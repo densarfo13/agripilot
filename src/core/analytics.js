@@ -49,6 +49,16 @@
 
 import { saveEvent } from './eventStore.js';
 import { trackEvent as legacyTrackEvent } from '../analytics/analyticsStore.js';
+// Dual-Mode Analytics §1 — userType resolver. Top-level ESM
+// import (Vite is ESM-only). Pure derivation, never throws,
+// SSR-safe — wrapping the call site in try/catch is enough to
+// guard against any module-load edge case.
+import { getUserType as _getUserType } from './userType.js';
+// Pricing A/B Test §2 — read the user's experiment cohort
+// (every variant they've been bucketed into) and stamp it on
+// every event. Lets the analytics pipeline split conversion +
+// retention by variant without a join.
+import { getActiveAssignments as _getActiveAssignments } from '../experiments/abTest.js';
 // Server-sync mirror (Data Moat Layer follow-up). Event writes
 // ALSO land on the lightweight offline queue when
 // FEATURE_EVENT_SYNC is on; the App.jsx 5s tick drains the
@@ -222,12 +232,36 @@ export function trackEvent(eventName, payload = {}) {
     // lands.
     const ctx = _readActiveContext();
     const safeCtx = (ctx && typeof ctx === 'object') ? ctx : {};
+    // Dual-Mode Analytics §1 — auto-attach userType to every
+    // event. The resolver is a pure derivation (reads sticky
+    // override → active experience → row farmType → 'farmer'
+    // default); wrapping the call in try/catch is enough to
+    // guard the rare SSR / locked-storage edge cases.
+    let _userType = null;
+    try { _userType = _getUserType(); }
+    catch { _userType = null; }
+    // Pricing A/B Test §2 — auto-attach experiment cohort.
+    // `experiments` is a plain object keyed by experiment name
+    // → assigned variant id (e.g. {pricing_tier: 'seven',
+    // paywall_message: 'benefit'}). Empty object when the user
+    // hasn't been bucketed into any experiment yet.
+    let _experiments = null;
+    try { _experiments = _getActiveAssignments(); }
+    catch { _experiments = null; }
     const enrichedPayload = {
       // Caller-supplied first (spec-shape extras live here).
       ...(payload && typeof payload === 'object' ? payload : {}),
       // Spec §1 enrichment fields. Caller can override any of
       // these by passing the same key in `payload`.
       userId:           safeCtx.userId           || _readUserId(),
+      // Dual-Mode Analytics §1 — userType ('farmer' | 'backyard')
+      // attached to every event. Caller-supplied value wins so a
+      // future debug / admin path can override.
+      userType:         (payload && payload.userType) || _userType || null,
+      // Pricing A/B Test §2 — every event carries the user's
+      // cohort assignments. Caller-supplied value wins
+      // (typically only debug / admin paths override).
+      experiments:      (payload && payload.experiments) || _experiments || null,
       activeExperience: safeCtx.activeExperience || safeCtx.experience || null,
       gardenId:         safeCtx.gardenId         || null,
       farmId:           safeCtx.farmId           || null,

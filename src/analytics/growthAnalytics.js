@@ -253,6 +253,51 @@ export function buildGrowthAnalytics({
     estimatedRevenueUsd: 0,
   };
 
+  // Dual-Mode Analytics §8 — split the headline metrics by
+  // userType so the dashboard can show "farmer cohort" vs
+  // "backyard cohort" side by side. Same shape as `overview`
+  // but partitioned. Reads `e.payload.userType` (auto-attached
+  // by core/analytics.js trackEvent enrichment §1). Events
+  // that pre-date the enrichment lack the field — they fall
+  // into the 'unknown' bucket so historical counts stay
+  // visible without contaminating either userType total.
+  const byUserType = (() => {
+    const buckets = { farmer: [], backyard: [], unknown: [] };
+    for (const e of safeEvents) {
+      const ut = String((e && e.payload && e.payload.userType) || '').toLowerCase();
+      if (ut === 'farmer')        buckets.farmer.push(e);
+      else if (ut === 'backyard') buckets.backyard.push(e);
+      else                        buckets.unknown.push(e);
+    }
+    const summarize = (list) => ({
+      totalEvents:    list.length,
+      onboardingCompleted: _countByName(list, ['onboarding_completed']),
+      actionsCompleted:    _countByName(list, ['primary_action_completed']),
+      scansSubmitted:      _countByName(list, ['scan_completed', 'scan_started']),
+      day1Returns:         _countByName(list, ['day1_return']),
+      day2Returns:         _countByName(list, ['day2_return']),
+      day7Returns:         _countByName(list, ['day7_return']),
+      sharesTriggered:     _countByName(list, ['viral_share_clicked']),
+      paywallViews:        _countByName(list, [paywallShownName, 'paywall_view']),
+      modeSwitches:        _countByName(list, ['mode_switched']),
+    });
+    return {
+      farmer:   summarize(buckets.farmer),
+      backyard: summarize(buckets.backyard),
+      unknown:  summarize(buckets.unknown),
+    };
+  })();
+
+  // Dual-Mode Analytics §6 — upgrade-signal counters. Read
+  // recent farms vs gardens registrations from the event log.
+  // Mode-switched count tells us how many manual flips have
+  // happened; gardens_count + farms_count tells us cohort mix.
+  const upgradeSignals = {
+    farmsCreated:    _countByName(safeEvents, ['farm_created', 'add_farm']),
+    gardensCreated:  _countByName(safeEvents, ['garden_created', 'add_garden']),
+    modeSwitches:    _countByName(safeEvents, ['mode_switched']),
+  };
+
   return Object.freeze({
     overview: {
       totalEvents,
@@ -265,6 +310,9 @@ export function buildGrowthAnalytics({
     retention,
     viral,
     monetization,
+    // Dual-Mode Analytics §8 + §6 — new top-level surfaces.
+    byUserType,
+    upgradeSignals,
     generatedAt: new Date().toISOString(),
   });
 }

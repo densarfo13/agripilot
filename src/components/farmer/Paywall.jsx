@@ -44,11 +44,26 @@
 import { useEffect } from 'react';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { dismissPaywall } from '../../core/paywall.js';
+import {
+  dismissPaywall,
+  startFreeTrial,
+  getTrialState,
+} from '../../core/paywall.js';
+// Pricing A/B test §1 — sticky per-user variant assignment.
+// Reads (or seeds) the user's bucket on first render; same
+// variant on every subsequent open. Fires `experiment_exposure`
+// once per session for the conversion-rate denominator.
+import { getAssignment } from '../../experiments/abTest.js';
+// Premium Monetization §5 — onTrial handler (optional).
+// Caller can wire a separate handler to differentiate trial
+// starts from full-upgrade conversions in analytics. When not
+// supplied, falls back to onUpgrade so existing call sites
+// keep working without churning.
 
 export default function Paywall({
   open = false,
   onUpgrade,
+  onTrial,
   onDismiss,
   trigger = null,
 }) {
@@ -73,13 +88,53 @@ export default function Paywall({
   if (!open) return null;
 
   const title    = tStrict('paywall.title',    'Get smarter daily decisions');
+
+  // Pricing A/B test §1 + §3 — read the user's pricing variant
+  // ($5 / $7 / $9). Sticky per-device; same variant on every
+  // open until billing flips them to Pro (post-conversion the
+  // paywall stops surfacing anyway). Spec §3: features / UI /
+  // timing stay constant — only the price + body line vary.
+  // Pricing A/B test §5 — feature- vs benefit-led messaging
+  // variant. Same getAssignment helper; wires copy below.
+  const _pricingVariant = (() => {
+    try { return getAssignment('pricing_tier').variant; }
+    catch { return null; }
+  })();
+  const _messageVariant = (() => {
+    try { return getAssignment('paywall_message').variant; }
+    catch { return null; }
+  })();
+
   // Freemium spec §4 — body copy aligned to the spec's exact wording.
-  const body     = tStrict('paywall.body',     'Avoid mistakes and improve your results with better guidance.');
-  // Freemium spec §5 — price anchor. Localized via paywall.price; falls
-  // back to the launch default ($7/month) when the key isn't translated.
-  const price    = tStrict('paywall.price',    '$7/month');
+  // Pricing A/B test §5 — feature-led variant emphasises what
+  // the user GETS; benefit-led emphasises the OUTCOME. Both
+  // are honest framings — the experiment reveals which lands
+  // better with each cohort.
+  const body = (_messageVariant && _messageVariant.id === 'feature')
+    ? tStrict('paywall.body.feature',
+        'Unlimited scans, deeper insights, and the "why" behind every recommendation.')
+    : tStrict('paywall.body',
+        'Avoid mistakes and improve your results with better guidance.');
+
+  // Freemium spec §5 — price anchor. Pricing A/B test §1: when
+  // a variant is assigned, render the variant's label
+  // ("$5/month" / "$7/month" / "$9/month"). Falls back to the
+  // i18n key when no variant is available (SSR / private mode).
+  const price = (_pricingVariant && _pricingVariant.label)
+    ? _pricingVariant.label
+    : tStrict('paywall.price', '$7/month');
   const cta      = tStrict('paywall.cta',      'Upgrade to Pro');
   const dismiss  = tStrict('paywall.dismiss',  'Maybe later');
+  // Premium Monetization §5 — 7-day free trial CTA. Surfaced
+  // ONLY when the trial slot hasn't been used yet (single-shot
+  // per device). Once started + expired, the slot is locked
+  // and only the regular Upgrade path remains.
+  const trialState = (() => {
+    try { return getTrialState(); }
+    catch { return { started: false, active: false }; }
+  })();
+  const showTrialCta = !trialState.started;
+  const trialCta = tStrict('paywall.trialCta', 'Start 7-day free trial');
 
   const handleBackdrop = (e) => {
     // Only close on direct backdrop click (not bubble from card).
@@ -101,6 +156,22 @@ export default function Paywall({
     }
   };
 
+  // Premium Monetization §5 — start the 7-day trial. Single-
+  // shot per device; the trial state itself is single-source-
+  // of-truth in paywall.js. After starting, isPro() returns
+  // true for the trial window so feature gates open
+  // immediately. Caller's onTrial (or onUpgrade fallback)
+  // closes the modal + can refresh.
+  const handleTrial = () => {
+    try { startFreeTrial(); }
+    catch { /* swallow — Pro flag flip below still attempts */ }
+    const handler = (typeof onTrial === 'function') ? onTrial : onUpgrade;
+    if (typeof handler === 'function') {
+      try { handler({ source: 'free_trial' }); }
+      catch { /* never propagate */ }
+    }
+  };
+
   return (
     <div
       role="dialog"
@@ -108,6 +179,8 @@ export default function Paywall({
       aria-labelledby="paywall-title"
       data-testid="paywall"
       data-trigger={trigger || 'unknown'}
+      data-pricing-variant={(_pricingVariant && _pricingVariant.id) || 'unknown'}
+      data-message-variant={(_messageVariant && _messageVariant.id) || 'unknown'}
       style={S.backdrop}
       onClick={handleBackdrop}
     >
@@ -120,9 +193,25 @@ export default function Paywall({
             weight kept light (a single line, dim color) so the
             primary action stays the dominant affordance. */}
         <p style={S.price} data-testid="paywall-price">{price}</p>
+        {/* Premium Monetization §5 — 7-day free trial CTA. Single-
+            shot per device; renders only when the trial slot is
+            still available. Tapping starts the trial (isPro()
+            returns true for the next 7 days) AND fires the
+            caller's onTrial handler so the modal can close +
+            the page can refresh into Pro features. */}
+        {showTrialCta ? (
+          <button
+            type="button"
+            style={S.cta}
+            onClick={handleTrial}
+            data-testid="paywall-trial-cta"
+          >
+            {trialCta}
+          </button>
+        ) : null}
         <button
           type="button"
-          style={S.cta}
+          style={showTrialCta ? S.ctaSecondary : S.cta}
           onClick={handleUpgrade}
           data-testid="paywall-cta"
         >
@@ -203,6 +292,25 @@ const S = {
     fontWeight: 800,
     cursor: 'pointer',
     minHeight: 52,
+    WebkitTapHighlightColor: 'transparent',
+  },
+  // Premium Monetization §5 — secondary upgrade button shown
+  // BELOW the trial CTA when the trial slot is available.
+  // Same shape as cta but ghost-styled so the trial reads as
+  // the primary affordance + upgrade reads as the alternative.
+  ctaSecondary: {
+    appearance: 'none',
+    width: '100%',
+    background: 'transparent',
+    color: '#86EFAC',
+    border: '1px solid rgba(34,197,94,0.45)',
+    borderRadius: 12,
+    padding: '12px 20px',
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 46,
+    marginTop: 8,
     WebkitTapHighlightColor: 'transparent',
   },
   dismiss: {

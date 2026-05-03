@@ -74,6 +74,14 @@ const WORDS = Object.freeze({
   field:    { garden: 'pot',      farm: 'field'     },
   rows:     { garden: 'pots',     farm: 'rows'      },
   scouting: { garden: 'checking', farm: 'scouting'  },
+  // Dual-Mode UX §2 — Task ↔ Step. Backyard users find "step"
+  // less intimidating than "task" (which carries a chore-list
+  // connotation); farmers expect "task" for actions that map
+  // to farm operations. Pair runs both directions.
+  task:     { garden: 'step',     farm: 'task'      },
+  tasks:    { garden: 'steps',    farm: 'tasks'     },
+  step:     { garden: 'step',     farm: 'task'      },
+  steps:    { garden: 'steps',    farm: 'tasks'     },
 
   // Shared vocabulary \u2014 same word in both contexts. Surfaced here
   // so a caller doesn't have to know which words are shared vs
@@ -244,6 +252,10 @@ const _SWAP_PAIRS = Object.freeze([
   ['plant',   'crop'],
   ['pots',    'rows'],
   ['pot',     'row'],
+  // Dual-Mode UX §2 — Task ↔ Step. Plurals first so
+  // "Daily tasks" → "Daily steps" doesn't get truncated.
+  ['steps',   'tasks'],
+  ['step',    'task'],
 ]);
 
 function _matchCase(template, replacement) {

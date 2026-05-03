@@ -61,6 +61,19 @@ import FirstActionGate from '../../components/farmer/FirstActionGate.jsx';
 import { getUserMemory } from '../../core/userMemory.js';
 import { decideToday } from '../../core/ultimateDecisionEngine.js';
 import Paywall from '../../components/farmer/Paywall.jsx';
+// Backyard → Farmer upgrade prompt + trigger helpers. Surfaces
+// in the post-Done state when the spec's trigger conditions are
+// met (gardens >= 3, or daysActive >= 3, or fresh advanced-
+// feature signal). Dismissal applies a 14-day cooldown; accept
+// flips userType via setUserTypeOverride('farmer').
+import BackyardUpgradePrompt from '../../components/farmer/BackyardUpgradePrompt.jsx';
+import {
+  shouldShowBackyardUpgrade,
+  markUpgradePromptShown,
+  markUpgradeDismissed,
+  markUpgradeAccepted,
+} from '../../core/backyardUpgrade.js';
+import { getGardens } from '../../store/multiExperience.js';
 import { recordDayActive, getEngagement } from '../../core/userEngagement.js';
 import {
   shouldShowPaywall, markPaywallShown, markUpgraded,
@@ -202,6 +215,31 @@ export default function FarmerTodayPage() {
   // shouldShowPaywall(...) calls when those features land.
   const [paywallOpen, setPaywallOpen]       = useState(false);
   const [paywallTrigger, setPaywallTrigger] = useState(null);
+
+  // Backyard → Farmer upgrade prompt state. The check fires on
+  // the `farroway:primaryActionDone` event (dispatched by
+  // FirstActionGate's onClickDone) so the prompt surfaces at
+  // the post-action value moment per spec §2 — never before
+  // the user has experienced a win.
+  const [backyardUpgradeOpen, setBackyardUpgradeOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onDone = () => {
+      try {
+        const gardens = (getGardens() || []).length;
+        const eng = getEngagement();
+        if (shouldShowBackyardUpgrade({
+          gardens,
+          daysActive: eng && eng.daysActive,
+        })) {
+          markUpgradePromptShown();
+          setBackyardUpgradeOpen(true);
+        }
+      } catch { /* swallow — never block render */ }
+    };
+    window.addEventListener('farroway:primaryActionDone', onDone);
+    return () => window.removeEventListener('farroway:primaryActionDone', onDone);
+  }, []);
 
   // Onboarding Completion §6 — read + clear the "just completed"
   // flag stamped by FastOnboarding's goNext(). One-shot: if the
@@ -1481,6 +1519,31 @@ export default function FarmerTodayPage() {
           setPaywallOpen(false);
         }}
         onDismiss={() => setPaywallOpen(false)}
+      />
+
+      {/* Backyard → Farmer upgrade prompt. Mounted alongside the
+          Paywall at end of the page so it overlays everything.
+          Open is gated by `shouldShowBackyardUpgrade` in the
+          Done-event listener above; never shows pre-Done. */}
+      <BackyardUpgradePrompt
+        open={backyardUpgradeOpen}
+        onUpgrade={() => {
+          try { markUpgradeAccepted(); } catch { /* ignore */ }
+          setBackyardUpgradeOpen(false);
+          // Spec §7 — show the enhanced plan immediately. The
+          // simplest reliable trigger is a hard refresh: the
+          // userType override is in localStorage so a remount
+          // picks up the farmer-mode UI on first paint.
+          try {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          } catch { /* swallow */ }
+        }}
+        onDismiss={() => {
+          try { markUpgradeDismissed(); } catch { /* ignore */ }
+          setBackyardUpgradeOpen(false);
+        }}
       />
     </Shell>
   );

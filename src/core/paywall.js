@@ -57,12 +57,23 @@ export const PAYWALL_TRIGGERS = Object.freeze({
   // consecutive). Caller passes engagement.streakDays so the
   // gate fires after the user's 3rd consecutive Done tap.
   STREAK_3_DAY:     'streak_3_day',
+  // Premium Monetization §2 — fire when a backyard user is
+  // managing multiple gardens (≥ 2). Engagement signal: the
+  // user invested enough effort to organize multiple plots,
+  // making them a strong candidate for Pro features.
+  MULTIPLE_GARDENS: 'multiple_gardens',
 });
 
 const KEYS = Object.freeze({
   IS_PRO:        'farroway_pro_status',          // 'true' | (absent)
   DISMISSED_AT:  'farroway_pro_dismissed_at',    // ms-epoch
   SEEN_PREFIX:   'farroway_pro_seen_',           // + trigger
+  // Premium Monetization §5 — 7-day free trial. Storing only
+  // the start timestamp; trial-active = (now - startedAt) < 7d.
+  // Single-shot: once started + expired, the user can't re-
+  // start without real billing (the slot is preserved as a
+  // marker so the funnel knows they've already trialed).
+  TRIAL_STARTED: 'farroway_pro_trial_started_at',
 });
 
 const DEDUP_MS = Object.freeze({
@@ -74,7 +85,15 @@ const DEDUP_MS = Object.freeze({
   // dismissed and went back to using the free tier doesn't get
   // re-prompted on every streak rollover.
   streak_3_day:     14 * 24 * 60 * 60 * 1000,
+  // Premium Monetization §2 — once per 14 days for the multi-
+  // garden trigger; same long cooldown as other engagement-
+  // based triggers so a "not now" tap doesn't generate
+  // re-prompt fatigue.
+  multiple_gardens: 14 * 24 * 60 * 60 * 1000,
 });
+
+// Premium Monetization §5 — trial duration in ms.
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 const RECENT_DISMISS_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -126,12 +145,78 @@ function _remove(key) {
  * /api/billing/me and cache the result. Every consumer of this
  * function will pick up the change automatically.
  *
+ * Premium Monetization §5 — an active 7-day free trial counts
+ * as Pro for the trial window; expires automatically when the
+ * window elapses (no renewal logic — caller surfaces the
+ * upgrade prompt at expiry).
+ *
  * Defaults to false; intentionally optimistic in the wrong
  * direction (better to gate a Pro feature than to let a non-Pro
  * user through it).
  */
 export function isPro() {
-  return _readStr(KEYS.IS_PRO) === 'true';
+  if (_readStr(KEYS.IS_PRO) === 'true') return true;
+  if (isInTrial()) return true;
+  return false;
+}
+
+/**
+ * Premium Monetization §5 — trial state helpers.
+ *
+ *   startFreeTrial()
+ *     • One-shot start. Returns { ok: true, expiresAt } on
+ *       first start; { ok: false, reason: 'already_started' }
+ *       on a second attempt. Trial slot is single-use.
+ *
+ *   isInTrial()
+ *     • True iff trial started AND now is within the 7-day window.
+ *
+ *   getTrialState()
+ *     • Read-only snapshot for UI surfaces that want to render
+ *       "X days left in trial".
+ */
+export function startFreeTrial() {
+  const existing = _readNum(KEYS.TRIAL_STARTED);
+  if (existing) {
+    return Object.freeze({
+      ok: false,
+      reason: 'already_started',
+      startedAt: existing,
+      expiresAt: existing + TRIAL_DURATION_MS,
+    });
+  }
+  const now = Date.now();
+  _writeNum(KEYS.TRIAL_STARTED, now);
+  return Object.freeze({
+    ok: true,
+    startedAt: now,
+    expiresAt: now + TRIAL_DURATION_MS,
+  });
+}
+
+export function isInTrial() {
+  const startedAt = _readNum(KEYS.TRIAL_STARTED);
+  if (!startedAt) return false;
+  return (Date.now() - startedAt) < TRIAL_DURATION_MS;
+}
+
+export function getTrialState() {
+  const startedAt = _readNum(KEYS.TRIAL_STARTED);
+  if (!startedAt) {
+    return { started: false, active: false, daysRemaining: null };
+  }
+  const elapsed = Date.now() - startedAt;
+  const active = elapsed < TRIAL_DURATION_MS;
+  const daysRemaining = active
+    ? Math.max(0, Math.ceil((TRIAL_DURATION_MS - elapsed) / (24 * 60 * 60 * 1000)))
+    : 0;
+  return Object.freeze({
+    started:       true,
+    active,
+    startedAt,
+    expiresAt:     startedAt + TRIAL_DURATION_MS,
+    daysRemaining,
+  });
 }
 
 /**
@@ -196,6 +281,15 @@ export function shouldShowPaywall(trigger, engagement = {}) {
   // they've felt the value 3 days in a row.
   if (trigger === PAYWALL_TRIGGERS.STREAK_3_DAY) {
     if (!Number.isFinite(streak) || streak < 3) return false;
+    return !_alreadyShown(trigger);
+  }
+
+  // Premium Monetization §2 — MULTIPLE_GARDENS gates on the
+  // user managing ≥ 2 garden rows. Caller passes
+  // engagement.gardensCount; trigger fires once per 14d.
+  if (trigger === PAYWALL_TRIGGERS.MULTIPLE_GARDENS) {
+    const gardens = Number((engagement && engagement.gardensCount) || 0);
+    if (!Number.isFinite(gardens) || gardens < 2) return false;
     return !_alreadyShown(trigger);
   }
 

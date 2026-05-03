@@ -9901,14 +9901,26 @@ const T = {
   // Freemium spec §4 — body wording aligned to "Avoid mistakes
   // and improve your results with better guidance" (the previous
   // "insights" phrasing was generic; "guidance" matches the
-  // decision-engine value prop).
+  // decision-engine value prop). This is the BENEFIT-LED variant
+  // for the Pricing A/B Test §5 messaging experiment.
   'paywall.body':                             { en: 'Avoid mistakes and improve your results with better guidance.', fr: '\u00C9vitez les erreurs et am\u00E9liorez vos r\u00E9sultats avec des conseils plus pr\u00E9cis.', sw: 'Epuka makosa na boresha matokeo yako kwa mwongozo bora.', ha: 'Guji kurakurai ka inganta sakamakon ku tare da jagora mai kyau.', tw: 'Twe ho firi mfomsoɔ na nya nnetebea pa fa akwanky\u025Cr\u025B pa so.', hi: 'गलतियों से बचें और बेहतर मार्गदर्शन से अपने परिणाम सुधारें।' },
+  // Pricing A/B Test §5 — FEATURE-LED variant of the paywall
+  // body. Lists capabilities ("unlimited scans, deeper insights,
+  // why-behind-recommendations") rather than outcomes. Run as a
+  // 50/50 split against `paywall.body` to identify which framing
+  // converts better per cohort.
+  'paywall.body.feature':                     { en: 'Unlimited scans, deeper insights, and the "why" behind every recommendation.', fr: 'Scans illimit\u00E9s, aper\u00E7us plus approfondis, et le "pourquoi" derri\u00E8re chaque recommandation.', sw: 'Skani zisizo na kikomo, maarifa ya kina, na sababu ya kila pendekezo.', ha: 'Duban da ba shi da iyaka, fahimta mai zurfi, da \u201Cme ya sa\u201D bayan kowace shawara.', tw: 'Hwehw\u025B a enni h\u025Bn, nimdee a emu ye den, ne \u201CdeNti\u201D wo afotuo biara akyiri.', hi: 'असीमित स्कैन, गहरी अंतर्दृष्टि और हर सिफ़ारिश का "क्यों"।' },
   // Freemium spec §5 — single price line. Default "$7/month"
   // rendered between the body and the CTA. Currency follows the
   // active locale only when the team's billing layer ships per-
   // region price tables; until then we ship the USD anchor as the
   // launch default and let the localized value override it.
   'paywall.price':                            { en: '$7/month',                                               fr: '7\u00A0$/mois',                                              sw: '$7/mwezi',                                            ha: '$7/wata',                                              tw: '$7/bosome',                                       hi: '$7/महीना' },
+  // Premium Monetization §5 — 7-day free trial primary CTA.
+  // Single-shot per device; surfaces only when the trial slot
+  // is still available. Wording emphasizes "free" + "7 days"
+  // up front so the user reads it as a low-commitment ask.
+  'paywall.trialCta':                         { en: 'Start 7-day free trial',                                 fr: 'Commencer l\'essai gratuit de 7 jours',                       sw: 'Anza majaribio ya bure ya siku 7',                    ha: 'Fara gwajin kyauta na kwanaki 7',                     tw: 'Hy\u025B nna 7 awosae a y\u025Btua',              hi: '7-दिन मुफ़्त ट्रायल शुरू करें' },
   'paywall.cta':                              { en: 'Upgrade to Pro',                                         fr: 'Passer à Pro',                                                sw: 'Boresha hadi Pro',                                    ha: 'Haɓaka zuwa Pro',                                       tw: 'Kɔ Pro so',                                       hi: 'Pro में अपग्रेड करें' },
   'paywall.dismiss':                          { en: 'Maybe later',                                            fr: 'Plus tard peut-être',                                         sw: 'Labda baadaye',                                       ha: 'Wataƙila daga baya',                                    tw: 'Ebia akyiri',                                     hi: 'शायद बाद में' },
 
@@ -12434,6 +12446,19 @@ const T = {
   // specific or too restrictive for whoever the user actually
   // is. "What are you growing?" lands as friendly + general.
   'fastOnboarding.title.universal':      { en: 'What are you growing?',                      fr: 'Que cultivez-vous ?',                                       sw: 'Unalima nini?',                                ha: 'Me kake nomawa?',                            tw: 'Wodua d\u025Bn?',                              hi: 'आप क्या उगा रहे हैं?' },
+
+  // Optimize Backyard → Farmer Upgrade — modal copy. Spec §3
+  // headline ("You're growing more than a backyard setup") +
+  // §3 body ("Unlock Farm Mode for better tracking") + §4
+  // benefit bullets + §5 CTA + reversibility note.
+  'backyardUpgrade.title':                { en: 'You\u2019re growing more than a backyard setup', fr: 'Vous cultivez plus qu\'un jardin de maison',                 sw: 'Unalima zaidi ya bustani ya nyumbani',           ha: 'Kuna noma fiye da gonar baya',                       tw: 'Wodua bebree sen w\'efie hakan',                 hi: 'आप घर के बगीचे से ज़्यादा उगा रहे हैं' },
+  'backyardUpgrade.body':                 { en: 'Unlock Farm Mode for better tracking',           fr: 'D\u00E9bloquez le mode Ferme pour un meilleur suivi',         sw: 'Fungua Hali ya Shamba kwa ufuatiliaji bora',     ha: 'Buɗe Yanayin Gona don bin diddigi mafi kyau',       tw: 'Bue Afuo Mu na hwehw\u025B yiye',                 hi: 'बेहतर ट्रैकिंग के लिए फ़ार्म मोड अनलॉक करें' },
+  'backyardUpgrade.benefit.tracking':     { en: 'Better tracking across multiple plots',          fr: 'Meilleur suivi sur plusieurs parcelles',                       sw: 'Ufuatiliaji bora kwenye viwanja vingi',          ha: 'Bin diddigi mafi kyau a fage da yawa',              tw: 'Hwehw\u025B yiye w\u0254 mfuo pii so',           hi: 'कई खेतों पर बेहतर ट्रैकिंग' },
+  'backyardUpgrade.benefit.insights':     { en: 'More insights on weather + soil',                fr: 'Plus d\'aper\u00E7us sur la m\u00E9t\u00E9o + le sol',         sw: 'Maarifa zaidi kuhusu hali ya hewa + udongo',     ha: 'Karin fahimta kan yanayi + ƙasa',                   tw: 'Nimdee pii w\u0254 ewiem ne asaase ho',          hi: 'मौसम + मिट्टी पर अधिक अंतर्दृष्टि' },
+  'backyardUpgrade.benefit.recommendations': { en: 'Improved recommendations tuned to farm scale', fr: 'Recommandations am\u00E9lior\u00E9es adapt\u00E9es \u00E0 la ferme', sw: 'Mapendekezo bora yaliyolinganishwa na shamba', ha: 'Inganta shawarwarin da suka dace da gona',          tw: 'Afotuo a w\u025By\u025By\u025B ma afuo',         hi: 'खेत पैमाने पर बेहतर सिफ़ारिशें' },
+  'backyardUpgrade.cta':                  { en: 'Unlock Farm Mode',                               fr: 'D\u00E9bloquer le mode Ferme',                                sw: 'Fungua Hali ya Shamba',                          ha: 'Buɗe Yanayin Gona',                                  tw: 'Bue Afuo Mu',                                     hi: 'फ़ार्म मोड अनलॉक करें' },
+  'backyardUpgrade.dismiss':              { en: 'Not now',                                        fr: 'Pas maintenant',                                              sw: 'Si sasa',                                        ha: 'Ba yanzu ba',                                        tw: 'Ɛnnyɛ seesei',                                    hi: 'अभी नहीं' },
+  'backyardUpgrade.reversible':           { en: 'You can switch back anytime in Settings.',       fr: 'Vous pouvez revenir en arri\u00E8re \u00E0 tout moment dans les param\u00E8tres.', sw: 'Unaweza kurudi nyuma wakati wowote katika Mipangilio.', ha: 'Za ka iya komawa duk lokacin a cikin Saitin.',  tw: 'Wobetumi asan akɔ akyi bere biara wɔ Saiti mu.', hi: 'आप कभी भी सेटिंग्स में वापस स्विच कर सकते हैं।' },
 
   // High-Conversion Onboarding screen 1 (location confirm).
   // Headline + subtitle + 4 status strings + the manual-entry
