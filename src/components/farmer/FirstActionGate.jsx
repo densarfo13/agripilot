@@ -54,6 +54,12 @@ import { consumeTimeToFirstAction } from '../../core/onboardingTiming.js';
 // investor demos always have social proof on screen. Gated on
 // isDemoMode so production users never see imputed copy.
 import { isDemoMode } from '../../config/demoMode.js';
+// Viral Growth Loop §1 + §2 — share the action+location insight
+// after the user taps Done. Web Share API first, clipboard
+// fallback. Caller passes the localized one-line action so the
+// outgoing message reads "Farroway told me {action} based on my
+// location".
+import { shareFarrowayInsight } from '../../growth/insightShare.js';
 
 export default function FirstActionGate({
   weather,
@@ -70,6 +76,17 @@ export default function FirstActionGate({
   // crop hints / scan-follow-up while existing call sites keep
   // working unchanged.
   decision,
+  // Engagement Depth §1 — optional bonus actions surfaced after
+  // Done. Caller passes the composer's `decision.supportingTasks`
+  // (capped at 2 by ultimateDecisionEngine). The first item, if
+  // any, renders as "Next step (optional): {action}". Hidden when
+  // empty/missing — the spec's "no overwhelm" rule (§7).
+  nextSteps,
+  // Engagement Depth §5 + §6 — daily completion count for the
+  // insight-unlock line. ≥2 flips on "You're ahead today —
+  // conditions look good" after the toast. Defaults to 0; the
+  // unlock simply doesn't fire.
+  dailyCount = 0,
   onDone,
 }) {
   // Subscribe to language change so all the localized strings
@@ -226,7 +243,33 @@ export default function FirstActionGate({
   // the supplied fallback, never bleed English. The fallbacks
   // below are the spec's exact wording.
 
-  const headerText      = tStrict('firstAction.header',       'Before you do anything, do this first:');
+  // Viral Hook §4 — home header aligned to "Before you water,
+  // check this first" so the home surface picks up exactly where
+  // the post-onboarding hook left off ("Most people water too
+  // early today"). The wording ties the hook → action → result
+  // loop together visually.
+  //
+  // Viral Click → Conversion §5 — when a user landed via the
+  // /try value-first surface, ViralLandingPage stamped a
+  // sessionStorage flag so this gate can echo the same framing
+  // ("Do not water today") on first paint instead of the engine's
+  // arbitrary first action. Read + clear the stamp once so a
+  // refresh doesn't keep over-riding the engine. The override
+  // only affects the eyebrow/header pair; the engine's
+  // primaryActionType still drives Done analytics + downstream
+  // memory.
+  const _viralPreviewActive = (() => {
+    try {
+      if (typeof sessionStorage === 'undefined') return false;
+      const raw = sessionStorage.getItem('farroway:viralPreview:action');
+      if (raw) {
+        sessionStorage.removeItem('farroway:viralPreview:action');
+        return true;
+      }
+    } catch { /* ignore */ }
+    return false;
+  })();
+  const headerText      = tStrict('firstAction.header',       'Before you water, check this first');
   const title           = tStrict(action.titleKey,            action.titleFallback);
   const detail          = tStrict(action.detailKey,           action.detailFallback);
   const reason          = tStrict(action.reasonKey,           action.reasonFallback);
@@ -316,6 +359,13 @@ export default function FirstActionGate({
       data-testid="first-action-gate"
       data-action-type={action.primaryActionType}
       data-completed={done ? 'true' : 'false'}
+      // Viral Click → Conversion §5 — surface the "came from /try
+      // preview" signal as a data attribute so analytics + future
+      // context-preservation copy can target it without us
+      // hijacking the engine's chosen primary action. Engine
+      // remains the source of truth; this just records the
+      // attribution.
+      data-viral-preview={_viralPreviewActive ? 'true' : 'false'}
       style={{
         ...S.card,
         // Conversion §6 — slight card fade on Done so the
@@ -462,6 +512,70 @@ export default function FirstActionGate({
             <span style={S.toastCheck} aria-hidden="true">{'\u2714'}</span>
             <span>{toastText}</span>
           </div>
+
+          {/* Engagement Depth §6 — insight unlock. Quiet green
+              line below the toast when the user has completed
+              ≥2 actions today. Reinforcement-only; never a
+              warning. Hidden at <2 so the typical "first Done
+              of the day" view stays clean. */}
+          {Number(dailyCount) >= 2 ? (
+            <p style={S.aheadToday} data-testid="first-action-ahead-today">
+              {tStrict('firstAction.aheadToday',
+                'You\u2019re ahead today \u2014 conditions look good')}
+            </p>
+          ) : null}
+
+          {/* Engagement Depth §1 — "Next step (optional): {action}".
+              Surfaces ONLY after Done so the primary action keeps
+              its single-affordance dominance pre-tap. Pulls the
+              first supportingTask from the composer; the line is
+              skipped when supportingTasks is empty so the spec's
+              §7 "no overwhelm" rule holds (we never invent a
+              follow-up). Tap-target points to /tasks where the
+              user can mark it done — keeps the gate read-only. */}
+          {Array.isArray(nextSteps) && nextSteps.length > 0 ? (
+            <div style={S.nextStep} data-testid="first-action-next-step">
+              <span style={S.nextStepLabel}>
+                {tStrict('firstAction.nextStep.label', 'Next step (optional)')}
+              </span>
+              <span style={S.nextStepText}>
+                {tStrict(
+                  nextSteps[0].titleKey || '',
+                  nextSteps[0].titleFallback || '',
+                )}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Viral Growth Loop §1 + §2 — small "Share this insight"
+              affordance after Done. Spec calls for the trigger to
+              fire after first action / streak / insight; the gate
+              is the canonical "first action" surface so this is
+              the primary entry point. Outgoing message uses the
+              spec's exact format ("Farroway told me {action}
+              based on my location"). Tapping uses the Web Share
+              API on mobile, clipboard fallback elsewhere. Never
+              throws; never blocks the rest of the post-Done
+              experience. */}
+          <button
+            type="button"
+            onClick={() => {
+              shareFarrowayInsight({
+                source:     'first_action',
+                action:     action.titleFallback || action.titleKey || '',
+                streakDays: null,
+                lang:       (typeof navigator !== 'undefined'
+                              && navigator.language) || 'en',
+              });
+            }}
+            style={S.shareInsight}
+            data-testid="first-action-share-insight"
+          >
+            <span aria-hidden="true" style={{ marginRight: 6 }}>
+              {'\u{1F4E4}'}
+            </span>
+            {tStrict('firstAction.shareInsight', 'Share this insight')}
+          </button>
 
           {/* Data Moat §2 — outcome-feedback prompt. Renders ONLY
               after Done. Three single-tap chips; once one is
@@ -822,5 +936,67 @@ const S = {
     fontSize: 11,
     color: 'rgba(255,255,255,0.45)',
     margin: '2px 0 0',
+  },
+  // Engagement Depth §6 — insight unlock line. Same green family
+  // as the toast / area-insight chip so the tone reads as
+  // reinforcement, not alarm.
+  aheadToday: {
+    margin: '10px 2px 0',
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#86EFAC',
+    letterSpacing: '0.01em',
+  },
+  // Viral Growth Loop §1 — "Share this insight" button shown
+  // after Done. Visual weight kept light (ghost-style chip) so
+  // the toast / health-feedback prompt stay the primary
+  // post-Done elements. Sits right above the tomorrow line so
+  // the user sees it during the natural eye-scan after the
+  // checkmark + reward toast.
+  shareInsight: {
+    appearance: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.85)',
+    borderRadius: 999,
+    padding: '0.4rem 0.85rem',
+    marginTop: 12,
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 34,
+    fontFamily: 'inherit',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  // Engagement Depth §1 — "Next step (optional)" container.
+  // Two stacked lines: dim eyebrow + slightly brighter action
+  // text. Visual weight kept light so the toast/checkmark stays
+  // the dominant post-Done signal.
+  nextStep: {
+    marginTop: 12,
+    padding: '10px 12px',
+    borderRadius: 12,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px dashed rgba(255,255,255,0.14)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  nextStepLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  nextStepText: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'rgba(255,255,255,0.92)',
+    lineHeight: 1.4,
   },
 };

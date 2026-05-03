@@ -60,6 +60,72 @@ const C = {
 };
 
 const S = {
+  // Viral Hook §1 + §2 — full-screen surface for the curiosity
+  // hook. Centered card, generous spacing, no other UI. Auto-
+  // navigates after 1.8s. Background mirrors `page` so the
+  // visual continuity from screen 2 → hook → home stays calm.
+  hookPage: {
+    minHeight: '100vh',
+    background: `linear-gradient(180deg, ${C.navy} 0%, ${C.navy2} 100%)`,
+    color: C.ink,
+    padding: '1.5rem 1.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hookCard: {
+    maxWidth: '24rem',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+    textAlign: 'left',
+  },
+  hookLine1: {
+    margin: 0,
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    color: 'rgba(234,242,255,0.62)',
+    letterSpacing: '0.01em',
+  },
+  hookLine2: {
+    margin: 0,
+    fontSize: '1.5rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+    lineHeight: 1.25,
+    letterSpacing: '-0.01em',
+  },
+  hookLine3: {
+    margin: 0,
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: '#FCD34D',
+    lineHeight: 1.4,
+  },
+  hookSharePrompt: {
+    margin: '12px 0 0',
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    color: 'rgba(234,242,255,0.72)',
+  },
+  hookShareBtn: {
+    appearance: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: '#FFFFFF',
+    borderRadius: 999,
+    padding: '0.55rem 1rem',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 40,
+    fontFamily: 'inherit',
+  },
   page: {
     minHeight: '100vh',
     background: `linear-gradient(180deg, ${C.navy} 0%, ${C.navy2} 100%)`,
@@ -70,6 +136,29 @@ const S = {
   progress: {
     height: 4, background: 'rgba(255,255,255,0.08)',
     borderRadius: 4, overflow: 'hidden', margin: '0 0 6px',
+  },
+  // Onboarding Completion §1 — textual stepper eyebrow above the
+  // hairline progress bar. Replaces the opaque "75%" read with
+  // the spec's "Step 1 of 1 · Almost done" framing. Tiny, dim,
+  // never the dominant element on screen.
+  stepEyebrow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    margin: '0 0 8px',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+  },
+  stepEyebrowStep: {
+    color: 'rgba(255,255,255,0.55)',
+  },
+  stepEyebrowDot: {
+    color: 'rgba(255,255,255,0.35)',
+  },
+  stepEyebrowAlmost: {
+    color: '#86EFAC',
   },
   progressFill: {
     height: '100%', background: C.green,
@@ -168,6 +257,70 @@ const S = {
     fontSize: '0.9rem', fontWeight: 700,
     cursor: 'pointer', minHeight: 44, fontFamily: 'inherit',
   },
+  // High-Conversion Onboarding §1 — text link beneath the
+  // primary CTA. Reveals/hides the manual country/region inputs.
+  // Visually a link, not a button — the spec wants it secondary
+  // so the typical user never registers it as something they
+  // need to interact with.
+  linkBtn: {
+    appearance: 'none',
+    display: 'block',
+    width: '100%',
+    background: 'transparent',
+    border: 'none',
+    color: 'rgba(234,242,255,0.62)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '0.5rem',
+    minHeight: 36,
+    textDecoration: 'underline',
+    textDecorationColor: 'rgba(234,242,255,0.32)',
+    textUnderlineOffset: 3,
+    fontFamily: 'inherit',
+  },
+  // High-Conversion Onboarding §1 — location status card. Single
+  // tap target showing 📍 + status text. Idle/denied states are
+  // tappable to (re-)trigger detection; granted state is purely
+  // informational.
+  locationCard: {
+    appearance: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    color: C.ink,
+    borderRadius: 14,
+    padding: '14px 16px',
+    margin: '6px 0 14px',
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 56,
+    fontFamily: 'inherit',
+    textAlign: 'left',
+  },
+  locationCardGranted: {
+    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(34,197,94,0.40)',
+    color: C.greenFg,
+    cursor: 'default',
+  },
+  locationCardDenied: {
+    background: 'rgba(245,158,11,0.10)',
+    border: '1px solid rgba(245,158,11,0.36)',
+    color: '#FDE68A',
+  },
+  locationCardIcon: {
+    fontSize: 22,
+    flexShrink: 0,
+  },
+  locationCardText: {
+    flex: 1,
+    lineHeight: 1.35,
+  },
   geoStatus: {
     fontSize: '0.8rem', color: C.inkDim, lineHeight: 1.4,
   },
@@ -217,15 +370,17 @@ const S = {
 // inference (skipped tasks, scan counts, feedback patterns). It
 // only controls downstream routing — addGarden vs addFarm,
 // engine wording, urgency tiers — never the crop list itself.
+// Onboarding Completion §3 — limit to top 4 crops + Other so the
+// pill row is a single horizontal scan rather than a 9-item grid.
+// Picks are the most common smallholder crops globally (tomato,
+// pepper, maize, cassava); rice/herbs/flowers/greens still
+// reachable via the Other free-text input so we don't lock users
+// out of their crop. Spec §3 explicitly calls for 3-5 options.
 const UNIFIED_CROP_OPTIONS = [
   { value: 'tomato',   label: 'Tomato',   emoji: '\u{1F345}' },
   { value: 'pepper',   label: 'Pepper',   emoji: '\u{1F336}' },
   { value: 'maize',    label: 'Maize',    emoji: '\u{1F33D}' },
   { value: 'cassava',  label: 'Cassava',  emoji: '\u{1F33E}' },
-  { value: 'rice',     label: 'Rice',     emoji: '\u{1F35A}' },
-  { value: 'leafy',    label: 'Greens',   emoji: '\u{1F96C}' },
-  { value: 'herbs',    label: 'Herbs',    emoji: '\u{1F33F}' },
-  { value: 'flowers',  label: 'Flowers',  emoji: '\u{1F33C}' },
   { value: 'other',    label: 'Other',    emoji: '\u{1F331}' },
 ];
 
@@ -252,14 +407,17 @@ const FARM_SIZE_BUCKETS = [
 // ── Component ───────────────────────────────────────────────────
 export default function FastOnboarding() {
   const navigate = useNavigate();
-  // Activation §1/§2 — default to step 1 (crop pick) and assume
-  // experience='farm' so the experience-pick screen is auto-
-  // skipped. Users who're growing in a garden can flip via the
-  // small "Growing in a garden?" link rendered above the crop
-  // list, OR change later via the My Grow Farms/Gardens toggle.
-  // This collapses the flow from 4 screens to effectively 1
-  // (crop pick) → direct navigation to Home.
-  const [stepIdx, setStepIdx] = useState(1);
+  // High-Conversion Onboarding spec — true 2-screen flow:
+  //   Screen 0 — Location confirm (auto-detect → "Continue")
+  //   Screen 1 — Crop selection (4 + Other → tap → /home)
+  // Default to 0 so a fresh open lands on the location-confirm
+  // screen. The experience-pick screen the legacy stepIdx=0
+  // used to render is no longer reached; its JSX has been
+  // replaced inline by the location-confirm UI below. The
+  // legacy multi-step location form (stepIdx 2) and the final
+  // ready screen (stepIdx 3) stay in scope for deep-link
+  // compat but are unreachable on the happy path.
+  const [stepIdx, setStepIdx] = useState(0);
 
   // Form state — every field stays optional EXCEPT the experience
   // pick on screen 1 and the plant/crop pick on screen 2.
@@ -273,6 +431,17 @@ export default function FastOnboarding() {
   const [country,    setCountry]    = useState('');
   const [region,     setRegion]     = useState('');
   const [geoStatus,  setGeoStatus]  = useState('idle'); // idle|requesting|granted|denied
+  // High-Conversion Onboarding §1 — manual entry on the
+  // location-confirm screen sits behind a link. Default false so
+  // typical users never see the country/region inputs. Toggled by
+  // the "Enter manually" link beneath the Continue button.
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  // Viral Hook §1 + §2 — transient hook screen shown between crop
+  // pick and navigation to /home. Persistence + flags fire when
+  // the hook flips on (so a user who closes the tab mid-hook
+  // doesn't lose their work); auto-redirect timer fires 1.8s
+  // later. Single shot per onboarding session.
+  const [showingHook, setShowingHook] = useState(false);
 
   const [savedRow,   setSavedRow]   = useState(null);   // row returned from addGarden/addFarm
   const [taskDone,   setTaskDone]   = useState(false);
@@ -304,7 +473,11 @@ export default function FastOnboarding() {
 
   // ── Step gates ────────────────────────────────────────────
   function canAdvance() {
-    if (stepIdx === 0) return experience === 'garden' || experience === 'farm';
+    // High-Conversion Onboarding §1 — location screen is non-
+    // blocking. Geo detection runs in the background; "Continue"
+    // is always tappable so a slow / denied geo never gates the
+    // user.
+    if (stepIdx === 0) return true;
     if (stepIdx === 1) {
       // Plant/crop required. Setup/size optional but encouraged.
       const pick = isGarden ? plant : crop;
@@ -315,6 +488,61 @@ export default function FastOnboarding() {
     if (stepIdx === 2) return true;       // Location is non-blocking
     if (stepIdx === 3) return true;       // Final screen owns its own button
     return false;
+  }
+
+  // ── Viral Hook §2 — auto-redirect after the hook screen mounts.
+  //   Timer fires once, exactly 1.8s after the hook flips on.
+  //   Cleared on unmount so a back-button mid-hook never leaves
+  //   a stale navigation queued. Persistence + flags already
+  //   ran in goNext when the user tapped Next, so closing the
+  //   tab mid-hook still leaves the saved row + onboarding-
+  //   complete flag in place.
+  useEffect(() => {
+    if (!showingHook) return undefined;
+    const timer = setTimeout(() => {
+      try { navigate('/home', { replace: true }); }
+      catch {
+        try { navigate('/dashboard', { replace: true }); }
+        catch { /* swallow */ }
+      }
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [showingHook, navigate]);
+
+  // ── Viral Hook §3 — share button. Uses the Web Share API when
+  //   available (mobile primary path); falls back to copying a
+  //   share link to clipboard. Never throws; never blocks the
+  //   auto-redirect timer.
+  function onClickShare() {
+    const shareText = tStrict(
+      'fastOnboarding.viralHook.sharePrompt',
+      'Want to see what your plants need today?',
+    );
+    const shareUrl = (typeof window !== 'undefined' && window.location)
+      ? `${window.location.origin}/`
+      : 'https://farroway.app/';
+    try {
+      trackEvent('viral_hook_share_tapped', {});
+    } catch { /* swallow */ }
+    try {
+      if (typeof navigator !== 'undefined'
+          && typeof navigator.share === 'function') {
+        navigator.share({
+          title: 'Farroway',
+          text:  shareText,
+          url:   shareUrl,
+        }).catch(() => { /* user cancelled or share failed — silent */ });
+        return;
+      }
+    } catch { /* fall through to clipboard */ }
+    try {
+      if (typeof navigator !== 'undefined'
+          && navigator.clipboard
+          && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
+          .catch(() => { /* clipboard blocked — silent */ });
+      }
+    } catch { /* ignore */ }
   }
 
   // ── Geolocation (screen 3) ────────────────────────────────
@@ -435,6 +663,18 @@ export default function FastOnboarding() {
     if (stepIdx === 1) {
       try { persistRow(); } catch { /* never block navigation */ }
       try { setOnboardingComplete(); } catch { /* swallow */ }
+      // Onboarding Completion §6 — stamp the "just completed"
+      // intent so FarmerTodayPage can show the spec's exact line
+      // ("We prepared your first action") as a brief banner
+      // above the FirstActionGate on first paint. sessionStorage
+      // (not localStorage) so it never persists across browser
+      // sessions and a returning user doesn't see it again. The
+      // banner self-clears the flag after first read.
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('farroway:onboarding:justCompleted', '1');
+        }
+      } catch { /* ignore */ }
       try {
         trackEvent('fast_onboarding_collapsed_to_home', {
           experience,
@@ -442,11 +682,18 @@ export default function FastOnboarding() {
             ? Date.now() - startedAtRef.current : null,
         });
       } catch { /* swallow */ }
-      try { navigate('/home', { replace: true }); }
-      catch {
-        try { navigate('/dashboard', { replace: true }); }
-        catch { /* swallow */ }
-      }
+      // Viral Hook §1 + §2 — instead of navigating immediately,
+      // show the curiosity hook screen for 1.8s. The actual
+      // navigation fires from the showingHook useEffect below.
+      // All persistence + flags + analytics already ran above so
+      // closing the tab mid-hook still leaves the user's data
+      // intact and a return open lands cleanly on /home.
+      try {
+        trackEvent('viral_hook_shown', {
+          experience,
+        });
+      } catch { /* swallow */ }
+      setShowingHook(true);
       return;
     }
     // Legacy multi-step path — preserved for any deep-link
@@ -525,12 +772,84 @@ export default function FastOnboarding() {
   }
 
   // ── Render per step ───────────────────────────────────────
+  // Viral Hook §1 + §2 — when the hook screen is on, render ONLY
+  // the hook (suppress stepper, progress bar, and step content).
+  // This is the "memorable, shareable first impression" surface;
+  // any other UI competing with it would dilute the moment.
+  if (showingHook) {
+    const hookLine1 = tStrict(
+      'fastOnboarding.viralHook.line1',
+      'Based on your location\u2026',
+    );
+    const hookLine2 = tStrict(
+      'fastOnboarding.viralHook.line2',
+      'Most people water too early today.',
+    );
+    const hookLine3 = tStrict(
+      'fastOnboarding.viralHook.line3',
+      'That can harm your plants.',
+    );
+    const sharePrompt = tStrict(
+      'fastOnboarding.viralHook.sharePrompt',
+      'Want to see what your plants need today?',
+    );
+    const shareCta = tStrict(
+      'fastOnboarding.viralHook.shareCta',
+      'Share',
+    );
+    return (
+      <main
+        style={S.hookPage}
+        data-testid="fast-onboarding-viral-hook"
+      >
+        <div style={S.hookCard} role="status" aria-live="polite">
+          <p style={S.hookLine1}>{hookLine1}</p>
+          <p style={S.hookLine2}>{hookLine2}</p>
+          <p style={S.hookLine3}>{hookLine3}</p>
+          <p style={S.hookSharePrompt}>{sharePrompt}</p>
+          <button
+            type="button"
+            onClick={onClickShare}
+            style={S.hookShareBtn}
+            data-testid="fast-onboarding-viral-share"
+          >
+            <span aria-hidden="true" style={{ marginRight: 6 }}>
+              {'\u{1F4E4}'}
+            </span>
+            {shareCta}
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main
       style={S.page}
       data-testid="fast-onboarding"
       data-screen={`fast-step-${stepIdx}`}
     >
+      {/* Onboarding Completion §1 — explicit "Step N of N · Almost
+          done" eyebrow instead of an opaque % bar. Reads as
+          "you're nearly there", not "you have N% to slog through".
+          The progress bar still renders for the assistive-tech
+          path (role/aria) but visually is replaced by the textual
+          stepper above it. */}
+      {/* High-Conversion Onboarding §1 — stepper reflects the true
+          2-screen flow: 1/2 on location-confirm, 2/2 on crop-pick.
+          "Almost done" still shows alongside since both screens
+          are within seconds of completing the flow. */}
+      <div style={S.stepEyebrow} data-testid="fast-onboarding-step-eyebrow">
+        <span style={S.stepEyebrowStep}>
+          {tStrict('fastOnboarding.progress.stepOfX',
+            `Step ${stepIdx === 0 ? 1 : 2} of 2`,
+            { current: stepIdx === 0 ? 1 : 2, total: 2 })}
+        </span>
+        <span style={S.stepEyebrowDot} aria-hidden="true">{'\u00B7'}</span>
+        <span style={S.stepEyebrowAlmost}>
+          {tStrict('fastOnboarding.progress.almostDone', 'Almost done')}
+        </span>
+      </div>
       <div
         style={S.progress}
         role="progressbar"
@@ -543,57 +862,121 @@ export default function FastOnboarding() {
         <div style={{ ...S.progressFill, width: `${progressPct}%` }} />
       </div>
 
-      {/* ── Screen 1: experience pick ─────────────────────── */}
+      {/* ── Screen 1: location confirm (High-Conversion §1) ─────
+          Auto-detect runs on mount (mount useEffect calls
+          requestLocation()); this screen is just the confirm UI.
+          The "Continue" button is always tappable — geo is
+          non-blocking. Manual entry sits behind a link so a
+          typical user never sees a typing field. */}
       {stepIdx === 0 ? (
         <>
           <h1 style={S.title}>
-            {tStrict('fastOnboarding.title.experience',
-              'What are you growing?')}
+            {tStrict('fastOnboarding.locationConfirm.title',
+              'Where are you?')}
           </h1>
           <p style={S.subtitle}>
-            {tStrict('fastOnboarding.subtitle.experience',
-              'Pick where your plants live. You can add the other one later.')}
+            {tStrict('fastOnboarding.locationConfirm.subtitle',
+              'We use this for weather-aware tips.')}
           </p>
+
+          {/* Status card — communicates the current geo state at
+              a glance. Tapping it (when idle) re-triggers the
+              detection so a user who arrived before the auto-
+              call settled can still kick it off. */}
           <button
             type="button"
-            onClick={() => { setExperience('garden'); setStepIdx(1); }}
+            onClick={geoStatus === 'granted' ? undefined : requestLocation}
             style={{
-              ...S.bigTile,
-              ...(experience === 'garden'
-                ? { background: C.greenBg, borderColor: C.greenBd }
-                : null),
+              ...S.locationCard,
+              ...(geoStatus === 'granted' ? S.locationCardGranted : null),
+              ...(geoStatus === 'denied'  ? S.locationCardDenied  : null),
             }}
-            data-testid="fast-onboarding-pick-garden"
+            data-testid="fast-onboarding-location-card"
+            data-geo-status={geoStatus}
           >
-            <span style={S.bigTileEmoji} aria-hidden="true">{'\u{1F331}'}</span>
-            <span style={S.bigTileTitle}>
-              {tStrict('fastOnboarding.experience.garden.title', 'At home')}
+            <span style={S.locationCardIcon} aria-hidden="true">
+              {geoStatus === 'granted' ? '\u2705'
+               : geoStatus === 'denied' ? '\u26A0\uFE0F'
+               : '\uD83D\uDCCD'}
             </span>
-            <span style={S.bigTileSub}>
-              {tStrict('fastOnboarding.experience.garden.sub',
-                'Backyard, balcony, or a few pots')}
+            <span style={S.locationCardText}>
+              {geoStatus === 'requesting'
+                ? tStrict('fastOnboarding.locationConfirm.detecting',
+                    'Detecting your location\u2026')
+                : geoStatus === 'granted'
+                ? tStrict('fastOnboarding.locationConfirm.granted',
+                    'Location detected')
+                : geoStatus === 'denied'
+                ? tStrict('fastOnboarding.locationConfirm.denied',
+                    'We couldn\u2019t detect your location')
+                : tStrict('fastOnboarding.locationConfirm.idle',
+                    'Tap to use your location')}
             </span>
           </button>
+
+          {/* Primary CTA — always tappable per spec. Geo state
+              is informational; advancing to the crop screen is
+              never gated on it. */}
           <button
             type="button"
-            onClick={() => { setExperience('farm'); setStepIdx(1); }}
-            style={{
-              ...S.bigTile,
-              ...(experience === 'farm'
-                ? { background: C.greenBg, borderColor: C.greenBd }
-                : null),
-            }}
-            data-testid="fast-onboarding-pick-farm"
+            onClick={() => setStepIdx(1)}
+            style={S.primaryBtn}
+            data-testid="fast-onboarding-location-continue"
           >
-            <span style={S.bigTileEmoji} aria-hidden="true">{'\u{1F33D}'}</span>
-            <span style={S.bigTileTitle}>
-              {tStrict('fastOnboarding.experience.farm.title', 'On a farm')}
-            </span>
-            <span style={S.bigTileSub}>
-              {tStrict('fastOnboarding.experience.farm.sub',
-                'Field crops, market garden, or larger plot')}
-            </span>
+            {tStrict('fastOnboarding.continue', 'Continue')}
           </button>
+
+          {/* Manual entry behind a link per spec §1 ("hide manual
+              fields behind link"). Default off; toggling reveals
+              two compact text fields. The fields are still
+              optional — Continue advances regardless of whether
+              the user typed anything. */}
+          <button
+            type="button"
+            onClick={() => setShowManualEntry((v) => !v)}
+            style={S.linkBtn}
+            data-testid="fast-onboarding-toggle-manual"
+            aria-expanded={showManualEntry}
+          >
+            {showManualEntry
+              ? tStrict('fastOnboarding.locationConfirm.hideManual',
+                  'Hide manual entry')
+              : tStrict('fastOnboarding.locationConfirm.enterManually',
+                  'Enter manually')}
+          </button>
+
+          {showManualEntry ? (
+            <>
+              <span style={S.label}>
+                {tStrict('fastOnboarding.label.country', 'Country')}
+              </span>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder={tStrict('fastOnboarding.placeholder.country',
+                  'e.g. Ghana, Nigeria, USA')}
+                style={S.input}
+                maxLength={60}
+                autoComplete="country-name"
+                data-testid="fast-onboarding-country-screen0"
+              />
+              <span style={S.label}>
+                {tStrict('fastOnboarding.label.region', 'Region (optional)')}
+              </span>
+              <input
+                type="text"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                placeholder={tStrict('fastOnboarding.placeholder.region',
+                  'e.g. Ashanti, Lagos, Maryland')}
+                style={S.input}
+                maxLength={60}
+                autoComplete="address-level1"
+                data-testid="fast-onboarding-region-screen0"
+              />
+            </>
+          ) : null}
         </>
       ) : null}
 
@@ -675,32 +1058,18 @@ export default function FastOnboarding() {
             />
           ) : null}
 
-          <span style={S.label}>
-            {isGarden
-              ? tStrict('fastOnboarding.label.setup', 'Where are they growing?')
-              : tStrict('fastOnboarding.label.size',  'How big is your farm?')}
-          </span>
-          <div style={S.pillRow}>
-            {(isGarden ? GROWING_SETUPS : FARM_SIZE_BUCKETS).map((opt) => {
-              const picked = isGarden ? setup : size;
-              const active = picked === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    if (isGarden) setSetup(opt.value);
-                    else          setSize(opt.value);
-                  }}
-                  style={active ? { ...S.pill, ...S.pillActive } : S.pill}
-                  data-testid={`fast-onboarding-${isGarden ? 'setup' : 'size'}-${opt.value}`}
-                  aria-pressed={active}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* Onboarding Completion §4 — farm size + growing setup
+              were optional from day one; the spec promotes that to
+              "remove entirely" so the screen has a single
+              decision (crop) on it. The state hooks (setSetup /
+              setSize) stay in scope so persistRow's downstream
+              writes ('unknown' / 'small' defaults) don't break,
+              but the user is never asked. Cuts ~6 taps off the
+              p50 onboarding flow.
+              suppressed:
+              <span style={S.label}>...how big is your farm?</span>
+              <div style={S.pillRow}>...size pills...</div>
+          */}
 
           <button
             type="button"
@@ -762,34 +1131,49 @@ export default function FastOnboarding() {
             </p>
           ) : null}
 
-          <span style={S.label}>
-            {tStrict('fastOnboarding.label.country', 'Country')}
-          </span>
-          <input
-            type="text"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            placeholder={tStrict('fastOnboarding.placeholder.country',
-              'e.g. Ghana, Nigeria, USA')}
-            style={S.input}
-            maxLength={60}
-            autoComplete="country-name"
-            data-testid="fast-onboarding-country"
-          />
-          <span style={S.label}>
-            {tStrict('fastOnboarding.label.region', 'Region (optional)')}
-          </span>
-          <input
-            type="text"
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder={tStrict('fastOnboarding.placeholder.region',
-              'e.g. Ashanti, Lagos, Maryland')}
-            style={S.input}
-            maxLength={60}
-            autoComplete="address-level1"
-            data-testid="fast-onboarding-region"
-          />
+          {/* Onboarding Drop-Off §1 — manual country/region fields
+              are hidden by default; the auto-detect → confirm path
+              is the only one users see in the happy flow. The
+              fields surface ONLY when geo permission was denied,
+              giving a graceful fallback without exposing every
+              new user to a typing field they don't need.
+              Spec mandates "show confirm only, hide manual
+              fields". The legacy multi-step flow itself is
+              auto-skipped (FastOnboarding navigates from step 1
+              directly to /home) so most users never reach this
+              code path; this just hardens it for deep-links. */}
+          {geoStatus === 'denied' ? (
+            <>
+              <span style={S.label}>
+                {tStrict('fastOnboarding.label.country', 'Country')}
+              </span>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder={tStrict('fastOnboarding.placeholder.country',
+                  'e.g. Ghana, Nigeria, USA')}
+                style={S.input}
+                maxLength={60}
+                autoComplete="country-name"
+                data-testid="fast-onboarding-country"
+              />
+              <span style={S.label}>
+                {tStrict('fastOnboarding.label.region', 'Region (optional)')}
+              </span>
+              <input
+                type="text"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                placeholder={tStrict('fastOnboarding.placeholder.region',
+                  'e.g. Ashanti, Lagos, Maryland')}
+                style={S.input}
+                maxLength={60}
+                autoComplete="address-level1"
+                data-testid="fast-onboarding-region"
+              />
+            </>
+          ) : null}
 
           <button
             type="button"

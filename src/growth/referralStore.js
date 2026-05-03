@@ -103,10 +103,16 @@ export function getMyReferralCode() {
 /**
  * Build a share-friendly invite URL.
  *
- *   buildInviteUrl({ origin? }) → 'https://farroway.app/?ref=abc123'
+ *   buildInviteUrl({ origin? }) → 'https://farroway.app/try?ref=abc123'
  *
  * Origin defaults to the current location's origin so a pilot
  * running on a custom domain still produces correct links.
+ *
+ * Viral Click → Conversion §1-§3 — share URLs now point at the
+ * value-first /try landing (renders "Do not water today" +
+ * reason + soft CTA) instead of the marketing root. Existing
+ * `?ref=` tokens still resolve because the helper still appends
+ * the same encoded code; only the path changed.
  */
 export function buildInviteUrl({ origin } = {}) {
   const code = getMyReferralCode();
@@ -119,7 +125,7 @@ export function buildInviteUrl({ origin } = {}) {
     } catch { /* swallow */ }
     return 'https://farroway.app';
   })();
-  return `${base.replace(/\/+$/, '')}/?ref=${encodeURIComponent(code)}`;
+  return `${base.replace(/\/+$/, '')}/try?ref=${encodeURIComponent(code)}`;
 }
 
 /**

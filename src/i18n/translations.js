@@ -9540,7 +9540,14 @@ const T = {
   // Dependency System §1 — header reworded to "Before you act,
   // check this first". Tighter, action-implying wording so the
   // gate frames itself as a check-in, not a checklist item.
-  'firstAction.header':                       { en: 'Before you act, check this first',                       fr: 'Avant d\'agir, vérifiez ceci',                              sw: 'Kabla hujachukua hatua, kagua hili kwanza',           ha: 'Kafin ka yi aiki, duba wannan da farko',              tw: 'Ansa na woayɛ biribiara, di kan hwɛ yi',           hi: 'कार्य करने से पहले, पहले यह जाँचें' },
+  // Viral Hook §4 — wording aligned to "Before you water, check
+  // this first" so the home header picks up the watering hook
+  // narrative ("Most people water too early today") shown on
+  // the post-onboarding hook screen. Engine still emits varied
+  // primaryActionType values (moisture_check / spray / scout / etc)
+  // — the header is the user-facing framing, not a per-action
+  // verb. Engine-driven action verbs render in the headline below.
+  'firstAction.header':                       { en: 'Before you water, check this first',                     fr: 'Avant d\'arroser, v\u00E9rifiez ceci',                       sw: 'Kabla ya kumwagilia, kagua hili kwanza',              ha: 'Kafin ka shayar, duba wannan da farko',               tw: 'Ansa na wugu nsuo, di kan hw\u025B yi',           hi: 'पानी देने से पहले, पहले यह जाँचें' },
   'primaryAction.cta.done':                   { en: 'Done',                                                  fr: 'Fait',                                                       sw: 'Imekamilika',                                          ha: 'An gama',                                              tw: 'Awie',                                              hi: 'हो गया' },
   'primaryAction.cta.skip':                   { en: 'Not now',                                               fr: 'Pas maintenant',                                              sw: 'Si sasa',                                              ha: 'Ba yanzu ba',                                          tw: 'Ɛnnyɛ seesei',                                       hi: 'अभी नहीं' },
   'primaryAction.cta.skipAria':               { en: 'Skip this action',                                      fr: 'Ignorer cette action',                                        sw: 'Ruka kitendo hiki',                                    ha: 'Tsallake wannan aiki',                                 tw: 'Tra adwuma yi',                                     hi: 'इस क्रिया को छोड़ें' },
@@ -9710,6 +9717,37 @@ const T = {
   // outside demo mode so production users never see imputed
   // social-proof copy.
   'firstAction.areaInsight.demo':             { en: 'Growers in your area see better results doing this',     fr: 'Les producteurs pr\u00E8s de chez vous obtiennent de meilleurs r\u00E9sultats ainsi', sw: 'Wakulima wa eneo lako wanapata matokeo bora zaidi kwa kufanya hivi', ha: 'Manoma a yankinka suna samun sakamako mafi kyau ta yin haka', tw: 'Akuafoɔ a w\u0254w\u0254 wo mpasua so nya nnetebea pa fa eyi y\u025B', hi: 'आपके क्षेत्र के किसान ऐसा करके बेहतर परिणाम पा रहे हैं' },
+
+  // Engagement Depth §1 — "Next step (optional)" eyebrow above the
+  // bonus action surfaced after the user taps Done on the primary
+  // action. Framed as optional so spec §7 "no overwhelm" holds —
+  // the user already won the day; this is bonus, never pressure.
+  'firstAction.nextStep.label':               { en: 'Next step (optional)',                                   fr: '\u00C9tape suivante (facultative)',                           sw: 'Hatua inayofuata (ya hiari)',                         ha: 'Mataki na gaba (za\u0253i ne)',                       tw: '\u0186kwan a edi h\u0254 (woomp\u025B a)',           hi: 'अगला कदम (वैकल्पिक)' },
+  // Engagement Depth §6 — insight unlock after ≥2 completions in
+  // the day. Reinforcement-only; aligns with Core Product Signal §7.
+  'firstAction.aheadToday':                   { en: 'You\u2019re ahead today \u2014 conditions look good',    fr: 'Vous avez de l\'avance aujourd\'hui \u2014 les conditions sont favorables', sw: 'Uko mbele leo \u2014 hali ni nzuri',                  ha: 'Kana gaba yau \u2014 yanayi yana kyau',               tw: 'Wodi anim nn\u025B \u2014 tebea no y\u025B pa',      hi: 'आज आप आगे हैं \u2014 स्थितियाँ अच्छी हैं' },
+
+  // Viral Growth Loop §1 — "Share this insight" pill. Sits as a
+  // ghost-style chip in the post-Done state of FirstActionGate.
+  // Tapping fires shareFarrowayInsight() which uses Web Share API
+  // first, clipboard fallback. The outgoing text format (spec §2)
+  // is built inside the helper — this key is only the button
+  // label, not the share message itself.
+  'firstAction.shareInsight':                 { en: 'Share this insight',                                     fr: 'Partager cet aper\u00E7u',                                  sw: 'Shiriki mwongozo huu',                              ha: 'Raba wannan fahimta',                                tw: 'Ky\u025B nimdee yi',                              hi: 'यह जानकारी साझा करें' },
+
+  // Viral Click → Conversion (§1-§3) — copy for the value-first
+  // /try landing surface. Five lines: eyebrow, headline (spec's
+  // exact wording "Do not water today"), short reason, soft CTA
+  // ("Get your daily plan"), and a "no signup required" cue.
+  // The reason line is honest-but-generic — when we ship a
+  // server-side preview that uses the user's IP-geo, this key
+  // will carry the personalized line and the static fallback
+  // becomes the "we don't know yet" copy.
+  'viralLanding.eyebrow':                     { en: 'Today\u2019s plant tip',                                 fr: 'Conseil du jour',                                            sw: 'Kidokezo cha leo',                                  ha: 'Shawara ta yau',                                     tw: 'Nn\u025B afotusm',                                hi: 'आज की सलाह' },
+  'viralLanding.headline':                    { en: 'Do not water today',                                     fr: 'N\'arrosez pas aujourd\'hui',                                sw: 'Usimwagilie maji leo',                              ha: 'Kada ka shayar yau',                                  tw: 'Ngu nsuo nn\u025B',                                hi: 'आज पानी न दें' },
+  'viralLanding.reason':                      { en: 'Soil is still wet from yesterday \u2014 watering now risks root rot.', fr: 'Le sol est encore humide \u2014 arroser maintenant risque la pourriture des racines.', sw: 'Udongo bado una unyevu wa jana \u2014 kumwagilia sasa kunaweza kusababisha kuoza kwa mizizi.', ha: 'K\u0257asa har yanzu tana da ruwa daga jiya \u2014 shayar yanzu na iya ruɓar tushen.', tw: 'Asaase no nsuo da so w\u0254 mu firi nnora \u2014 nsuo a wugu mu seesei na \u025Btumi ama ahaban no aporo.', hi: 'मिट्टी अभी भी कल से नम है \u2014 अभी पानी देने से जड़ें सड़ सकती हैं।' },
+  'viralLanding.cta':                         { en: 'Get your daily plan',                                    fr: 'Obtenez votre plan du jour',                                 sw: 'Pata mpango wako wa kila siku',                     ha: 'Sami shirin ku na yau da kullum',                    tw: 'Nya wo daa daa nhyehy\u025B\u025B',              hi: 'अपनी रोज़ की योजना पाएँ' },
+  'viralLanding.noSignup':                    { en: 'No signup required',                                     fr: 'Aucune inscription requise',                                 sw: 'Hakuna usajili unaohitajika',                       ha: 'Babu buƙatar yin rajista',                            tw: 'Wo nhwehw\u025B din krataa',                      hi: 'साइन अप ज़रूरी नहीं' },
 
   // Dependency System §2 — 7-day rotating day-cue line. Engine
   // picks slot via day-of-year mod 7. Cosmetic only, but gives
@@ -12220,6 +12258,59 @@ const T = {
   // without a separate screen.
   'fastOnboarding.toggleToGarden':       { en: 'Growing in a garden? Switch',                fr: 'Vous cultivez au jardin ? Basculer',           sw: 'Unalima bustanini? Badilisha',               ha: 'Kuna noma a lambu? Sauya',                  tw: 'Wodua wɔ turo mu? Sesa',                      hi: 'बगीचे में उगा रहे हैं? बदलें' },
   'fastOnboarding.toggleToFarm':         { en: 'On a farm? Switch',                          fr: 'Sur une ferme ? Basculer',                      sw: 'Kwenye shamba? Badilisha',                   ha: 'A gona? Sauya',                             tw: 'Wɔ afuo so? Sesa',                            hi: 'खेत पर हैं? बदलें' },
+
+  // Onboarding Completion §1 — textual stepper. Plain "Step N of N"
+  // string with `{current}` and `{total}` interpolation slots so
+  // future expansions of the flow can re-use the same key. We
+  // ship "1 of 1" as the default copy because the spec collapsed
+  // the flow to a single visible screen.
+  'fastOnboarding.progress.stepOfX':     { en: 'Step {current} of {total}',                  fr: '\u00C9tape {current} sur {total}',              sw: 'Hatua {current} kati ya {total}',            ha: 'Mataki {current} daga {total}',             tw: 'Anammɔn {current} firi {total}',              hi: 'चरण {current} / {total}' },
+  // Onboarding Completion §1 — "Almost done" reinforcement chip.
+  // Pairs with stepOfX to give the user a clear "you're nearly
+  // there" signal instead of an opaque percentage.
+  'fastOnboarding.progress.almostDone':  { en: 'Almost done',                                fr: 'Presque termin\u00E9',                          sw: 'Karibu kumaliza',                            ha: 'Kusan an gama',                             tw: 'Aka kakra na awie',                           hi: 'लगभग पूरा' },
+  // Onboarding Completion §6 — value-affirming banner shown on
+  // FarmerTodayPage right after a fresh onboarding completion.
+  // Auto-hides after 6s; never re-fires for returning users.
+  // Onboarding Drop-Off §4 — wording aligned to "We prepared your
+  // first action" (no contraction) per the latest spec. Banner
+  // surfaces above the FirstActionGate on the very first Home
+  // mount after a fresh onboarding completion; auto-hides 6s.
+  'fastOnboarding.firstActionPrepared':  { en: 'We prepared your first action',              fr: 'Nous avons pr\u00E9par\u00E9 votre premi\u00E8re action', sw: 'Tumeandaa hatua yako ya kwanza',             ha: 'Mun shirya muku aikinku na farko',           tw: 'Yɛasiesie w\'adwuma a edi kan',               hi: 'हमने आपका पहला कार्य तैयार किया है' },
+
+  // High-Conversion Onboarding screen 1 (location confirm).
+  // Headline + subtitle + 4 status strings + the manual-entry
+  // toggle text. All routed through tStrict at the call site so
+  // a missing translation never leaks English into a non-English
+  // UI — the in-component fallback string mirrors the en value.
+  'fastOnboarding.locationConfirm.title':         { en: 'Where are you?',                                 fr: 'O\u00F9 \u00EAtes-vous ?',                                  sw: 'Uko wapi?',                                       ha: 'Ina kake?',                                          tw: 'Wow\u0254 he?',                                  hi: 'आप कहाँ हैं?' },
+  'fastOnboarding.locationConfirm.subtitle':      { en: 'We use this for weather-aware tips.',            fr: 'Nous l\'utilisons pour des conseils adapt\u00E9s \u00E0 la m\u00E9t\u00E9o.', sw: 'Tunatumia hii kwa vidokezo vya hali ya hewa.', ha: 'Muna amfani da wannan don shawarwarin yanayi.',     tw: 'Y\u025Bde yi b\u025By\u025B nsuo\u2010ho afotuo.', hi: 'हम इसका उपयोग मौसम-अनुकूल सुझावों के लिए करते हैं।' },
+  'fastOnboarding.locationConfirm.idle':          { en: 'Tap to use your location',                       fr: 'Appuyez pour utiliser votre emplacement',                   sw: 'Gusa kutumia mahali pako',                        ha: 'Matsa don amfani da wurinka',                        tw: 'Mia so de wo bea no',                            hi: 'अपना स्थान उपयोग करने के लिए टैप करें' },
+  'fastOnboarding.locationConfirm.detecting':     { en: 'Detecting your location\u2026',                  fr: 'D\u00E9tection de votre emplacement\u2026',                 sw: 'Inatambua mahali pako\u2026',                     ha: 'Ana gano wurinka\u2026',                             tw: '\u0190rehwehw\u025B wo bea\u2026',               hi: 'आपका स्थान खोजा जा रहा है\u2026' },
+  'fastOnboarding.locationConfirm.granted':       { en: 'Location detected',                              fr: 'Emplacement d\u00E9tect\u00E9',                             sw: 'Mahali pamejulikana',                             ha: 'An gano wurin',                                      tw: 'Y\u025Banya wo bea',                             hi: 'स्थान मिल गया' },
+  'fastOnboarding.locationConfirm.denied':        { en: 'We couldn\u2019t detect your location',          fr: 'Nous n\'avons pas pu d\u00E9tecter votre emplacement',      sw: 'Hatukuweza kutambua mahali pako',                 ha: 'Ba mu iya gano wurinka ba',                          tw: 'Yentumi anhwehw\u025B wo bea',                   hi: 'हम आपका स्थान नहीं ढूँढ सके' },
+  'fastOnboarding.locationConfirm.enterManually': { en: 'Enter manually',                                 fr: 'Saisir manuellement',                                       sw: 'Ingiza mwenyewe',                                 ha: 'Shigar da kanka',                                    tw: 'Hy\u025B mu',                                    hi: 'मैन्युअल रूप से दर्ज करें' },
+  'fastOnboarding.locationConfirm.hideManual':    { en: 'Hide manual entry',                              fr: 'Masquer la saisie manuelle',                                sw: 'Ficha uingizaji wa mwenyewe',                     ha: '\u0181oye shigarwa ta hannu',                       tw: 'De hy\u025Bmu sie',                              hi: 'मैन्युअल प्रविष्टि छिपाएँ' },
+
+  // High-Conversion Onboarding §1 — primary button on the
+  // location-confirm screen. Single word "Continue" so it reads
+  // as "tap and move on", not "fill out a form".
+  'fastOnboarding.continue':              { en: 'Continue',                                              fr: 'Continuer',                                                  sw: 'Endelea',                                          ha: 'Ci gaba',                                            tw: 'Toa so',                                          hi: 'जारी रखें' },
+
+  // Viral Hook §1 — three-line curiosity hook surfaced between
+  // crop selection and the auto-redirect to /home. Spec calls
+  // for the exact wording — interpolation deliberately avoided
+  // so the line reads identically across users (the "based on
+  // your location" framing creates the illusion of
+  // personalization without the engine actually emitting one).
+  'fastOnboarding.viralHook.line1':       { en: 'Based on your location\u2026',                         fr: 'En fonction de votre emplacement\u2026',                     sw: 'Kulingana na mahali ulipo\u2026',                  ha: 'Bisa wurinka\u2026',                                  tw: 'Egyina wo bea so\u2026',                          hi: 'आपके स्थान के आधार पर\u2026' },
+  'fastOnboarding.viralHook.line2':       { en: 'Most people water too early today.',                   fr: 'La plupart des gens arrosent trop t\u00F4t aujourd\'hui.',   sw: 'Watu wengi wanamwagilia mapema sana leo.',         ha: 'Yawancin mutane suna shayarwa da wuri yau.',          tw: 'Nnipa pii gugu nsuo ntem dodo nn\u025B.',         hi: 'आज ज़्यादातर लोग बहुत जल्दी पानी देते हैं।' },
+  'fastOnboarding.viralHook.line3':       { en: 'That can harm your plants.',                           fr: 'Cela peut nuire \u00E0 vos plantes.',                        sw: 'Hiyo inaweza kudhuru mimea yako.',                 ha: 'Wannan na iya cutar da shukokinka.',                  tw: '\u0190no betumi ahaw w\'aduane.',                hi: 'इससे आपके पौधे ख़राब हो सकते हैं।' },
+  // Viral Hook §3 — optional share prompt + button label.
+  // Renders below the hook lines on the same screen. Tapping
+  // share opens the Web Share API; falls back to clipboard.
+  'fastOnboarding.viralHook.sharePrompt': { en: 'Want to see what your plants need today?',             fr: 'Vous voulez voir ce dont vos plantes ont besoin aujourd\'hui ?', sw: 'Unataka kuona mimea yako inahitaji nini leo?',  ha: 'Kuna so ku ga abin da shukokinku suke bukata yau?',   tw: 'Wop\u025B s\u025B wohu deɛ w\'aduane hia nn\u025B?', hi: 'देखना चाहते हैं आज आपके पौधों को क्या चाहिए?' },
+  'fastOnboarding.viralHook.shareCta':    { en: 'Share',                                                fr: 'Partager',                                                   sw: 'Shiriki',                                          ha: 'Raba',                                                tw: 'Ky\u025B',                                        hi: 'साझा करें' },
 
   'fastOnboarding.intro.title':          { en: 'Know what to do every day',                   fr: 'Sachez quoi faire chaque jour',                 sw: 'Jua la kufanya kila siku',                   ha: 'San abin da za ka yi kowace rana',         tw: 'Hu deɛ ɛsɛ sɛ woyɛ daa',                       hi: 'हर दिन क्या करना है जानें' },
   'fastOnboarding.intro.subtitle':       { en: 'A simple, daily plan for your home garden \u2014 ready in seconds.', fr: 'Un plan quotidien simple pour votre jardin \u2014 prêt en quelques secondes.', sw: 'Mpango rahisi wa kila siku kwa bustani yako \u2014 tayari kwa sekunde.', ha: 'Sauƙin shirin yau da kullum don lambun ku \u2014 cikin daƙiƙai.', tw: 'Da biara nhyehyɛeɛ a ɛyɛ mmerɛ ma wo turo \u2014 ɛsiesie wɔ daakye.', hi: 'आपके घर के बगीचे के लिए सरल दैनिक योजना \u2014 कुछ सेकंड में तैयार।' },

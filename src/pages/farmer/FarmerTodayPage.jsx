@@ -203,6 +203,29 @@ export default function FarmerTodayPage() {
   const [paywallOpen, setPaywallOpen]       = useState(false);
   const [paywallTrigger, setPaywallTrigger] = useState(null);
 
+  // Onboarding Completion §6 — read + clear the "just completed"
+  // flag stamped by FastOnboarding's goNext(). One-shot: if the
+  // flag is set on first render we display the value-message
+  // banner and clear the stamp synchronously so a refresh of the
+  // Home tab doesn't re-trigger it. Auto-hides 6s later via the
+  // effect below.
+  const [showFirstActionPrepared, setShowFirstActionPrepared] = useState(() => {
+    try {
+      if (typeof sessionStorage === 'undefined') return false;
+      const v = sessionStorage.getItem('farroway:onboarding:justCompleted');
+      if (v === '1') {
+        sessionStorage.removeItem('farroway:onboarding:justCompleted');
+        return true;
+      }
+    } catch { /* ignore */ }
+    return false;
+  });
+  useEffect(() => {
+    if (!showFirstActionPrepared) return undefined;
+    const timer = setTimeout(() => setShowFirstActionPrepared(false), 6_000);
+    return () => clearTimeout(timer);
+  }, [showFirstActionPrepared]);
+
   // Mark today as "visited" so the daily-entry helper can tell
   // first-open from continuing session on the next render cycle.
   useEffect(() => { touchLastVisit(); }, []);
@@ -1022,6 +1045,27 @@ export default function FarmerTodayPage() {
           The h1 page title above is shrunk to a tiny eyebrow
           (see S.pageTitle) so it remains a screen-reader landmark
           without competing for visual weight. */}
+      {/* Onboarding Completion §6 — value-affirming banner shown
+          on first paint after a fresh onboarding completion. Sits
+          immediately above the FirstActionGate so the user reads
+          "We've prepared your first action" → eyes drop to the
+          actual primary action below. Auto-hides after 6s. The
+          stamp is sessionStorage-scoped so this never fires on a
+          returning user. */}
+      {showFirstActionPrepared ? (
+        <div
+          style={S.firstActionPreparedBanner}
+          role="status"
+          aria-live="polite"
+          data-testid="first-action-prepared-banner"
+        >
+          <span style={S.firstActionPreparedIcon} aria-hidden="true">{'\u2728'}</span>
+          <span>
+            {tStrict('fastOnboarding.firstActionPrepared',
+              'We prepared your first action')}
+          </span>
+        </div>
+      ) : null}
       {journeySnapshot.state !== 'onboarding'
         && journeySnapshot.state !== 'crop_selected' && (
         (() => {
@@ -1062,6 +1106,17 @@ export default function FarmerTodayPage() {
           return (
             <FirstActionGate
               decision={decision && decision.primaryAction}
+              // Engagement Depth §1 — pass the composer's
+              // supportingTasks (capped at 2) so the gate can
+              // surface "Next step (optional): {action}" after
+              // the user taps Done. Empty/null array = no bonus
+              // line shown (spec §7 "no overwhelm").
+              nextSteps={decision && decision.supportingTasks}
+              // Engagement Depth §5 + §6 — today's completion
+              // count drives the insight-unlock line. Sourced
+              // from the same `tasksDone` rollup HomeProgressBar
+              // already reads so the two surfaces never disagree.
+              dailyCount={tasksDone}
               context={{
                 activeExperience: 'farm',
                 cropOrPlant:      activeCycle?.cropType || null,
@@ -1497,6 +1552,27 @@ function microStatusStyleFor(code) {
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
+  // Onboarding Completion §6 — first-action-prepared banner. Soft
+  // green chip rendered above the FirstActionGate immediately
+  // after a fresh onboarding completion. Auto-hides after 6s
+  // (handled by the controlling useEffect) so it never sticks
+  // around long enough to compete with the gate.
+  firstActionPreparedBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 14px',
+    borderRadius: 12,
+    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(34,197,94,0.32)',
+    color: '#86EFAC',
+    fontSize: 13,
+    fontWeight: 700,
+    margin: '0 0 6px',
+  },
+  firstActionPreparedIcon: {
+    fontSize: 16,
+  },
   // Conversion §3 — page title shrunk to a small eyebrow so it
   // no longer competes with the FirstActionGate above the fold.
   // Kept as <h1> for screen-reader landmark; the visual weight

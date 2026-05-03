@@ -69,6 +69,12 @@ import { logEvent, EVENT_TYPES } from './data/eventLogger.js';
 // page. The earlier Landing.jsx (dark v2 design language)
 // is retained in tree as a backup but no longer routed.
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+// Viral Click → Conversion §1-§3 — value-first landing surface
+// served at /try and /preview. Single-screen ("Do not water
+// today" + reason + soft CTA), no signup required. The CTA
+// jumps straight to the existing FastOnboarding flow which
+// already collects only location + crop (spec §4).
+const ViralLandingPage = lazy(() => import('./pages/ViralLandingPage.jsx'));
 
 // Buyer + Funding/Impact layer (v3 merge, local-first)
 //   /sell           — farmer creates a produce listing
@@ -752,6 +758,15 @@ export default function App() {
               page so external links keep working. */}
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
+
+          {/* Viral Click → Conversion (§1-§5) — value-first
+              landing for share-link recipients. Two paths so
+              both `farroway.app/try?ref=...` and
+              `farroway.app/preview?ref=...` resolve, letting
+              the team A/B-test path naming without breaking
+              outbound shares. Public — no auth gate. */}
+          <Route path="/try"     element={<ViralLandingPage />} />
+          <Route path="/preview" element={<ViralLandingPage />} />
 
           {/* Public Marketplace — buyers browse without an
               account. Interest forms route to platform/admin
