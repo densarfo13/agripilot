@@ -94,6 +94,14 @@ const KNOWN_EVENTS = new Set([
   'setup_farm_completed',
   'app_open',
   'listing_expiry_sweep',
+  // Final Go-Live Audit §20 — security + role events. Fired by
+  // RouteGuard when the user attempts to access a route they
+  // aren't authorised for. Server-side audit log
+  // (prisma.adminAuditLog) remains the source of truth for
+  // attempted admin actions; this client event measures the
+  // shape of the attempted access for funnel analysis +
+  // surface improvements.
+  'role_access_denied',
 ]);
 
 // Reasonable cap on the weather-summary string the enriched

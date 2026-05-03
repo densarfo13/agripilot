@@ -469,29 +469,15 @@ export default function MyFarmPage() {
         tabIndex={-1}
       />
 
-      {/* ── Today's farm action (action-first spec) ──────────
-          Compact read-only card linking to /tasks. Stays subtle
-          so it never competes with the Home primary CTA. The
-          farmer's main task surface is still /tasks; this is
-          just a contextual link from the farm-management view. */}
-      {todaySnapshot.primaryTitle ? (
-        <button
-          type="button"
-          onClick={() => navigate('/tasks')}
-          style={S.todayActionCard}
-          data-testid="my-farm-today-action"
-        >
-          <span style={S.todayActionLabel}>
-            {tSafe('myFarm.todayAction.title', "Today's farm action")}
-          </span>
-          <span style={S.todayActionTitle}>
-            {todaySnapshot.primaryTitle}
-          </span>
-          <span style={S.todayActionChevron} aria-hidden="true">
-            <ArrowRight size={14} />
-          </span>
-        </button>
-      ) : null}
+      {/* Define Tab Tap Behavior §2 — My Grow is "management
+          only, no tasks". The legacy "Today's farm action"
+          card duplicated the Home primary action affordance
+          + invited users to act here instead of on Home,
+          violating §2's "no tasks" rule. Suppressed. The
+          farmer's task surface stays at /tasks (Tasks tab);
+          today's primary action stays on Home (FirstActionGate).
+          The HomeProgressBar below stays — it's a passive
+          status display, not a task affordance. */}
 
       {/* ── My progress (action-first spec) ─────────────────────
           Reuses the existing HomeProgressBar — same tones, same

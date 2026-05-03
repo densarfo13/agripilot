@@ -30,6 +30,12 @@ import { generateTasks } from '../lib/tasks/taskEngine.js';
 import { getTaskCompletions, getFeedback } from '../store/farrowayLocal.js';
 import VoiceButton from '../components/VoiceButton.jsx';
 import { tSafe } from '../i18n/tSafe.js';
+import { useNavigate } from 'react-router-dom';
+// Define Tab Tap Behavior §4 — farmer-only Funding/Sell
+// shortcuts on Progress. Visibility gated by the central
+// per-userType registry (backyard users get false →
+// shortcuts hide). Top-level ESM import (Vite is ESM-only).
+import { isFeatureVisible as _isProgressFeatureVisible } from '../core/featuresByUserType.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 
 const STAGE_ORDER = [
@@ -41,6 +47,20 @@ export default function FarmerProgressPage() {
   const { currentFarmId, profile } = useProfile();
   const { t, lang } = useTranslation();
   const { isOnline } = useNetwork();
+  // Define Tab Tap Behavior §4 — useNavigate for the farmer-
+  // only Funding/Sell shortcuts. Called unconditionally at
+  // component top so React's hook counter stays in sync
+  // (the prior VoiceAssistant fix taught us the hooks-in-IIFE
+  // pattern desyncs StrictMode).
+  const _navigate = useNavigate();
+  // Per-userType visibility — backyard users get false from
+  // the registry, so the shortcuts auto-hide for them.
+  let _canSeeFunding = false;
+  let _canSeeSell    = false;
+  try {
+    _canSeeFunding = _isProgressFeatureVisible('showFunding');
+    _canSeeSell    = _isProgressFeatureVisible('showSell');
+  } catch { /* keep both false */ }
 
   const [taskCount, setTaskCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
@@ -344,6 +364,40 @@ export default function FarmerProgressPage() {
               {t('progress.offlineNote')}
             </div>
           )}
+
+          {/* Define Tab Tap Behavior §4 — farmer-only Funding +
+              Sell shortcuts at the bottom of Progress. Hidden
+              for backyard users via the per-userType visibility
+              registry. Routes unchanged (/opportunities + /sell
+              still mounted in App.jsx); this is the entry-point
+              migration following the spec's "Funding/Sell as
+              shortcuts inside Progress" guidance. */}
+          {(_canSeeFunding || _canSeeSell) ? (
+            <div style={S.shortcutRow} data-testid="progress-shortcuts">
+              {_canSeeFunding ? (
+                <button
+                  type="button"
+                  onClick={() => { try { _navigate('/opportunities'); } catch { /* ignore */ } }}
+                  style={S.shortcutLink}
+                  data-testid="progress-shortcut-funding"
+                >
+                  {tSafe('progress.shortcut.funding', 'Funding')}
+                  <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
+                </button>
+              ) : null}
+              {_canSeeSell ? (
+                <button
+                  type="button"
+                  onClick={() => { try { _navigate('/sell'); } catch { /* ignore */ } }}
+                  style={S.shortcutLink}
+                  data-testid="progress-shortcut-sell"
+                >
+                  {tSafe('progress.shortcut.sell', 'Sell')}
+                  <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -362,6 +416,37 @@ const S = {
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
     padding: '0 0 5rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
+  },
+  // Define Tab Tap Behavior §4 — farmer-only shortcut row at
+  // the bottom of Progress. Same visual treatment as the
+  // MyFarmPage shortcut row so the two surfaces feel like
+  // a paired utility section.
+  shortcutRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+    marginTop: 12,
+    padding: '12px 16px',
+  },
+  shortcutLink: {
+    appearance: 'none',
+    background: 'transparent',
+    border: 'none',
+    color: 'rgba(234,242,255,0.62)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '0.5rem 0.5rem',
+    minHeight: 32,
+    display: 'inline-flex',
+    alignItems: 'center',
+    fontFamily: 'inherit',
+    textDecoration: 'underline',
+    textDecorationColor: 'rgba(234,242,255,0.32)',
+    textUnderlineOffset: 3,
   },
   pageHeader: {
     display: 'flex',

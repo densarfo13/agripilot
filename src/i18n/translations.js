@@ -6736,6 +6736,16 @@ const T = {
   'myFarm.shortcut.sell': {
     en: 'Sell', fr: 'Vendre', sw: 'Uza', ha: 'Sayar', tw: 'T\u0254n', hi: 'बेचें',
   },
+  // Define Tab Tap Behavior §4 — same shortcut affordances
+  // surfaced at the bottom of the Progress tab. Distinct keys
+  // (progress.shortcut.*) so a future iteration can vary
+  // wording per surface without churning the My Grow values.
+  'progress.shortcut.funding': {
+    en: 'Funding', fr: 'Financement', sw: 'Ufadhili', ha: 'Tallafi', tw: 'Sika boa', hi: 'फंडिंग',
+  },
+  'progress.shortcut.sell': {
+    en: 'Sell', fr: 'Vendre', sw: 'Uza', ha: 'Sayar', tw: 'T\u0254n', hi: 'बेचें',
+  },
   'myFarm.noFarm': {
     en: 'No farm yet. Set up your farm to get started.',
     fr: 'Pas encore de ferme. Configurez votre ferme pour commencer.',
