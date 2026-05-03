@@ -87,6 +87,26 @@ import {
   getLocalizedTaskDescription,
 } from './taskTranslations.js';
 
+// Calm-UI Upgrade §3 — short, action-first title overrides. The
+// legacy server task engine (server/lib/farmTaskEngine.js) still
+// emits long verbose titles like:
+//   "Start logging farm costs to track profitability"
+//   "Log farm expenses to track profitability"
+//   "Refresh crop stage"
+// The Calm-UI spec demands short, time-based, action-first
+// wording. Rather than rewriting the server engine (much larger
+// change), we shorten at the render layer here. Each entry maps
+// a verbose canonical English title to its short Calm-UI form;
+// localizeServerTask consults this map BEFORE locale resolution
+// so the override applies in every language.
+const SHORT_TITLE_OVERRIDES = Object.freeze({
+  'Start logging farm costs to track profitability': 'Log first cost (30 sec)',
+  'Log farm expenses to track profitability':         'Log first cost (30 sec)',
+  'Keep logging harvest and costs to unlock performance comparison':
+                                                      'Log today\u2019s harvest (1 min)',
+  'Refresh crop stage':                               'Update crop stage',
+});
+
 export function localizeServerTask(task, t, lang = null) {
   if (!task) return null;
 
@@ -97,6 +117,17 @@ export function localizeServerTask(task, t, lang = null) {
     title = getLocalizedTaskTitle(task.id, task.title, lang) || task.title;
   } else {
     title = task.title || '';
+  }
+  // Apply Calm-UI short-title override AFTER locale resolution so
+  // both English and non-English paths get the short form when
+  // the original key was a known verbose source string.
+  // Using the ORIGINAL `task.title` (untranslated) as the lookup
+  // key means a non-English session still gets the override, then
+  // re-localises to the short form via the same `t` resolver if a
+  // matching key exists; otherwise the English short form is used
+  // (acceptable per the spec's "short, action-first" rule).
+  if (task.title && SHORT_TITLE_OVERRIDES[task.title]) {
+    title = SHORT_TITLE_OVERRIDES[task.title];
   }
 
   let detail;

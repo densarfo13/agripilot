@@ -35,6 +35,13 @@ import TaskCorrectionModal from '../components/farmer/TaskCorrectionModal.jsx';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';
 import NextActionCard from '../components/NextActionCard.jsx';
+// Calm-UI Home — server-driven primary action card. Swaps in
+// for NextActionCard when FEATURE_AI_TASK_ENGINE is on. Brings:
+// dynamic weather header above the action, spec-matched CTA
+// per rule + userType + locale, scan prompt below, tomorrow
+// hook on done. Strict no-duplicates: NextActionCard stays
+// registered as the rollback path.
+import TodayTaskCard from '../components/farmer/TodayTaskCard.jsx';
 import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
 } from '../components/admin/AdminState.jsx';
@@ -811,24 +818,33 @@ export default function Dashboard() {
           && loop.profile
           && !loop.farmSwitching
           && !isFeatureEnabled('FEATURE_DAILY_INTELLIGENCE') && (
-          <NextActionCard
-            decision={loop.decision}
-            taskViewModel={loop.taskViewModel}
-            loading={loop.decision.loading}
-            loopState={loop.loopState}
-            progress={loop.progress}
-            onDoThisNow={handleDoThisNow}
-            onSetStage={handleSetStage}
-            onGoToSetup={handleGoToSetup}
-            onAddUpdate={handleAddUpdate}
-            lastSuccessText={loop.lastSuccessText}
-            autopilotNextText={loop.taskViewModel?.nextText}
-            completionState={loop.completionState}
-            onContinue={loop.continueAfterCompletion}
-            onLater={loop.dismissCompletion}
-            t={t}
-            language={loop.language}
-          />
+          // Flag-gated swap: when FEATURE_AI_TASK_ENGINE is ON,
+          // render the Calm-UI TodayTaskCard (server-driven,
+          // weather header + spec-matched CTA + scan prompt +
+          // tomorrow hook). When OFF, fall back to the legacy
+          // NextActionCard so rollback is one feature-flag flip.
+          isFeatureEnabled('FEATURE_AI_TASK_ENGINE')
+            ? <TodayTaskCard />
+            : (
+              <NextActionCard
+                decision={loop.decision}
+                taskViewModel={loop.taskViewModel}
+                loading={loop.decision.loading}
+                loopState={loop.loopState}
+                progress={loop.progress}
+                onDoThisNow={handleDoThisNow}
+                onSetStage={handleSetStage}
+                onGoToSetup={handleGoToSetup}
+                onAddUpdate={handleAddUpdate}
+                lastSuccessText={loop.lastSuccessText}
+                autopilotNextText={loop.taskViewModel?.nextText}
+                completionState={loop.completionState}
+                onContinue={loop.continueAfterCompletion}
+                onLater={loop.dismissCompletion}
+                t={t}
+                language={loop.language}
+              />
+            )
         )}
 
         {/* v3 Verification System: opt-in "Add location"
