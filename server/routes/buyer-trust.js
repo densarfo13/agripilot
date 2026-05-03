@@ -1,9 +1,27 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/rbac.js';
 import { evaluatePesticideCompliance, buildComplianceTimeline, determineConfidence } from '../src/utils/pesticideCompliance.js';
+// Merged-blocker spec §3 — buyer-trust farm detail handler reads
+// req.organizationId for an inline same-org check, but that field
+// is only populated when extractOrganization runs in the chain.
+// Without it the inline check evaluates against undefined and
+// silently allows cross-org reads.
+import { extractOrganization } from '../../src/middleware/orgScope.js';
 
 const router = express.Router();
+
+// Buyer-trust farm panels are read by buyers / farmers / admins to
+// make purchase decisions. NGO field-officers and reviewers also
+// have legitimate read access for verification audits. The same-org
+// filter inside the handler then narrows further. Field agent role
+// is excluded from this list — they consume the NGO dashboard route
+// instead.
+const requireBuyerTrustAccess = requireRole(
+  'buyer', 'farmer', 'reviewer',
+  'super_admin', 'institutional_admin', 'admin', 'platform_admin',
+);
 
 // ─── Buyer-facing status labels ────────────────────────────────
 const BUYER_STATUS = {
@@ -158,7 +176,7 @@ router.get('/farms', authenticate, async (req, res) => {
 
 // ─── GET /api/v2/buyer-trust/farms/:farmerId ────────────────────
 // Single farm detail with full timeline for buyer view
-router.get('/farms/:farmerId', authenticate, async (req, res) => {
+router.get('/farms/:farmerId', authenticate, requireBuyerTrustAccess, extractOrganization, async (req, res) => {
   try {
     const { farmerId } = req.params;
 

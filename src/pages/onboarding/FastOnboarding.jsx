@@ -662,6 +662,22 @@ export default function FastOnboarding() {
             ? Date.now() - startedAtRef.current : null,
         });
       } catch { /* swallow */ }
+      // Soft-launch monitoring (Phase 3 §C) — fire the
+      // canonical `user_type_selected` event so the launch
+      // dashboard cohort split (farmer vs backyard) is
+      // populated. Lazy-imported to keep the bundle slim.
+      try {
+        import('../../analytics/lifecycleEvents.js').then((m) => {
+          try {
+            m.fireUserTypeSelected({
+              userType: isGarden ? 'backyard' : 'farmer',
+              source:   'onboarding',
+              country:  row?.country || null,
+              farmType: row?.farmType || null,
+            });
+          } catch { /* swallow */ }
+        }).catch(() => { /* swallow */ });
+      } catch { /* swallow */ }
       setSavedRow(row);
       return row;
     } catch {

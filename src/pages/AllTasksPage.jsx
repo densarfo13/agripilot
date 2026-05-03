@@ -122,6 +122,31 @@ export default function AllTasksPage() {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  // Soft-launch monitoring (Phase 3 §C) — fire `task_viewed`
+  // once per mount of the tasks page so the launch dashboard
+  // can compute the view → completion ratio. Lazy-imported so
+  // a missing analytics module never blocks the tasks list.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const m = await import('../analytics/lifecycleEvents.js');
+        if (cancelled) return;
+        m.fireTaskViewed({
+          surface:   'tasks_page',
+          taskCount: Array.isArray(tasks) ? tasks.length : null,
+          activeTaskId: Array.isArray(tasks) && tasks[0] ? tasks[0].id : null,
+        });
+      } catch { /* swallow */ }
+    })();
+    return () => { cancelled = true; };
+    // Fire once on mount; tasks length change is interesting
+    // for analytics but the spec asks for a single fire per
+    // surface visit. If we want re-fires on filter changes
+    // they'll go through fireTaskViewed directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleComplete(task) {
     if (!currentFarmId || completing) return;
     setCompleting(task.id);

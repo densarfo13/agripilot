@@ -2,6 +2,11 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 import { authenticate } from '../../middleware/auth.js';
 import { validateParamUUID, isValidUUID } from '../../middleware/validate.js';
+// Merged-blocker spec §1 — middleware-level ownership guard. The
+// existing `verifyFarmProfileOwnership` helper still runs inside
+// the handler as defence-in-depth; this middleware adds the
+// chain-level check the audit scanner asks for.
+import { requireOwnership } from '../../middleware/requireOwnership.js';
 import * as weatherService from './service.js';
 import prisma from '../../config/database.js';
 
@@ -52,7 +57,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
 // ─── GET /api/v1/farms/:farmId/weather ─────────────────
 // Weather for a specific farm profile (uses stored coordinates)
-router.get('/farms/:farmId/weather', validateParamUUID('farmId'), asyncHandler(async (req, res) => {
+router.get('/farms/:farmId/weather', validateParamUUID('farmId'), requireOwnership('farm'), asyncHandler(async (req, res) => {
   await verifyFarmProfileOwnership(req, req.params.farmId);
   const { weather, source } = await weatherService.getWeatherForFarm(req.params.farmId);
   res.json({ ...weather, _source: source });

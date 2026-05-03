@@ -86,6 +86,49 @@ export default class RecoveryErrorBoundary extends React.Component {
         componentStack,
       });
     } catch { /* never let telemetry cascade */ }
+    // Soft-launch monitoring (Phase 3 §C) — also fire the
+    // canonical `app_error` event so the launch dashboard's
+    // crashes-per-1k-sessions metric picks up React render
+    // failures. Lazy-imported so a broken analytics module
+    // can't block the recovery card from rendering.
+    try {
+      import('../../analytics/lifecycleEvents.js').then((m) => {
+        try {
+          m.fireAppError({
+            error,
+            surface:        'render',
+            componentStack: info && info.componentStack,
+          });
+        } catch { /* swallow */ }
+      }).catch(() => { /* swallow */ });
+    } catch { /* swallow */ }
+    // Server-side crash log via POST /api/errors. Sends a
+    // structured payload (message + truncated stack + component
+    // stack + route + user-agent) so admins can triage. Lazy-
+    // imported and try/catched twice — a broken api client must
+    // never prevent the recovery UI from rendering.
+    try {
+      import('../../api/client.js').then((apiModule) => {
+        try {
+          const api = apiModule.default || apiModule;
+          if (!api || typeof api.post !== 'function') return;
+          api.post('/errors', {
+            message: (error && error.message) || String(error || 'Unknown error'),
+            stack:   typeof error?.stack === 'string'
+              ? error.stack.slice(0, 4000)
+              : undefined,
+            surface: 'render',
+            componentStack: info && typeof info.componentStack === 'string'
+              ? info.componentStack.slice(0, 2000)
+              : undefined,
+            route: typeof window !== 'undefined' && window.location
+              ? window.location.pathname
+              : undefined,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+          }).catch(() => { /* swallow — server log is best-effort */ });
+        } catch { /* swallow */ }
+      }).catch(() => { /* swallow */ });
+    } catch { /* swallow */ }
   }
 
   // \u00a75 \u2014 Try again: reload the current route. Most render-

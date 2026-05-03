@@ -27,7 +27,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://farroway:farroway_secret@db:5432/farroway_prod?schema=public
+      # DATABASE_URL must be supplied via env-var. Falls back to
+      # a local-only default for `docker compose up` smoke tests
+      # (the db service is not exposed outside the compose
+      # network). Production deploys ALWAYS set DATABASE_URL.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://farroway:farroway_dev_only@db:5432/farroway_prod?schema=public} # secrets-scanner:ignore
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-strong-random-secret-in-production}
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4000}

@@ -387,6 +387,26 @@ export function addGarden(payload = {}) {
   _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.GARDEN);
   _emitSwitch(EXPERIENCE.GARDEN, row.id, { added: true });
   _setLastValidation(validation);
+  // Soft-launch monitoring (Phase 3 §C) — fire grow_created.
+  // Lazy-imported so the analytics module is only pulled into
+  // the bundle when an actual write happens; never blocks the
+  // store's return value.
+  (async () => {
+    try {
+      const m = await import('../analytics/lifecycleEvents.js');
+      const isFirst = (() => {
+        try { return (getGardens() || []).length <= 1; }
+        catch { return false; }
+      })();
+      m.fireGrowCreated({
+        cropName:     safe.crop || safe.cropName || null,
+        growingSetup: safe.growingSetup || null,
+        country:      safe.country || null,
+        region:       safe.region || safe.state || null,
+        isFirst,
+      });
+    } catch { /* swallow */ }
+  })();
   return row;
 }
 
@@ -449,6 +469,29 @@ export function addFarm(payload = {}) {
   _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.FARM);
   _emitSwitch(EXPERIENCE.FARM, row.id, { added: true });
   _setLastValidation(validation);
+  // Soft-launch monitoring (Phase 3 §C) — fire farm_created.
+  // Skip when this farm was auto-created as a garden parent
+  // (autoCreated marker) so the dashboard counts only the
+  // farms a user explicitly added.
+  if (!safe.autoCreated) {
+    (async () => {
+      try {
+        const m = await import('../analytics/lifecycleEvents.js');
+        const isFirst = (() => {
+          try { return (getFarmsOnly() || []).length <= 1; }
+          catch { return false; }
+        })();
+        m.fireFarmCreated({
+          farmType:    correctedType,
+          cropName:    safe.crop || safe.cropName || null,
+          sizeInAcres: safe.farmSize ?? safe.size ?? null,
+          country:     safe.country || null,
+          region:      safe.region || safe.state || null,
+          isFirst,
+        });
+      } catch { /* swallow */ }
+    })();
+  }
   return row;
 }
 

@@ -1,9 +1,20 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/rbac.js';
 import { writeAuditLog } from '../lib/audit.js';
 
 const router = express.Router();
+
+// Merged-blocker spec §4 — the /admin/* surface MUST be role-gated
+// AT THE MIDDLEWARE LEVEL. Previous implementation relied on
+// nothing but `authenticate`, meaning any farmer with a valid JWT
+// could read the admin supply list. `requireAdmin` collapses the
+// 6-role spec admin set + legacy aliases (super_admin /
+// institutional_admin) into a single chain entry.
+const requireAdmin = requireRole(
+  'super_admin', 'institutional_admin', 'admin', 'platform_admin',
+);
 
 const VALID_UNITS = ['kg', 'bags', 'tonnes', 'crates'];
 
@@ -111,7 +122,7 @@ router.post('/mine', authenticate, async (req, res) => {
 // ─── Admin: GET list of sale-ready supply ───────────────
 // This route uses V1 auth middleware imported separately
 // We'll handle admin auth inline since V2 cookie auth doesn't carry role
-router.get('/admin/list', authenticate, async (req, res) => {
+router.get('/admin/list', authenticate, requireAdmin, async (req, res) => {
   try {
     const { crop, readyOnly } = req.query;
 
@@ -207,7 +218,7 @@ router.get('/admin/list', authenticate, async (req, res) => {
 });
 
 // ─── Admin: POST mark as connected ──────────────────────
-router.post('/admin/:id/connect', authenticate, async (req, res) => {
+router.post('/admin/:id/connect', authenticate, requireAdmin, async (req, res) => {
   try {
     const record = await prisma.v2SupplyReadiness.findUnique({ where: { id: req.params.id } });
     if (!record) return res.status(404).json({ success: false, error: 'Record not found' });
@@ -233,7 +244,7 @@ router.post('/admin/:id/connect', authenticate, async (req, res) => {
 });
 
 // ─── Admin: GET CSV export ──────────────────────────────
-router.get('/admin/export.csv', authenticate, async (req, res) => {
+router.get('/admin/export.csv', authenticate, requireAdmin, async (req, res) => {
   try {
     const where = { status: { in: ['active', 'connected'] } };
     if (req.query.readyOnly === 'true') where.readyToSell = true;

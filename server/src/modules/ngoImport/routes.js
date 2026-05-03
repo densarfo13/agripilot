@@ -126,6 +126,12 @@ export function createFarmMeContextRouter(opts = {}) {
     ? resolveUser
     : (req) => req.user || null;
 
+  // Self-scoped /me endpoint. Handler queries `where: { userId: user.id }`
+  // and falls back to 401 when no user is resolved. The mount path in
+  // app.js is `/api/farm`, not `/api/ngoImport` — the scanner classifies
+  // by file path which produces a misleading prefix; in practice the
+  // route is farmer-self scoped, not NGO-scoped.
+  // security:routes:ignore
   router.get('/me/context', auth, asyncHandler(async (req, res) => {
     const r = standardResponse(res);
     const user = pickUser(req);

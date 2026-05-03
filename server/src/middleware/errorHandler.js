@@ -1,6 +1,52 @@
 import { config } from '../config/index.js';
 import { opsEvent } from '../utils/opsLogger.js';
 
+// ─── Sensitive-leak scrubber ──────────────────────────────
+// Merged-blocker spec §5: API errors must never leak stack
+// traces, Prisma internals, env vars, file paths, or tokens
+// to the client. The errorHandler already replaces 5xx
+// messages with "Internal server error" in production, but
+// a controller can still throw `new Error("DATABASE_URL bad")`
+// and the message would have flowed through unchanged. This
+// regex scans every outgoing message and either replaces it
+// with the neutral string OR strips the offending substring
+// (depending on how the message was assembled).
+const LEAK_PATTERNS = [
+  /\bDATABASE_URL\b/gi,
+  /\bAUTH_SECRET\b/gi,
+  /\bJWT_SECRET\b/gi,
+  /\bMFA_SECRET_KEY\b/gi,
+  /\bSENDGRID_API_KEY\b/gi,
+  /\bTWILIO_AUTH_TOKEN\b/gi,
+  /\bnode_modules\b/gi,
+  /\bat Object\./g,
+  /\bat (?:\/|[A-Z]:\\)\S+/g,
+  /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/g,
+  /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g,
+  /\bPrismaClient(?:Known|Validation|Initialization)RequestError\b/g,
+];
+
+function _isSensitive(msg) {
+  if (typeof msg !== 'string' || !msg) return false;
+  return LEAK_PATTERNS.some((re) => { re.lastIndex = 0; return re.test(msg); });
+}
+
+/**
+ * Scrub a candidate user-facing error message. Returns:
+ *   • the original message when it carries no sensitive token
+ *   • the neutral fallback when it does
+ *
+ * In production we always fall back; in development we keep
+ * the diagnostic so engineers can debug, but server-side logs
+ * already get the full err.stack regardless of environment.
+ */
+function scrubMessage(msg, fallback = 'Something went wrong') {
+  if (!config.isProduction) return msg || fallback;
+  if (!msg || typeof msg !== 'string') return fallback;
+  if (_isSensitive(msg)) return fallback;
+  return msg;
+}
+
 /**
  * Global error handler middleware.
  * Never exposes stack traces in production.
@@ -75,16 +121,32 @@ export function errorHandler(err, req, res, _next) {
     return res.status(413).json({ error: `File too large. Maximum size is ${config.upload.maxFileSizeMB}MB` });
   }
 
-  const message = statusCode === 500 && config.isProduction
-    ? 'Internal server error'
-    : err.message || 'Internal server error';
+  // Build the user-facing message with the leak scrubber.
+  // 5xx in production always falls back to the neutral string;
+  // 4xx still passes through for actionable errors (e.g.
+  // "Invalid email") UNLESS the message carries a leak pattern,
+  // in which case scrubMessage swaps it for "Something went
+  // wrong" in production. Dev keeps the original message so
+  // engineers can debug.
+  let message;
+  if (statusCode >= 500) {
+    message = config.isProduction
+      ? 'Internal server error'
+      : scrubMessage(err.message, 'Internal server error');
+  } else {
+    message = scrubMessage(err.message, 'Something went wrong');
+  }
 
-  // Never include stack traces in API responses — log them server-side only
-  // Include requestId so users can reference it in support tickets
+  // Never include stack traces in API responses — log them server-side only.
+  // Include requestId so users can reference it in support tickets.
   const response = { error: message };
   if (statusCode >= 500) response.requestId = rid;
   res.status(statusCode).json(response);
 }
+
+// Exported for the security test suite — it asserts the
+// scrubber catches every spec leak pattern.
+export { scrubMessage, LEAK_PATTERNS };
 
 /**
  * Async route wrapper — catches async errors and passes to error handler.

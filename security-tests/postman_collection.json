@@ -1,0 +1,429 @@
+{
+  "info": {
+    "name": "Farroway — API Security Harness",
+    "description": "Importable Postman collection mirroring security-test-plan.md §2. Every request has a status-code test and a sensitive-leak scan. Create a Postman environment with the variables listed below before running the collection.\n\nRequired environment variables:\n- API_BASE_URL\n- USER_A_FARMER_TOKEN, USER_B_FARMER_TOKEN\n- BUYER_TOKEN, NGO_A_TOKEN, NGO_B_TOKEN\n- FIELD_AGENT_TOKEN, PLATFORM_ADMIN_TOKEN\n- INVALID_TOKEN\n- USER_A_FARM_ID, USER_B_FARM_ID\n- USER_A_SCAN_ID, USER_B_SCAN_ID\n- PROGRAM_A_ID, PROGRAM_B_ID\n- PRIVATE_LISTING_ID, PUBLIC_LISTING_ID\n- UNASSIGNED_FARMER_ID\n\nNever target the production apex — the pre-flight script throws.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "farroway-security-harness-v1"
+  },
+  "variable": [
+    { "key": "API_BASE_URL",            "value": "http://localhost:4000" },
+    { "key": "INVALID_TOKEN",           "value": "not-a-real-jwt" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-flight (test-plan §0): refuse to run against production.",
+          "var base = pm.variables.get('API_BASE_URL') || '';",
+          "if (/\\/\\/(?:www\\.)?farroway\\.app(?:[/:]|$)/.test(base)) {",
+          "  throw new Error('API_BASE_URL points at the production apex. Use staging.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global sensitive-leak scan (test-plan §3).",
+          "var body = pm.response.text() || '';",
+          "var leaks = [",
+          "  /\\bat Object\\./, /\\bat (?:\\/|[A-Z]:\\\\)/,",
+          "  /\\bPrisma(?:Client(?:Known|Validation|Initialization)RequestError)?\\b/,",
+          "  /\\bSQLSTATE\\b|\\bsyntax error at or near\\b/i,",
+          "  /\\bDATABASE_URL\\b/, /\\bAUTH_SECRET\\b/, /\\bJWT_SECRET\\b/,",
+          "  /\\bMFA_SECRET_KEY\\b/, /\\bSENDGRID_API_KEY\\b/,",
+          "  /\\bTWILIO_AUTH_TOKEN\\b/,",
+          "  /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/,",
+          "  /\\bnode_modules\\b/,",
+          "  /\\bxox[abprs]-[A-Za-z0-9-]{8,}/,",
+          "  /\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b/,",
+          "  /\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}/",
+          "];",
+          "pm.test('No sensitive-leak patterns in response body', function () {",
+          "  for (var i = 0; i < leaks.length; i += 1) {",
+          "    pm.expect(leaks[i].test(body), 'Leak match: ' + leaks[i]).to.be.false;",
+          "  }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "01 — Unauthenticated GET /api/farms → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{API_BASE_URL}}/api/farms", "host": ["{{API_BASE_URL}}"], "path": ["api", "farms"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 401', function () { pm.response.to.have.status(401); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "02 — Invalid token → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{INVALID_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/farms", "host": ["{{API_BASE_URL}}"], "path": ["api", "farms"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 401', function () { pm.response.to.have.status(401); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "21 — Health endpoint reachable (200/503)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{API_BASE_URL}}/api/health", "host": ["{{API_BASE_URL}}"], "path": ["api", "health"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 200 or 503', function () { pm.expect(pm.response.code).to.be.oneOf([200, 503]); });"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "IDOR",
+      "item": [
+        {
+          "name": "03 — Farmer A reading Farmer B's farm → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/farms/{{USER_B_FARM_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "farms", "{{USER_B_FARM_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "04 — Farmer A reading Farmer B's scan → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/scans/{{USER_B_SCAN_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "scans", "{{USER_B_SCAN_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Buyer",
+      "item": [
+        {
+          "name": "05 — Buyer reading another user's scan → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{BUYER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/scans/{{USER_A_SCAN_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "scans", "{{USER_A_SCAN_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "06 — Buyer reading private listing → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{BUYER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/buyer/listings/{{PRIVATE_LISTING_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "buyer", "listings", "{{PRIVATE_LISTING_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "07 — Buyer reading public listing → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{BUYER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/buyer/listings/{{PUBLIC_LISTING_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "buyer", "listings", "{{PUBLIC_LISTING_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "17 — Buyer POSTing farmer-only /api/sell/listings → 403/404",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{BUYER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"crop\":\"tomato\",\"quantity\":100}" },
+            "url": { "raw": "{{API_BASE_URL}}/api/sell/listings", "host": ["{{API_BASE_URL}}"], "path": ["api", "sell", "listings"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "19 — Buyer reading a farmer's farm directly → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{BUYER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/farms/{{USER_A_FARM_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "farms", "{{USER_A_FARM_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NGO",
+      "item": [
+        {
+          "name": "08 — NGO A reading Program B → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{NGO_A_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/ngo/programs/{{PROGRAM_B_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "ngo", "programs", "{{PROGRAM_B_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "09 — Field agent on unassigned farmer → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{FIELD_AGENT_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/ngo/farmers/{{UNASSIGNED_FARMER_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "ngo", "farmers", "{{UNASSIGNED_FARMER_ID}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([403, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "20 — NGO B querying NGO A's roster → 403 or empty",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{NGO_B_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/ngo/farmers?programId={{PROGRAM_A_ID}}", "host": ["{{API_BASE_URL}}"], "path": ["api", "ngo", "farmers"], "query": [ { "key": "programId", "value": "{{PROGRAM_A_ID}}" } ] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 200 or 403', function () { pm.expect(pm.response.code).to.be.oneOf([200, 403]); });",
+              "if (pm.response.code === 200) {",
+              "  var body = pm.response.json();",
+              "  var list = (body && Array.isArray(body.farmers)) ? body.farmers : [];",
+              "  pm.test('Roster from another program is empty', function () { pm.expect(list.length).to.eql(0); });",
+              "}"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "10 — Farmer reaching /api/admin/users → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/admin/users", "host": ["{{API_BASE_URL}}"], "path": ["api", "admin", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403', function () { pm.response.to.have.status(403); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "11 — Platform admin on /api/admin/users → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{PLATFORM_ADMIN_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/admin/users", "host": ["{{API_BASE_URL}}"], "path": ["api", "admin", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 200 or 404', function () { pm.expect(pm.response.code).to.be.oneOf([200, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "18 — Field agent on /api/admin/users → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{FIELD_AGENT_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/admin/users", "host": ["{{API_BASE_URL}}"], "path": ["api", "admin", "users"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 403', function () { pm.response.to.have.status(403); });"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Scan Upload",
+      "item": [
+        {
+          "name": "13 — Upload non-image (text base64) → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"imageBase64\":\"bm90IGFuIGltYWdl\"}" },
+            "url": { "raw": "{{API_BASE_URL}}/api/scan/analyze", "host": ["{{API_BASE_URL}}"], "path": ["api", "scan", "analyze"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 400 / 415 / 429', function () { pm.expect(pm.response.code).to.be.oneOf([400, 415, 429]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "16 — Empty scan body → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{API_BASE_URL}}/api/scan/analyze", "host": ["{{API_BASE_URL}}"], "path": ["api", "scan", "analyze"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 400 / 422 / 429', function () { pm.expect(pm.response.code).to.be.oneOf([400, 422, 429]); });"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rate Limit",
+      "item": [
+        {
+          "name": "12 — Scan rate-limit fires (run via Runner with N≥35 iterations)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"plantName\":\"tomato\"}" },
+            "url": { "raw": "{{API_BASE_URL}}/api/scan/analyze", "host": ["{{API_BASE_URL}}"], "path": ["api", "scan", "analyze"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// Track 429 across runner iterations via pm.environment.",
+              "if (pm.response.code === 429) {",
+              "  pm.environment.set('SAW_429', '1');",
+              "}",
+              "var seen = pm.environment.get('SAW_429') === '1';",
+              "pm.test('Eventually 429 across runner iterations', function () {",
+              "  pm.expect(seen || pm.response.code === 429).to.be.true;",
+              "});"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Safety",
+      "item": [
+        {
+          "name": "15 — Invalid farm id returns clean error",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_A_FARMER_TOKEN}}" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/farms/not-a-real-uuid", "host": ["{{API_BASE_URL}}"], "path": ["api", "farms", "not-a-real-uuid"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 400 / 404', function () { pm.expect(pm.response.code).to.be.oneOf([400, 404]); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "23 — OPTIONS preflight",
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              { "key": "Origin", "value": "https://example.invalid" },
+              { "key": "Access-Control-Request-Method", "value": "GET" }
+            ],
+            "url": { "raw": "{{API_BASE_URL}}/api/farms", "host": ["{{API_BASE_URL}}"], "path": ["api", "farms"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 200 / 204 / 403 / 404', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204, 403, 404]); });"
+            ] } }
+          ]
+        }
+      ]
+    }
+  ]
+}

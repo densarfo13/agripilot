@@ -53,6 +53,10 @@ export const ROUTE_ACCESS = Object.freeze({
   '/dashboard':   [ROLES.BACKYARD_USER, ROLES.FARMER],
   '/home':        [ROLES.BACKYARD_USER, ROLES.FARMER],
   '/my-farm':     [ROLES.BACKYARD_USER, ROLES.FARMER],
+  // Phase 1 §A.5 — backyard nav tab. Same page as /my-farm,
+  // routed for the backyard label. Strict no-duplicates: no
+  // parallel page; the existing /my-farm renders the right
+  // wording via useUserMode().
   '/my-grow':     [ROLES.BACKYARD_USER, ROLES.FARMER],
   '/tasks':       [ROLES.BACKYARD_USER, ROLES.FARMER],
   '/progress':    [ROLES.BACKYARD_USER, ROLES.FARMER],

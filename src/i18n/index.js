@@ -195,6 +195,16 @@ export function setLanguage(code) {
       catch { /* swallow */ }
     }).catch(() => { /* swallow */ });
   } catch { /* swallow */ }
+  // Soft-launch monitoring (Phase 3 §C) — also fire the
+  // canonical `language_changed` event through trackEvent so
+  // the launch dashboard's per-event aggregator picks it up
+  // alongside the rest of the lifecycle events.
+  try {
+    import('../analytics/lifecycleEvents.js').then((m) => {
+      try { m.fireLanguageChanged({ to: String(code || ''), source: 'manual' }); }
+      catch { /* swallow */ }
+    }).catch(() => { /* swallow */ });
+  } catch { /* swallow */ }
 }
 
 // On module load, mirror the persisted language onto <html lang> so

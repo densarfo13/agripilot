@@ -74,10 +74,28 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
   cors: {
-    // Comma-separated origins, or empty for dev permissive mode
-    origins: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-      : [],
+    // Comma-separated origins, or empty for dev permissive mode.
+    // The merged-blocker spec §8 also accepts FRONTEND_URL /
+    // STAGING_FRONTEND_URL / ADMIN_FRONTEND_URL as named slots
+    // for the same allowlist — these are unioned with CORS_ORIGIN
+    // so a deploy can populate either surface and both work.
+    // In production with no allowlist set, CORS rejects every
+    // cross-origin request (see app.js#corsOptions).
+    origins: (() => {
+      const set = new Set();
+      const push = (raw) => {
+        if (!raw) return;
+        for (const s of String(raw).split(',')) {
+          const t = s.trim();
+          if (t) set.add(t);
+        }
+      };
+      push(process.env.CORS_ORIGIN);
+      push(process.env.FRONTEND_URL);
+      push(process.env.STAGING_FRONTEND_URL);
+      push(process.env.ADMIN_FRONTEND_URL);
+      return Array.from(set);
+    })(),
   },
   upload: {
     dir: process.env.UPLOAD_DIR || './uploads',

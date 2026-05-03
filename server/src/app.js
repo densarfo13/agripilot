@@ -20,6 +20,18 @@ import authRoutes from './modules/auth/routes.js';
 import adminUserRoutes from './modules/auth/admin-routes.js';
 // Client-event ingestion (data foundation v2) + NGO read APIs
 import ingestRoutes from './modules/ingest/routes.js';
+// Soft-launch monitoring pipeline (Phase 3 §C). Exposes:
+//   POST /api/events            — single + batched ingest
+//   POST /api/errors            — auth-only crash logger
+//   GET  /api/admin/metrics     — admin-gated aggregation view
+// Routes are mounted at the API root because the spec wires
+// frontend `trackEvent()` calls to /api/events directly (no
+// versioning prefix needed for the pilot).
+import softLaunchEventsRoutes from './modules/events/routes.js';
+// AI Task Engine v1 — POST /api/tasks/today. Rules-based daily
+// task generator. See server/src/modules/aiTask/engine.js for
+// the precedence ladder.
+import aiTaskRoutes from './modules/aiTask/routes.js';
 import ngoRoutes    from './modules/ingest/ngoRoutes.js';
 import farmersRoutes from './modules/farmers/routes.js';
 import applicationsRoutes from './modules/applications/routes.js';
@@ -278,6 +290,43 @@ const authLimiter = rateLimit({
   // Uses default keyGenerator (request IP via express trust proxy)
 });
 
+// Admin Monitoring Dashboard v1 — fire `rate_limit_hit` events
+// on every cap excess so the dashboard's "API rate-limit hits"
+// card has a signal to count. The handler runs AFTER the
+// limiter has already decided to reject; we log + return the
+// configured 429 message untouched.
+function _onRateLimited(_limiterName) {
+  return (req, res, _next, options) => {
+    try {
+      import('./config/database.js').then(({ default: prisma }) => {
+        try {
+          const id = (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.randomUUID)
+            ? globalThis.crypto.randomUUID()
+            : `rl-hit-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          prisma.clientEvent.create({
+            data: {
+              id,
+              type:      'rate_limit_hit',
+              payload: {
+                limiter: _limiterName,
+                method:  req.method,
+                route:   req.originalUrl || req.path,
+                userId:  (req.user && (req.user.sub || req.user.id)) || null,
+                ip:      req.ip,
+              },
+              createdAt: new Date(),
+              farmerId:  (req.user && (req.user.sub || req.user.id)) || null,
+              orgId:     (req.user && req.user.organizationId) || null,
+              offline:   false,
+            },
+          }).catch(() => { /* swallow — telemetry never blocks the response */ });
+        } catch { /* swallow */ }
+      }).catch(() => { /* swallow */ });
+    } catch { /* swallow */ }
+    res.status(options.statusCode).json(options.message);
+  };
+}
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 200, // 200 requests per minute
@@ -286,6 +335,7 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => req.path.startsWith('/api/v2/auth/'), // auth has its own limiter
   store: _rlStore('api'),
+  handler: _onRateLimited('api'),
 });
 
 // Production infra spec §2: domain-specific rate limits.
@@ -800,6 +850,12 @@ app.get('/api/ops/metrics', authenticate, async (req, res) => {
 // ─── Auth (public — with stricter rate limiting) ────────
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', adminUserRoutes);
+// Spec-canonical alias for the admin surface. Same router,
+// same middleware (`router.use(authenticate)` +
+// `authorize('super_admin', ...)` per route). Mounted as
+// /api/admin so the merged-blocker spec's tests
+// (GET /api/admin/users, etc.) hit the existing guards.
+app.use('/api/admin', adminUserRoutes);
 
 // ─── Ingest + NGO aggregates (data foundation v2) ───────
 // /api/ingest accepts batched client events idempotently.
@@ -810,6 +866,12 @@ app.use('/api/users', adminUserRoutes);
 // matches verbatim.
 app.use('/api/ingest', ingestRoutes);
 app.use('/api/ngo',    ngoRoutes);
+// Soft-launch monitoring pipeline. Mounted at /api so the
+// child routes resolve as /api/events, /api/errors,
+// /api/admin/metrics — matching the spec's exact paths.
+app.use('/api',        softLaunchEventsRoutes);
+// AI Task Engine v1 — child routes resolve as /api/tasks/today.
+app.use('/api/tasks',  aiTaskRoutes);
 
 // ─── /me endpoint ───────────────────────────────────────
 // V1 admin /me (used by older admin tools). V2 farmer-facing

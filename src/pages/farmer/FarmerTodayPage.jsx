@@ -58,6 +58,13 @@ import { recordOutcome } from '../../lib/outcomes/outcomeStore.js';
 import CompletionBanner from '../../components/farmer/CompletionBanner.jsx';
 import TodayContextHeader from '../../components/farmer/TodayContextHeader.jsx';
 import FirstActionGate from '../../components/farmer/FirstActionGate.jsx';
+// AI Task Engine v1 — server-driven primary action card. Gated
+// by FEATURE_AI_TASK_ENGINE; OFF by default so the legacy
+// FirstActionGate keeps owning the home screen until the API
+// is observed in production. When ON, this card replaces the
+// FirstActionGate as the above-the-fold primary action.
+import TodayTaskCard from '../../components/farmer/TodayTaskCard.jsx';
+import { isFeatureEnabled as isAiFlagOn } from '../../utils/featureFlags.js';
 import { getUserMemory } from '../../core/userMemory.js';
 import { decideToday } from '../../core/ultimateDecisionEngine.js';
 import Paywall from '../../components/farmer/Paywall.jsx';
@@ -1177,6 +1184,19 @@ export default function FarmerTodayPage() {
       {journeySnapshot.state !== 'onboarding'
         && journeySnapshot.state !== 'crop_selected' && (
         (() => {
+          // AI Task Engine v1 — server-driven path. Replaces
+          // the legacy FirstActionGate when FEATURE_AI_TASK_ENGINE
+          // is on. The card calls POST /api/tasks/today on
+          // mount, fires task_viewed/task_completed events,
+          // and falls back to a generic local task when the
+          // API is unreachable. FEATURE_AI_TASK_ENGINE OFF →
+          // identical to before (legacy FirstActionGate path).
+          let aiOn = false;
+          try { aiOn = isAiFlagOn('FEATURE_AI_TASK_ENGINE'); }
+          catch { aiOn = false; }
+          if (aiOn) {
+            return <TodayTaskCard />;
+          }
           // Composer call — produces primaryAction +
           // supportingTasks + riskLevel + tomorrowPreview from
           // the live weather + per-day precipitation

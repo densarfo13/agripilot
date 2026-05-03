@@ -1,9 +1,18 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/rbac.js';
 import { writeAuditLog } from '../lib/audit.js';
 
 const router = express.Router();
+
+// V2Buyer is an admin-managed catalogue table — the row's owner
+// is the admin who created it (`createdBy`), there is no
+// end-user ownership relation. Merged-blocker spec §4 demands
+// a middleware-level role gate on /:id reads/writes.
+const requireAdmin = requireRole(
+  'super_admin', 'institutional_admin', 'admin', 'platform_admin',
+);
 
 // ─── Admin: GET list buyers ────────────────────────────────────
 router.get('/', authenticate, async (req, res) => {
@@ -40,7 +49,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // ─── Admin: GET single buyer ───────────────────────────────────
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const buyer = await prisma.v2Buyer.findUnique({
       where: { id: req.params.id },
@@ -110,7 +119,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // ─── Admin: PUT update buyer ───────────────────────────────────
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const existing = await prisma.v2Buyer.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ success: false, error: 'Buyer not found' });

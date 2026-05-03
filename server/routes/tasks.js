@@ -2,11 +2,16 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { writeAuditLog } from '../lib/audit.js';
+// Merged-blocker spec §1 — middleware-level ownership guard. The
+// `v2Task` resource resolves ownership via the parent V2Season's
+// userId. The handler's existing inline `season: { userId }`
+// filter remains as defence-in-depth.
+import { requireOwnership } from '../../src/middleware/requireOwnership.js';
 
 const router = express.Router();
 
 // Complete a task
-router.post('/:taskId/complete', authenticate, async (req, res) => {
+router.post('/:taskId/complete', authenticate, requireOwnership('v2Task'), async (req, res) => {
   try {
     const task = await prisma.v2Task.findFirst({
       where: {

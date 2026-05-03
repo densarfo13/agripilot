@@ -15,8 +15,13 @@ export const NAV_ICONS = {
   // tab on the unified 5-tab nav (Home / My Grow / Tasks /
   // Progress / Scan).
   scan: '\uD83D\uDCF7',       // 📷
-  sell: '\uD83C\uDFF7\uFE0F',         // 🏷️  (kept for legacy /sell route)
-  opportunities: '\uD83C\uDFAF',      // 🎯  (kept for legacy /opportunities)
+  sell: '\uD83C\uDFF7\uFE0F',         // 🏷️   Top-level Sell tab on farmer nav
+  // Funding tab on the farmer nav (Phase 1 §A.5). Routes to
+  // /opportunities — same destination as the legacy
+  // `opportunities` icon below; the rename is purely a label
+  // shift so the farmer nav reads "Funding" not "Opportunities".
+  funding: '\uD83D\uDCB0',            // 💰
+  opportunities: '\uD83C\uDFAF',      // 🎯  Kept for legacy callers
 };
 
 // ─── Section icons (used in headers / labels) ───────────────

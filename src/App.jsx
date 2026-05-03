@@ -345,6 +345,11 @@ const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx')
 const BuyerTrustPage = lazy(() => import('./pages/BuyerTrustPage.jsx'));
 const BuyerView = lazy(() => import('./pages/BuyerView.jsx'));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage.jsx'));
+// Phase 3 §C — soft-launch monitoring dashboard. Reads the
+// canonical event store + computes DAU / completion / stuck /
+// crashes / retention numbers in-memory. Admin-only via the
+// surrounding RoleRoute wrapper.
+const MonitoringDashboardPage = lazy(() => import('./pages/admin/MonitoringDashboardPage.jsx'));
 // Final feedback-loop spec §4 — admin-only feedback rollup.
 const FeedbackDashboard = lazy(() => import('./components/admin/FeedbackDashboard.jsx'));
 const AdminImportFarmersPage = lazy(() => import('./pages/AdminImportFarmersPage.jsx'));
@@ -539,6 +544,31 @@ export default function App() {
     // renders real data on first load. No-ops outside demo mode and
     // when the store already has real data (see demoSeed.isStoreEmpty).
     try { ensureDemoSeed(); } catch { /* never blocks app boot */ }
+    // Schema versioning (Phase 1 spec §A) — one-shot
+    // upgrade-on-boot for legacy localStorage shapes so a user
+    // who skipped releases never sees a v1 blob crash a v5 render
+    // path. Idempotent: the SCHEMA_VERSION sentinel guards against
+    // re-running steps. See src/store/bootSchemaMigrate.js.
+    (async () => {
+      try {
+        const mod = await import('./store/bootSchemaMigrate.js');
+        if (mod && typeof mod.migrateOnBoot === 'function') {
+          mod.migrateOnBoot();
+        }
+      } catch { /* never blocks app boot */ }
+    })();
+    // Soft-launch lifecycle listeners (Phase 3 §C) — install
+    // window.onerror / unhandledrejection / stuck-screen watch
+    // so app_error + screen_stuck events fire automatically
+    // without every component having to subscribe. Idempotent.
+    (async () => {
+      try {
+        const mod = await import('./analytics/lifecycleEvents.js');
+        if (mod && typeof mod.installLifecycleListeners === 'function') {
+          mod.installLifecycleListeners();
+        }
+      } catch { /* never blocks app boot */ }
+    })();
     // Behavior tracking (gated). One `app_open` event per cold
     // mount feeds the local analytics log + the canonical pipeline.
     try {
@@ -905,6 +935,14 @@ export default function App() {
             <Route path="/dashboard" element={<ExperienceFallback><V2Dashboard /></ExperienceFallback>} />
             <Route path="/tasks" element={<AllTasksPage />} />
             <Route path="/my-farm" element={<ExperienceFallback><MyFarmPage /></ExperienceFallback>} />
+            {/* Phase 1 §A.5 — backyard nav tab points at /my-grow.
+                We mount the same MyFarmPage so all the existing
+                action-first / photo-upload / switch / edit
+                affordances are reused; the page reads
+                useUserMode() and renders "My Grow" wording when
+                the userType is backyard, "My Farm" when farmer.
+                Strict no-duplicates: NO parallel /my-grow page. */}
+            <Route path="/my-grow" element={<ExperienceFallback><MyFarmPage /></ExperienceFallback>} />
             {/* /help moved to the public block above (go-live audit). */}
             {/* Simple Onboarding (rollout v1) — gated by
                 FEATURE_SIMPLE_ONBOARDING inside the component;
@@ -1183,6 +1221,8 @@ export default function App() {
                 for this UI-only sprint. */}
             <Route path="buyers" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><BuyerView /></RoleRoute>} />
             <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
+            {/* Phase 3 §C — soft-launch ops dashboard. */}
+            <Route path="admin/monitoring" element={<RoleRoute roles={ADMIN_ROLES}><MonitoringDashboardPage /></RoleRoute>} />
             <Route path="admin/feedback"  element={<RoleRoute roles={ADMIN_ROLES}><FeedbackDashboard /></RoleRoute>} />
             <Route path="admin/ngo-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><AdminDashboard /></RoleRoute>} />
             <Route path="admin/ngo-program" element={<RoleRoute roles={ADMIN_ROLES}><NgoDashboardPage /></RoleRoute>} />

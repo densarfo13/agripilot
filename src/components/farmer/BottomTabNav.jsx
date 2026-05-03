@@ -33,31 +33,41 @@ import { getNavigationItems } from '../../navigation/getNavigationItems.js';
 // flips nav surfaces instantly on switch.
 import useExperience from '../../hooks/useExperience.js';
 
-// Farm vs Garden UX spec §1 — the second tab is renamed
-// "My Grow" across BOTH experience variants. A single label
-// covers users who own farms, gardens, or both, and the
-// destination page (/my-farm) renders Farms / Gardens tabs
-// internally so the per-experience filtering is explicit.
-// Route stays at /my-farm so existing deep links and the
-// router config keep working unchanged.
-// Standardize Navigation System §1 + §3 — single 5-tab
-// structure shared by every userType:
-//   Home | My Grow | Tasks | Progress | Scan
-// Funding + Sell removed from primary nav per §3 (their pages
-// continue to exist; per §4 they should surface inside
-// Progress / My Grow as section links — that placement
-// migration is out of scope for this turn). Backyard vs
-// farmer adaptation happens INSIDE My Grow (Farms / Gardens
-// tabs) per §2 — not at the nav level. Same single TABS
-// array for backyard / farmer / ngo so cross-mode flips
-// don't reshuffle the nav.
-const TABS = [
+// Farmer/Backyard Split spec (Phase 1 §A.5) — bottom nav is
+// SPLIT by userType so the two experiences never share a
+// surface. The previous "single 5-tab for everyone" was the
+// right call for the pilot but obscures the divergence the
+// product team wants visible at launch:
+//
+//   Farmer  (6 tabs): Home · My Farm · Tasks · Progress · Funding · Sell
+//   Backyard (5 tabs): Home · My Grow · Tasks · Progress · Scan
+//
+// Both share Home / Tasks / Progress; the divergent tabs
+// (My Farm vs My Grow, Funding+Sell vs Scan) are the surfaces
+// that DO differ between experiences. Resolution comes from
+// useUserMode() (canonical hook) → falls back to the
+// activeContextType heuristic → 'farmer' default.
+const FARMER_TABS = [
   { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
-  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
+  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'My Farm' },
+  { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
+  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
+  { key: 'funding',  path: '/opportunities', icon: NAV_ICONS.funding || '\uD83D\uDCB0', labelKey: 'nav.funding', fallback: 'Funding' },
+  { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell || '\uD83C\uDFEA', labelKey: 'nav.sell', fallback: 'Sell' },
+];
+
+const BACKYARD_TABS = [
+  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
+  { key: 'grow',     path: '/my-grow',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
   { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
   { key: 'scan',     path: '/scan',      icon: NAV_ICONS.scan,     labelKey: 'nav.scan',     fallback: 'Scan' },
 ];
+
+// Kept as the legacy union so the regionUxSystem flag-gated
+// path below has a deterministic fallback. New code should NOT
+// reference this — read FARMER_TABS / BACKYARD_TABS instead.
+const TABS = FARMER_TABS;
 
 // Setup / onboarding paths where the bottom nav must self-hide
 // (Adaptive setup spec \u00a75 + high-trust onboarding spec \u00a77 \u2014
@@ -145,19 +155,11 @@ export default function BottomTabNav() {
     || (activeContextType == null
         && shouldUseBackyardExperience(country, farmType));
 
-  // Standardize Navigation System §1 — single canonical 5-tab
-  // array (TABS) used by every userType. The `isBackyard`
-  // signal is computed above but no longer drives the nav
-  // shape — backyard / farmer / ngo all see the same Home /
-  // My Grow / Tasks / Progress / Scan structure. Per-type
-  // adaptation happens INSIDE My Grow (Farms / Gardens tabs)
-  // per spec §2.
-  //
-  // The legacy regionUxSystem flag-gated path is preserved
-  // for any pilot still relying on the 4-tab subset routing
-  // — when the flag is on, getNavigationItems(experience)
-  // computes its own subset; when off, every user gets the
-  // canonical 5-tab structure.
+  // Farmer/Backyard Split spec (Phase 1 §A.5) — pick the tab
+  // set by userType. The legacy regionUxSystem flag-gated path
+  // is preserved for any pilot that still relies on the 4-tab
+  // subset; when the flag is OFF (default), the canonical
+  // farmer-6 / backyard-5 split applies.
   let tabs;
   if (isFeatureEnabled('regionUxSystem')) {
     const ux = resolveRegionUX({
@@ -174,14 +176,12 @@ export default function BottomTabNav() {
       fallback: it.fallback,
     }));
   } else {
-    // Reference isBackyard so the linter doesn't flag it as
-    // unused — kept in scope for any future per-type tweak
-    // that lives at this level (e.g. swapping the My Grow
-    // icon between 🌾 and 🌱). Today, both userTypes get
-    // the identical TABS array.
-    void isBackyard;
-    tabs = TABS;
+    tabs = isBackyard ? BACKYARD_TABS : FARMER_TABS;
   }
+  // Reference TABS so the linter doesn't flag the legacy
+  // export as unused — kept on disk for any caller importing
+  // the deprecated symbol.
+  void TABS;
 
   const currentPath = location.pathname;
 

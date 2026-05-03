@@ -39,7 +39,15 @@
     "check:crop-labels":  "node scripts/check-raw-crop-render.js",
     "launch-gate":      "node scripts/launch-gate.mjs",
     "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build",
-    "launch-gate:final": "npm run launch-gate:fast && npm run guard:i18n && npm run guard:crop-render && npm run guard:mobile && npm run guard:telemetry && npm run guard:ios-quirks"
+    "launch-gate:final": "npm run launch-gate:fast && npm run guard:i18n && npm run guard:crop-render && npm run guard:mobile && npm run guard:telemetry && npm run guard:ios-quirks",
+    "security:scan-secrets": "node scripts/ci/scan-secrets.mjs",
+    "security:routes":       "node scripts/audit-routes.mjs",
+    "security:test:unit":    "node scripts/ci/run-security-tests.mjs",
+    "security:test":         "node scripts/ci/run-api-security-harness.mjs",
+    "security:curl":         "bash security-tests/curl-tests.sh",
+    "security:all":          "npm run security:test && npm run security:curl",
+    "security:audit":        "npm run security:scan-secrets && npm run security:test:unit",
+    "launch-gate:security":  "npm run security:audit"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

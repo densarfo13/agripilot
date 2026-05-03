@@ -10,6 +10,13 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
+// Merged-blocker spec §1 — middleware-level ownership guard for
+// farm-task routes. Both endpoints below already do an inline
+// `where: { id, userId }` lookup as defence-in-depth; the
+// middleware adds the spec-mandated where-clause + 404-on-miss
+// pattern at the chain level so a future refactor cannot
+// accidentally remove the inline check.
+import { requireOwnership } from '../../src/middleware/requireOwnership.js';
 import { generateTasksForFarm } from '../lib/farmTaskEngine.js';
 import { resolveStage, CROP_STAGES } from '../lib/cropStages.js';
 import { getSeasonalContext } from '../lib/seasonalTiming.js';
@@ -29,7 +36,7 @@ const router = express.Router();
  * Query params:
  *   ?stage=<override> — override the farm's current stage (optional)
  */
-router.get('/:id/tasks', authenticate, async (req, res) => {
+router.get('/:id/tasks', authenticate, requireOwnership('farm'), async (req, res) => {
   try {
     const farm = await prisma.farmProfile.findFirst({
       where: { id: req.params.id, userId: req.user.id },
@@ -250,7 +257,7 @@ router.get('/:id/tasks', authenticate, async (req, res) => {
  * Idempotent: re-completing the same task returns the existing record.
  * Returns the next primary task for immediate refresh.
  */
-router.post('/:id/tasks/:taskId/complete', authenticate, async (req, res) => {
+router.post('/:id/tasks/:taskId/complete', authenticate, requireOwnership('farm'), async (req, res) => {
   try {
     const farm = await prisma.farmProfile.findFirst({
       where: { id: req.params.id, userId: req.user.id },

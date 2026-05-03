@@ -102,6 +102,20 @@ const KNOWN_EVENTS = new Set([
   // shape of the attempted access for funnel analysis +
   // surface improvements.
   'role_access_denied',
+  // Soft-launch monitoring spec (Phase 3 §C) — 8 lifecycle
+  // events the launch dashboard surfaces. `task_completed`
+  // is already in the list above; the rest are added here so
+  // a stray fire-site doesn't get a dev-mode "unknown event"
+  // warning. Wired from the existing render paths via
+  // src/analytics/lifecycleEvents.js — see that module for
+  // the canonical fire sites.
+  'farm_created',
+  'grow_created',
+  'task_viewed',
+  'app_error',
+  'screen_stuck',
+  'language_changed',
+  'user_type_selected',
 ]);
 
 // Reasonable cap on the weather-summary string the enriched

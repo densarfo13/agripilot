@@ -16,15 +16,28 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth, requireRole } from '../middleware/rbac.js';
+// Merged-blocker spec §3 — NGO routes must be org-scoped at the
+// middleware level so a reviewer in NGO A can never read NGO B's
+// roster even if their JWT carries the correct role. The legacy
+// chain authenticated + role-gated, but didn't populate
+// req.organizationId — meaning any inline `where: { organizationId }`
+// filter would have been undefined and the query would have
+// returned every org's data. Adding extractOrganization here
+// guarantees a reviewer's queries are bounded to their own org.
+import { extractOrganization } from '../../src/middleware/orgScope.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// NGO endpoints are reviewer/admin only. Route-level stack is:
-// authenticate (populates req.user) → requireAuth (401 guard) →
-// requireRole('reviewer') (admin bypasses via the super-role list).
+// NGO endpoints are reviewer/admin only AND org-scoped. Route-level
+// stack is:
+//   authenticate         — populates req.user (id, role)
+//   requireAuth          — 401 guard
+//   requireReviewer      — 403 unless reviewer / admin
+//   extractOrganization  — populates req.organizationId so handlers
+//                          can pass it to orgWhereFarmer(req)
 const requireReviewer = requireRole('reviewer');
-const NGO_SCOPE = [authenticate, requireAuth, requireReviewer];
+const NGO_SCOPE = [authenticate, requireAuth, requireReviewer, extractOrganization];
 
 const ACTIVE_WINDOW_DAYS = 30;
 

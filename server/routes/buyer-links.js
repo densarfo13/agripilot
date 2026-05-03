@@ -1,9 +1,20 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/rbac.js';
 import { writeAuditLog } from '../lib/audit.js';
 
 const router = express.Router();
+
+// V2BuyerLink rows are admin-managed (created/updated by admins
+// linking a buyer to a sale-ready supply). The `linkedBy` column
+// stores the admin's userId — there is NO end-user ownership
+// model. Merged-blocker spec §4 mandates a middleware-level role
+// gate; the inline check that previously only existed for the
+// /admin/* prefix in supply-readiness is mirrored here.
+const requireAdmin = requireRole(
+  'super_admin', 'institutional_admin', 'admin', 'platform_admin',
+);
 
 const VALID_STATUSES = ['buyer_linked', 'buyer_contacted', 'in_discussion', 'matched', 'closed', 'cancelled'];
 
@@ -126,7 +137,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // ─── Admin: PATCH update buyer link status ─────────────────────
-router.patch('/:id', authenticate, async (req, res) => {
+router.patch('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const { status, notes } = req.body;
 

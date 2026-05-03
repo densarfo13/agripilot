@@ -72,17 +72,25 @@ const DEFAULTS = Object.freeze({
   FEATURE_HEALTH_FEEDBACK_SYNC: false,
 
   // Data Moat Layer follow-up — server sync for the canonical
-  // event log at `farroway_events`. Default OFF; same pattern
-  // as FEATURE_HEALTH_FEEDBACK_SYNC. When the server endpoint
-  // at /api/events lands, flip this flag and saveEvent
-  // additionally enqueues `event_batch` actions onto the
-  // offline queue (App.jsx dispatcher handles them). Existing
-  // local entries are unaffected by the flip — they stay
-  // readable on-device for the insightAggregator + the admin
-  // surfaces. The eventStore.markEventSynced + clearSyncedEvents
-  // helpers were built for this drain path; flipping the
-  // flag activates it.
-  FEATURE_EVENT_SYNC: false,
+  // event log at `farroway_events`. Default ON now that the
+  // server endpoint at POST /api/events has shipped (Zod-
+  // validated, rate-limited via ingestLimiter, persists to the
+  // ClientEvent table). Each call to trackEvent additionally
+  // enqueues an `event` action onto the offline queue; the
+  // App.jsx dispatcher posts it to /api/events. Existing local
+  // entries at `farroway_events` are unaffected by the flip —
+  // they stay readable on-device for the insightAggregator +
+  // the admin surfaces.
+  FEATURE_EVENT_SYNC: true,
+
+  // AI Task Engine v1 — when ON, the home screen mounts
+  // TodayTaskCard at the top and calls POST /api/tasks/today
+  // for the primary action. The legacy FirstActionGate stays
+  // registered so flipping the flag back to OFF is a one-line
+  // rollback. Default OFF for the soft-launch initial cut so
+  // the existing surface is untouched until the API is
+  // observed in production.
+  FEATURE_AI_TASK_ENGINE: false,
 
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.

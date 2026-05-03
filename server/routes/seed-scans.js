@@ -2,6 +2,11 @@ import express from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { writeAuditLog } from '../lib/audit.js';
+// Merged-blocker spec §1 — middleware-level ownership guard for
+// /:id routes. The handler still does its own profile + scan
+// lookup as defence-in-depth (so seedScan reads stay consistent
+// even if a future refactor changes the param shape).
+import { requireOwnership } from '../../src/middleware/requireOwnership.js';
 
 const router = express.Router();
 
@@ -122,7 +127,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // ─── GET /:id — single scan detail ─────────────────────────────
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, requireOwnership('seedScan'), async (req, res) => {
   try {
     const profile = await prisma.farmProfile.findFirst({
       where: { userId: req.user.id, status: 'active' },
