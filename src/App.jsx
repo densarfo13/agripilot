@@ -350,6 +350,10 @@ const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage.jsx'));
 // crashes / retention numbers in-memory. Admin-only via the
 // surrounding RoleRoute wrapper.
 const MonitoringDashboardPage = lazy(() => import('./pages/admin/MonitoringDashboardPage.jsx'));
+// Live Admin Issue Dashboard — turns metrics into ranked alerts
+// with severity + suggested operator action. Same admin-only
+// gate; consumes GET /api/admin/alerts.
+const AdminIssueDashboardPage = lazy(() => import('./pages/admin/AdminIssueDashboardPage.jsx'));
 // Final feedback-loop spec §4 — admin-only feedback rollup.
 const FeedbackDashboard = lazy(() => import('./components/admin/FeedbackDashboard.jsx'));
 const AdminImportFarmersPage = lazy(() => import('./pages/AdminImportFarmersPage.jsx'));
@@ -1223,6 +1227,9 @@ export default function App() {
             <Route path="admin/analytics" element={<RoleRoute roles={ADMIN_ROLES}><AdminAnalyticsPage /></RoleRoute>} />
             {/* Phase 3 §C — soft-launch ops dashboard. */}
             <Route path="admin/monitoring" element={<RoleRoute roles={ADMIN_ROLES}><MonitoringDashboardPage /></RoleRoute>} />
+            {/* Live Admin Issue Dashboard — alert-shaped view of
+                the same metrics envelope. Same admin-only gate. */}
+            <Route path="admin/issues"     element={<RoleRoute roles={ADMIN_ROLES}><AdminIssueDashboardPage /></RoleRoute>} />
             <Route path="admin/feedback"  element={<RoleRoute roles={ADMIN_ROLES}><FeedbackDashboard /></RoleRoute>} />
             <Route path="admin/ngo-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><AdminDashboard /></RoleRoute>} />
             <Route path="admin/ngo-program" element={<RoleRoute roles={ADMIN_ROLES}><NgoDashboardPage /></RoleRoute>} />

@@ -54,6 +54,9 @@ const TEST_FILES = [
   'src/__tests__/protectedRouter.test.js',   // defence-in-depth: registration-time block
   'src/__tests__/softLaunchEvents.test.js',  // POST /api/events + /api/errors + admin/metrics
   'src/__tests__/aiTaskEngine.test.js',      // AI Task Engine v1 — POST /api/tasks/today
+  'src/__tests__/alertsRules.test.js',       // Live Issue Dashboard — alert rules + rollup
+  'src/__tests__/todayTaskUiContract.test.js', // Calm-UI Upgrade — Home-card contract via engine
+  'src/__tests__/servicesLayerContract.test.js', // Calm-UI Services Layer — backend adaptors
 ];
 
 // Placeholder env values for the security-test boot path.

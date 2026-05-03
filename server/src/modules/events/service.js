@@ -198,6 +198,7 @@ export async function buildMetrics(prisma, opts = {}) {
   let locationDenied = 0;
   let uploadFailed   = 0;       // Admin Monitoring v1
   let rateLimitHits  = 0;       // Admin Monitoring v1
+  let onboardingCompleted = 0;  // Live Issue Dashboard — drop-off rule
 
   const errorRoutes  = Object.create(null);
   const stuckRoutes  = Object.create(null);
@@ -265,6 +266,7 @@ export async function buildMetrics(prisma, opts = {}) {
       case 'location_permission_denied':  locationDenied += 1; break;
       case 'upload_failed':               uploadFailed  += 1; break;
       case 'rate_limit_hit':              rateLimitHits += 1; break;
+      case 'onboarding_completed':        onboardingCompleted += 1; break;
       case 'language_changed': {
         const code = p.to || p.code || 'unknown';
         langCounts[code] = (langCounts[code] || 0) + 1;
@@ -341,6 +343,7 @@ export async function buildMetrics(prisma, opts = {}) {
     locationDenied,
     uploadFailed,
     rateLimitHits,
+    onboardingCompleted,
     farmsCreated,
     growsCreated,
     userTypeSplit:  userTypes,

@@ -32,6 +32,11 @@ import softLaunchEventsRoutes from './modules/events/routes.js';
 // task generator. See server/src/modules/aiTask/engine.js for
 // the precedence ladder.
 import aiTaskRoutes from './modules/aiTask/routes.js';
+// Calm-UI services-layer adaptors. Mounts spec-named routes
+// (/api/weather/today, /api/actions/today, /api/actions/complete,
+// /api/tasks/from-scan) that delegate to existing engines/stores.
+// No new business logic — pure forwarders.
+import serviceAliasesRoutes from './modules/serviceAliases/routes.js';
 import ngoRoutes    from './modules/ingest/ngoRoutes.js';
 import farmersRoutes from './modules/farmers/routes.js';
 import applicationsRoutes from './modules/applications/routes.js';
@@ -872,6 +877,10 @@ app.use('/api/ngo',    ngoRoutes);
 app.use('/api',        softLaunchEventsRoutes);
 // AI Task Engine v1 — child routes resolve as /api/tasks/today.
 app.use('/api/tasks',  aiTaskRoutes);
+// Calm-UI service aliases. Mounted at /api so child paths
+// resolve as /api/weather/today, /api/actions/today,
+// /api/actions/complete, /api/tasks/from-scan.
+app.use('/api',        serviceAliasesRoutes);
 
 // ─── /me endpoint ───────────────────────────────────────
 // V1 admin /me (used by older admin tools). V2 farmer-facing

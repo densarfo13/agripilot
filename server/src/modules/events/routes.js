@@ -52,6 +52,7 @@ import {
   toClientEventRow,
 } from './schemas.js';
 import { persistEvents, persistError, buildMetrics } from './service.js';
+import { buildAlerts, rollupSystemStatus, topConfusionSignals } from './alerts.js';
 
 const router = Router();
 
@@ -204,8 +205,56 @@ router.get('/admin/metrics',
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid metrics query' });
     }
-    const metrics = await buildMetrics(prisma, { windowDays: parsed.data.windowDays });
+    const metrics = await buildMetrics(prisma, parsed.data);
     return res.json(metrics);
+  }),
+);
+
+// ─── GET /api/admin/alerts ───────────────────────────────
+//
+// Live Admin Issue Dashboard — alerts derived from the same
+// metrics envelope as `/admin/metrics`. Returns a structured
+// list ranked by severity (red → yellow → green) plus a
+// top-level systemStatus rollup the dashboard renders as a
+// big traffic-light badge.
+//
+// Same auth + Zod validation as `/admin/metrics`. The query
+// shape is identical (windowDays / userType / country /
+// region / language) so the dashboard can apply the same
+// filters across both endpoints.
+router.get('/admin/alerts',
+  authenticate,
+  authorize('super_admin', 'institutional_admin', 'admin', 'platform_admin'),
+  extractOrganization,
+  asyncHandler(async (req, res) => {
+    const parsed = metricsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid alerts query' });
+    }
+    const metrics = await buildMetrics(prisma, parsed.data);
+    const alerts  = buildAlerts(metrics);
+    const status  = rollupSystemStatus(alerts);
+    const confusion = topConfusionSignals(metrics, 5);
+
+    return res.json({
+      systemStatus:    status,
+      alerts,
+      confusionSignals: confusion,
+      // Echo back the filter context + a small set of headline
+      // numbers so the dashboard can render its top strip
+      // without a second round-trip.
+      headline: {
+        dau:             metrics.dau,
+        crashes:         metrics.appErrors,
+        stuck:           metrics.screenStuck,
+        completionRate:  metrics.completionRate,
+        uploadFailed:    metrics.uploadFailed,
+        rateLimitHits:   metrics.rateLimitHits,
+        sampleSize:      metrics.sampleSize,
+      },
+      filters:    metrics.filters,
+      builtAt:    metrics.builtAt,
+    });
   }),
 );
 

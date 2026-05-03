@@ -47,16 +47,14 @@ import useExperience from '../../hooks/useExperience.js';
 // that DO differ between experiences. Resolution comes from
 // useUserMode() (canonical hook) → falls back to the
 // activeContextType heuristic → 'farmer' default.
-const FARMER_TABS = [
-  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
-  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'My Farm' },
-  { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
-  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
-  { key: 'funding',  path: '/opportunities', icon: NAV_ICONS.funding || '\uD83D\uDCB0', labelKey: 'nav.funding', fallback: 'Funding' },
-  { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell || '\uD83C\uDFEA', labelKey: 'nav.sell', fallback: 'Sell' },
-];
-
-const BACKYARD_TABS = [
+// Calm-UI Upgrade spec §9 — "Use one bottom nav. No separate
+// nav systems." The earlier farmer/backyard split is reverted
+// in favour of a single 5-tab structure shared by every
+// userType. Funding + Sell move to Progress as farmer-only
+// shortcuts (spec §8). The Scan tab covers both experiences:
+// label adapts to "scan plant" (backyard) or "scan crop"
+// (farmer) inside the destination page, not the nav.
+const TABS = [
   { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'grow',     path: '/my-grow',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
@@ -64,10 +62,11 @@ const BACKYARD_TABS = [
   { key: 'scan',     path: '/scan',      icon: NAV_ICONS.scan,     labelKey: 'nav.scan',     fallback: 'Scan' },
 ];
 
-// Kept as the legacy union so the regionUxSystem flag-gated
-// path below has a deterministic fallback. New code should NOT
-// reference this — read FARMER_TABS / BACKYARD_TABS instead.
-const TABS = FARMER_TABS;
+// Aliases preserved so any external import that still references
+// FARMER_TABS / BACKYARD_TABS resolves cleanly. New callers should
+// just import the unified TABS array.
+const FARMER_TABS = TABS;
+const BACKYARD_TABS = TABS;
 
 // Setup / onboarding paths where the bottom nav must self-hide
 // (Adaptive setup spec \u00a75 + high-trust onboarding spec \u00a77 \u2014
@@ -176,7 +175,13 @@ export default function BottomTabNav() {
       fallback: it.fallback,
     }));
   } else {
-    tabs = isBackyard ? BACKYARD_TABS : FARMER_TABS;
+    // Single canonical 5-tab nav per Calm-UI Upgrade §9.
+    // `isBackyard` is computed above and intentionally unused
+    // at this layer — per-userType adaptation happens INSIDE
+    // the destination page (e.g. My Grow renders Farms/Gardens
+    // tabs for farmers, garden cards for backyard users).
+    void isBackyard;
+    tabs = TABS;
   }
   // Reference TABS so the linter doesn't flag the legacy
   // export as unused — kept on disk for any caller importing
