@@ -355,6 +355,93 @@ select option:checked {
 @keyframes farroway-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 @keyframes farroway-scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes completion-check-draw { to { stroke-dashoffset: 0; } }
+
+/* ── Alive UI motion (Calm-UI Upgrade) ─────────────────
+   Spec timing: 150–250 ms. No bounce. The classes below
+   are intended as drop-in modifiers any component can opt
+   into without local <style> tags.
+*/
+@keyframes farroway-slide-up   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes farroway-check-pop  { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes farroway-shimmer-x  { 0% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
+@keyframes farroway-progress-fill { from { width: 0%; } to { width: var(--ff-progress, 0%); } }
+
+/* Generic page fade-in. Wrap any route-level <main> with
+   class "ff-page" and the content fades up on mount. */
+.ff-page             { animation: farroway-fade-in 200ms ease-out both; }
+.ff-card             { animation: farroway-slide-up 220ms ease-out both; }
+.ff-card-stagger > * { animation: farroway-slide-up 220ms ease-out both; }
+.ff-card-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.ff-card-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.ff-card-stagger > *:nth-child(4) { animation-delay: 180ms; }
+
+/* Universal button press state. Applies to every <button>
+   AND any element with class "ff-press" so links styled as
+   buttons get the same micro-interaction. Uses transform so
+   it composites on the GPU; never triggers a layout reflow. */
+button, .ff-press {
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+}
+button:active, .ff-press:active {
+  transform: scale(0.98);
+}
+button:disabled { transform: none; }
+
+/* Animated checkmark glyph for the "task done" state.
+   Use as <span class="ff-check" aria-hidden="true">✓</span> */
+.ff-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #22C55E;
+  color: #062714;
+  font-weight: 800;
+  font-size: 18px;
+  animation: farroway-check-pop 240ms ease-out both;
+}
+
+/* Shimmer overlay for in-progress / analyzing states.
+   Apply to a placeholder div sized to its content. */
+.ff-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+.ff-shimmer::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0)   0%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0)  100%);
+  background-size: 200% 100%;
+  animation: farroway-shimmer-x 1.4s linear infinite;
+}
+
+/* Smooth-fill progress bar. Set --ff-progress on the
+   element (e.g. style="--ff-progress: 65%") and the bar
+   animates from 0% to that width on mount. */
+.ff-progress-fill {
+  height: 100%;
+  background: #22C55E;
+  border-radius: inherit;
+  animation: farroway-progress-fill 600ms ease-out both;
+  width: var(--ff-progress, 0%);
+}
+
+/* Reduced motion — respect user OS setting. Spec rule:
+   never let motion become a barrier. */
+@media (prefers-reduced-motion: reduce) {
+  .ff-page, .ff-card, .ff-card-stagger > *,
+  .ff-check, .ff-shimmer::after, .ff-progress-fill {
+    animation: none !important;
+  }
+  button:active, .ff-press:active { transform: none; }
+}
+
 .skeleton-text { height: 0.875rem; margin-bottom: 0.5rem; background: linear-gradient(90deg, var(--surface) 25%, var(--card-hover) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
 .skeleton-heading { height: 1.75rem; width: 40%; margin-bottom: 0.75rem; }
 .skeleton-card { background: var(--card); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); }

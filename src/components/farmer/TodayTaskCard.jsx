@@ -37,15 +37,10 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-// Calm-UI spec §11 — subtle fade-in keyframe injected once at
-// module load. We avoid a global CSS file change so the
-// component stays self-contained. No bounce, 150–250 ms only.
-if (typeof document !== 'undefined' && !document.getElementById('farroway-fadeIn-keyframes')) {
-  const sty = document.createElement('style');
-  sty.id = 'farroway-fadeIn-keyframes';
-  sty.textContent = '@keyframes farroway-fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }';
-  try { document.head.appendChild(sty); } catch { /* swallow — SSR / locked DOM */ }
-}
+// Calm-UI motion — `farroway-fade-in` + `farroway-slide-up` +
+// `farroway-check-pop` keyframes live in src/index.css now.
+// The previous local <style> injector was deduped into the
+// global stylesheet so every screen gets the same vocabulary.
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import api from '../../api/client.js';
@@ -237,7 +232,15 @@ export default function TodayTaskCard({ userType: userTypeProp, onDone }) {
           {_resolveWeatherHeader(task)}
         </div>
         <div style={S.cardDone} data-testid="today-task-card-done">
-          <div style={S.eyebrowDone}>{tSafe('todayTask.doneEyebrow', 'Done')}</div>
+          <div style={S.doneRow}>
+            {/* Animated success checkmark — global ff-check class
+                pops the green pill on mount (240 ms), then settles.
+                Reduced-motion users see the static circle. */}
+            <span className="ff-check" aria-hidden="true">{'\u2713'}</span>
+            <span style={S.eyebrowDone}>
+              {tSafe('todayTask.doneEyebrow', 'Done')}
+            </span>
+          </div>
           <h2 style={S.title}>
             {task.completionPrompt
               || tSafe('todayTask.completionPrompt',
@@ -353,7 +356,7 @@ const S = {
     fontWeight: 600,
     letterSpacing: '0.01em',
     // Subtle motion per spec §11 — fade-in only, no bounce.
-    animation: 'farroway-fadeIn 200ms ease-out',
+    animation: 'farroway-fade-in 200ms ease-out',
   },
   card: {
     width: '100%',
@@ -367,7 +370,7 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
-    animation: 'farroway-fadeIn 220ms ease-out',
+    animation: 'farroway-fade-in 220ms ease-out',
   },
   // Done state mirrors `card` but adds a soft green accent so
   // the success feels emotional, not analytical (spec §8 vibe).
@@ -383,7 +386,12 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
-    animation: 'farroway-fadeIn 250ms ease-out',
+    animation: 'farroway-fade-in 250ms ease-out',
+  },
+  doneRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
   },
   tomorrowHook: {
     margin: '4px 0 0',
@@ -408,7 +416,7 @@ const S = {
     color: '#EAF2FF',
     cursor: 'pointer',
     textAlign: 'left',
-    animation: 'farroway-fadeIn 280ms ease-out',
+    animation: 'farroway-fade-in 280ms ease-out',
     minHeight: 48,
   },
   scanPromptIcon:    { fontSize: 22, lineHeight: 1 },
