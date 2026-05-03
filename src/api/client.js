@@ -226,42 +226,65 @@ api.interceptors.response.use(
       // not already on a public auth route — otherwise a 401
       // from /me on /login would loop the browser back to
       // /login forever.
-      useAuthStore.getState().logout();
+      //
+      // CRITICAL: defer the logout() + redirect into a microtask
+      // (queueMicrotask / setTimeout 0). The interceptor fires
+      // when a Promise resolves, and that Promise resolution can
+      // happen synchronously inside another component's render
+      // cycle (e.g. when AuthProvider's bootstrap fetch races
+      // back from cache during initial mount). Calling
+      // useAuthStore.setState() during another render triggers
+      // React's "Cannot update a component while rendering a
+      // different component" error (minified as #300), which
+      // in turn surfaces as the "Something went wrong" recovery
+      // card.
+      //
+      // Microtask-deferring guarantees the auth-state cascade
+      // happens AFTER React finishes the current render commit,
+      // turning the in-render setState into a clean post-render
+      // setState that React batches normally.
+      const _doLogoutAndRedirect = () => {
+        try { useAuthStore.getState().logout(); }
+        catch { /* swallow — store may be torn down mid-unmount */ }
+        try {
+          const here = (typeof window !== 'undefined' && window.location)
+            ? String(window.location.pathname || '/')
+            : '/';
+          const PUBLIC_AUTH = [
+            '/login', '/register', '/forgot-password', '/reset-password',
+            '/verify-otp', '/welcome', '/landing', '/start',
+          ];
+          const onAuthPage = PUBLIC_AUTH.some(
+            (p) => here === p || here.startsWith(p + '/'),
+          );
+          // Gate: only the FIRST 401 in a storm fires the redirect.
+          // Subsequent 401s (from the offline queue draining, parallel
+          // /me checks, etc.) are silenced. Without this gate, Chrome
+          // throttles `window.location.href` after ~5 rapid assignments
+          // and the user sees a blank screen with the "Throttling
+          // navigation" warning in the console.
+          if (!onAuthPage && !_logoutRedirectInFlight
+              && typeof window !== 'undefined' && window.location) {
+            _logoutRedirectInFlight = true;
+            // Preserve where the user was so /login can return them after
+            // re-auth. The `reason=session_expired` query param makes the
+            // session-expired banner in Login.jsx fire.
+            const ret = `${here}${window.location.search || ''}`;
+            window.location.href = `/login?from=${encodeURIComponent(ret)}`
+              + `&reason=session_expired`;
+          }
+        } catch { /* never throw from a recovery handler */ }
+      };
+      // Use queueMicrotask when available (Node 11+ / every modern
+      // browser), fall back to setTimeout 0 otherwise. Either way,
+      // the work runs AFTER the current render commit.
       try {
-        const here = (typeof window !== 'undefined' && window.location)
-          ? String(window.location.pathname || '/')
-          : '/';
-        const PUBLIC_AUTH = [
-          '/login', '/register', '/forgot-password', '/reset-password',
-          '/verify-otp', '/welcome', '/landing', '/start',
-        ];
-        const onAuthPage = PUBLIC_AUTH.some(
-          (p) => here === p || here.startsWith(p + '/'),
-        );
-        // Gate: only the FIRST 401 in a storm fires the redirect.
-        // Subsequent 401s (from the offline queue draining, parallel
-        // /me checks, etc.) are silenced. Without this gate, Chrome
-        // throttles `window.location.href` after ~5 rapid assignments
-        // and the user sees a blank screen with the "Throttling
-        // navigation" warning in the console.
-        if (!onAuthPage && !_logoutRedirectInFlight
-            && typeof window !== 'undefined' && window.location) {
-          _logoutRedirectInFlight = true;
-          // Preserve where the user was so /login can return them after
-          // re-auth. Avoids the "I clicked into farmers, got bounced to
-          // login, then dumped on the dashboard" papercut.
-          //
-          // The `reason=session_expired` query param makes the otherwise-
-          // unreachable session-expired banner in Login.jsx fire — pre-fix
-          // the banner code existed but no caller set the reason, so users
-          // got an unexplained jump back to /login. Hard-navigation can't
-          // pass router state, so we route the reason via search param and
-          // Login picks it up from URLSearchParams as a fallback.
-          const ret = `${here}${window.location.search || ''}`;
-          window.location.href = `/login?from=${encodeURIComponent(ret)}`
-            + `&reason=session_expired`;
+        if (typeof queueMicrotask === 'function') {
+          queueMicrotask(_doLogoutAndRedirect);
+        } else {
+          setTimeout(_doLogoutAndRedirect, 0);
         }
-      } catch { /* never throw from a recovery handler */ }
+      } catch { /* swallow */ }
       return Promise.reject(error);
     }
 
