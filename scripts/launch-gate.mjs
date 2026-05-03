@@ -41,6 +41,12 @@ const steps = [
   },
   { name: 'crop-label render check (alias)',
     cmd: 'node', args: ['scripts/check-raw-crop-render.js'] },
+  // Server-boot smoke test — catches broken module-resolution
+  // bugs (e.g. wrong relative path on a server import) that
+  // the static security:routes auditor cannot see because it
+  // parses files but never traverses the import graph.
+  { name: 'CI guard — server boot (module resolution)',
+    cmd: 'node', args: ['scripts/ci/check-server-boot.mjs'] },
   { name: 'CI guard — env assertions (prod mode)',
     cmd: 'node', args: ['scripts/ci/check-env-assertions.mjs', '--mode=prod'],
     tolerate: true,  // don't fail the whole gate on missing optional providers
