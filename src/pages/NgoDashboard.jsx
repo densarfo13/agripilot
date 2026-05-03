@@ -93,11 +93,65 @@ export default function NgoDashboard() {
   const [performance, setPerformance] = useState(null);
   const [error,      setError]      = useState('');
   const [loading,    setLoading]    = useState(true);
+  // NGO Dashboard §2 — multi-dimensional filters. Program is
+  // server-fed (drives the API query); region / crop / mode /
+  // status / risk are client-side filters applied to the
+  // already-fetched farmers list. All default to '' (= "any")
+  // so the dashboard renders the unfiltered cohort by default.
+  const [filterRegion, setFilterRegion] = useState('');
+  const [filterCrop,   setFilterCrop]   = useState('');
+  const [filterMode,   setFilterMode]   = useState('');     // ''|'farm'|'garden'
+  const [filterStatus, setFilterStatus] = useState('');     // ''|'active'|'inactive'
+  const [filterRisk,   setFilterRisk]   = useState('');     // ''|'high'|'medium'|'low'
   // NGO impact: engagement summary derived from the local event
   // log. Recomputed whenever the program filter changes or the
   // farmers list updates so totals stay aligned with the filtered
   // cohort. Pure read of localStorage — no extra fetch.
   const [engagement, setEngagement] = useState(null);
+
+  // NGO Dashboard §2 — apply client-side filters to the
+  // server-supplied farmers list. Pure derivation; pulled into
+  // a useMemo so re-renders don't re-walk the list when the
+  // filters haven't changed. Empty filter values (= "any") are
+  // skipped so a single active filter doesn't accidentally
+  // require ALL fields to be set.
+  const filteredFarmers = useMemo(() => {
+    const list = Array.isArray(farmers) ? farmers : [];
+    if (!filterRegion && !filterCrop && !filterMode
+        && !filterStatus && !filterRisk) return list;
+    const region = String(filterRegion || '').toLowerCase();
+    const crop   = String(filterCrop   || '').toLowerCase();
+    return list.filter((f) => {
+      if (!f) return false;
+      if (region) {
+        const r = String(f.region || f.location || '').toLowerCase();
+        if (!r.includes(region)) return false;
+      }
+      if (crop) {
+        const c = String(f.crop || f.cropLabel || '').toLowerCase();
+        if (!c.includes(crop)) return false;
+      }
+      if (filterMode) {
+        const ft = String(f.farmType || '').toLowerCase();
+        const isGarden = ft === 'backyard' || ft === 'home_garden' || ft === 'home';
+        if (filterMode === 'garden' && !isGarden) return false;
+        if (filterMode === 'farm'   &&  isGarden) return false;
+      }
+      if (filterStatus) {
+        // Active: lastActiveDate within 7 days. Treat missing
+        // lastActiveDate as inactive — conservative.
+        const last = f.lastActiveDate ? Date.parse(f.lastActiveDate) : 0;
+        const isActive = Number.isFinite(last)
+          && last > Date.now() - 7 * 24 * 60 * 60 * 1000;
+        if (filterStatus === 'active'   && !isActive) return false;
+        if (filterStatus === 'inactive' &&  isActive) return false;
+      }
+      if (filterRisk) {
+        if (String(f.risk || '').toLowerCase() !== filterRisk) return false;
+      }
+      return true;
+    });
+  }, [farmers, filterRegion, filterCrop, filterMode, filterStatus, filterRisk]);
 
   useEffect(() => {
     let alive = true;
@@ -283,6 +337,88 @@ export default function NgoDashboard() {
         </div>
       )}
 
+      {/* NGO Dashboard §2 — additional filter row. Region + Crop +
+          Mode + Status + Risk dropdowns derived from the loaded
+          farmers list. All client-side filters; the API query
+          stays scoped to Program only so we don't re-fetch on
+          every filter flip. Empty value = "any". */}
+      {Array.isArray(farmers) && farmers.length > 0 ? (
+        <div style={S.filterRow} data-testid="ngo-filters">
+          {(() => {
+            const regions = Array.from(new Set(
+              farmers.map((f) => String(f && (f.region || f.location) || '').trim())
+                     .filter(Boolean),
+            )).sort();
+            const crops = Array.from(new Set(
+              farmers.map((f) => String(f && (f.crop || f.cropLabel) || '').trim())
+                     .filter(Boolean),
+            )).sort();
+            return (
+              <>
+                {regions.length > 1 ? (
+                  <select
+                    value={filterRegion}
+                    onChange={(e) => setFilterRegion(e.target.value)}
+                    style={S.pickerSelect}
+                    data-testid="ngo-filter-region"
+                    aria-label={resolve(t, 'ngo.dashboard.filter.region', 'Region')}
+                  >
+                    <option value="">{resolve(t, 'ngo.dashboard.filter.region.any', 'All regions')}</option>
+                    {regions.map((r) => (<option key={r} value={r}>{r}</option>))}
+                  </select>
+                ) : null}
+                {crops.length > 1 ? (
+                  <select
+                    value={filterCrop}
+                    onChange={(e) => setFilterCrop(e.target.value)}
+                    style={S.pickerSelect}
+                    data-testid="ngo-filter-crop"
+                    aria-label={resolve(t, 'ngo.dashboard.filter.crop', 'Crop')}
+                  >
+                    <option value="">{resolve(t, 'ngo.dashboard.filter.crop.any', 'All crops')}</option>
+                    {crops.map((c) => (<option key={c} value={c}>{c}</option>))}
+                  </select>
+                ) : null}
+                <select
+                  value={filterMode}
+                  onChange={(e) => setFilterMode(e.target.value)}
+                  style={S.pickerSelect}
+                  data-testid="ngo-filter-mode"
+                  aria-label={resolve(t, 'ngo.dashboard.filter.mode', 'Farm or Garden')}
+                >
+                  <option value="">{resolve(t, 'ngo.dashboard.filter.mode.any', 'Farms + Gardens')}</option>
+                  <option value="farm">{resolve(t, 'ngo.dashboard.filter.mode.farm', 'Farms only')}</option>
+                  <option value="garden">{resolve(t, 'ngo.dashboard.filter.mode.garden', 'Gardens only')}</option>
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  style={S.pickerSelect}
+                  data-testid="ngo-filter-status"
+                  aria-label={resolve(t, 'ngo.dashboard.filter.status', 'Status')}
+                >
+                  <option value="">{resolve(t, 'ngo.dashboard.filter.status.any', 'Any status')}</option>
+                  <option value="active">{resolve(t, 'ngo.dashboard.filter.status.active', 'Active (7d)')}</option>
+                  <option value="inactive">{resolve(t, 'ngo.dashboard.filter.status.inactive', 'Inactive')}</option>
+                </select>
+                <select
+                  value={filterRisk}
+                  onChange={(e) => setFilterRisk(e.target.value)}
+                  style={S.pickerSelect}
+                  data-testid="ngo-filter-risk"
+                  aria-label={resolve(t, 'ngo.dashboard.filter.risk', 'Risk')}
+                >
+                  <option value="">{resolve(t, 'ngo.dashboard.filter.risk.any', 'Any risk')}</option>
+                  <option value="high">{resolve(t, 'ngo.dashboard.filter.risk.high', 'High')}</option>
+                  <option value="medium">{resolve(t, 'ngo.dashboard.filter.risk.medium', 'Medium')}</option>
+                  <option value="low">{resolve(t, 'ngo.dashboard.filter.risk.low', 'Low')}</option>
+                </select>
+              </>
+            );
+          })()}
+        </div>
+      ) : null}
+
       {/* Needs attention — actionable top-of-dashboard band. Numbers
           come straight from the already-fetched summary + farmers
           payload so there's zero extra API cost. Hidden when we
@@ -356,6 +492,38 @@ export default function NgoDashboard() {
                 value={engagement.inactiveFarmers7d}
                 tone="warn"
               />
+              {/* NGO Dashboard §1 — Farms / Gardens count split.
+                  Derived from the same farmers payload the rest
+                  of the dashboard reads; backyard-typed rows
+                  count as gardens, everything else as farms.
+                  Renders alongside the existing engagement
+                  metrics so an NGO operator can see "X farms +
+                  Y gardens" at a glance. */}
+              {(() => {
+                const list = Array.isArray(farmers) ? farmers : [];
+                let farmCount = 0;
+                let gardenCount = 0;
+                for (const f of list) {
+                  const ft = String((f && f.farmType) || '').toLowerCase();
+                  const isGarden = ft === 'backyard' || ft === 'home_garden' || ft === 'home';
+                  if (isGarden) gardenCount += 1;
+                  else farmCount += 1;
+                }
+                return (
+                  <>
+                    <MetricCard
+                      label={resolve(t, 'ngo.dashboard.engagement.farms',   'Farms registered')}
+                      value={farmCount}
+                      tone="neutral"
+                    />
+                    <MetricCard
+                      label={resolve(t, 'ngo.dashboard.engagement.gardens', 'Gardens registered')}
+                      value={gardenCount}
+                      tone="neutral"
+                    />
+                  </>
+                );
+              })()}
             </MetricGrid>
             <button
               type="button"
@@ -436,7 +604,14 @@ export default function NgoDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {farmers.map((f) => (
+                {/* NGO Dashboard §2 + §3 — table now reads from
+                    filteredFarmers so the dropdown filters above
+                    shape WHO is listed. Headline engagement
+                    metrics + risk distribution stay scoped to
+                    the full cohort (intentional — operator
+                    sees "program-wide picture" up top, "who am
+                    I looking at right now" in the table). */}
+                {filteredFarmers.map((f) => (
                   <tr key={f.farmId}>
                     <td style={S.td}>{f.farmerName || `${String(f.farmId||'').slice(0,8)}\u2026`}</td>
                     <td style={S.td}>{f.location || '—'}</td>
@@ -446,6 +621,14 @@ export default function NgoDashboard() {
                     <td style={S.td}>{f.status}</td>
                   </tr>
                 ))}
+                {filteredFarmers.length === 0 ? (
+                  <tr data-testid="ngo-farmers-empty-filter">
+                    <td colSpan={6} style={{ ...S.td, textAlign: 'center', fontStyle: 'italic', opacity: 0.7 }}>
+                      {resolve(t, 'ngo.dashboard.farmersEmptyFilter',
+                        'No farmers match the current filters.')}
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -500,6 +683,16 @@ const S = {
   },
   title:  { margin: '0 0 8px', fontSize: 22, fontWeight: 700 },
   pickerRow: { display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 14px' },
+  // NGO Dashboard §2 — multi-dimensional filter row. Wraps on
+  // narrow viewports so the 5 dropdowns stack into a 2-column
+  // grid on mobile rather than horizontal-scroll.
+  filterRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    margin: '0 0 14px',
+  },
   pickerLbl: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600 },
   pickerSelect: {
     padding: '6px 10px', borderRadius: 8,

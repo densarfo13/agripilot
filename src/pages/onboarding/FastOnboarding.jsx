@@ -1046,12 +1046,15 @@ export default function FastOnboarding() {
               ? tStrict('fastOnboarding.toggleToFarm', 'On a farm? Switch')
               : tStrict('fastOnboarding.toggleToGarden', 'Growing in a garden? Switch')}
           </button>
+          {/* Optimize Onboarding for Backyard Users §1 — single
+              friendly headline that works for both garden and
+              farm users. Earlier mode-specific copy ("What crop
+              are you growing?") read as too farming-specific
+              for a backyard user just picking a tomato plant.
+              "What are you growing?" is universal + low-pressure. */}
           <h1 style={S.title}>
-            {isGarden
-              ? tStrict('fastOnboarding.title.plant',
-                  'What are you growing at home?')
-              : tStrict('fastOnboarding.title.crop',
-                  'What crop are you growing?')}
+            {tStrict('fastOnboarding.title.universal',
+              'What are you growing?')}
           </h1>
           <p style={S.subtitle}>
             {tStrict('fastOnboarding.subtitle.plantCrop',

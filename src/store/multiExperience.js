@@ -296,6 +296,15 @@ export function switchExperience(target) {
  * a `{ ok:false, errors:[...] }` companion via the second return
  * slot). Existing single-return callers keep working unchanged
  * because the row is still the primary return value on success.
+ *
+ * Backyard / Garden-Only Users §1 + §2 — when no farm-typed row
+ * exists yet, auto-create a "My Backyard" parent farm and stamp
+ * the garden's `parentFarmId` to it. Keeps the data model clean
+ * (every garden has a parent) while hiding the complexity from
+ * the user (they only see a garden affordance). Skipped when:
+ *   • the caller already supplied a parentFarmId, OR
+ *   • a farm row already exists (parent inferred from active or
+ *     first non-backyard row).
  */
 export function addGarden(payload = {}) {
   const safe = (payload && typeof payload === 'object') ? payload : {};
@@ -313,9 +322,61 @@ export function addGarden(payload = {}) {
     _setLastValidation(validation);
     return null;
   }
+
+  // Backyard / Garden-Only Users §1 — resolve the parent farm.
+  // Order: caller-supplied parentFarmId → existing farm row →
+  // auto-created "My Backyard" farm. We never throw on lookup
+  // failure; if the auto-create itself fails (storage quota /
+  // private mode) the garden still saves with parentFarmId=null
+  // so the user is never blocked.
+  let parentFarmId = safe.parentFarmId || null;
+  if (!parentFarmId) {
+    let existingFarms = [];
+    try { existingFarms = getFarmsOnly() || []; }
+    catch { existingFarms = []; }
+    if (existingFarms.length > 0) {
+      // Prefer the active farm when set; otherwise the
+      // newest existing farm. Reads as "this garden belongs
+      // to the farm the user is currently working with".
+      const activeFarmId = getActiveFarmId();
+      const active = activeFarmId
+        ? existingFarms.find((f) => f && f.id === activeFarmId)
+        : null;
+      parentFarmId = (active && active.id) || existingFarms[0].id;
+    } else {
+      // §1 + §2 — no farm exists; auto-create "My Backyard"
+      // and link the garden to it. The auto-created farm is
+      // never set as the active pointer (we still pin the
+      // garden as active per the existing flow); §3 wants
+      // the user to never see this complexity.
+      try {
+        const autoFarm = saveFarm({
+          name:     'My Backyard',
+          farmName: 'My Backyard',
+          // Farm row, not a backyard row — this IS the parent.
+          farmType: 'small_farm',
+          // Inherit country / region from the garden payload
+          // so the auto-farm sits in the same locale rather
+          // than landing in a "no location" empty state.
+          country:      safe.country      || null,
+          countryLabel: safe.countryLabel || null,
+          state:        safe.state        || null,
+          stateLabel:   safe.stateLabel   || null,
+          // Marker so downstream code can recognise this row
+          // as system-created vs user-supplied.
+          autoCreated:  true,
+          source:       'garden_auto_parent',
+          setActive:    false,
+        });
+        if (autoFarm && autoFarm.id) parentFarmId = autoFarm.id;
+      } catch { /* swallow — gardens still save with parentFarmId=null */ }
+    }
+  }
+
   const row = saveFarm({
     ...safe,
     farmType: 'backyard',
+    parentFarmId,
     setActive: false, // we manage the active garden pointer ourselves
   });
   if (!row || !row.id) {

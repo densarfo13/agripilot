@@ -395,7 +395,26 @@ export default function MyFarmPage() {
             : tSafe('myFarm.modeLabel.farm',     'Farm:')}
         </span>
         <span style={S.modeLabelName}>
-          {farm.farmName || farm.name || tSafe('myFarm.unnamedFarm', 'My Farm')}
+          {/* Backyard / Garden-Only Users §4 — in garden mode,
+              resolve the PARENT farm's name (via parentFarmId →
+              farms list lookup) instead of the garden's own
+              name. addGarden auto-creates a "My Backyard" parent
+              when none exists, so a garden-only user always
+              gets a sensible "From farm: My Backyard" label.
+              Falls back to the garden's name when the parent
+              can't be resolved (e.g. legacy rows without
+              parentFarmId), and to "My Farm" if both are
+              empty. */}
+          {(() => {
+            if (isBackyardActive && farm && farm.parentFarmId
+                && Array.isArray(farms)) {
+              const parent = farms.find((f) => f && f.id === farm.parentFarmId);
+              const parentName = parent && (parent.farmName || parent.name);
+              if (parentName) return parentName;
+            }
+            return farm.farmName || farm.name
+              || tSafe('myFarm.unnamedFarm', 'My Farm');
+          })()}
         </span>
       </div>
 

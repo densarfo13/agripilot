@@ -12427,6 +12427,14 @@ const T = {
   // mount after a fresh onboarding completion; auto-hides 6s.
   'fastOnboarding.firstActionPrepared':  { en: 'We prepared your first action',              fr: 'Nous avons pr\u00E9par\u00E9 votre premi\u00E8re action', sw: 'Tumeandaa hatua yako ya kwanza',             ha: 'Mun shirya muku aikinku na farko',           tw: 'Yɛasiesie w\'adwuma a edi kan',               hi: 'हमने आपका पहला कार्य तैयार किया है' },
 
+  // Optimize Onboarding for Backyard Users §1 — single universal
+  // headline that works equally well for garden + farm users.
+  // Earlier mode-specific titles ("What crop are you growing?"
+  // / "What are you growing at home?") read as too farming-
+  // specific or too restrictive for whoever the user actually
+  // is. "What are you growing?" lands as friendly + general.
+  'fastOnboarding.title.universal':      { en: 'What are you growing?',                      fr: 'Que cultivez-vous ?',                                       sw: 'Unalima nini?',                                ha: 'Me kake nomawa?',                            tw: 'Wodua d\u025Bn?',                              hi: 'आप क्या उगा रहे हैं?' },
+
   // High-Conversion Onboarding screen 1 (location confirm).
   // Headline + subtitle + 4 status strings + the manual-entry
   // toggle text. All routed through tStrict at the call site so
