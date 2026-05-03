@@ -41,8 +41,18 @@ import {
   getActiveExperience,
   getActiveGardenId,
   getActiveEntity,
+  // multiExperience exports `getFarmsOnly`, NOT `getFarms` —
+  // the unprefixed `getFarms` belongs to `farrowayLocal.js`
+  // (the broader farms store). Aliased here so the parent-
+  // farm lookup in `resolveContext()` reads naturally without
+  // importing the wrong store.
+  getFarmsOnly as _getAllFarms,
 } from '../store/multiExperience.js';
 import { getActiveFarmId } from '../store/farrowayLocal.js';
+// Build Full Frontend Architecture §3 + §6 — userType resolver
+// for the new spec-shape `resolveContext()` export below.
+// Top-level ESM import (Vite is ESM-only).
+import { getUserType as _getUserType } from './userType.js';
 
 /**
  * Read JSON from localStorage with a try/catch. Returns the
@@ -199,6 +209,123 @@ export function resolveUserContext(user = null) {
     sizeSqFt,
     displayUnit,
   };
+}
+
+/**
+ * resolveContext() — Build Full Frontend Architecture §6
+ * spec-shape resolver. Composes on top of `resolveUserContext`
+ * + `getUserType` + `getFarms` so consumers can bind to the
+ * spec's exact field names without duplicating logic.
+ *
+ *   const ctx = resolveContext();
+ *   // → {
+ *   //   userType, activeContextType, activeContextId,
+ *   //   displayName, cropOrPlant, location, growingSetup,
+ *   //   farmSize, parentFarmId, parentFarmName, hasContext
+ *   // }
+ *
+ * Sibling export to `resolveUserContext`; both can coexist.
+ * The legacy export keeps every existing call site working;
+ * new code uses the spec-shape resolver.
+ *
+ * Spec contract
+ *   • Never returns undefined — every field has a safe default.
+ *   • Garden rows expose parentFarmId + parentFarmName resolved
+ *     from the farms list (auto-create handled upstream by
+ *     `multiExperience.addGarden()`).
+ *   • NGO userType returns activeContextType='program' so
+ *     consumers know to route to the dashboard.
+ *   • `hasContext: false` signals the caller to route to
+ *     onboarding.
+ */
+const _SPEC_EMPTY_CONTEXT = Object.freeze({
+  userType:          'farmer',
+  activeContextType: null,
+  activeContextId:   null,
+  displayName:       null,
+  cropOrPlant:       null,
+  location:          null,
+  growingSetup:      null,
+  farmSize:          null,
+  parentFarmId:      null,
+  parentFarmName:    null,
+  hasContext:        false,
+});
+
+export function resolveContext(user = null) {
+  // 1. UserType first — determines the branch we take.
+  let userType = 'farmer';
+  try { userType = _getUserType(); }
+  catch { userType = 'farmer'; }
+
+  // 2. NGO branch — context type is 'program'. The dashboard
+  //    handles its own program selection; this resolver
+  //    returns a sentinel so consumers know to route to /ngo
+  //    rather than /home.
+  if (userType === 'ngo') {
+    return Object.freeze({
+      ..._SPEC_EMPTY_CONTEXT,
+      userType,
+      activeContextType: 'program',
+      hasContext:        true,
+    });
+  }
+
+  // 3. Read the legacy resolution + the active row.
+  const legacy = resolveUserContext(user);
+  let row = (user && typeof user === 'object') ? user : null;
+  if (!row) {
+    try { row = getActiveEntity() || null; } catch { row = null; }
+  }
+  if (!row) {
+    return Object.freeze({ ..._SPEC_EMPTY_CONTEXT, userType });
+  }
+
+  // 4. Determine context type from experience + row farmType.
+  const ft = String(row.farmType || '').toLowerCase();
+  const isGarden = legacy.experience === 'garden'
+                || ft === 'backyard' || ft === 'home_garden' || ft === 'home';
+  const activeContextType = isGarden ? 'garden' : 'farm';
+
+  // 5. Parent farm lookup for garden rows. Reads parentFarmId
+  //    stamped by multiExperience.addGarden's auto-create path.
+  let parentFarmId = null;
+  let parentFarmName = null;
+  if (isGarden && row.parentFarmId) {
+    parentFarmId = String(row.parentFarmId);
+    try {
+      const allRows = _getAllFarms() || [];
+      const parent = allRows.find((r) => r && r.id === parentFarmId);
+      if (parent) {
+        parentFarmName = parent.farmName || parent.name || null;
+      }
+    } catch { /* parentFarmName stays null */ }
+  }
+
+  // 6. Display name + size with safe fallbacks.
+  const displayName = row.farmName || row.name
+    || (isGarden ? 'My Garden' : 'My Farm');
+  const farmSize = row.farmSize || row.size || null;
+
+  return Object.freeze({
+    userType,
+    activeContextType,
+    activeContextId: String(row.id || ''),
+    displayName,
+    cropOrPlant:  legacy.cropOrPlant,
+    location:     legacy.location,
+    growingSetup: legacy.growingSetup,
+    farmSize,
+    parentFarmId,
+    parentFarmName,
+    hasContext:   true,
+  });
+}
+
+/** Convenience boolean for routes/gates. */
+export function hasResolvedContext() {
+  try { return resolveContext().hasContext === true; }
+  catch { return false; }
 }
 
 export default resolveUserContext;

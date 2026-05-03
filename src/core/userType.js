@@ -64,21 +64,47 @@ function _safeWriteOverride(value) {
 }
 
 /**
- * getUserType() — returns 'farmer' | 'backyard' for the current
- * session. Pure read; never writes.
+ * getUserType() — returns 'farmer' | 'backyard' | 'ngo' for the
+ * current session. Pure read; never writes.
+ *
+ * Build Full Frontend Architecture §3 — 'ngo' added as a
+ * first-class user type for institutional dashboards. Resolved
+ * via the auth role (super_admin / institutional_admin / ngo /
+ * staff all collapse to 'ngo' for UX purposes); the override
+ * still wins so a debug session can flip to a farmer/backyard
+ * view without changing the auth record.
  */
 export function getUserType() {
   // 1. Sticky override (spec §7 manual mode switch).
   const override = _safeReadOverride();
   if (override) return override;
 
-  // 2. Active experience.
+  // 2. Build Full Frontend Architecture §3 — auth role check.
+  //    Institutional roles get the NGO experience by default.
+  //    Read defensively from localStorage; the AuthContext
+  //    bridges the user record into the legacy zustand store
+  //    + writes a `farroway_active_role` slot.
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const role = String(localStorage.getItem('farroway_active_role') || '')
+        .trim().toLowerCase();
+      if (role === 'super_admin'
+          || role === 'institutional_admin'
+          || role === 'ngo'
+          || role === 'staff'
+          || role === 'field_officer') {
+        return 'ngo';
+      }
+    }
+  } catch { /* ignore */ }
+
+  // 3. Active experience.
   let exp = null;
   try { exp = getActiveExperience(); }
   catch { exp = null; }
   if (exp === EXPERIENCE.GARDEN) return 'backyard';
 
-  // 3. Active row farmType (defensive — covers cases where
+  // 4. Active row farmType (defensive — covers cases where
   //    activeExperience hasn't been pinned yet).
   let entity = null;
   try { entity = getActiveEntity(); }
@@ -88,7 +114,7 @@ export function getUserType() {
     return 'backyard';
   }
 
-  // 4. Conservative default — full feature set.
+  // 5. Conservative default — full feature set.
   return 'farmer';
 }
 

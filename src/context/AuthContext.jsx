@@ -198,6 +198,33 @@ export function AuthProvider({ children }) {
     bootstrap();
   }, []);
 
+  // Build Full Frontend Architecture §3 — mirror the auth
+  // user's role into localStorage[`farroway_active_role`] on
+  // every user change. This is the slot `core/userType.js`
+  // reads to resolve the 'ngo' user type for institutional
+  // accounts (super_admin / institutional_admin / ngo / staff
+  // / field_officer). Without this bridge, the 'ngo' resolution
+  // path never fires because the slot was only present in the
+  // logout-cleanup list — never written.
+  //
+  // Wrapped in try/catch so SSR / locked-storage failures
+  // never block auth flow. Cleared (alongside the rest of the
+  // session cache) by the existing logout cleanup.
+  useEffect(() => {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      const role = String((user && user.role) || '').trim().toLowerCase();
+      if (role) {
+        localStorage.setItem('farroway_active_role', role);
+      } else if (user === null) {
+        // Cleared on explicit logout — leave the value intact
+        // when `user` is just undefined-during-bootstrap so a
+        // page refresh mid-bootstrap doesn't drop the role.
+        localStorage.removeItem('farroway_active_role');
+      }
+    } catch { /* swallow */ }
+  }, [user]);
+
   // ─── Cross-tab session sync (go-live audit fix) ────────────
   // localStorage `storage` events fire in OTHER tabs when a key
   // is mutated, so listening for changes to the session-cache

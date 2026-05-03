@@ -28,6 +28,11 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import useExperience from '../../hooks/useExperience.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
+// Build Full Frontend Architecture §4 (adoption) — central
+// label registry. ScanHero is the exemplar consumer: it
+// reads `scanLabel` for the active userType instead of
+// hardcoding the "your plant" / "your crop" split.
+import { getLabel } from '../../core/terminology.js';
 
 const C = {
   bg:        'rgba(34,197,94,0.10)',
@@ -91,10 +96,18 @@ export default function ScanHero() {
   const isGarden = activeExperience === 'garden'
                 || activeExperience === 'backyard';
 
+  // Build Full Frontend Architecture §4 (adoption fix) — read
+  // the scan label from the central terminology registry
+  // instead of hardcoding the if/else. The registry maps
+  // backyard → "Scan your plant", farmer → "Scan crop", ngo →
+  // "Review scan". Existing i18n keys (scan.hero.title.garden /
+  // .farm) still win when localized; the registry is the
+  // source-of-truth fallback.
   const titleKey = isGarden ? 'scan.hero.title.garden' : 'scan.hero.title.farm';
-  const titleFallback = isGarden
-    ? '\uD83D\uDCF7 Scan your plant'
-    : '\uD83D\uDCF7 Scan your crop';
+  const titleFallback = `\uD83D\uDCF7 ${
+    getLabel('scanLabel', isGarden ? 'backyard' : 'farmer')
+    || (isGarden ? 'Scan your plant' : 'Scan your crop')
+  }`;
 
   const subtitleKey = isGarden
     ? 'scan.hero.subtitle.garden'
