@@ -261,7 +261,7 @@ export default function MyFarmPage() {
     : tSafe('myFarm.notSelected', 'Not selected');
   const sizeValue = farm.size
     ? formatSize(farm.size, farm.sizeUnit)
-    : tSafe('myFarm.addSize', 'Add farm size');
+    : tSafe('myFarm.addSize', 'Not added yet');
   const locationValue = farm.location || farm.locationLabel
     || localizeCountry(farm.country || farm.countryCode, lang)
     || tSafe('myFarm.addLocation', 'Add location');

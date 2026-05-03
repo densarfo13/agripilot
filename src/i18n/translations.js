@@ -9540,14 +9540,15 @@ const T = {
   // Dependency System §1 — header reworded to "Before you act,
   // check this first". Tighter, action-implying wording so the
   // gate frames itself as a check-in, not a checklist item.
-  // Daily Habit Loop §1 — header tightened with the explicit
-  // "today" anchor ("Before you water today, check this first").
-  // The added word ties the trigger to the user's specific
-  // calendar day, reinforcing the daily-return cadence the rest
-  // of the loop (streak, anticipation line, retention bar) is
-  // built around. Earlier Viral-Hook framing kept; only the
-  // wording grew by one word so existing fallbacks stay close.
-  'firstAction.header':                       { en: 'Before you water today, check this first',               fr: 'Avant d\'arroser aujourd\'hui, v\u00E9rifiez ceci',          sw: 'Kabla ya kumwagilia leo, kagua hili kwanza',          ha: 'Kafin ka shayar yau, duba wannan da farko',           tw: 'Ansa na wugu nsuo nn\u025B, di kan hw\u025B yi',  hi: 'आज पानी देने से पहले, पहले यह जाँचें' },
+  // Optimize First Action Completion (CRITICAL) §1 — header
+  // simplified back to the action-agnostic "Before you act,
+  // check this first". The earlier "Before you water" /
+  // "Before you water today" framings tied too tightly to a
+  // single action verb when the engine actually emits varied
+  // primaryActionType values (moisture_check / spray / scout /
+  // log_cost / etc). The general "act" wording works for every
+  // type without misleading the user.
+  'firstAction.header':                       { en: 'Before you act, check this first',                       fr: 'Avant d\'agir, v\u00E9rifiez ceci',                          sw: 'Kabla hujachukua hatua, kagua hili kwanza',           ha: 'Kafin ka yi aiki, duba wannan da farko',              tw: 'Ansa na woay\u025B biribiara, di kan hw\u025B yi',hi: 'कार्य करने से पहले, पहले यह जाँचें' },
   'primaryAction.cta.done':                   { en: 'Done',                                                  fr: 'Fait',                                                       sw: 'Imekamilika',                                          ha: 'An gama',                                              tw: 'Awie',                                              hi: 'हो गया' },
   // Primary Action Clarity §1 + §3 — typed CTA labels. Engine
   // routes water / spray / log_cost / scan actions to these
@@ -9766,6 +9767,17 @@ const T = {
   // is built inside the helper — this key is only the button
   // label, not the share message itself.
   'firstAction.shareInsight':                 { en: 'Share this insight',                                     fr: 'Partager cet aper\u00E7u',                                  sw: 'Shiriki mwongozo huu',                              ha: 'Raba wannan fahimta',                                tw: 'Ky\u025B nimdee yi',                              hi: 'यह जानकारी साझा करें' },
+
+  // Smart Scan System §1 — contextual trigger wording aligned to
+  // "See something wrong?" (was "Notice something unusual?").
+  // Both versions are honest invitations, but "see something
+  // wrong" reads as a more concrete farmer prompt — the eye-test
+  // language matches how a farmer actually evaluates their crop.
+  // Surfaced in the post-Done state of FirstActionGate so it
+  // never competes with the primary action (Optimize Scan
+  // Feature Placement §4).
+  'firstAction.scan.prompt':                  { en: 'See something wrong?',                                   fr: 'Vous voyez un probl\u00E8me ?',                              sw: 'Umeona tatizo?',                                    ha: 'Kun ga matsala?',                                     tw: 'Wohu \u0254haw bi?',                              hi: 'कुछ ग़लत दिख रहा है?' },
+  'firstAction.scan.cta':                     { en: 'Scan crop',                                              fr: 'Scanner la culture',                                         sw: 'Changanua zao',                                    ha: 'Duba amfanin gona',                                   tw: 'Hwehw\u025B aduane',                              hi: 'फसल स्कैन करें' },
 
   // Viral Click → Conversion (§1-§3) — copy for the value-first
   // /try landing surface. Five lines: eyebrow, headline (spec's
@@ -10536,7 +10548,13 @@ const T = {
   // ─── Summary fallback values (spec §2) ──────────────────────
   'farm.fallback.crop':           { en: 'Not selected',           fr: 'Non sélectionné',            sw: 'Hakijachaguliwa',              ha: 'Ba a zaba ba',                       tw: 'Wɔnpaw',                        hi: 'चुना नहीं गया' },
   'farm.fallback.stage':          { en: 'Planning',               fr: 'Planification',              sw: 'Kupanga',                      ha: 'Tsarawa',                            tw: 'Nhyehyɛeɛ',                     hi: 'योजना' },
-  'farm.fallback.size':           { en: 'Add farm size',          fr: 'Ajouter la taille',          sw: 'Ongeza ukubwa',                ha: 'Ƙara girman gona',                   tw: 'Fa afuo kɛseɛ ka ho',           hi: 'खेत आकार जोड़ें' },
+  // Optimize First Action Completion (CRITICAL) §4 — incomplete-
+  // field placeholder reframed from imperative ("Add farm size")
+  // to neutral status ("Not added yet"). Removes the "you must
+  // do this" pressure on a field that's optional anyway. Same
+  // fallback re-used by FarmSummaryCard + MyFarmPage so both
+  // pages flip in lockstep.
+  'farm.fallback.size':           { en: 'Not added yet',          fr: 'Pas encore ajout\u00E9',     sw: 'Bado haijaongezwa',            ha: 'Ba a ƙara ba tukuna',                tw: 'Y\u025Bnnaa ho mfa',            hi: 'अभी नहीं जोड़ा' },
   'farm.fallback.location':       { en: 'Add location',           fr: 'Ajouter le lieu',            sw: 'Ongeza mahali',                ha: 'Ƙara wuri',                          tw: 'Fa bea no ka ho',               hi: 'स्थान जोड़ें' },
   'farm.fallback.lastUpdated':    { en: 'Recently',               fr: 'Récemment',                  sw: 'Hivi karibuni',                ha: 'Kwanan nan',                         tw: 'Nnansa yi',                     hi: 'हाल ही में' },
 

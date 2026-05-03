@@ -78,20 +78,25 @@ const CHIP = {
   text: { lineHeight: 1 },
 };
 
+// Optimize First Action Completion (CRITICAL) §5 — sized down
+// to match the smaller VoiceLauncher (48 px) so the two
+// launchers form a quiet pair beside the bottom nav rather
+// than visual competitors to the FirstActionGate CTA. Right-
+// offset re-derived from the new 48px size + 12px gap.
 const FLOATING = {
   btn: {
     position: 'fixed',
     // Sits to the LEFT of the voice FAB so the two don't
     // overlap. Voice FAB is `right: 1rem`; the photo FAB is
-    // 1rem + 56 (FAB size) + 12 gap = ~84px right offset.
-    right: 'calc(1rem + 68px)',
-    bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))',
-    width: 56, height: 56,
+    // 1rem + 48 (FAB size) + 12 gap = ~60px right offset.
+    right: 'calc(1rem + 60px)',
+    bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+    width: 48, height: 48,
     borderRadius: 999,
     border: 'none',
     background: '#3B82F6',
     color: '#fff',
-    fontSize: '1.4rem',
+    fontSize: '1.2rem',
     cursor: 'pointer',
     boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
     zIndex: 90,

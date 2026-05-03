@@ -77,7 +77,7 @@ export default function FarmSummaryCard({ farm, lang = 'en', countryLabel = '' }
        || tStrict('farm.fallback.stage', 'Planning'))
     : tStrict('farm.fallback.stage', 'Planning');
   const sizeRaw = _formatSize(farm.size || farm.farmSize, farm.sizeUnit);
-  const size  = sizeRaw || tStrict('farm.fallback.size', 'Add farm size');
+  const size  = sizeRaw || tStrict('farm.fallback.size', 'Not added yet');
   const placeRaw = countryLabel || farm.region || farm.location || '';
   const place = placeRaw || tStrict('farm.fallback.location', 'Add location');
   const gpsOk = _hasGps(farm);

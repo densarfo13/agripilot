@@ -71,20 +71,27 @@ const CHIP = {
   text: { lineHeight: 1 },
 };
 
+// Optimize First Action Completion (CRITICAL) §5 — floating
+// launcher made smaller + lower so it never visually competes
+// with the FirstActionGate's Done CTA. 56 → 48 px is still
+// well above Apple's 44px minimum tap target; bottom offset
+// dropped from 74 → 64 px so the chip sits closer to the
+// nav bar where it reads as a quiet utility, not a primary
+// affordance.
 const FLOATING = {
   btn: {
     position: 'fixed',
     right: '1rem',
-    bottom: 'calc(74px + env(safe-area-inset-bottom, 0px))',  // above bottom-tab nav
-    width: 56,
-    height: 56,
+    bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+    width: 48,
+    height: 48,
     borderRadius: 999,
     border: 'none',
     background: '#22C55E',
     color: '#062714',
-    fontSize: '1.4rem',
+    fontSize: '1.2rem',
     cursor: 'pointer',
-    boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
+    boxShadow: '0 8px 18px rgba(0,0,0,0.30)',
     zIndex: 90,
     display: 'flex',
     alignItems: 'center',

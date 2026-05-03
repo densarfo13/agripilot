@@ -42,6 +42,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { buildPrimaryAction } from '../../core/primaryActionEngine.js';
@@ -98,6 +99,13 @@ export default function FirstActionGate({
   // Subscribe to language change so all the localized strings
   // refresh on a flip without forcing the parent to re-render.
   useTranslation();
+  // Optimize Scan Feature Placement §3 — useNavigate called
+  // unconditionally at component top (NOT inside a try/catch
+  // IIFE — the prior VoiceAssistant fix taught us that pattern
+  // desyncs React's hook counter under StrictMode). Used by
+  // the contextual "Scan crop" affordance rendered in the
+  // post-Done state below.
+  const navigate = useNavigate();
 
   const action = useMemo(
     () => decision
@@ -282,7 +290,7 @@ export default function FirstActionGate({
     } catch { /* ignore */ }
     return false;
   })();
-  const headerText      = tStrict('firstAction.header',       'Before you water today, check this first');
+  const headerText      = tStrict('firstAction.header',       'Before you act, check this first');
   const title           = tStrict(action.titleKey,            action.titleFallback);
   const detail          = tStrict(action.detailKey,           action.detailFallback);
   const reason          = tStrict(action.reasonKey,           action.reasonFallback);
@@ -686,6 +694,51 @@ export default function FirstActionGate({
               {healthThanksText}
             </p>
           )}
+
+          {/* Optimize Scan Feature Placement §3 — contextual scan
+              trigger. Renders ONLY in the post-Done state so it
+              never competes with the primary action above the
+              fold (§4: "Scan must not compete with primary
+              action"). Two-line layout: prompt + ghost-style
+              "Scan crop" button. Tap fires the canonical
+              scan_cta_clicked analytics + navigates to /scan
+              the same way ScanHero does, so attribution + the
+              SCAN_TAP paywall trigger keep working unchanged. */}
+          <div style={S.scanContext} data-testid="first-action-scan-context">
+            <span style={S.scanContextPrompt}>
+              {tStrict('firstAction.scan.prompt',
+                'See something wrong?')}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  trackEvent('scan_cta_clicked', {
+                    source: 'first-action-gate',
+                    primaryActionType: action && action.primaryActionType,
+                  });
+                } catch { /* swallow */ }
+                // Mirror the ScanHero pattern: stamp the scan-tap
+                // paywall intent so the next Home open surfaces
+                // the SCAN_TAP paywall (Freemium §3) — non-
+                // blocking; user proceeds to /scan immediately.
+                try {
+                  if (typeof sessionStorage !== 'undefined') {
+                    sessionStorage.setItem('farroway:paywall:intent', 'scan_tap');
+                  }
+                } catch { /* swallow */ }
+                try { navigate('/scan'); }
+                catch { /* swallow */ }
+              }}
+              style={S.scanContextBtn}
+              data-testid="first-action-scan-btn"
+            >
+              <span aria-hidden="true" style={{ marginRight: 6 }}>
+                {'\u{1F4F7}'}
+              </span>
+              {tStrict('firstAction.scan.cta', 'Scan crop')}
+            </button>
+          </div>
         </>
       )}
 
@@ -1024,6 +1077,45 @@ const S = {
     display: 'flex',
     justifyContent: 'center',
     marginTop: 6,
+  },
+  // Optimize Scan Feature Placement §3 — contextual scan trigger
+  // shown in the post-Done state. Two-row layout (prompt above,
+  // ghost-style button below) so the user reads the question
+  // first then sees the affordance. Visual weight kept light so
+  // it never dominates the toast / health-feedback prompt that
+  // fired moments earlier.
+  scanContext: {
+    marginTop: 14,
+    padding: '10px 12px',
+    borderRadius: 12,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px dashed rgba(255,255,255,0.16)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  scanContextPrompt: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.72)',
+    fontWeight: 600,
+  },
+  scanContextBtn: {
+    appearance: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(59,130,246,0.10)',
+    border: '1px solid rgba(59,130,246,0.40)',
+    color: '#93C5FD',
+    borderRadius: 999,
+    padding: '0.4rem 0.85rem',
+    fontSize: '0.8125rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 34,
+    fontFamily: 'inherit',
+    WebkitTapHighlightColor: 'transparent',
   },
   // Viral Growth Loop §1 — "Share this insight" button shown
   // after Done. Visual weight kept light (ghost-style chip) so

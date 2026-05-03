@@ -388,10 +388,51 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
     const { analyzePlantImage } = await import('./ml/scanInferenceService.js');
     const { fuseContext } = await import('./ml/contextFusionEngine.js');
     const { applySafetyFilter } = await import('./ml/scanSafetyFilter.js');
+    // Smart Scan AI Backend §3 + §8 — spec-shape verdict
+    // adapter + fallback constant. Lazy-imported alongside
+    // the rest of the ML pipeline so the route stays small.
+    const { normalizeToSpecShape, SPEC_FALLBACK_VERDICT } =
+      await import('./ml/scanResultNormalizer.js');
+    // Smart Scan AI Backend §7 — daily per-user quota guard.
+    const { checkDailyScanLimit } = await import('./ml/scanLimitGuard.js');
+
+    // §7 cost control — enforce the daily quota BEFORE we do
+    // any image preprocess / AI work so an over-quota request
+    // doesn't burn provider tokens. Anonymous callers fall
+    // through to the IP-based scanLimiter; signed-in callers
+    // get the per-user counter. Pro flag is read off the user
+    // record when present; defaults to false so we always pick
+    // the conservative limit when in doubt.
+    const _limit = await checkDailyScanLimit({
+      prisma,
+      userId: req.user && req.user.id,
+      isPro:  !!(req.user && (req.user.isPro || req.user.proStatus === 'active')),
+    });
+    if (!_limit.ok) {
+      return res.status(429).json({
+        error:     'scan_limit_reached',
+        limit:     _limit.limit,
+        used:      _limit.used,
+        remaining: _limit.remaining,
+        resetAt:   _limit.resetAt,
+        // Include the spec fallback shape so the client doesn't
+        // need a separate render path — it can show the
+        // "uncertain / monitor" state with a clear retry hint.
+        verdictV2: SPEC_FALLBACK_VERDICT,
+        message:   'Daily scan limit reached. Upgrade to Pro for more scans.',
+      });
+    }
 
     const pre = await preprocessImage({ base64: imageBase64, url: imageUrl });
     if (!pre.ok) {
-      return res.status(400).json({ error: 'image_rejected', reason: pre.reason });
+      return res.status(400).json({
+        error:     'image_rejected',
+        reason:    pre.reason,
+        // §8 fallback — even on image-validation failure we
+        // return the spec shape so the client never has to
+        // null-check the verdict field.
+        verdictV2: SPEC_FALLBACK_VERDICT,
+      });
     }
 
     // Pull recent scan history for the same user to feed the
@@ -479,12 +520,34 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       });
     } catch { /* swallow — analytics row is best-effort */ }
 
+    // Smart Scan AI Backend §3 — strict-shape verdict for
+    // ML / analytics / partner consumers. Existing rich
+    // `verdict` field stays untouched so the frontend
+    // ScanResultCard keeps rendering. New consumers should
+    // bind to verdictV2.
+    const verdictV2 = normalizeToSpecShape(safe, {
+      // Force-low-confidence when the inference path used its
+      // fallback engine (no real provider response). Honest
+      // floor — never claim certainty we don't have.
+      forceLowConfidence: !!inference.fallbackUsed,
+    });
+
     return res.json({
       ok:                    true,
       verdict:               safe,
+      verdictV2,
       tierPolicy:            policy,
       verificationQuestions: questions,
       scanId,
+      // Smart Scan AI Backend §7 — surface remaining quota so
+      // the client can show "X of N scans left today" without
+      // a second round-trip.
+      scanQuota: {
+        limit:     _limit.limit,
+        used:      _limit.used + 1,                 // +1 for the scan we just did
+        remaining: Math.max(0, _limit.remaining - 1),
+        resetAt:   _limit.resetAt,
+      },
       inferenceMeta: {
         provider:     inference.meta?.provider || null,
         latencyMs:    inference.meta?.latencyMs || 0,
@@ -492,7 +555,22 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: 'scan_analyze_failed', message: err && err.message });
+    // Smart Scan AI Backend §8 — total-failure fallback. We
+    // never return an empty body or a raw 500; the client
+    // always gets the spec-shape verdict so render code stays
+    // identical regardless of whether the AI succeeded. Lazy-
+    // import here so module-resolution failures don't shadow
+    // the original error.
+    let fallbackBody = {
+      error:    'scan_analyze_failed',
+      message:  err && err.message,
+    };
+    try {
+      const { SPEC_FALLBACK_VERDICT } =
+        await import('./ml/scanResultNormalizer.js');
+      fallbackBody.verdictV2 = SPEC_FALLBACK_VERDICT;
+    } catch { /* swallow — body still ships error code */ }
+    return res.status(500).json(fallbackBody);
   }
 });
 
