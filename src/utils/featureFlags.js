@@ -87,10 +87,12 @@ const DEFAULTS = Object.freeze({
   // TodayTaskCard at the top and calls POST /api/tasks/today
   // for the primary action. The legacy FirstActionGate stays
   // registered so flipping the flag back to OFF is a one-line
-  // rollback. Default OFF for the soft-launch initial cut so
-  // the existing surface is untouched until the API is
-  // observed in production.
-  FEATURE_AI_TASK_ENGINE: false,
+  // rollback if production traffic surfaces a regression.
+  // Flipped ON 2026-05-03 — the server endpoint has shipped,
+  // the engine's CTA matching is wired, and the Calm-UI spec
+  // surfaces (weather header, scan prompt, tomorrow hook,
+  // spec-literal fallbacks) only render via this path.
+  FEATURE_AI_TASK_ENGINE: true,
 
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.
