@@ -39,6 +39,12 @@ import {
   setActiveGardenId, EXPERIENCE,
 } from '../../store/multiExperience.js';
 import { setActiveFarmId } from '../../store/farrowayLocal.js';
+// Polish spec §1 \u2014 the trigger renders the canonical context
+// label ("\uD83C\uDF31 Tomato Garden" / "\uD83D\uDE9C Maize Farm") instead of the
+// bare entity name so the user sees the icon + suffix in one
+// glance. ContextLabel reads useExperience internally, but we
+// pass explicit props so the popover preview is consistent.
+import ContextLabel from '../system/ContextLabel.jsx';
 
 const C = {
   panel:   '#102C47',
@@ -209,9 +215,7 @@ export default function HomeContextSwitcher() {
     } catch { /* swallow — user can retry */ }
   }
 
-  const activeKindLabel = experience === EXPERIENCE.GARDEN
-    ? tSafe('homeSwitcher.kind.garden', 'garden')
-    : tSafe('homeSwitcher.kind.farm',   'farm');
+  const triggerCtx = experience === EXPERIENCE.GARDEN ? 'garden' : 'farm';
   const triggerName = _entityName(
     activeEntity,
     experience === EXPERIENCE.GARDEN
@@ -232,7 +236,19 @@ export default function HomeContextSwitcher() {
         <span style={S.triggerLabel}>
           {tSafe('homeSwitcher.workingOn', 'Working on:')}
         </span>
-        <span style={S.triggerName}>{triggerName}</span>
+        {/* Polish spec §1 \u2014 canonical "\uD83C\uDF31 Tomato Garden" /
+            "\uD83D\uDE9C Maize Farm" label. Renders the icon + name +
+            suffix as a single visual unit; the icon is
+            decorative (aria-hidden) so screen readers announce
+            only the text. */}
+        <span style={{ ...S.triggerName, display: 'inline-flex', alignItems: 'center' }}>
+          <ContextLabel
+            context={triggerCtx}
+            name={activeEntity ? _entityName(activeEntity, '') : ''}
+            size="md"
+            testid="home-context-switcher-label"
+          />
+        </span>
         <span aria-hidden="true" style={S.triggerChevron}>
           {open ? '\u25B4' : '\u25BE'}
         </span>

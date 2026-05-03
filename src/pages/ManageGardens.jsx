@@ -48,6 +48,8 @@ import {
 } from '../store/multiExperience.js';
 import ExperienceTabs from '../components/farm/ExperienceTabs.jsx';
 import { formatLocation, formatFarmSize } from '../utils/formatDisplay.js';
+// Polish spec §6 \u2014 empty-state copy keyed on context.
+import { getContextEmptyState, getContextIcon } from '../i18n/contextWords.js';
 
 // ── Color tokens (mirror ManageFarms.jsx for visual parity) ─────
 const C_NAVY     = '#0B1D34';
@@ -350,9 +352,16 @@ export default function ManageGardens() {
         </div>
         <ExperienceTabs current="garden" />
         <div style={S.empty} data-testid="manage-gardens-empty-card">
+          {/* Polish spec §6 \u2014 garden empty-state headline reads
+              "Add a plant to get started" via getContextEmptyState.
+              The 3-emoji palette adds visual texture without
+              competing with the CTA. */}
+          <div aria-hidden="true" style={{ fontSize: '1.6rem' }}>
+            {getContextIcon('garden', 'palette').join(' ')}
+          </div>
           <h2 style={S.emptyTitle}>
             {tSafe('manageGardens.empty.title',
-              'Set up your first garden')}
+              getContextEmptyState('garden'))}
           </h2>
           <p style={S.emptyBody}>
             {tSafe('manageGardens.empty.body',

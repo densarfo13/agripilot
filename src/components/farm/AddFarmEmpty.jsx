@@ -12,6 +12,11 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { useNavigate } from 'react-router-dom';
 import { Sprout, Plus } from '../icons/lucide.jsx';
+// Polish spec §6 \u2014 farm empty state surfaces "Add your farm to
+// begin tracking" via the centralised contextWords helper so the
+// copy stays in sync with the spec without a per-component sweep
+// when wording changes.
+import { getContextEmptyState } from '../../i18n/contextWords.js';
 
 export default function AddFarmEmpty() {
   useTranslation();
@@ -23,7 +28,7 @@ export default function AddFarmEmpty() {
         <Sprout size={48} />
       </div>
       <h1 style={S.title}>
-        {tStrict('farm.empty.title', 'Set up your farm')}
+        {tStrict('farm.empty.title', getContextEmptyState('farm'))}
       </h1>
       <p style={S.body}>
         {tStrict('farm.empty.body',
