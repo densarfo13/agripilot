@@ -163,6 +163,33 @@ export default class RecoveryErrorBoundary extends React.Component {
           >
             {tSafe('recovery.restart', 'Restart setup')}
           </button>
+
+          {/* Dev-only error diagnostics. Renders only when
+              import.meta.env.DEV is true (i.e. local dev /
+              `vite preview`); production builds strip this
+              entirely. Surfaces the error message + first few
+              stack frames so engineers can diagnose without
+              digging through DevTools console. Wrapped in a
+              <details> so it's collapsed by default — never
+              alarms a user even if it accidentally renders in
+              prod. */}
+          {(() => {
+            try {
+              const isDev = typeof import.meta !== 'undefined'
+                          && import.meta.env && import.meta.env.DEV;
+              if (!isDev) return null;
+              const err = this.state.error;
+              if (!err) return null;
+              const msg = String(err.message || err.toString() || 'Unknown error');
+              const stack = String(err.stack || '').split('\n').slice(0, 6).join('\n');
+              return (
+                <details style={S.devDetails} data-testid="recovery-dev-error">
+                  <summary style={S.devSummary}>Dev: error details</summary>
+                  <pre style={S.devPre}>{msg}{'\n\n'}{stack}</pre>
+                </details>
+              );
+            } catch { return null; }
+          })()}
         </div>
       </main>
     );
@@ -178,6 +205,33 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Dev-only error diagnostics styling. Stripped from
+  // production builds via the `import.meta.env.DEV` gate above.
+  devDetails: {
+    width: '100%',
+    marginTop: 16,
+    padding: '8px 12px',
+    background: 'rgba(239,68,68,0.06)',
+    border: '1px dashed rgba(239,68,68,0.40)',
+    borderRadius: 8,
+    color: 'rgba(255,255,255,0.78)',
+  },
+  devSummary: {
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#FCA5A5',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+  },
+  devPre: {
+    margin: '8px 0 0',
+    fontSize: 11,
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    color: 'rgba(255,255,255,0.85)',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
   },
   card: {
     width: '100%',
