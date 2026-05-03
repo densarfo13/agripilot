@@ -85,15 +85,42 @@ function _tasksFor(experience) {
  * SummaryRow \u2014 one line in the "Your picks" summary block.
  *   Label (small)
  *   Value (bold)               [Change X]
- * The value is rendered as-is so the caller controls
- * formatting (capitalisation, translation, etc.).
+ *
+ * Render-300 hotfix (May 2026)
+ * \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+ * Production farmers were hitting React error #300 ("Objects are
+ * not valid as a React child") on the setup review screen and
+ * landing on the RecoveryErrorBoundary card. Root cause class:
+ * a caller passing an object (e.g. unflattened location, or a
+ * `formatLocation` result that took an early-return code path
+ * returning the input shape) into `value` slipped past the
+ * existing `value || '\u2014'` short-circuit, because non-empty
+ * objects are truthy.
+ *
+ * Defensive coercion: every prop is wrapped in `_str(\u2026)` which
+ * stringifies safely. Bad input falls through to em-dash, never
+ * throws. Strings keep their original render. The fix is purely
+ * additive \u2014 happy-path output is identical.
  */
+function _str(v) {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  // Objects / arrays: best-effort stringify, but never crash.
+  // We deliberately don't render JSON \u2014 a farmer-visible
+  // "[object Object]" is bad, but a recovery boundary is worse.
+  try { return String(v); } catch { return ''; }
+}
+
 function SummaryRow({ label, value, onChange, changeLabel, testid }) {
+  const safeValue       = _str(value);
+  const safeLabel       = _str(label);
+  const safeChangeLabel = _str(changeLabel);
   return (
     <div style={S.summaryRow}>
       <div style={S.summaryRowText}>
-        <span style={S.summaryRowLabel}>{label}</span>
-        <span style={S.summaryRowValue}>{value || '\u2014'}</span>
+        <span style={S.summaryRowLabel}>{safeLabel}</span>
+        <span style={S.summaryRowValue}>{safeValue || '\u2014'}</span>
       </div>
       <button
         type="button"
@@ -101,7 +128,7 @@ function SummaryRow({ label, value, onChange, changeLabel, testid }) {
         style={S.summaryRowBtn}
         data-testid={testid}
       >
-        {changeLabel}
+        {safeChangeLabel}
       </button>
     </div>
   );
@@ -293,8 +320,13 @@ export default function OnboardingReviewPanel({ experience, summary, onChangeSte
             style={{ ...S.row, ...(URGENCY_TONE[t.urgency] || URGENCY_TONE.low) }}
             data-testid={`onboarding-review-task-${i}`}
           >
-            <p style={S.rowTitle}>{t.title}</p>
-            <p style={S.rowReason}>{t.reason}</p>
+            {/* Render-300 hotfix \u2014 same defensive coercion the
+                SummaryRow uses. If an upstream engine ever
+                returns an object as `title` / `reason` instead
+                of a string, we render its stringified form
+                instead of crashing the whole subtree. */}
+            <p style={S.rowTitle}>{_str(t.title)}</p>
+            <p style={S.rowReason}>{_str(t.reason)}</p>
           </li>
         ))}
       </ul>
