@@ -347,7 +347,16 @@ export default function BackyardOnboarding() {
       return;
     }
     try { trackEvent('onboarding_completed', { source: 'backyard' }); } catch { /* ignore */ }
-    try { navigate('/dashboard', { replace: true }); } catch { /* ignore */ }
+    // Garden-visibility spec §2 — land on /manage-gardens after a
+    // garden save so the user immediately sees the row they just
+    // created. /dashboard is the long-running home; routing there
+    // FIRST hid the garden under generic plan copy and the user
+    // assumed the save had failed. Falls back to /dashboard if
+    // /manage-gardens fails (e.g. router not yet mounted).
+    try { navigate('/manage-gardens', { replace: true }); }
+    catch {
+      try { navigate('/dashboard', { replace: true }); } catch { /* ignore */ }
+    }
   }, [plantId, plantNameOther, growingLocation, experienceLevel, city, state, navigate]);
 
   const progressPct = Math.round(((stepIdx + 1) / STEPS.length) * 100);

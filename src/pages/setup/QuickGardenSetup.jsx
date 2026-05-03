@@ -404,10 +404,19 @@ export default function QuickGardenSetup() {
           draftVersion:     2,
         });
       } catch { /* swallow */ }
-      try { navigate('/home', { replace: true }); }
+      // Garden-visibility spec §2 — land on /manage-gardens after
+      // a garden save so the row the user just created is
+      // immediately visible. /home renders the daily-plan card
+      // and the user couldn't tell their garden had been saved
+      // without explicit confirmation. /home / /dashboard remain
+      // safe fallbacks if /manage-gardens fails to navigate.
+      try { navigate('/manage-gardens', { replace: true }); }
       catch {
-        try { navigate('/dashboard', { replace: true }); }
-        catch { /* swallow */ }
+        try { navigate('/home', { replace: true }); }
+        catch {
+          try { navigate('/dashboard', { replace: true }); }
+          catch { /* swallow */ }
+        }
       }
     } catch (err) {
       setErrors({ form: tStrict('setup.garden.err.save', 'We couldn\u2019t save right now. Try again.') });

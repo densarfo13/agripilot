@@ -36,6 +36,12 @@ import { getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_KEYS } from '../utils/cropStages.js';
 import { archiveFarm } from '../lib/api.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
+// Garden-visibility spec — gardens (backyard / home rows) live in
+// /manage-gardens; this page must list ONLY farms. The classifier
+// `isGarden` from multiExperience.js is the single source of
+// truth for the partition.
+import { isGarden } from '../store/multiExperience.js';
+import ExperienceTabs from '../components/farm/ExperienceTabs.jsx';
 
 function _formatSize(size, unit) {
   if (size == null || size === '') return null;
@@ -66,9 +72,13 @@ export default function ManageFarms() {
   // Visible list — exclude archived farms so the page reads as
   // "current farms"; archived ones can be re-surfaced from a
   // dedicated screen later if pilot data shows it's needed.
+  // Garden-visibility spec — also exclude rows tagged as gardens
+  // (farmType: 'backyard' | 'home' | 'home_garden') so a backyard
+  // garden NEVER appears under Manage Farms. Gardens have their
+  // own surface at /manage-gardens.
   const visibleFarms = useMemo(() => {
     if (!Array.isArray(farms)) return [];
-    return farms.filter((f) => f && f.status !== 'archived');
+    return farms.filter((f) => f && f.status !== 'archived' && !isGarden(f));
   }, [farms]);
 
   const active = visibleFarms.find((f) => f.id === currentFarmId)
@@ -140,12 +150,17 @@ export default function ManageFarms() {
   }
 
   // ── Empty state — single setup CTA ───────────────────────
+  // Garden-visibility spec — when the user has gardens but no
+  // farms, the empty state also surfaces an experience switcher
+  // so they can hop straight to /manage-gardens instead of
+  // wondering where their backyard went.
   if (visibleFarms.length === 0) {
     return (
       <main style={S.page} data-testid="manage-farms-empty">
         <div style={S.header}>
           <h1 style={S.title}>{tSafe('manageFarms.title', 'Manage Farms')}</h1>
         </div>
+        <ExperienceTabs current="farm" />
         <AddFarmEmpty />
       </main>
     );
@@ -156,6 +171,12 @@ export default function ManageFarms() {
       <div style={S.header}>
         <h1 style={S.title}>{tSafe('manageFarms.title', 'Manage Farms')}</h1>
       </div>
+
+      {/* Garden-visibility spec §5 — Farms / Gardens experience
+          switcher. Renders ONLY when the user has at least one
+          row of each kind so a single-experience user doesn't
+          see a useless tab strip. */}
+      <ExperienceTabs current="farm" />
 
       {/* ─── 1. Active Farm Card ──────────────────────────── */}
       {active && (

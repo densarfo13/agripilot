@@ -218,6 +218,12 @@ const AdaptiveFarmSetup = lazy(() => import('./pages/AdaptiveFarmSetup.jsx'));
 // (April 2026). Lazy because most farmers won't visit it; it
 // only matters once they have 2+ farms or want to archive.
 const ManageFarms    = lazy(() => import('./pages/ManageFarms.jsx'));
+// Garden-visibility spec — backyard / home gardens live on a
+// dedicated /manage-gardens surface. ManageFarms hides garden
+// rows; the new page lists them with the same set-active /
+// edit / remove actions, plus a switcher so users with both
+// experience types hop between the two with one tap.
+const ManageGardens  = lazy(() => import('./pages/ManageGardens.jsx'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 const WelcomeScreen  = lazy(() => import('./pages/WelcomeScreen.jsx'));
 const CropFitQuick   = lazy(() => import('./pages/CropFit.jsx'));
@@ -935,6 +941,12 @@ export default function App() {
                 Flag-off path: identical to before. */}
             <Route path="/farm/new" element={<AdaptiveFarmSetup />} />
             <Route path="/farms" element={<ManageFarms />} />
+            {/* Garden-visibility spec — gardens get their own
+                manage surface. /manage-gardens is the canonical
+                path; /gardens is an alias so deep-links from
+                older builds keep resolving. */}
+            <Route path="/manage-gardens" element={<ManageGardens />} />
+            <Route path="/gardens" element={<ManageGardens />} />
             <Route path="/welcome-farmer" element={<WelcomeScreen />} />
             <Route path="/crop-fit/quick" element={<CropFitQuick />} />
             <Route path="/program-dashboard" element={<ProgramDashboardPage />} />

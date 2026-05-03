@@ -551,6 +551,32 @@ export default function MyFarmPage() {
                   : tSafe('myFarm.switchFarm', 'Switch Farm'))}
           </span>
         </button>
+        {/* Garden-visibility spec §3 — explicit deep-link to the
+            management surface that matches the user's active
+            experience. The button title shifts so a backyard
+            user reads "My Gardens" (not "Manage Farms") and
+            never wonders where their garden went. The
+            destination route is canonical (/manage-gardens vs
+            /farms) so a deep-link from elsewhere keeps working. */}
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              navigate(isBackyardActive ? '/manage-gardens' : '/farms');
+            } catch { /* swallow */ }
+          }}
+          style={S.actionBtnSecondary}
+          data-testid="my-farm-manage"
+        >
+          <span style={S.actionBtnIcon} aria-hidden="true">
+            <Sprout size={16} />
+          </span>
+          <span>
+            {isBackyardActive
+              ? tSafe('myFarm.viewGardens', 'My Gardens')
+              : tSafe('myFarm.viewFarms',   'My Farms')}
+          </span>
+        </button>
       </div>
 
       {/* ── 6. Help Card (spec §6) ─────────────────────────────
