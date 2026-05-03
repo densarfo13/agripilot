@@ -47,6 +47,11 @@ const FIRST_VISIT_KEY  = 'farroway_funnel_first_visit';
 const FIRST_ACTION_KEY = 'farroway_funnel_first_action';
 const LAST_SESSION_DAY = 'farroway_funnel_last_session_day';
 const DAY2_SEEN_KEY    = 'farroway_funnel_day2_seen';
+// Growth Analytics §2 — additional retention markers. The
+// existing day2_return wrap-around marker stays untouched; the
+// d1/d7 markers run alongside via the same idempotent pattern.
+const DAY1_SEEN_KEY    = 'farroway_funnel_day1_seen';
+const DAY7_SEEN_KEY    = 'farroway_funnel_day7_seen';
 
 function _safeRead(key) {
   try {
@@ -134,22 +139,62 @@ export function markSessionStart() {
     trackEvent('session_started', _withContext({ day: today }));
   } catch { /* swallow */ }
 
-  // Day-2 detection: the user's first visit was on a different
-  // calendar day than today, AND we haven't yet logged d2.
+  // Growth Analytics §2 — retention day-N detection. We fire each
+  // marker exactly once per device on the first session that
+  // crosses its threshold (1 / 2 / 7 calendar days since the
+  // first-visit stamp). Each marker has its own DAY*_SEEN_KEY so
+  // they're independent — a user who opens on day 7 without
+  // appearing on day 1 still gets `day7_return` correctly.
   const visitISO = _safeRead(FIRST_VISIT_KEY);
-  const day2Seen = _safeRead(DAY2_SEEN_KEY) === 'true';
-  if (visitISO && !day2Seen) {
+  if (visitISO) {
     const visitDay = String(visitISO).slice(0, 10);
-    if (visitDay && visitDay < today) {
-      const visitMs = Date.parse(visitISO || '');
-      const elapsedMs = Number.isFinite(visitMs)
-        ? Math.max(0, Date.now() - visitMs)
-        : null;
+    const visitMs  = Date.parse(visitISO || '');
+    const dayDelta = (() => {
+      if (!Number.isFinite(visitMs)) return 0;
+      const a = Date.parse(`${visitDay}T00:00:00Z`);
+      const b = Date.parse(`${today}T00:00:00Z`);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+      return Math.max(0, Math.round((b - a) / (24 * 60 * 60 * 1000)));
+    })();
+    const elapsedMs = Number.isFinite(visitMs)
+      ? Math.max(0, Date.now() - visitMs)
+      : null;
+
+    // d1 — fires on session ≥ 1 day after first visit.
+    if (dayDelta >= 1 && _safeRead(DAY1_SEEN_KEY) !== 'true') {
+      _safeWrite(DAY1_SEEN_KEY, 'true');
+      try {
+        trackEvent('day1_return', _withContext({
+          firstVisit: visitISO,
+          elapsedMs,
+          dayDelta,
+        }));
+      } catch { /* swallow */ }
+    }
+
+    // d2 — preserved exact behaviour (separate stamp + same
+    // payload shape as before so existing dashboards keep working).
+    if (dayDelta >= 1 && _safeRead(DAY2_SEEN_KEY) !== 'true') {
+      // d2 historically fired on first session whose visitDay
+      // < today. Keep that behaviour but only when the cohort
+      // is genuinely past day 1 (dayDelta >= 1 guards both).
       _safeWrite(DAY2_SEEN_KEY, 'true');
       try {
         trackEvent('day2_return', _withContext({
           firstVisit: visitISO,
           elapsedMs,
+        }));
+      } catch { /* swallow */ }
+    }
+
+    // d7 — fires on session ≥ 7 days after first visit.
+    if (dayDelta >= 7 && _safeRead(DAY7_SEEN_KEY) !== 'true') {
+      _safeWrite(DAY7_SEEN_KEY, 'true');
+      try {
+        trackEvent('day7_return', _withContext({
+          firstVisit: visitISO,
+          elapsedMs,
+          dayDelta,
         }));
       } catch { /* swallow */ }
     }
@@ -159,10 +204,12 @@ export function markSessionStart() {
 /** Read-only snapshot for surfaces that want to nudge contextually. */
 export function getFunnelState() {
   return {
-    firstVisit:    _safeRead(FIRST_VISIT_KEY),
-    firstAction:   _safeRead(FIRST_ACTION_KEY),
+    firstVisit:     _safeRead(FIRST_VISIT_KEY),
+    firstAction:    _safeRead(FIRST_ACTION_KEY),
     lastSessionDay: _safeRead(LAST_SESSION_DAY),
-    day2Seen:      _safeRead(DAY2_SEEN_KEY) === 'true',
+    day1Seen:       _safeRead(DAY1_SEEN_KEY) === 'true',
+    day2Seen:       _safeRead(DAY2_SEEN_KEY) === 'true',
+    day7Seen:       _safeRead(DAY7_SEEN_KEY) === 'true',
   };
 }
 

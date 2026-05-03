@@ -42,7 +42,11 @@ import {
   addGarden as _addGarden,
   addFarm   as _addFarm,
   getGardens as _getGardens,
-  getFarms   as _getMxFarms,
+  // multiExperience exports `getFarmsOnly` (not `getFarms` — the
+  // unprefixed name belongs to farrowayLocal). Aliased here so
+  // the seed code reads naturally and doesn't collide with the
+  // farrowayLocal `getFarms` already imported above.
+  getFarmsOnly as _getMxFarms,
 } from '../../store/multiExperience.js';
 import { setOnboardingComplete as _setOnboardingComplete } from '../../utils/onboarding.js';
 import {

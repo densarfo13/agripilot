@@ -34,6 +34,11 @@ import {
   getPerMarketBreakdown,
 } from '../admin/growthMetrics.js';
 import { getAttributionBySource } from '../admin/attributionMetrics.js';
+// Growth Analytics §6 — read-only panel rendering the spec's
+// dashboard payload (overview / funnel / retention / viral /
+// monetization). Reads the same farroway_events log as the
+// existing KPI strip; no new storage.
+import GrowthAnalyticsPanel from '../components/admin/GrowthAnalyticsPanel.jsx';
 
 const S = {
   page: {
@@ -277,6 +282,12 @@ export default function MetricsDashboard() {
           </div>
         ))}
       </section>
+
+      {/* Growth Analytics Dashboard panel — overview / funnel /
+          retention / viral / monetization. Sits directly under
+          the headline KPI strip so operators can scan funnel
+          drop-off + viral conversion without leaving this page. */}
+      <GrowthAnalyticsPanel testId="metrics-growth-panel" />
 
       {/* Growth + retention */}
       {metrics ? (
