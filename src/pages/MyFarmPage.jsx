@@ -377,6 +377,28 @@ export default function MyFarmPage() {
           icon + green accent border. */}
       <FarmSwitcher />
 
+      {/* Remove Duplicate Navigation §3 — dynamic mode/context
+          label. Reads "Farm: {Name}" in farm mode or "From farm:
+          {Name}" in garden mode so the user always knows which
+          entity they're viewing AND which mode they're in.
+          Sits directly under the FarmSwitcher so the eye-scan
+          order reads top→bottom: tab strip (mode) → dropdown
+          (context) → label (current selection). */}
+      <div
+        style={S.modeLabel}
+        data-testid="my-farm-mode-label"
+        data-mode={isBackyardActive ? 'garden' : 'farm'}
+      >
+        <span style={S.modeLabelEyebrow}>
+          {isBackyardActive
+            ? tSafe('myFarm.modeLabel.fromFarm', 'From farm:')
+            : tSafe('myFarm.modeLabel.farm',     'Farm:')}
+        </span>
+        <span style={S.modeLabelName}>
+          {farm.farmName || farm.name || tSafe('myFarm.unnamedFarm', 'My Farm')}
+        </span>
+      </div>
+
       {/* ── 3. Farm Identity Card (spec §3 redesign) ───────────
           Circular farm photo on the left + farm name + location
           on the right. "Upload photo" button below the picture
@@ -588,24 +610,19 @@ export default function MyFarmPage() {
               : tSafe('myFarm.addGarden', 'Add Garden')}
           </span>
         </button>
-        <button
-          type="button"
-          onClick={handleSwitchFarm}
-          style={S.actionBtnSecondary}
-          data-testid="my-farm-switch"
-          disabled={!hasOtherFarm && !(Array.isArray(farms) && farms.length > 1)}
-        >
-          <span style={S.actionBtnIcon} aria-hidden="true">
-            <ArrowRight size={16} />
-          </span>
-          <span>
-            {isBackyardActive
-              ? tSafe('myFarm.switchToFarm', 'Switch to Farm')
-              : (hasOtherFarm
-                  ? tSafe('myFarm.switchToGarden', 'Switch to Garden')
-                  : tSafe('myFarm.switchFarm', 'Switch Farm'))}
-          </span>
-        </button>
+        {/* Remove Duplicate Navigation §1 — "Switch to Farm" /
+            "Switch to Garden" / "Switch Farm" buttons removed.
+            Mode switching now lives in exactly one place: the
+            ExperienceTabs at the top of the page (Farms /
+            Gardens). The FarmSwitcher dropdown (also at top)
+            handles per-farm context selection. Two surfaces,
+            two responsibilities, zero duplication.
+            handleSwitchFarm + hasOtherFarm intentionally kept
+            in scope for any deep-link / programmatic caller
+            that still references them; the void marks below
+            silence eslint's unused-vars rule. */}
+        {void hasOtherFarm}
+        {void handleSwitchFarm}
         {/* Garden-visibility spec §3 — explicit deep-link to the
             management surface that matches the user's active
             experience. The button title shifts so a backyard
@@ -803,6 +820,34 @@ const S = {
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
     padding: '0 0 1.5rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
+  },
+  // Remove Duplicate Navigation §3 — dynamic mode/context label.
+  // Two-line layout (eyebrow above, name below) so the user
+  // reads "Farm:" → "[Name]" without crowding either piece.
+  // Quiet styling — never competes with the FarmSwitcher above
+  // or the FarmIdentityCard below; just a clarifier ribbon.
+  modeLabel: {
+    margin: '0 1rem 8px',
+    padding: '8px 12px',
+    borderRadius: 10,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  modeLabelEyebrow: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  modeLabelName: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: '#FFFFFF',
   },
 
   // ── Header (spec §1) ────────────────────────────────────────

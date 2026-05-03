@@ -6709,6 +6709,16 @@ const T = {
   'myFarm.unnamedFarm': {
     en: 'My Farm', fr: 'Ma Ferme', sw: 'Shamba Langu', ha: 'Gonar Ta', tw: 'Me Afuo',
   },
+  // Remove Duplicate Navigation §3 — dynamic mode/context label.
+  // "Farm: {Name}" surfaces in farm mode; "From farm: {Name}"
+  // surfaces in garden mode (the latter framing reflects that
+  // a backyard garden is associated WITH a farm, not standalone).
+  'myFarm.modeLabel.farm': {
+    en: 'Farm:', fr: 'Ferme :', sw: 'Shamba:', ha: 'Gona:', tw: 'Afuo:', hi: 'खेत:',
+  },
+  'myFarm.modeLabel.fromFarm': {
+    en: 'From farm:', fr: 'De la ferme :', sw: 'Kutoka shambani:', ha: 'Daga gona:', tw: 'Firi afuom:', hi: 'खेत से:',
+  },
   'myFarm.noFarm': {
     en: 'No farm yet. Set up your farm to get started.',
     fr: 'Pas encore de ferme. Configurez votre ferme pour commencer.',
