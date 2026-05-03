@@ -321,6 +321,27 @@ const S = {
     flex: 1,
     lineHeight: 1.35,
   },
+  // Final Onboarding Optimization §1 — confidence cue under the
+  // location card. Quiet green text + ✓ glyph. Sits in its own
+  // line so the user reads "Location detected → ✓ Looks correct"
+  // top-down without crowding the primary card.
+  locationConfidence: {
+    marginTop: -6,
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: 700,
+    color: C.greenFg,
+    letterSpacing: '0.01em',
+  },
+  // Final Onboarding Optimization §2 — reassurance below crop
+  // pillRow. Tiny + dim — whispers, not shouts.
+  cropReassurance: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.55)',
+    marginTop: -4,
+    marginBottom: 10,
+    fontStyle: 'italic',
+  },
   geoStatus: {
     fontSize: '0.8rem', color: C.inkDim, lineHeight: 1.4,
   },
@@ -777,17 +798,19 @@ export default function FastOnboarding() {
   // This is the "memorable, shareable first impression" surface;
   // any other UI competing with it would dilute the moment.
   if (showingHook) {
-    const hookLine1 = tStrict(
-      'fastOnboarding.viralHook.line1',
-      'Based on your location\u2026',
-    );
-    const hookLine2 = tStrict(
+    // Final Onboarding Optimization §3 — hook simplified to ONE
+    // line ("Do not water today"). The earlier 3-line copy
+    // ("Based on your location… / Most people water too early
+    // today. / That can harm your plants.") tested as too dense
+    // for the 1.8s auto-redirect window — users were still
+    // reading line 2 when navigation fired. Single bold line
+    // lands in <0.5s + leaves room for the share affordance
+    // without clutter. Old i18n keys preserved (line2 carries
+    // the new spec wording) so translation packs that
+    // already shipped don't churn.
+    const hookHeadline = tStrict(
       'fastOnboarding.viralHook.line2',
-      'Most people water too early today.',
-    );
-    const hookLine3 = tStrict(
-      'fastOnboarding.viralHook.line3',
-      'That can harm your plants.',
+      'Do not water today',
     );
     const sharePrompt = tStrict(
       'fastOnboarding.viralHook.sharePrompt',
@@ -803,9 +826,7 @@ export default function FastOnboarding() {
         data-testid="fast-onboarding-viral-hook"
       >
         <div style={S.hookCard} role="status" aria-live="polite">
-          <p style={S.hookLine1}>{hookLine1}</p>
-          <p style={S.hookLine2}>{hookLine2}</p>
-          <p style={S.hookLine3}>{hookLine3}</p>
+          <p style={S.hookLine2}>{hookHeadline}</p>
           <p style={S.hookSharePrompt}>{sharePrompt}</p>
           <button
             type="button"
@@ -913,6 +934,21 @@ export default function FastOnboarding() {
                     'Tap to use your location')}
             </span>
           </button>
+
+          {/* Final Onboarding Optimization §1 — "✓ Looks correct"
+              affirmation rendered immediately below the location
+              card when geo permission was granted. Removes the
+              "is this right?" hesitation by giving the user an
+              explicit confidence cue. Hidden in the requesting /
+              denied / idle states because it would read as a
+              false promise there. */}
+          {geoStatus === 'granted' ? (
+            <span style={S.locationConfidence} data-testid="fast-onboarding-location-confidence">
+              <span aria-hidden="true">{'\u2714'}</span>{' '}
+              {tStrict('fastOnboarding.locationConfirm.looksCorrect',
+                'Looks correct')}
+            </span>
+          ) : null}
 
           {/* Primary CTA — always tappable per spec. Geo state
               is informational; advancing to the crop screen is
@@ -1041,6 +1077,19 @@ export default function FastOnboarding() {
               );
             })}
           </div>
+          {/* Final Onboarding Optimization §2 — "You can change
+              this later" reassurance directly under the crop
+              pills. Removes the "what if I pick wrong?"
+              hesitation that historically drove drop-off here.
+              Tiny, dim styling so it whispers rather than
+              shouts — the pill row stays the dominant element. */}
+          <span
+            style={S.cropReassurance}
+            data-testid="fast-onboarding-crop-reassurance"
+          >
+            {tStrict('fastOnboarding.cropReassurance',
+              'You can change this later')}
+          </span>
           {(isGarden ? plant : crop) === 'other' ? (
             <input
               type="text"

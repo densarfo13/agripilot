@@ -39,6 +39,13 @@ import { getAttributionBySource } from '../admin/attributionMetrics.js';
 // monetization). Reads the same farroway_events log as the
 // existing KPI strip; no new storage.
 import GrowthAnalyticsPanel from '../components/admin/GrowthAnalyticsPanel.jsx';
+// Data-Driven Product Decisions — surfaces the lowest-performing
+// metric this week + the spec's exact remediation playbook
+// (reduce friction / improve action clarity / improve habit loop
+// / improve share triggers). Derives from the same growth
+// analytics snapshot so both panels stay consistent.
+import WeakestPointCard from '../components/admin/WeakestPointCard.jsx';
+import { buildGrowthAnalytics } from '../analytics/growthAnalytics.js';
 
 const S = {
   page: {
@@ -283,11 +290,27 @@ export default function MetricsDashboard() {
         ))}
       </section>
 
-      {/* Growth Analytics Dashboard panel — overview / funnel /
-          retention / viral / monetization. Sits directly under
-          the headline KPI strip so operators can scan funnel
-          drop-off + viral conversion without leaving this page. */}
-      <GrowthAnalyticsPanel testId="metrics-growth-panel" />
+      {/* Data-Driven Product Decisions — "what to fix this week"
+          card. Reads the same growth-analytics snapshot the panel
+          below uses; identifies the lowest-performing metric and
+          surfaces the spec's matching remediation playbook.
+          Computed once in this scope so both surfaces share the
+          identical analytics payload (no double-aggregation). */}
+      {(() => {
+        let snap = null;
+        try { snap = buildGrowthAnalytics(); }
+        catch { snap = null; }
+        return (
+          <>
+            <WeakestPointCard analytics={snap} testId="metrics-weakest-point" />
+            {/* Growth Analytics Dashboard panel — overview / funnel /
+                retention / viral / monetization. Sits below the
+                weekly-focus card so operators see the
+                recommendation first, then the supporting numbers. */}
+            <GrowthAnalyticsPanel events={null} testId="metrics-growth-panel" />
+          </>
+        );
+      })()}
 
       {/* Growth + retention */}
       {metrics ? (

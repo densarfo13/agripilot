@@ -481,7 +481,19 @@ export default function FirstActionGate({
             }}
             data-testid="first-action-done"
           >
-            {ctaDone}
+            {/* Final Onboarding Optimization §6 — appended ✓
+                glyph next to the Done label so the CTA reads as
+                "tap = win" before the user has even tapped.
+                Decorative; aria-hidden. The ctaDone string is
+                still engine/i18n-driven so localized labels
+                stay intact, just with the glyph stamped after. */}
+            <span>{ctaDone}</span>
+            <span
+              aria-hidden="true"
+              style={{ marginLeft: 6, fontWeight: 900 }}
+            >
+              {'\u2713'}
+            </span>
           </button>
           {/* CONVERSION §4/§7: visible "Not now" affordance was
               removed because it competed with Done. The skip
