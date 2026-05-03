@@ -101,6 +101,17 @@ export default function Dashboard() {
   const loop = useFarmerLoop();
   const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
 
+  // Premium Home spec \u00a712 \u2014 home_opened. Fires once per Dashboard
+  // mount (not once per render). useEffect with an empty dep array
+  // guarantees a single emit when the user lands on /dashboard or
+  // /home; subsequent navigations to the same route via React
+  // Router will remount the page so the event re-fires for each
+  // new visit, which matches the spec intent.
+  useEffect(() => {
+    try { safeTrackEvent('home_opened', {}); }
+    catch { /* swallow \u2014 analytics must not crash */ }
+  }, []);
+
   // ─── 7-day engagement loop ──────────────────────────────
   // Pure derivation from the retention store. Gates the three
   // progressive-unlock quick-action tiles and supplies the

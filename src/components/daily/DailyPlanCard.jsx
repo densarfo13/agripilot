@@ -66,6 +66,12 @@ import {
 // drives the "Last time..." nudge above the priority when the
 // user has prior history.
 import { trackEvent as moatTrack } from '../../core/analytics.js';
+// Premium Home spec \u00a712 \u2014 spec-mandated analytics events fired
+// alongside the existing moatTrack calls. Uses analyticsStore so
+// the events land in the same dashboard the rest of the home
+// surface reports into. Wrapped in try/catch at every callsite
+// per the "analytics must never crash app" rule.
+import { trackEvent as homeTrack } from '../../analytics/analyticsStore.js';
 import {
   getUserMemory, encouragementMessage,
 } from '../../core/userMemory.js';
@@ -453,6 +459,24 @@ export default function DailyPlanCard({
   const toastTimerRef = React.useRef(null);
   const experienceType = farm.farmType === 'backyard' ? 'garden' : 'farm';
 
+  // Premium Home spec \u00a79 \u2014 micro-interaction state for the Done
+  // button. Holds the action id whose Done button is currently
+  // mid-press so we can scale it 0.97 \u2192 1.0 over ~180 ms. The
+  // ref-backed timeout makes the press visible even when the
+  // user releases instantly. Auto-clears so a stale press doesn't
+  // leave the button stuck at 97%.
+  const [pressedActionId, setPressedActionId] = React.useState(null);
+  const pressedTimerRef = React.useRef(null);
+  React.useEffect(() => () => {
+    if (pressedTimerRef.current) clearTimeout(pressedTimerRef.current);
+  }, []);
+  function _bumpPress(id) {
+    if (!id) return;
+    setPressedActionId(id);
+    if (pressedTimerRef.current) clearTimeout(pressedTimerRef.current);
+    pressedTimerRef.current = setTimeout(() => setPressedActionId(null), 180);
+  }
+
   // Retention Loop spec \u00a76 \u2014 health-feedback prompt. Visible
   // only AFTER the user has marked at least one task done
   // today AND hasn't already answered for this (gardenId/farmId,
@@ -470,12 +494,61 @@ export default function DailyPlanCard({
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
   }, []);
 
+  // Premium Home spec \u00a712 \u2014 fire primary_action_shown + risk_viewed
+  // once per render of a NEW priority/risk so the dashboard can
+  // attribute "did the user see the gate today?" without double-
+  // counting. Refs gate the event-once-per-id behaviour without
+  // pulling in a state setter (which would cause re-renders).
+  const _shownPriorityRef = React.useRef(null);
+  const _shownRiskRef     = React.useRef(null);
+  React.useEffect(() => {
+    if (plan && plan.summary && _shownPriorityRef.current !== plan.summary) {
+      _shownPriorityRef.current = plan.summary;
+      try {
+        homeTrack('primary_action_shown', {
+          contextType: experienceType,
+          priority:    String(plan.summary).slice(0, 80),
+        });
+      } catch { /* swallow \u2014 analytics must not crash */ }
+    }
+    if (plan && plan.riskLevel && _shownRiskRef.current !== plan.riskLevel) {
+      _shownRiskRef.current = plan.riskLevel;
+      try {
+        homeTrack('risk_viewed', {
+          contextType: experienceType,
+          riskLevel:   plan.riskLevel,
+        });
+      } catch { /* swallow */ }
+    }
+  }, [plan && plan.summary, plan && plan.riskLevel, experienceType]);
+
   function handleMarkDone(action) {
     if (!isFeatureEnabled('FEATURE_AUTO_TASK_GENERATION')) return;
     markActionDone(farm.id, action);
     try {
       logEvent(EVENT_TYPES.DAILY_PLAN_ACTION_DONE || 'daily_plan_action_done',
         { farmId: farm.id, actionId: action.id, actionType: action.actionType });
+    } catch { /* swallow */ }
+    // Premium Home spec \u00a712 \u2014 spec-named primary_action_completed
+    // event. Fired alongside the legacy + moat events; the home
+    // dashboard reads this name specifically.
+    try {
+      homeTrack('primary_action_completed', {
+        contextType: experienceType,
+        actionId:    action.id,
+        actionType:  action.actionType || 'inspect',
+        actionTitle: String(action.title || '').slice(0, 80),
+      });
+    } catch { /* swallow */ }
+    // Spec \u00a79 / \u00a712 \u2014 the "Tomorrow: quick leaf check" hook
+    // surfaces on the toast post-Done; fire the analytic event
+    // here so attribution doesn't depend on the toast actually
+    // rendering (the user might dismiss it before timeout).
+    try {
+      homeTrack('tomorrow_hook_shown', {
+        contextType: experienceType,
+        actionType:  action.actionType || 'inspect',
+      });
     } catch { /* swallow */ }
     // Data Moat Layer \u00a78 \u2014 spec-shaped task_completed
     // event. The analytics service enriches the payload with
@@ -732,6 +805,22 @@ export default function DailyPlanCard({
         </p>
       ) : null}
 
+      {/* Premium Home spec \u00a73 \u2014 first-action gate eyebrow above
+          the priority. Strong, decisive copy ("Before you do
+          anything, do this first:") frames the card as a single
+          decisive instruction rather than an inbox of tasks.
+          Renders only when there's a real priority to gate \u2014
+          the empty/all-done branch already shows its own copy. */}
+      {plan.summary && (
+        <span
+          style={S.firstActionEyebrow}
+          data-testid="daily-plan-first-action-eyebrow"
+        >
+          {tSafe('daily.firstAction.eyebrow',
+            'Before you do anything, do this first:')}
+        </span>
+      )}
+
       {/* Final Home + Review Copy Polish \u00a72 \u2014 visual hierarchy.
           Today's Priority is the LARGEST element on the card.
           The headline reads BIG (~1.25rem, bold), then the
@@ -874,8 +963,21 @@ export default function DailyPlanCard({
                   <>
                   <button
                     type="button"
-                    onClick={() => handleMarkDone(a)}
-                    style={{ ...S.btn, ...S.btnPrimary }}
+                    onClick={() => { _bumpPress(a.id); handleMarkDone(a); }}
+                    onTouchStart={() => _bumpPress(a.id)}
+                    onMouseDown={() => _bumpPress(a.id)}
+                    style={{
+                      ...S.btn,
+                      ...S.btnPrimary,
+                      // Premium Home spec \u00a79 \u2014 200 ms ease-out
+                      // scale-down on press, snapping back to 1.0
+                      // when the timer clears. No bounce, no
+                      // flashy effect; the user sees a calm
+                      // confirmation that the tap registered.
+                      transform: pressedActionId === a.id ? 'scale(0.97)' : 'scale(1)',
+                      transition: 'transform 180ms ease-out',
+                    }}
+                    data-pressed={pressedActionId === a.id ? 'true' : 'false'}
                     data-testid={`daily-mark-done-${a.id}`}
                   >
                     {tSafe('daily.markDone', 'Mark done')}
@@ -1125,6 +1227,19 @@ const S = {
     fontSize: '0.9375rem',
     lineHeight: 1.45,
     color: '#F1F5F9',
+  },
+  // Premium Home spec \u00a73 \u2014 small green eyebrow ("Before you do
+  // anything, do this first:") sitting tight above the BIG
+  // priority headline. Tight tracking + uppercase pulls the eye
+  // to the priority below it without competing visually.
+  firstActionEyebrow: {
+    display: 'block',
+    fontSize: '0.65rem',
+    fontWeight: 800,
+    color: '#86EFAC',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   // Final Home + Review Copy Polish \u00a72 \u2014 BIG priority headline.
   // Visually dominates the card so the user reads "what to do

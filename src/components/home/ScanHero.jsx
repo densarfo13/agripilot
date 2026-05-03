@@ -109,6 +109,16 @@ export default function ScanHero() {
         experience: isGarden ? 'garden' : 'farm',
       });
     } catch { /* swallow */ }
+    // Premium Home spec \u00a712 \u2014 spec-named scan_cta_clicked event
+    // fired alongside the legacy scan_hero_tap so the new home
+    // dashboard reads the canonical name without us breaking
+    // the existing scan funnel.
+    try {
+      trackEvent('scan_cta_clicked', {
+        experience: isGarden ? 'garden' : 'farm',
+        source:     'home-hero',
+      });
+    } catch { /* swallow \u2014 analytics must not crash */ }
     try { navigate('/scan'); }
     catch { /* swallow */ }
   }

@@ -39,6 +39,10 @@ import {
   setActiveGardenId, EXPERIENCE,
 } from '../../store/multiExperience.js';
 import { setActiveFarmId } from '../../store/farrowayLocal.js';
+// Premium Home spec \u00a712 \u2014 context_switched analytics. Wrapped
+// in try/catch at the callsite so analytics never crashes the
+// switcher.
+import { trackEvent } from '../../analytics/analyticsStore.js';
 // Polish spec §1 \u2014 the trigger renders the canonical context
 // label ("\uD83C\uDF31 Tomato Garden" / "\uD83D\uDE9C Maize Farm") instead of the
 // bare entity name so the user sees the icon + suffix in one
@@ -212,6 +216,17 @@ export default function HomeContextSwitcher() {
           detail: { experience: kind, activeId: row.id, source: 'home-switcher' },
         }));
       }
+      // Premium Home spec §12 — emit the canonical
+      // context_switched event the home dashboard reads. Carries
+      // the new active kind + id + the source so the funnel can
+      // attribute switches by surface (home dropdown vs nav tabs).
+      try {
+        trackEvent('context_switched', {
+          to:       kind,
+          activeId: row.id,
+          source:   'home-switcher',
+        });
+      } catch { /* swallow — analytics must not crash */ }
     } catch { /* swallow — user can retry */ }
   }
 
