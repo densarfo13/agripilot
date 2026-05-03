@@ -142,7 +142,20 @@ export function setActiveGardenId(id) {
   // when callers pass the wrong id.
   const rows = getGardens();
   if (!rows.some((g) => String(g?.id) === String(id))) return false;
-  return _write(STORAGE_KEYS.ACTIVE_GARDEN_ID, id);
+  const ok = _write(STORAGE_KEYS.ACTIVE_GARDEN_ID, id);
+  // Context-driven UI spec §7 \u2014 switching to a garden must also
+  // update the legacy active-farm pointer so every existing
+  // consumer (useProfile.currentFarmId, useFarmerLoop,
+  // AllTasksPage, scan flow) re-derives off the picked row in
+  // one shot. Without this, the Tasks page would keep loading
+  // the previously-active farm's tasks while the user is
+  // looking at the garden surface.
+  try {
+    if (ok && typeof setActiveFarmId === 'function') {
+      setActiveFarmId(id);
+    }
+  } catch { /* swallow \u2014 the garden pointer is already set */ }
+  return ok;
 }
 
 /**

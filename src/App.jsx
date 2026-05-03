@@ -807,7 +807,7 @@ export default function App() {
                 /ngo/impact is staff-only (NGO operators
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
-            <Route path="/sell"               element={<BackyardGuard><Sell /></BackyardGuard>} />
+            <Route path="/sell"               element={<BackyardGuard surface="sell"><Sell /></BackyardGuard>} />
             {/* /buy — simple buyer marketplace. The page itself
                 checks the `buyMarketplace` flag and renders a
                 "coming soon" notice when off, so the route is
@@ -844,7 +844,7 @@ export default function App() {
                 required fields with regional unit default. */}
             <Route path="/setup/garden"       element={<QuickGardenSetup />} />
             <Route path="/setup/farm"         element={<QuickFarmSetup />} />
-            <Route path="/opportunities"      element={<BackyardGuard><Opportunities /></BackyardGuard>} />
+            <Route path="/opportunities"      element={<BackyardGuard surface="funding"><Opportunities /></BackyardGuard>} />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message
                 when off, so the route is always live + safe. */}

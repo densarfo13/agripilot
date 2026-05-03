@@ -53,19 +53,18 @@ const FARM_TABS = [
   { key: 'sell',          path: '/sell',          icon: NAV_ICONS.sell,          labelKey: 'nav.sell',          fallback: 'Sell' },
 ];
 
-// Backyard-experience tabs (U.S. backyard / home garden) —
-// spec §10. Same "My Grow" label as farm tabs (Farm vs Garden
-// UX spec §1) so the nav stays consistent regardless of which
-// experience the user is on. Sell stays removed for backyard
-// — that surface is reserved for users with marketplace-eligible
-// farms; Ask + Scan keep their nav slots.
+// Garden-experience tabs (Context-driven UI spec §2 — strict
+// 4-tab subset). Hides Funding + Sell because those surfaces
+// only apply to farm rows; Ask + Scan stay reachable from the
+// Home page (ScanHero + voice / help affordances) so removing
+// them from the bottom nav doesn't lose access. Same "My Grow"
+// label as the farm tabs (Farm vs Garden UX spec §1) so the
+// chrome stays consistent across context flips.
 const BACKYARD_TABS = [
   { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
   { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
-  { key: 'ask',      path: '/help',      icon: NAV_ICONS.help || '\u2754', labelKey: 'nav.ask',  fallback: 'Ask' },
-  { key: 'scan',     path: '/dashboard?scan=1', icon: NAV_ICONS.scan || '\uD83D\uDCF7', labelKey: 'nav.scan', fallback: 'Scan' },
 ];
 
 // Setup / onboarding paths where the bottom nav must self-hide
@@ -121,14 +120,19 @@ export default function BottomTabNav() {
   try { profile = useProfile()?.profile || null; }
   catch { /* outside ProfileContext (e.g. login page) */ }
   const country = profile?.country || profile?.countryCode || null;
-  // Multi-experience: when the user has both a garden and a farm
-  // and has explicitly switched, the active entity's farmType
-  // wins over the profile's farmType so the nav reflects the
-  // current context. Falls through to the profile when no active
-  // entity is set (single-experience users are unaffected).
+  // Context-driven UI spec §2 — `activeContextType` from
+  // useExperience is the canonical signal: 'farm' shows all
+  // tabs, 'garden' shows the strict 4-tab subset (no Funding /
+  // Sell). Falls back to the legacy farmType + region heuristic
+  // when useExperience can't resolve a snapshot (login screens
+  // mount BottomTabNav outside the experience scope).
+  let activeContextType = null;
   let farmType = profile?.farmType || null;
   try {
     const exp = useExperience();
+    if (exp && (exp.activeContextType === 'garden' || exp.activeContextType === 'farm')) {
+      activeContextType = exp.activeContextType;
+    }
     if (exp && exp.activeEntity && exp.activeEntity.farmType) {
       farmType = exp.activeEntity.farmType;
     } else if (exp && exp.experience === exp.EXPERIENCE.GARDEN) {
@@ -142,7 +146,12 @@ export default function BottomTabNav() {
       }
     }
   } catch { /* outside hook scope — fall back to profile */ }
-  const isBackyard = shouldUseBackyardExperience(country, farmType);
+  // Spec §2: prefer activeContextType. Only fall back to the
+  // legacy region+farmType heuristic when context is unknown
+  // (login flow / pre-onboarding paths).
+  const isBackyard = (activeContextType === 'garden')
+    || (activeContextType == null
+        && shouldUseBackyardExperience(country, farmType));
 
   // Region UX System path (feature-flag gated). When on, derive
   // tabs through `getNavigationItems(experience)` — this routes

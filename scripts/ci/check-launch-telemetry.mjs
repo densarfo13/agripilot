@@ -40,8 +40,8 @@ const SRC  = path.join(ROOT, 'src');
 // surface that should be the canonical emit site so a regression
 // (rename / accidental delete) is easy to diagnose.
 const REQUIRED_EVENTS = [
-  { name: 'backyard_guard_redirect',  surface: 'BackyardGuard.jsx',
-    why: 'Tracks stale-link / direct-URL hits from backyard users into farmer-only routes.' },
+  { name: 'context_empty_state_shown', surface: 'BackyardGuard.jsx',
+    why: 'Context-driven UI spec \u00a76 \u2014 fires when a garden-context user lands on a farm-only surface (Sell/Funding) and sees the empty-state card. Replaces the legacy backyard_guard_redirect event.' },
   { name: 'listing_expiry_sweep',     surface: 'App.jsx (boot microtask)',
     why: 'Reports how many ACTIVE listings auto-flipped to EXPIRED on app boot.' },
   { name: 'home_all_set_scan_tap',    surface: 'AllSetForTodayCard.jsx',

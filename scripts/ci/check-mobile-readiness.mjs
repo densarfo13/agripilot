@@ -75,12 +75,17 @@ const checks = [
   },
   {
     name: 'BackyardGuard wraps /sell, /opportunities, /funding',
-    why:  'Stops backyard users hitting farmer-only commerce via direct URL',
+    why:  'Context-driven UI spec \u00a76 \u2014 backyard users see a friendly empty-state instead of the underlying farmer-only surface. Surface prop drives the copy (sell/funding/default).',
     pass: () => {
       const app = read('src/App.jsx');
-      return /<BackyardGuard><Sell\s*\/><\/BackyardGuard>/.test(app)
-        && /<BackyardGuard><Opportunities\s*\/><\/BackyardGuard>/.test(app)
-        && /<BackyardGuard><FundingHub\s*\/><\/BackyardGuard>/.test(app);
+      // After the context-driven UI spec, BackyardGuard takes a
+      // `surface` prop. Either spelling (with or without prop)
+      // is acceptable so a future revert / refactor can keep
+      // this guard green.
+      const sellOk    = /<BackyardGuard(\s+surface=["']sell["'])?>\s*<Sell\s*\/>\s*<\/BackyardGuard>/.test(app);
+      const fundingOk = /<BackyardGuard(\s+surface=["']funding["'])?>\s*<Opportunities\s*\/>\s*<\/BackyardGuard>/.test(app);
+      const fundingHubOk = /<BackyardGuard(\s+surface=["'](?:funding|default)["'])?>\s*<FundingHub\s*\/>\s*<\/BackyardGuard>/.test(app);
+      return sellOk && fundingOk && fundingHubOk;
     },
   },
   {
