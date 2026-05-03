@@ -87,7 +87,8 @@ export default function Paywall({
 
   if (!open) return null;
 
-  const title    = tStrict('paywall.title',    'Get smarter daily decisions');
+  // Optimize Paywall for High Conversion §1 — outcome-led title.
+  const title    = tStrict('paywall.title',    'Never miss a problem in your plants');
 
   // Pricing A/B test §1 + §3 — read the user's pricing variant
   // ($5 / $7 / $9). Sticky per-device; same variant on every
@@ -134,7 +135,29 @@ export default function Paywall({
     catch { return { started: false, active: false }; }
   })();
   const showTrialCta = !trialState.started;
-  const trialCta = tStrict('paywall.trialCta', 'Start 7-day free trial');
+  // Optimize Paywall for High Conversion §3 — "Start free 7-day
+  // trial" wording (was "Start 7-day free trial"). Same key
+  // (no churn for translators).
+  const trialCta = tStrict('paywall.trialCta', 'Start free 7-day trial');
+  // Optimize Paywall for High Conversion §2 — 3 benefit bullets.
+  // Rendered below the body tagline. Outcome-led copy; same
+  // for every variant (the A/B test only varies the body line
+  // above, not the bullets).
+  const benefit1 = tStrict('paywall.benefit.guidance',
+    'Daily guidance tuned to your crop');
+  const benefit2 = tStrict('paywall.benefit.detection',
+    'Catch problems before they spread');
+  const benefit3 = tStrict('paywall.benefit.answers',
+    'Clear answers, no jargon');
+  // Optimize Paywall for High Conversion §4 + §5 — post-trial
+  // price framing + cancel-anytime trust cue. Both render only
+  // when the trial CTA is showing — once the trial has been
+  // started, the price/trust block becomes the "$7/month" +
+  // "Cancel anytime" pair (see render below).
+  const priceAfterTrial = tStrict('paywall.priceAfterTrial',
+    '$7/month after trial');
+  const cancelAnytime = tStrict('paywall.cancelAnytime',
+    'Cancel anytime');
 
   const handleBackdrop = (e) => {
     // Only close on direct backdrop click (not bubble from card).
@@ -188,11 +211,43 @@ export default function Paywall({
         <div style={S.icon} aria-hidden="true">{'\u2728'}</div>
         <h2 id="paywall-title" style={S.title}>{title}</h2>
         <p style={S.body}>{body}</p>
-        {/* Freemium §5 — price anchor sits directly above the CTA so
-            the user reads "$7/month" before tapping Upgrade. Visual
-            weight kept light (a single line, dim color) so the
-            primary action stays the dominant affordance. */}
-        <p style={S.price} data-testid="paywall-price">{price}</p>
+        {/* Optimize Paywall for High Conversion §2 — 3 benefit
+            bullets directly under the body tagline. Outcome-led
+            language; ✔ glyph leads each line so the eye scans
+            the row vertically without re-anchoring. The list
+            stays constant across A/B variants (the test only
+            varies the body line above) so cohort comparisons
+            stay clean. */}
+        <ul style={S.benefitList} data-testid="paywall-benefits">
+          <li style={S.benefitItem}>
+            <span aria-hidden="true" style={S.benefitCheck}>{'\u2714'}</span>
+            <span>{benefit1}</span>
+          </li>
+          <li style={S.benefitItem}>
+            <span aria-hidden="true" style={S.benefitCheck}>{'\u2714'}</span>
+            <span>{benefit2}</span>
+          </li>
+          <li style={S.benefitItem}>
+            <span aria-hidden="true" style={S.benefitCheck}>{'\u2714'}</span>
+            <span>{benefit3}</span>
+          </li>
+        </ul>
+        {/* Optimize Paywall for High Conversion §4 — price line.
+            When the trial slot is available, surface
+            "$7/month after trial" so the user reads the trial
+            CTA below as low-commitment ("free now, $7 after").
+            Once the trial has been started/used, the regular
+            "$7/month" line shows for honest pricing context. */}
+        <p style={S.price} data-testid="paywall-price">
+          {showTrialCta ? priceAfterTrial : price}
+        </p>
+        {/* Optimize Paywall for High Conversion §5 — trust cue.
+            Single italic dim line beneath the price; addresses
+            the lock-in fear that's the biggest source of
+            trial-start hesitation. */}
+        <p style={S.trustLine} data-testid="paywall-cancel-anytime">
+          {cancelAnytime}
+        </p>
         {/* Premium Monetization §5 — 7-day free trial CTA. Single-
             shot per device; renders only when the trial slot is
             still available. Tapping starts the trial (isPro()
@@ -269,6 +324,42 @@ const S = {
     color: 'rgba(255,255,255,0.72)',
     lineHeight: 1.5,
     margin: '0 0 12px',
+  },
+  // Optimize Paywall for High Conversion §2 — 3 benefit bullets.
+  // Left-aligned list in an otherwise center-aligned card so the
+  // eye scans the bullets vertically. Same green ✔ as the
+  // BackyardUpgradePrompt (consistency across upgrade prompts).
+  benefitList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: '0 0 14px',
+    textAlign: 'left',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  benefitItem: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 1.45,
+  },
+  benefitCheck: {
+    color: '#86EFAC',
+    fontWeight: 900,
+    flexShrink: 0,
+  },
+  // Optimize Paywall for High Conversion §5 — trust line.
+  // Tiny italic dim text directly below the price so the
+  // commitment-shape (price + cancel-anytime) reads as one
+  // block.
+  trustLine: {
+    margin: '4px 0 12px',
+    fontSize: 11,
+    fontStyle: 'italic',
+    color: 'rgba(255,255,255,0.55)',
   },
   // Freemium §5 — price line sits between body and CTA. Slightly
   // brighter than the body copy so it reads as a discrete fact,

@@ -9897,7 +9897,13 @@ const T = {
   'firstAction.dayCue.6':                     { en: 'Today\u2019s update',    fr: 'Mise à jour du jour',           sw: 'Sasisho la leo',                  ha: 'Sabuntawa ta yau',                          tw: 'Nnɛ nsesaeɛ',                   hi: 'आज का अद्यतन' },
 
   // Monetisation §3 — paywall copy. Single CTA + dismiss.
-  'paywall.title':                            { en: 'Get smarter daily decisions',                            fr: 'Obtenez des décisions quotidiennes plus intelligentes',       sw: 'Pata maamuzi bora zaidi ya kila siku',                ha: 'Sami yanke shawara mai kyau na yau da kullum',         tw: 'Nya gyinaeɛ pa daa daa',                          hi: 'रोज़ बेहतर निर्णय पाएँ' },
+  // Optimize Paywall for High Conversion §1 — outcome-driven
+  // headline. Earlier "Get smarter daily decisions" reads as
+  // a feature framing ("decisions"); the new wording leads
+  // with what the user FEARS LOSING ("a problem in your
+  // plants") which converts better in pilot data + matches
+  // the spec's exact text.
+  'paywall.title':                            { en: 'Never miss a problem in your plants',                    fr: 'Ne ratez jamais un probl\u00E8me sur vos plantes',           sw: 'Usikose tatizo kwenye mimea yako',                    ha: 'Kar ka kasa lura da matsala a tsire-tsiren ka',       tw: 'Ɛnka b\u0254ne biara a w\u025By\u025B w\u0254 wo nnua mu wo akyi', hi: 'अपने पौधों की कोई समस्या न चूकें' },
   // Freemium spec §4 — body wording aligned to "Avoid mistakes
   // and improve your results with better guidance" (the previous
   // "insights" phrasing was generic; "guidance" matches the
@@ -9916,11 +9922,30 @@ const T = {
   // region price tables; until then we ship the USD anchor as the
   // launch default and let the localized value override it.
   'paywall.price':                            { en: '$7/month',                                               fr: '7\u00A0$/mois',                                              sw: '$7/mwezi',                                            ha: '$7/wata',                                              tw: '$7/bosome',                                       hi: '$7/महीना' },
-  // Premium Monetization §5 — 7-day free trial primary CTA.
-  // Single-shot per device; surfaces only when the trial slot
-  // is still available. Wording emphasizes "free" + "7 days"
-  // up front so the user reads it as a low-commitment ask.
-  'paywall.trialCta':                         { en: 'Start 7-day free trial',                                 fr: 'Commencer l\'essai gratuit de 7 jours',                       sw: 'Anza majaribio ya bure ya siku 7',                    ha: 'Fara gwajin kyauta na kwanaki 7',                     tw: 'Hy\u025B nna 7 awosae a y\u025Btua',              hi: '7-दिन मुफ़्त ट्रायल शुरू करें' },
+  // Optimize Paywall for High Conversion §4 — post-trial price
+  // framing. Surfaces under the trial CTA so the user reads
+  // "Start free 7-day trial" / "$7/month after trial" / "Cancel
+  // anytime" as a connected reassurance block, not three
+  // separate disclosures.
+  'paywall.priceAfterTrial':                  { en: '$7/month after trial',                                   fr: '7\u00A0$/mois apr\u00E8s l\'essai',                          sw: '$7/mwezi baada ya majaribio',                         ha: '$7/wata bayan gwaji',                                  tw: '$7/bosome wie awosae no',                         hi: 'ट्रायल के बाद $7/महीना' },
+  // Optimize Paywall for High Conversion §5 — trust cue.
+  // "Cancel anytime" is the single line that addresses the
+  // single biggest source of trial-start hesitation (lock-in
+  // fear). Stays directly under the price line so the
+  // commitment-shape is unambiguous.
+  'paywall.cancelAnytime':                    { en: 'Cancel anytime',                                         fr: 'Annulez \u00E0 tout moment',                                 sw: 'Ghairi wakati wowote',                                ha: 'Soke kowane lokaci',                                   tw: 'Twa mu ber\u025B biara',                          hi: 'कभी भी रद्द करें' },
+  // Optimize Paywall for High Conversion §2 — 3 benefit
+  // bullets rendered below the body tagline. Outcome-led
+  // language (what the user GETS), short enough to scan in
+  // a glance.
+  'paywall.benefit.guidance':                 { en: 'Daily guidance tuned to your crop',                      fr: 'Conseils quotidiens adapt\u00E9s \u00E0 votre culture',      sw: 'Mwongozo wa kila siku kwa zao lako',                 ha: 'Jagora ta yau da kullum da ta dace da amfaninka',     tw: 'Daa daa akwanky\u025Cr\u025B a ehia w\'aduane',   hi: 'आपकी फसल के लिए दैनिक मार्गदर्शन' },
+  'paywall.benefit.detection':                { en: 'Catch problems before they spread',                      fr: 'D\u00E9tectez les probl\u00E8mes avant qu\'ils ne se propagent', sw: 'Gundua matatizo kabla ya kuenea',                 ha: 'Gane matsalolin kafin su yaɗu',                       tw: 'Hu nsɛnnenne ansa na atrɛ',                       hi: 'समस्याएँ फैलने से पहले पकड़ें' },
+  'paywall.benefit.answers':                  { en: 'Clear answers, no jargon',                               fr: 'R\u00E9ponses claires, sans jargon',                          sw: 'Majibu wazi, bila lugha ngumu',                       ha: 'Amsoshin a fili, ba tare da kalmomi masu wuya ba',    tw: 'Mmuae a emu da ho, kasa a y\u025Bnte ase nni mu', hi: 'स्पष्ट जवाब, कोई कठिन भाषा नहीं' },
+  // Optimize Paywall for High Conversion §3 — trial CTA
+  // rewording. "Start free 7-day trial" leads with the word
+  // "free" up front so the user reads "free" before
+  // registering "7-day"; matches the spec's exact phrasing.
+  'paywall.trialCta':                         { en: 'Start free 7-day trial',                                 fr: 'Commencer l\'essai gratuit de 7 jours',                       sw: 'Anza majaribio ya bure ya siku 7',                    ha: 'Fara gwajin kyauta na kwanaki 7',                     tw: 'Hy\u025B awosae a y\u025Btua nna 7',              hi: 'मुफ़्त 7-दिन ट्रायल शुरू करें' },
   'paywall.cta':                              { en: 'Upgrade to Pro',                                         fr: 'Passer à Pro',                                                sw: 'Boresha hadi Pro',                                    ha: 'Haɓaka zuwa Pro',                                       tw: 'Kɔ Pro so',                                       hi: 'Pro में अपग्रेड करें' },
   'paywall.dismiss':                          { en: 'Maybe later',                                            fr: 'Plus tard peut-être',                                         sw: 'Labda baadaye',                                       ha: 'Wataƙila daga baya',                                    tw: 'Ebia akyiri',                                     hi: 'शायद बाद में' },
 
