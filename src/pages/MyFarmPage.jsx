@@ -623,13 +623,13 @@ export default function MyFarmPage() {
             silence eslint's unused-vars rule. */}
         {void hasOtherFarm}
         {void handleSwitchFarm}
-        {/* Garden-visibility spec §3 — explicit deep-link to the
-            management surface that matches the user's active
-            experience. The button title shifts so a backyard
-            user reads "My Gardens" (not "Manage Farms") and
-            never wonders where their garden went. The
-            destination route is canonical (/manage-gardens vs
-            /farms) so a deep-link from elsewhere keeps working. */}
+        {/* Optimize Farm/Garden Mental Model §4 + §7 — collapse
+            "My Gardens" / "My Farms" / "Manage Farms" into a
+            single tight "Manage →" link. The destination route
+            still varies by active experience (/manage-gardens
+            vs /farms); only the visual weight + label changes
+            so the user reads it as a quiet utility, not a
+            primary affordance competing with Edit / Add. */}
         <button
           type="button"
           onClick={() => {
@@ -637,17 +637,11 @@ export default function MyFarmPage() {
               navigate(isBackyardActive ? '/manage-gardens' : '/farms');
             } catch { /* swallow */ }
           }}
-          style={S.actionBtnSecondary}
+          style={S.manageLink}
           data-testid="my-farm-manage"
         >
-          <span style={S.actionBtnIcon} aria-hidden="true">
-            <Sprout size={16} />
-          </span>
-          <span>
-            {isBackyardActive
-              ? tSafe('myFarm.viewGardens', 'My Gardens')
-              : tSafe('myFarm.viewFarms',   'My Farms')}
-          </span>
+          {tSafe('myFarm.manage', 'Manage')}
+          <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
         </button>
       </div>
 
@@ -1188,6 +1182,30 @@ const S = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  // Optimize Farm/Garden Mental Model §7 — "Manage →" rendered
+  // as a link, not a full button. Demoted visual weight so it
+  // reads as a quiet utility (the page's primary affordances
+  // are Edit + Add above). Centered + small + dim — the eye
+  // skips past it unless the user is specifically looking for
+  // the management page.
+  manageLink: {
+    appearance: 'none',
+    background: 'transparent',
+    border: 'none',
+    color: 'rgba(234,242,255,0.55)',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '0.5rem 0.5rem',
+    minHeight: 32,
+    display: 'inline-flex',
+    alignItems: 'center',
+    alignSelf: 'center',
+    fontFamily: 'inherit',
+    textDecoration: 'underline',
+    textDecorationColor: 'rgba(234,242,255,0.32)',
+    textUnderlineOffset: 3,
   },
   actionBtnIcon: {
     display: 'inline-flex',

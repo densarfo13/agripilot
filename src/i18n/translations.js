@@ -6719,6 +6719,13 @@ const T = {
   'myFarm.modeLabel.fromFarm': {
     en: 'From farm:', fr: 'De la ferme :', sw: 'Kutoka shambani:', ha: 'Daga gona:', tw: 'Firi afuom:', hi: 'खेत से:',
   },
+  // Optimize Farm/Garden Mental Model §7 — single "Manage →"
+  // entry collapses the legacy "My Gardens" / "My Farms" /
+  // "Manage Farms" labels. Same destination route, demoted
+  // visual weight (rendered as a link, not a button).
+  'myFarm.manage': {
+    en: 'Manage', fr: 'G\u00E9rer', sw: 'Dhibiti', ha: 'Sarrafa', tw: 'Hw\u025B so', hi: 'प्रबंधित करें',
+  },
   'myFarm.noFarm': {
     en: 'No farm yet. Set up your farm to get started.',
     fr: 'Pas encore de ferme. Configurez votre ferme pour commencer.',
@@ -6750,6 +6757,13 @@ const T = {
   'farmSwitcher.label':                 { en: 'Farm',                                                            fr: 'Ferme',                                                              sw: 'Shamba',                                              ha: 'Gona',                                                       tw: 'Afuo',                                                                hi: 'खेत' },
   'farmSwitcher.addNew':                { en: '+ Add new farm',                                                  fr: '+ Ajouter une ferme',                                                sw: '+ Ongeza shamba jipya',                               ha: '+ Ƙara sabuwar gona',                                        tw: '+ Fa afuo foforɔ ka ho',                                              hi: '+ नया खेत जोड़ें' },
   'farmSwitcher.manage':                { en: 'Manage farms',                                                    fr: 'G\u00E9rer les fermes',                                              sw: 'Dhibiti mashamba',                                    ha: 'Gudanar da gonaki',                                          tw: 'Hwɛ mfuo no so',                                                      hi: 'खेत प्रबंधित करें' },
+  // Multi-Farm Switcher (§2 / §3 / §6) — labels for the new
+  // panel pieces: explicit ACTIVE badge, search input, recent
+  // section header, and empty-search message.
+  'farmSwitcher.activeBadge':           { en: 'ACTIVE',                                                          fr: 'ACTIF',                                                              sw: 'AMILIFU',                                              ha: 'AYYUKA',                                                     tw: 'EREKO',                                                              hi: 'सक्रिय' },
+  'farmSwitcher.searchPlaceholder':     { en: 'Search farms\u2026',                                              fr: 'Rechercher des fermes\u2026',                                        sw: 'Tafuta mashamba\u2026',                                ha: 'Bincika gonaki\u2026',                                       tw: 'Hwehw\u025B mfuo\u2026',                                              hi: 'खेत खोजें\u2026' },
+  'farmSwitcher.recent':                { en: 'Recent',                                                          fr: 'R\u00E9cent',                                                        sw: 'Hivi karibuni',                                        ha: 'Kwanan nan',                                                 tw: 'Mmer\u025B a etwa to\u0254',                                          hi: 'हाल ही में' },
+  'farmSwitcher.noMatch':               { en: 'No matching farms',                                               fr: 'Aucune ferme correspondante',                                        sw: 'Hakuna mashamba yanayolingana',                        ha: 'Babu gonaki masu dacewa',                                    tw: 'Mfuo a \u025By\u025B s\u025B yi nni h\u0254',                          hi: 'कोई मेल खाने वाला खेत नहीं' },
 
   // ─── /farms page (Manage Farms, Apr 2026) ────────────────
   // Page-specific copy. Trust-safe: archive copy explicitly

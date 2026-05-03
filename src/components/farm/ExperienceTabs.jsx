@@ -124,6 +124,12 @@ export default function ExperienceTabs({
       style={S.wrap}
       data-testid="experience-tabs"
     >
+      {/* Optimize Farm/Garden Mental Model §6 — leading icons:
+          🌾 for farms, 🌱 for gardens. Decorative; aria-hidden so
+          screen readers read the text label only. The icons act
+          as the parent-vs-child visual cue (§1) — a sheaf of
+          grain reads as the larger / parent entity, the seedling
+          reads as the smaller / nested one. */}
       <button
         role="tab"
         type="button"
@@ -132,6 +138,7 @@ export default function ExperienceTabs({
         style={current === 'farm' ? { ...S.tab, ...S.tabActive } : S.tab}
         data-testid="experience-tab-farms"
       >
+        <span aria-hidden="true" style={{ marginRight: 6 }}>{'\uD83C\uDF3E'}</span>
         {tSafe('experienceTabs.farms', 'Farms')}
       </button>
       <button
@@ -142,6 +149,7 @@ export default function ExperienceTabs({
         style={current === 'garden' ? { ...S.tab, ...S.tabActive } : S.tab}
         data-testid="experience-tab-gardens"
       >
+        <span aria-hidden="true" style={{ marginRight: 6 }}>{'\uD83C\uDF31'}</span>
         {tSafe('experienceTabs.gardens', 'Gardens')}
       </button>
     </div>

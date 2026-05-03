@@ -48,20 +48,44 @@
  *     is exercised in the pilot.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
 import { Sprout } from '../icons/lucide.jsx';
+// Multi-Farm Switcher §6 — recent-farms ordering. Pure helper
+// module; no React state churn here.
+import { markFarmAccessed, getRecentFarmIds } from '../../store/recentFarms.js';
 
 const MAX_VISIBLE_BEFORE_SCROLL = 5;
 const ROW_HEIGHT_REM = 2.5;
+// Multi-Farm Switcher §3 — search input surfaces only when the
+// user has more than this many farms. Below the threshold the
+// dropdown stays clean (search would be overkill for ≤5 rows).
+const SEARCH_THRESHOLD = 5;
+// Multi-Farm Switcher §6 — quick-switch row caps at this many
+// recent farms so the rail never crowds out the full list.
+const RECENT_FARMS_LIMIT = 3;
 
 export default function FarmSwitcher() {
   const navigate = useNavigate();
   const { farms, currentFarmId, switchFarm } = useProfile();
   const [open, setOpen] = useState(false);
+  // Multi-Farm Switcher §3 — search input state. Initialised
+  // empty; only renders when farms.length > SEARCH_THRESHOLD.
+  const [query, setQuery] = useState('');
   const wrapRef = useRef(null);
+
+  // Multi-Farm Switcher §5 + §6 — bump the active farm to the
+  // top of the recent-farms list whenever it changes. Pure
+  // side effect; markFarmAccessed is idempotent within a 60s
+  // window so a re-render doesn't churn the ordering.
+  useEffect(() => {
+    if (currentFarmId) {
+      try { markFarmAccessed(currentFarmId); }
+      catch { /* swallow — analytics-shape; never block render */ }
+    }
+  }, [currentFarmId]);
 
   // Close on click outside or Esc — keeps the dropdown calm
   // and never traps focus on a misclick.
@@ -95,6 +119,43 @@ export default function FarmSwitcher() {
 
   const isSingle = farms.length <= 1;
   const labelPrefix = tSafe('farmSwitcher.label', 'Farm');
+
+  // Multi-Farm Switcher §3 — search filter. Case-insensitive
+  // substring match against farm name + region. When the query
+  // is empty (or the user has ≤ threshold farms), filtered ===
+  // farms.
+  const showSearch = farms.length > SEARCH_THRESHOLD;
+  const filteredFarms = useMemo(() => {
+    if (!showSearch || !query.trim()) return farms;
+    const q = query.trim().toLowerCase();
+    return farms.filter((f) => {
+      const name = String(f.farmName || f.name || '').toLowerCase();
+      const region = String(f.region || f.state || '').toLowerCase();
+      return name.includes(q) || region.includes(q);
+    });
+  }, [farms, query, showSearch]);
+
+  // Multi-Farm Switcher §6 — recent-farms quick-switch rail.
+  // Surfaces up to RECENT_FARMS_LIMIT IDs that aren't the
+  // currently-active farm. Hidden when search is active OR the
+  // recent-cohort is empty so it never duplicates rows shown
+  // below in the full list. Pure derivation — `getRecentFarmIds`
+  // reads localStorage on every render which is cheap (the
+  // store is capped at 10 rows).
+  const recentRows = useMemo(() => {
+    if (showSearch && query.trim()) return [];
+    let ids = [];
+    try { ids = getRecentFarmIds({ exclude: currentFarmId, limit: RECENT_FARMS_LIMIT }); }
+    catch { ids = []; }
+    if (!ids.length) return [];
+    const byId = new Map(farms.map((f) => [f.id, f]));
+    const rows = [];
+    for (const id of ids) {
+      const row = byId.get(id);
+      if (row) rows.push(row);
+    }
+    return rows;
+  }, [farms, currentFarmId, query, showSearch]);
 
   function handleSelect(id) {
     setOpen(false);
@@ -143,13 +204,67 @@ export default function FarmSwitcher() {
           aria-label={labelPrefix}
           data-testid="farm-switcher-popover"
         >
+          {/* Multi-Farm Switcher §3 — search input. Surfaces only
+              when the user has > SEARCH_THRESHOLD farms. The
+              filter applies to name + region (substring,
+              case-insensitive). Empty query renders all rows. */}
+          {showSearch ? (
+            <div style={S.searchRow}>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={tSafe('farmSwitcher.searchPlaceholder',
+                  'Search farms\u2026')}
+                style={S.searchInput}
+                data-testid="farm-switcher-search"
+                autoFocus
+              />
+            </div>
+          ) : null}
+
+          {/* Multi-Farm Switcher §6 — recent farms quick-switch
+              rail. Up to RECENT_FARMS_LIMIT rows newest-first,
+              excluding the active farm. Hidden when search is
+              active so the user only sees one list at a time. */}
+          {recentRows.length > 0 ? (
+            <div style={S.section} data-testid="farm-switcher-recent">
+              <span style={S.sectionLabel}>
+                {tSafe('farmSwitcher.recent', 'Recent')}
+              </span>
+              {recentRows.map((f) => {
+                const name = f.farmName || f.name
+                          || tSafe('myFarm.unnamedFarm', 'Farm');
+                return (
+                  <button
+                    key={`recent-${f.id}`}
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    onClick={() => handleSelect(f.id)}
+                    style={S.row}
+                    data-testid={`farm-switcher-recent-${f.id}`}
+                  >
+                    <span style={S.rowCheck} aria-hidden="true" />
+                    <span style={S.rowName}>{name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
           <div
             style={{
               ...S.list,
               maxHeight: `${MAX_VISIBLE_BEFORE_SCROLL * ROW_HEIGHT_REM}rem`,
             }}
           >
-            {farms.map((f) => {
+            {filteredFarms.length === 0 ? (
+              <div style={S.emptySearch} data-testid="farm-switcher-empty-search">
+                {tSafe('farmSwitcher.noMatch', 'No matching farms')}
+              </div>
+            ) : null}
+            {filteredFarms.map((f) => {
               const isActive = f.id === currentFarmId;
               const name = f.farmName || f.name
                         || tSafe('myFarm.unnamedFarm', 'Farm');
@@ -167,6 +282,17 @@ export default function FarmSwitcher() {
                     {isActive ? '\u2713' : ''}
                   </span>
                   <span style={S.rowName}>{name}</span>
+                  {/* Multi-Farm Switcher §2 — explicit [ACTIVE]
+                      badge alongside the existing ✓ glyph. Two
+                      visual cues for the same state: the glyph
+                      reads at a glance, the badge confirms in
+                      text — better for low-literacy + high-
+                      density (10+ farms) cohorts. */}
+                  {isActive ? (
+                    <span style={S.activeBadge} aria-hidden="true">
+                      {tSafe('farmSwitcher.activeBadge', 'ACTIVE')}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
@@ -296,6 +422,65 @@ const S = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  // Multi-Farm Switcher §2 — explicit "[ACTIVE]" badge that sits
+  // to the right of the active row's name. Tiny green pill —
+  // reads as text confirmation alongside the ✓ glyph on the
+  // left. Hidden on inactive rows.
+  activeBadge: {
+    flex: '0 0 auto',
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    padding: '2px 6px',
+    borderRadius: 999,
+    background: 'rgba(34,197,94,0.20)',
+    color: '#86EFAC',
+    border: '1px solid rgba(34,197,94,0.45)',
+    marginLeft: 8,
+  },
+  // Multi-Farm Switcher §3 — search input row. Sits at the very
+  // top of the popover when farms.length > SEARCH_THRESHOLD.
+  searchRow: {
+    padding: '8px 10px 6px',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+  },
+  searchInput: {
+    width: '100%',
+    appearance: 'none',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#fff',
+    borderRadius: 8,
+    padding: '8px 10px',
+    fontSize: '0.875rem',
+    fontFamily: 'inherit',
+    outline: 'none',
+  },
+  // Multi-Farm Switcher §6 — recent-farms quick-switch rail.
+  // Visually demarcated from the full list below by a soft
+  // bottom border + a label eyebrow.
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '6px 0',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+  },
+  sectionLabel: {
+    padding: '4px 12px',
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.45)',
+  },
+  // Multi-Farm Switcher §3 — empty-search state inside the list.
+  emptySearch: {
+    padding: '14px 12px',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   footer: {
     display: 'flex',
