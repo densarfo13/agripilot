@@ -74,6 +74,11 @@ import {
   markUpgradeAccepted,
 } from '../../core/backyardUpgrade.js';
 import { getGardens } from '../../store/multiExperience.js';
+// Audit + Fix All Screens for User Type Consistency §1 — page-
+// level mode resolution stamped onto Shell's data attribute.
+// Top-level ESM import (Vite is ESM-only); `getUserType` is a
+// pure derivation that never throws.
+import { getUserType as _resolveUserType } from '../../core/userType.js';
 import { recordDayActive, getEngagement } from '../../core/userEngagement.js';
 import {
   shouldShowPaywall, markPaywallShown, markUpgraded,
@@ -1550,8 +1555,18 @@ export default function FarmerTodayPage() {
 }
 
 function Shell({ children }) {
+  // Audit + Fix All Screens for User Type Consistency §1 + §7 —
+  // stamp the page root with `data-user-type="farmer|backyard"`
+  // so QA tests, analytics CSS rules, and e2e flows can target
+  // the active mode declaratively. `getUserType` is a pure
+  // derivation that never throws; the try/catch guards SSR /
+  // private-mode storage where the resolution chain might
+  // fail mid-walk.
+  let userType = 'farmer';
+  try { userType = _resolveUserType(); }
+  catch { userType = 'farmer'; }
   return (
-    <div style={S.page}>
+    <div style={S.page} data-user-type={userType}>
       <div style={S.container}>{children}</div>
     </div>
   );

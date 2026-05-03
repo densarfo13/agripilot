@@ -45,6 +45,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tStrict } from '../../i18n/strictT.js';
+// Fix Messaging Inconsistency §1 + §4 — single source of truth
+// for "render this string in mode-correct vocabulary". Routes
+// every visible engine-driven string through `sanitize()` so a
+// stray "your farm" leaking from the engine into a backyard
+// user's view automatically rewrites to "your garden".
+import useUserMode from '../../hooks/useUserMode.js';
 import { buildPrimaryAction } from '../../core/primaryActionEngine.js';
 import { trackEvent } from '../../core/analytics.js';
 import { markHomeOpenedToday } from '../../core/firstActionNotifications.js';
@@ -106,6 +112,12 @@ export default function FirstActionGate({
   // the contextual "Scan crop" affordance rendered in the
   // post-Done state below.
   const navigate = useNavigate();
+  // Fix Messaging Inconsistency §1 + §4 — sanitize() rewrites
+  // any farm/garden/crop/plant/task/step term to the
+  // mode-correct variant before render, so a stray "your farm"
+  // leaking from the engine into a backyard user's view (or
+  // vice versa) auto-corrects without per-call-site discipline.
+  const { sanitize } = useUserMode();
 
   const action = useMemo(
     () => decision
@@ -290,16 +302,28 @@ export default function FirstActionGate({
     } catch { /* ignore */ }
     return false;
   })();
+  // Audit + Fix All Screens for User Type Consistency §3 + §6 —
+  // every engine-emitted string flows through `sanitize()` so a
+  // "your farm" leaking from a farm_default fallback into a
+  // backyard user's render auto-rewrites to "your garden" (and
+  // vice versa). Static strings (`firstAction.header`,
+  // `firstAction.effort`) intentionally NOT sanitized because
+  // they're hand-curated copy — only engine-driven content
+  // needs the runtime safety net.
   const headerText      = tStrict('firstAction.header',       'Before you act, check this first');
-  const title           = tStrict(action.titleKey,            action.titleFallback);
-  const detail          = tStrict(action.detailKey,           action.detailFallback);
-  const reason          = tStrict(action.reasonKey,           action.reasonFallback);
-  const consequence     = tStrict(action.consequenceKey,      action.consequenceFallback);
+  const title           = sanitize(tStrict(action.titleKey,         action.titleFallback));
+  const detail          = sanitize(tStrict(action.detailKey,        action.detailFallback));
+  const reason          = sanitize(tStrict(action.reasonKey,        action.reasonFallback));
+  const consequence     = sanitize(tStrict(action.consequenceKey,   action.consequenceFallback));
   // Conversion upgrade §1 — compose [Action] — [Consequence] as
   // ONE bold headline so the user's eye lands on a single
   // sentence carrying intent + stakes. The standalone
   // consequence amber line is now redundant, suppressed below.
-  const headline        = consequence ? `${title} \u2014 ${consequence}` : title;
+  // Fix Messaging Inconsistency §1 + §4 — `sanitize()` swaps
+  // any cross-mode terminology in the engine-emitted strings
+  // (e.g. a farm-default fallback leaking "your crop" into a
+  // backyard user's view auto-rewrites to "your plant").
+  const headline        = sanitize(consequence ? `${title} \u2014 ${consequence}` : title);
   // Conversion upgrade §2 — small urgency chip above headline.
   // Engine derives the tier; gate renders it.
   const urgencyText     = action.urgencyKey
@@ -330,13 +354,13 @@ export default function FirstActionGate({
   // localized variant ships once translators write it.
   const effortText      = tStrict('firstAction.effort', 'Takes 30 seconds');
   const memoryText      = action.memoryKey
-    ? tStrict(action.memoryKey, action.memoryFallback)
+    ? sanitize(tStrict(action.memoryKey, action.memoryFallback))
     : '';
   // Primary Action Intelligence §5 — optional risk-boost line.
   // Engine sets it when humidity > 75 OR repeated-worse pattern.
   // Severity drives the visual weight (medium amber, high red).
   const riskNoteText    = action.riskNoteKey
-    ? tStrict(action.riskNoteKey, action.riskNoteFallback)
+    ? sanitize(tStrict(action.riskNoteKey, action.riskNoteFallback))
     : '';
   const riskNoteSeverity = action.riskNoteSeverity || null;
   // Demo / Investor Mode §3 — when there's no real area insight
@@ -349,13 +373,13 @@ export default function FirstActionGate({
     catch { return false; }
   })();
   const areaInsightText = action.showAreaInsight
-    ? tStrict(action.areaInsightKey, action.areaInsightFallback)
+    ? sanitize(tStrict(action.areaInsightKey, action.areaInsightFallback))
     : (_demoAreaInsight
-        ? tStrict('firstAction.areaInsight.demo',
-            'Growers in your area see better results doing this')
+        ? sanitize(tStrict('firstAction.areaInsight.demo',
+            'Growers in your area see better results doing this'))
         : '');
   const ctaDone         = tStrict(action.ctaDoneKey,          action.ctaDoneFallback);
-  const tomorrowText    = tStrict(action.tomorrowKey,         action.tomorrowFallback);
+  const tomorrowText    = sanitize(tStrict(action.tomorrowKey, action.tomorrowFallback));
   // Retention §2 — time anchor under the tomorrow line. Fixed
   // copy ("Check again tomorrow morning") sits under the
   // tomorrow hook so the user has a concrete return cue.
