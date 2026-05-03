@@ -2753,6 +2753,43 @@ const checks = [
     // Open-Meteo, returns the spec shape, falls back to a
     // safe default. Home weather card mounts on Dashboard
     // with the unavailable fallback line.
+    // Moat \u00a75 \u2014 spec-faithful adaptive rules. Engine inserts
+    // `{ title, detail }` task objects per the four moat rules
+    // (skip-many / consistency / scan-many / region-insight)
+    // and the card adapter handles both string and object task
+    // shapes.
+    name: 'Moat adaptive rules: 4 task-insertion rules + region insight + card adapter',
+    why:  'Moat \u00a75 \u2014 learning hook drives adaptive plan',
+    pass: () => {
+      const eng  = read('src/core/dailyPlanEngine.js');
+      const card = read('src/components/daily/DailyPlanCard.jsx');
+      // Engine has the 4 spec rules with the spec wording.
+      const RULES_OK =
+            /'Start with a quick check'/.test(eng)
+         && /'Just check leaves today\\u2014keep it simple'/.test(eng)
+         && /'Keep the streak going'/.test(eng)
+         && /'Your consistency is helping your plants'/.test(eng)
+         && /'Follow up on plant condition'/.test(eng)
+         && /'Check the same leaves you scanned earlier'/.test(eng)
+         && /'Common successful step'/.test(eng)
+         && /'Growers in your area are checking leaves early'/.test(eng);
+      // Engine reads ctx.insights with the spec-shape key.
+      const INSIGHT_OK =
+            /ctx\.insights/.test(eng)
+         && /\$\{region\}_\$\{cropOrPlant\}_\$\{setup\}/.test(eng);
+      // Card threads ctx.insights (composite key) into the
+      // engine call.
+      const CARD_OK =
+            /from\s+['"]\.\.\/\.\.\/core\/insightAggregator\.js['"]/.test(card)
+         && /from\s+['"]\.\.\/\.\.\/core\/eventStore\.js['"]/.test(card)
+         && /ctx\.insights = grouped/.test(card)
+         // Adapter handles both string and object task shapes.
+         && /isObject = task && typeof task === 'object'/.test(card)
+         && /typeof task\.title === 'string'/.test(card);
+      return RULES_OK && INSIGHT_OK && CARD_OK;
+    },
+  },
+  {
     name: 'Weather service + Home weather card ship spec contract',
     why:  'Final Weather Integration \u00a75 + \u00a77 \u2014 location feeds weather feeds plan',
     pass: () => {
@@ -3541,18 +3578,20 @@ const checks = [
     },
   },
   {
-    // Data Moat Layer \u00a75 \u2014 dailyPlanEngine accepts userMemory
-    // + adapts the plan based on skip / scan / feedback signals.
+    // Data Moat Layer \u00a75 + Moat Adaptive Rules \u2014 dailyPlanEngine
+    // accepts userMemory + adapts the plan based on skip /
+    // consistency / scan / feedback signals. The Moat patch
+    // replaced the legacy transform-based rules (watering-line
+    // swap; reason rewrite) with spec-faithful task INSERTIONS;
+    // the new rules are asserted by a separate guard ("Moat
+    // adaptive rules: 4 task-insertion rules ..."). This guard
+    // now checks that the engine still reads userMemory + still
+    // promotes risk to HIGH on getting_worse feedback.
     name: 'dailyPlanEngine adapts to userMemory signals',
     why:  'Data Moat Layer \u00a75 \u2014 memory-aware adaptation',
     pass: () => {
       const f = read('src/core/dailyPlanEngine.js');
-      // Engine reads ctx.userMemory.
       return /ctx\.userMemory/.test(f)
-          // Skip-many simplification swaps the watering line.
-          && /Press the soil\. If dry, water it\./.test(f)
-          // High-scan path tweaks the reason.
-          && /Follow up on what you scanned recently\./.test(f)
           // Getting-worse standalone HIGH branch.
           && /recentlyReportedWorse/.test(f)
           && /You said it\\u2019s getting worse \\u2014 try a scan today\./.test(f);

@@ -69,6 +69,13 @@ import { trackEvent as moatTrack } from '../../core/analytics.js';
 import {
   getUserMemory, encouragementMessage,
 } from '../../core/userMemory.js';
+// Moat \u00a74 + \u00a75 \u2014 region-insight aggregator. The engine
+// reads ctx.insights to surface a "Common successful step"
+// task when the local bucket
+// `${region}_${cropOrPlant}_${setup}` shows other growers
+// completing tasks.
+import { aggregateLocalInsights } from '../../core/insightAggregator.js';
+import { getEvents } from '../../core/eventStore.js';
 // Final Home Dashboard Polish \u00a72 \u2014 reuse the spec-shaped
 // formatters so the active-context strip displays a clean
 // "Maryland, USA" + "2 acres" / "Small farm" readout instead
@@ -264,6 +271,45 @@ export default function DailyPlanCard({
         };
         try { ctx.userMemory = getUserMemory(); }
         catch { /* leave undefined; engine handles missing */ }
+        // Moat \u00a74 + \u00a75 \u2014 thread the local insight buckets
+        // through ctx.insights so the engine's region-insight
+        // rule can lookup `${region}_${cropOrPlant}_${setup}`.
+        // Skip if the event log is empty; the aggregator
+        // returns an empty `{}` in that case which the engine
+        // tolerates.
+        try {
+          const events = getEvents();
+          const insights = aggregateLocalInsights(events);
+          // Pass the byKey grouping the engine reads. The
+          // aggregator's existing shape gives us per-dimension
+          // counts; we add the spec's composite key here so the
+          // engine reads it directly without re-grouping.
+          const grouped = Object.create(null);
+          for (const e of events) {
+            if (!e || e.name !== 'task_completed') continue;
+            const p = e.payload || {};
+            const region = p.region || '';
+            const crop   = p.cropOrPlant || '';
+            const setup  = p.growingSetup || p.farmSizeCategory || '';
+            const key = `${region}_${crop}_${setup}`;
+            if (!grouped[key]) grouped[key] = { completed: 0, total: 0 };
+            grouped[key].completed += 1;
+          }
+          for (const e of events) {
+            if (!e || e.name !== 'task_shown') continue;
+            const p = e.payload || {};
+            const region = p.region || '';
+            const crop   = p.cropOrPlant || '';
+            const setup  = p.growingSetup || p.farmSizeCategory || '';
+            const key = `${region}_${crop}_${setup}`;
+            if (!grouped[key]) grouped[key] = { completed: 0, total: 0 };
+            grouped[key].total += 1;
+          }
+          ctx.insights = grouped;
+          // Stash the wider aggregator output too, in case a
+          // future engine extension reads byRegion / byCrop.
+          ctx.insightsAggregate = insights;
+        } catch { /* leave insights undefined; engine handles */ }
       } catch { /* keep engine input unchanged */ }
       v2 = generatePlanV2(ctx);
     } catch { /* never let the engine break the page */ }
@@ -288,18 +334,29 @@ export default function DailyPlanCard({
     // tomorrowPreview becomes the followUpTask body.
     const slugV2 = (s) => String(s || '')
       .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 32);
-    const v2Actions = (Array.isArray(v2.tasks) ? v2.tasks : []).map((task, i) => ({
-      id:         `v2_${i}_${slugV2(task)}`,
-      title:      task,
-      // Reason hangs the priority's "why" off the FIRST task so
-      // the action tile stays informative without crowding the
-      // headline. Subsequent tasks render with no detail \u2014 they
-      // are short enough to read at a glance.
-      reason:     i === 0 ? v2.reason : '',
-      urgency:    i === 0 ? 'medium' : 'low',
-      actionType: 'inspect',
-      source:     'dailyPlanEngine',
-    }));
+    // Moat \u00a75 \u2014 the engine emits tasks as EITHER plain strings
+    // (legacy: priority + size + scan tasks) OR `{ title, detail }`
+    // objects (adaptive insertions: "Start with a quick check",
+    // "Keep the streak going", "Follow up on plant condition",
+    // "Common successful step"). Normalise both shapes here:
+    // object tasks bring their own detail; string tasks get the
+    // priority's "why" reason on the first slot only.
+    const v2Actions = (Array.isArray(v2.tasks) ? v2.tasks : []).map((task, i) => {
+      const isObject = task && typeof task === 'object' && typeof task.title === 'string';
+      const title    = isObject ? task.title : String(task || '');
+      const detail   = isObject ? (typeof task.detail === 'string' ? task.detail : '') : '';
+      return {
+        id:         `v2_${i}_${slugV2(title)}`,
+        title,
+        // Object tasks carry their own detail; string tasks
+        // get the priority's reason on the FIRST slot only
+        // (kept for back-compat with the legacy render path).
+        reason:     detail || (i === 0 ? v2.reason : ''),
+        urgency:    i === 0 ? 'medium' : 'low',
+        actionType: 'inspect',
+        source:     'dailyPlanEngine',
+      };
+    });
     const v2Alerts = (Array.isArray(v2.riskAlerts) ? v2.riskAlerts : []).map((text, i) => ({
       id:       `v2_risk_${i}`,
       severity: 'warning',

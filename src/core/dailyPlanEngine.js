@@ -358,23 +358,50 @@ function _fallbackPlan(type) {
 }
 
 /**
- * Trim + dedupe a task list to MAX_TASKS. Empty / non-string
- * entries drop out. Dedupe is case-insensitive on the trimmed
- * value so "Water only if soil is dry" and the same string
- * with trailing whitespace don't both appear.
+ * Trim + dedupe a task list to MAX_TASKS. Each entry may be
+ * EITHER a plain string OR an object `{ title, detail? }`. The
+ * output is the SAME shape \u2014 string in / string out, object
+ * in / object out, mixed input collapses to a per-entry shape
+ * preserved.
+ *
+ * Dedupe is case-insensitive on the title; "Water only if soil
+ * is dry" and the same string with trailing whitespace don't
+ * both appear.
+ *
+ * Why mixed shapes
+ * \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+ * Moat \u00a75 wants the engine to UNSHIFT / PUSH adaptive tasks
+ * with `{ title, detail }` shape ("Start with a quick check"
+ * + "Just check leaves today\u2014keep it simple"). The legacy
+ * tasks (water lines, scan prompts) are plain strings. Rather
+ * than flip the whole engine to objects (which would break
+ * the existing CI guards that match string content), we let
+ * both shapes coexist. The DailyPlanCard adapter handles
+ * either.
  */
 function _capTasks(list) {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
   const out  = [];
   for (const raw of list) {
-    if (typeof raw !== 'string') continue;
-    const t = raw.trim();
-    if (!t) continue;
-    const key = t.toLowerCase();
+    if (raw == null) continue;
+    let title;
+    let entry;
+    if (typeof raw === 'string') {
+      title = raw.trim();
+      if (!title) continue;
+      entry = title;
+    } else if (typeof raw === 'object' && typeof raw.title === 'string') {
+      title = raw.title.trim();
+      if (!title) continue;
+      entry = { title, detail: typeof raw.detail === 'string' ? raw.detail : '' };
+    } else {
+      continue;
+    }
+    const key = title.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(t);
+    out.push(entry);
     if (out.length >= MAX_TASKS) break;
   }
   return out;
@@ -521,31 +548,85 @@ function _applyWeather(plan, w, ctx) {
   };
   const risk = _computeRisk(w, mergedRetention);
 
-  // Data Moat Layer \u00a75 \u2014 watering-task simplification.
-  // When the user often skips watering tasks (skippedCount >
-  // completedCount AND >= 3 skips), the watering line is
-  // re-shaped to a more direct prompt that the user can act
-  // on without thinking. The original detail still renders
-  // as the action's reason on the priority tile.
-  const skipMany = typeof memory.skippedTasksCount === 'number'
-                && memory.skippedTasksCount >= 3
-                && memory.skippedTasksCount > (memory.completedTasksCount || 0);
-  if (skipMany) {
-    tasks = tasks.map((t) => (
-      /^water only if/i.test(t)
-        ? 'Press the soil. If dry, water it.'
-        : t
-    ));
+  // Moat \u00a75 \u2014 spec-faithful adaptive rules. UNSHIFT/PUSH
+  // new task objects at the front/back of the list, then let
+  // _capTasks trim to MAX_TASKS so the most-relevant adaptive
+  // task survives. Each task is a `{ title, detail }` object
+  // so the card can render the title in the slot + the detail
+  // as the reason line; legacy string tasks coexist (the
+  // _capTasks helper preserves whichever shape it sees).
+  //
+  // Order matters here:
+  //   1. Push consistency-encouragement to the END (it's the
+  //      least urgent; it should drop first if the cap kicks in).
+  //   2. Unshift skip-many reminder to the FRONT (the spec wants
+  //      it to be the first thing the user sees when they're
+  //      missing tasks).
+  //   3. Unshift scan-follow-up to the FRONT (overrides skip
+  //      reminder if both apply \u2014 active scanners need the
+  //      follow-up call to action ahead of the gentler nudge).
+  //   4. Unshift region-insight LAST so it ends up at index 0
+  //      \u2014 social proof from local growers wins the top slot
+  //      when present.
+
+  // Rule (a) \u2014 consistency: push encouragement task when the
+  // user has completed > 5 tasks total in their history.
+  if (typeof memory.completedTasksCount === 'number'
+      && memory.completedTasksCount > 5) {
+    tasks.push({
+      title:  'Keep the streak going',
+      detail: 'Your consistency is helping your plants',
+    });
   }
 
-  // Data Moat Layer \u00a75 \u2014 high-scan users get follow-up
-  // prioritised. We DON'T add extra tasks (cap stays at 3);
-  // we tweak the priority's reason to nudge the follow-up
-  // check explicitly. Threshold: 3+ scans in the user's
-  // history.
-  if ((memory.scanCount || 0) >= 3) {
-    if (!/follow.?up/i.test(reason)) {
-      reason = 'Follow up on what you scanned recently.';
+  // Rule (b) \u2014 skip-many: unshift a simpler check task when
+  // the user has skipped more than they've completed. Spec
+  // wording verbatim.
+  if (typeof memory.skippedTasksCount === 'number'
+      && typeof memory.completedTasksCount === 'number'
+      && memory.skippedTasksCount > memory.completedTasksCount) {
+    tasks.unshift({
+      title:  'Start with a quick check',
+      detail: 'Just check leaves today\u2014keep it simple',
+    });
+  }
+
+  // Rule (c) \u2014 active scanner: unshift a follow-up task when
+  // the user has scanned more than 3 times.
+  if (typeof memory.scanCount === 'number' && memory.scanCount > 3) {
+    tasks.unshift({
+      title:  'Follow up on plant condition',
+      detail: 'Check the same leaves you scanned earlier',
+    });
+  }
+
+  // Rule (d) \u2014 region insight: unshift a "common successful
+  // step" task when the local insight bucket
+  // `${region}_${cropOrPlant}_${setup}` shows > 5 completions
+  // by other growers in the same context. The caller threads
+  // the insights map via ctx.insights (read straight from
+  // aggregateLocalInsights output).
+  const insights = (ctx && typeof ctx.insights === 'object') ? ctx.insights : null;
+  if (insights) {
+    const region      = (ctx.location && ctx.location.region) || ctx.region || '';
+    const cropOrPlant = ctx.cropOrPlant || '';
+    // Garden: setup is the canonical bucket (container /
+    // raised_bed / etc.). Farm: setup is 'unknown' from
+    // buildGrowingContext (gardens-only field) so we fall
+    // through to size (small / medium / large). Treating
+    // 'unknown' as falsy here matches the spec's intent of
+    // a meaningful bucket key.
+    const rawSetup    = ctx.setup;
+    const setup       = (rawSetup && rawSetup !== 'unknown')
+                          ? rawSetup
+                          : (ctx.type === 'farm' ? (ctx.size || '') : '');
+    const key         = `${region}_${cropOrPlant}_${setup}`;
+    const bucket      = insights[key];
+    if (bucket && typeof bucket.completed === 'number' && bucket.completed > 5) {
+      tasks.unshift({
+        title:  'Common successful step',
+        detail: 'Growers in your area are checking leaves early',
+      });
     }
   }
 
