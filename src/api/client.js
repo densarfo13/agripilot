@@ -118,6 +118,19 @@ function prettyField(key) {
   return MAP[key] || String(key || '').trim();
 }
 
+// Module-scoped one-shot flag — when MANY in-flight requests
+// return 401 in rapid succession (e.g. the offline-event queue
+// draining after a session expires), the previous interceptor
+// fired `window.location.href = '/login...'` per response,
+// triggering Chrome's "Throttling navigation to prevent the
+// browser from hanging" circuit-breaker AND a blank screen.
+//
+// This flag flips on the first 401-redirect attempt and gates
+// every subsequent attempt to a no-op until the page actually
+// unloads. Idempotent + safe — the user lands at /login exactly
+// once, with the same `?from=` + `reason=session_expired` query.
+let _logoutRedirectInFlight = false;
+
 // Response interceptor: 401 logout + network error tagging + GET auto-retry
 api.interceptors.response.use(
   (response) => response,
@@ -225,7 +238,15 @@ api.interceptors.response.use(
         const onAuthPage = PUBLIC_AUTH.some(
           (p) => here === p || here.startsWith(p + '/'),
         );
-        if (!onAuthPage && typeof window !== 'undefined' && window.location) {
+        // Gate: only the FIRST 401 in a storm fires the redirect.
+        // Subsequent 401s (from the offline queue draining, parallel
+        // /me checks, etc.) are silenced. Without this gate, Chrome
+        // throttles `window.location.href` after ~5 rapid assignments
+        // and the user sees a blank screen with the "Throttling
+        // navigation" warning in the console.
+        if (!onAuthPage && !_logoutRedirectInFlight
+            && typeof window !== 'undefined' && window.location) {
+          _logoutRedirectInFlight = true;
           // Preserve where the user was so /login can return them after
           // re-auth. Avoids the "I clicked into farmers, got bounced to
           // login, then dumped on the dashboard" papercut.
