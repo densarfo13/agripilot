@@ -3,10 +3,24 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { isProfileComplete } from '../lib/farmScore.js';
 import { isFirstTimeFarmer } from '../utils/fastOnboarding/index.js';
 import { shouldShowSetup } from '../utils/onboarding.js';
+import { BYPASS_SETUP_FOR_PILOT } from '../lib/pilotFlags.js';
 
 export default function ProfileGuard({ children }) {
   const location = useLocation();
   const { profile, farms, loading, initialized } = useProfile();
+
+  // ─── Pilot bypass (May 2026 emergency fix) ───────────────────────
+  // While the live pilot is unstable we route EVERY authenticated
+  // user straight to Home. The in-Home "Complete setup" card
+  // surfaces missing crop / location / farm context inline so the
+  // user can finish setup without leaving Home, and no automatic
+  // redirect can ping-pong them back to "/onboarding/fast" or
+  // "/profile/setup". Auth + role state is untouched. Flip the
+  // flag in src/lib/pilotFlags.js to disable the bypass; nothing
+  // else in this guard needs to change.
+  if (BYPASS_SETUP_FOR_PILOT) {
+    return children;
+  }
 
   // ─── Onboarding-loop fix v2 (May 2026) ───────────────────────────
   // shouldShowSetup() unifies two rules per the final fix spec:

@@ -27,8 +27,54 @@ try {
 } catch { /* swallow */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
+import { BYPASS_SETUP_FOR_PILOT, LOOP_STATE_KEYS } from './lib/pilotFlags.js';
+import { setOnboardingComplete } from './utils/onboarding.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
+
+// ── Pilot bypass: clear loop-state + stamp completion flag ──────
+//
+// When BYPASS_SETUP_FOR_PILOT is true (live pilot fix, May 2026)
+// we wipe the localStorage keys that have caused setup-redirect
+// loops in past releases and stamp the onboarding-complete flag.
+// This way a tab that was stuck mid-wizard recovers the next
+// time the page loads — even if the user never taps Continue
+// again. Auth + user identity are NEVER touched. The contract
+// is a hard guarantee: dropping every key in LOOP_STATE_KEYS
+// must leave the user signed in and routable to Home.
+//
+// When the pilot flag flips back to false, this block no-ops.
+try {
+  if (BYPASS_SETUP_FOR_PILOT && typeof localStorage !== 'undefined') {
+    let droppedLoopKeys = 0;
+    for (const k of LOOP_STATE_KEYS) {
+      try {
+        if (localStorage.getItem(k) != null) {
+          localStorage.removeItem(k);
+          droppedLoopKeys += 1;
+        }
+      } catch { /* per-key tolerate */ }
+    }
+    // Also clear the sessionStorage one-shot guard so a fresh
+    // tab never thinks it has "already visited setup once"
+    // (which is meaningless under the bypass).
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('farroway_setup_visited');
+      }
+    } catch { /* swallow */ }
+    // Stamp the onboarding-complete flag so any downstream
+    // reader (CompleteSetupCard logic, dashboard gating,
+    // legacy guards) treats the user as already-onboarded.
+    try { setOnboardingComplete(); } catch { /* swallow */ }
+    // eslint-disable-next-line no-console
+    console.log(
+      '[Farroway] Pilot bypass active — cleared '
+      + droppedLoopKeys + ' loop-state key(s); stamped onboarding flag.'
+    );
+  }
+} catch { /* never throw from boot */ }
+
 // Strip malformed-JSON entries (parse-level safety) — runs before
 // the schema migration so we never feed garbage to a validator.
 validateLocalStorageShapes();

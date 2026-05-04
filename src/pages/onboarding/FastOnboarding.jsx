@@ -43,6 +43,7 @@ import { generateFirstPlan } from '../../core/firstPlanEngine.js';
 import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../core/analytics.js';
 import { stampOnboardingStart } from '../../core/onboardingTiming.js';
+import { BYPASS_SETUP_FOR_PILOT } from '../../lib/pilotFlags.js';
 
 // ── Color tokens (mirror onboarding visual language) ────────────
 const C = {
@@ -967,8 +968,19 @@ export default function FastOnboarding() {
           ) : null}
 
           {/* Primary CTA — always tappable per spec. Geo state
-              is informational; advancing to the crop screen is
-              never gated on it. */}
+              is informational; advancing is never gated on it.
+              ─── Emergency pilot fix (May 2026) ───
+              Continue NEVER advances into the rest of the wizard
+              while BYPASS_SETUP_FOR_PILOT is true — the previous
+              path (setStepIdx(1) → crop selection → first-action
+              render) was crashing on missing location data and
+              dumping the user into the global ErrorBoundary.
+              We now stamp the onboarding-complete flag, record
+              that the user opted to skip location, and route
+              straight to /home. Home renders fallbacks for
+              missing crop / location / weather and exposes a
+              non-blocking "Complete setup" card so the user
+              can return to fill in details on their own time. */}
           <button
             type="button"
             onClick={() => {
@@ -983,6 +995,25 @@ export default function FastOnboarding() {
                   hasManualRegion:  !!region.trim(),
                 });
               } catch { /* swallow */ }
+
+              // Pilot bypass: skip the rest of the wizard.
+              if (BYPASS_SETUP_FOR_PILOT) {
+                try { setOnboardingComplete(); } catch { /* swallow */ }
+                try {
+                  if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem('farroway_location_skipped', 'true');
+                  }
+                } catch { /* swallow */ }
+                try {
+                  trackEvent('pilot_bypass_continue', {
+                    geoStatus,
+                    from: 'fast-onboarding/location',
+                  });
+                } catch { /* swallow */ }
+                navigate('/home', { replace: true });
+                return;
+              }
+
               setStepIdx(1);
             }}
             style={S.primaryBtn}

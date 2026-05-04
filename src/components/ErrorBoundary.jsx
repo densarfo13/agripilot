@@ -23,6 +23,8 @@ import React from 'react';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from './BrandLogo.jsx';
 import { removeFarrowayState } from '../lib/storageSafe.js';
+import { LOOP_STATE_KEYS } from '../lib/pilotFlags.js';
+import { setOnboardingComplete } from '../utils/onboarding.js';
 
 const C = FARROWAY_BRAND.colors;
 
@@ -146,6 +148,19 @@ export default class ErrorBoundary extends React.Component {
           _currentPath());
       }
     } catch { /* console missing in some sandboxes */ }
+
+    // Crash diagnostics (May 2026 pilot fix §6) — always log the
+    // route + error message so ops can pinpoint which surface
+    // threw without dev tools open. Single line, no PII, safe
+    // for production console drains.
+    try {
+      // eslint-disable-next-line no-console
+      console.error(
+        'Route crash:',
+        _currentPath(),
+        error?.message || error || 'unknown'
+      );
+    } catch { /* never throw from a catch handler */ }
   }
 
   handleReload = () => {
@@ -206,15 +221,37 @@ export default class ErrorBoundary extends React.Component {
     } catch { /* never throw from a recovery handler */ }
   };
 
-  handleRestartSetup = () => {
-    // "Restart setup" — clear the farm + onboarding state and
-    // route back to the onboarding entry point. Auth is still
-    // preserved; the user just re-walks the setup wizard.
+  handleClearSetupState = () => {
+    // "Clear setup state" — drops ONLY the loop-state keys
+    // (farroway_temp_setup_state, farroway_setup_step,
+    // farroway_location_required, farroway_location_pending,
+    // farroway_onboarding_redirect) and stamps the
+    // onboarding-complete flag so the next mount can NOT
+    // redirect into a broken wizard.
+    //
+    // Auth + user + role + userType are preserved — none of
+    // those are in LOOP_STATE_KEYS, and we never touch the
+    // farroway_token / farroway_user / farroway_user_type
+    // keys here. Sessions stay alive; the only thing that
+    // changes is the user lands on Home with a "Complete
+    // setup" card instead of bouncing back through onboarding.
     this.setState({ hasError: false, error: null, page: '' });
-    try { removeFarrowayState(); } catch { /* tolerate */ }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        for (const k of LOOP_STATE_KEYS) {
+          try { localStorage.removeItem(k); } catch { /* per-key tolerate */ }
+        }
+      }
+    } catch { /* swallow */ }
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('farroway_setup_visited');
+      }
+    } catch { /* swallow */ }
+    try { setOnboardingComplete(); } catch { /* swallow */ }
     try {
       if (typeof window !== 'undefined' && window.location) {
-        window.location.href = '/onboarding';
+        window.location.href = '/home';
       }
     } catch { /* never throw */ }
   };
@@ -244,24 +281,42 @@ export default class ErrorBoundary extends React.Component {
             </p>
           )}
 
+          {/* Dev-only error-message reveal (May 2026 §6).
+              Production users never see the raw exception text;
+              ops still get the line via console.error above. */}
+          {_isDev() && this.state.error ? (
+            <p style={S.errPill} data-testid="error-boundary-error-message">
+              <span style={S.pagePillLabel}>Error</span>
+              <span style={S.pagePillVal}>
+                {String(this.state.error?.message || this.state.error)}
+              </span>
+            </p>
+          ) : null}
+
           <div style={S.btnRow}>
             <button type="button"
-                    onClick={this.handleReload}
+                    onClick={this.handleHome}
                     style={S.btnPrimary}
+                    data-testid="error-boundary-back-home">
+              Back Home
+            </button>
+            <button type="button"
+                    onClick={this.handleReload}
+                    style={S.btnGhost}
                     data-testid="error-boundary-try-again">
               Try again
+            </button>
+            <button type="button"
+                    onClick={this.handleClearSetupState}
+                    style={S.btnGhost}
+                    data-testid="error-boundary-clear-setup-state">
+              Clear setup state
             </button>
             <button type="button"
                     onClick={this.handleFixSetup}
                     style={S.btnGhost}
                     data-testid="error-boundary-fix-setup">
               Fix setup issue
-            </button>
-            <button type="button"
-                    onClick={this.handleRestartSetup}
-                    style={S.btnGhost}
-                    data-testid="error-boundary-restart-setup">
-              Restart setup
             </button>
           </div>
 
@@ -322,6 +377,18 @@ const S = {
     fontSize: '0.6875rem',
   },
   pagePillVal: { color: C.white, fontFamily: 'monospace' },
+  errPill: {
+    display: 'inline-flex', alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.35rem 0.7rem',
+    borderRadius: '999px',
+    background: 'rgba(239,68,68,0.08)',
+    border: '1px solid rgba(239,68,68,0.25)',
+    margin: '0.25rem 0 0',
+    fontSize: '0.8125rem',
+    maxWidth: '100%',
+    wordBreak: 'break-word',
+  },
   btnRow: {
     display: 'flex', flexWrap: 'wrap',
     gap: '0.5rem', justifyContent: 'center',
