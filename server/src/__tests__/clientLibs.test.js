@@ -418,20 +418,24 @@ describe('useGeoLocation internals', () => {
 
 // ─── Downgrade-skip guard (stale-bundle protection) ─────────
 describe('runStateMigration — stale-bundle direction guard', () => {
-  it('skips the migration AND avoids reload when stored is NEWER than current', async () => {
-    const { runStateMigration, CURRENT_STATE_VERSION } = await import('../../../src/lib/stateMigration.js');
-    // Pretend a future v7 bundle has run; user is now back on a
-    // cached v6. CURRENT_STATE_VERSION is the v6 string.
+  it('skips the migration AND avoids reload when stored sequence is NEWER than current', async () => {
+    const { runStateMigration, CURRENT_STATE_VERSION, CURRENT_STATE_SEQUENCE } =
+      await import('../../../src/lib/stateMigration.js');
+    // Pretend a future bundle has run; user is now back on a
+    // cached older bundle. The newer build stamped a higher
+    // SEQUENCE — that's the canonical "newer" signal now.
     const newer = '2099-12-31-state-v99';
-    expect(newer > CURRENT_STATE_VERSION).toBe(true);
+    const newerSeq = CURRENT_STATE_SEQUENCE + 50;
     localStorage.setItem('farroway_state_version', newer);
+    localStorage.setItem('farroway_state_sequence', String(newerSeq));
     const r = runStateMigration();
     expect(r.ranMigration).toBe(false);
     expect(r.reloaded).toBe(false);
     expect(reloadCalls).toBe(0);
-    // Stored version is preserved — we don't trample on the
-    // newer-build's stamp.
+    // Stored version + sequence are preserved — we don't trample
+    // on the newer-build's stamp.
     expect(localStorage.getItem('farroway_state_version')).toBe(newer);
+    expect(localStorage.getItem('farroway_state_sequence')).toBe(String(newerSeq));
   });
 });
 

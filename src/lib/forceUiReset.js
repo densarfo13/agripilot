@@ -44,12 +44,22 @@
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
 // builds (May 2026 deployment-debug spec).
-export const FARROWAY_BUILD_VERSION = '2026-05-04-no-loop-v1';
+export const FARROWAY_BUILD_VERSION = '2026-05-04-direction-fix-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-04-no-loop-v1';
+export const FARROWAY_UI_VERSION = '2026-05-04-direction-fix-v1';
+
+// Monotonically-increasing build sequence — drives the direction
+// guard. Lexicographic compare on the human-readable version
+// strings was misordering same-day builds (e.g. "no-loop-v1" <
+// "onboarding-fix-v1" because 'n' < 'o' even though no-loop
+// shipped LATER). The sequence is the only source of truth for
+// "newer vs older". Bump on every release that adds, removes, or
+// changes the migration logic.
+export const FARROWAY_BUILD_SEQUENCE = 18;
+const SEQUENCE_KEY = 'farroway_build_sequence';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
 // var. Falls back to 'local-dev' when running outside the CI
@@ -194,28 +204,30 @@ export function ensureUiVersion() {
   if (stored == null) {
     try { localStorage.setItem(VERSION_KEY, FARROWAY_UI_VERSION); }
     catch { /* swallow — boot continues */ }
+    try { localStorage.setItem(SEQUENCE_KEY, String(FARROWAY_BUILD_SEQUENCE)); }
+    catch { /* swallow */ }
     return false;
   }
 
-  // Direction guard — if `stored` is NEWER than the bundle's
-  // version, the browser is almost certainly serving a stale
-  // cached bundle (the new index.html hasn't been fetched yet).
-  // Triggering a reset here would push v6 state through v5
-  // code, then reload, then hit the same cached v5 bundle, then
-  // ping-pong forever until Chrome throttles navigation.
-  //
-  // Format is YYYY-MM-DD-vN so a plain string compare is enough
-  // for the common case. Bail without resetting; the next time
-  // the browser fetches index.html it'll get the new bundle and
-  // this branch will never fire.
-  if (typeof stored === 'string'
-      && typeof FARROWAY_UI_VERSION === 'string'
-      && stored > FARROWAY_UI_VERSION) {
+  // Direction guard — if the stored BUILD SEQUENCE is greater
+  // than the in-bundle sequence, the browser is serving a stale
+  // cached bundle and a reset would loop. The sequence is a
+  // monotonic integer so the comparison is unambiguous (the
+  // previous lexicographic-compare on version strings misfired
+  // for same-day builds like "no-loop-v1" vs "onboarding-fix-v1"
+  // because 'n' < 'o' under string compare even though no-loop
+  // actually shipped later).
+  let storedSeq = NaN;
+  try {
+    const raw = localStorage.getItem(SEQUENCE_KEY);
+    if (raw != null) storedSeq = Number(raw);
+  } catch { storedSeq = NaN; }
+  if (Number.isFinite(storedSeq) && storedSeq > FARROWAY_BUILD_SEQUENCE) {
     try {
       // eslint-disable-next-line no-console
       console.warn(
-        '[Farroway] Stale bundle detected (in-bundle '
-        + FARROWAY_UI_VERSION + ' < stored ' + stored + '). '
+        '[Farroway] Stale bundle detected (in-bundle seq '
+        + FARROWAY_BUILD_SEQUENCE + ' < stored seq ' + storedSeq + '). '
         + 'Skipping UI reset to avoid a reload loop. '
         + 'Hard-refresh (Ctrl+Shift+R) once to pick up the new bundle.'
       );
@@ -358,9 +370,11 @@ async function _runResetAndReload() {
   // 3. Drop any caches whose name contains `farroway` or `workbox`.
   await _clearFarrowayCaches();
 
-  // 4. Stamp the new version BEFORE reloading so the next boot
-  //    reads the match and no-ops the reset path.
+  // 4. Stamp the new version + sequence BEFORE reloading so the
+  //    next boot reads the match and no-ops the reset path.
   try { localStorage.setItem(VERSION_KEY, FARROWAY_UI_VERSION); }
+  catch { /* swallow */ }
+  try { localStorage.setItem(SEQUENCE_KEY, String(FARROWAY_BUILD_SEQUENCE)); }
   catch { /* swallow */ }
 
   // 5. Reload once.

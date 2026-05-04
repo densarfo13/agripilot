@@ -47,9 +47,22 @@ import {
 // v7 — drops cached task payloads so the legacy "Start logging
 //      farm costs to track profitability" / "Keep logging
 //      harvest…" entries can't surface from a stale cache.
-export const CURRENT_STATE_VERSION = '2026-05-03-state-v7';
+// v8 — direction-fix: replace the lexicographic compare in the
+//      direction guard below with a monotonic integer sequence
+//      (CURRENT_STATE_SEQUENCE). Lexicographic compare misordered
+//      same-day version strings such that the guard skipped
+//      legitimate migrations and left users on stale state.
+export const CURRENT_STATE_VERSION = '2026-05-04-state-v8';
+
+// Monotonically-increasing state-schema sequence — drives the
+// direction guard. Bump on every release that changes
+// CURRENT_STATE_VERSION. The sequence is the only source of
+// truth for "newer vs older"; the version string is just a
+// human-readable label.
+export const CURRENT_STATE_SEQUENCE = 8;
 
 const STATE_VERSION_KEY     = 'farroway_state_version';
+const STATE_SEQUENCE_KEY    = 'farroway_state_sequence';
 // Spec §4 — sessionStorage flag preventing a migration loop in
 // the same browser-tab session. Renamed from the prior
 // 'farroway_migrated_once' to match the spec exactly. Older
@@ -123,22 +136,31 @@ export function runStateMigration() {
     return _result(false, stored, [], false);
   }
 
-  // Direction guard — if `stored` is NEWER than CURRENT_STATE_VERSION,
-  // the browser is serving a stale cached bundle that doesn't yet
-  // know about the newer state schema. Resetting + reloading would
-  // re-serve the same stale bundle, which would re-fire the
-  // migration, which would reload again — Chrome throttles
-  // navigation after ~5 such bounces, then the user sees a blank
-  // page. Skip the migration entirely; the next index.html fetch
-  // will hand the user the new bundle.
-  if (typeof stored === 'string'
-      && typeof CURRENT_STATE_VERSION === 'string'
-      && stored > CURRENT_STATE_VERSION) {
+  // Direction guard — if the stored STATE SEQUENCE is greater
+  // than the in-bundle sequence, the browser is serving a stale
+  // cached bundle that doesn't yet know about the newer schema.
+  // Migrating + reloading would re-serve the same stale bundle,
+  // which would re-fire the migration, which would reload again —
+  // Chrome throttles navigation after ~5 such bounces, then the
+  // user sees a blank page.
+  //
+  // The previous lexicographic compare on version strings misfired
+  // for same-day reissues (e.g. "no-loop-v1" < "onboarding-fix-v1"
+  // because 'n' < 'o' even though no-loop shipped LATER). The
+  // sequence is a monotonic integer so the comparison is
+  // unambiguous.
+  let storedSeq = NaN;
+  try {
+    const raw = localStorage.getItem(STATE_SEQUENCE_KEY);
+    if (raw != null) storedSeq = Number(raw);
+  } catch { storedSeq = NaN; }
+  if (Number.isFinite(storedSeq) && storedSeq > CURRENT_STATE_SEQUENCE) {
     try {
       // eslint-disable-next-line no-console
       console.warn(
         '[Farroway] State migration skipped: stale bundle '
-        + '(' + CURRENT_STATE_VERSION + ' < stored ' + stored + ').'
+        + '(in-bundle seq ' + CURRENT_STATE_SEQUENCE
+        + ' < stored seq ' + storedSeq + ').'
       );
     } catch { /* swallow */ }
     return _result(false, stored, [], false);
@@ -186,9 +208,12 @@ export function runStateMigration() {
     void k;
   }
 
-  // Stamp the new version BEFORE a potential reload so we don't
-  // loop.
+  // Stamp the new version + sequence BEFORE a potential reload
+  // so we don't loop. Both are written so the direction guard on
+  // the next boot reads the up-to-date sequence.
   try { localStorage.setItem(STATE_VERSION_KEY, CURRENT_STATE_VERSION); }
+  catch { /* tolerate — boot continues */ }
+  try { localStorage.setItem(STATE_SEQUENCE_KEY, String(CURRENT_STATE_SEQUENCE)); }
   catch { /* tolerate — boot continues */ }
 
   // First run on a fresh install (no stored version yet) doesn't
@@ -236,6 +261,7 @@ function _result(ranMigration, fromVersion, droppedKeys, reloaded) {
 // Test hooks.
 export const _internal = Object.freeze({
   STATE_VERSION_KEY,
+  STATE_SEQUENCE_KEY,
   MIGRATED_ONCE_FLAG,
   KEYS_OWNED,
   VALIDATORS,
