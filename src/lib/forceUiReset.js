@@ -43,27 +43,45 @@
 
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN.
-export const FARROWAY_BUILD_VERSION = '2026-05-03-v7';
+export const FARROWAY_BUILD_VERSION = '2026-05-03-v8';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-03-v7';
+export const FARROWAY_UI_VERSION = '2026-05-03-v8';
 
 // localStorage key the version is stored under.
 const VERSION_KEY = 'farroway_ui_version';
 
 // Auth-related keys. NEVER clear these — they keep the user signed in.
+//
+// Kept in sync with storageSafe.FARROWAY_AUTH_KEYS — every reset
+// path the app has must respect the same preservation contract.
+// Onboarding flags also live here so a forced UI reset never
+// re-routes a returning user back through setup.
 const AUTH_KEYS = Object.freeze([
   'farroway_token',
   'farroway_user',
-  // Step-up MFA + refresh state — preserve so the user doesn't
-  // hit a re-verify prompt purely because the UI shell rotated.
   'farroway_refresh',
   'farroway_step_up',
-  // Generic auth_token key the spec mentions — preserved as a
-  // belt-and-braces safeguard if any future flow uses it.
+  'farroway_auth_token',
+  'farroway_session',
+  'farroway:session_cache',
+  'farroway:access_token',
+  'farroway:refresh_token',
+  'farroway:user_profile',
+  'farroway:farmerProfile',
   'auth_token',
+  'access_token',
+  'refresh_token',
+  'token',
+  'user',
+  'session',
+  'supabase.auth.token',
+  // Onboarding flags must NEVER be cleared by a reset.
+  'farroway_onboarding_done',
+  'farroway_onboarding_completed',
+  'farroway_onboarding_complete',
 ]);
 
 // Stale UI / sync / cache keys to clear when the version bumps.

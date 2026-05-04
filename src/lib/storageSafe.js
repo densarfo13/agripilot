@@ -56,15 +56,46 @@ export const FARROWAY_STATE_KEYS = Object.freeze([
   'farroway_task_queue',
   'farroway_progress_task',
   'farroway_daily_plan',
+  // Logout-loop fix v3 — transient setup-state blob.
+  'farroway_temp_setup_state',
 ]);
 
-// Auth keys preserved across every reset.
+// Auth + onboarding keys preserved across every reset.
+//
+// Logout-loop fix v3 (spec §1) — broadened to cover every known
+// auth-token shape the codebase has used (legacy + V2 cookie
+// mirrors + third-party providers) plus the onboarding-complete
+// flag in all three of its known names. removeFarrowayState()
+// AND any future bulk-reset routine must skip every key listed
+// here so the user is NEVER signed out and never re-routed back
+// to the setup wizard by a state cleanup.
 export const FARROWAY_AUTH_KEYS = Object.freeze([
+  // V1 admin / canonical Farroway slots.
   'farroway_token',
   'farroway_user',
   'farroway_refresh',
   'farroway_step_up',
+  'farroway_auth_token',
+  'farroway_session',
+  'farroway:session_cache',
+  'farroway:access_token',
+  'farroway:refresh_token',
+  'farroway:user_profile',
+  'farroway:farmerProfile',
+  // Generic / spec-listed slots that some flows may use.
   'auth_token',
+  'access_token',
+  'refresh_token',
+  'token',
+  'user',
+  'session',
+  // Third-party auth providers (defensive — only present if used).
+  'supabase.auth.token',
+  // Onboarding flags — preserved so a state sweep never routes
+  // a returning user back through setup.
+  'farroway_onboarding_done',
+  'farroway_onboarding_completed',
+  'farroway_onboarding_complete',
 ]);
 
 // ─── safeJsonParse(key, fallback) ────────────────────────────

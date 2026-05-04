@@ -28,6 +28,43 @@ const _migrationResult = runStateMigration();
 // navigate; skip the React mount the same way ensureUiVersion does.
 const _farrowayMigrationReloading = _migrationResult && _migrationResult.reloaded === true;
 
+// ── Safe debug logs (spec §7) ───────────────────────────────────
+// Booleans only — never log token VALUES. These three booleans
+// are the field-troubleshoot signals for the logout/setup-loop
+// class of bugs. If any user reports being kicked out or sent
+// back to setup after a deploy, the first DevTools console line
+// tells us which branch fired.
+try {
+  if (typeof localStorage !== 'undefined') {
+    const _has = (k) => {
+      try { return localStorage.getItem(k) != null; } catch { return false; }
+    };
+    const authExists = _has('farroway_token')
+                    || _has('farroway_auth_token')
+                    || _has('auth_token')
+                    || _has('access_token')
+                    || _has('token')
+                    || _has('farroway:session_cache');
+    const onboardingComplete = _has('farroway_onboarding_done')
+                            || _has('farroway_onboarding_completed')
+                            || _has('farroway_onboarding_complete');
+    let migrationRan = false;
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const v = sessionStorage.getItem('farroway_migration_ran_once')
+               || sessionStorage.getItem('farroway_migrated_once');
+        migrationRan = v === '1' || v === 'true';
+      }
+    } catch { migrationRan = false; }
+    // eslint-disable-next-line no-console
+    console.log('Auth exists:', Boolean(authExists));
+    // eslint-disable-next-line no-console
+    console.log('Onboarding complete:', Boolean(onboardingComplete));
+    // eslint-disable-next-line no-console
+    console.log('Migration ran:', Boolean(migrationRan));
+  }
+} catch { /* never throw from a diagnostic */ }
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';

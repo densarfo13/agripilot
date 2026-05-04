@@ -253,7 +253,11 @@ describe('stateMigration', () => {
     expect(localStorage.getItem('farroway_state_version')).toBe(CURRENT_STATE_VERSION);
     expect(r.reloaded).toBe(true);
     expect(reloadCalls).toBe(1);
-    expect(sessionStorage.getItem('farroway_migrated_once')).toBe('1');
+    // After the rename the flag is written under the new spec
+    // name. The legacy name is also accepted on read for back-
+    // compat (covered by a separate test below).
+    const v = sessionStorage.getItem('farroway_migration_ran_once');
+    expect(v === 'true' || v === '1').toBe(true);
   });
 
   it('does NOT reload a second time in the same session', async () => {
@@ -422,6 +426,121 @@ describe('runStateMigration — stale-bundle direction guard', () => {
     // Stored version is preserved — we don't trample on the
     // newer-build's stamp.
     expect(localStorage.getItem('farroway_state_version')).toBe(newer);
+  });
+});
+
+// ─── Onboarding flag (logout-loop fix v3) ───────────────────
+describe('isOnboardingComplete + shouldShowSetup', () => {
+  beforeEach(async () => {
+    // Reload modules so the storage mock is fresh per test.
+    vi.resetModules();
+  });
+
+  it('isOnboardingComplete returns true on any of the three known keys', async () => {
+    const { isOnboardingComplete } = await import('../../../src/utils/onboarding.js');
+    expect(isOnboardingComplete()).toBe(false);
+    localStorage.setItem('farroway_onboarding_done', 'true');
+    expect(isOnboardingComplete()).toBe(true);
+    localStorage.removeItem('farroway_onboarding_done');
+    localStorage.setItem('farroway_onboarding_completed', 'true');
+    expect(isOnboardingComplete()).toBe(true);
+    localStorage.removeItem('farroway_onboarding_completed');
+    localStorage.setItem('farroway_onboarding_complete', 'true');
+    expect(isOnboardingComplete()).toBe(true);
+  });
+
+  it('setOnboardingComplete writes ALL three known keys', async () => {
+    const { setOnboardingComplete } = await import('../../../src/utils/onboarding.js');
+    setOnboardingComplete();
+    expect(localStorage.getItem('farroway_onboarding_done')).toBe('true');
+    expect(localStorage.getItem('farroway_onboarding_completed')).toBe('true');
+    expect(localStorage.getItem('farroway_onboarding_complete')).toBe('true');
+  });
+
+  it('shouldShowSetup is FALSE when onboarding is complete (even with no local entities)', async () => {
+    const { shouldShowSetup, setOnboardingComplete } = await import('../../../src/utils/onboarding.js');
+    setOnboardingComplete();
+    // No farroway_farms / farroway_gardens / farroway.farms anywhere.
+    expect(shouldShowSetup()).toBe(false);
+  });
+
+  it('shouldShowSetup is TRUE only when onboarding flag is missing', async () => {
+    const { shouldShowSetup } = await import('../../../src/utils/onboarding.js');
+    // Plant entities but no flag — STILL true (the routing
+    // gate is the flag, not the entity arrays).
+    localStorage.setItem('farroway_farms', JSON.stringify([{ id: 'f1' }]));
+    expect(shouldShowSetup()).toBe(true);
+  });
+
+  it('resetOnboarding clears all three keys', async () => {
+    const { setOnboardingComplete, resetOnboarding, isOnboardingComplete } =
+      await import('../../../src/utils/onboarding.js');
+    setOnboardingComplete();
+    expect(isOnboardingComplete()).toBe(true);
+    resetOnboarding();
+    expect(isOnboardingComplete()).toBe(false);
+  });
+});
+
+// ─── Auth + onboarding preservation across migration ────────
+describe('runStateMigration — auth + onboarding preservation', () => {
+  it('preserves every auth + onboarding key across a v6→v7+ migration', async () => {
+    vi.resetModules();
+    const { runStateMigration } = await import('../../../src/lib/stateMigration.js');
+    // Plant the OLD state version so a migration fires.
+    localStorage.setItem('farroway_state_version', '2026-04-01-state-v1');
+    // Plant every auth + onboarding key the spec asks us to preserve.
+    const preserved = {
+      'farroway_token':                  'tk-1',
+      'farroway_user':                   '{"id":"u1"}',
+      'farroway_refresh':                'rt-1',
+      'farroway_auth_token':             'fauth-1',
+      'farroway_session':                's-1',
+      'farroway:session_cache':          'mirror',
+      'farroway:access_token':           'va-1',
+      'farroway:refresh_token':          'vr-1',
+      'auth_token':                      'a-1',
+      'access_token':                    'a-2',
+      'refresh_token':                   'r-1',
+      'token':                           'g-1',
+      'user':                            '{"id":"g"}',
+      'session':                         'gsession',
+      'supabase.auth.token':             'sb-1',
+      'farroway_onboarding_done':        'true',
+      'farroway_onboarding_completed':   'true',
+      'farroway_onboarding_complete':    'true',
+    };
+    for (const [k, v] of Object.entries(preserved)) {
+      localStorage.setItem(k, v);
+    }
+    runStateMigration();
+    for (const [k, v] of Object.entries(preserved)) {
+      expect(localStorage.getItem(k)).toBe(v);
+    }
+  });
+});
+
+// ─── Migration sessionStorage flag rename ───────────────────
+describe('runStateMigration — farroway_migration_ran_once flag', () => {
+  it('writes the new spec-named sessionStorage flag after a real migration', async () => {
+    vi.resetModules();
+    const { runStateMigration } = await import('../../../src/lib/stateMigration.js');
+    localStorage.setItem('farroway_state_version', '2026-04-01-state-v1');
+    runStateMigration();
+    const v = sessionStorage.getItem('farroway_migration_ran_once');
+    expect(v === 'true' || v === '1').toBe(true);
+  });
+
+  it('honours the legacy flag name to prevent a double-migration across the rename', async () => {
+    vi.resetModules();
+    const { runStateMigration } = await import('../../../src/lib/stateMigration.js');
+    localStorage.setItem('farroway_state_version', '2026-04-01-state-v1');
+    // Older builds wrote farroway_migrated_once='1'. A tab open
+    // across the rename must NOT reload again.
+    sessionStorage.setItem('farroway_migrated_once', '1');
+    const r = runStateMigration();
+    expect(r.reloaded).toBe(false);
+    expect(reloadCalls).toBe(0);
   });
 });
 

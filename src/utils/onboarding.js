@@ -38,8 +38,15 @@ export const ONBOARDING_DONE_KEY      = 'farroway_onboarding_done';
 // key. The original helper only checked the _done key, so a user
 // who completed setup via a save handler still got bounced back
 // to setup when ProfileGuard called isOnboardingComplete(). The
-// helper now treats EITHER key as a valid completion signal.
+// helper now treats ANY of the three known keys as a valid
+// completion signal.
 export const ONBOARDING_COMPLETED_KEY = 'farroway_onboarding_completed';
+// Logout-loop fix v3 (May 2026 spec §3) — third recognised
+// completion key. Some external flows / future code paths may
+// stamp this snake-case variant; isOnboardingComplete() must
+// honour it so a returning user is never mis-routed back to
+// setup just because a different writer used a different key.
+export const ONBOARDING_COMPLETE_KEY  = 'farroway_onboarding_complete';
 export const LANGUAGE_KEY             = 'farroway_language';
 export const COUNTRY_KEY              = 'farroway_country';
 
@@ -69,64 +76,58 @@ function _safeRemove(key) {
 /* ─── onboarding flag ──────────────────────────────────────────── */
 
 export function setOnboardingComplete() {
-  // Write BOTH keys so every reader (ProfileGuard, repairSession,
-  // FarmerEntry, getActiveContext) sees the same answer no matter
-  // which key it's checking.
+  // Write all three known keys so every reader (ProfileGuard,
+  // repairSession, FarmerEntry, getActiveContext, external
+  // writers) sees the same answer no matter which key it's
+  // checking.
   _safeSet(ONBOARDING_DONE_KEY,      'true');
   _safeSet(ONBOARDING_COMPLETED_KEY, 'true');
+  _safeSet(ONBOARDING_COMPLETE_KEY,  'true');
 }
 
 export function isOnboardingComplete() {
-  // OR semantics — either key truthy means "done." This stops the
-  // farroway_onboarding_done vs farroway_onboarding_completed
-  // mismatch from re-routing finished users back to setup.
+  // OR semantics — any of the three keys truthy means "done."
+  // Stops a writer/reader mismatch from re-routing finished
+  // users back to setup.
   return _safeGet(ONBOARDING_DONE_KEY)      === 'true'
-      || _safeGet(ONBOARDING_COMPLETED_KEY) === 'true';
+      || _safeGet(ONBOARDING_COMPLETED_KEY) === 'true'
+      || _safeGet(ONBOARDING_COMPLETE_KEY)  === 'true';
 }
 
 /**
  * shouldShowSetup() — final routing-decision helper for guards.
- * Final fix spec §6:
- *   • onboarding NOT complete                → show setup
- *   • onboarding complete + farm/garden exists → go home
- *   • onboarding complete + no entity exists → show setup (the
- *     entity must have been wiped or migrated; safer to onboard
- *     than to render a blank Home dashboard)
  *
- * Reads gardens/farms via the multi-experience selector helpers,
- * which themselves prefer the post-migration arrays and fall
- * back to the legacy partition. Pure function. Never throws.
+ * Logout-loop fix v3 (May 2026 spec §3 + §5):
+ *   • onboarding NOT complete                → show setup
+ *   • onboarding complete                    → go home (NEVER
+ *     auto-route to setup just because local entity arrays are
+ *     empty — that was the May 2026 logout-loop trigger after
+ *     a cache reset / device wipe). The in-app Home / My Farm /
+ *     My Grow surfaces detect missing entities themselves and
+ *     render an inline "Complete setup" card; the top-of-router
+ *     redirect is reserved for genuinely-unset users.
+ *
+ * Pure function. Never throws.
  */
 export function shouldShowSetup() {
   if (!isOnboardingComplete()) return true;
-  // Onboarding is complete — only redirect to setup if zero
-  // entities exist on the device.
-  let hasAnyEntity = false;
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const _array = (key) => {
-        try {
-          const raw = localStorage.getItem(key);
-          if (!raw) return [];
-          const parsed = JSON.parse(raw);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch { return []; }
-      };
-      // Post-migration first-class arrays.
-      const gardens = _array('farroway_gardens');
-      const farms   = _array('farroway_farms');
-      // Legacy combined partition (pre-migration sessions).
-      const legacy  = _array('farroway.farms');
-      hasAnyEntity = (gardens.length + farms.length + legacy.length) > 0;
-    }
-  } catch { hasAnyEntity = false; }
-  return !hasAnyEntity;
+  // Onboarding is complete — never redirect. Even if local
+  // entity arrays are empty (cache reset, fresh install on a
+  // new device, partial migration), the user has a server-side
+  // session and either:
+  //   • the server profile will hydrate the entity arrays on
+  //     the next /me round-trip, or
+  //   • the in-app "Complete setup" card surfaces inside Home
+  //     so the user can finish missing details without losing
+  //     their session.
+  return false;
 }
 
 /** Test / "redo onboarding" admin helper. Not wired into any UI. */
 export function resetOnboarding() {
   _safeRemove(ONBOARDING_DONE_KEY);
   _safeRemove(ONBOARDING_COMPLETED_KEY);
+  _safeRemove(ONBOARDING_COMPLETE_KEY);
 }
 
 /* ─── language preference ──────────────────────────────────────── */

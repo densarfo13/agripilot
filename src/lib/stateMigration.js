@@ -50,7 +50,13 @@ import {
 export const CURRENT_STATE_VERSION = '2026-05-03-state-v7';
 
 const STATE_VERSION_KEY     = 'farroway_state_version';
-const MIGRATED_ONCE_FLAG    = 'farroway_migrated_once';
+// Spec §4 — sessionStorage flag preventing a migration loop in
+// the same browser-tab session. Renamed from the prior
+// 'farroway_migrated_once' to match the spec exactly. Older
+// flag is also honoured for back-compat so a tab open across
+// the rename doesn't trigger a second migration.
+const MIGRATED_ONCE_FLAG    = 'farroway_migration_ran_once';
+const LEGACY_MIGRATED_FLAG  = 'farroway_migrated_once';
 
 // Per-key validators. Keys NOT in this map are removed unconditionally
 // when the version changes (we'd rather lose a stale cache than have
@@ -85,6 +91,11 @@ const KEYS_OWNED = Object.freeze([
   'farroway_task_queue',
   'farroway_progress_task',
   'farroway_daily_plan',
+  // Logout-loop fix v3 (spec §2) — transient setup-state blob
+  // some flows write while a wizard is mid-flight. Safe to drop
+  // on every migration; the wizard repopulates it from the
+  // server profile on the next mount.
+  'farroway_temp_setup_state',
 ]);
 
 /**
@@ -136,11 +147,14 @@ export function runStateMigration() {
   // Loop guard — if we've already migrated once in this tab session,
   // do NOT reload again even if the version still doesn't match.
   // (The page is already running the latest code; one reload is
-  // enough.)
+  // enough.) Honours both the new spec-named flag and the legacy
+  // name so a tab open across the rename doesn't double-migrate.
   let migratedOnce = false;
   try {
     if (typeof sessionStorage !== 'undefined') {
-      migratedOnce = sessionStorage.getItem(MIGRATED_ONCE_FLAG) === '1';
+      migratedOnce = sessionStorage.getItem(MIGRATED_ONCE_FLAG)   === '1'
+                  || sessionStorage.getItem(MIGRATED_ONCE_FLAG)   === 'true'
+                  || sessionStorage.getItem(LEGACY_MIGRATED_FLAG) === '1';
     }
   } catch { migratedOnce = false; }
 
@@ -191,7 +205,10 @@ export function runStateMigration() {
   if (!migratedOnce) {
     try {
       if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem(MIGRATED_ONCE_FLAG, '1');
+        // Spec §4 — write the new spec-named flag as 'true'
+        // (matches the user-facing wording exactly). Both '1'
+        // and 'true' are accepted by the read above.
+        sessionStorage.setItem(MIGRATED_ONCE_FLAG, 'true');
       }
     } catch { /* tolerate */ }
     try {
