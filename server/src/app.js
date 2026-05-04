@@ -45,6 +45,12 @@ import evidenceRoutes from './modules/evidence/routes.js';
 import verificationRoutes from './modules/verification/routes.js';
 import fraudRoutes from './modules/fraud/routes.js';
 import decisionRoutes from './modules/decision/routes.js';
+// Decision Engine v2 — adds /today + /complete + soil + satellite
+// + region routes. Wraps the AI Task Engine v1 with the priority
+// ladder + soil/satellite/region/scan signals. Each router is
+// mounted on its own /api segment so it never collides with the
+// legacy decisionRoutes.
+import decisionV2Routers from './modules/decisionV2/routes.js';
 import benchmarkRoutes from './modules/benchmarking/routes.js';
 import intelligenceRoutes from './modules/intelligence/routes.js';
 import reviewRoutes from './modules/reviews/routes.js';
@@ -942,6 +948,14 @@ app.use('/api/location', locationRoutes);
 app.use('/api/evidence', evidenceRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/fraud', fraudRoutes);
+// Decision Engine v2 — must mount BEFORE the legacy decisionRoutes
+// because the v2 router declares concrete /today + /complete paths
+// while the legacy router uses /:applicationId positional params
+// that would otherwise swallow the v2 path matches.
+app.use('/api/decision',  decisionV2Routers.decisionRouter);
+app.use('/api/soil',      decisionV2Routers.soilRouter);
+app.use('/api/satellite', decisionV2Routers.satelliteRouter);
+app.use('/api/region',    decisionV2Routers.regionRouter);
 app.use('/api/decision', decisionRoutes);
 app.use('/api/benchmark', benchmarkRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
