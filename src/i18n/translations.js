@@ -4890,7 +4890,7 @@ const T = {
 
   'guided.stageOutdatedTitle': { en: 'Your crop may have changed', fr: 'Votre culture a peut-être changé', sw: 'Mazao yako yanaweza kuwa yamebadilika', ha: 'Amfanin gonar ka na iya canzawa', tw: 'Ebia wo nnɔbae no asesa' },
   'guided.stageOutdatedReason': { en: 'Last updated {days} days ago. Keeping this current gives you better advice.', fr: 'Dernière mise à jour il y a {days} jours.', sw: 'Ilisasishwa siku {days} zilizopita.', ha: 'An sabunta shi kwanaki {days} da suka wuce.', tw: 'Wɔsesaa no nnansa {days} a atwam\' no mu.' },
-  'guided.stageOutdatedCta': { en: 'Refresh crop stage', fr: 'Actualiser', sw: 'Sasisha hatua', ha: 'Sabunta mataki', tw: 'Sesa anammɔn' },
+  'guided.stageOutdatedCta': { en: 'Update crop stage', fr: 'Actualiser', sw: 'Sasisha hatua', ha: 'Sabunta mataki', tw: 'Sesa anammɔn' },
   'guided.daysAgo': { en: '{days}d ago', fr: 'il y a {days}j', sw: 'siku {days} zilizopita', ha: 'kwanaki {days} da suka wuce', tw: 'nnansa {days} a atwam\'' },
 
   'guided.taskReason': { en: 'Based on your crop stage and today\'s conditions.', fr: 'Basé sur votre étape et les conditions du jour.', sw: 'Kulingana na hatua ya mazao yako na hali ya leo.', ha: 'Bisa ga matakin amfanin ku da halin yau.', tw: 'Egyina wo nnɔbae anammɔn ne ɛnnɛ tebea so.' },

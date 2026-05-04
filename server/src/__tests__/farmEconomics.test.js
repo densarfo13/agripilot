@@ -449,9 +449,13 @@ describe('Task engine — economics integration', () => {
     expect(engine).toContain('benchmarkInsights');
   });
 
-  it('generates cost logging prompt when no costs', () => {
-    expect(engine).toContain('cost-log-prompt');
-    expect(engine).toContain('Start logging farm costs to track profitability');
+  it('no longer surfaces the cost-logging task on the daily Home feed', () => {
+    // Legacy regression: "Start logging farm costs to track
+    // profitability" used to appear as a daily task. The TITLE
+    // field is now gone (the only remaining reference is in a
+    // comment that documents WHY it was removed).
+    expect(engine).not.toMatch(/title:\s*['"`]Start logging farm costs/);
+    expect(engine).not.toMatch(/title:\s*['"`]Keep logging harvest/);
   });
 
   it('generates revenue prompt when harvest but no price', () => {
@@ -480,7 +484,10 @@ describe('Task engine — economics prompts runtime', () => {
     generateTasksForFarm = mod.generateTasksForFarm;
   });
 
-  it('adds cost-log-prompt when no cost records', () => {
+  it('does NOT surface cost-log-prompt as a daily task (moved off Home)', () => {
+    // The legacy daily-feed prompt was removed — Home is a
+    // crop-care surface, not a bookkeeping nudge. Cost tracking
+    // now lives only on the Economics tab.
     const tasks = generateTasksForFarm({
       farmId: 'eco-1',
       crop: 'maize',
@@ -489,9 +496,7 @@ describe('Task engine — economics prompts runtime', () => {
       hasCostRecords: false,
     });
     const prompt = tasks.find(t => t.id === 'cost-log-prompt-eco-1');
-    expect(prompt).toBeTruthy();
-    expect(prompt.priority).toBe('low');
-    expect(prompt.economicsNote).toBeTruthy();
+    expect(prompt).toBeFalsy();
   });
 
   it('does NOT add cost-log-prompt when cost records exist', () => {

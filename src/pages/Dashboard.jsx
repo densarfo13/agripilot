@@ -122,10 +122,18 @@ export default function Dashboard() {
       const params = new URLSearchParams(window.location.search || '');
       const isDev = !!(import.meta && import.meta.env && import.meta.env.DEV);
       if (isDev || params.get('debug') === '1') {
+        // Canonical task source — spec §8: confirm Home/Tasks/
+        // Progress all read from the same useFarmerLoop pipeline.
+        const taskSource = 'useFarmerLoop()';
+        const liveTask   = loop.task || loop.activeTask || null;
+        // eslint-disable-next-line no-console
+        console.log('Today task source:', taskSource);
+        // eslint-disable-next-line no-console
+        console.log('Today task:', liveTask && (liveTask.title || liveTask.todayTaskTitle));
         // eslint-disable-next-line no-console
         console.log('[Farroway Home] farm:', loop.profile || null);
         // eslint-disable-next-line no-console
-        console.log('[Farroway Home] task:', loop.task || loop.activeTask || null);
+        console.log('[Farroway Home] task:', liveTask);
         // eslint-disable-next-line no-console
         console.log('[Farroway Home] weather:', loop.weather || null);
       }

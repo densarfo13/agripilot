@@ -51,6 +51,11 @@ export const FARROWAY_STATE_KEYS = Object.freeze([
   'farroway_offline_state',
   'farroway_selected_crop',
   'farroway_crop_stage',
+  // v7 — daily / today task caches.
+  'farroway_today_task',
+  'farroway_task_queue',
+  'farroway_progress_task',
+  'farroway_daily_plan',
 ]);
 
 // Auth keys preserved across every reset.

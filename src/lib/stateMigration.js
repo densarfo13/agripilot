@@ -43,7 +43,11 @@ import {
 
 // Bump this whenever the persisted-state shape changes in a way
 // the previous build can't read. Format: YYYY-MM-DD-state-vN.
-export const CURRENT_STATE_VERSION = '2026-05-03-state-v6';
+//
+// v7 — drops cached task payloads so the legacy "Start logging
+//      farm costs to track profitability" / "Keep logging
+//      harvest…" entries can't surface from a stale cache.
+export const CURRENT_STATE_VERSION = '2026-05-03-state-v7';
 
 const STATE_VERSION_KEY     = 'farroway_state_version';
 const MIGRATED_ONCE_FLAG    = 'farroway_migrated_once';
@@ -59,6 +63,11 @@ const VALIDATORS = Object.freeze({
 
 // Keys we always touch when a migration runs. Anything not in this
 // list is left alone (we don't want to wipe arbitrary user state).
+//
+// v7 added the task / daily-plan / progress-task / queue keys
+// below so the previous deploy's cached task payloads (which
+// could carry the legacy "Start logging farm costs…" wording)
+// get dropped on the next boot.
 const KEYS_OWNED = Object.freeze([
   'farroway_active_farm',
   'farroway_location',
@@ -71,6 +80,11 @@ const KEYS_OWNED = Object.freeze([
   'farroway_offline_state',
   'farroway_selected_crop',
   'farroway_crop_stage',
+  // v7 additions — daily/today task caches.
+  'farroway_today_task',
+  'farroway_task_queue',
+  'farroway_progress_task',
+  'farroway_daily_plan',
 ]);
 
 /**

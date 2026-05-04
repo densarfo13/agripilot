@@ -427,7 +427,11 @@ function buildNextSteps(input, priorities, risks) {
   }
 
   if (!hasCostRecords && steps.length < 4) {
-    steps.push('Start logging farm expenses to track profitability.');
+    // Replaced the legacy "Start logging farm expenses to track
+    // profitability." string with a softer, opt-in nudge that
+    // points to the right surface instead of front-running the
+    // daily report.
+    steps.push('Open the Economics tab when you\u2019re ready to start tracking costs.');
   }
 
   if (hasRecentHarvestRecord && !hasRevenueData && steps.length < 4) {
@@ -476,7 +480,9 @@ function buildMissingDataNotes(input) {
   }
 
   if (benchmarkInsights && benchmarkInsights.noComparisonData) {
-    notes.push('Keep logging harvest and costs to unlock stronger benchmarking.');
+    // Replaced legacy "Keep logging harvest and costs to unlock
+    // stronger benchmarking." with a softer, contextual note.
+    notes.push('Once you have data from two seasons, season-over-season comparison will appear on the Benchmark tab.');
   }
 
   return notes;

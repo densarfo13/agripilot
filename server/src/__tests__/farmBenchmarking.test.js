@@ -426,9 +426,12 @@ describe('Task engine — benchmark integration', () => {
     expect(engine).toContain('benchmarkInsights } = context');
   });
 
-  it('generates benchmark-data-prompt when no comparison data', () => {
-    expect(engine).toContain('benchmark-data-prompt');
-    expect(engine).toContain('Keep logging harvest and costs to unlock performance comparison');
+  it('no longer surfaces the benchmark-data prompt on the daily Home feed', () => {
+    // Legacy regression: "Keep logging harvest and costs to unlock
+    // performance comparison" used to appear as a daily task.
+    // Removed because Home is a crop-care surface; benchmarking
+    // hints now live only on the Benchmark tab.
+    expect(engine).not.toContain('Keep logging harvest and costs to unlock performance comparison');
   });
 
   it('generates profit review task on profit drop', () => {
@@ -467,7 +470,11 @@ describe('Task engine — benchmark tasks runtime', () => {
     generateTasksForFarm = mod.generateTasksForFarm;
   });
 
-  it('adds benchmark-data-prompt when noComparisonData', () => {
+  it('does NOT surface benchmark-data-prompt as a daily task (moved off Home)', () => {
+    // Legacy "Keep logging harvest and costs to unlock performance
+    // comparison" was removed from the daily Home feed. The
+    // Benchmark tab itself still surfaces a contextual hint when
+    // there's not enough history.
     const tasks = generateTasksForFarm({
       farmId: 'bm-1',
       crop: 'maize',
@@ -476,8 +483,7 @@ describe('Task engine — benchmark tasks runtime', () => {
       benchmarkInsights: { noComparisonData: true, profitDropped: false, yieldDropped: false, costsIncreased: false },
     });
     const prompt = tasks.find(t => t.id === 'benchmark-data-prompt-bm-1');
-    expect(prompt).toBeTruthy();
-    expect(prompt.benchmarkNote).toBeTruthy();
+    expect(prompt).toBeFalsy();
   });
 
   it('adds profit review when profitDropped', () => {

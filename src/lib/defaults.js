@@ -23,7 +23,23 @@ export const defaultFarm = Object.freeze({
   userType: 'backyard',
 });
 
+// Default task — used when the user HAS a farm but the live
+// engine hasn't returned a task yet (loading / network error /
+// stale state). Wording is generic crop-care so the screen
+// always shows a useful action instead of a profitability
+// nudge.
 export const defaultTask = Object.freeze({
+  title:   'Check soil moisture around your crop',
+  reason:  'Dry weather can stress plants. Water only if the soil feels dry.',
+  urgency: 'medium',
+  time:    '5 mins',
+  cta:     'Mark as done',
+});
+
+// Setup task — used only when the user has no farm yet. Distinct
+// from defaultTask so Home can pick the right copy by branch
+// instead of overloading a single fallback.
+export const setupTask = Object.freeze({
   title:   'Create your farm to get today\u2019s task',
   reason:  'Add your crop and location so Farroway can guide you.',
   urgency: 'low',
@@ -39,4 +55,4 @@ export const defaultWeather = Object.freeze({
   advice:     'Showing general crop guidance.',
 });
 
-export default Object.freeze({ defaultFarm, defaultTask, defaultWeather });
+export default Object.freeze({ defaultFarm, defaultTask, setupTask, defaultWeather });

@@ -88,23 +88,24 @@ import {
 } from './taskTranslations.js';
 
 // Calm-UI Upgrade §3 — short, action-first title overrides. The
-// legacy server task engine (server/lib/farmTaskEngine.js) still
-// emits long verbose titles like:
-//   "Start logging farm costs to track profitability"
-//   "Log farm expenses to track profitability"
-//   "Refresh crop stage"
-// The Calm-UI spec demands short, time-based, action-first
-// wording. Rather than rewriting the server engine (much larger
-// change), we shorten at the render layer here. Each entry maps
-// a verbose canonical English title to its short Calm-UI form;
-// localizeServerTask consults this map BEFORE locale resolution
-// so the override applies in every language.
+// server task engine (server/lib/farmTaskEngine.js) emits a few
+// titles that aren't ideal for the Home / Tasks surface:
+//   "Refresh crop stage" → softer "Update crop stage"
+// The legacy "Start logging farm costs to track profitability"
+// and "Keep logging harvest and costs to unlock performance
+// comparison" rows used to be remapped here too — those daily
+// tasks have since been removed from the engine entirely (Home
+// is for crop-care, not bookkeeping nudges). The override map
+// stays so any in-flight cached payload from a previous build
+// still gets cleaned up at render time before reaching the user.
 const SHORT_TITLE_OVERRIDES = Object.freeze({
-  'Start logging farm costs to track profitability': 'Log first cost (30 sec)',
-  'Log farm expenses to track profitability':         'Log first cost (30 sec)',
-  'Keep logging harvest and costs to unlock performance comparison':
-                                                      'Log today\u2019s harvest (1 min)',
   'Refresh crop stage':                               'Update crop stage',
+  // Defensive entries — strip legacy strings if a stale cache
+  // ever resurfaces them. The mapped titles are crop-care.
+  'Start logging farm costs to track profitability': 'Check soil moisture around your crop',
+  'Log farm expenses to track profitability':         'Check soil moisture around your crop',
+  'Keep logging harvest and costs to unlock performance comparison':
+                                                      'Inspect leaves for pests or yellow spots',
 });
 
 export function localizeServerTask(task, t, lang = null) {

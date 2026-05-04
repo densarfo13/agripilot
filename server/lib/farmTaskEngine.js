@@ -1054,23 +1054,14 @@ export function generateTasksForFarm(context) {
   }
 
   // ─── Economics prompts ─────────────────────────────────
-  // Prompt to start logging costs if none exist
-  if (!hasCostRecords) {
-    tasks.push({
-      id: `cost-log-prompt-${farmId}`,
-      farmId,
-      title: 'Start logging farm costs to track profitability',
-      description: 'Record seeds, fertilizer, labor, and other expenses. This helps you see if your farm is profitable.',
-      priority: 'low',
-      reason: 'Tracking costs helps you understand your farm as a business.',
-      dueLabel: 'When ready',
-      crop: normalizedCrop,
-      stage: normalizedStage,
-      status: 'pending',
-      createdAt: now,
-      economicsNote: 'Track expenses to see profitability',
-    });
-  }
+  // The legacy "Start logging farm costs to track profitability"
+  // task used to surface here. It was removed from the daily-
+  // task feed because farmers reported it felt off-topic (Home
+  // is a crop-care surface, not a bookkeeping prompt). Cost
+  // tracking now lives only on the Economics tab where it
+  // belongs. The `hasCostRecords` flag is still computed above
+  // because other branches (revenue-prompt below) read it.
+  void hasCostRecords;
 
   // Prompt to add selling price if harvest exists but no revenue data
   if (hasRecentHarvestRecord && !hasRevenueData) {
@@ -1092,21 +1083,13 @@ export function generateTasksForFarm(context) {
 
   // ─── Benchmark-driven insights ─────────────────────────
   if (benchmarkInsights) {
+    // Legacy "Keep logging harvest and costs to unlock performance
+    // comparison" prompt removed for the same reason as the cost
+    // prompt above — Home is for crop-care, not benchmarking
+    // nudges. The Benchmark tab itself still surfaces a
+    // contextual hint when there's not enough history.
     if (benchmarkInsights.noComparisonData) {
-      tasks.push({
-        id: `benchmark-data-prompt-${farmId}`,
-        farmId,
-        title: 'Keep logging harvest and costs to unlock performance comparison',
-        description: 'Once you have data from two seasons, you can see how your farm is improving over time.',
-        priority: 'low',
-        reason: 'Season-over-season comparison needs data from at least two periods.',
-        dueLabel: 'Ongoing',
-        crop: normalizedCrop,
-        stage: normalizedStage,
-        status: 'pending',
-        createdAt: now,
-        benchmarkNote: 'Build history for performance tracking',
-      });
+      // intentional no-op
     }
 
     if (benchmarkInsights.profitDropped) {
