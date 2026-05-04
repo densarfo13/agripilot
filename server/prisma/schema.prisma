@@ -3143,3 +3143,104 @@ model InsightAggregate {
   @@index([condition], map: "idx_insight_condition")
   @@map("insight_aggregates")
 }
+
+// ─── Decision Engine V2 — persisted context + decision rows ──
+//
+// Replaces the ClientEvent-only approximation with first-class
+// tables so the decision pipeline is auditable, queryable for
+// the Progress screen, and ready for the learning loop.
+//
+// Privacy: every row is scoped by `userId`. Routes enforce
+// ownership before reading/writing — see decisionV2/routes.js.
+//
+// FK behaviour: we leave userId as a free-form String (no FK)
+// because a hard FK would couple decision history to user
+// deletion. The route layer handles GC when a user is purged.
+
+model DecisionContext {
+  id                   String    @id @default(uuid())
+  userId               String    @map("user_id")
+  farmId               String?   @map("farm_id")
+  gardenId             String?   @map("garden_id")
+  userType             String    @map("user_type") // 'farmer' | 'backyard'
+  cropOrPlant          String?   @map("crop_or_plant")
+  growthStage          String?   @map("growth_stage")
+  weatherCondition     String?   @map("weather_condition")
+  temperature          Float?
+  humidity             Float?
+  rainfallProbability  Float?    @map("rainfall_probability")
+  soilMoistureLevel    String?   @map("soil_moisture_level") // 'low' | 'normal' | 'high'
+  soilType             String?   @map("soil_type")
+  satelliteStressLevel String?   @map("satellite_stress_level") // 'low' | 'medium' | 'high'
+  vegetationIndex      Float?    @map("vegetation_index")
+  regionPestRisk       String?   @map("region_pest_risk") // 'low' | 'medium' | 'high'
+  regionDiseaseRisk    String?   @map("region_disease_risk")
+  recentScanStatus     String?   @map("recent_scan_status")
+  recentScanIssueType  String?   @map("recent_scan_issue_type")
+  lastWateredAt        DateTime? @map("last_watered_at")
+  lastInspectedAt      DateTime? @map("last_inspected_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, createdAt], map: "idx_decision_ctx_user_time")
+  @@index([farmId], map: "idx_decision_ctx_farm")
+  @@map("decision_contexts")
+}
+
+model DailyDecision {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  farmId        String?   @map("farm_id")
+  gardenId      String?   @map("garden_id")
+  contextId     String?   @map("context_id")
+  primaryAction String    @map("primary_action")
+  primaryCta    String    @map("primary_cta")
+  reason        String
+  priority      Int       @default(8)
+  confidence    String    @default("low") // 'low' | 'medium' | 'high'
+  ruleId        String?   @map("rule_id")
+  // sourceSignals is internal diagnostic data — never returned
+  // to end users. Kept on the server for the learning loop +
+  // admin dashboards.
+  sourceSignals Json?     @map("source_signals")
+  tomorrowHook  String?   @map("tomorrow_hook")
+  language      String    @default("en")
+  completed     Boolean   @default(false)
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, createdAt], map: "idx_daily_decision_user_time")
+  @@index([userId, completed], map: "idx_daily_decision_user_completed")
+  @@index([farmId], map: "idx_daily_decision_farm")
+  @@map("daily_decisions")
+}
+
+model ActionCompletion {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  decisionId      String   @map("decision_id")
+  actionType      String?  @map("action_type")
+  completedAt     DateTime @default(now()) @map("completed_at")
+  // Snapshot of the decision context at completion time so the
+  // learning loop can correlate outcomes with conditions even
+  // if the source rows are pruned later.
+  contextSnapshot Json?    @map("context_snapshot")
+
+  @@index([userId, completedAt], map: "idx_action_completion_user_time")
+  @@index([decisionId], map: "idx_action_completion_decision")
+  @@map("action_completions")
+}
+
+model OutcomeFeedback {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  decisionId String   @map("decision_id")
+  // 'healthy' | 'needs_attention' | 'not_sure' — controlled
+  // vocabulary; route Zod-validates.
+  result     String
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt], map: "idx_outcome_user_time")
+  @@index([decisionId], map: "idx_outcome_decision")
+  @@map("outcome_feedback")
+}

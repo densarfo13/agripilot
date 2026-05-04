@@ -28,17 +28,44 @@ export const decisionQuerySchema = z.object({
   lat:      z.coerce.number().min(-90).max(90).optional(),
   lng:      z.coerce.number().min(-180).max(180).optional(),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
+  // `debug=1` returns the raw sourceSignals + ruleId. Honoured
+  // only for platform_admin / super_admin roles; the route
+  // double-checks before populating the field. Spec §3 + §10:
+  // raw technical signals are NEVER shown to normal users.
+  debug:    z.union([z.literal('1'), z.literal('0'), z.literal('true'), z.literal('false')]).optional(),
 });
 
 // POST /api/decision/complete body — records the user finishing
-// the suggested action. Optional outcome feedback closes the
-// learning loop (spec §10).
+// the suggested action. Spec §4: minimal contract — { decisionId,
+// actionType }. Optional context lives in the snapshot column on
+// the server.
 export const decisionCompleteSchema = z.object({
-  decisionId:   z.string().min(1).max(64),
-  ruleId:       z.string().min(1).max(64).optional(),
-  outcome:      z.enum(['done', 'skipped', 'helpful', 'not_helpful']).default('done'),
-  comment:      z.string().min(1).max(280).optional(),
-  completedAt:  z.string().datetime().optional(),
+  decisionId:  z.string().min(1).max(64),
+  actionType:  z.string().min(1).max(64).optional(),
+  // Legacy fields kept so older clients keep working — the new
+  // route only persists the spec-shape columns.
+  ruleId:      z.string().min(1).max(64).optional(),
+  outcome:     z.enum(['done', 'skipped', 'helpful', 'not_helpful']).optional(),
+  comment:     z.string().min(1).max(280).optional(),
+  completedAt: z.string().datetime().optional(),
+});
+
+// POST /api/decision/outcome body — long-tail feedback (asked
+// 2-3 days after a decision). Spec §5.
+export const decisionOutcomeSchema = z.object({
+  decisionId: z.string().min(1).max(64),
+  result:     z.enum(['healthy', 'needs_attention', 'not_sure']),
+  notes:      z.string().min(1).max(500).optional(),
+});
+
+// GET /api/decision/history query — bounded pagination.
+export const decisionHistoryQuerySchema = z.object({
+  limit:  z.coerce.number().int().min(1).max(50).optional(),
+  cursor: z.string().min(1).max(64).optional(),
+  // `debug=1` is admin-only; the route checks the role separately
+  // before honouring it. The flag still parses for everyone so a
+  // typo doesn't 400 the page.
+  debug:  z.union([z.literal('1'), z.literal('0'), z.literal('true'), z.literal('false')]).optional(),
 });
 
 // POST /api/soil/manual body
