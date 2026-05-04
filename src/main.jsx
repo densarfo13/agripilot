@@ -14,6 +14,7 @@ import {
   validateLocalStorageShapes,
 } from './lib/forceUiReset.js';
 import { runStateMigration } from './lib/stateMigration.js';
+import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
 // Strip malformed-JSON entries (parse-level safety) — runs before
@@ -24,6 +25,12 @@ validateLocalStorageShapes();
 // (sessionStorage flag guards against loops). The user's auth
 // token is preserved across every branch.
 const _migrationResult = runStateMigration();
+// Task-cache invalidator (May 2026 spec): the API is the ONLY
+// source of truth for tasks. Until task_version === 'v2' is
+// stamped, every task-related localStorage key is dropped.
+// Logs "Task source = API ONLY" on every boot for diagnostic
+// confirmation. Idempotent — a stamped boot no-ops.
+enforceTaskApiOnly();
 // When the migration triggers a reload, the page is about to
 // navigate; skip the React mount the same way ensureUiVersion does.
 const _farrowayMigrationReloading = _migrationResult && _migrationResult.reloaded === true;

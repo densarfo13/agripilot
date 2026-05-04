@@ -50,22 +50,23 @@ import { resolveContext } from '../../core/contextResolver.js';
 
 // Local fallback envelope — used when the network call fails.
 // Mirrors the server's `fallback_check` rule shape so downstream
-// consumers don't branch. Calm-UI spec §14 — Home must never
-// blank on weather/API failure; spec wording exact:
-//   farmer  → "Check your crop today"
-//   backyard → "Check your plant today"
+// consumers don't branch.
+//
+// Spec wording (May 2026 §3): API is the ONLY source of truth
+// for tasks; when the API call fails, render this single
+// crop-care fallback. Identical wording for farmer + backyard
+// — the "Check soil moisture" line works for both contexts and
+// avoids the previous farmer/plant copy split that drifted out
+// of sync across deploys.
 function buildLocalFallback(userType, language) {
   const ut = userType === 'backyard' ? 'backyard' : 'farmer';
-  const isBackyard = ut === 'backyard';
   return {
-    todayTaskTitle: isBackyard
-      ? tSafe('todayTask.fallback.backyard.title', 'Check your plant today')
-      : tSafe('todayTask.fallback.farmer.title',   'Check your crop today'),
-    taskReason: isBackyard
-      ? tSafe('todayTask.fallback.backyard.reason', 'A quick look every day keeps plants healthy.')
-      : tSafe('todayTask.fallback.farmer.reason',   'A 10-minute walk catches early problems.'),
-    urgency:        'low',
-    estimatedTime:  isBackyard ? '3 min' : '10 min',
+    todayTaskTitle: tSafe('todayTask.apiFallback.title',
+      'Check soil moisture around your crop'),
+    taskReason:     tSafe('todayTask.apiFallback.reason',
+      'Dry conditions can stress your plants. Water only if soil is dry.'),
+    urgency:        'medium',
+    estimatedTime:  '5 min',
     safetyNote:     null,
     localizedText: {
       title:  null,
@@ -74,16 +75,14 @@ function buildLocalFallback(userType, language) {
       completionPrompt: tSafe('todayTask.completionPrompt',
         'Nice — you stayed ahead today \uD83C\uDF31'),
     },
-    nextRecommendedTask: isBackyard
-      ? tSafe('todayTask.nextSoonBackyard', 'Check again tomorrow morning')
-      : tSafe('todayTask.nextSoonFarmer',   'Check again tomorrow morning'),
+    nextRecommendedTask: tSafe('todayTask.nextSoon',
+      'Check again tomorrow morning'),
     completionPrompt: tSafe('todayTask.completionPrompt',
       'Nice — you stayed ahead today \uD83C\uDF31'),
-    // Final-polish spec §4 — local fallback also carries a CTA
-    // so the button text never reads from the raw default in
-    // a network-down render path.
-    ctaLabel: tSafe('todayTask.cta', 'Check now \u2713'),
-    ruleId:    'local_fallback',
+    // Spec §3 — fallback CTA reads "Mark as done" so the
+    // button text never claims an action that wasn't completed.
+    ctaLabel:  tSafe('todayTask.apiFallback.cta', 'Mark as done'),
+    ruleId:    'api_fallback',
     userType:  ut,
     fallback:  true,
     language,

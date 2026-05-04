@@ -544,6 +544,63 @@ describe('runStateMigration — farroway_migration_ran_once flag', () => {
   });
 });
 
+// ─── Task cache invalidator (API-only enforcement) ──────────
+describe('enforceTaskApiOnly', () => {
+  beforeEach(() => { vi.resetModules(); });
+
+  it('drops every listed task cache key + farroway_task_*/farroway_daily_plan*', async () => {
+    const { enforceTaskApiOnly } = await import('../../../src/lib/taskCacheInvalidator.js');
+    // Plant a mix of known + pattern-matched task keys.
+    localStorage.setItem('farroway_cached_tasks',  '[]');
+    localStorage.setItem('farroway_today_task',    '{}');
+    localStorage.setItem('farroway_task_queue',    '[]');
+    localStorage.setItem('farroway_progress_task', '{}');
+    localStorage.setItem('farroway_daily_plan',    '{}');
+    localStorage.setItem('farroway_task_metric_v3', '{}');     // pattern
+    localStorage.setItem('farroway_daily_plan_v2',  '{}');     // pattern
+    localStorage.setItem('unrelated_key',           'keep me');
+    const r = enforceTaskApiOnly();
+    expect(r.ranInvalidation).toBe(true);
+    expect(r.toVersion).toBe('v2');
+    for (const k of [
+      'farroway_cached_tasks',
+      'farroway_today_task',
+      'farroway_task_queue',
+      'farroway_progress_task',
+      'farroway_daily_plan',
+      'farroway_task_metric_v3',
+      'farroway_daily_plan_v2',
+    ]) {
+      expect(localStorage.getItem(k)).toBeNull();
+    }
+    expect(localStorage.getItem('unrelated_key')).toBe('keep me');
+    expect(localStorage.getItem('task_version')).toBe('v2');
+  });
+
+  it('is idempotent — second boot with task_version=v2 no-ops', async () => {
+    const { enforceTaskApiOnly } = await import('../../../src/lib/taskCacheInvalidator.js');
+    localStorage.setItem('task_version', 'v2');
+    localStorage.setItem('farroway_cached_tasks', '[]');
+    const r = enforceTaskApiOnly();
+    expect(r.ranInvalidation).toBe(false);
+    // The cached key STAYS — we only wipe when versions differ.
+    // (Future bumps to a v3 would clear it again.)
+    expect(localStorage.getItem('farroway_cached_tasks')).toBe('[]');
+  });
+
+  it('NEVER touches auth or onboarding keys', async () => {
+    const { enforceTaskApiOnly } = await import('../../../src/lib/taskCacheInvalidator.js');
+    localStorage.setItem('farroway_token',                'tk');
+    localStorage.setItem('farroway_user',                 '{"id":"u"}');
+    localStorage.setItem('farroway_onboarding_complete',  'true');
+    localStorage.setItem('farroway_cached_tasks',         '[]');
+    enforceTaskApiOnly();
+    expect(localStorage.getItem('farroway_token')).toBe('tk');
+    expect(localStorage.getItem('farroway_user')).toBe('{"id":"u"}');
+    expect(localStorage.getItem('farroway_onboarding_complete')).toBe('true');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

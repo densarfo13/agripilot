@@ -510,27 +510,15 @@ const TASK_TITLE_PHRASE_MAP = {
     tw: 'Gugu wo aduane',
     hi: 'अपनी फसल को पानी दें',
   },
-  'Start logging farm costs to track profitability': {
-    fr: 'Commencez à enregistrer les coûts pour suivre la rentabilité',
-    sw: 'Anza kuandika gharama za shamba kufuatilia faida',
-    ha: 'Fara rubuta kuɗaɗen gona don bibiyar riba',
-    tw: 'Hyɛ aseɛ kyerɛw afuom ho ka na hwɛ mfaso',
-    hi: 'लाभ ट्रैक करने के लिए खेत की लागत दर्ज करें',
-  },
-  'Keep logging harvest and costs to unlock performance comparison': {
-    fr: 'Continuez à enregistrer la récolte et les coûts pour comparer les performances',
-    sw: 'Endelea kuandika mavuno na gharama kufungua ulinganisho',
-    ha: 'Ci gaba da rubuta girbi da farashi don buɗe kwatance',
-    tw: 'Kɔ so kyerɛw nnɔbae ne ka so na bue toatoa toa hwɛ',
-    hi: 'प्रदर्शन तुलना अनलॉक करने के लिए फसल और लागत दर्ज करते रहें',
-  },
-  'Log farm expenses to track profitability': {
-    fr: 'Enregistrez les dépenses pour suivre la rentabilité',
-    sw: 'Andika gharama za shamba kufuatilia faida',
-    ha: 'Rubuta kashe-kashen gona don bibiyar riba',
-    tw: 'Kyerɛw afuom ho ka na hwɛ mfaso',
-    hi: 'लाभ ट्रैक करने के लिए खेत के खर्चे दर्ज करें',
-  },
+  // Legacy "Start logging farm costs to track profitability",
+  // "Keep logging harvest and costs to unlock performance
+  // comparison", and "Log farm expenses to track profitability"
+  // translation rows were removed (May 2026 spec §4). The
+  // matching English titles are no longer emitted by the
+  // engine; the SHORT_TITLE_OVERRIDES map in
+  // generateLocalizedTask.js defensively remaps any stale
+  // cached payload to crop-care wording before this locale
+  // dictionary is consulted, so the rows were unreachable.
   'Prepare rows for maize': {
     fr: 'Préparer les rangs pour le maïs',
     sw: 'Andaa mistari kwa mahindi',
