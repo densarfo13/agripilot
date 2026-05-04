@@ -446,8 +446,13 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
     // Smart Scan AI Backend §3 + §8 — spec-shape verdict
     // adapter + fallback constant. Lazy-imported alongside
     // the rest of the ML pipeline so the route stays small.
-    const { normalizeToSpecShape, SPEC_FALLBACK_VERDICT } =
-      await import('./ml/scanResultNormalizer.js');
+    const {
+      normalizeToSpecShape, SPEC_FALLBACK_VERDICT,
+      // Plant Identification v1.1 — full envelope with both
+      // plantIdentification + healthAnalysis. Existing verdictV2
+      // stays for back-compat; new consumers bind to verdictV3.
+      normalizeToFullSpecShape, SPEC_FALLBACK_FULL,
+    } = await import('./ml/scanResultNormalizer.js');
     // Smart Scan AI Backend §7 — daily per-user quota guard.
     const { checkDailyScanLimit } = await import('./ml/scanLimitGuard.js');
 
@@ -474,6 +479,7 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
         // need a separate render path — it can show the
         // "uncertain / monitor" state with a clear retry hint.
         verdictV2: SPEC_FALLBACK_VERDICT,
+        verdictV3: SPEC_FALLBACK_FULL,
         message:   'Daily scan limit reached. Upgrade to Pro for more scans.',
       });
     }
@@ -487,6 +493,7 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
         // return the spec shape so the client never has to
         // null-check the verdict field.
         verdictV2: SPEC_FALLBACK_VERDICT,
+        verdictV3: SPEC_FALLBACK_FULL,
       });
     }
 
@@ -586,11 +593,21 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       // floor — never claim certainty we don't have.
       forceLowConfidence: !!inference.fallbackUsed,
     });
+    // Plant Identification v1.1 — full envelope. Same
+    // forceLowConfidence semantics; additionally feeds the
+    // user-supplied selectedCropOrPlant through so the
+    // identification card can echo the user's profile crop
+    // when inference can't identify independently.
+    const verdictV3 = normalizeToFullSpecShape(safe, {
+      forceLowConfidence:   !!inference.fallbackUsed,
+      selectedCropOrPlant:  cropName || plantName || null,
+    });
 
     return res.json({
       ok:                    true,
       verdict:               safe,
       verdictV2,
+      verdictV3,
       tierPolicy:            policy,
       verificationQuestions: questions,
       scanId,
@@ -621,9 +638,10 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       message:  err && err.message,
     };
     try {
-      const { SPEC_FALLBACK_VERDICT } =
+      const { SPEC_FALLBACK_VERDICT, SPEC_FALLBACK_FULL } =
         await import('./ml/scanResultNormalizer.js');
       fallbackBody.verdictV2 = SPEC_FALLBACK_VERDICT;
+      fallbackBody.verdictV3 = SPEC_FALLBACK_FULL;
     } catch { /* swallow — body still ships error code */ }
     return res.status(500).json(fallbackBody);
   }

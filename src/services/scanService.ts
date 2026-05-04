@@ -30,14 +30,34 @@ export type ScanStatus =
   | 'needs_attention'
   | 'uncertain';
 
+export type Confidence = 'low' | 'medium' | 'high';
+
+// Plant Identification v1.1 — the new identification card
+// the scan UI renders ABOVE the health-analysis card. Spec
+// rule §3: confidence-based language ("Likely tomato", "Looks
+// like maize"). The frontend never claims certainty.
+export type PlantIdentification = {
+  detectedName: string | null;   // canonical (e.g. "Tomato")
+  commonName:   string | null;   // user-friendly label
+  confidence:   Confidence;
+  alternatives: string[];        // up to 3 next-best guesses
+};
+
 export type ScanResult = {
+  // Health analysis (legacy contract — every existing caller
+  // keeps reading these top-level fields).
   status:      ScanStatus;
   confidence?: number;            // 0..1 when the engine is confident
   issueType?:  string | null;     // e.g. 'pest_damage' | 'leaf_spot' | null
   explanation: string;            // human-readable, low-literacy
   action:      string;            // suggested next step
-  timing:      'now' | 'monitor' | 'later' | string;
+  timing:      'now' | 'monitor' | 'later' | 'today' | '24_hours' | string;
   scanId?:     string;
+  // Plant Identification v1.1 envelope. Optional so callers
+  // that still consume the legacy shape don't break; the
+  // ScanResultPage renders the identification card only when
+  // this field is present.
+  plantIdentification?: PlantIdentification;
 };
 
 const FALLBACK_UNCERTAIN: ScanResult = {
@@ -45,6 +65,12 @@ const FALLBACK_UNCERTAIN: ScanResult = {
   explanation: 'We couldn\u2019t analyze this clearly.',
   action:      'Take another photo in good light.',
   timing:      'monitor',
+  plantIdentification: {
+    detectedName: null,
+    commonName:   null,
+    confidence:   'low',
+    alternatives: [],
+  },
 };
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -167,22 +193,68 @@ export async function createScanFollowUpTask(
 function _normaliseScanResult(raw: unknown): ScanResult {
   if (!raw || typeof raw !== 'object') return { ...FALLBACK_UNCERTAIN };
   const r = raw as Record<string, unknown>;
-  const status = (typeof r.status === 'string'
-    && (r.status === 'healthy' || r.status === 'needs_attention' || r.status === 'uncertain'))
-    ? r.status as ScanStatus : 'uncertain';
+
+  // The /api/scan/analyze response wraps both legacy + v2 + v3
+  // shapes. Prefer the v3 envelope (plantIdentification +
+  // healthAnalysis); fall back to v2 (healthAnalysis only); fall
+  // back to legacy top-level fields for any older route response.
+  const v3 = (r.verdictV3 && typeof r.verdictV3 === 'object')
+    ? (r.verdictV3 as Record<string, unknown>) : null;
+  const v2 = (r.verdictV2 && typeof r.verdictV2 === 'object')
+    ? (r.verdictV2 as Record<string, unknown>) : null;
+
+  // Health source: v3.healthAnalysis → v2 → top-level r.
+  const health: Record<string, unknown> = (() => {
+    if (v3 && v3.healthAnalysis && typeof v3.healthAnalysis === 'object') {
+      return v3.healthAnalysis as Record<string, unknown>;
+    }
+    if (v2) return v2;
+    return r;
+  })();
+
+  const status = (typeof health.status === 'string'
+    && (health.status === 'healthy' || health.status === 'needs_attention' || health.status === 'uncertain'))
+    ? health.status as ScanStatus : 'uncertain';
+
+  // Numeric confidence (legacy contract, 0..1) — preserved for
+  // any caller that read the top-level field. The new
+  // plantIdentification.confidence is the typed enum below.
   const confidence = typeof r.confidence === 'number' && r.confidence >= 0 && r.confidence <= 1
     ? r.confidence : undefined;
+
+  // Plant identification — only populate when the server
+  // surfaced it. Older routes that don't return verdictV3
+  // produce an undefined plantIdentification → UI renders the
+  // identification card hidden and just shows the health card.
+  let plantIdentification: PlantIdentification | undefined;
+  if (v3 && v3.plantIdentification && typeof v3.plantIdentification === 'object') {
+    const p = v3.plantIdentification as Record<string, unknown>;
+    const conf = (typeof p.confidence === 'string'
+      && (p.confidence === 'low' || p.confidence === 'medium' || p.confidence === 'high'))
+      ? p.confidence as Confidence : 'low';
+    const alts = Array.isArray(p.alternatives)
+      ? (p.alternatives as unknown[]).filter((s) => typeof s === 'string').slice(0, 3) as string[]
+      : [];
+    plantIdentification = {
+      detectedName: typeof p.detectedName === 'string' ? p.detectedName : null,
+      commonName:   typeof p.commonName === 'string'   ? p.commonName   : null,
+      confidence:   conf,
+      alternatives: alts,
+    };
+  }
+
   return {
     status,
     confidence,
-    issueType:   typeof r.issueType === 'string' ? r.issueType : null,
-    explanation: typeof r.explanation === 'string' && r.explanation.length > 0
-      ? r.explanation : FALLBACK_UNCERTAIN.explanation,
-    action: typeof r.action === 'string' && r.action.length > 0
-      ? r.action : FALLBACK_UNCERTAIN.action,
-    timing: typeof r.timing === 'string' && r.timing.length > 0
-      ? r.timing : FALLBACK_UNCERTAIN.timing,
+    issueType:   typeof health.issueType === 'string' ? health.issueType : null,
+    explanation: typeof health.explanation === 'string' && health.explanation.length > 0
+      ? health.explanation : FALLBACK_UNCERTAIN.explanation,
+    action: typeof health.action === 'string' && health.action.length > 0
+      ? health.action : FALLBACK_UNCERTAIN.action,
+    timing: typeof health.timing === 'string' && health.timing.length > 0
+      ? health.timing : FALLBACK_UNCERTAIN.timing,
     scanId: typeof r.scanId === 'string' ? r.scanId : undefined,
+    plantIdentification,
   };
 }
 

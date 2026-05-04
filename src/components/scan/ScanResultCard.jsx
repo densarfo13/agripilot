@@ -32,6 +32,11 @@ import ScanContinueCard from '../growth/ScanContinueCard.jsx';
 import ScanRetryTips from './ScanRetryTips.jsx';
 import { trackFirstAction } from '../../analytics/funnelEvents.js';
 import { enforceHighTrustScanResult } from '../../core/scanResultPolicy.js';
+// Plant Identification v1.1 — drop-in card rendered ABOVE the
+// existing health surface when the server supplied a
+// `plantIdentification` envelope. Self-hides when absent so
+// older verdicts (no v3 envelope) keep their existing UI.
+import PlantIdentificationCard from './PlantIdentificationCard.jsx';
 
 const STYLES = {
   card: {
@@ -286,6 +291,42 @@ export default function ScanResultCard({
   }, [result, experience]);
 
   return (
+    <>
+      {/* Plant Identification v1.1 — sits ABOVE the health card.
+          Self-hides when result.plantIdentification is absent
+          (older scan responses) or when no plant could be
+          identified. Confirmation flow (Yes / Change) fires for
+          confidence ≤ medium per spec §5. The onCorrect handler
+          opens the existing crop-picker on the parent page; for
+          the soft launch we just record the correction via the
+          existing /api/tasks/from-scan endpoint server-side. */}
+      <PlantIdentificationCard
+        identification={result && result.plantIdentification}
+        onConfirm={(name) => {
+          // Fire-and-forget telemetry: the server uses this to
+          // build a per-user identification accuracy signal.
+          try {
+            // Lazy import keeps the card light when scan isn't on
+            // the rendered route.
+            import('../../core/analytics.js').then((m) => {
+              try { m.trackEvent('scan_plant_confirmed', { name }); }
+              catch { /* swallow */ }
+            }).catch(() => { /* swallow */ });
+          } catch { /* swallow */ }
+        }}
+        onCorrect={(name) => {
+          try {
+            import('../../core/analytics.js').then((m) => {
+              try { m.trackEvent('scan_plant_correction_requested', { name }); }
+              catch { /* swallow */ }
+            }).catch(() => { /* swallow */ });
+          } catch { /* swallow */ }
+          // Future v1.2 — open the crop-picker modal here. For
+          // now we surface the request as a tracked event the
+          // operator can act on; the user can change their farm
+          // crop via the existing /my-farm edit flow.
+        }}
+      />
     <article
       style={STYLES.card}
       data-testid="scan-result-card"
@@ -476,5 +517,6 @@ export default function ScanResultCard({
           scan result; sits below the card content as a follow-on. */}
       <UpgradePrompt context="scan_result" style={{ marginTop: 12 }} />
     </article>
+    </>
   );
 }

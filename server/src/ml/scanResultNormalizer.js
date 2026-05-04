@@ -221,12 +221,135 @@ export const SPEC_FALLBACK_VERDICT = Object.freeze({
   timing:      'monitor',
 });
 
+// ─── Plant Identification (v1.1 spec) ────────────────────
+//
+// `normalizeToFullSpecShape(safe, opts)` returns the richer
+// `{ plantIdentification, healthAnalysis }` envelope that the
+// frontend ScanResultPage now consumes. Existing
+// `normalizeToSpecShape` stays unchanged for backward compat
+// (every existing caller still sees the same 6-field shape).
+//
+// Contract for plantIdentification:
+//   {
+//     detectedName: string | null,    // canonical (e.g. "Tomato")
+//     commonName:   string | null,    // user-friendly label
+//     confidence:   "low" | "medium" | "high",
+//     alternatives: string[],         // up to 3 next-best guesses
+//   }
+//
+// Resolution order:
+//   1. Inference returned a `detectedPlant` field → use it.
+//      Confidence comes from `identificationConfidence` if
+//      present, otherwise from the verdict-level confidence.
+//      Alternatives capped at 3 to keep UI uncluttered.
+//   2. Caller supplied `opts.selectedCropOrPlant` (the user's
+//      profile crop) and inference didn't identify → echo the
+//      user's value with `confidence: 'medium'`. Honest floor:
+//      we can't independently confirm without an inference hit.
+//   3. Both missing → all-null shape with `confidence: 'low'`.
+//      Frontend renders the spec's identification fallback line.
+//
+// Confidence-language rule (spec §3) is enforced at the FRONTEND
+// render layer — this module only emits the enum value.
+function _buildPlantIdentification(safeVerdict, opts = {}) {
+  const safe = safeVerdict && typeof safeVerdict === 'object' ? safeVerdict : {};
+  const detected = _normStr(safe.detectedPlant) || _normStr(safe.plantName) || null;
+  const provided = opts.selectedCropOrPlant
+    ? _normStr(opts.selectedCropOrPlant) : null;
+
+  // Identification confidence — when the inference path used
+  // its fallback (`opts.forceLowConfidence`) we MUST clamp to
+  // 'low' regardless of what the caller stamped on the verdict.
+  // Honest floor.
+  let confidence;
+  if (opts.forceLowConfidence) {
+    confidence = 'low';
+  } else if (safe.identificationConfidence) {
+    confidence = _normEnum(safe.identificationConfidence, CONFIDENCES, 'medium');
+  } else if (detected) {
+    confidence = _normEnum(safe.confidence, CONFIDENCES, 'medium');
+  } else if (provided) {
+    confidence = 'medium';
+  } else {
+    confidence = 'low';
+  }
+
+  // Filter alternatives — only accept actual strings. Numbers,
+  // nulls, and objects would produce noisy entries (e.g. "42" or
+  // "[object Object]") in the UI.
+  const alternatives = (Array.isArray(safe.alternatives)
+    ? safe.alternatives : [])
+    .filter((s) => typeof s === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (detected) {
+    return {
+      detectedName: detected,
+      commonName:   detected,
+      confidence,
+      alternatives,
+    };
+  }
+  if (provided) {
+    return {
+      detectedName: provided,
+      commonName:   provided,
+      confidence,        // 'medium' from rule 2 above
+      alternatives,
+    };
+  }
+  return {
+    detectedName: null,
+    commonName:   null,
+    confidence:   'low',
+    alternatives: [],
+  };
+}
+
+/**
+ * normalizeToFullSpecShape(safeVerdict, opts) →
+ *   { plantIdentification, healthAnalysis }
+ *
+ * The full v1.1 envelope. Reuses the existing
+ * `normalizeToSpecShape` for the healthAnalysis branch so the
+ * 6-field shape stays in lock-step with the legacy contract.
+ */
+export function normalizeToFullSpecShape(safeVerdict = {}, opts = {}) {
+  return {
+    plantIdentification: _buildPlantIdentification(safeVerdict, opts),
+    healthAnalysis:      normalizeToSpecShape(safeVerdict, opts),
+  };
+}
+
+/**
+ * Spec §8 fallback for the full v1.1 envelope. Emitted when
+ * inference throws, fails, or the caller didn't supply an
+ * image at all.
+ */
+export const SPEC_FALLBACK_FULL = Object.freeze({
+  plantIdentification: Object.freeze({
+    detectedName: null,
+    commonName:   null,
+    confidence:   'low',
+    alternatives: [],
+  }),
+  healthAnalysis: SPEC_FALLBACK_VERDICT,
+});
+
 export const _internal = Object.freeze({
   STATUSES, ISSUE_TYPES, TIMINGS, CONFIDENCES,
   LOW_CONFIDENCE_FALLBACK_ACTION,
   ISSUE_KEYWORDS, UNCERTAIN_PHRASES,
   _deriveStatus, _deriveIssueType, _deriveTiming,
   _deriveExplanation, _deriveAction,
+  _buildPlantIdentification,
 });
 
-export default { normalizeToSpecShape, SPEC_FALLBACK_VERDICT };
+export default {
+  normalizeToSpecShape,
+  normalizeToFullSpecShape,
+  SPEC_FALLBACK_VERDICT,
+  SPEC_FALLBACK_FULL,
+};

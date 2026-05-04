@@ -57,6 +57,7 @@ const TEST_FILES = [
   'src/__tests__/alertsRules.test.js',       // Live Issue Dashboard — alert rules + rollup
   'src/__tests__/todayTaskUiContract.test.js', // Calm-UI Upgrade — Home-card contract via engine
   'src/__tests__/servicesLayerContract.test.js', // Calm-UI Services Layer — backend adaptors
+  'src/__tests__/plantIdentification.test.js',   // Plant Identification v1.1 — normalizer contract
 ];
 
 // Placeholder env values for the security-test boot path.
