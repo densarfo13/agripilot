@@ -39,6 +39,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
+import { getTodayTask } from '../lib/getTodayTask.js';
 
 // ─── Local-storage helpers ─────────────────────────────────────
 function _safeGet(key) {
@@ -105,20 +106,25 @@ function _resolveCrop(farm) {
 }
 
 function _resolveWeather() {
+  // Defensive optional-chained reads for every property — even
+  // if a future cache version stores a non-object or a Proxy
+  // with throwing getters, we never crash the render.
   const w = _safeJsonGet('farroway_cached_weather');
-  if (w && typeof w === 'object') {
-    const condition = w.condition || w.summary || w.description;
-    const temp = (typeof w.temp === 'number') ? w.temp
-              : (typeof w.temperature === 'number') ? w.temperature
-              : null;
-    if (condition || temp != null) {
-      return {
-        condition: condition || 'Conditions logged',
-        advice: 'Plan around current conditions for best results.',
-        temp,
-      };
+  try {
+    if (w && typeof w === 'object') {
+      const condition = (w?.condition ?? w?.summary ?? w?.description) || null;
+      const temp = (typeof w?.temp === 'number') ? w.temp
+                : (typeof w?.temperature === 'number') ? w.temperature
+                : null;
+      if (condition || temp != null) {
+        return {
+          condition: condition || 'Conditions logged',
+          advice: 'Plan around current conditions for best results.',
+          temp,
+        };
+      }
     }
-  }
+  } catch { /* fall through to null */ }
   return null;
 }
 
@@ -141,21 +147,54 @@ export default function PilotHome() {
   }, []);
 
   // Resolve view-model with hard fallbacks.
+  // Wrapped in try/catch so a single resolver throwing (e.g.
+  // localStorage with a Proxy-shaped value) cannot crash the
+  // render — the catch falls through to the all-defaults
+  // shape that always paints.
   const view = useMemo(() => {
-    const userType  = _resolveUserType();          // never null
-    const location  = _resolveLocation();          // string | null
-    const farm      = _resolveFarm();              // object | null
-    const crop      = _resolveCrop(farm);          // never null
-    const weather   = _resolveWeather() || {
+    let userType, location, farm, crop, resolvedWeather;
+    try {
+      userType        = _resolveUserType();   // never null
+      location        = _resolveLocation();   // string | null
+      farm            = _resolveFarm();       // object | null
+      crop            = _resolveCrop(farm);   // never null
+      resolvedWeather = _resolveWeather();    // object | null
+    } catch {
+      userType        = 'farmer';
+      location        = null;
+      farm            = null;
+      crop            = 'crop';
+      resolvedWeather = null;
+    }
+
+    // Spec §2 weather guard — `weather?.temp ?? "--"` style
+    // safe defaults at the source. Never assume the returned
+    // object has any specific field.
+    const weather = resolvedWeather || {
       condition: 'Weather unavailable',
       advice:    'Add location later for weather-aware tips',
       temp:      null,
     };
-    const task = {
-      title:  'Check soil moisture around your ' + crop,
-      reason: 'Dry weather can stress plants. Water only if the soil feels dry.',
-      cta:    'Mark as done',
-    };
+
+    // Spec §3 task engine — getTodayTask centralises the
+    // missing-data decision tree and never throws. Output is
+    // ALWAYS { title, description, cta, reason? } — every
+    // field a non-empty string.
+    let task;
+    try {
+      task = getTodayTask({
+        crop:     crop && crop !== 'crop' ? crop : null,
+        weather:  resolvedWeather,
+        location,
+      });
+    } catch {
+      task = {
+        title:       'Check soil moisture',
+        description: 'Water only if soil feels dry',
+        cta:         'Mark as done',
+      };
+    }
+
     const setupIncomplete = !location || !farm;
     return { userType, location, farm, crop, weather, task, setupIncomplete };
   }, []);
@@ -169,9 +208,16 @@ export default function PilotHome() {
     } catch { return 'Hello'; }
   })();
 
-  const userTypeLabel = view.userType === 'farmer'
-    ? 'Farmer'
-    : view.userType.charAt(0).toUpperCase() + view.userType.slice(1);
+  // Hard-default to 'Farmer' so even a malformed view.userType
+  // (null, number, etc.) cannot crash the title-case fallback.
+  const userTypeLabel = (() => {
+    try {
+      const ut = view?.userType;
+      if (typeof ut !== 'string' || !ut.trim()) return 'Farmer';
+      if (ut === 'farmer') return 'Farmer';
+      return ut.charAt(0).toUpperCase() + ut.slice(1);
+    } catch { return 'Farmer'; }
+  })();
 
   // Mark-as-done is purely cosmetic in PilotHome — it persists
   // a sessionStorage flag so the same task doesn't re-render
@@ -203,17 +249,21 @@ export default function PilotHome() {
           </span>
         </header>
 
-        {/* Weather card */}
+        {/* Weather card — spec §2: every property uses `?.` +
+            `??` so a null view.weather can never throw. */}
         <section style={S.card} data-testid="pilot-home-weather">
           <p style={S.cardLabel}>Weather</p>
           <h2 style={S.cardTitle}>
-            {view.weather.condition}
-            {view.weather.temp != null
+            {view?.weather?.condition ?? 'Weather unavailable'}
+            {view?.weather?.temp != null
               ? ' \u00B7 ' + Math.round(view.weather.temp) + '\u00B0'
               : ''}
           </h2>
-          <p style={S.cardBody}>{view.weather.advice}</p>
-          {view.location ? (
+          <p style={S.cardBody}>
+            {view?.weather?.advice
+              ?? 'Add location later for weather-aware tips'}
+          </p>
+          {view?.location ? (
             <p style={S.metaPill}>
               <span style={S.metaLabel}>Location</span>
               <span style={S.metaVal}>{view.location}</span>
@@ -221,14 +271,23 @@ export default function PilotHome() {
           ) : null}
         </section>
 
-        {/* Today's task — always present, even with safe defaults */}
+        {/* Today's task — always present, even with safe
+            defaults. getTodayTask guarantees every field is
+            present, but we still optional-chain at the read
+            site as belt-and-braces. */}
         <section
           style={taskDone ? S.cardDone : S.card}
           data-testid="pilot-home-task"
         >
           <p style={S.cardLabel}>Today's task</p>
-          <h2 style={S.cardTitle}>{view.task.title}</h2>
-          <p style={S.cardBody}>{view.task.reason}</p>
+          <h2 style={S.cardTitle}>
+            {view?.task?.title ?? 'Check soil moisture'}
+          </h2>
+          <p style={S.cardBody}>
+            {view?.task?.reason
+              ?? view?.task?.description
+              ?? 'Water only if soil feels dry'}
+          </p>
           {taskDone ? (
             <p style={S.doneNote}>{'\u2714'} Marked as done — nice work.</p>
           ) : (
@@ -238,7 +297,7 @@ export default function PilotHome() {
               style={S.btnPrimary}
               data-testid="pilot-home-task-cta"
             >
-              {view.task.cta}
+              {view?.task?.cta ?? 'Mark as done'}
             </button>
           )}
         </section>

@@ -46,6 +46,7 @@ import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 // role. Drives the new role-routing system in lib/roleFeatures.js.
 import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
 import PilotHome from './pages/PilotHome.jsx';
+import HomeErrorBoundary from './components/system/HomeErrorBoundary.jsx';
 import {
   BYPASS_SETUP_FOR_PILOT,
   FEATURE_EVENT_SYNC as PILOT_FEATURE_EVENT_SYNC,
@@ -576,7 +577,9 @@ function ProtectedRoute({ children, allowSetup }) {
     if (BYPASS_SETUP_FOR_PILOT) {
       return (
         <LegacyProfileProvider>
-          <PilotHome />
+          <HomeErrorBoundary>
+            <PilotHome />
+          </HomeErrorBoundary>
         </LegacyProfileProvider>
       );
     }
@@ -1025,7 +1028,11 @@ export default function App() {
               The role-redirect helper is still imported for the
               "/" entry below where staff/admin still benefit
               from the role-aware landing logic. */}
-          <Route path="/home"   element={<PilotHome />} />
+          <Route path="/home"   element={
+            <HomeErrorBoundary>
+              <PilotHome />
+            </HomeErrorBoundary>
+          } />
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
