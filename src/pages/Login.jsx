@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
@@ -100,6 +100,50 @@ export default function Login() {
   const persistedReturnTo = returnToRef.current || null;
   const redirectTo = location.state?.from || persistedReturnTo || defaultRedirect;
 
+  // ─── Hook-order fix (May 2026 React #300 hunt) ──────────────
+  // sessionNotice MUST be declared above the conditional returns
+  // below. The previous implementation declared it after the
+  // `if (authLoading) return …` gate, so the very first render
+  // (authLoading=true) called fewer hooks than the second render
+  // (authLoading=false), which trips React's hook-order check
+  // and surfaces minified error #300 on /login.
+  //
+  // Surface a session-expired info banner when the protected
+  // route sent the user back to /login with a `reason`. Cleared
+  // as soon as the user starts typing.
+  //
+  // Two delivery channels — react-router state (used when an
+  // in-app navigation triggers the redirect) and URLSearchParams
+  // (used when the api/client.js interceptor hard-navigates after
+  // a 401, which can't carry router state). The interceptor sets
+  // ?reason=…; this hook reads either source so the banner fires
+  // in both paths.
+  const [sessionNotice, setSessionNotice] = useState(() => {
+    const stateReason = location.state && location.state.reason;
+    let queryReason = '';
+    try {
+      const sp = new URLSearchParams(location.search || '');
+      queryReason = sp.get('reason') || '';
+    } catch { /* ignore malformed search string */ }
+    const reason = stateReason || queryReason;
+    if (reason === 'session_expired') {
+      return tSafe('auth.sessionExpired', '');
+    }
+    if (reason === 'signed_out') {
+      return tSafe('auth.signedOut', '');
+    }
+    return '';
+  });
+
+  // Stable-mount diagnostic — confirms hooks ran in the same
+  // order every render. Single greppable line per session.
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line no-console
+      console.log('Hooks stable check: V2Login mounted');
+    } catch { /* swallow */ }
+  }, []);
+
   // ─── Gate 1: Auth still loading ───
   if (authLoading) {
     // Splash treatment per the v3 brand spec: logo + Farroway
@@ -120,32 +164,6 @@ export default function Login() {
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
   }
-
-  // Surface a session-expired info banner when the protected route
-  // sent the user back to /login with a `reason`. Cleared as soon as
-  // the user starts typing.
-  //
-  // Two delivery channels — react-router state (used when an in-app
-  // navigation triggers the redirect) and URLSearchParams (used when
-  // the api/client.js interceptor hard-navigates after a 401, which
-  // can't carry router state). The interceptor sets ?reason=…; this
-  // hook reads either source so the banner fires in both paths.
-  const [sessionNotice, setSessionNotice] = useState(() => {
-    const stateReason = location.state && location.state.reason;
-    let queryReason = '';
-    try {
-      const sp = new URLSearchParams(location.search || '');
-      queryReason = sp.get('reason') || '';
-    } catch { /* ignore malformed search string */ }
-    const reason = stateReason || queryReason;
-    if (reason === 'session_expired') {
-      return tSafe('auth.sessionExpired', '');
-    }
-    if (reason === 'signed_out') {
-      return tSafe('auth.signedOut', '');
-    }
-    return '';
-  });
 
   // ─── Password login (step 1) ────────────────────────────
   const validate = () => {

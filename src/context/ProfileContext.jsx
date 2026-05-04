@@ -99,10 +99,18 @@ export function ProfileProvider({ children }) {
   const savingRef = useRef(false);
 
   // ─── Synchronous auth-transition reset (runs DURING render, not after) ───
-  // useEffect fires after render → ProfileGuard would see stale initialized=true
-  // and redirect to /profile/setup before the reset. This pattern (setState during
-  // render based on changed props) is React's recommended solution — React will
-  // immediately re-render with the new state before committing to the DOM.
+  // React's documented "adjusting state when a prop changes" pattern. The
+  // setState calls below are SAFE to fire in render — React batches them and
+  // re-renders with the new state before committing.
+  //
+  // ─── React #300 hardening (May 2026) ──────────────────────
+  // ANY non-setState side effect was previously running here too —
+  // specifically `persistFarmId(null)` on logout, which writes to
+  // localStorage during render. That violates render-purity and
+  // can surface as React error #300 ("Cannot update a component
+  // while rendering a different component") under StrictMode's
+  // double-render. The localStorage write is now hoisted into a
+  // useEffect below; the in-render block keeps ONLY setState calls.
   const [prevAuth, setPrevAuth] = useState(isAuthenticated);
   if (isAuthenticated !== prevAuth) {
     setPrevAuth(isAuthenticated);
@@ -116,9 +124,19 @@ export function ProfileProvider({ children }) {
       // Logged out — clear immediately
       setProfile(null);
       setInitialized(false);
-      persistFarmId(null);
+      // persistFarmId moved to the useEffect below.
     }
   }
+  // Side effect for the logout transition. useEffect runs AFTER
+  // commit, so the localStorage write happens once the in-render
+  // setState calls above have already taken effect. Safe under
+  // StrictMode double-render because persistFarmId(null) is
+  // idempotent.
+  useEffect(() => {
+    if (!isAuthenticated && prevAuth) {
+      try { persistFarmId(null); } catch { /* tolerate */ }
+    }
+  }, [isAuthenticated, prevAuth]);
 
   const refreshSyncMeta = useCallback(async () => {
     try {
