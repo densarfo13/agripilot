@@ -61,14 +61,28 @@ export default function OfflineBanner({ transport = null } = {}) {
 
   // When we transition offline → online and still have pending items,
   // kick a sync and flash a "Back online — syncing" strip.
+  //
+  // Hard-stop: even if syncPending hangs (the underlying transport
+  // is wedged, the network drops mid-flush, etc.), we ALWAYS clear
+  // the `syncing` flag within 5 seconds so the banner can never
+  // get stuck. The actual sync continues in the background; the
+  // banner just stops claiming we're still working on it.
   useEffect(() => {
     let cancelled = false;
+    let hardStop  = null;
     async function runSync() {
       if (!online || pending === 0) return;
       setSyncing(true);
+      hardStop = setTimeout(() => {
+        if (cancelled) return;
+        setSyncing(false);
+        setJustSynced(true);
+        setTimeout(() => { if (!cancelled) setJustSynced(false); }, 2500);
+      }, 5000);
       try {
         await syncPending(transport ? { transport } : undefined);
       } catch { /* engine never throws, but guard anyway */ }
+      if (hardStop) { clearTimeout(hardStop); hardStop = null; }
       if (cancelled) return;
       setPending(pendingCount());
       setSyncing(false);
@@ -76,7 +90,10 @@ export default function OfflineBanner({ transport = null } = {}) {
       setTimeout(() => { if (!cancelled) setJustSynced(false); }, 2500);
     }
     runSync();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (hardStop) { clearTimeout(hardStop); hardStop = null; }
+    };
   }, [online, pending, transport]);
 
   if (online && !syncing && !justSynced) return null;

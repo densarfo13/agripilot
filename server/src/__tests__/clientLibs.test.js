@@ -279,6 +279,133 @@ describe('stateMigration', () => {
   });
 });
 
+// ─── syncManager ─────────────────────────────────────────────
+describe('syncManager', () => {
+  beforeEach(async () => {
+    const { _internal } = await import('../../../src/lib/syncManager.js');
+    _internal._resetForTests();
+  });
+
+  it('runSync flips isSyncing on then off + clears the message', async () => {
+    const { runSync, getSyncState } = await import('../../../src/lib/syncManager.js');
+    let resolveWork;
+    const work = new Promise((r) => { resolveWork = r; });
+    const p = runSync(() => work);
+    expect(getSyncState().isSyncing).toBe(true);
+    expect(typeof getSyncState().connectionMessage).toBe('string');
+    resolveWork();
+    await p;
+    expect(getSyncState().isSyncing).toBe(false);
+    expect(getSyncState().connectionMessage).toBeNull();
+  });
+
+  it('hard-stops a hanging sync after 5 seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      const { runSync, getSyncState } = await import('../../../src/lib/syncManager.js');
+      // A promise that NEVER resolves.
+      const p = runSync(() => new Promise(() => {}));
+      expect(getSyncState().isSyncing).toBe(true);
+      // Fast-forward past the 5s ceiling.
+      vi.advanceTimersByTime(5000);
+      // The internal _setState fires synchronously inside the
+      // setTimeout callback; the banner is already cleared.
+      expect(getSyncState().isSyncing).toBe(false);
+      expect(getSyncState().connectionMessage).toBeNull();
+      void p;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('swallows sync errors but still clears the banner', async () => {
+    const { runSync, getSyncState } = await import('../../../src/lib/syncManager.js');
+    const p = runSync(() => Promise.reject(new Error('boom')));
+    await p;
+    expect(getSyncState().isSyncing).toBe(false);
+    expect(getSyncState().connectionMessage).toBeNull();
+  });
+
+  it('runSync survives a synchronous throw inside syncFn', async () => {
+    const { runSync, getSyncState } = await import('../../../src/lib/syncManager.js');
+    expect(() => runSync(() => { throw new Error('sync throw'); })).not.toThrow();
+    // settle microtask
+    await Promise.resolve();
+    expect(getSyncState().isSyncing).toBe(false);
+  });
+
+  it('setConnectionMessage with autoHideMs clears itself', async () => {
+    vi.useFakeTimers();
+    try {
+      const { setConnectionMessage, getSyncState } = await import('../../../src/lib/syncManager.js');
+      setConnectionMessage('Back online. Updating\u2026', 3000);
+      expect(getSyncState().connectionMessage).toBe('Back online. Updating\u2026');
+      vi.advanceTimersByTime(3000);
+      expect(getSyncState().connectionMessage).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('forceClearBanner clears every active timer + state', async () => {
+    const { runSync, forceClearBanner, getSyncState } = await import('../../../src/lib/syncManager.js');
+    runSync(() => new Promise(() => {})); // hang
+    expect(getSyncState().isSyncing).toBe(true);
+    forceClearBanner();
+    expect(getSyncState().isSyncing).toBe(false);
+    expect(getSyncState().connectionMessage).toBeNull();
+  });
+
+  it('a later setConnectionMessage does NOT get clobbered by an older auto-hide timer', async () => {
+    vi.useFakeTimers();
+    try {
+      const { setConnectionMessage, getSyncState } = await import('../../../src/lib/syncManager.js');
+      setConnectionMessage('Back online. Updating\u2026', 3000);
+      // Mid-window the user goes offline.
+      vi.advanceTimersByTime(1500);
+      setConnectionMessage('Offline mode');
+      // Older auto-hide fires — must NOT clear the new message.
+      vi.advanceTimersByTime(2000);
+      expect(getSyncState().connectionMessage).toBe('Offline mode');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// ─── useGeoLocation (logic-only — _mapErr + ERROR_MESSAGES) ─
+describe('useGeoLocation internals', () => {
+  it('maps PERMISSION_DENIED → permission_denied', async () => {
+    const { _internal } = await import('../../../src/hooks/useGeoLocation.js');
+    expect(_internal._mapErr({ code: 1 })).toBe('permission_denied');
+    expect(_internal._mapErr({ code: 2 })).toBe('unavailable');
+    expect(_internal._mapErr({ code: 3 })).toBe('timeout');
+    expect(_internal._mapErr({ code: 99 })).toBe('unknown');
+    expect(_internal._mapErr(null)).toBe('unknown');
+    expect(_internal._mapErr(undefined)).toBe('unknown');
+  });
+
+  it('every error code has a user-friendly message', async () => {
+    const { _internal } = await import('../../../src/hooks/useGeoLocation.js');
+    for (const k of ['unsupported', 'permission_denied', 'unavailable', 'timeout', 'unknown']) {
+      const m = _internal.ERROR_MESSAGES[k];
+      expect(typeof m).toBe('string');
+      expect(m.length).toBeGreaterThan(0);
+      // None of these messages should ever swallow the recovery
+      // affordance — every message tells the user they can
+      // continue manually.
+      expect(m.toLowerCase()).toMatch(/manual/);
+    }
+  });
+
+  it('default options match the iOS-Safari-friendly recipe', async () => {
+    const { _internal } = await import('../../../src/hooks/useGeoLocation.js');
+    expect(_internal.DEFAULT_OPTS.enableHighAccuracy).toBe(true);
+    expect(_internal.DEFAULT_OPTS.timeout).toBe(10000);
+    expect(_internal.DEFAULT_OPTS.maximumAge).toBe(0);
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

@@ -1,157 +1,44 @@
 /**
- * OfflineSyncBanner — small, non-blocking status pill for the
- * lightweight `src/offline/*` queue.
+ * OfflineSyncBanner — pure consumer of the centralized
+ * syncManager state. NEVER owns timers; NEVER reads queue
+ * lengths; NEVER stays stuck.
  *
- * Distinct from the existing `OfflineBanner.jsx`, which serves the
- * heavy IndexedDB sync engine (`src/lib/sync/transport.js`). Both
- * can render at the same time: the existing banner reflects the
- * production mutation queue; THIS pill reflects the simple
- * localStorage-backed queue used by the new low-literacy flows.
+ *   <OfflineSyncBanner />
  *
- * Visible states
- * ──────────────
- *   • offline           → "You are offline. Actions will sync later."
- *   • online + items    → "Back online. Syncing data…"
- *   • online + empty    → nothing rendered
+ * What it shows
+ *   • connectionMessage from useSyncManager()
+ *     (e.g. "Offline mode", "Back online. Updating…",
+ *           "Updating your farm data…")
+ *   • Hides when the message is null. The manager guarantees
+ *     the message clears within 5 seconds of any sync trigger
+ *     and within 3 seconds of the "Back online" pill firing.
  *
- * The component listens to:
- *   • window 'online' / 'offline' events (the browser's own signal)
- *   • a custom 'farroway:offlineQueueChange' event, dispatched (by
- *     a tiny observer below) whenever the queue length we track
- *     transitions across zero. This avoids polling localStorage on
- *     every render.
- *
- * Visible text routes through tStrict so non-English UIs never
- * leak English.
- *
- * Mount: at App level alongside <VoiceAssistant />. Top-right
- * placement avoids colliding with the floating mic at bottom-centre
- * and the OfflineBanner at the top of the page-shell.
+ * Why so small
+ *   The previous version maintained its own queue counts +
+ *   auto-hide timers, which drifted out of sync with the rest
+ *   of the app. Hoisting the state into syncManager.js means
+ *   there's exactly ONE place to find a stuck banner.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSyncManager } from '../lib/syncManager.js';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
-import { tStrict } from '../i18n/strictT.js';
-import { getQueue } from '../offline/offlineQueue.js';
-
-const POLL_MS = 4000;
-// Auto-hide windows for the "Back online. Syncing…" pill.
-// 3s normal hide, 5s hard ceiling — even if the queue still
-// reports pending items the banner disappears, because a user
-// staring at a forever-syncing pill thinks the app is broken.
-// The actual sync continues in the background regardless.
-const SYNCING_AUTO_HIDE_MS  = 3000;
-const SYNCING_FORCE_HIDE_MS = 5000;
-
-function _onLine() {
-  try {
-    if (typeof navigator === 'undefined') return true;
-    return navigator.onLine !== false;
-  } catch { return true; }
-}
 
 export default function OfflineSyncBanner() {
-  // Re-render on language change so the banner's strings update.
+  // Re-render on language change so the banner's strings update
+  // even though our message is provided externally — the
+  // useTranslation subscription is the canonical re-render hook.
   useTranslation();
 
-  const [online, setOnline] = useState(_onLine);
-  const [counts, setCounts] = useState({ pending: 0, abandoned: 0 });
-  // When the user comes back online with a non-empty queue, the
-  // pill flashes once for SYNCING_AUTO_HIDE_MS then hides — even
-  // if the queue is still draining. Without this guard a stuck
-  // queue (e.g. an item the new code can't process) would leave
-  // the banner up forever.
-  const [syncingHidden, setSyncingHidden] = useState(false);
-  const hideTimerRef  = useRef(null);
-  const forceTimerRef = useRef(null);
+  const { connectionMessage } = useSyncManager();
+  if (!connectionMessage) return null;
 
-  // Update queue counts on the same cadence as the auto-sync hook.
-  // The queue dispatches `farroway:offlineQueueChange` on every
-  // mutation so this listener stays current without polling fast.
-  useEffect(() => {
-    let cancelled = false;
-    const refresh = () => {
-      if (cancelled) return;
-      try {
-        const all = getQueue();
-        let pending = 0; let abandoned = 0;
-        for (const e of all) {
-          if (e.status === 'abandoned') abandoned += 1;
-          else pending += 1;
-        }
-        setCounts({ pending, abandoned });
-      } catch { /* ignore */ }
-    };
-    refresh();
-    const id = setInterval(refresh, POLL_MS);
-    const onChange = () => refresh();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('farroway:offlineQueueChange', onChange);
-    }
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('farroway:offlineQueueChange', onChange);
-      }
-    };
-  }, []);
-
-  const onlineHandler  = useCallback(() => setOnline(true),  []);
-  const offlineHandler = useCallback(() => setOnline(false), []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    window.addEventListener('online',  onlineHandler);
-    window.addEventListener('offline', offlineHandler);
-    return () => {
-      window.removeEventListener('online',  onlineHandler);
-      window.removeEventListener('offline', offlineHandler);
-    };
-  }, [onlineHandler, offlineHandler]);
-
-  // Self-timeout for the "Syncing\u2026" pill. Whenever the
-  // online + pending state turns truthy, schedule a 3-second
-  // hide and a 5-second hard ceiling. If the queue empties
-  // first (counts.pending → 0), the conditional render hides
-  // it earlier; either way the banner can't stay up forever.
-  useEffect(() => {
-    const showing = online && counts.pending > 0 && counts.abandoned === 0;
-    // Reset the visibility flag whenever the conditions change.
-    if (!showing) {
-      setSyncingHidden(false);
-      if (hideTimerRef.current)  { clearTimeout(hideTimerRef.current);  hideTimerRef.current  = null; }
-      if (forceTimerRef.current) { clearTimeout(forceTimerRef.current); forceTimerRef.current = null; }
-      return undefined;
-    }
-    // Don't re-arm the timers if they're already running.
-    if (hideTimerRef.current || forceTimerRef.current) return undefined;
-    hideTimerRef.current  = setTimeout(() => { setSyncingHidden(true); }, SYNCING_AUTO_HIDE_MS);
-    forceTimerRef.current = setTimeout(() => { setSyncingHidden(true); }, SYNCING_FORCE_HIDE_MS);
-    return () => {
-      if (hideTimerRef.current)  { clearTimeout(hideTimerRef.current);  hideTimerRef.current  = null; }
-      if (forceTimerRef.current) { clearTimeout(forceTimerRef.current); forceTimerRef.current = null; }
-    };
-  }, [online, counts.pending, counts.abandoned]);
-
-  let message = '';
-  let tone    = 'info';
-
-  if (!online) {
-    message = tStrict('offlineSync.offline', 'You are offline. Actions will sync later.');
-    tone    = 'warn';
-  } else if (counts.abandoned > 0) {
-    // Surface abandoned entries to the user so they know something
-    // needs attention. The queue keeps them on disk for inspection
-    // / manual retry rather than silently dropping them.
-    message = tStrict('offlineSync.abandoned', 'Some actions could not sync. Please check your connection.');
-    tone    = 'err';
-  } else if (counts.pending > 0 && !syncingHidden) {
-    message = tStrict('offlineSync.syncing', 'Back online. Updating\u2026');
-    tone    = 'ok';
-  }
-
-  if (!message) return null;
+  // Pick a tone from the message keyword. We deliberately don't
+  // expose a separate `tone` field on the manager — the message
+  // text IS the user-facing signal, and the colour is pure UX.
+  const lower = String(connectionMessage).toLowerCase();
+  let tone = 'info';
+  if (lower.includes('offline')) tone = 'warn';
+  else if (lower.includes('back online') || lower.includes('updating')) tone = 'ok';
 
   const style = {
     position: 'fixed',
@@ -165,7 +52,6 @@ export default function OfflineSyncBanner() {
     color: '#fff',
     background:
       tone === 'warn' ? 'rgba(245,158,11,0.92)'
-      : tone === 'err' ? 'rgba(239,68,68,0.92)'
       : tone === 'ok' ? 'rgba(34,197,94,0.92)'
       : 'rgba(11,29,52,0.92)',
     boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
@@ -173,8 +59,13 @@ export default function OfflineSyncBanner() {
   };
 
   return (
-    <div role="status" aria-live="polite" style={style} data-testid="offline-sync-banner">
-      {message}
+    <div
+      role="status"
+      aria-live="polite"
+      style={style}
+      data-testid="offline-sync-banner"
+    >
+      {connectionMessage}
     </div>
   );
 }
