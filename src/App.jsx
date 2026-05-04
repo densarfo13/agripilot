@@ -45,6 +45,10 @@ import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 // /dashboard (ngo), or /market (buyer) based on their signed-in
 // role. Drives the new role-routing system in lib/roleFeatures.js.
 import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
+// Role-aware dashboard wrapper — picks the right page for
+// /dashboard based on user.role. Farmer → V2Dashboard;
+// ngo / admin → NgoDashboardV1.
+import RoleAwareDashboard from './components/system/RoleAwareDashboard.jsx';
 import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
@@ -1000,7 +1004,9 @@ export default function App() {
             <Route path="/onboarding/starter-guide" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/dashboard" element={
               <RouteErrorBoundary routeName="home">
-                <ExperienceFallback><V2Dashboard /></ExperienceFallback>
+                <RoleAwareDashboard>
+                  <ExperienceFallback><V2Dashboard /></ExperienceFallback>
+                </RoleAwareDashboard>
               </RouteErrorBoundary>
             } />
             <Route path="/tasks" element={

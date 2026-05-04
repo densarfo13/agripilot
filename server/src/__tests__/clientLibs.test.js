@@ -1648,6 +1648,128 @@ describe('RoleHomeRedirect + RoleAwareBottomNav structural smoke', () => {
   });
 });
 
+// ─── NGO Dashboard v1 — risk logic ──────────────────────────
+describe('classifyFarmerRisk', () => {
+  it('returns low for an empty / null input', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    expect(classifyFarmerRisk().level).toBe('low');
+    expect(classifyFarmerRisk(null).level).toBe('low');
+    expect(classifyFarmerRisk({}).level).toBe('low');
+  });
+
+  it('high when no activity ≥ 7 days', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r = classifyFarmerRisk({ daysSinceLastActivity: 8 });
+    expect(r.level).toBe('high');
+    expect(r.reasons.some((x) => /no activity in 8/i.test(x))).toBe(true);
+  });
+
+  it('high when completion < 30%', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r = classifyFarmerRisk({ completionRate: 0.20 });
+    expect(r.level).toBe('high');
+    expect(r.reasons.some((x) => /20%/i.test(x))).toBe(true);
+  });
+
+  it('high when ≥ 2 pest+weather alerts in 7 days', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const a = classifyFarmerRisk({ pestAlertsLast7Days: 2 });
+    const b = classifyFarmerRisk({ pestAlertsLast7Days: 1, weatherAlertsLast7Days: 1 });
+    expect(a.level).toBe('high');
+    expect(b.level).toBe('high');
+  });
+
+  it('medium when no activity ≥ 3 days but < 7', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r = classifyFarmerRisk({ daysSinceLastActivity: 4 });
+    expect(r.level).toBe('medium');
+  });
+
+  it('medium when completion < 50% but ≥ 30%', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r = classifyFarmerRisk({ completionRate: 0.40 });
+    expect(r.level).toBe('medium');
+  });
+
+  it('low for healthy farmer', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r = classifyFarmerRisk({
+      daysSinceLastActivity: 1,
+      completionRate:        0.85,
+      pestAlertsLast7Days:   0,
+      weatherAlertsLast7Days: 0,
+    });
+    expect(r.level).toBe('low');
+    expect(r.reasons.length).toBe(0);
+  });
+
+  it('high overrides medium when both conditions fire', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r = classifyFarmerRisk({
+      daysSinceLastActivity: 8,    // would be high
+      completionRate:        0.45, // would be medium
+    });
+    expect(r.level).toBe('high');
+  });
+
+  it('score is bounded [0,100]', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const r1 = classifyFarmerRisk({ daysSinceLastActivity: 100, completionRate: 0, pestAlertsLast7Days: 50 });
+    expect(r1.score).toBeGreaterThanOrEqual(0);
+    expect(r1.score).toBeLessThanOrEqual(100);
+    const r2 = classifyFarmerRisk({ daysSinceLastActivity: 0, completionRate: 1.0 });
+    expect(r2.score).toBeLessThanOrEqual(100);
+  });
+
+  it('never throws on garbage input', async () => {
+    const { classifyFarmerRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    expect(() => classifyFarmerRisk('hello')).not.toThrow();
+    expect(() => classifyFarmerRisk(42)).not.toThrow();
+    expect(() => classifyFarmerRisk({ daysSinceLastActivity: 'eight' })).not.toThrow();
+  });
+});
+
+describe('summariseRisk', () => {
+  it('counts high / medium / low across an array', async () => {
+    const { summariseRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    const farmers = [
+      { daysSinceLastActivity: 10 },                  // high
+      { completionRate: 0.20 },                        // high
+      { daysSinceLastActivity: 4 },                   // medium
+      { completionRate: 0.40 },                        // medium
+      { daysSinceLastActivity: 1, completionRate: 0.9 }, // low
+    ];
+    const s = summariseRisk(farmers);
+    expect(s.total).toBe(5);
+    expect(s.high).toBe(2);
+    expect(s.medium).toBe(2);
+    expect(s.low).toBe(1);
+  });
+
+  it('returns zero buckets for non-array input', async () => {
+    const { summariseRisk } = await import('../../../src/lib/ngoRiskLogic.js');
+    expect(summariseRisk(null)).toEqual({ high: 0, medium: 0, low: 0, total: 0 });
+    expect(summariseRisk('hi')).toEqual({ high: 0, medium: 0, low: 0, total: 0 });
+  });
+});
+
+describe('NGO dashboard structural smoke', () => {
+  it('NgoDashboardV1 exports a default React component', async () => {
+    const mod = await import('../../../src/pages/ngo/NgoDashboardV1.jsx');
+    expect(typeof mod.default).toBe('function');
+  });
+
+  it('RoleAwareDashboard exports default + NGO_ROLES set', async () => {
+    const mod = await import('../../../src/components/system/RoleAwareDashboard.jsx');
+    expect(typeof mod.default).toBe('function');
+    expect(mod._internal.NGO_ROLES instanceof Set).toBe(true);
+    expect(mod._internal.NGO_ROLES.has('ngo')).toBe(true);
+    expect(mod._internal.NGO_ROLES.has('ngo_admin')).toBe(true);
+    expect(mod._internal.NGO_ROLES.has('platform_admin')).toBe(true);
+    expect(mod._internal.NGO_ROLES.has('farmer')).toBe(false);
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {
