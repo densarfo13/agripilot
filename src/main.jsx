@@ -11,9 +11,16 @@
 import {
   ensureUiVersion,
   killServiceWorkerAndCaches,
+  validateLocalStorageShapes,
 } from './lib/forceUiReset.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
+// Strip any malformed-JSON localStorage entry BEFORE React mounts
+// so the "We hit a problem rendering this page" recovery card
+// doesn't fire just because a partial cache reset left a half-
+// shaped object behind. Returns the count of keys removed; we
+// don't act on the value here — the validator self-logs.
+validateLocalStorageShapes();
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

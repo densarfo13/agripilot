@@ -79,6 +79,26 @@ const RESET_KEYS = Object.freeze([
   'farroway_offline_state',
 ]);
 
+// JSON-encoded localStorage keys whose shape we validate at boot.
+// Each entry: { key, kind } where kind ∈ {'object','array'}. If a
+// value is present but doesn't parse, OR doesn't match the expected
+// kind, we remove it BEFORE React mounts so consumer components
+// never read malformed data — preventing the "We hit a problem
+// rendering this page" crash that surfaces after a partial
+// cache reset.
+const SHAPED_LOCAL_KEYS = Object.freeze([
+  { key: 'farroway_active_farm',   kind: 'object' },
+  { key: 'farroway_user',          kind: 'object' },
+  { key: 'farroway_location',      kind: 'object' },
+  { key: 'farroway_user_memory',   kind: 'object' },
+  { key: 'farroway_cached_tasks',  kind: 'array'  },
+  { key: 'farroway_cached_weather',kind: 'object' },
+  { key: 'farroway_offline_state', kind: 'object' },
+  { key: 'farroway_events',        kind: 'array'  },
+  { key: 'farroway_sync_queue',    kind: 'array'  },
+  { key: 'farroway_farmer_source', kind: 'object' },
+]);
+
 // Console diagnostic — emitted on every boot so engineers can
 // confirm both the live UI version and the actual build hash.
 function _stampVersion() {
@@ -142,6 +162,57 @@ export function ensureUiVersion() {
     _safeReload();
   });
   return true;
+}
+
+/**
+ * validateLocalStorageShapes()
+ *
+ * Scrubs malformed JSON values out of localStorage BEFORE any
+ * component reads them. For each entry in SHAPED_LOCAL_KEYS:
+ *   • if the value is missing → skip
+ *   • if it doesn't parse as JSON → remove
+ *   • if it doesn't match the expected kind (object/array) → remove
+ *
+ * This guarantees the "after a partial cache reset, components
+ * read a half-shaped object and crash on `.crop.name`" failure
+ * mode is impossible. Synchronous; never throws.
+ *
+ * Returns the number of keys removed (handy for logging in tests).
+ */
+export function validateLocalStorageShapes() {
+  if (typeof localStorage === 'undefined') return 0;
+  let removed = 0;
+  for (const { key, kind } of SHAPED_LOCAL_KEYS) {
+    let raw;
+    try { raw = localStorage.getItem(key); } catch { continue; }
+    if (raw == null) continue;
+    let parsed;
+    let ok = false;
+    try {
+      parsed = JSON.parse(raw);
+      if (kind === 'object') {
+        ok = parsed !== null
+          && typeof parsed === 'object'
+          && !Array.isArray(parsed);
+      } else if (kind === 'array') {
+        ok = Array.isArray(parsed);
+      }
+    } catch { ok = false; }
+    if (!ok) {
+      try { localStorage.removeItem(key); removed += 1; } catch { /* tolerate */ }
+    }
+  }
+  if (removed > 0) {
+    try {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[Farroway] cleared ' + removed
+        + ' malformed localStorage entr' + (removed === 1 ? 'y' : 'ies')
+        + ' before mount.'
+      );
+    } catch { /* swallow */ }
+  }
+  return removed;
 }
 
 /**
@@ -278,6 +349,7 @@ export const _internal = Object.freeze({
   VERSION_KEY,
   AUTH_KEYS,
   RESET_KEYS,
+  SHAPED_LOCAL_KEYS,
   _clearStaleLocalStorage,
   _unregisterServiceWorkers,
   _clearFarrowayCaches,

@@ -106,8 +106,30 @@ export default function Dashboard() {
   const { t, lang: language } = useTranslation();
 
   // ─── THE LOOP ────────────────────────────────────────────
-  const loop = useFarmerLoop();
+  // useFarmerLoop is built to never throw; we still defensively
+  // coerce the return value to an object so a future refactor
+  // that returns null/undefined can't surface as a crash here.
+  const _loopRaw = useFarmerLoop();
+  const loop = _loopRaw && typeof _loopRaw === 'object' ? _loopRaw : {};
   const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
+
+  // Debug-only render trace. Gated behind ?debug=1 OR DEV mode so
+  // production logs stay clean. Helps QA pin down "why did Home
+  // render the empty state for me?" reports.
+  if (typeof window !== 'undefined') {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const isDev = !!(import.meta && import.meta.env && import.meta.env.DEV);
+      if (isDev || params.get('debug') === '1') {
+        // eslint-disable-next-line no-console
+        console.log('[Farroway Home] farm:', loop.profile || null);
+        // eslint-disable-next-line no-console
+        console.log('[Farroway Home] task:', loop.task || loop.activeTask || null);
+        // eslint-disable-next-line no-console
+        console.log('[Farroway Home] weather:', loop.weather || null);
+      }
+    } catch { /* never throw from a diagnostic */ }
+  }
 
   // Premium Home spec \u00a712 \u2014 home_opened. Fires once per Dashboard
   // mount (not once per render). useEffect with an empty dep array
