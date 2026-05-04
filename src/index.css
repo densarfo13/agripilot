@@ -9,7 +9,36 @@
      the country-dropdown unreadability bug. */
   color-scheme: dark;
 
-  /* ── Farroway brand tokens (premium theme) ──── */
+  /* ─── Farroway nature-dark theme tokens (May 2026) ─── */
+  /* Earthy green base. Three-stop gradient: top→mid→bottom.
+     Weather classes (theme-rain / theme-heat / theme-wind /
+     theme-dry / theme-normal) override the three stops to
+     subtly tint the whole shell. */
+  --bg-top:    #0c1f1c;
+  --bg-mid:    #123d32;
+  --bg-bottom: #1b5e3c;
+
+  /* Glass card surfaces. Translucent so the gradient bleeds
+     through and every screen feels part of the same shell. */
+  --card-bg:        rgba(255, 255, 255, 0.06);
+  --card-bg-strong: rgba(255, 255, 255, 0.10);
+  --card-border:    rgba(255, 255, 255, 0.12);
+
+  /* Text scale. High-contrast against the green base. */
+  --text-primary:   #e8f5e9;
+  --text-secondary: #a5d6a7;
+  --text-muted:     #6b8f82;
+
+  /* Accent + status. The green CTA is the only saturated colour
+     in the system so taps stand out. */
+  --accent-green:      #2ecc71;
+  --accent-green-dark: #042c1a;
+  --warning:           #f4c430;
+  --danger:            #ff6b6b;
+
+  /* ── Legacy Farroway brand tokens (kept for back-compat ──
+     existing components still reference these). New work
+     should prefer the nature-dark tokens above. */
   --primary: #22C55E;
   --primary-dark: #16A34A;
   --primary-light: rgba(34,197,94,0.15);
@@ -17,19 +46,18 @@
 
   --success: #22C55E;
   --success-light: rgba(34,197,94,0.15);
-  --warning: #F59E0B;
   --warning-light: rgba(245,158,11,0.14);
-  --danger: #EF4444;
   --danger-light: rgba(239,68,68,0.14);
   --info: #0EA5E9;
   --info-light: rgba(14,165,233,0.14);
 
-  /* ── Surfaces (deep navy) ─────────────────────── */
-  --bg: #0B1D34;
-  --bg-bottom: #081423;
-  --card: rgba(255,255,255,0.04);
-  --card-elevated: rgba(255,255,255,0.06);
-  --card-solid: #111D2E;
+  /* Surface aliases that still resolve under the legacy names
+     so per-component inline styles don't re-paint after the
+     gradient migration. */
+  --bg: var(--bg-top);
+  --card: var(--card-bg);
+  --card-elevated: var(--card-bg-strong);
+  --card-solid: #0e3328;
   --card-hover: rgba(255,255,255,0.07);
   --surface: rgba(255,255,255,0.03);
 
@@ -54,7 +82,23 @@
 }
 
 html, body, #root { height: 100%; }
-body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(180deg, var(--bg) 0%, var(--bg-bottom) 100%); background-attachment: fixed; min-height: 100vh; line-height: 1.5; }
+/* Nature-dark shell — three-stop gradient + soft green halo.
+   The radial-gradient sits on top of the linear so the green
+   highlight at the top blooms over the deeper foliage below.
+   The whole stack listens to weather theme classes via
+   --bg-top / --bg-mid / --bg-bottom — a class swap on the
+   body re-tints the entire app. */
+body, .app-shell {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at top, rgba(46, 204, 113, 0.14), transparent 38%),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bottom) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  line-height: 1.5;
+  transition: background 0.6s ease;
+}
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -885,4 +929,114 @@ select:focus {
     animation: none;
   }
   .weather-hero { animation: none; }
+}
+
+/* ─── Nature-dark theme: card + button base classes (May 2026)
+   Opt-in classes for new surfaces. Existing inline-styled
+   surfaces continue working unchanged via the legacy --bg /
+   --card aliases above. */
+
+.card,
+.weather-card,
+.task-card,
+.progress-card,
+.farm-card {
+  background:    var(--card-bg);
+  border:        1px solid var(--card-border);
+  border-radius: 20px;
+  backdrop-filter:         blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:    0 16px 40px rgba(0, 0, 0, 0.22);
+  color:         var(--text-primary);
+}
+
+.primary-btn,
+.cta,
+button.primary {
+  background:    var(--accent-green);
+  color:         var(--accent-green-dark);
+  border:        none;
+  border-radius: 14px;
+  font-weight:   800;
+  padding:       0.85rem 1.4rem;
+  cursor:        pointer;
+  min-height:    48px;
+  box-shadow:    0 8px 22px rgba(46, 204, 113, 0.28);
+  transition:    transform 200ms ease, box-shadow 200ms ease;
+}
+.primary-btn:active,
+.cta:active,
+button.primary:active {
+  transform: scale(0.98);
+}
+
+.secondary-btn {
+  background:    var(--card-bg-strong);
+  color:         var(--text-primary);
+  border:        1px solid var(--card-border);
+  border-radius: 14px;
+  font-weight:   700;
+  padding:       0.85rem 1.4rem;
+  cursor:        pointer;
+  min-height:    48px;
+}
+
+.text-muted   { color: var(--text-muted) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+
+/* ─── Weather-tinted theme classes ──────────────────────────
+   Apply to body OR an .app-shell wrapper. The single class
+   swap re-tints the entire gradient because every surface
+   reads from the three --bg-* tokens via `var()`. */
+body.theme-rain,
+.app-shell.theme-rain {
+  --bg-top:    #071923;
+  --bg-mid:    #123846;
+  --bg-bottom: #1e5a5a;
+}
+
+body.theme-heat,
+.app-shell.theme-heat {
+  --bg-top:    #172014;
+  --bg-mid:    #34491f;
+  --bg-bottom: #566b27;
+}
+
+body.theme-wind,
+.app-shell.theme-wind {
+  --bg-top:    #0a2024;
+  --bg-mid:    #173b3c;
+  --bg-bottom: #31594f;
+}
+
+body.theme-dry,
+.app-shell.theme-dry {
+  --bg-top:    #141f18;
+  --bg-mid:    #31462a;
+  --bg-bottom: #4a5f2b;
+}
+
+body.theme-normal,
+.app-shell.theme-normal {
+  --bg-top:    #0c1f1c;
+  --bg-mid:    #123d32;
+  --bg-bottom: #1b5e3c;
+}
+
+/* ─── Bottom nav glass surface ──────────────────────────────
+   Per-page nav components (BottomTabNav etc.) currently use
+   inline styles. The .bottom-nav class is provided so any
+   new nav consumer / future refactor lands on the
+   nature-dark token set without re-painting work. */
+.bottom-nav {
+  background:    rgba(8, 31, 27, 0.86);
+  border-top:    1px solid var(--card-border);
+  backdrop-filter:         blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color:         var(--text-primary);
+}
+
+.bottom-nav .active,
+.bottom-nav [data-active="true"] {
+  color: var(--accent-green);
 }

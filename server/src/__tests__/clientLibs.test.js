@@ -43,6 +43,12 @@ beforeEach(() => {
       pathname: '/dashboard',
       search: '',
     },
+    // Stub event APIs so modules that subscribe at top-level
+    // (e.g. logger.js → window.addEventListener('error', …))
+    // don't crash when imported in this Node test environment.
+    addEventListener:    () => {},
+    removeEventListener: () => {},
+    dispatchEvent:       () => true,
   };
 });
 
@@ -1415,6 +1421,72 @@ describe('completeTask', () => {
     const r = await completeTask({});
     expect(r.ok).toBe(false);
     expect(r.error).toBe('missing_id');
+  });
+});
+
+// ─── Nature-dark theme: weather class mapping ──────────────
+describe('getWeatherThemeClass', () => {
+  it('maps each known weather type to its theme class', async () => {
+    const { getWeatherThemeClass } = await import('../../../src/lib/themeWeather.js');
+    expect(getWeatherThemeClass('rain')).toBe('theme-rain');
+    expect(getWeatherThemeClass('heat')).toBe('theme-heat');
+    expect(getWeatherThemeClass('wind')).toBe('theme-wind');
+    expect(getWeatherThemeClass('dry')).toBe('theme-dry');
+    expect(getWeatherThemeClass('normal')).toBe('theme-normal');
+  });
+
+  it('returns theme-normal for unknown / null / non-string inputs', async () => {
+    const { getWeatherThemeClass } = await import('../../../src/lib/themeWeather.js');
+    expect(getWeatherThemeClass()).toBe('theme-normal');
+    expect(getWeatherThemeClass(null)).toBe('theme-normal');
+    expect(getWeatherThemeClass(undefined)).toBe('theme-normal');
+    expect(getWeatherThemeClass(42)).toBe('theme-normal');
+    expect(getWeatherThemeClass({ type: 'rain' })).toBe('theme-normal');
+    expect(getWeatherThemeClass('snow')).toBe('theme-normal');
+    expect(getWeatherThemeClass('')).toBe('theme-normal');
+  });
+
+  it('is case-insensitive for the input', async () => {
+    const { getWeatherThemeClass } = await import('../../../src/lib/themeWeather.js');
+    expect(getWeatherThemeClass('RAIN')).toBe('theme-rain');
+    expect(getWeatherThemeClass('Heat')).toBe('theme-heat');
+  });
+
+  it('returns a single non-empty class string for every output', async () => {
+    const { getWeatherThemeClass, _internal } = await import('../../../src/lib/themeWeather.js');
+    for (const t of _internal.KNOWN_TYPES) {
+      const cls = getWeatherThemeClass(t);
+      expect(typeof cls).toBe('string');
+      expect(cls.length).toBeGreaterThan(0);
+      expect(cls.startsWith('theme-')).toBe(true);
+    }
+  });
+
+  it('aligns with weatherActionEngine output types', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const { getWeatherThemeClass } = await import('../../../src/lib/themeWeather.js');
+    const grids = [
+      { weather: { rainChance: 80 }, expected: 'theme-rain' },
+      { weather: { temp: 35 },       expected: 'theme-heat' },
+      { weather: { windSpeed: 30 },  expected: 'theme-wind' },
+      { weather: { rainChance: 5 },  expected: 'theme-dry' },
+      { weather: { rainChance: 35, temp: 24, windSpeed: 8 }, expected: 'theme-normal' },
+    ];
+    for (const g of grids) {
+      const a = getWeatherAction(g.weather);
+      expect(getWeatherThemeClass(a.type)).toBe(g.expected);
+    }
+  });
+});
+
+describe('AppShellTheme structural smoke', () => {
+  it('exports a default React component + theme-class allow-list', async () => {
+    const mod = await import('../../../src/components/system/AppShellTheme.jsx');
+    expect(typeof mod.default).toBe('function');
+    expect(Array.isArray(mod._internal.ALL_THEME_CLASSES)).toBe(true);
+    expect(mod._internal.ALL_THEME_CLASSES).toEqual([
+      'theme-rain', 'theme-heat', 'theme-wind', 'theme-dry', 'theme-normal',
+    ]);
   });
 });
 

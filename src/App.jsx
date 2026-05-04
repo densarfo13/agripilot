@@ -31,6 +31,10 @@ import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
 // (e.g. taskActions.completeTask) can fire toasts via
 // `import { showToast } from '../lib/globalToast.js'`.
 import GlobalToastHost from './components/system/GlobalToastHost.jsx';
+// Nature-dark theme tinter — reads weather context, applies a
+// `theme-*` class to <body> so the gradient + cards re-tint
+// to match rain / heat / wind / dry / normal. Pure observer.
+import AppShellTheme from './components/system/AppShellTheme.jsx';
 import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
@@ -1302,6 +1306,12 @@ export default function App() {
           completion, sync recovery) can fire toasts without
           owning a component handle. Single mount-point. */}
       <GlobalToastHost />
+      {/* Nature-dark theme tinter. Reads useWeather() — must
+          live inside WeatherProvider, which the wrapping
+          providers above already establish. Pure observer:
+          renders nothing, just toggles a `theme-*` class on
+          <body>. */}
+      <AppShellTheme />
       </AuthLoadingGate>
       </SeasonProvider>
       </MarketProvider>
