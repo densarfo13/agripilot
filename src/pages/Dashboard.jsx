@@ -94,6 +94,12 @@ import {
 // .weather-dry. WeatherIcon is no longer imported here — the
 // hero card has its own icon resolver via the action engine.
 import WeatherHeroCard from '../components/WeatherHeroCard.jsx';
+// Non-blocking inline "Complete your setup" prompt. Surfaces
+// when the active profile is missing crop / location / stage —
+// crop and location are OPTIONAL per the May 2026 onboarding-
+// loop fix, so this card replaces the previous hard-redirect
+// path with an in-app affordance the user can tap when ready.
+import CompleteSetupCard from '../components/home/CompleteSetupCard.jsx';
 import useEngagementDay from '../hooks/useEngagementDay.js';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -686,6 +692,25 @@ export default function Dashboard() {
             fallback action line — Home is never blank. */}
         {loop.profile && (
           <WeatherHeroCard weather={loop.weather || null} />
+        )}
+
+        {/* Complete-setup card (May 2026 onboarding-loop fix).
+            Crop and location are OPTIONAL — when the active
+            profile is missing one or both, surface a non-
+            blocking inline prompt that takes the user to
+            /my-grow when they tap. Self-hides when nothing
+            is missing. */}
+        {loop.profile && (
+          <CompleteSetupCard
+            missing={{
+              crop:     !(loop.profile.crop || loop.profile.cropType || loop.profile.plantName),
+              location: !(loop.profile.locationName || loop.profile.location
+                          || loop.profile.region || loop.profile.country),
+              stage:    false,
+            }}
+            onAddCrop={() => { try { navigate('/my-grow'); } catch { /* swallow */ } }}
+            onAddLocation={() => { try { navigate('/my-grow'); } catch { /* swallow */ } }}
+          />
         )}
 
         {/* v3 stability layer: classified load-error banner.

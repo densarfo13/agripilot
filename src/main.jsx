@@ -94,6 +94,30 @@ try {
       // eslint-disable-next-line no-console
       console.log('LocalStorage keys:', keys);
     } catch { /* swallow */ }
+
+    // Onboarding-loop diagnostic (May 2026): three booleans that
+    // tell engineers which path the user is on. Never logs the
+    // location string itself — just whether one is set.
+    try {
+      let location = null;
+      try {
+        const raw = localStorage.getItem('farroway_active_farm');
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (parsed && typeof parsed === 'object') {
+          location = parsed.locationName || parsed.location
+                  || parsed.region || parsed.country || null;
+        }
+      } catch { location = null; }
+      // eslint-disable-next-line no-console
+      console.log('Location:', location ? '<set>' : null);
+      // User type — read from the dedicated key the
+      // useUserMode hook persists to.
+      let userType = null;
+      try { userType = localStorage.getItem('farroway_user_type'); }
+      catch { userType = null; }
+      // eslint-disable-next-line no-console
+      console.log('User type:', userType || '(not set)');
+    } catch { /* never throw from a diagnostic */ }
   }
 } catch { /* never throw from a diagnostic */ }
 
