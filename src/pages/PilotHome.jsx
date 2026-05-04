@@ -39,10 +39,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
-import { getTodayTask } from '../lib/getTodayTask.js';
 import { useWeatherSafe } from '../hooks/useWeatherSafe.js';
-import { useTodayTaskSafe } from '../hooks/useTodayTaskSafe.js';
 import { decideWeatherAction } from '../lib/weatherActionEngine.js';
+import { getWeatherTask } from '../lib/weatherTaskEngine.js';
 
 // ─── Local-storage helpers ─────────────────────────────────────
 function _safeGet(key) {
@@ -189,47 +188,22 @@ export default function PilotHome() {
     }
   }, [liveWeather, local.crop]);
 
-  // Derive today's task. useTodayTaskSafe ALWAYS returns a
-  // task; it falls through to the spec-default soil-moisture
-  // task whenever crop / location / weather is missing.
-  const todayTask = useTodayTaskSafe({
-    crop:     local.crop && local.crop !== 'crop' ? local.crop : null,
-    location: local.location,
-    weather:  liveWeather,
-  });
-
-  // Compose the legacy view shape PilotHome's existing JSX
-  // expects, but fed by the live pipeline. Belt-and-braces
-  // fallback to getTodayTask() if useTodayTaskSafe ever returns
-  // an unexpected shape.
+  // Derive today's task directly from live weather.
+  // getWeatherTask() is a pure function that always returns
+  // { title, reason, cta } — never null, never throws.
+  // It handles all edge cases (no weather, unavailable, etc.)
+  // internally, so no belt-and-braces wrapper is needed here.
   const view = useMemo(() => {
-    const fallbackTask = (() => {
-      try {
-        return getTodayTask({
-          crop:     local.crop && local.crop !== 'crop' ? local.crop : null,
-          weather:  liveWeather,
-          location: local.location,
-        });
-      } catch {
+    const task = (() => {
+      try { return getWeatherTask(liveWeather); }
+      catch {
         return {
-          title:       'Check soil moisture around your crop',
-          description: 'Water only if soil feels dry',
-          cta:         'Mark as done',
+          title:  'Check soil moisture around your crop',
+          reason: 'Water only if soil feels dry.',
+          cta:    'Mark as done',
         };
       }
     })();
-    const task = (todayTask && typeof todayTask === 'object')
-      ? {
-          title:       todayTask.title       || fallbackTask.title,
-          reason:      todayTask.reason      || fallbackTask.reason
-                                              || fallbackTask.description,
-          description: todayTask.reason      || fallbackTask.description,
-          cta:         todayTask.cta         || fallbackTask.cta,
-          urgency:     todayTask.urgency     || 'medium',
-          time:        todayTask.time        || '5 mins',
-          source:      todayTask.source      || 'fallback',
-        }
-      : fallbackTask;
     const setupIncomplete = !local.location || !local.farm;
     return {
       userType: local.userType,
@@ -240,7 +214,7 @@ export default function PilotHome() {
       task,
       setupIncomplete,
     };
-  }, [local, liveWeather, todayTask]);
+  }, [local, liveWeather]);
 
   const greeting = (() => {
     try {

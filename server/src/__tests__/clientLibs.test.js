@@ -1792,3 +1792,140 @@ describe('crash-resistance smoke tests', () => {
     expect(farm).toBe(defaultFarm);
   });
 });
+
+// ─── weatherTaskEngine — acceptance criteria (May 2026) ─────
+describe('getWeatherTask', () => {
+  it('null weather → soil moisture fallback task', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask(null);
+    expect(t.title).toMatch(/soil moisture/i);
+    expect(t.cta).toBe('Mark as done');
+  });
+
+  it('undefined weather → soil moisture fallback task', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask(undefined);
+    expect(t.title).toMatch(/soil moisture/i);
+  });
+
+  it('condition === "Weather unavailable" → soil moisture fallback', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ condition: 'Weather unavailable' });
+    expect(t.title).toMatch(/soil moisture/i);
+  });
+
+  it('rain ≥ 60 → drainage task', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 60, temp: 25, windSpeed: 5 });
+    expect(t.title).toMatch(/drainage/i);
+    expect(t.reason).toMatch(/pool/i);
+    expect(t.cta).toBe('Mark as done');
+  });
+
+  it('rain = 75 → drainage task (well above threshold)', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 75 });
+    expect(t.title).toMatch(/drainage/i);
+  });
+
+  it('temp ≥ 32 (rain < 60) → water early/late task', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 30, temp: 35, windSpeed: 5 });
+    expect(t.title).toMatch(/early morning|late evening/i);
+    expect(t.reason).toMatch(/heat|midday/i);
+    expect(t.cta).toBe('Mark as done');
+  });
+
+  it('temp exactly 32 → water early/late task', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ temp: 32 });
+    expect(t.title).toMatch(/early morning|late evening/i);
+  });
+
+  it('wind ≥ 25 (rain < 60, temp < 32) → support plants task', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 10, temp: 25, windSpeed: 30 });
+    expect(t.title).toMatch(/support/i);
+    expect(t.reason).toMatch(/wind/i);
+    expect(t.cta).toBe('Mark as done');
+  });
+
+  it('rain ≤ 20 (no heat, no wind) → soil moisture check', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 10, temp: 24, windSpeed: 5 });
+    expect(t.title).toMatch(/soil moisture/i);
+    expect(t.reason).toMatch(/dry/i);
+  });
+
+  it('rain = 0 → soil moisture check', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 0 });
+    expect(t.title).toMatch(/soil moisture/i);
+  });
+
+  it('mild conditions (rain 35, temp 24, wind 8) → inspect crops', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 35, temp: 24, windSpeed: 8 });
+    expect(t.title).toMatch(/inspect/i);
+    expect(t.cta).toBe('Mark as done');
+  });
+
+  it('rain beats temp: rain ≥ 60 AND temp ≥ 32 → drainage (rain wins)', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 70, temp: 35 });
+    expect(t.title).toMatch(/drainage/i);
+  });
+
+  it('temp beats wind: temp ≥ 32 AND wind ≥ 25 → water early/late (temp wins)', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const t = getWeatherTask({ rainChance: 30, temp: 33, windSpeed: 28 });
+    expect(t.title).toMatch(/early morning|late evening/i);
+  });
+
+  it('always returns { title, reason, cta } strings — never undefined', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const grids = [
+      null, undefined, {},
+      { rainChance: 80 }, { temp: 35 }, { windSpeed: 30 },
+      { rainChance: 5 },  { rainChance: 35, temp: 24, windSpeed: 8 },
+      { condition: 'Weather unavailable' },
+    ];
+    for (const w of grids) {
+      const t = getWeatherTask(w);
+      expect(typeof t.title).toBe('string');
+      expect(t.title.length).toBeGreaterThan(0);
+      expect(typeof t.reason).toBe('string');
+      expect(t.reason.length).toBeGreaterThan(0);
+      expect(t.cta).toBe('Mark as done');
+    }
+  });
+
+  it('never throws on garbage input', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    expect(() => getWeatherTask(null)).not.toThrow();
+    expect(() => getWeatherTask(undefined)).not.toThrow();
+    expect(() => getWeatherTask([])).not.toThrow();
+    expect(() => getWeatherTask('rainy')).not.toThrow();
+    expect(() => getWeatherTask(42)).not.toThrow();
+    expect(() => getWeatherTask({ temp: 'hot', rainChance: '???' })).not.toThrow();
+  });
+
+  it('FALLBACK_TASK is frozen', async () => {
+    const { _internal } = await import('../../../src/lib/weatherTaskEngine.js');
+    expect(Object.isFrozen(_internal.FALLBACK_TASK)).toBe(true);
+    expect(_internal.FALLBACK_TASK.cta).toBe('Mark as done');
+  });
+
+  it('no task output contains legacy profitability wording', async () => {
+    const { getWeatherTask } = await import('../../../src/lib/weatherTaskEngine.js');
+    const grids = [
+      null, { rainChance: 80 }, { temp: 35 }, { windSpeed: 30 },
+      { rainChance: 5 }, { rainChance: 35, temp: 24, windSpeed: 8 },
+    ];
+    for (const w of grids) {
+      const t = getWeatherTask(w);
+      const all = (t.title + ' ' + t.reason).toLowerCase();
+      expect(all).not.toMatch(/profitability|start logging farm costs|track profitability/);
+    }
+  });
+});
