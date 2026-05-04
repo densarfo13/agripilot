@@ -65,13 +65,50 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Register service worker for PWA (web only, not native Capacitor) -->
+    <!--
+      Service-worker registration is intentionally DISABLED.
+      We've been hitting cache-staleness issues where the SW
+      keeps farmers on an old shell across deploys. Until the
+      Home-banner + sync regressions are resolved, the SW is
+      unregistered on every boot via src/lib/forceUiReset.js
+      (see killServiceWorkerAndCaches). Re-enabling requires
+      removing that call and restoring this <script> tag.
+    -->
+    <!--
     <script>
       if ('serviceWorker' in navigator && !window.Capacitor) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').catch(() => {});
         });
       }
+    </script>
+    -->
+    <!-- Defensive in-page cleanup, runs IMMEDIATELY before main.jsx
+         loads so the bundle never races a stale SW. The same
+         logic also runs from forceUiReset.js for non-web hosts. -->
+    <script>
+      (function () {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) { try { r.unregister(); } catch (e) {} });
+            }).catch(function () {});
+          }
+        } catch (e) {}
+        try {
+          if ('caches' in window) {
+            caches.keys().then(function (keys) {
+              keys.forEach(function (k) {
+                if (typeof k !== 'string') return;
+                var l = k.toLowerCase();
+                if (l.indexOf('farroway') >= 0 || l.indexOf('workbox') >= 0) {
+                  try { caches.delete(k); } catch (e) {}
+                }
+              });
+            }).catch(function () {});
+          }
+        } catch (e) {}
+      })();
     </script>
   </body>
 </html>

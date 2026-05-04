@@ -28,6 +28,19 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Cache-bust every API response. While the SW is disabled and
+  // the cache-staleness investigation is ongoing, we'd rather pay
+  // an extra fetch than risk an HTTP/proxy/SW cache returning a
+  // stale envelope (e.g. an old "syncing" status that hangs the
+  // Home banner). These headers are advisory — the browser may
+  // still cache transparently — but they cover the common cases.
+  if (!config.headers['Cache-Control']) {
+    config.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate';
+  }
+  if (!config.headers.Pragma) {
+    config.headers.Pragma = 'no-cache';
+  }
   // Auto-attach idempotency key for mutation requests (POST/PUT/PATCH)
   // Enables safe retry on network failures
   if (['post', 'put', 'patch'].includes(config.method)) {

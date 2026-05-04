@@ -1,12 +1,19 @@
-// ── Forced UI cache/state reset (must run BEFORE anything else) ──
+// ── Forced UI cache/state reset + SW disable (run BEFORE everything) ──
 //
-// Compares the in-bundle FARROWAY_UI_VERSION against the value in
-// localStorage. On mismatch: preserves the auth token + user,
-// clears known stale client-state keys, unregisters service
-// workers, drops every `farroway*` cache, then reloads ONCE.
+//   ensureUiVersion()             — compares the bundled
+//   FARROWAY_UI_VERSION against localStorage; on mismatch wipes
+//   stale client state (preserving auth) and reloads ONCE.
+//   killServiceWorkerAndCaches()  — unconditional fire-and-forget
+//   cleanup that unregisters every service worker and drops any
+//   `farroway*` / `workbox*` cache, run on EVERY boot.
+//
 // The auth session is never cleared — the user is NOT logged out.
-import { ensureUiVersion } from './lib/forceUiReset.js';
+import {
+  ensureUiVersion,
+  killServiceWorkerAndCaches,
+} from './lib/forceUiReset.js';
 const _farrowayResettingUi = ensureUiVersion();
+killServiceWorkerAndCaches();
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -91,24 +98,17 @@ if (_auditAutoloadEnabled()) {
   import('./dev/i18nLeakScanner.js').catch(() => { /* never block boot */ });
 }
 
-// Register the service worker with new-version detection. The helper
-// listens for `updatefound` and broadcasts `farroway:sw_activated`;
-// any UI surface that wants to show "Reload to update" can listen for
-// the global `farroway:sw_new_version` event below.
-if (typeof window !== 'undefined') {
-  registerServiceWorker({
-    onNewVersion: (reload) => {
-      try {
-        window.__farrowayReloadForUpdate = reload;
-        window.dispatchEvent(new CustomEvent('farroway:sw_new_version'));
-      } catch { /* never propagate */ }
-    },
-    onActivated: (version) => {
-      try { window.dispatchEvent(new CustomEvent('farroway:sw_activated', { detail: version })); }
-      catch { /* never propagate */ }
-    },
-  }).catch(() => { /* never propagate */ });
-}
+// Service-worker registration is DISABLED. While the cache-
+// staleness investigation is ongoing, killServiceWorkerAndCaches()
+// at the top of this file unregisters any existing SW + purges
+// caches on every boot. To re-enable, restore the registerServiceWorker
+// call below AND remove the kill call at module top.
+//
+// if (typeof window !== 'undefined') {
+//   registerServiceWorker({ onNewVersion: ..., onActivated: ... })
+//     .catch(() => { /* never propagate */ });
+// }
+void registerServiceWorker; // referenced for the import; satisfies linter
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

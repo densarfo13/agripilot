@@ -1,28 +1,35 @@
 /**
- * forceUiReset.js — forced UI cache + state reset on version bump.
+ * forceUiReset.js — forced UI cache + state reset on version bump,
+ * plus unconditional service-worker disable + cache purge.
  *
- *   import { ensureUiVersion, FARROWAY_UI_VERSION } from './lib/forceUiReset.js';
+ *   import {
+ *     ensureUiVersion,
+ *     killServiceWorkerAndCaches,
+ *     FARROWAY_BUILD_VERSION,
+ *     FARROWAY_UI_VERSION,
+ *   } from './lib/forceUiReset.js';
  *
  *   // At the very top of main.jsx — before any other side-effect:
  *   const resetting = ensureUiVersion();
- *   if (!resetting) {
- *     // ... continue boot ...
- *   }
+ *   killServiceWorkerAndCaches();   // runs every boot, fire-and-forget
+ *   if (!resetting) { ... continue boot ... }
  *
  * Why this exists
- *   When we cut a deploy that materially changes the UI shell
- *   (banners, layouts, store keys), some farmers' browsers hang
- *   onto stale state — old localStorage, old service-worker
- *   caches, the old "Back online. Syncing..." banner — and the
- *   new build never visibly takes hold even after a reload.
+ *   When we cut a deploy that materially changes the UI shell,
+ *   some farmers' browsers hang onto stale state — old localStorage,
+ *   old service-worker caches, the old "Back online. Syncing…"
+ *   banner — and the new build never visibly takes hold even after
+ *   a reload.
  *
- *   This module bumps a single constant whenever we know a fresh
- *   UI must replace the cached one. On boot, it compares the
- *   stored version against the constant; if different, it
- *   PRESERVES the auth token + user, clears the known stale
- *   client-state keys, unregisters service workers, drops every
- *   `farroway*` cache, then reloads ONCE. After reload, the
- *   versions match and the routine no-ops.
+ *   Strategy:
+ *     1. Bump FARROWAY_UI_VERSION when client state must be wiped.
+ *     2. Bump FARROWAY_BUILD_VERSION on every deploy that ships a
+ *        new bundle, so DevTools (and the Home overlay) can confirm
+ *        which build is actually running.
+ *     3. Unconditionally unregister the service worker and drop
+ *        farroway/workbox caches on EVERY boot. Until the SW story
+ *        stabilises we'd rather pay one extra fetch than hand a user
+ *        an old cached shell.
  *
  * Strict-rule audit
  *   • Auth is never cleared — `farroway_token` + `farroway_user`
@@ -30,14 +37,18 @@
  *   • Reload happens exactly once — guarded by the freshly-set
  *     `farroway_ui_version` value, so there's no loop risk.
  *   • Every step is wrapped in try/catch — any single failure
- *     falls through to the next step, then to the reload, so a
- *     locked storage or denied SW API never strands the user.
+ *     falls through to the next step.
  *   • Pure browser-only — no-ops in SSR / non-window contexts.
  */
 
-// Bump this whenever a deploy must force-clear stale client state.
+// Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
+// Format: YYYY-MM-DD-vN.
+export const FARROWAY_BUILD_VERSION = '2026-05-03-v5';
+
+// Bump only when client state must be wiped. When this changes the
+// reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-03-v4';
+export const FARROWAY_UI_VERSION = '2026-05-03-v5';
 
 // localStorage key the version is stored under.
 const VERSION_KEY = 'farroway_ui_version';
@@ -50,6 +61,9 @@ const AUTH_KEYS = Object.freeze([
   // hit a re-verify prompt purely because the UI shell rotated.
   'farroway_refresh',
   'farroway_step_up',
+  // Generic auth_token key the spec mentions — preserved as a
+  // belt-and-braces safeguard if any future flow uses it.
+  'auth_token',
 ]);
 
 // Stale UI / sync / cache keys to clear when the version bumps.
@@ -66,9 +80,11 @@ const RESET_KEYS = Object.freeze([
 ]);
 
 // Console diagnostic — emitted on every boot so engineers can
-// confirm the live UI version from DevTools.
+// confirm both the live UI version and the actual build hash.
 function _stampVersion() {
   try {
+    // eslint-disable-next-line no-console
+    console.log('Farroway Build:', FARROWAY_BUILD_VERSION);
     // eslint-disable-next-line no-console
     console.log('Farroway UI version:', FARROWAY_UI_VERSION);
   } catch { /* swallow */ }
@@ -128,6 +144,51 @@ export function ensureUiVersion() {
   return true;
 }
 
+/**
+ * killServiceWorkerAndCaches()
+ *
+ * Unconditional, fire-and-forget cleanup that runs on every boot:
+ *   • Unregisters every service-worker registration.
+ *   • Deletes every cache whose name contains `farroway` or
+ *     `workbox` (matches both legacy SW caches and any future
+ *     workbox-based ones).
+ *
+ * The SW story is intentionally disabled until the Home banner +
+ * sync regressions are resolved. Pay one extra network fetch per
+ * page load in exchange for a guarantee the user sees the live
+ * bundle.
+ *
+ * Safe to call BEFORE React mounts and BEFORE ensureUiVersion's
+ * own cleanup — the operations are idempotent.
+ */
+export function killServiceWorkerAndCaches() {
+  // SW unregister — fire and forget.
+  try {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        if (!Array.isArray(regs)) return;
+        regs.forEach((r) => { try { r.unregister(); } catch { /* tolerate */ } });
+      }).catch(() => { /* tolerate */ });
+    }
+  } catch { /* swallow */ }
+
+  // Cache purge — drop anything that smells like ours or workbox's.
+  try {
+    if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
+      caches.keys().then((keys) => {
+        if (!Array.isArray(keys)) return;
+        keys.forEach((k) => {
+          if (typeof k !== 'string') return;
+          const lower = k.toLowerCase();
+          if (lower.includes('farroway') || lower.includes('workbox')) {
+            try { caches.delete(k); } catch { /* tolerate */ }
+          }
+        });
+      }).catch(() => { /* tolerate */ });
+    }
+  } catch { /* swallow */ }
+}
+
 async function _runResetAndReload() {
   // 1. Clear stale localStorage keys (preserve auth).
   _clearStaleLocalStorage();
@@ -135,7 +196,7 @@ async function _runResetAndReload() {
   // 2. Unregister service workers.
   await _unregisterServiceWorkers();
 
-  // 3. Drop any caches whose name starts with `farroway`.
+  // 3. Drop any caches whose name contains `farroway` or `workbox`.
   await _clearFarrowayCaches();
 
   // 4. Stamp the new version BEFORE reloading so the next boot
@@ -192,9 +253,12 @@ async function _clearFarrowayCaches() {
     if (typeof caches === 'undefined' || typeof caches.keys !== 'function') return;
     const keys = await caches.keys();
     if (!Array.isArray(keys) || keys.length === 0) return;
-    const farrowayKeys = keys.filter((k) => typeof k === 'string'
-      && k.toLowerCase().startsWith('farroway'));
-    await Promise.all(farrowayKeys.map(async (k) => {
+    const matchKeys = keys.filter((k) => {
+      if (typeof k !== 'string') return false;
+      const lower = k.toLowerCase();
+      return lower.includes('farroway') || lower.includes('workbox');
+    });
+    await Promise.all(matchKeys.map(async (k) => {
       try { await caches.delete(k); } catch { /* tolerate */ }
     }));
   } catch { /* swallow */ }

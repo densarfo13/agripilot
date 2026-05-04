@@ -17,6 +17,7 @@
 import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -1206,6 +1207,31 @@ export default function Dashboard() {
             onCancel={() => { setShowCorrectionModal(false); setCorrectionTargetSource(null); }}
           />
         )}
+      </div>
+
+      {/* Build version stamp — fixed footer overlay so engineers
+          (and farmers reporting issues) can confirm which build
+          they're actually running. Hidden behind the bottom nav
+          on mobile (z-index 0) but visible on the home surface
+          itself; opacity is low enough to never compete with the
+          primary action. */}
+      <div
+        aria-hidden="true"
+        data-testid="farroway-build-stamp"
+        style={{
+          position: 'fixed',
+          bottom: 8,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontSize: '10px',
+          opacity: 0.6,
+          color: '#9fd3c7',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      >
+        Farroway Build: {FARROWAY_BUILD_VERSION}
       </div>
     </div>
   );

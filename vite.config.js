@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
+    // Explicit so deployment scripts that look for the artifact
+    // never hunt the wrong directory. Matches the Vite default;
+    // pinned here per the cache-bust playbook.
+    outDir: 'dist',
     chunkSizeWarningLimit: 600,
     // Bump the heap ceiling for the minify step. The previous
     // single-bundle output was a 1.9 MB chunk that blew past
