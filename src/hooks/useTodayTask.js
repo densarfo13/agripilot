@@ -26,10 +26,12 @@
  *   • Stable identity within a single render — useMemo.
  */
 
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { generateTodayTask } from '../intelligence/taskEngine.js';
 import { generateSmartTask } from '../lib/taskIntelligence.js';
+import { getBestTask }       from '../lib/smartTaskEngine.js';
+import { logTaskEvent }      from '../lib/taskEventLogger.js';
 
 export default function useTodayTask({
   farm = null,
@@ -127,6 +129,125 @@ export function useSmartTask({
 // Re-export the bare engine for non-React callers (TodayTaskCard
 // fallback, tests, server-driven previews).
 export { generateSmartTask };
+
+// ─── useBestTask — ML scoring layer v1 ──────────────────────
+//
+//   const { bestTask, candidates, recordCompleted, recordSkipped } =
+//     useBestTask({ userType, crop, cropStage, region, weather, userHistory });
+//
+//   <h1>{bestTask.title}</h1>
+//   <button onClick={recordCompleted}>{bestTask.cta}</button>
+//
+// Calls smartTaskEngine.getBestTask() to combine the candidate
+// engine + ML scorer + event logging. Fires:
+//   • task_generated  — every time the input changes (per top
+//     candidate)
+//   • task_score      — once per candidate per re-rank
+//   • task_completed  — when caller invokes recordCompleted()
+//   • task_skipped    — when caller invokes recordSkipped()
+//
+// All fires are debounced via a ref so a re-render doesn't
+// re-emit the same event for the same task title.
+
+export function useBestTask(input) {
+  const o = (input && typeof input === 'object') ? input : {};
+  const { lang } = useTranslation();
+
+  const result = useMemo(
+    () => getBestTask(o),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      lang,
+      o.userType,
+      _smartCropKey(o.crop),
+      o.cropStage,
+      o.region,
+      _weatherKey(o.weather),
+      o.userHistory ? JSON.stringify(o.userHistory) : '',
+    ],
+  );
+
+  const lastFiredTitle = useRef(null);
+
+  // Fire task_generated + task_score events whenever the best
+  // task identity changes. The event sink is fire-and-forget.
+  useEffect(() => {
+    const best = result && result.bestTask;
+    if (!best || !best.title) return;
+    if (lastFiredTitle.current === best.title) return;
+    lastFiredTitle.current = best.title;
+    const baseMeta = {
+      crop:             o.crop,
+      cropStage:        o.cropStage,
+      weather:          o.weather,
+      userType:         o.userType,
+    };
+    logTaskEvent('task_generated', {
+      ...baseMeta,
+      taskTitle: best.title,
+      category:  best.category,
+      score:     best.score,
+    });
+    // Emit one task_score per candidate so the back-end can see
+    // the full rank distribution. Cheap — there are only 4
+    // candidates and the analytics path is fire-and-forget.
+    if (Array.isArray(result.candidates)) {
+      for (const c of result.candidates) {
+        logTaskEvent('task_score', {
+          ...baseMeta,
+          taskTitle: c.title,
+          category:  c.category,
+          score:     c.score,
+        });
+      }
+    }
+    try {
+      // eslint-disable-next-line no-console
+      console.log('Today task source:', best.source);
+      // eslint-disable-next-line no-console
+      console.log('Today task:', best.title);
+    } catch { /* swallow */ }
+  }, [result, o.crop, o.cropStage, o.weather, o.userType]);
+
+  const recordCompleted = useCallback((extra = {}) => {
+    const best = result && result.bestTask;
+    if (!best) return;
+    logTaskEvent('task_completed', {
+      crop:      o.crop,
+      cropStage: o.cropStage,
+      weather:   o.weather,
+      userType:  o.userType,
+      taskTitle: best.title,
+      category:  best.category,
+      score:     best.score,
+      ...extra,
+    });
+  }, [result, o.crop, o.cropStage, o.weather, o.userType]);
+
+  const recordSkipped = useCallback((extra = {}) => {
+    const best = result && result.bestTask;
+    if (!best) return;
+    logTaskEvent('task_skipped', {
+      crop:      o.crop,
+      cropStage: o.cropStage,
+      weather:   o.weather,
+      userType:  o.userType,
+      taskTitle: best.title,
+      category:  best.category,
+      score:     best.score,
+      ...extra,
+    });
+  }, [result, o.crop, o.cropStage, o.weather, o.userType]);
+
+  return {
+    bestTask:         result.bestTask,
+    candidates:       result.candidates,
+    recordCompleted,
+    recordSkipped,
+  };
+}
+
+export { getBestTask };
 
 function _smartCropKey(c) {
   if (typeof c === 'string') return c;

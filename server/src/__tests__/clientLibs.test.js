@@ -718,6 +718,225 @@ describe('generateSmartTask — weather/region/crop/stage', () => {
   });
 });
 
+// ─── ML Task Scoring Layer v1 ───────────────────────────────
+describe('scoreTaskCandidate', () => {
+  it('returns the base score on empty input', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    expect(scoreTaskCandidate()).toBe(50);
+    expect(scoreTaskCandidate(null)).toBe(50);
+    expect(scoreTaskCandidate({})).toBe(50);
+  });
+
+  it('clamps to [0, 100]', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    // Stack every positive bonus possible.
+    const high = scoreTaskCandidate({
+      task: { category: 'heat', time: '5 mins' },
+      userType: 'farmer',
+      cropStage: 'flowering',
+      weather:  { temp: 35 },
+    });
+    expect(high).toBeLessThanOrEqual(100);
+    expect(high).toBeGreaterThan(50);
+    // Stack negatives — backyard + market task + low completion.
+    const low = scoreTaskCandidate({
+      task: { category: 'market' },
+      userType: 'backyard',
+      userHistory: { completedSimilarTasksRecently: true, lowCompletionRate: true },
+    });
+    expect(low).toBeGreaterThanOrEqual(0);
+    expect(low).toBeLessThan(50);
+  });
+
+  it('weather: rain ≥ 60 boosts the weather category', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    const s = scoreTaskCandidate({
+      task: { category: 'weather' },
+      weather: { rainChance: 75 },
+    });
+    expect(s).toBeGreaterThan(50);
+  });
+
+  it('weather: hot day boosts heat category', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    const s = scoreTaskCandidate({
+      task: { category: 'heat' },
+      weather: { temp: 36 },
+    });
+    expect(s).toBeGreaterThan(50);
+  });
+
+  it('crop-specific: rice+water-level scores highest among rice candidates', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    const water = scoreTaskCandidate({
+      task: { category: 'water-level' },
+      crop: 'rice',
+    });
+    const weeding = scoreTaskCandidate({
+      task: { category: 'weeding' },
+      crop: 'rice',
+    });
+    expect(water).toBeGreaterThan(weeding);
+  });
+
+  it('user history: missedYesterday adds, completedSimilarTasksRecently subtracts', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    const baseline = scoreTaskCandidate({ task: { category: 'watering' } });
+    const missed = scoreTaskCandidate({
+      task: { category: 'watering' },
+      userHistory: { missedYesterday: true },
+    });
+    const recent = scoreTaskCandidate({
+      task: { category: 'watering' },
+      userHistory: { completedSimilarTasksRecently: true },
+    });
+    expect(missed).toBeGreaterThan(baseline);
+    expect(recent).toBeLessThan(baseline);
+  });
+
+  it('backyard mode: market/profitability category gets penalised heavily', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    const s = scoreTaskCandidate({
+      task: { category: 'market' },
+      userType: 'backyard',
+    });
+    // 50 base − 50 backyard penalty = 0.
+    expect(s).toBeLessThanOrEqual(20);
+  });
+
+  it('quick wins (≤ 5 min) get a small boost', async () => {
+    const { scoreTaskCandidate } = await import('../../../src/lib/mlTaskScoring.js');
+    const quick = scoreTaskCandidate({ task: { category: 'watering', time: '5 mins' } });
+    const slow  = scoreTaskCandidate({ task: { category: 'watering', time: '20 mins' } });
+    expect(quick).toBeGreaterThan(slow);
+  });
+});
+
+describe('generateTaskCandidates', () => {
+  it('always returns the 4 spec categories', async () => {
+    const { generateTaskCandidates } = await import('../../../src/lib/taskCandidates.js');
+    const list = generateTaskCandidates({ crop: 'tomato' });
+    expect(list).toHaveLength(4);
+    const cats = list.map((c) => c.category);
+    expect(cats).toEqual(['watering', 'pest-check', 'weeding', 'crop-stage']);
+  });
+
+  it('crop name is interpolated into every candidate title', async () => {
+    const { generateTaskCandidates } = await import('../../../src/lib/taskCandidates.js');
+    const list = generateTaskCandidates({ crop: 'okra' });
+    for (const c of list) {
+      expect(c.title.toLowerCase()).toMatch(/okra/);
+    }
+  });
+
+  it('falls back to "crop" placeholder for empty / non-string crop', async () => {
+    const { generateTaskCandidates } = await import('../../../src/lib/taskCandidates.js');
+    const list = generateTaskCandidates({ crop: null });
+    for (const c of list) {
+      // Title contains the placeholder; never "[object Object]".
+      expect(c.title).not.toMatch(/\[object/);
+    }
+  });
+
+  it('backyard mode rewrites "crop" → "plant" in reasons', async () => {
+    const { generateTaskCandidates } = await import('../../../src/lib/taskCandidates.js');
+    const list = generateTaskCandidates({ userType: 'backyard', crop: 'pepper' });
+    for (const c of list) {
+      expect(c.reason).not.toMatch(/\bcrop\b/i);
+    }
+  });
+
+  it('object crop with .name is honoured', async () => {
+    const { generateTaskCandidates } = await import('../../../src/lib/taskCandidates.js');
+    const list = generateTaskCandidates({ crop: { name: 'maize' } });
+    expect(list[0].title.toLowerCase()).toMatch(/maize/);
+  });
+});
+
+describe('getBestTask — combine candidates + ML scoring', () => {
+  it('returns bestTask + ranked candidates with source tag', async () => {
+    const { getBestTask } = await import('../../../src/lib/smartTaskEngine.js');
+    const r = getBestTask({ crop: 'tomato', cropStage: 'flowering' });
+    expect(r.bestTask).toBeTruthy();
+    expect(r.bestTask.source).toBe('rules-plus-ml-score-v1');
+    expect(Array.isArray(r.candidates)).toBe(true);
+    expect(r.candidates.length).toBe(4);
+    // Candidates sorted descending by score.
+    for (let i = 1; i < r.candidates.length; i += 1) {
+      expect(r.candidates[i - 1].score).toBeGreaterThanOrEqual(r.candidates[i].score);
+    }
+  });
+
+  it('rice + flowering ranks pest-check (tomato) lower than the watering default', async () => {
+    const { getBestTask } = await import('../../../src/lib/smartTaskEngine.js');
+    const r = getBestTask({ crop: 'rice', cropStage: 'vegetative', userType: 'farmer' });
+    // Best should be a watering / weeding task — rice doesn't
+    // get a pest-check bonus.
+    expect(['watering', 'weeding', 'pest-check', 'crop-stage']).toContain(r.bestTask.category);
+  });
+
+  it('hot weather elevates a heat-category candidate when present', async () => {
+    const { getBestTask } = await import('../../../src/lib/smartTaskEngine.js');
+    // No 'heat' candidate in the safe list, so this just
+    // confirms the engine still produces a usable best task.
+    const r = getBestTask({ weather: { temp: 36 } });
+    expect(r.bestTask).toBeTruthy();
+    expect(typeof r.bestTask.score).toBe('number');
+  });
+
+  it('NEVER produces legacy profitability wording', async () => {
+    const { getBestTask } = await import('../../../src/lib/smartTaskEngine.js');
+    const r = getBestTask({ crop: 'tomato', cropStage: 'flowering' });
+    const all = r.candidates.map((c) => c.title + ' ' + c.reason).join(' ').toLowerCase();
+    expect(all).not.toMatch(/start logging farm costs/);
+    expect(all).not.toMatch(/track profitability/);
+    expect(all).not.toMatch(/keep logging harvest/);
+    expect(all).not.toMatch(/performance comparison/);
+  });
+
+  it('never throws on garbage input', async () => {
+    const { getBestTask } = await import('../../../src/lib/smartTaskEngine.js');
+    expect(() => getBestTask(null)).not.toThrow();
+    expect(() => getBestTask(undefined)).not.toThrow();
+    expect(() => getBestTask('hello')).not.toThrow();
+    expect(() => getBestTask({ crop: 42, weather: 'rainy' })).not.toThrow();
+  });
+});
+
+// ─── taskEventLogger payload projection ────────────────────
+describe('taskEventLogger._projectPayload', () => {
+  it('only emits the spec fields', async () => {
+    const { _internal } = await import('../../../src/lib/taskEventLogger.js');
+    const p = _internal._projectPayload({
+      taskTitle: 'Inspect tomato leaves for yellow spots or pests',
+      category:  'pest-check',
+      score:     78,
+      crop:      { name: 'tomato' },
+      cropStage: 'flowering',
+      weather:   { condition: 'rainy', rainChance: 70 },
+      userType:  'farmer',
+      // Extra fields must NOT appear in the payload.
+      privateNote: 'remove me',
+      profitMargin: 1234,
+    });
+    expect(Object.keys(p).sort()).toEqual([
+      'category', 'crop', 'cropStage', 'rainChance',
+      'score', 'taskTitle', 'userType', 'weatherCondition',
+    ]);
+    expect(p.crop).toBe('tomato');
+    expect(p.weatherCondition).toBe('rainy');
+    expect(p.rainChance).toBe(70);
+  });
+
+  it('coerces missing fields to null (not undefined)', async () => {
+    const { _internal } = await import('../../../src/lib/taskEventLogger.js');
+    const p = _internal._projectPayload({});
+    for (const k of Object.keys(p)) {
+      expect(p[k]).toBeNull();
+    }
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

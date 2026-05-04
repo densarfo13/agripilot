@@ -3244,3 +3244,39 @@ model OutcomeFeedback {
   @@index([decisionId], map: "idx_outcome_decision")
   @@map("outcome_feedback")
 }
+
+// ─── ML Task Scoring Layer v1 ─────────────────────────────────
+//
+// Append-only ledger of every task the smart engine surfaces +
+// what the user did with it. Drives future ML training: pair
+// the input context (crop, stage, weather) with the outcome
+// (completed / skipped / completion time) and feed it to a real
+// model when enough data accumulates.
+//
+// Indexed for the cohort queries we expect ("how does the
+// pest-check category perform for tomato + flowering across
+// all users?"). userId is free-form (no FK) so user deletes
+// don't cascade through training data.
+
+model TaskInteraction {
+  id                    String    @id @default(uuid())
+  userId                String    @map("user_id")
+  taskTitle             String    @map("task_title")
+  category              String?
+  crop                  String?
+  cropStage             String?   @map("crop_stage")
+  weatherCondition      String?   @map("weather_condition")
+  rainChance            Float?    @map("rain_chance")
+  region                String?
+  userType              String?   @map("user_type")
+  score                 Int?
+  shownAt               DateTime  @default(now()) @map("shown_at")
+  completedAt           DateTime? @map("completed_at")
+  skippedAt             DateTime? @map("skipped_at")
+  completionTimeSeconds Int?      @map("completion_time_seconds")
+
+  @@index([userId, shownAt],   map: "idx_task_interaction_user_time")
+  @@index([category, shownAt], map: "idx_task_interaction_category_time")
+  @@index([crop, cropStage],   map: "idx_task_interaction_crop_stage")
+  @@map("task_interactions")
+}
