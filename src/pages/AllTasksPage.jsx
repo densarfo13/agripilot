@@ -26,8 +26,10 @@ import {
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useWeather } from '../context/WeatherContext.jsx';
-import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
-import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
+// VoiceLauncher / PhotoLauncher used to render as floating FABs
+// at the bottom of the Tasks list. The Scan tab in the bottom
+// nav owns those actions exclusively now — no FAB clutter on the
+// task surface.
 import { getFarmTasks, completeTask } from '../lib/api.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 // Structured event log for the NGO impact dashboard. logEvent
@@ -695,17 +697,8 @@ export default function AllTasksPage() {
         </div>
       )}
 
-      {/* Voice assistant launcher (rollout §1) — floating FAB
-          above the bottom-tab nav, hidden when
-          FEATURE_VOICE_ASSISTANT is off. */}
-      <VoiceLauncher variant="floating" />
-
-      {/* Photo intelligence launcher — left of the voice FAB. */}
-      <PhotoLauncher
-        variant="floating"
-        farmId={profile?.id || null}
-        cropId={profile?.crop || profile?.cropType || null}
-      />
+      {/* Floating voice + camera launchers used to live here. The
+          Scan tab in the bottom-nav owns scan / mic actions now. */}
     </div>
   );
 }

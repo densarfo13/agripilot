@@ -45,8 +45,10 @@ import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
 // keeps the toggle visible even before both experiences exist.
 import ExperienceTabs from '../components/farm/ExperienceTabs.jsx';
 import useExperience from '../hooks/useExperience.js';
-import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
-import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
+// VoiceLauncher / PhotoLauncher used to render as floating FABs
+// at the bottom of My Farm / My Grow. The Scan tab in the bottom
+// nav owns those actions now — no FAB clutter on the profile
+// surface. Imports removed to keep the bundle lean.
 import {
   Sprout, Wheat, MapPin, Ruler, Calendar, HelpCircle, Plus, ArrowRight,
 } from '../components/icons/lucide.jsx';
@@ -737,19 +739,9 @@ export default function MyFarmPage() {
           card on phones with translucent nav (spec §7 mobile rule). */}
       <div style={S.bottomSpacer} aria-hidden="true" />
 
-      {/* Voice assistant launcher (rollout §1) — floating FAB
-          above the bottom-tab nav, hidden when
-          FEATURE_VOICE_ASSISTANT is off. */}
-      <VoiceLauncher variant="floating" />
-
-      {/* Photo intelligence launcher — sits LEFT of the voice
-          FAB so the two don't overlap. Hides itself when
-          FEATURE_PHOTO_INTELLIGENCE is off. */}
-      <PhotoLauncher
-        variant="floating"
-        farmId={farmIdForPhoto}
-        cropId={profile?.crop || profile?.cropType || null}
-      />
+      {/* Floating voice + camera launchers used to live here, but
+          they cluttered the My Farm / My Grow profile. Scan / mic
+          actions are owned exclusively by the /scan tab now. */}
     </div>
   );
 }

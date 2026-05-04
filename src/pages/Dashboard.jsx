@@ -56,8 +56,9 @@ import {
 import { confirmProgramActed } from '../notifications/smsConfirmations.js';
 import ProgramCard from '../components/farmer/ProgramCard.jsx';
 import NotificationBell from '../components/NotificationBell.jsx';
-import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
-import PhotoLauncher from '../components/photo/PhotoLauncher.jsx';
+// VoiceLauncher / PhotoLauncher used to render as floating FABs
+// on Home. The Scan tab in the bottom-nav owns those actions
+// exclusively now — no duplicate FABs cluttering the daily loop.
 import DailyPlanCard from '../components/daily/DailyPlanCard.jsx';
 // Farm vs Garden UX spec §3 — "Working on: [ My Pepper Garden \u25BE ]"
 // dropdown above the daily plan. Lets a multi-entity user flip
@@ -1208,20 +1209,9 @@ export default function Dashboard() {
 
         {modals}
 
-        {/* Voice assistant launcher (rollout §1) — floating FAB
-            sits above the bottom-tab nav, hides itself when
-            FEATURE_VOICE_ASSISTANT is off so existing UI stays
-            unchanged. */}
-        <VoiceLauncher variant="floating" />
-
-        {/* Photo intelligence launcher — sits LEFT of the voice
-            FAB so the two don't overlap. Hides itself when
-            FEATURE_PHOTO_INTELLIGENCE is off. */}
-        <PhotoLauncher
-          variant="floating"
-          farmId={loop.profile?.id || null}
-          cropId={loop.profile?.cropType || loop.profile?.crop || null}
-        />
+        {/* Floating voice + camera launchers used to live here. The
+            Scan tab in the bottom-nav owns scan / mic actions now,
+            so Home stays focused on the single daily action. */}
 
         {showCorrectionModal && (
           <TaskCorrectionModal

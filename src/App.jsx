@@ -128,6 +128,24 @@ function ExitTrackingObserver() {
   return null;
 }
 
+/**
+ * ScanOnlyVoiceAssistant — route-aware wrapper around the global
+ * <VoiceAssistant /> mic FAB.
+ *
+ * Renders the mic ONLY on the /scan surface (and its sub-routes
+ * like /scan/result/:id). Every other tab — Home, My Farm,
+ * My Grow, Tasks, Progress — gets a clean view with no floating
+ * camera / scan / mic clutter. The bottom-nav still has a Scan
+ * tab, so users always have one tap to reach this surface.
+ */
+function ScanOnlyVoiceAssistant() {
+  const location = useLocation();
+  const path = (location && location.pathname) || '';
+  const onScan = path === '/scan' || path.startsWith('/scan/');
+  if (!onScan) return null;
+  return <VoiceAssistant />;
+}
+
 // Buyer + Funding/Impact layer (v3 merge, local-first)
 //   /sell           — farmer creates a produce listing
 //   /marketplace    — buyer browses available produce
@@ -1247,10 +1265,12 @@ export default function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
-      {/* Floating voice-first navigator — fixed bottom-centre across
-          every route. Hides itself when speech I/O is unavailable
-          (Firefox / iOS Safari today). */}
-      <VoiceAssistant />
+      {/* Floating voice-first navigator — fixed bottom-centre. The
+          mic FAB is now scoped to the /scan route so it doesn't
+          clutter Home / My Farm / My Grow / Tasks / Progress. The
+          bottom-nav already includes a Scan tab, so users always
+          have one tap to reach the voice + camera surface. */}
+      <ScanOnlyVoiceAssistant />
       {/* Tiny status pill for the lightweight offline queue at
           src/offline/*. Coexists with the existing OfflineBanner
           (which serves the heavy IndexedDB sync engine). */}
