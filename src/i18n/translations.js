@@ -9445,7 +9445,7 @@ const T = {
   // OfflineBanner — these strings are deliberately short so the
   // pill fits at the top-right of the screen.
   'offlineSync.offline':     { en: 'Offline mode: changes will sync',          fr: 'Mode hors ligne : les changements se synchroniseront', sw: 'Hali ya nje ya mtandao: mabadiliko yataoanishwa', ha: 'Yanayin babu yanar gizo: canje-canje za su daidaita', tw: 'Intanɛt nni hɔ: nsesaeɛ bɛkɔ so', hi: 'ऑफ़लाइन मोड: बदलाव बाद में सिंक होंगे' },
-  'offlineSync.syncing':     { en: 'Back online. Syncing…',                    fr: 'De retour en ligne. Synchronisation…',                              sw: 'Umerudi mtandaoni. Inaoanisha…',              ha: 'Ka koma yanar gizo. Ana daidaitawa…',         tw: 'Wo san ba intanɛt so. Yɛrekora…',           hi: 'फिर से ऑनलाइन। सिंक हो रहा है…' },
+  'offlineSync.syncing':     { en: 'Back online. Updating…',                   fr: 'De retour en ligne. Mise à jour…',                                  sw: 'Umerudi mtandaoni. Inasasishwa…',             ha: 'Ka koma yanar gizo. Ana sabuntawa…',          tw: 'Wo san ba intanɛt so. Yɛresesa…',          hi: 'फिर से ऑनलाइन। अपडेट हो रहा है…' },
   'offlineSync.abandoned':   { en: 'Some actions could not sync. Please check your connection.', fr: 'Certaines actions n’ont pas pu se synchroniser. Vérifiez votre connexion.', sw: 'Vitendo kadhaa havijaweza kuoanishwa. Angalia muunganisho.', ha: 'Wasu ayyuka ba su daidaita ba. Duba haɗin yanar gizo.', tw: 'Nneyɛeɛ bi antumi ankɔ. Hwɛ wo intanɛt no.', hi: 'कुछ क्रियाएँ सिंक नहीं हो सकीं। कनेक्शन जाँचें।' },
 
   // ─── Admin "Key Insights" section (KeyInsightsSection.jsx) ────

@@ -44,12 +44,12 @@
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
 // builds (May 2026 deployment-debug spec).
-export const FARROWAY_BUILD_VERSION = '2026-05-03-debug-1';
+export const FARROWAY_BUILD_VERSION = '2026-05-03-diagnostic-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-03-debug-1';
+export const FARROWAY_UI_VERSION = '2026-05-03-diagnostic-v1';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
 // var. Falls back to 'local-dev' when running outside the CI

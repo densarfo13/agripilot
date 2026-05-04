@@ -81,6 +81,19 @@ try {
     console.log('Onboarding complete:', Boolean(onboardingComplete));
     // eslint-disable-next-line no-console
     console.log('Migration ran:', Boolean(migrationRan));
+    // CHECK 5 — list every localStorage key currently on the
+    // device. Names only, never values, so token / user data
+    // is never logged. Lets engineers spot stale keys that
+    // are blocking new UI from rendering.
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const k = localStorage.key(i);
+        if (typeof k === 'string') keys.push(k);
+      }
+      // eslint-disable-next-line no-console
+      console.log('LocalStorage keys:', keys);
+    } catch { /* swallow */ }
   }
 } catch { /* never throw from a diagnostic */ }
 

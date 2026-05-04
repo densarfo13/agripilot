@@ -94,6 +94,25 @@ const DEFAULTS = Object.freeze({
   // spec-literal fallbacks) only render via this path.
   FEATURE_AI_TASK_ENGINE: true,
 
+  // ── Diagnostic-build surface gates (May 2026) ───────────
+  // Per the deploy-diagnostic spec §9, these flags exist so a
+  // pilot build can hide unstable modules without ripping
+  // their routes out of the codebase. Default values match
+  // the diagnostic spec exactly: only the four core farmer
+  // surfaces (Home / My Grow / Tasks / Progress) stay
+  // enabled. Production env can flip any of these on via
+  // VITE_FEATURE_<NAME>=true at build time.
+  //
+  // Note: these flags do NOT remove the routes from App.jsx
+  // — the routes are always mounted so deep links don't
+  // 404. Each surface checks its flag at render time and
+  // shows "Feature temporarily disabled for pilot." when off.
+  FEATURE_SCAN:   false,
+  FEATURE_SELL:   false,
+  FEATURE_BUYER:  false,
+  FEATURE_NGO:    false,
+  FEATURE_ADMIN:  false,
+
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.
   FEATURE_ADVANCED_AI_RECOMMENDATIONS: false,

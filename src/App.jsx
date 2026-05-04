@@ -212,6 +212,10 @@ const ScanResultPage = lazy(() => import('./pages/ScanResultPage.jsx'));
 // it can catch a crash from ScanPage's own lazy-import / mount.
 // Wraps the /scan + /scan/result/:id routes in App.jsx below.
 import ScanErrorBoundary from './components/scan/ScanErrorBoundary.jsx';
+// Generic per-route error boundary — wraps Home / Tasks /
+// Progress so a crash on one tab degrades to a small in-route
+// fallback instead of unmounting the whole app.
+import RouteErrorBoundary from './components/system/RouteErrorBoundary.jsx';
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -986,9 +990,21 @@ export default function App() {
             <Route path="/onboarding/minimal" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/onboarding/farmer-type" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/onboarding/starter-guide" element={<Navigate to="/onboarding/fast" replace />} />
-            <Route path="/dashboard" element={<ExperienceFallback><V2Dashboard /></ExperienceFallback>} />
-            <Route path="/tasks" element={<AllTasksPage />} />
-            <Route path="/my-farm" element={<ExperienceFallback><MyFarmPage /></ExperienceFallback>} />
+            <Route path="/dashboard" element={
+              <RouteErrorBoundary routeName="home">
+                <ExperienceFallback><V2Dashboard /></ExperienceFallback>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/tasks" element={
+              <RouteErrorBoundary routeName="tasks">
+                <AllTasksPage />
+              </RouteErrorBoundary>
+            } />
+            <Route path="/my-farm" element={
+              <RouteErrorBoundary routeName="my-farm">
+                <ExperienceFallback><MyFarmPage /></ExperienceFallback>
+              </RouteErrorBoundary>
+            } />
             {/* Phase 1 §A.5 — backyard nav tab points at /my-grow.
                 We mount the same MyFarmPage so all the existing
                 action-first / photo-upload / switch / edit
@@ -996,14 +1012,22 @@ export default function App() {
                 useUserMode() and renders "My Grow" wording when
                 the userType is backyard, "My Farm" when farmer.
                 Strict no-duplicates: NO parallel /my-grow page. */}
-            <Route path="/my-grow" element={<ExperienceFallback><MyFarmPage /></ExperienceFallback>} />
+            <Route path="/my-grow" element={
+              <RouteErrorBoundary routeName="my-grow">
+                <ExperienceFallback><MyFarmPage /></ExperienceFallback>
+              </RouteErrorBoundary>
+            } />
             {/* /help moved to the public block above (go-live audit). */}
             {/* Simple Onboarding (rollout v1) — gated by
                 FEATURE_SIMPLE_ONBOARDING inside the component;
                 when off it forwards to /onboarding so existing
                 pilots are unaffected. */}
             <Route path="/onboarding/simple" element={<Navigate to="/onboarding/fast" replace />} />
-            <Route path="/progress" element={<FarmerProgressPage />} />
+            <Route path="/progress" element={
+              <RouteErrorBoundary routeName="progress">
+                <FarmerProgressPage />
+              </RouteErrorBoundary>
+            } />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />
             <Route path="/crop-fit" element={<CropFitIntake />} />
