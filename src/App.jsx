@@ -1122,7 +1122,11 @@ export default function App() {
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message
                 when off, so the route is always live + safe. */}
-            <Route path="/funding"            element={<BackyardGuard><FundingHub /></BackyardGuard>} />
+            <Route path="/funding" element={
+              <FeatureGated flag="FEATURE_FUNDING" feature="funding">
+                <BackyardGuard><FundingHub /></BackyardGuard>
+              </FeatureGated>
+            } />
             {/* /contact, /privacy, /terms moved to the public
                 block above (go-live audit). Previously they
                 lived here despite the comment claiming "public",
@@ -1147,15 +1151,19 @@ export default function App() {
                 Retry" fallback instead of the global recovery
                 card. The boundary fires `scan_component_error`
                 analytics on every catch. */}
-            <Route path="/scan"                     element={
-              <ScanErrorBoundary>
-                <ScanPage />
-              </ScanErrorBoundary>
+            <Route path="/scan" element={
+              <FeatureGated flag="FEATURE_SCAN" feature="scan">
+                <ScanErrorBoundary>
+                  <ScanPage />
+                </ScanErrorBoundary>
+              </FeatureGated>
             } />
-            <Route path="/scan/result/:scanId"       element={
-              <ScanErrorBoundary>
-                <ScanResultPage />
-              </ScanErrorBoundary>
+            <Route path="/scan/result/:scanId" element={
+              <FeatureGated flag="FEATURE_SCAN" feature="scan">
+                <ScanErrorBoundary>
+                  <ScanResultPage />
+                </ScanErrorBoundary>
+              </FeatureGated>
             } />
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"

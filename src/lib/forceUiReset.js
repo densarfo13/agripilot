@@ -44,12 +44,12 @@
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
 // builds (May 2026 deployment-debug spec).
-export const FARROWAY_BUILD_VERSION = '2026-05-04-onboarding-fix-v1';
+export const FARROWAY_BUILD_VERSION = '2026-05-04-stable-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-04-onboarding-fix-v1';
+export const FARROWAY_UI_VERSION = '2026-05-04-stable-v1';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
 // var. Falls back to 'local-dev' when running outside the CI
@@ -295,28 +295,41 @@ export function validateLocalStorageShapes() {
  * own cleanup — the operations are idempotent.
  */
 export function killServiceWorkerAndCaches() {
-  // SW unregister — fire and forget.
+  // SW unregister — fire and forget. Logs the count per spec
+  // wording so engineers can confirm the cleanup fired.
   try {
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
         if (!Array.isArray(regs)) return;
         regs.forEach((r) => { try { r.unregister(); } catch { /* tolerate */ } });
+        try {
+          // eslint-disable-next-line no-console
+          console.log('Service workers unregistered:', regs.length);
+        } catch { /* swallow */ }
       }).catch(() => { /* tolerate */ });
     }
   } catch { /* swallow */ }
 
-  // Cache purge — drop anything that smells like ours or workbox's.
+  // Cache purge — drop anything that smells like ours, workbox's,
+  // or vite's. Spec-named "Cache cleanup complete" log fires
+  // after the keys() promise resolves so engineers can confirm
+  // the sweep ran.
   try {
     if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
       caches.keys().then((keys) => {
         if (!Array.isArray(keys)) return;
+        let dropped = 0;
         keys.forEach((k) => {
           if (typeof k !== 'string') return;
           const lower = k.toLowerCase();
-          if (lower.includes('farroway') || lower.includes('workbox')) {
-            try { caches.delete(k); } catch { /* tolerate */ }
+          if (lower.includes('farroway') || lower.includes('workbox') || lower.includes('vite')) {
+            try { caches.delete(k); dropped += 1; } catch { /* tolerate */ }
           }
         });
+        try {
+          // eslint-disable-next-line no-console
+          console.log('Cache cleanup complete (' + dropped + ' deleted)');
+        } catch { /* swallow */ }
       }).catch(() => { /* tolerate */ });
     }
   } catch { /* swallow */ }

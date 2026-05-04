@@ -197,6 +197,16 @@ export default function BottomTabNav() {
         fallback: isBackyard ? 'My Grow'    : 'My Farm',
       };
     });
+    // Pilot stability filter (May 2026): hide the Scan tab when
+    // FEATURE_SCAN is off. The route stays mounted (deep links
+    // resolve cleanly) but the tab disappears so the bottom nav
+    // shows only the four core pilot surfaces:
+    //   Home · My Farm/My Grow · Tasks · Progress.
+    // Existing nav.scan label etc. is unchanged so a flag flip
+    // restores the tab without code churn.
+    if (!isFeatureEnabled('FEATURE_SCAN')) {
+      tabs = tabs.filter((t) => t.key !== 'scan');
+    }
   }
   // Reference TABS so the linter doesn't flag the legacy
   // export as unused — kept on disk for any caller importing
