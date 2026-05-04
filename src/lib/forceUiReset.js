@@ -44,12 +44,12 @@
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
 // builds (May 2026 deployment-debug spec).
-export const FARROWAY_BUILD_VERSION = '2026-05-04-stable-v1';
+export const FARROWAY_BUILD_VERSION = '2026-05-04-no-sw-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-04-stable-v1';
+export const FARROWAY_UI_VERSION = '2026-05-04-no-sw-v1';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
 // var. Falls back to 'local-dev' when running outside the CI
@@ -310,21 +310,18 @@ export function killServiceWorkerAndCaches() {
     }
   } catch { /* swallow */ }
 
-  // Cache purge — drop anything that smells like ours, workbox's,
-  // or vite's. Spec-named "Cache cleanup complete" log fires
-  // after the keys() promise resolves so engineers can confirm
-  // the sweep ran.
+  // Cache purge — service worker is permanently removed, so
+  // there is no Farroway-owned cache we want to keep. Drop
+  // EVERY entry per the May 2026 SW-removal spec; the spec-
+  // named "Cache cleanup complete" log fires after the keys()
+  // promise resolves so engineers can confirm the sweep ran.
   try {
     if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
       caches.keys().then((keys) => {
         if (!Array.isArray(keys)) return;
         let dropped = 0;
         keys.forEach((k) => {
-          if (typeof k !== 'string') return;
-          const lower = k.toLowerCase();
-          if (lower.includes('farroway') || lower.includes('workbox') || lower.includes('vite')) {
-            try { caches.delete(k); dropped += 1; } catch { /* tolerate */ }
-          }
+          try { caches.delete(k); dropped += 1; } catch { /* tolerate */ }
         });
         try {
           // eslint-disable-next-line no-console
@@ -399,12 +396,10 @@ async function _clearFarrowayCaches() {
     if (typeof caches === 'undefined' || typeof caches.keys !== 'function') return;
     const keys = await caches.keys();
     if (!Array.isArray(keys) || keys.length === 0) return;
-    const matchKeys = keys.filter((k) => {
-      if (typeof k !== 'string') return false;
-      const lower = k.toLowerCase();
-      return lower.includes('farroway') || lower.includes('workbox');
-    });
-    await Promise.all(matchKeys.map(async (k) => {
+    // Service worker is permanently removed (May 2026 spec) so
+    // every cache key is fair game — there's no PWA cache we
+    // want to keep. Delete the lot.
+    await Promise.all(keys.map(async (k) => {
       try { await caches.delete(k); } catch { /* tolerate */ }
     }));
   } catch { /* swallow */ }

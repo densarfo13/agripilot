@@ -196,9 +196,12 @@ if (fs.existsSync(_distPath)) {
     express.static(path.join(_distPath, 'favicon.ico'), pwaCache));
   app.use('/apple-touch-icon.png',
     express.static(path.join(_distPath, 'apple-touch-icon.png'), pwaCache));
-  app.use('/sw.js',
-    express.static(path.join(_distPath, 'sw.js'),
-      { maxAge: '0', etag: true })); // SW must always revalidate
+  // /sw.js — service worker fully removed (May 2026 stability
+  // pass). The route is intentionally left unmounted; any
+  // browser still requesting /sw.js gets a 404, the SW unregister
+  // path in src/lib/forceUiReset.js handles cleanup on the
+  // client. NEVER reintroduce a static handler for this path
+  // without the corresponding registration on the client.
   app.use('/robots.txt',
     express.static(path.join(_distPath, 'robots.txt'), pwaCache));
 }

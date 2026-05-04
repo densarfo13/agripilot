@@ -181,7 +181,10 @@ import { AppSettingsProvider } from './context/AppSettingsContext.jsx';
 import LanguageRegionGate from './components/LanguageRegionGate.jsx';
 import { initSyncCoordinator } from './services/syncCoordinator.js';
 import { initPrimaryActionDoneBridge } from './core/primaryActionDoneBridge.js';
-import { registerServiceWorker } from './lib/sw/registerServiceWorker.js';
+// Service worker registration was permanently removed in the
+// May 2026 stability pass. The unregister + cache-cleanup path
+// is now the only SW-related code that ships; it lives in
+// src/lib/forceUiReset.js (killServiceWorkerAndCaches).
 import './index.css';
 // Bootstrap the JSON-driven react-i18next namespace once, before any
 // component mounts (spec §10). Legacy translations.js engine still
@@ -250,17 +253,13 @@ if (_auditAutoloadEnabled()) {
   import('./dev/i18nLeakScanner.js').catch(() => { /* never block boot */ });
 }
 
-// Service-worker registration is DISABLED. While the cache-
-// staleness investigation is ongoing, killServiceWorkerAndCaches()
-// at the top of this file unregisters any existing SW + purges
-// caches on every boot. To re-enable, restore the registerServiceWorker
-// call below AND remove the kill call at module top.
-//
-// if (typeof window !== 'undefined') {
-//   registerServiceWorker({ onNewVersion: ..., onActivated: ... })
-//     .catch(() => { /* never propagate */ });
-// }
-void registerServiceWorker; // referenced for the import; satisfies linter
+// Service-worker registration is PERMANENTLY REMOVED (May 2026
+// stability pass). The killServiceWorkerAndCaches() helper at
+// the top of this file unregisters any leftover SWs + purges
+// every cache on every boot — that's the only SW-related code
+// that ships now. There is no opt-in path; if a future deploy
+// wants PWA caching it must be re-introduced through a fresh
+// review of cache invalidation strategy.
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
