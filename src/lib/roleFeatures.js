@@ -153,6 +153,19 @@ export function getHomePathForRole(role) {
   return getRoleFeatures(role).homePath;
 }
 
+/**
+ * getFallbackHomePathForRole(role) — backup path the role lands
+ * on when the primary homePath would cause a circular redirect
+ * (e.g. RoleHomeRedirect mounted at /home + farmer.homePath = /home
+ * → infinite loop). Each role definition supplies its own fallback;
+ * we default to '/dashboard' if a future role omits it.
+ */
+export function getFallbackHomePathForRole(role) {
+  const f = getRoleFeatures(role);
+  return (f && typeof f.fallbackHomePath === 'string' && f.fallbackHomePath)
+    || '/dashboard';
+}
+
 /** getNavTabsForRole(role) — array of { key, path, label }. */
 export function getNavTabsForRole(role) {
   return getRoleFeatures(role).navTabs;
@@ -183,6 +196,7 @@ export const _internal = Object.freeze({
 export default {
   getRoleFeatures,
   getHomePathForRole,
+  getFallbackHomePathForRole,
   getNavTabsForRole,
   hasFeature,
 };

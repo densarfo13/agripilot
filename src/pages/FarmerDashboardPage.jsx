@@ -35,6 +35,7 @@ import {
 import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { BYPASS_SETUP_FOR_PILOT } from '../lib/pilotFlags.js';
 
 /** Collapsible section — keeps secondary content below the fold */
 function ExpandableSection({ title, icon, children, testId }) {
@@ -219,6 +220,20 @@ export default function FarmerDashboardPage() {
             return;
           }
           // No cache → genuine first-run state, route to setup.
+          // ─── Pilot bypass (May 2026) ───
+          // Under BYPASS_SETUP_FOR_PILOT we NEVER redirect off
+          // the dashboard; the in-page OnboardingWizard /
+          // CompleteSetupCard surfaces missing data inline.
+          // Otherwise a 404 from the server (cold cache, slow
+          // /me round-trip, partial profile) re-creates the
+          // setup-loop class of bug we're explicitly trying
+          // to break.
+          if (BYPASS_SETUP_FOR_PILOT) {
+            // eslint-disable-next-line no-console
+            console.log('[BOOT] farmer missing — pilot bypass keeps user on Home');
+            setShowOnboarding(true);
+            return;
+          }
           // eslint-disable-next-line no-console
           console.log('[BOOT] farmer missing — routing to /profile/setup');
           setShowOnboarding(true);
@@ -294,6 +309,16 @@ export default function FarmerDashboardPage() {
           console.log('[BOOT] empty payload — using cached farmer profile (no redirect)');
           setProfile(cachedProfileEmpty);
           setProfileError('');
+          return;
+        }
+        // ─── Pilot bypass (May 2026) ───
+        // Same rationale as the 404 branch above: never bounce
+        // a pilot user off the dashboard for a missing-profile
+        // server response.
+        if (BYPASS_SETUP_FOR_PILOT) {
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] farmer missing (empty payload) — pilot bypass keeps user on Home');
+          setShowOnboarding(true);
           return;
         }
         // eslint-disable-next-line no-console

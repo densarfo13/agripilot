@@ -251,7 +251,10 @@ export default class ErrorBoundary extends React.Component {
     try { setOnboardingComplete(); } catch { /* swallow */ }
     try {
       if (typeof window !== 'undefined' && window.location) {
-        window.location.href = '/home';
+        // Route to "/" — the canonical Layout + DashboardPage
+        // entry. /home mounts RoleHomeRedirect which can loop
+        // for farmers (blank-screen bug, May 2026).
+        window.location.href = '/';
       }
     } catch { /* never throw */ }
   };

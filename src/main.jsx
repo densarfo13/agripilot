@@ -321,4 +321,66 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 );
 
+// Boot success marker (May 2026 blank-screen fix §7).
+// Single greppable line — engineers can confirm React mounted
+// without anything else having to fire. If this line is missing
+// from a user's DevTools console, the boot failed BEFORE
+// createRoot. If it's present but the page is still blank,
+// the watchdog below will say so within 4 seconds.
+try {
+  // eslint-disable-next-line no-console
+  console.log('App mounted successfully');
+} catch { /* swallow */ }
+
+// ── Blank-screen watchdog ───────────────────────────────────────
+// React's createRoot() returns synchronously; the actual paint
+// happens on the next tick. If 4 seconds later the #root element
+// still has zero rendered content, something downstream of
+// ErrorBoundary swallowed the render (e.g. a redirect loop or a
+// provider stuck in `loading`). Log a single, greppable line so
+// ops can spot it in user console drains, and stamp a
+// localStorage flag so the next boot can show a recovery UI
+// instead of repeating the blank screen.
+try {
+  if (typeof window !== 'undefined' && typeof setTimeout === 'function') {
+    setTimeout(() => {
+      try {
+        const root = document.getElementById('root');
+        const childCount = root && root.children ? root.children.length : 0;
+        const textLen = root && typeof root.innerText === 'string'
+          ? root.innerText.trim().length
+          : 0;
+        if (childCount === 0 || textLen === 0) {
+          // eslint-disable-next-line no-console
+          console.error(
+            '[FARROWAY_BLANK] No content rendered after 4s.',
+            'path:', window.location && window.location.pathname,
+            'children:', childCount,
+            'textLen:', textLen
+          );
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('farroway_last_blank_at',
+                String(Date.now()));
+              localStorage.setItem('farroway_last_blank_path',
+                String(window.location && window.location.pathname || ''));
+            }
+          } catch { /* swallow */ }
+        } else {
+          // eslint-disable-next-line no-console
+          console.log('[FARROWAY_PAINT] Render confirmed.',
+            'children:', childCount, 'textLen:', textLen);
+          // Clear any prior blank-screen marker — last boot painted.
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('farroway_last_blank_at');
+              localStorage.removeItem('farroway_last_blank_path');
+            }
+          } catch { /* swallow */ }
+        }
+      } catch { /* never throw from a diagnostic */ }
+    }, 4000);
+  }
+} catch { /* swallow */ }
+
 } // end if (!_farrowayResettingUi)

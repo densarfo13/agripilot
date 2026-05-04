@@ -997,6 +997,14 @@ export default function FastOnboarding() {
               } catch { /* swallow */ }
 
               // Pilot bypass: skip the rest of the wizard.
+              //
+              // Routes to "/" (the canonical landing) rather
+              // than "/home". /home mounts RoleHomeRedirect,
+              // which for farmers used to resolve back to
+              // /home → infinite loop → blank screen. /
+              // renders <ProtectedRoute><Layout /></...> with
+              // <DashboardPage /> at the index — direct paint,
+              // no redirect indirection.
               if (BYPASS_SETUP_FOR_PILOT) {
                 try { setOnboardingComplete(); } catch { /* swallow */ }
                 try {
@@ -1010,7 +1018,7 @@ export default function FastOnboarding() {
                     from: 'fast-onboarding/location',
                   });
                 } catch { /* swallow */ }
-                navigate('/home', { replace: true });
+                navigate('/', { replace: true });
                 return;
               }
 
