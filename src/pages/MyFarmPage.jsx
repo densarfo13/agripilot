@@ -749,13 +749,18 @@ export default function MyFarmPage() {
 // ─── Local components ──────────────────────────────────────────
 
 function Header({ t, isBackyard }) {
-  // Safe-launch spec §2: title swaps "My Farm" → "My Garden" when
-  // the active row is a backyard / home-garden record. Falls back
-  // through tSafe so a missing translation never blanks the title.
+  // Wording rule (Farmer vs Backyard alignment, May 2026):
+  //   farmer    → page title "My Farm"
+  //   backyard  → page title "My Grow"
+  // Both match the bottom-nav label exactly so the tab and the
+  // page can never disagree. The legacy "My Garden" string is
+  // still kept in tSafe as a tertiary fallback so a missing
+  // translation doesn't blank the heading.
   const title = isBackyard
-    ? (tSafe('myGarden.title', 'My Garden')
-       || t('myGarden.title') || 'My Garden')
-    : (t('myFarm.title') || 'My Farm');
+    ? (tSafe('myGrow.title', 'My Grow')
+       || t('nav.myGrow') || 'My Grow')
+    : (tSafe('myFarm.title', 'My Farm')
+       || t('myFarm.title') || 'My Farm');
   return (
     <div style={S.header}>
       <span style={S.headerIcon} aria-hidden="true">

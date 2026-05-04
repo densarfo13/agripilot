@@ -183,13 +183,20 @@ export default function BottomTabNav() {
       fallback: it.fallback,
     }));
   } else {
-    // Single canonical 5-tab nav per Calm-UI Upgrade §9.
-    // `isBackyard` is computed above and intentionally unused
-    // at this layer — per-userType adaptation happens INSIDE
-    // the destination page (e.g. My Grow renders Farms/Gardens
-    // tabs for farmers, garden cards for backyard users).
-    void isBackyard;
-    tabs = TABS;
+    // Single canonical 5-tab nav per Calm-UI Upgrade §9. The
+    // 'grow' tab's label adapts to the active experience so
+    // farmers see "My Farm" and backyard users see "My Grow"
+    // — they never see the OTHER experience's wording. Title
+    // on the destination page (MyFarmPage Header) follows the
+    // same isBackyard signal so the tab + page agree.
+    tabs = TABS.map((t) => {
+      if (t.key !== 'grow') return t;
+      return {
+        ...t,
+        labelKey: isBackyard ? 'nav.myGrow' : 'nav.myFarm',
+        fallback: isBackyard ? 'My Grow'    : 'My Farm',
+      };
+    });
   }
   // Reference TABS so the linter doesn't flag the legacy
   // export as unused — kept on disk for any caller importing

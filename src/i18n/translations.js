@@ -6842,6 +6842,12 @@ const T = {
   'myGarden.title': {
     en: 'My Garden', fr: 'Mon jardin', sw: 'Bustani Yangu', ha: 'Lambun a', tw: 'Me Turom', hi: 'मेरा बगीचा',
   },
+  // Farmer/Backyard alignment (May 2026): title shown on the
+  // /my-grow page for backyard users. Matches the bottom-nav
+  // 'My Grow' label so the tab + page header agree exactly.
+  'myGrow.title': {
+    en: 'My Grow', fr: 'Mon espace', sw: 'Kilimo Changu', ha: 'Gonata', tw: 'Me Mfuo', hi: 'मेरी फ़सल',
+  },
   'myFarm.editGarden': {
     en: 'Edit Garden', fr: 'Modifier le jardin', sw: 'Hariri bustani', ha: 'Gyara lambu', tw: 'Sesa turo no', hi: 'बगीचा संपादित करें',
   },
