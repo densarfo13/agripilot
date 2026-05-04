@@ -40,6 +40,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
 import { getTodayTask } from '../lib/getTodayTask.js';
+import { useWeatherSafe } from '../hooks/useWeatherSafe.js';
+import { useTodayTaskSafe } from '../hooks/useTodayTaskSafe.js';
+import { decideWeatherAction } from '../lib/weatherActionEngine.js';
 
 // ─── Local-storage helpers ─────────────────────────────────────
 function _safeGet(key) {
@@ -146,58 +149,98 @@ export default function PilotHome() {
     } catch { /* swallow */ }
   }, []);
 
-  // Resolve view-model with hard fallbacks.
-  // Wrapped in try/catch so a single resolver throwing (e.g.
-  // localStorage with a Proxy-shaped value) cannot crash the
-  // render — the catch falls through to the all-defaults
-  // shape that always paints.
-  const view = useMemo(() => {
-    let userType, location, farm, crop, resolvedWeather;
+  // Resolve LOCAL view-model with hard fallbacks. Pure
+  // localStorage reads — no network, no async work. Wrapped in
+  // try/catch so a single resolver throwing cannot crash the
+  // render.
+  const local = useMemo(() => {
+    let userType, location, farm, crop;
     try {
-      userType        = _resolveUserType();   // never null
-      location        = _resolveLocation();   // string | null
-      farm            = _resolveFarm();       // object | null
-      crop            = _resolveCrop(farm);   // never null
-      resolvedWeather = _resolveWeather();    // object | null
+      userType = _resolveUserType();   // never null
+      location = _resolveLocation();   // string | null
+      farm     = _resolveFarm();       // object | null
+      crop     = _resolveCrop(farm);   // never null
     } catch {
-      userType        = 'farmer';
-      location        = null;
-      farm            = null;
-      crop            = 'crop';
-      resolvedWeather = null;
+      userType = 'farmer';
+      location = null;
+      farm     = null;
+      crop     = 'crop';
     }
+    return { userType, location, farm, crop };
+  }, []);
 
-    // Spec §2 weather guard — `weather?.temp ?? "--"` style
-    // safe defaults at the source. Never assume the returned
-    // object has any specific field.
-    const weather = resolvedWeather || {
-      condition: 'Weather unavailable',
-      advice:    'Add location later for weather-aware tips',
-      temp:      null,
-    };
+  // ─── Live weather pipeline (May 2026 Weather → Task spec) ──
+  // useWeatherSafe always returns a usable `weather` object —
+  // never null, never throws — so we can render the large
+  // weather card synchronously even on first paint.
+  const { weather: liveWeather, loading: weatherLoading } = useWeatherSafe();
 
-    // Spec §3 task engine — getTodayTask centralises the
-    // missing-data decision tree and never throws. Output is
-    // ALWAYS { title, description, cta, reason? } — every
-    // field a non-empty string.
-    let task;
+  // Derive a weather-driven action envelope (insight + action +
+  // taskTitle + taskReason + urgency + cta). Pure decision tree
+  // from src/lib/weatherActionEngine.js.
+  const weatherAction = useMemo(() => {
     try {
-      task = getTodayTask({
-        crop:     crop && crop !== 'crop' ? crop : null,
-        weather:  resolvedWeather,
-        location,
+      return decideWeatherAction({
+        weather: liveWeather,
+        crop:    local.crop && local.crop !== 'crop' ? local.crop : null,
       });
     } catch {
-      task = {
-        title:       'Check soil moisture',
-        description: 'Water only if soil feels dry',
-        cta:         'Mark as done',
-      };
+      return null;
     }
+  }, [liveWeather, local.crop]);
 
-    const setupIncomplete = !location || !farm;
-    return { userType, location, farm, crop, weather, task, setupIncomplete };
-  }, []);
+  // Derive today's task. useTodayTaskSafe ALWAYS returns a
+  // task; it falls through to the spec-default soil-moisture
+  // task whenever crop / location / weather is missing.
+  const todayTask = useTodayTaskSafe({
+    crop:     local.crop && local.crop !== 'crop' ? local.crop : null,
+    location: local.location,
+    weather:  liveWeather,
+  });
+
+  // Compose the legacy view shape PilotHome's existing JSX
+  // expects, but fed by the live pipeline. Belt-and-braces
+  // fallback to getTodayTask() if useTodayTaskSafe ever returns
+  // an unexpected shape.
+  const view = useMemo(() => {
+    const fallbackTask = (() => {
+      try {
+        return getTodayTask({
+          crop:     local.crop && local.crop !== 'crop' ? local.crop : null,
+          weather:  liveWeather,
+          location: local.location,
+        });
+      } catch {
+        return {
+          title:       'Check soil moisture around your crop',
+          description: 'Water only if soil feels dry',
+          cta:         'Mark as done',
+        };
+      }
+    })();
+    const task = (todayTask && typeof todayTask === 'object')
+      ? {
+          title:       todayTask.title       || fallbackTask.title,
+          reason:      todayTask.reason      || fallbackTask.reason
+                                              || fallbackTask.description,
+          description: todayTask.reason      || fallbackTask.description,
+          cta:         todayTask.cta         || fallbackTask.cta,
+          urgency:     todayTask.urgency     || 'medium',
+          time:        todayTask.time        || '5 mins',
+          source:      todayTask.source      || 'fallback',
+        }
+      : fallbackTask;
+    const setupIncomplete = !local.location || !local.farm;
+    return {
+      userType: local.userType,
+      location: local.location,
+      farm:     local.farm,
+      crop:     local.crop,
+      weather:  liveWeather,  // safe — useWeatherSafe always returns a shape
+      task,
+      setupIncomplete,
+    };
+  }, [local, liveWeather, todayTask]);
 
   const greeting = (() => {
     try {
@@ -249,26 +292,63 @@ export default function PilotHome() {
           </span>
         </header>
 
-        {/* Weather card — spec §2: every property uses `?.` +
-            `??` so a null view.weather can never throw. */}
-        <section style={S.card} data-testid="pilot-home-weather">
-          <p style={S.cardLabel}>Weather</p>
-          <h2 style={S.cardTitle}>
+        {/* Large weather card with live insight + action.
+            Every property uses `?.` + `??` so a null
+            view.weather can never throw. The insight and
+            action come from decideWeatherAction in
+            src/lib/weatherActionEngine.js — same decision tree
+            that drives today's task, so the user sees a
+            consistent story across both cards. */}
+        <section style={S.weatherHero} data-testid="pilot-home-weather">
+          <div style={S.weatherHeroTopRow}>
+            <p style={S.weatherEyebrow}>
+              {weatherLoading ? 'Updating weather…' : 'Weather'}
+            </p>
+            <span style={S.weatherIcon} aria-hidden="true">
+              {(weatherAction && weatherAction.icon) || '\uD83C\uDF24\uFE0F'}
+            </span>
+          </div>
+          <h2 style={S.weatherHeroTitle}>
             {view?.weather?.condition ?? 'Weather unavailable'}
             {view?.weather?.temp != null
               ? ' \u00B7 ' + Math.round(view.weather.temp) + '\u00B0'
               : ''}
           </h2>
-          <p style={S.cardBody}>
-            {view?.weather?.advice
-              ?? 'Add location later for weather-aware tips'}
+          <p style={S.weatherInsight}>
+            {(weatherAction && weatherAction.insight)
+              || 'Weather data unavailable.'}
           </p>
-          {view?.location ? (
-            <p style={S.metaPill}>
-              <span style={S.metaLabel}>Location</span>
-              <span style={S.metaVal}>{view.location}</span>
-            </p>
-          ) : null}
+          <p style={S.weatherAction}>
+            {(weatherAction && weatherAction.action)
+              || 'Add location later for weather-aware tips.'}
+          </p>
+          <div style={S.weatherStatRow}>
+            {view?.weather?.rainChance != null ? (
+              <span style={S.weatherStat} data-testid="pilot-home-weather-rain">
+                <span style={S.weatherStatLabel}>Rain</span>
+                <span style={S.weatherStatVal}>
+                  {Math.round(view.weather.rainChance)}%
+                </span>
+              </span>
+            ) : null}
+            {view?.weather?.windSpeed != null ? (
+              <span style={S.weatherStat} data-testid="pilot-home-weather-wind">
+                <span style={S.weatherStatLabel}>Wind</span>
+                <span style={S.weatherStatVal}>
+                  {Math.round(view.weather.windSpeed)} km/h
+                </span>
+              </span>
+            ) : null}
+            {view?.weather?.locationLabel
+             && view.weather.locationLabel !== 'Your area' ? (
+              <span style={S.weatherStat} data-testid="pilot-home-weather-location">
+                <span style={S.weatherStatLabel}>Location</span>
+                <span style={S.weatherStatVal}>
+                  {view.weather.locationLabel}
+                </span>
+              </span>
+            ) : null}
+          </div>
         </section>
 
         {/* Today's task — always present, even with safe
@@ -420,6 +500,82 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
+  },
+  // Larger weather hero — spec §6: "large weather card +
+  // weather insight/action above today's task". Sized so the
+  // condition + temp reads at a glance from arm's length.
+  weatherHero: {
+    background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(255,255,255,0.04) 100%)',
+    border: '1px solid ' + C.border,
+    borderRadius: '20px',
+    padding: '1.5rem 1.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.6rem',
+  },
+  weatherHeroTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  weatherEyebrow: {
+    margin: 0,
+    fontSize: '0.6875rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: C.inkFaint,
+  },
+  weatherIcon: {
+    fontSize: '1.5rem',
+    lineHeight: 1,
+  },
+  weatherHeroTitle: {
+    margin: 0,
+    fontSize: '1.5rem',
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    lineHeight: 1.2,
+  },
+  weatherInsight: {
+    margin: 0,
+    fontSize: '1rem',
+    fontWeight: 700,
+    color: C.ink,
+    lineHeight: 1.4,
+  },
+  weatherAction: {
+    margin: 0,
+    fontSize: '0.9375rem',
+    color: C.inkDim,
+    lineHeight: 1.55,
+  },
+  weatherStatRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.45rem',
+    marginTop: '0.4rem',
+  },
+  weatherStat: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    padding: '0.3rem 0.6rem',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '999px',
+    fontSize: '0.75rem',
+  },
+  weatherStatLabel: {
+    color: C.inkFaint,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    fontSize: '0.6875rem',
+  },
+  weatherStatVal: {
+    color: C.ink,
+    fontFamily: 'monospace',
   },
   cardDone: {
     background: 'rgba(34,197,94,0.06)',

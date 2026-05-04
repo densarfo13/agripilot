@@ -85,6 +85,7 @@ import performanceRoutes from './modules/performance/routes.js';
 import farmProfileRoutes from './modules/farmProfiles/routes.js';
 import programRoutes from './modules/programs/routes.js';
 import weatherRoutes from './modules/weather/routes.js';
+import publicWeatherRoute from './modules/weather/publicRoute.js';
 import financeScoreRoutes from './modules/financeScore/routes.js';
 import referralRoutes from './modules/referral/routes.js';
 import analyticsRoutes from './modules/analytics/routes.js';
@@ -1020,6 +1021,10 @@ app.use('/api/v1/farms', farmProfileRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/v1/weather', weatherRoutes);
 app.use('/api/v1', weatherRoutes); // mounts /farms/:farmId/weather and /insights/recommend under /api/v1
+// Pilot Weather → Task pipeline (May 2026 spec): clean public
+// route at /api/weather. No auth, never returns 4xx/5xx for the
+// frontend, normalised shape consumed by useWeatherSafe.
+app.use('/api/weather', publicWeatherRoute);
 app.use('/api/v1/farms', financeScoreRoutes);
 app.use('/api/v1/referral', referralRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
