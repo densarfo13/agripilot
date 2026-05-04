@@ -44,6 +44,39 @@ killServiceWorkerAndCaches();
 // must leave the user signed in and routable to Home.
 //
 // When the pilot flag flips back to false, this block no-ops.
+// ── userType safe-default (May 2026 blank-screen fix §1) ────────
+//
+// PilotHome reads `userType` to pick the right copy. The dashboard
+// console diagnostic was logging "User type: (not set)" for live
+// pilot users because no save handler had stamped it on this
+// device. Default to 'farmer' so every render path has a usable
+// value — the only role the pilot serves anyway. Both the new
+// `userType` key (PilotHome's preferred name) and the legacy
+// `farroway_user_type` key (the existing useUserMode hook) are
+// stamped so all readers agree.
+//
+// Auth keys are NEVER touched by this default. If a real role
+// is already persisted (admin, ngo, buyer, super_admin, etc.)
+// we leave it alone.
+try {
+  if (typeof localStorage !== 'undefined') {
+    const _existing = (() => {
+      try {
+        return localStorage.getItem('userType')
+            || localStorage.getItem('farroway_user_type');
+      } catch { return null; }
+    })();
+    if (_existing == null || String(_existing).trim() === '') {
+      try { localStorage.setItem('userType', 'farmer'); }
+      catch { /* swallow — quota / private mode */ }
+      try { localStorage.setItem('farroway_user_type', 'farmer'); }
+      catch { /* swallow */ }
+      // eslint-disable-next-line no-console
+      console.log('[Farroway] userType defaulted to "farmer" (was missing).');
+    }
+  }
+} catch { /* never throw from boot */ }
+
 try {
   if (BYPASS_SETUP_FOR_PILOT && typeof localStorage !== 'undefined') {
     let droppedLoopKeys = 0;

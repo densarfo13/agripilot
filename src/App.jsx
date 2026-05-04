@@ -45,6 +45,8 @@ import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 // /dashboard (ngo), or /market (buyer) based on their signed-in
 // role. Drives the new role-routing system in lib/roleFeatures.js.
 import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
+import PilotHome from './pages/PilotHome.jsx';
+import { BYPASS_SETUP_FOR_PILOT } from './lib/pilotFlags.js';
 // Role-aware dashboard wrapper — picks the right page for
 // /dashboard based on user.role. Farmer → V2Dashboard;
 // ngo / admin → NgoDashboardV1.
@@ -539,6 +541,23 @@ function ProtectedRoute({ children, allowSetup }) {
   if (user?.role === 'farmer') {
     // Wrap farmer routes in legacy ProfileProvider for shared profile state
     if (allowSetup) return <LegacyProfileProvider>{children}</LegacyProfileProvider>;
+
+    // ─── Pilot bypass (May 2026 blank-screen fix §2) ───
+    // Under BYPASS_SETUP_FOR_PILOT we render <PilotHome />
+    // instead of FarmerDashboardPage. PilotHome has no
+    // context dependencies, no automatic redirects, and
+    // always paints visible UI even when location / farm /
+    // crop / weather are missing. The richer dashboard
+    // returns once the pilot stabilises and the bypass flag
+    // flips to false.
+    if (BYPASS_SETUP_FOR_PILOT) {
+      return (
+        <LegacyProfileProvider>
+          <PilotHome />
+        </LegacyProfileProvider>
+      );
+    }
+
     // ProfileGuard redirects to /profile/setup if profile is incomplete
     return <LegacyProfileProvider><LegacyProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></LegacyProfileGuard></LegacyProfileProvider>;
   }
@@ -928,7 +947,16 @@ export default function App() {
               These keep the spec's role-routing contract
               clean while reusing the existing destination
               pages — no codebase duplication. */}
-          <Route path="/home"   element={<RoleHomeRedirect />} />
+          {/* /home — emergency pilot fix (May 2026): always
+              render <PilotHome />, the safe-default Home that
+              never returns null, never redirects, and renders
+              with hard-coded fallbacks for missing location /
+              farm / crop / weather. Replaces RoleHomeRedirect
+              (which infinite-looped for farmer.homePath='/home').
+              The role-redirect helper is still imported for the
+              "/" entry below where staff/admin still benefit
+              from the role-aware landing logic. */}
+          <Route path="/home"   element={<PilotHome />} />
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
