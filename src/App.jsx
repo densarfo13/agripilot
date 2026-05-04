@@ -216,6 +216,10 @@ import ScanErrorBoundary from './components/scan/ScanErrorBoundary.jsx';
 // Progress so a crash on one tab degrades to a small in-route
 // fallback instead of unmounting the whole app.
 import RouteErrorBoundary from './components/system/RouteErrorBoundary.jsx';
+// Feature-flag gate — wraps disabled-for-pilot routes so they
+// render a calm placeholder instead of mounting an unstable
+// surface. Falls open (renders children) on flag-system error.
+import FeatureGated from './components/system/FeatureGated.jsx';
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -907,7 +911,11 @@ export default function App() {
               account. Interest forms route to platform/admin
               via marketStore.saveBuyerInterest; farmer phone
               is never exposed publicly. */}
-          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/marketplace" element={
+            <FeatureGated flag="FEATURE_BUYER" feature="buyer">
+              <Marketplace />
+            </FeatureGated>
+          } />
           {/* Role-routing canonical paths (May 2026).
               /home    → role-aware redirect (farmer→/dashboard,
                          ngo→/dashboard, buyer→/market).
@@ -1059,7 +1067,11 @@ export default function App() {
                 /ngo/impact is staff-only (NGO operators
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
-            <Route path="/sell"               element={<BackyardGuard surface="sell"><Sell /></BackyardGuard>} />
+            <Route path="/sell" element={
+              <FeatureGated flag="FEATURE_SELL" feature="sell">
+                <BackyardGuard surface="sell"><Sell /></BackyardGuard>
+              </FeatureGated>
+            } />
             {/* /buy — simple buyer marketplace. The page itself
                 checks the `buyMarketplace` flag and renders a
                 "coming soon" notice when off, so the route is
@@ -1096,7 +1108,11 @@ export default function App() {
                 required fields with regional unit default. */}
             <Route path="/setup/garden"       element={<QuickGardenSetup />} />
             <Route path="/setup/farm"         element={<QuickFarmSetup />} />
-            <Route path="/opportunities"      element={<BackyardGuard surface="funding"><Opportunities /></BackyardGuard>} />
+            <Route path="/opportunities" element={
+              <FeatureGated flag="FEATURE_FUNDING" feature="funding">
+                <BackyardGuard surface="funding"><Opportunities /></BackyardGuard>
+              </FeatureGated>
+            } />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message
                 when off, so the route is always live + safe. */}

@@ -245,10 +245,39 @@ export const _internal = Object.freeze({
   _isPlainObject,
 });
 
+// ─── Spec-named aliases (May 2026 stability audit) ──────────
+//
+// The stability-audit spec asks for `clearFarrowayCacheOnly` and
+// `preserveAuthKeys` — both are equivalent to existing helpers.
+// We re-export under the spec names so future code can use the
+// names verbatim, AND keep the originals for back-compat.
+
+/**
+ * clearFarrowayCacheOnly() — alias for removeFarrowayState(),
+ * but the name reads more clearly at call sites that just want
+ * to wipe local cache without wiping anything else.
+ */
+export const clearFarrowayCacheOnly = removeFarrowayState;
+
+/**
+ * preserveAuthKeys() — returns the AUTH_KEYS list. Use when a
+ * caller wants to verify which keys are protected before doing
+ * its own sweep.
+ */
+export function preserveAuthKeys() {
+  return [...FARROWAY_AUTH_KEYS];
+}
+
+// Re-export getDisplayText so consumers can pull every safe-
+// render helper from one module.
+export { getDisplayText } from './getDisplayText.js';
+
 export default {
   safeJsonParse,
   safeJsonSet,
   removeFarrowayState,
+  clearFarrowayCacheOnly,
+  preserveAuthKeys,
   validateFarm,
   validateTask,
   validateWeather,

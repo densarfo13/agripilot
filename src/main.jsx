@@ -115,6 +115,11 @@ try {
   // eslint-disable-next-line no-console
   console.log('Current URL:',
     typeof window !== 'undefined' && window.location ? window.location.href : '(no window)');
+  // Phase-2 spec line — pathname-only so it's grep-friendly
+  // when a user reports an issue from a deep link.
+  // eslint-disable-next-line no-console
+  console.log('Current route:',
+    typeof window !== 'undefined' && window.location ? window.location.pathname : '(no window)');
   // eslint-disable-next-line no-console
   console.log('Environment:',
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE) || 'production');
