@@ -86,7 +86,13 @@ import MarketSignalCard from '../components/MarketSignalCard.jsx';
 import {
   Camera, Sprout, ShoppingCart, Wallet, ArrowRight, HelpCircle,
 } from '../components/icons/lucide.jsx';
-import WeatherIcon from '../components/farmer/WeatherIcon.jsx';
+// WeatherIcon used to be imported here for the prior single-line
+// weather pill. The May 2026 Home redesign §3 replaced that pill
+// with a large actionable WeatherActionCard which has its own
+// condition-icon resolver, so the import is no longer needed
+// in this file. WeatherIcon is still consumed by DailyPlanCard
+// and other surfaces — only this Home file dropped it.
+import WeatherActionCard from '../components/home/WeatherActionCard.jsx';
 import useEngagementDay from '../hooks/useEngagementDay.js';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -670,54 +676,20 @@ export default function Dashboard() {
           />
         )}
 
-        {/* ── Weather Intelligence Card (Home redesign §2) ─────
-            One compact card with the weather condition + a
-            single line of action guidance. Self-hides when the
-            weather decision is 'safe' (no notable signal — the
-            FarmerHeader chip already carries the condition for
-            those days). Reads from the existing
-            loop.weatherDecision; no new fetch.
-
-            Layout intentionally uses ONE icon + one bold line +
-            one body line so we don't accumulate "duplicate
-            weather cards" — the spec's anti-pattern. */}
-        {loop.profile
-          && loop.weatherDecision
-          && loop.weatherDecision.severity !== 'safe'
-          && (loop.weatherDecision.actionLine || loop.weatherDecision.chipLabel) && (
-          <div
-            style={S.wxIntelCard}
-            data-testid="home-weather-intel"
-            data-severity={loop.weatherDecision.severity}
-          >
-            {/* Use the dedicated WeatherIcon so the picture
-                matches the actual condition (sunny / cloudy /
-                rain / storm / hot / dry) rather than the
-                decision-engine's flat emoji. Falls back to the
-                existing chipIcon when WeatherIcon resolves to
-                null (very stale / unavailable payloads). */}
-            <span style={S.wxIntelIcon} aria-hidden="true">
-              {loop.weather ? (
-                <WeatherIcon weather={loop.weather} size={22} />
-              ) : (
-                <span style={{ fontSize: 22, lineHeight: 1 }}>
-                  {loop.weatherDecision.chipIcon || '☁'}
-                </span>
-              )}
-            </span>
-            <div style={S.wxIntelText}>
-              {loop.weatherDecision.chipLabel ? (
-                <div style={S.wxIntelTitle}>
-                  {loop.weatherDecision.chipLabel}
-                </div>
-              ) : null}
-              {loop.weatherDecision.actionLine ? (
-                <div style={S.wxIntelBody}>
-                  {loop.weatherDecision.actionLine}
-                </div>
-              ) : null}
-            </div>
-          </div>
+        {/* ── Weather Action Card (May 2026 Home redesign) ─────
+            Large 30–40% screen-height card showing temp +
+            condition + rain + wind + insight + action. Replaces
+            the prior single-line "weather intel pill" so the
+            farmer sees the WHY behind today's task at a glance.
+            Always renders when a profile exists — even with
+            empty weather data the card falls back to a friendly
+            "Weather unavailable. Showing general crop guidance."
+            line so Home is never blank.
+            The legacy WeatherIcon import is retained for
+            DailyPlanCard + similar surfaces; this card uses its
+            own condition-icon resolver internally. */}
+        {loop.profile && (
+          <WeatherActionCard weather={loop.weather || null} />
         )}
 
         {/* v3 stability layer: classified load-error banner.

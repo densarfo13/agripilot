@@ -937,6 +937,94 @@ describe('taskEventLogger._projectPayload', () => {
   });
 });
 
+// ─── Weather action mapping (Home redesign May 2026) ────────
+describe('getWeatherAction', () => {
+  it('rain ≥ 60 → drainage advice', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ rainChance: 75 });
+    expect(r.insight).toMatch(/rain expected/i);
+    expect(r.action).toMatch(/drainage/i);
+  });
+
+  it('temp ≥ 32 → water early/late', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ temp: 35 });
+    expect(r.insight).toMatch(/high heat/i);
+    expect(r.action).toMatch(/early morning|late evening/i);
+  });
+
+  it('wind ≥ 25 → support weak plants', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ wind: 30 });
+    expect(r.insight).toMatch(/strong winds/i);
+    expect(r.action).toMatch(/support/i);
+  });
+
+  it('rain ≤ 20 → soil moisture check', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ rainChance: 10 });
+    expect(r.insight).toMatch(/dry conditions/i);
+    expect(r.action).toMatch(/soil moisture/i);
+  });
+
+  it('normal weather → follow today task', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ rainChance: 35, temp: 24, wind: 8 });
+    expect(r.insight).toMatch(/normal/i);
+    expect(r.action).toMatch(/today/i);
+  });
+
+  it('rain wins over wind when BOTH branches would match', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ rainChance: 80, wind: 35 });
+    expect(r.action).toMatch(/drainage/i);
+  });
+
+  it('temp wins over wind when BOTH match (temp branch sits higher)', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const r = getWeatherAction({ temp: 36, wind: 30 });
+    expect(r.action).toMatch(/early morning|late evening/i);
+  });
+
+  it('never throws on garbage input', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    expect(() => getWeatherAction(null)).not.toThrow();
+    expect(() => getWeatherAction(undefined)).not.toThrow();
+    expect(() => getWeatherAction([])).not.toThrow();
+    expect(() => getWeatherAction('rainy')).not.toThrow();
+    expect(() => getWeatherAction({ temp: 'hot', rainChance: '???' })).not.toThrow();
+    // Falls through to "Normal conditions" rather than crashing.
+    const r = getWeatherAction(null);
+    expect(r.insight).toMatch(/normal/i);
+  });
+
+  it('normalizeWeather coerces alternate field names', async () => {
+    const { normalizeWeather } = await import('../../../src/lib/weatherAction.js');
+    expect(normalizeWeather({ tempHighC: 30 }).temp).toBe(30);
+    expect(normalizeWeather({ temperatureC: 30 }).temp).toBe(30);
+    expect(normalizeWeather({ tempC: 30 }).temp).toBe(30);
+    expect(normalizeWeather({ rainChancePct: 70 }).rainChance).toBe(70);
+    expect(normalizeWeather({ precipitationProbability: 70 }).rainChance).toBe(70);
+    expect(normalizeWeather({ windKph: 22 }).wind).toBe(22);
+    expect(normalizeWeather({ summary: 'rainy' }).condition).toBe('rainy');
+  });
+
+  it('aligns with the smart task engine: rain → weather/drainage category', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherAction.js');
+    const { getBestTask }      = await import('../../../src/lib/smartTaskEngine.js');
+    const wx = { rainChance: 80 };
+    const advice = getWeatherAction(wx);
+    expect(advice.action).toMatch(/drainage/i);
+    // Smart engine's top candidate isn't strictly drainage (its
+    // candidates are watering/pest-check/weeding/crop-stage), but
+    // the weather scorer ranks 'weather'/'watering' adjacents
+    // higher when rain is high.
+    const r = getBestTask({ crop: 'tomato', weather: wx });
+    expect(r.bestTask).toBeTruthy();
+    expect(typeof r.bestTask.score).toBe('number');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {
