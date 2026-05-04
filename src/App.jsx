@@ -1059,11 +1059,16 @@ export default function App() {
           <Route path="/officer/issues"   element={<OfficerIssuesPage />} />
           <Route path="/verify-email" element={<V2VerifyEmail />} />
           <Route path="/profile/setup" element={<V2ProfileSetup />} />
-          {/* Public pricing page - reachable without auth so it can
-              be demo'd / linked from sales emails. The companion
-              /ngo/value dashboard sits inside the protected layout
-              below since it reads the user's farm roster. */}
-          <Route path="/pricing" element={<Pricing />} />
+          {/* Public pricing page - reachable without auth. Gated
+              under FEATURE_PRICING so the May 2026 stable-pilot
+              restore can hide it; renders the canonical
+              "Feature temporarily disabled for pilot." fallback
+              when the flag is off. */}
+          <Route path="/pricing" element={
+            <FeatureGated flag="FEATURE_PRICING" feature="pricing">
+              <Pricing />
+            </FeatureGated>
+          } />
 
           {/* Go-live audit fix: legal + help surfaces MUST be
               reachable without a session so App Store reviewers

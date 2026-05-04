@@ -114,6 +114,11 @@ const DEFAULTS = Object.freeze({
   FEATURE_NGO:     false,
   FEATURE_ADMIN:   false,
   FEATURE_FUNDING: false,
+  // Pilot stability restore (May 2026 spec §1) — public pricing
+  // page hidden until the live pilot stabilises. Reachable
+  // routes still render <DisabledFeatureFallback /> with the
+  // canonical "Feature temporarily disabled for pilot." copy.
+  FEATURE_PRICING: false,
 
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.

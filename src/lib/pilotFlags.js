@@ -95,6 +95,36 @@ export const LOOP_STATE_KEYS = Object.freeze([
 export const DISABLE_EVENTS = true;
 
 /**
+ * LIVE_WEATHER_ENABLED — kill switch for the live /api/weather
+ * fetch in `useWeatherSafe`.
+ *
+ * When false (default during the May 2026 pilot stability
+ * restore): `useWeatherSafe` skips the network call entirely
+ * and returns the documented fallback shape immediately:
+ *
+ *   { temp: null,
+ *     condition: 'Weather unavailable',
+ *     rainChance: null,
+ *     windSpeed: null,
+ *     locationLabel: 'Your area',
+ *     source: 'fallback' }
+ *
+ * The downstream UI is unchanged — PilotHome still renders the
+ * weather hero card, weatherActionEngine still picks a task,
+ * and useTodayTaskSafe still ships the spec-literal default.
+ * The user simply doesn't see a live forecast until the live
+ * pipeline is re-enabled.
+ *
+ * Why a kill switch (and not a removal): the network code is
+ * production-ready and well-tested. We turn it off via a
+ * single boolean now to remove ANY chance the in-flight
+ * /api/weather request could surface a regression while we
+ * stabilise the pilot. Flip back to true in a single commit
+ * when the live pipeline is ready to ship.
+ */
+export const LIVE_WEATHER_ENABLED = false;
+
+/**
  * FEATURE_EVENT_SYNC
  *
  * When false (default for the pilot):

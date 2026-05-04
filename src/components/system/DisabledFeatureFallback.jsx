@@ -25,6 +25,7 @@ const FEATURE_LABELS = Object.freeze({
   ngo:     'NGO',
   admin:   'Admin',
   funding: 'Funding',
+  pricing: 'Pricing',
 });
 
 export default function DisabledFeatureFallback({ feature, message }) {

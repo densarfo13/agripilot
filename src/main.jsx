@@ -38,6 +38,14 @@ import { setOnboardingComplete } from './utils/onboarding.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
 
+// Stable-pilot restore marker (May 2026 spec §10). Single
+// greppable line per boot — engineers can confirm the
+// restored bundle is live without opening DevTools deeply.
+try {
+  // eslint-disable-next-line no-console
+  console.log('Farroway restored stable pilot v1');
+} catch { /* swallow */ }
+
 // ── Pilot bypass: clear loop-state + stamp completion flag ──────
 //
 // When BYPASS_SETUP_FOR_PILOT is true (live pilot fix, May 2026)

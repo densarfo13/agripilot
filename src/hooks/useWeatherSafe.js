@@ -45,6 +45,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSavedLocation } from '../lib/locationSafe.js';
+import { LIVE_WEATHER_ENABLED } from '../lib/pilotFlags.js';
 
 const TIMEOUT_MS = 6_000;
 
@@ -121,6 +122,22 @@ export function useWeatherSafe(opts) {
   useEffect(() => {
     // Hard kill switch — caller can disable via opts.enabled.
     if (!enabled) {
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+    // ─── Pilot stability restore (May 2026) ───
+    // When LIVE_WEATHER_ENABLED is false we skip the network
+    // entirely and paint the fallback shape. The hook still
+    // declares its hooks unconditionally + returns the same
+    // shape, so flipping the flag back to true is a one-line
+    // re-enable with no caller-side changes.
+    if (!LIVE_WEATHER_ENABLED) {
+      const loc = (() => {
+        try { return getSavedLocation(); } catch { return null; }
+      })();
+      const fallbackLabel = (loc && loc.label) || 'Your area';
+      setWeather({ ...FALLBACK_WEATHER, locationLabel: fallbackLabel });
       setLoading(false);
       setError(null);
       return undefined;

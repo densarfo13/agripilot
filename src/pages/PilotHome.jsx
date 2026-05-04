@@ -401,12 +401,16 @@ export default function PilotHome() {
           </section>
         ) : null}
 
-        {/* Quick links */}
+        {/* Quick links — May 2026 stable-pilot restore: only
+            the four enabled tabs (Home / My Farm / My Grow /
+            Tasks / Progress). Scan is gated off behind
+            FEATURE_SCAN=false; surfacing a link to it would
+            land users on the disabled-feature fallback. */}
         <section style={S.linksGrid}>
-          <Link to="/tasks"    style={S.linkTile}>Today's tasks</Link>
+          <Link to="/my-farm"  style={S.linkTile}>My Farm</Link>
           <Link to="/my-grow"  style={S.linkTile}>My Grow</Link>
+          <Link to="/tasks"    style={S.linkTile}>Tasks</Link>
           <Link to="/progress" style={S.linkTile}>Progress</Link>
-          <Link to="/scan"     style={S.linkTile}>Scan</Link>
         </section>
 
         {/* Debug footer (May 2026 spec §6) — visible build,
