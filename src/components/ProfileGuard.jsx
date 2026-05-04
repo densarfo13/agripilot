@@ -49,6 +49,30 @@ export default function ProfileGuard({ children }) {
   // If the profile is already complete, no routing work needed.
   if (isProfileComplete(profile || {})) return children;
 
+  // ─── Onboarding-loop fix v3 (May 2026 spec §5) ──────────────
+  // sessionStorage guard: if the user has ALREADY been
+  // redirected to setup once in this tab session and they
+  // bounced back here without completing it, do NOT redirect
+  // again. The user gets to use the app; the in-app
+  // CompleteSetupCard surfaces missing data inline. Without
+  // this guard a save-handler bug or a stale profile fetch
+  // can ping-pong the user between /dashboard and
+  // /onboarding/* until the browser throttles navigation.
+  let alreadyVisitedSetup = false;
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      alreadyVisitedSetup = sessionStorage.getItem('farroway_setup_visited') === '1';
+    }
+  } catch { alreadyVisitedSetup = false; }
+  if (alreadyVisitedSetup) {
+    return children;
+  }
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('farroway_setup_visited', '1');
+    }
+  } catch { /* tolerate */ }
+
   // Profile incomplete. Decide where to send them.
   const firstTime = isFirstTimeFarmer({ profile, farms });
 
@@ -56,9 +80,7 @@ export default function ProfileGuard({ children }) {
     // ─── First-time path: minimal 2-screen onboarding ─────────
     // "Are you new to farming?" → 3-field setup (location, size,
     // crop) → /dashboard. Reaches the first actionable task in
-    // under 60 s. The legacy /onboarding/quick and
-    // /onboarding/fast routes remain mounted for any deep links
-    // that were previously documented.
+    // under 60 s.
     return <Navigate to="/onboarding/minimal" replace />;
   }
 
