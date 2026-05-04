@@ -13,14 +13,20 @@ import {
   killServiceWorkerAndCaches,
   validateLocalStorageShapes,
 } from './lib/forceUiReset.js';
+import { runStateMigration } from './lib/stateMigration.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
-// Strip any malformed-JSON localStorage entry BEFORE React mounts
-// so the "We hit a problem rendering this page" recovery card
-// doesn't fire just because a partial cache reset left a half-
-// shaped object behind. Returns the count of keys removed; we
-// don't act on the value here — the validator self-logs.
+// Strip malformed-JSON entries (parse-level safety) — runs before
+// the schema migration so we never feed garbage to a validator.
 validateLocalStorageShapes();
+// Schema-level migration. Drops keys whose parsed shape doesn't
+// match the current contract; reloads exactly once per session
+// (sessionStorage flag guards against loops). The user's auth
+// token is preserved across every branch.
+const _migrationResult = runStateMigration();
+// When the migration triggers a reload, the page is about to
+// navigate; skip the React mount the same way ensureUiVersion does.
+const _farrowayMigrationReloading = _migrationResult && _migrationResult.reloaded === true;
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -44,12 +50,12 @@ import './index.css';
 // farroway:langchange events.
 import './i18n/i18next.js';
 
-// When a UI version reset is in progress, ensureUiVersion() has
-// already started the async cleanup-then-reload pipeline. Skip
-// every side-effect below — none of them should mount on a page
-// that's about to navigate. The reload will re-enter main.jsx with
-// the new version stamped, and this gate becomes false.
-if (!_farrowayResettingUi) {
+// When EITHER ensureUiVersion() OR runStateMigration() has
+// started a reload, skip every side-effect below — none of them
+// should mount on a page that's about to navigate. The reload
+// will re-enter main.jsx with the new version stamped and this
+// gate becomes false.
+if (!_farrowayResettingUi && !_farrowayMigrationReloading) {
 
 // Initialize offline sync coordinator (auto-flushes on reconnect + visibility)
 initSyncCoordinator();

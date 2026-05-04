@@ -43,12 +43,12 @@
 
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN.
-export const FARROWAY_BUILD_VERSION = '2026-05-03-v5';
+export const FARROWAY_BUILD_VERSION = '2026-05-03-v6';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-03-v5';
+export const FARROWAY_UI_VERSION = '2026-05-03-v6';
 
 // localStorage key the version is stored under.
 const VERSION_KEY = 'farroway_ui_version';

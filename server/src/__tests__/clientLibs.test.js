@@ -1,0 +1,299 @@
+/**
+ * clientLibs.test.js — unit tests for the frontend safety layer.
+ *
+ * These modules live under the frontend tree but contain no
+ * React / DOM / browser-only APIs that vitest can't polyfill, so
+ * we run them inside the existing server vitest project. The
+ * imports reach into ../../../src/lib/* via relative paths.
+ *
+ * Covered:
+ *   • storageSafe.safeJsonParse / safeJsonSet
+ *   • storageSafe.removeFarrowayState (auth preserved)
+ *   • storageSafe.validateFarm / validateTask / validateWeather
+ *   • getDisplayText (object → string with name/label/title)
+ *   • defaults (frozen + correct shapes)
+ *   • stateMigration: runs once, drops invalid shapes,
+ *     sessionStorage loop guard
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// ─── In-memory localStorage / sessionStorage / window mocks ──
+function makeStorage() {
+  const store = new Map();
+  return {
+    get length() { return store.size; },
+    key:        (i) => Array.from(store.keys())[i] ?? null,
+    getItem:    (k) => (store.has(k) ? store.get(k) : null),
+    setItem:    (k, v) => { store.set(String(k), String(v)); },
+    removeItem: (k) => { store.delete(String(k)); },
+    clear:      () => { store.clear(); },
+    _dump:      () => Object.fromEntries(store),
+  };
+}
+
+let reloadCalls = 0;
+beforeEach(() => {
+  globalThis.localStorage   = makeStorage();
+  globalThis.sessionStorage = makeStorage();
+  reloadCalls = 0;
+  globalThis.window = {
+    location: {
+      reload: () => { reloadCalls += 1; },
+      pathname: '/dashboard',
+      search: '',
+    },
+  };
+});
+
+// ─── storageSafe ─────────────────────────────────────────────
+describe('storageSafe.safeJsonParse', () => {
+  it('returns the fallback when the key is missing', async () => {
+    const { safeJsonParse } = await import('../../../src/lib/storageSafe.js');
+    expect(safeJsonParse('nope', { a: 1 })).toEqual({ a: 1 });
+  });
+
+  it('parses valid JSON and returns the object', async () => {
+    const { safeJsonParse } = await import('../../../src/lib/storageSafe.js');
+    localStorage.setItem('k', JSON.stringify({ hello: 'world' }));
+    expect(safeJsonParse('k', null)).toEqual({ hello: 'world' });
+  });
+
+  it('returns fallback AND removes the key when JSON is malformed', async () => {
+    const { safeJsonParse } = await import('../../../src/lib/storageSafe.js');
+    localStorage.setItem('k', '{not json');
+    expect(safeJsonParse('k', null)).toBeNull();
+    expect(localStorage.getItem('k')).toBeNull();
+  });
+
+  it('returns fallback when the parsed value is null', async () => {
+    const { safeJsonParse } = await import('../../../src/lib/storageSafe.js');
+    localStorage.setItem('k', 'null');
+    expect(safeJsonParse('k', { ok: true })).toEqual({ ok: true });
+  });
+});
+
+describe('storageSafe.safeJsonSet', () => {
+  it('serialises and writes', async () => {
+    const { safeJsonSet } = await import('../../../src/lib/storageSafe.js');
+    expect(safeJsonSet('k', { a: 1 })).toBe(true);
+    expect(localStorage.getItem('k')).toBe('{"a":1}');
+  });
+
+  it('rejects circular structures gracefully', async () => {
+    const { safeJsonSet } = await import('../../../src/lib/storageSafe.js');
+    const a = {}; a.self = a;
+    expect(safeJsonSet('k', a)).toBe(false);
+  });
+});
+
+describe('storageSafe.removeFarrowayState', () => {
+  it('drops listed state keys but PRESERVES every auth key', async () => {
+    const { removeFarrowayState, FARROWAY_AUTH_KEYS } = await import('../../../src/lib/storageSafe.js');
+    localStorage.setItem('farroway_active_farm', '{"id":"x"}');
+    localStorage.setItem('farroway_cached_tasks', '[]');
+    localStorage.setItem('farroway_token', 'abc');
+    localStorage.setItem('farroway_user',  '{"id":"u"}');
+    localStorage.setItem('auth_token',      'def');
+    const removed = removeFarrowayState();
+    expect(removed).toBeGreaterThan(0);
+    expect(localStorage.getItem('farroway_active_farm')).toBeNull();
+    for (const k of FARROWAY_AUTH_KEYS) {
+      // Auth must survive the sweep.
+      // Some keys were never set; ones we did set must still be there.
+      if (k === 'farroway_token' || k === 'farroway_user' || k === 'auth_token') {
+        expect(localStorage.getItem(k)).not.toBeNull();
+      }
+    }
+  });
+
+  it('also cleans pattern-matched sync/cache/offline keys', async () => {
+    const { removeFarrowayState } = await import('../../../src/lib/storageSafe.js');
+    localStorage.setItem('farroway_sync_outbox_v3', '[]');
+    localStorage.setItem('farroway_cache_weather_xyz', '{}');
+    localStorage.setItem('farroway_offline_queue_extra', '[]');
+    localStorage.setItem('unrelated_key', 'keepme');
+    removeFarrowayState();
+    expect(localStorage.getItem('farroway_sync_outbox_v3')).toBeNull();
+    expect(localStorage.getItem('farroway_cache_weather_xyz')).toBeNull();
+    expect(localStorage.getItem('farroway_offline_queue_extra')).toBeNull();
+    expect(localStorage.getItem('unrelated_key')).toBe('keepme');
+  });
+});
+
+describe('storageSafe.validateFarm', () => {
+  it('accepts a plain object', async () => {
+    const { validateFarm } = await import('../../../src/lib/storageSafe.js');
+    expect(validateFarm({ id: '1', crop: 'tomato' })).toBe(true);
+    expect(validateFarm({ id: '1', crop: { name: 'tomato' } })).toBe(true);
+  });
+
+  it('rejects arrays / primitives / null', async () => {
+    const { validateFarm } = await import('../../../src/lib/storageSafe.js');
+    expect(validateFarm(null)).toBe(false);
+    expect(validateFarm([])).toBe(false);
+    expect(validateFarm('hello')).toBe(false);
+    expect(validateFarm(42)).toBe(false);
+  });
+
+  it('rejects objects whose crop is a function', async () => {
+    const { validateFarm } = await import('../../../src/lib/storageSafe.js');
+    expect(validateFarm({ crop: () => null })).toBe(false);
+  });
+});
+
+describe('storageSafe.validateTask', () => {
+  it('requires at least one renderable label', async () => {
+    const { validateTask } = await import('../../../src/lib/storageSafe.js');
+    expect(validateTask({ title: 'Inspect today' })).toBe(true);
+    expect(validateTask({ todayTaskTitle: 'x' })).toBe(true);
+    expect(validateTask({ primaryAction: 'x' })).toBe(true);
+    expect(validateTask({})).toBe(false);
+    expect(validateTask({ title: '' })).toBe(false);
+    expect(validateTask(null)).toBe(false);
+  });
+});
+
+describe('storageSafe.validateWeather', () => {
+  it('accepts any of the common shapes', async () => {
+    const { validateWeather } = await import('../../../src/lib/storageSafe.js');
+    expect(validateWeather({ temp: 28 })).toBe(true);
+    expect(validateWeather({ tempHighC: 32 })).toBe(true);
+    expect(validateWeather({ condition: 'rainy' })).toBe(true);
+    expect(validateWeather({ summary: 'hot' })).toBe(true);
+    expect(validateWeather({})).toBe(false);
+  });
+});
+
+// ─── getDisplayText ──────────────────────────────────────────
+describe('getDisplayText', () => {
+  it('returns string passthrough', async () => {
+    const { getDisplayText } = await import('../../../src/lib/getDisplayText.js');
+    expect(getDisplayText('tomato', 'fb')).toBe('tomato');
+  });
+
+  it('returns the fallback for null/undefined', async () => {
+    const { getDisplayText } = await import('../../../src/lib/getDisplayText.js');
+    expect(getDisplayText(null, 'fb')).toBe('fb');
+    expect(getDisplayText(undefined, 'fb')).toBe('fb');
+  });
+
+  it('resolves objects via name → label → title', async () => {
+    const { getDisplayText } = await import('../../../src/lib/getDisplayText.js');
+    expect(getDisplayText({ name: 'Maize' }, 'fb')).toBe('Maize');
+    expect(getDisplayText({ label: 'Lagos' }, 'fb')).toBe('Lagos');
+    expect(getDisplayText({ title: 'Vegetative' }, 'fb')).toBe('Vegetative');
+  });
+
+  it('returns fallback for objects with no rendering field', async () => {
+    const { getDisplayText } = await import('../../../src/lib/getDisplayText.js');
+    expect(getDisplayText({ random: 1 }, 'No crop selected')).toBe('No crop selected');
+  });
+
+  it('NEVER produces "[object Object]"', async () => {
+    const { getDisplayText } = await import('../../../src/lib/getDisplayText.js');
+    expect(getDisplayText({}, 'fb')).not.toMatch(/object Object/);
+  });
+
+  it('coerces numbers + booleans to readable strings', async () => {
+    const { getDisplayText } = await import('../../../src/lib/getDisplayText.js');
+    expect(getDisplayText(42, 'fb')).toBe('42');
+    expect(getDisplayText(true, 'fb')).toBe('Yes');
+    expect(getDisplayText(false, 'fb')).toBe('No');
+  });
+});
+
+// ─── defaults ────────────────────────────────────────────────
+describe('defaults', () => {
+  it('exports frozen, correctly-shaped fallbacks', async () => {
+    const { defaultFarm, defaultTask, defaultWeather } = await import('../../../src/lib/defaults.js');
+    expect(Object.isFrozen(defaultFarm)).toBe(true);
+    expect(Object.isFrozen(defaultTask)).toBe(true);
+    expect(Object.isFrozen(defaultWeather)).toBe(true);
+    expect(defaultFarm.userType).toBe('backyard');
+    expect(typeof defaultTask.title).toBe('string');
+    expect(defaultTask.title.length).toBeGreaterThan(0);
+    expect(typeof defaultWeather.condition).toBe('string');
+    expect(defaultWeather.condition.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── stateMigration ──────────────────────────────────────────
+describe('stateMigration', () => {
+  it('no-ops when stored version matches current', async () => {
+    const { runStateMigration, CURRENT_STATE_VERSION } = await import('../../../src/lib/stateMigration.js');
+    localStorage.setItem('farroway_state_version', CURRENT_STATE_VERSION);
+    const r = runStateMigration();
+    expect(r.ranMigration).toBe(false);
+    expect(r.reloaded).toBe(false);
+    expect(reloadCalls).toBe(0);
+  });
+
+  it('on a brand-new install (no stored version): stamps and returns without reload', async () => {
+    const { runStateMigration, CURRENT_STATE_VERSION } = await import('../../../src/lib/stateMigration.js');
+    const r = runStateMigration();
+    expect(r.ranMigration).toBe(true);
+    expect(r.reloaded).toBe(false);
+    expect(localStorage.getItem('farroway_state_version')).toBe(CURRENT_STATE_VERSION);
+    expect(reloadCalls).toBe(0);
+  });
+
+  it('drops keys whose parsed shape is invalid + reloads ONCE', async () => {
+    const { runStateMigration, CURRENT_STATE_VERSION } = await import('../../../src/lib/stateMigration.js');
+    localStorage.setItem('farroway_state_version', '2026-04-01-state-v1');
+    localStorage.setItem('farroway_active_farm', '"a string, not an object"');
+    localStorage.setItem('farroway_cached_tasks', JSON.stringify([{ title: 'Inspect' }]));
+    const r = runStateMigration();
+    expect(r.ranMigration).toBe(true);
+    expect(r.droppedKeys).toContain('farroway_active_farm');
+    // The valid task array dropped because the migration wipes
+    // unowned-but-untyped keys; `farroway_cached_tasks` HAS a
+    // validator and the array IS valid → it should remain.
+    expect(r.droppedKeys).not.toContain('farroway_cached_tasks');
+    expect(localStorage.getItem('farroway_state_version')).toBe(CURRENT_STATE_VERSION);
+    expect(r.reloaded).toBe(true);
+    expect(reloadCalls).toBe(1);
+    expect(sessionStorage.getItem('farroway_migrated_once')).toBe('1');
+  });
+
+  it('does NOT reload a second time in the same session', async () => {
+    const { runStateMigration } = await import('../../../src/lib/stateMigration.js');
+    sessionStorage.setItem('farroway_migrated_once', '1');
+    localStorage.setItem('farroway_state_version', '2026-04-01-state-v1');
+    const r = runStateMigration();
+    expect(r.ranMigration).toBe(true);
+    expect(r.reloaded).toBe(false);
+    expect(reloadCalls).toBe(0);
+  });
+
+  it('NEVER touches auth keys', async () => {
+    const { runStateMigration } = await import('../../../src/lib/stateMigration.js');
+    localStorage.setItem('farroway_state_version', '2026-04-01-state-v1');
+    localStorage.setItem('farroway_token', 'KEEP_ME');
+    localStorage.setItem('farroway_user',  '{"id":"u"}');
+    localStorage.setItem('auth_token',     'KEEP_ME_2');
+    runStateMigration();
+    expect(localStorage.getItem('farroway_token')).toBe('KEEP_ME');
+    expect(localStorage.getItem('farroway_user')).toBe('{"id":"u"}');
+    expect(localStorage.getItem('auth_token')).toBe('KEEP_ME_2');
+  });
+});
+
+// ─── Crash-resistance smoke tests ────────────────────────────
+describe('crash-resistance smoke tests', () => {
+  it('corrupted localStorage JSON does not crash safeJsonParse', async () => {
+    const { safeJsonParse } = await import('../../../src/lib/storageSafe.js');
+    localStorage.setItem('farroway_active_farm', '{not_json:::');
+    expect(() => safeJsonParse('farroway_active_farm', null)).not.toThrow();
+    expect(safeJsonParse('farroway_active_farm', { fallback: true })).toEqual({ fallback: true });
+  });
+
+  it('stale-shape farm fails validation cleanly (no throw)', async () => {
+    const { safeJsonParse, validateFarm } = await import('../../../src/lib/storageSafe.js');
+    const { defaultFarm } = await import('../../../src/lib/defaults.js');
+    localStorage.setItem('farroway_active_farm', JSON.stringify([1, 2, 3]));
+    const raw = safeJsonParse('farroway_active_farm', null);
+    const farm = validateFarm(raw) ? raw : defaultFarm;
+    expect(farm).toBe(defaultFarm);
+  });
+});

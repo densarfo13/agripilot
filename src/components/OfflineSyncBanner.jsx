@@ -29,12 +29,19 @@
  * and the OfflineBanner at the top of the page-shell.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tStrict } from '../i18n/strictT.js';
 import { getQueue } from '../offline/offlineQueue.js';
 
 const POLL_MS = 4000;
+// Auto-hide windows for the "Back online. Syncing…" pill.
+// 3s normal hide, 5s hard ceiling — even if the queue still
+// reports pending items the banner disappears, because a user
+// staring at a forever-syncing pill thinks the app is broken.
+// The actual sync continues in the background regardless.
+const SYNCING_AUTO_HIDE_MS  = 3000;
+const SYNCING_FORCE_HIDE_MS = 5000;
 
 function _onLine() {
   try {
@@ -49,6 +56,14 @@ export default function OfflineSyncBanner() {
 
   const [online, setOnline] = useState(_onLine);
   const [counts, setCounts] = useState({ pending: 0, abandoned: 0 });
+  // When the user comes back online with a non-empty queue, the
+  // pill flashes once for SYNCING_AUTO_HIDE_MS then hides — even
+  // if the queue is still draining. Without this guard a stuck
+  // queue (e.g. an item the new code can't process) would leave
+  // the banner up forever.
+  const [syncingHidden, setSyncingHidden] = useState(false);
+  const hideTimerRef  = useRef(null);
+  const forceTimerRef = useRef(null);
 
   // Update queue counts on the same cadence as the auto-sync hook.
   // The queue dispatches `farroway:offlineQueueChange` on every
@@ -95,6 +110,30 @@ export default function OfflineSyncBanner() {
     };
   }, [onlineHandler, offlineHandler]);
 
+  // Self-timeout for the "Syncing\u2026" pill. Whenever the
+  // online + pending state turns truthy, schedule a 3-second
+  // hide and a 5-second hard ceiling. If the queue empties
+  // first (counts.pending → 0), the conditional render hides
+  // it earlier; either way the banner can't stay up forever.
+  useEffect(() => {
+    const showing = online && counts.pending > 0 && counts.abandoned === 0;
+    // Reset the visibility flag whenever the conditions change.
+    if (!showing) {
+      setSyncingHidden(false);
+      if (hideTimerRef.current)  { clearTimeout(hideTimerRef.current);  hideTimerRef.current  = null; }
+      if (forceTimerRef.current) { clearTimeout(forceTimerRef.current); forceTimerRef.current = null; }
+      return undefined;
+    }
+    // Don't re-arm the timers if they're already running.
+    if (hideTimerRef.current || forceTimerRef.current) return undefined;
+    hideTimerRef.current  = setTimeout(() => { setSyncingHidden(true); }, SYNCING_AUTO_HIDE_MS);
+    forceTimerRef.current = setTimeout(() => { setSyncingHidden(true); }, SYNCING_FORCE_HIDE_MS);
+    return () => {
+      if (hideTimerRef.current)  { clearTimeout(hideTimerRef.current);  hideTimerRef.current  = null; }
+      if (forceTimerRef.current) { clearTimeout(forceTimerRef.current); forceTimerRef.current = null; }
+    };
+  }, [online, counts.pending, counts.abandoned]);
+
   let message = '';
   let tone    = 'info';
 
@@ -107,8 +146,8 @@ export default function OfflineSyncBanner() {
     // / manual retry rather than silently dropping them.
     message = tStrict('offlineSync.abandoned', 'Some actions could not sync. Please check your connection.');
     tone    = 'err';
-  } else if (counts.pending > 0) {
-    message = tStrict('offlineSync.syncing', 'Back online. Syncing data…');
+  } else if (counts.pending > 0 && !syncingHidden) {
+    message = tStrict('offlineSync.syncing', 'Back online. Updating\u2026');
     tone    = 'ok';
   }
 
