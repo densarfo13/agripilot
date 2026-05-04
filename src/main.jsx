@@ -32,6 +32,7 @@ import {
   LOOP_STATE_KEYS,
   FEATURE_EVENT_SYNC,
   EVENT_QUEUE_KEYS,
+  DISABLE_EVENTS,
 } from './lib/pilotFlags.js';
 import { setOnboardingComplete } from './utils/onboarding.js';
 const _farrowayResettingUi = ensureUiVersion();
@@ -75,7 +76,11 @@ killServiceWorkerAndCaches();
 // log (read by the admin surfaces) are NOT in EVENT_QUEUE_KEYS —
 // they survive the wipe.
 try {
-  if (!FEATURE_EVENT_SYNC && typeof localStorage !== 'undefined') {
+  // DISABLE_EVENTS is the master kill switch; FEATURE_EVENT_SYNC
+  // is the legacy soft-gate. Wipe whenever EITHER is asking for
+  // the queue to be drained.
+  const _shouldWipeEventQueue = DISABLE_EVENTS || !FEATURE_EVENT_SYNC;
+  if (_shouldWipeEventQueue && typeof localStorage !== 'undefined') {
     let dropped = 0;
     for (const k of EVENT_QUEUE_KEYS) {
       try {
@@ -85,8 +90,12 @@ try {
         }
       } catch { /* per-key tolerate */ }
     }
+    // Spec-literal log line — engineers grep for the exact
+    // string in user-supplied DevTools captures.
     // eslint-disable-next-line no-console
-    console.log('Event sync disabled for pilot');
+    console.log(DISABLE_EVENTS
+      ? 'Event system disabled'
+      : 'Event sync disabled for pilot');
     if (dropped > 0) {
       // eslint-disable-next-line no-console
       console.log(

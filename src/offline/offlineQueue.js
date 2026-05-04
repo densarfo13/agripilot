@@ -56,6 +56,15 @@
 export const STORAGE_KEY = 'farroway_offline_queue';
 export const SCHEMA_VERSION = 2;
 
+// ─── Event-sync hard kill switch (May 2026 stability fix) ───
+// Inlined as a const rather than imported from pilotFlags so
+// addToQueue stays synchronous + side-effect-free for any
+// caller that loads this module before pilotFlags. Mirrors
+// `DISABLE_EVENTS` in src/lib/pilotFlags.js — flip BOTH when
+// the analytics pipeline stabilises and events go back on.
+const DISABLE_EVENTS_INLINE = true;
+let _eventEnqueueRefusedOnce = false;
+
 // Backoff schedule (seconds) — applied to `attempts - 1`. The last
 // step is reused once we exceed the array; an entry hits MAX_ATTEMPTS
 // before reaching the long tail anyway.
@@ -152,6 +161,25 @@ function _emitChange() {
  * non-blocking "saved for later" toast.
  */
 export function addToQueue(action) {
+  // ─── Hard kill switch backstop (May 2026) ───
+  // If a code path slips past the trackEvent gate and tries to
+  // enqueue an event-typed action directly, refuse it here.
+  // This is the lowest-level defence so even a forgotten /
+  // legacy caller cannot land an event entry on disk while
+  // events are disabled.
+  if (DISABLE_EVENTS_INLINE
+      && action
+      && typeof action === 'object'
+      && action.type === 'event') {
+    if (!_eventEnqueueRefusedOnce) {
+      _eventEnqueueRefusedOnce = true;
+      try {
+        // eslint-disable-next-line no-console
+        console.log('Event system disabled (addToQueue refused event)');
+      } catch { /* swallow */ }
+    }
+    return null;
+  }
   const entry = _normalize({
     id:              _uuid(),
     idempotencyKey:  _uuid(),

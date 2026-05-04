@@ -70,6 +70,20 @@ import { getActiveAssignments as _getActiveAssignments } from '../experiments/ab
 // on-device for the insightAggregator + admin surfaces.
 import { addToQueue } from '../offline/offlineQueue.js';
 import { isFeatureEnabled } from '../utils/featureFlags.js';
+import { DISABLE_EVENTS } from '../lib/pilotFlags.js';
+
+// One-shot diagnostic — log "Event system disabled" at most
+// once per process so engineers can confirm the kill switch
+// is armed without flooding the console on every trackEvent call.
+let _disabledNoticeLogged = false;
+function _logDisabledOnce() {
+  if (_disabledNoticeLogged) return;
+  _disabledNoticeLogged = true;
+  try {
+    // eslint-disable-next-line no-console
+    console.log('Event system disabled');
+  } catch { /* swallow */ }
+}
 
 // Spec §1 event allow-list. Keys are the canonical event
 // names; trackEvent silently warns (in dev) when called with
@@ -232,6 +246,15 @@ function _summariseWeather() {
  * This function NEVER throws.
  */
 export function trackEvent(eventName, payload = {}) {
+  // ─── Hard kill switch (May 2026 stability fix) ───
+  // Returns immediately when DISABLE_EVENTS is true. NO local
+  // write, NO legacy mirror, NO queue enqueue, NO POST. The
+  // single console line emitted once per process is the only
+  // observable effect — every subsequent call is silent.
+  if (DISABLE_EVENTS) {
+    _logDisabledOnce();
+    return null;
+  }
   let record = null;
   try {
     if (typeof eventName !== 'string' || !eventName.trim()) return null;

@@ -49,6 +49,7 @@ import PilotHome from './pages/PilotHome.jsx';
 import {
   BYPASS_SETUP_FOR_PILOT,
   FEATURE_EVENT_SYNC as PILOT_FEATURE_EVENT_SYNC,
+  DISABLE_EVENTS,
 } from './lib/pilotFlags.js';
 
 // One-shot warner for /api/events 400 responses. Prevents the
@@ -809,7 +810,13 @@ export default function App() {
         // resolve with `undefined` so syncQueue removes the
         // entry instead of bumping its retry counter.
         case 'event': {
-          if (!FEATURE_EVENT_SYNC_RUNTIME) {
+          // Hard kill switch (May 2026) — DISABLE_EVENTS is the
+          // outermost guard. When true, EVERY event entry drains
+          // silently regardless of any other flag state. Belt-
+          // and-braces: even if a stale entry survived the boot
+          // wipe AND somehow bypassed addToQueue's refusal,
+          // this branch never POSTs.
+          if (DISABLE_EVENTS || !FEATURE_EVENT_SYNC_RUNTIME) {
             // Drain quietly. Resolving (not throwing) tells
             // syncQueue to remove the entry from the queue.
             return undefined;

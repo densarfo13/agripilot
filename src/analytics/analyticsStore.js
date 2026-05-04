@@ -37,6 +37,15 @@ const EVENTS_KEY   = 'farroway_events';
 const FEEDBACK_KEY = 'farroway_feedback';
 const MAX_KEPT     = 300;
 
+// ─── Event-sync hard kill switch (May 2026) ───
+// Inlined to keep this module side-effect-free. Mirror in
+// src/lib/pilotFlags.js: DISABLE_EVENTS. When true, the legacy
+// analyticsStore.trackEvent path does NOT write the local
+// event log and does NOT forward to the canonical pipeline.
+// Feedback writes (QuickFeedback / PulseQuestion) still work —
+// only the event-log path is gated.
+const DISABLE_EVENTS_INLINE = true;
+
 /**
  * @typedef {Object} AnalyticsEvent
  * @property {string} name
@@ -95,6 +104,8 @@ function _forwardSafeTrack(name, payload) {
  * @param {object} [payload]   short, JSON-serializable bag
  */
 export function trackEvent(name, payload = {}) {
+  // Hard kill switch — see src/lib/pilotFlags.js DISABLE_EVENTS.
+  if (DISABLE_EVENTS_INLINE) return;
   if (!name || typeof name !== 'string') return;
   let safePayload;
   try {

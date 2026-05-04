@@ -65,6 +65,36 @@ export const LOOP_STATE_KEYS = Object.freeze([
 ]);
 
 /**
+ * DISABLE_EVENTS — hard kill switch for the event-sync system.
+ *
+ * When true, EVERY event-related code path returns immediately:
+ *   • src/core/analytics.trackEvent()   → returns null at the top
+ *   • src/analytics/analyticsStore.trackEvent() → same
+ *   • src/offline/offlineQueue.addToQueue() refuses 'event' types
+ *   • src/App.jsx dispatcher's `event` case resolves with undefined
+ *     (so syncQueue removes the entry instead of POSTing)
+ *   • main.jsx wipes EVENT_QUEUE_KEYS plus farroway_events +
+ *     farroway_event_queue at every boot
+ *
+ * This is a STRONGER guarantee than FEATURE_EVENT_SYNC = false
+ * (which only gated the queue mirror — local writes still ran).
+ * Under DISABLE_EVENTS = true, NOTHING related to the analytics
+ * pipeline runs: no localStorage writes, no enqueues, no dispatch,
+ * no POSTs to /api/events.
+ *
+ * The intent is the live pilot stays clean even if a future
+ * caller forgets to check FEATURE_EVENT_SYNC, or a stale entry
+ * survives the boot wipe. DISABLE_EVENTS is the belt-and-braces
+ * outermost guard; once the analytics system stabilises, flip
+ * this back to false in a single commit.
+ *
+ * Auth, profile, sync of OTHER queue types (task_complete,
+ * farm_update, harvest_record, health_feedback) are entirely
+ * unaffected — DISABLE_EVENTS only short-circuits event paths.
+ */
+export const DISABLE_EVENTS = true;
+
+/**
  * FEATURE_EVENT_SYNC
  *
  * When false (default for the pilot):
@@ -91,12 +121,16 @@ export const FEATURE_EVENT_SYNC = false;
 /**
  * EVENT_QUEUE_KEYS — localStorage keys the offline event queue
  * has used across versions. Cleared on every boot when
- * FEATURE_EVENT_SYNC is false so a queue that's been 400-looping
- * empties out without manual DevTools work.
+ * DISABLE_EVENTS is true (or FEATURE_EVENT_SYNC is false) so a
+ * queue that's been 400-looping empties out without manual
+ * DevTools work.
  *
- * `farroway_events` (the local event-log read by the admin
- * surfaces) is NOT in this list — it's the source of truth for
- * on-device analytics and must survive the wipe.
+ * Under DISABLE_EVENTS the user spec §4 explicitly asks us to
+ * also drop `farroway_events` (the local event-log the admin
+ * surfaces read from). The on-device analytics history is
+ * acceptable collateral while the pipeline is on fire — the
+ * server-side aggregator is the long-term source of truth and
+ * resumes once events flip back on.
  */
 export const EVENT_QUEUE_KEYS = Object.freeze([
   'farroway_offline_queue',     // src/offline/offlineQueue.js
@@ -104,6 +138,7 @@ export const EVENT_QUEUE_KEYS = Object.freeze([
   'farroway_queue',             // src/offline/farrowayQueue.js (spec facade)
   'farroway_sync_queue',        // legacy / per-spec drop list
   'farroway_event_queue',       // legacy / per-spec drop list
+  'farroway_events',            // local event log — DISABLE_EVENTS spec §4
 ]);
 
 export default BYPASS_SETUP_FOR_PILOT;
