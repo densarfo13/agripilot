@@ -406,6 +406,25 @@ describe('useGeoLocation internals', () => {
   });
 });
 
+// ─── Downgrade-skip guard (stale-bundle protection) ─────────
+describe('runStateMigration — stale-bundle direction guard', () => {
+  it('skips the migration AND avoids reload when stored is NEWER than current', async () => {
+    const { runStateMigration, CURRENT_STATE_VERSION } = await import('../../../src/lib/stateMigration.js');
+    // Pretend a future v7 bundle has run; user is now back on a
+    // cached v6. CURRENT_STATE_VERSION is the v6 string.
+    const newer = '2099-12-31-state-v99';
+    expect(newer > CURRENT_STATE_VERSION).toBe(true);
+    localStorage.setItem('farroway_state_version', newer);
+    const r = runStateMigration();
+    expect(r.ranMigration).toBe(false);
+    expect(r.reloaded).toBe(false);
+    expect(reloadCalls).toBe(0);
+    // Stored version is preserved — we don't trample on the
+    // newer-build's stamp.
+    expect(localStorage.getItem('farroway_state_version')).toBe(newer);
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

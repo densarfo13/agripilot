@@ -145,7 +145,33 @@ export function ensureUiVersion() {
     return false;
   }
 
-  // Version mismatch → run the reset.
+  // Direction guard — if `stored` is NEWER than the bundle's
+  // version, the browser is almost certainly serving a stale
+  // cached bundle (the new index.html hasn't been fetched yet).
+  // Triggering a reset here would push v6 state through v5
+  // code, then reload, then hit the same cached v5 bundle, then
+  // ping-pong forever until Chrome throttles navigation.
+  //
+  // Format is YYYY-MM-DD-vN so a plain string compare is enough
+  // for the common case. Bail without resetting; the next time
+  // the browser fetches index.html it'll get the new bundle and
+  // this branch will never fire.
+  if (typeof stored === 'string'
+      && typeof FARROWAY_UI_VERSION === 'string'
+      && stored > FARROWAY_UI_VERSION) {
+    try {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[Farroway] Stale bundle detected (in-bundle '
+        + FARROWAY_UI_VERSION + ' < stored ' + stored + '). '
+        + 'Skipping UI reset to avoid a reload loop. '
+        + 'Hard-refresh (Ctrl+Shift+R) once to pick up the new bundle.'
+      );
+    } catch { /* swallow */ }
+    return false;
+  }
+
+  // Version mismatch (older stored → newer bundle) → run the reset.
   _resetInFlight = true;
   try {
     // eslint-disable-next-line no-console

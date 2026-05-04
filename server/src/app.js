@@ -1076,9 +1076,33 @@ app.use(errorHandler);
 // ─── Production Static Serving ─────────────────────────
 if (config.isProduction) {
   const clientDist = path.join(__dirname, '../../dist');
-  app.use(express.static(clientDist));
+  // Hashed bundles (assets/index-*.js, assets/vendor-*.js, etc.) are
+  // safe to long-cache because their filenames change on every
+  // deploy. The HTML entry point is NOT — it must always be re-
+  // fetched so users pick up the new hashed-bundle references on
+  // each deploy. Without this, browsers happily reuse a months-old
+  // index.html that points at a missing/old bundle and the user
+  // ends up running an outdated UI version (the v4-vs-v6 bundle
+  // ping-pong loop chrome surfaces as "Throttling navigation").
+  app.use(express.static(clientDist, {
+    setHeaders: (res, filePath) => {
+      const lower = String(filePath || '').toLowerCase();
+      if (lower.endsWith('.html')) {
+        res.setHeader('Cache-Control',
+          'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      } else if (lower.includes(`${path.sep}assets${path.sep}`)
+              || lower.includes('/assets/')) {
+        // Vite's hashed assets are immutable.
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   // SPA fallback: serve index.html for non-API routes (React Router handles
-  // client-side routing).
+  // client-side routing). Same no-cache headers — this path serves
+  // the SAME index.html as the static handler when the URL doesn't
+  // match a file on disk.
   //
   // Defensive guard: if an asset request slips past the static handlers above
   // (e.g. the file doesn't exist on disk because of a botched build), DO NOT
@@ -1091,6 +1115,9 @@ if (config.isProduction) {
     if (_ASSET_RX.test(req.path)) {
       return res.status(404).type('text/plain').send('Not found');
     }
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }

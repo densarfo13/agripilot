@@ -98,6 +98,27 @@ export function runStateMigration() {
     return _result(false, stored, [], false);
   }
 
+  // Direction guard — if `stored` is NEWER than CURRENT_STATE_VERSION,
+  // the browser is serving a stale cached bundle that doesn't yet
+  // know about the newer state schema. Resetting + reloading would
+  // re-serve the same stale bundle, which would re-fire the
+  // migration, which would reload again — Chrome throttles
+  // navigation after ~5 such bounces, then the user sees a blank
+  // page. Skip the migration entirely; the next index.html fetch
+  // will hand the user the new bundle.
+  if (typeof stored === 'string'
+      && typeof CURRENT_STATE_VERSION === 'string'
+      && stored > CURRENT_STATE_VERSION) {
+    try {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[Farroway] State migration skipped: stale bundle '
+        + '(' + CURRENT_STATE_VERSION + ' < stored ' + stored + ').'
+      );
+    } catch { /* swallow */ }
+    return _result(false, stored, [], false);
+  }
+
   // Loop guard — if we've already migrated once in this tab session,
   // do NOT reload again even if the version still doesn't match.
   // (The page is already running the latest code; one reload is
