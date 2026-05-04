@@ -1,37 +1,35 @@
 /**
- * useTodayTask — thin React hook that calls the production
- * intelligence taskEngine and re-runs on language change so the
- * resolved title / instruction / reason update live.
+ * useTodayTask — production-intelligence task hook.
  *
- * Usage
- * ─────
- *   import useTodayTask from '../hooks/useTodayTask.js';
+ * Two flavours coexist:
  *
- *   const task = useTodayTask({
- *     farm,             // active farm shape
- *     weather,          // optional — falls through to default rule
- *     risks,            // optional — { pest, drought }
- *     activity,         // optional — { daysInactive }
- *     fundingMatches,   // optional
- *     buyerSignals,     // optional — { hasListing }
- *   });
+ *   1) useTodayTask({ farm, weather, risks, ... })  (default export)
+ *      Synchronous wrapper around `generateTodayTask` from
+ *      intelligence/taskEngine.js. Used by NextBestActionCard +
+ *      similar surfaces that already pass full context.
  *
- *   // task is NEVER null; render directly:
- *   <h1>{task.title}</h1>
- *   <p>{task.instruction}</p>
+ *   2) useSmartTask({ userType, crop, cropStage, region, weather })
+ *      Synchronous wrapper around the May 2026 Invisible
+ *      Intelligence Engine (taskIntelligence.generateSmartTask).
+ *      Used by Home / Tasks / Progress as the canonical fallback
+ *      when /api/tasks/today is empty or fails. The same engine
+ *      is also reachable from non-React code via the bare
+ *      `generateSmartTask` export below.
  *
  * Strict contract
  * ───────────────
- *   • Pure consumer of generateTodayTask. No side effects.
- *   • Re-runs on language change (subscribes via useTranslation),
- *     so a farmer flipping to French sees the new rendered strings
- *     on the next render without remounting the page.
- *   • Stable identity within a single render — uses useMemo.
+ *   • Both hooks are PURE consumers of their engine. No fetch.
+ *     The API call lives on the consumer (e.g. TodayTaskCard);
+ *     this hook is the deterministic fallback the UI renders
+ *     when the network path returns nothing usable.
+ *   • Re-run on language change so locale flips are live.
+ *   • Stable identity within a single render — useMemo.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { generateTodayTask } from '../intelligence/taskEngine.js';
+import { generateSmartTask } from '../lib/taskIntelligence.js';
 
 export default function useTodayTask({
   farm = null,
@@ -76,3 +74,72 @@ function _stableKey(o) {
 // to read the underlying API directly.
 export { generateTodayTask } from '../intelligence/taskEngine.js';
 export { URGENCY, ACTION_TYPE, RULE } from '../intelligence/taskEngine.js';
+
+// ─── useSmartTask — May 2026 Invisible Intelligence ────────────
+//
+//   const task = useSmartTask({
+//     userType:  'backyard',
+//     crop:      profile?.crop,
+//     cropStage: profile?.stage,
+//     region:    profile?.location,
+//     weather:   { condition: 'rainy', temp: 27, rainChance: 75 },
+//   });
+//
+// Returns the spec's task envelope (title / reason / urgency /
+// time / cta / category / region / generatedAt / source) and
+// logs the source + title to the console exactly once per
+// title change so engineers can confirm the smart path fired.
+
+export function useSmartTask({
+  userType  = 'backyard',
+  crop      = 'crop',
+  cropStage = 'unknown',
+  region    = 'your area',
+  weather   = null,
+} = {}) {
+  // Subscribe to language change so locale flips re-render.
+  const { lang } = useTranslation();
+
+  const task = useMemo(
+    () => generateSmartTask({ userType, crop, cropStage, region, weather: weather || {} }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang, userType, _smartCropKey(crop), cropStage, region, _weatherKey(weather)],
+  );
+
+  // Diagnostic — fire once per title change so the console
+  // doesn't spam on every render but still confirms the smart
+  // engine is the canonical task source.
+  const lastTitleRef = useRef(null);
+  useEffect(() => {
+    if (!task || !task.title || lastTitleRef.current === task.title) return;
+    lastTitleRef.current = task.title;
+    try {
+      // eslint-disable-next-line no-console
+      console.log('Today task source:', task.source);
+      // eslint-disable-next-line no-console
+      console.log('Today task:', task.title);
+    } catch { /* never throw from a diagnostic */ }
+  }, [task]);
+
+  return task;
+}
+
+// Re-export the bare engine for non-React callers (TodayTaskCard
+// fallback, tests, server-driven previews).
+export { generateSmartTask };
+
+function _smartCropKey(c) {
+  if (typeof c === 'string') return c;
+  if (c && typeof c === 'object') return c.name || c.id || '';
+  return '';
+}
+
+function _weatherKey(w) {
+  if (!w) return '';
+  return [
+    String(w.condition || ''),
+    String(w.temp ?? ''),
+    String(w.rainChance ?? ''),
+    String(w.windSpeed ?? ''),
+  ].join('|');
+}

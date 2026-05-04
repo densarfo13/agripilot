@@ -47,26 +47,32 @@ import api from '../../api/client.js';
 import { trackEvent } from '../../core/analytics.js';
 import { getCurrentLang } from '../../utils/i18n.js';
 import { resolveContext } from '../../core/contextResolver.js';
+import { generateSmartTask } from '../../lib/taskIntelligence.js';
 
 // Local fallback envelope — used when the network call fails.
-// Mirrors the server's `fallback_check` rule shape so downstream
-// consumers don't branch.
 //
-// Spec wording (May 2026 §3): API is the ONLY source of truth
-// for tasks; when the API call fails, render this single
-// crop-care fallback. Identical wording for farmer + backyard
-// — the "Check soil moisture" line works for both contexts and
-// avoids the previous farmer/plant copy split that drifted out
-// of sync across deploys.
-function buildLocalFallback(userType, language) {
+// May 2026 Invisible Intelligence Engine v1: the fallback now
+// delegates to generateSmartTask() so the wording adapts to the
+// user's actual weather / region / crop / cropStage instead of
+// rendering the same generic line on every device.
+// generateSmartTask() returns the spec-shape envelope
+// (title / reason / urgency / time / cta / category / source);
+// we map it onto the existing TodayTaskCard envelope so the
+// downstream renderer doesn't need to branch.
+function buildLocalFallback(userType, language, ctx = {}) {
   const ut = userType === 'backyard' ? 'backyard' : 'farmer';
+  const smart = generateSmartTask({
+    userType:  ut,
+    crop:      ctx.crop      || 'crop',
+    cropStage: ctx.stage     || ctx.cropStage || 'unknown',
+    region:    ctx.region    || ctx.location || 'your area',
+    weather:   ctx.weather   || {},
+  });
   return {
-    todayTaskTitle: tSafe('todayTask.apiFallback.title',
-      'Check soil moisture around your crop'),
-    taskReason:     tSafe('todayTask.apiFallback.reason',
-      'Dry conditions can stress your plants. Water only if soil is dry.'),
-    urgency:        'medium',
-    estimatedTime:  '5 min',
+    todayTaskTitle: smart.title,
+    taskReason:     smart.reason,
+    urgency:        smart.urgency || 'medium',
+    estimatedTime:  smart.time    || '5 min',
     safetyNote:     null,
     localizedText: {
       title:  null,
@@ -79,14 +85,14 @@ function buildLocalFallback(userType, language) {
       'Check again tomorrow morning'),
     completionPrompt: tSafe('todayTask.completionPrompt',
       'Nice — you stayed ahead today \uD83C\uDF31'),
-    // Spec §3 — fallback CTA reads "Mark as done" so the
-    // button text never claims an action that wasn't completed.
-    ctaLabel:  tSafe('todayTask.apiFallback.cta', 'Mark as done'),
-    ruleId:    'api_fallback',
+    ctaLabel:  smart.cta || tSafe('todayTask.apiFallback.cta', 'Mark as done'),
+    ruleId:    'smart_fallback',
     userType:  ut,
     fallback:  true,
     language,
-    generatedAt: new Date().toISOString(),
+    generatedAt: smart.generatedAt,
+    source:     smart.source,
+    category:   smart.category,
   };
 }
 
@@ -161,7 +167,7 @@ export default function TodayTaskCard({ userType: userTypeProp, onDone }) {
         });
         if (cancelled) return;
         const envelope = res && res.data ? res.data : res;
-        setTask(envelope || buildLocalFallback(ctx.userType, ctx.language));
+        setTask(envelope || buildLocalFallback(ctx.userType, ctx.language, ctx));
         if (!fired.current.viewed) {
           try {
             trackEvent('task_viewed', {
@@ -178,7 +184,7 @@ export default function TodayTaskCard({ userType: userTypeProp, onDone }) {
         if (cancelled) return;
         setError(err);
         // Local fallback — home screen is never blank.
-        const fb = buildLocalFallback(ctx.userType, ctx.language);
+        const fb = buildLocalFallback(ctx.userType, ctx.language, ctx);
         setTask(fb);
         try {
           trackEvent('task_viewed', {

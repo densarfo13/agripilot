@@ -601,6 +601,123 @@ describe('enforceTaskApiOnly', () => {
   });
 });
 
+// ─── Invisible Intelligence Task Engine v1 ──────────────────
+describe('generateSmartTask — weather/region/crop/stage', () => {
+  it('returns a usable default for empty input', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask();
+    expect(t.title).toMatch(/check soil moisture/i);
+    expect(t.cta).toBe('Mark as done');
+    expect(t.urgency).toBe('medium');
+    expect(t.source).toBe('weather-region-stage-v1');
+    expect(typeof t.generatedAt).toBe('string');
+  });
+
+  it('rain → drainage task', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ weather: { condition: 'rainy', rainChance: 80 } });
+    expect(t.title).toMatch(/drainage/i);
+    expect(t.category).toBe('weather');
+  });
+
+  it('hot weather (>= 32C) → water early/late', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    // Use a non-special crop so the crop-specific override
+    // doesn't replace the weather title; the urgency='high' +
+    // category='heat' stay regardless of crop.
+    const t = generateSmartTask({ crop: 'lettuce', weather: { temp: 35 } });
+    expect(t.title).toMatch(/water .* early or late/i);
+    expect(t.urgency).toBe('high');
+    expect(t.category).toBe('heat');
+  });
+
+  it('high wind → support task', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ weather: { windSpeed: 30 } });
+    expect(t.title).toMatch(/support/i);
+    expect(t.category).toBe('wind');
+  });
+
+  it('flowering stage → flower inspection', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ cropStage: 'flowering' });
+    expect(t.title).toMatch(/flowers and leaves/i);
+    expect(t.urgency).toBe('high');
+    expect(t.category).toBe('flowering');
+  });
+
+  it('harvest stage + tomato crop → tomato leaf inspection (crop-specific overrides stage)', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ crop: 'tomato', cropStage: 'harvest' });
+    expect(t.title).toMatch(/tomato leaves/i);
+    expect(t.category).toBe('pest-check');
+  });
+
+  it('rice always escalates to high urgency', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ crop: 'rice', cropStage: 'vegetative' });
+    expect(t.title).toMatch(/rice field water level/i);
+    expect(t.urgency).toBe('high');
+    expect(t.category).toBe('water-level');
+  });
+
+  it('backyard mode replaces "crop" with "plant" and "field" with "garden" in reason', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ userType: 'backyard', crop: 'pepper' });
+    expect(t.reason).not.toMatch(/\bcrop\b/i);
+    // Pepper task uses "plants" already; ensure no leakage of "crop" from the default.
+    expect(t.reason).not.toMatch(/\bfield\b/i);
+  });
+
+  it('NEVER produces legacy profitability wording', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    // Sweep a representative grid of inputs.
+    const grids = [
+      { crop: 'maize',  cropStage: 'germination', weather: { rainChance: 80 } },
+      { crop: 'tomato', cropStage: 'flowering',   weather: { temp: 35 } },
+      { crop: 'okra',   cropStage: 'harvest',     weather: { windSpeed: 30 } },
+      { crop: 'pepper', cropStage: 'vegetative',  weather: { condition: 'dry' } },
+      { crop: 'rice',   cropStage: 'fruit',       weather: {} },
+      { userType: 'backyard', crop: 'tomato' },
+    ];
+    for (const g of grids) {
+      const t = generateSmartTask(g);
+      const all = (t.title + ' ' + t.reason + ' ' + (t.cta || '')).toLowerCase();
+      expect(all).not.toMatch(/start logging farm costs/);
+      expect(all).not.toMatch(/track profitability/);
+      expect(all).not.toMatch(/keep logging harvest/);
+      expect(all).not.toMatch(/performance comparison/);
+    }
+  });
+
+  it('never throws on garbage input', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    expect(() => generateSmartTask(null)).not.toThrow();
+    expect(() => generateSmartTask(undefined)).not.toThrow();
+    expect(() => generateSmartTask({ crop: 42, cropStage: null, weather: 'hot' })).not.toThrow();
+    expect(() => generateSmartTask({ crop: { weird: true } })).not.toThrow();
+  });
+
+  it('object crop with .name is honoured', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ crop: { name: 'tomato' } });
+    expect(t.title).toMatch(/tomato/i);
+  });
+
+  it('always returns the shape Home/Tasks/Progress consume', async () => {
+    const { generateSmartTask } = await import('../../../src/lib/taskIntelligence.js');
+    const t = generateSmartTask({ region: 'Ashanti' });
+    expect(typeof t.title).toBe('string');
+    expect(typeof t.reason).toBe('string');
+    expect(typeof t.urgency).toBe('string');
+    expect(typeof t.time).toBe('string');
+    expect(typeof t.cta).toBe('string');
+    expect(typeof t.category).toBe('string');
+    expect(t.region).toBe('Ashanti');
+    expect(t.source).toBe('weather-region-stage-v1');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {
