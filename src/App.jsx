@@ -46,7 +46,29 @@ import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 // role. Drives the new role-routing system in lib/roleFeatures.js.
 import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
 import PilotHome from './pages/PilotHome.jsx';
-import { BYPASS_SETUP_FOR_PILOT } from './lib/pilotFlags.js';
+import {
+  BYPASS_SETUP_FOR_PILOT,
+  FEATURE_EVENT_SYNC as PILOT_FEATURE_EVENT_SYNC,
+} from './lib/pilotFlags.js';
+
+// One-shot warner for /api/events 400 responses. Prevents the
+// console-spam loop from a permanently-malformed payload —
+// emits exactly once per process, then silently drops every
+// subsequent 400 from the same source.
+let _eventsBadRequestWarned = false;
+function _warnEventsBadRequestOnce(name) {
+  if (_eventsBadRequestWarned) return;
+  _eventsBadRequestWarned = true;
+  try {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[Farroway] POST /api/events returned 400 for "'
+      + (typeof name === 'string' ? name : 'unknown')
+      + '". Dropping event and any further 400 responses '
+      + 'are suppressed (this warning fires once).'
+    );
+  } catch { /* swallow */ }
+}
 // Role-aware dashboard wrapper — picks the right page for
 // /dashboard based on user.role. Farmer → V2Dashboard;
 // ngo / admin → NgoDashboardV1.
@@ -704,6 +726,10 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     async function dispatchOne(action, meta) {
+      // Module-local capture so the closure doesn't have to
+      // import pilotFlags on every dispatch — and so a future
+      // hot reload can flip the const without re-mounting.
+      const FEATURE_EVENT_SYNC_RUNTIME = PILOT_FEATURE_EVENT_SYNC;
       // Fire-and-forget mapping. Any unrecognised type is dropped
       // silently to avoid jamming the queue on shape drift.
       if (!action || typeof action !== 'object') return;
@@ -763,15 +789,51 @@ export default function App() {
         // of type 'event'; the local eventStore at
         // farroway_events stays the source of truth, this
         // forwards the same record to the server route so
-        // admin surfaces can aggregate cross-device. Gated by
-        // FEATURE_EVENT_SYNC at the enqueue site
-        // (src/core/analytics.js); when the flag is off no
-        // entries land here, so the dispatcher is a no-op
-        // until the server route ships.
+        // admin surfaces can aggregate cross-device.
+        //
+        // Gated TWICE for safety:
+        //   1. FEATURE_EVENT_SYNC at the enqueue site
+        //      (src/core/analytics.js) prevents new entries
+        //      from being queued while the flag is off.
+        //   2. Belt-and-braces guard here: if a stale entry
+        //      slipped through from an earlier session, this
+        //      dispatcher silently swallows it instead of
+        //      POSTing to /api/events. The wrapping syncQueue
+        //      treats a resolved promise as success and removes
+        //      the entry from the queue, so the bad payload
+        //      drains in exactly one tick.
+        //
+        // 400 handling (spec \u00a74): a permanent client-side
+        // validation failure must NOT retry. We catch the
+        // axios error inline, warn ONCE per process, and
+        // resolve with `undefined` so syncQueue removes the
+        // entry instead of bumping its retry counter.
         case 'event': {
+          if (!FEATURE_EVENT_SYNC_RUNTIME) {
+            // Drain quietly. Resolving (not throwing) tells
+            // syncQueue to remove the entry from the queue.
+            return undefined;
+          }
           const { name, payload } = action.payload || {};
-          if (!name) return;
-          return api.post('/events', { name, payload }, cfg);
+          // Spec \u00a73 \u2014 validate event before sending.
+          if (!name || typeof name !== 'string') return undefined;
+          if (payload != null && typeof payload !== 'object') {
+            return undefined;
+          }
+          try {
+            return await api.post('/events', { name, payload }, cfg);
+          } catch (err) {
+            const status = err && err.response && err.response.status;
+            if (status === 400) {
+              _warnEventsBadRequestOnce(name);
+              // Resolve, don't throw \u2014 dropping the entry.
+              return undefined;
+            }
+            // Any other error \u2014 5xx, network, etc. \u2014 still
+            // throws so syncQueue's existing retry/backoff
+            // path takes over.
+            throw err;
+          }
         }
         default:
           return undefined;

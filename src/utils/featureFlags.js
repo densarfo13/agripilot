@@ -72,16 +72,17 @@ const DEFAULTS = Object.freeze({
   FEATURE_HEALTH_FEEDBACK_SYNC: false,
 
   // Data Moat Layer follow-up — server sync for the canonical
-  // event log at `farroway_events`. Default ON now that the
-  // server endpoint at POST /api/events has shipped (Zod-
-  // validated, rate-limited via ingestLimiter, persists to the
-  // ClientEvent table). Each call to trackEvent additionally
-  // enqueues an `event` action onto the offline queue; the
-  // App.jsx dispatcher posts it to /api/events. Existing local
-  // entries at `farroway_events` are unaffected by the flip —
-  // they stay readable on-device for the insightAggregator +
-  // the admin surfaces.
-  FEATURE_EVENT_SYNC: true,
+  // event log at `farroway_events`. Currently OFF for the pilot
+  // (May 2026 stability fix). The Zod schema on the server side
+  // doesn't line up with the client's enqueued shape, producing
+  // a tight 400 loop that spammed the offline queue's retry
+  // path. Source of truth for the flip is
+  // `src/lib/pilotFlags.js`; the value here matches it so any
+  // legacy reader of isFeatureEnabled() agrees with the bypass
+  // path. Local persistence at `farroway_events` is unaffected —
+  // that's a separate on-device store. Flip both back to true
+  // in a single commit when /api/events stabilises.
+  FEATURE_EVENT_SYNC: false,
 
   // AI Task Engine v1 — when ON, the home screen mounts
   // TodayTaskCard at the top and calls POST /api/tasks/today

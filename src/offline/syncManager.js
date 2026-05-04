@@ -125,10 +125,29 @@ export async function syncQueue(sendFn) {
         removeFromQueue(entry.id);
         result.flushed += 1;
       } catch (err) {
-        try { console.warn('[offlineQueue] sync failed', entry?.action, err && err.message); }
-        catch { /* ignore */ }
+        // May 2026 stability fix: log the failure exactly twice
+        // per entry across its retry budget — once on the first
+        // attempt (so engineers see the failure quickly) and
+        // once on abandonment (so they know it gave up). Every
+        // attempt in between stays silent.
+        //
+        // Without this throttle a single permanently-bad entry
+        // (e.g. a 400 from /api/events with a malformed payload)
+        // emitted "[offlineQueue] sync failed" every 5s for the
+        // entire page lifetime, drowning out genuinely useful
+        // logs. The retry budget itself is unchanged.
+        const isFirstAttempt = (entry.attempts || 0) === 0;
         const updated = markAttempt(entry.id, { error: err });
-        if (updated && updated.status === 'abandoned') {
+        const justAbandoned = updated && updated.status === 'abandoned';
+        if (isFirstAttempt || justAbandoned) {
+          try {
+            const tag = justAbandoned
+              ? '[offlineQueue] sync failed (abandoned)'
+              : '[offlineQueue] sync failed';
+            console.warn(tag, entry?.action, err && err.message);
+          } catch { /* ignore */ }
+        }
+        if (justAbandoned) {
           result.abandoned += 1;
         } else {
           result.failed += 1;

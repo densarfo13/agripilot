@@ -64,4 +64,46 @@ export const LOOP_STATE_KEYS = Object.freeze([
   'farroway_onboarding_redirect',
 ]);
 
+/**
+ * FEATURE_EVENT_SYNC
+ *
+ * When false (default for the pilot):
+ *   • analytics.trackEvent() does NOT enqueue an `event` action
+ *     onto the offline queue.
+ *   • The dispatcher in App.jsx no-ops the 'event' branch.
+ *   • syncQueue() short-circuits when only event-type entries
+ *     are due — no POSTs to /api/events fire.
+ *   • Boot in main.jsx wipes EVENT_QUEUE_KEYS so any pre-existing
+ *     queue entries (which were 400-ing in a tight loop and
+ *     spamming the console) get dropped exactly once.
+ *
+ * Local persistence at `farroway_events` (the on-device event
+ * store the insightAggregator + admin surfaces read from) is
+ * unaffected — that's a SEPARATE storage path; flipping this
+ * flag only touches the server-mirror queue.
+ *
+ * When the /api/events endpoint stabilises and the Zod schema
+ * lines up with the client's enqueued shape, flip this to true
+ * in a single commit.
+ */
+export const FEATURE_EVENT_SYNC = false;
+
+/**
+ * EVENT_QUEUE_KEYS — localStorage keys the offline event queue
+ * has used across versions. Cleared on every boot when
+ * FEATURE_EVENT_SYNC is false so a queue that's been 400-looping
+ * empties out without manual DevTools work.
+ *
+ * `farroway_events` (the local event-log read by the admin
+ * surfaces) is NOT in this list — it's the source of truth for
+ * on-device analytics and must survive the wipe.
+ */
+export const EVENT_QUEUE_KEYS = Object.freeze([
+  'farroway_offline_queue',     // src/offline/offlineQueue.js
+  'farroway.offlineQueue.v1',   // src/lib/sync/offlineQueue.js (legacy)
+  'farroway_queue',             // src/offline/farrowayQueue.js (spec facade)
+  'farroway_sync_queue',        // legacy / per-spec drop list
+  'farroway_event_queue',       // legacy / per-spec drop list
+]);
+
 export default BYPASS_SETUP_FOR_PILOT;

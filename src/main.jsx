@@ -27,7 +27,12 @@ try {
 } catch { /* swallow */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
-import { BYPASS_SETUP_FOR_PILOT, LOOP_STATE_KEYS } from './lib/pilotFlags.js';
+import {
+  BYPASS_SETUP_FOR_PILOT,
+  LOOP_STATE_KEYS,
+  FEATURE_EVENT_SYNC,
+  EVENT_QUEUE_KEYS,
+} from './lib/pilotFlags.js';
 import { setOnboardingComplete } from './utils/onboarding.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
@@ -58,6 +63,49 @@ killServiceWorkerAndCaches();
 // Auth keys are NEVER touched by this default. If a real role
 // is already persisted (admin, ngo, buyer, super_admin, etc.)
 // we leave it alone.
+// ── Event-sync disabled for pilot (May 2026 stability fix §1) ───
+//
+// /api/events was returning 400 in a tight loop because the server
+// Zod schema didn't line up with the client's enqueued event
+// shape — every 5s the offline-queue tick re-fired the same bad
+// payload, spamming the user's DevTools. While FEATURE_EVENT_SYNC
+// is false we wipe every known queue key on boot so a tab that
+// inherited a poisoned queue from a previous version cleans up
+// in exactly one boot. Auth + the local `farroway_events` event
+// log (read by the admin surfaces) are NOT in EVENT_QUEUE_KEYS —
+// they survive the wipe.
+try {
+  if (!FEATURE_EVENT_SYNC && typeof localStorage !== 'undefined') {
+    let dropped = 0;
+    for (const k of EVENT_QUEUE_KEYS) {
+      try {
+        if (localStorage.getItem(k) != null) {
+          localStorage.removeItem(k);
+          dropped += 1;
+        }
+      } catch { /* per-key tolerate */ }
+    }
+    // eslint-disable-next-line no-console
+    console.log('Event sync disabled for pilot');
+    if (dropped > 0) {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[Farroway] Cleared ' + dropped
+        + ' stale event-queue key(s) at boot.'
+      );
+    }
+  }
+} catch { /* never throw from boot */ }
+
+// Farmer-profile fallback marker (spec §7). The client's 404
+// handler already supplies a safe-default profile; this single
+// boot-time line tells engineers the fallback codepath is
+// armed without having to hit the dashboard to verify.
+try {
+  // eslint-disable-next-line no-console
+  console.log('Farmer profile fallback active');
+} catch { /* swallow */ }
+
 try {
   if (typeof localStorage !== 'undefined') {
     const _existing = (() => {

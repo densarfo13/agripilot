@@ -346,9 +346,25 @@ router.get('/farmer-profile', authenticate, asyncHandler(async (req, res) => {
     });
   }
   if (!profile) {
-    return res.status(404).json({
-      error: 'Farmer profile not found',
-      code: 'no_farmer_profile',
+    // ─── Pilot stability fix (May 2026) ───
+    // Return 200 with a safe-default profile shape instead of
+    // 404. The previous 404 was triggering a console-error +
+    // legacy redirect path on the client side; for the live
+    // pilot we want the dashboard to render with `profileComplete:
+    // false` and surface the in-app "Complete setup" card
+    // inline, NEVER a redirect. The shape is backwards-
+    // compatible — every existing reader checks for specific
+    // fields (`farm`, `crop`, etc.) which are explicitly null
+    // here, so the legacy "render onboarding" branches still
+    // fire correctly off the missing-data signal alone.
+    return res.json({
+      profileComplete: false,
+      role:     'farmer',
+      userType: 'farmer',
+      name:     'Farmer',
+      farm:     null,
+      crop:     null,
+      location: null,
     });
   }
   res.json(profile);

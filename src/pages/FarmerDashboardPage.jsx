@@ -219,30 +219,42 @@ export default function FarmerDashboardPage() {
             setProfileError('');
             return;
           }
-          // No cache → genuine first-run state, route to setup.
-          // ─── Pilot bypass (May 2026) ───
-          // Under BYPASS_SETUP_FOR_PILOT we NEVER redirect off
-          // the dashboard; the in-page OnboardingWizard /
-          // CompleteSetupCard surfaces missing data inline.
-          // Otherwise a 404 from the server (cold cache, slow
-          // /me round-trip, partial profile) re-creates the
-          // setup-loop class of bug we're explicitly trying
-          // to break.
+          // No cache → install a safe-default profile rather
+          // than redirecting. Spec §5 (May 2026 stability fix):
+          // a 404 must NOT crash the UI, must NOT redirect, and
+          // must surface the inline "Complete setup" card on
+          // Home. The shape mirrors the new server-side 200
+          // response so every downstream reader sees the same
+          // payload regardless of whether the deploy is the
+          // updated server or a stale cached older one.
+          const SAFE_DEFAULT_PROFILE = {
+            profileComplete: false,
+            role:     'farmer',
+            userType: 'farmer',
+            name:     'Farmer',
+            farm:     null,
+            crop:     null,
+            location: null,
+          };
+          // eslint-disable-next-line no-console
+          console.log('[BOOT] 404 — using safe-default farmer profile (no redirect)');
+          setProfile(SAFE_DEFAULT_PROFILE);
+          setProfileError('');
+          // Mirror the safe default into the cache so subsequent
+          // refreshes hit the cache branch above instead of
+          // re-painting the same "missing" path.
+          try {
+            localStorage.setItem(
+              'farroway:farmerProfile',
+              JSON.stringify(SAFE_DEFAULT_PROFILE),
+            );
+          } catch { /* tolerate quota */ }
+          // Surface the inline setup card; never redirect.
           if (BYPASS_SETUP_FOR_PILOT) {
-            // eslint-disable-next-line no-console
-            console.log('[BOOT] farmer missing — pilot bypass keeps user on Home');
             setShowOnboarding(true);
             return;
           }
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] farmer missing — routing to /profile/setup');
           setShowOnboarding(true);
-          try {
-            navigate('/profile/setup', {
-              replace: true,
-              state: { reason: 'no_farmer_profile' },
-            });
-          } catch { /* navigate may throw inside an unmount race; safe to swallow */ }
           return;
         }
 
