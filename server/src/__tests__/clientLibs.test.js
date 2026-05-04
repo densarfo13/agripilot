@@ -1025,6 +1025,135 @@ describe('getWeatherAction', () => {
   });
 });
 
+// ─── Weather Action Engine v2 (richer envelope) ─────────────
+describe('weatherActionEngine.getWeatherAction', () => {
+  it('rain ≥ 60 → rain envelope with full task body', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const r = getWeatherAction({ rainChance: 70 });
+    expect(r.type).toBe('rain');
+    expect(r.icon).toBeTruthy();
+    expect(r.taskTitle).toMatch(/drainage/i);
+    expect(r.reason).toMatch(/water .* sit around/i);
+    expect(r.urgency).toBe('medium');
+    expect(r.cta).toBe('Mark as done');
+  });
+
+  it('temp ≥ 32 → heat envelope with HIGH urgency', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const r = getWeatherAction({ temp: 35 });
+    expect(r.type).toBe('heat');
+    expect(r.urgency).toBe('high');
+    expect(r.taskTitle).toMatch(/cooler hours/i);
+  });
+
+  it('wind ≥ 25 → wind envelope', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const r = getWeatherAction({ windSpeed: 30 });
+    expect(r.type).toBe('wind');
+    expect(r.taskTitle).toMatch(/support/i);
+  });
+
+  it('rain ≤ 20 → dry envelope', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const r = getWeatherAction({ rainChance: 10 });
+    expect(r.type).toBe('dry');
+    expect(r.taskTitle).toMatch(/soil moisture/i);
+  });
+
+  it('normal weather → "Inspect for early stress signs"', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const r = getWeatherAction({ rainChance: 35, temp: 24, windSpeed: 8 });
+    expect(r.type).toBe('normal');
+    expect(r.taskTitle).toMatch(/early stress signs/i);
+    expect(r.urgency).toBe('low');
+  });
+
+  it('condition string trips rain/wind even without numeric thresholds', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    expect(getWeatherAction({ condition: 'Light Rain' }).type).toBe('rain');
+    expect(getWeatherAction({ condition: 'Windy day' }).type).toBe('wind');
+  });
+
+  it('rain ranks above heat when both fire', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    expect(getWeatherAction({ rainChance: 70, temp: 36 }).type).toBe('rain');
+  });
+
+  it('never throws on garbage input', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    expect(() => getWeatherAction(null)).not.toThrow();
+    expect(() => getWeatherAction(undefined)).not.toThrow();
+    expect(() => getWeatherAction([])).not.toThrow();
+    expect(() => getWeatherAction('rainy')).not.toThrow();
+    expect(() => getWeatherAction({ temp: 'hot' })).not.toThrow();
+    expect(getWeatherAction(null).type).toBe('normal');
+  });
+
+  it('every branch returns a frozen envelope with the spec keys', async () => {
+    const { getWeatherAction } = await import('../../../src/lib/weatherActionEngine.js');
+    const grids = [
+      { rainChance: 80 }, { temp: 35 }, { windSpeed: 30 },
+      { rainChance: 5 },  { rainChance: 35 },
+    ];
+    for (const g of grids) {
+      const r = getWeatherAction(g);
+      for (const k of ['type', 'icon', 'insight', 'action',
+                       'taskTitle', 'reason', 'urgency', 'cta']) {
+        expect(typeof r[k]).toBe('string');
+        expect(r[k].length).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+// ─── weatherApi.fetchWeather safe-fallback ──────────────────
+describe('weatherApi.fetchWeather', () => {
+  beforeEach(() => { vi.resetModules(); });
+
+  it('returns the fallback envelope when no API key is set', async () => {
+    // import.meta.env access in vitest is read-only on the
+    // server side; the module's own try/catch around the access
+    // collapses to "no key" automatically.
+    const { fetchWeather, _internal } = await import('../../../src/lib/weatherApi.js');
+    const r = await fetchWeather({ region: 'Lagos' });
+    expect(r.temp).toBeNull();
+    expect(r.condition).toBe(_internal.FALLBACK.condition);
+    expect(r.location).toBe('Lagos');
+  });
+
+  it('returns the default region in the fallback when no region given', async () => {
+    const { fetchWeather, _internal } = await import('../../../src/lib/weatherApi.js');
+    const r = await fetchWeather();
+    expect(r.location).toBe(_internal.FALLBACK.location);
+  });
+
+  it('_normalize coerces a WeatherAPI.com response into the spec envelope', async () => {
+    const { _internal } = await import('../../../src/lib/weatherApi.js');
+    const r = _internal._normalize({
+      current: {
+        temp_c:    27.6,
+        wind_kph:  12.3,
+        condition: { text: 'Light rain' },
+      },
+      forecast: { forecastday: [{ day: { daily_chance_of_rain: 65 } }] },
+      location: { name: 'Accra' },
+    }, null);
+    expect(r.temp).toBe(28);
+    expect(r.windSpeed).toBe(12);
+    expect(r.condition).toBe('Light rain');
+    expect(r.rainChance).toBe(65);
+    expect(r.location).toBe('Accra');
+  });
+
+  it('_normalize falls back gracefully for sparse responses', async () => {
+    const { _internal } = await import('../../../src/lib/weatherApi.js');
+    const r = _internal._normalize({}, 'Kumasi');
+    expect(r.temp).toBeNull();
+    expect(r.windSpeed).toBeNull();
+    expect(r.location).toBe('Kumasi');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

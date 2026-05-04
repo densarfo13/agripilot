@@ -86,13 +86,14 @@ import MarketSignalCard from '../components/MarketSignalCard.jsx';
 import {
   Camera, Sprout, ShoppingCart, Wallet, ArrowRight, HelpCircle,
 } from '../components/icons/lucide.jsx';
-// WeatherIcon used to be imported here for the prior single-line
-// weather pill. The May 2026 Home redesign §3 replaced that pill
-// with a large actionable WeatherActionCard which has its own
-// condition-icon resolver, so the import is no longer needed
-// in this file. WeatherIcon is still consumed by DailyPlanCard
-// and other surfaces — only this Home file dropped it.
-import WeatherActionCard from '../components/home/WeatherActionCard.jsx';
+// Home Screen v2 (May 2026) — animated weather hero. Replaces
+// the prior WeatherActionCard (which is still on disk for any
+// surface that wants the simpler shape). The hero card carries
+// its own per-condition CSS animations defined in src/index.css
+// under .weather-rain / .weather-heat / .weather-wind /
+// .weather-dry. WeatherIcon is no longer imported here — the
+// hero card has its own icon resolver via the action engine.
+import WeatherHeroCard from '../components/WeatherHeroCard.jsx';
 import useEngagementDay from '../hooks/useEngagementDay.js';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -676,20 +677,15 @@ export default function Dashboard() {
           />
         )}
 
-        {/* ── Weather Action Card (May 2026 Home redesign) ─────
-            Large 30–40% screen-height card showing temp +
-            condition + rain + wind + insight + action. Replaces
-            the prior single-line "weather intel pill" so the
-            farmer sees the WHY behind today's task at a glance.
-            Always renders when a profile exists — even with
-            empty weather data the card falls back to a friendly
-            "Weather unavailable. Showing general crop guidance."
-            line so Home is never blank.
-            The legacy WeatherIcon import is retained for
-            DailyPlanCard + similar surfaces; this card uses its
-            own condition-icon resolver internally. */}
+        {/* ── Weather Hero Card (Home Screen v2 — May 2026) ────
+            Large rounded card with subtle per-condition CSS
+            animations (rain / sun pulse / wind streaks / dry
+            pulse). Reads the same loop.weather payload the
+            existing pipeline produces. When the payload is
+            empty the card renders "Weather unavailable" + the
+            fallback action line — Home is never blank. */}
         {loop.profile && (
-          <WeatherActionCard weather={loop.weather || null} />
+          <WeatherHeroCard weather={loop.weather || null} />
         )}
 
         {/* v3 stability layer: classified load-error banner.

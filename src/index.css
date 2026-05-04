@@ -666,3 +666,223 @@ textarea:focus,
 select:focus {
   scroll-margin-bottom: 96px;
 }
+
+/* ─── Weather Hero Card (Home Screen v2 — May 2026) ─────────
+   Large actionable weather card with subtle per-condition
+   animations. Animations are pure CSS transforms on a single
+   ::before pseudo-element so the card stays smooth on mobile.
+   prefers-reduced-motion disables them entirely.
+*/
+.weather-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 260px;
+  border-radius: 24px;
+  padding: 22px;
+  margin: 0 auto 12px;
+  max-width: 32rem;
+  color: #FFFFFF;
+  background: linear-gradient(160deg, #0B1F2A 0%, #123D34 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+  animation: farroway-fade-in 0.32s ease-out;
+}
+
+.weather-hero .weather-bg-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.weather-hero > *:not(.weather-bg-effect) {
+  position: relative;
+  z-index: 1;
+}
+
+.weather-hero .eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.weather-hero h1 {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 8px 0 4px;
+  line-height: 1;
+}
+
+.weather-hero .weather-icon {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.weather-hero .weather-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.weather-hero .weather-condition {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.weather-hero .weather-location {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.weather-hero .weather-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.weather-hero .weather-stats span {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #FFFFFF;
+}
+
+.weather-hero .weather-stats strong {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 700;
+  margin-right: 4px;
+  letter-spacing: 0.02em;
+}
+
+.weather-hero .weather-action {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.weather-hero .weather-action p {
+  margin: 0;
+  font-size: 14px;
+  color: #FCD34D;
+  font-weight: 600;
+}
+
+.weather-hero .weather-action strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 16px;
+  color: #86EFAC;
+  font-weight: 700;
+}
+
+/* Per-condition animated effect layer. Each rule paints its
+   ::before pseudo-element. The .weather-bg-effect div is kept
+   as a future-proof hook for variants that need a real DOM
+   layer (e.g. SVG snowflakes); today the animations live on
+   the ::before. */
+.weather-rain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(transparent, rgba(255, 255, 255, 0.35));
+  background-size: 2px 18px;
+  background-repeat: repeat;
+  opacity: 0.18;
+  animation: farroway-rain-move 0.7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes farroway-rain-move {
+  from { transform: translateY(-20px); }
+  to   { transform: translateY(20px); }
+}
+
+.weather-heat::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 196, 87, 0.25);
+  animation: farroway-sun-pulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes farroway-sun-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.25; }
+  50%      { transform: scale(1.15); opacity: 0.45; }
+}
+
+.weather-wind::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    160deg,
+    transparent 0px,
+    transparent 20px,
+    rgba(255, 255, 255, 0.12) 22px,
+    transparent 24px
+  );
+  animation: farroway-wind-move 2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes farroway-wind-move {
+  from { transform: translateX(-30px); }
+  to   { transform: translateX(30px); }
+}
+
+.weather-dry::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(255, 196, 87, 0.10) 0%,
+    transparent 60%
+  );
+  animation: farroway-dry-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes farroway-dry-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1.0; }
+}
+
+.weather-normal::before {
+  /* No animation — calm gradient is the visual signal. */
+  content: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-rain::before,
+  .weather-heat::before,
+  .weather-wind::before,
+  .weather-dry::before {
+    animation: none;
+  }
+  .weather-hero { animation: none; }
+}
