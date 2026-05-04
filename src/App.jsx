@@ -27,6 +27,10 @@ import BackyardGuard from './components/system/BackyardGuard.jsx';
 import ExperienceFallback from './components/system/ExperienceFallback.jsx';
 import VoiceAssistant from './components/VoiceAssistant.jsx';
 import OfflineSyncBanner from './components/OfflineSyncBanner.jsx';
+// Global toast host — mounted ONCE so every non-React caller
+// (e.g. taskActions.completeTask) can fire toasts via
+// `import { showToast } from '../lib/globalToast.js'`.
+import GlobalToastHost from './components/system/GlobalToastHost.jsx';
 import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
@@ -1293,6 +1297,11 @@ export default function App() {
           src/offline/*. Coexists with the existing OfflineBanner
           (which serves the heavy IndexedDB sync engine). */}
       <OfflineSyncBanner />
+      {/* Global ephemeral toast host. The store lives in
+          src/lib/globalToast.js so non-React callers (task
+          completion, sync recovery) can fire toasts without
+          owning a component handle. Single mount-point. */}
+      <GlobalToastHost />
       </AuthLoadingGate>
       </SeasonProvider>
       </MarketProvider>

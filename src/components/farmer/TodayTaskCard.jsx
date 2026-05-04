@@ -48,6 +48,15 @@ import { trackEvent } from '../../core/analytics.js';
 import { getCurrentLang } from '../../utils/i18n.js';
 import { resolveContext } from '../../core/contextResolver.js';
 import { generateSmartTask } from '../../lib/taskIntelligence.js';
+// Optimistic completion pipeline (May 2026 spec):
+//   • Flips the local taskStore flag instantly so Home/Tasks/
+//     Progress all see the completion in the same render frame.
+//   • Fires the success toast.
+//   • Posts to backend in the background; on failure adds to
+//     the offline queue and surfaces a calmer "Saved on this
+//     device" toast. Never reverts the optimistic flip unless
+//     the backend explicitly rejects (403 cross-user).
+import { completeTask } from '../../lib/taskActions.js';
 
 // Local fallback envelope — used when the network call fails.
 //
@@ -203,6 +212,8 @@ export default function TodayTaskCard({ userType: userTypeProp, onDone }) {
 
   const handleDone = useCallback(() => {
     if (done) return;
+    // Instant local flip — completion check appears
+    // immediately, no network wait.
     setDone(true);
     if (!fired.current.completed) {
       try {
@@ -214,6 +225,24 @@ export default function TodayTaskCard({ userType: userTypeProp, onDone }) {
       } catch { /* swallow */ }
       fired.current.completed = true;
     }
+    // Optimistic completion pipeline — taskStore flip + toast +
+    // background sync. Never throws. Never reverts the local
+    // mark unless the backend explicitly rejects (403). The
+    // existing onDone callback STILL fires so callers wire up
+    // streak / loop transitions normally.
+    try {
+      const taskId = (task && (task.requestId || task.scanId
+                              || task.decisionId || task.ruleId))
+        || 'today-task-' + new Date().toISOString().slice(0, 10);
+      completeTask({
+        id:         String(taskId),
+        decisionId: task?.decisionId || null,
+        title:      task?.todayTaskTitle || task?.primaryAction || null,
+        category:   task?.category || null,
+        ruleId:     task?.ruleId || null,
+        actionType: task?.category || task?.ruleId || null,
+      });
+    } catch { /* never propagate from a click handler */ }
     if (typeof onDone === 'function') {
       try { onDone(task); } catch { /* swallow */ }
     }
