@@ -20,22 +20,27 @@ import { isAdminContext } from '../lib/voice/adminGuard.js';
  *   compact   — if true, shows smaller controls (default: false)
  */
 export default function VoiceBar({ voiceKey, compact = false }) {
-  // Admin-context guard: collapse to nothing so no audio listeners,
-  // no language-change subscriptions, and no SpeechSynthesisUtterance
-  // objects are created on admin surfaces.
-  if (isAdminContext()) return null;
+  // ─── Hook-order fix (May 2026 React #300 hardening) ────────
+  // EVERY hook below must run on every render — even on admin
+  // surfaces where the component returns null. Computing
+  // `isAdmin` synchronously (not as a hook) lets the conditional
+  // return live BELOW the hooks instead of above them.
+  const isAdmin = isAdminContext();
   const { t } = useTranslation();
   const [voiceLang, setVoiceLang] = useState(() => getLanguage());
   const [enabled, setEnabled] = useState(() => isVoiceAvailable());
   const playedRef = useRef({});
 
-  // Persist language preference — uses unified i18n storage
+  // Persist language preference — uses unified i18n storage.
+  // Skipped on admin surfaces via the `isAdmin` guard inside.
   useEffect(() => {
+    if (isAdmin) return;
     setLanguage(voiceLang); // writes to all localStorage keys + dispatches event
-  }, [voiceLang]);
+  }, [voiceLang, isAdmin]);
 
   // Listen for external language changes (e.g. from dashboard language selector)
   useEffect(() => {
+    if (isAdmin) return;
     const handler = (e) => {
       const newLang = e.detail || getLanguage();
       if (newLang !== voiceLang) {
@@ -45,10 +50,11 @@ export default function VoiceBar({ voiceKey, compact = false }) {
     };
     window.addEventListener('farroway:langchange', handler);
     return () => window.removeEventListener('farroway:langchange', handler);
-  }, [voiceLang]);
+  }, [voiceLang, isAdmin]);
 
   // Auto-play once per voiceKey
   useEffect(() => {
+    if (isAdmin) return;
     if (!voiceKey) return;
     // Track prompt shown regardless of enabled state
     trackVoiceEvent('VOICE_PROMPT_SHOWN', { promptKey: voiceKey, language: voiceLang, enabled });
@@ -62,10 +68,15 @@ export default function VoiceBar({ voiceKey, compact = false }) {
       }, 400);
       return () => clearTimeout(t);
     }
-  }, [voiceKey, enabled, voiceLang]);
+  }, [voiceKey, enabled, voiceLang, isAdmin]);
 
   // Stop on unmount
   useEffect(() => () => stopSpeech(), []);
+
+  // Admin-context guard: render nothing on admin surfaces.
+  // Moved BELOW hook declarations so the hook order is stable
+  // across the (rare) admin → non-admin transition.
+  if (isAdmin) return null;
 
   const handleReplay = () => {
     if (enabled && voiceKey) {

@@ -48,11 +48,15 @@ export default function LanguageSwitcher({
   const [open, setOpen] = React.useState(false);
   const wrapRef = React.useRef(null);
 
-  // Feature flag — quietly hide when off (spec §16).
-  if (!isFeatureEnabled('FEATURE_LOCALIZATION')) return null;
+  // ─── Hook-order fix (May 2026) ───
+  // Feature-flag is computed as a value, not a hook gate.
+  // The early return moves BELOW every hook declaration so
+  // hook order is stable across the localization on/off flip.
+  const localizationEnabled = isFeatureEnabled('FEATURE_LOCALIZATION');
 
   // Close on outside click / escape.
   React.useEffect(() => {
+    if (!localizationEnabled) return;
     if (!open) return;
     const onDown = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
@@ -64,7 +68,7 @@ export default function LanguageSwitcher({
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, localizationEnabled]);
 
   // Country-aware option list — Ghana shows en/tw/ha; Nigeria
   // shows en/ha; United States shows en. Everywhere else, fall
@@ -77,6 +81,9 @@ export default function LanguageSwitcher({
     }
     return Object.keys(SUPPORTED_LANGUAGES);
   }, [country]);
+
+  // Feature flag off → hide quietly. Lives BELOW every hook.
+  if (!localizationEnabled) return null;
 
   const activeLabel = getLanguageNativeLabel(lang);
 

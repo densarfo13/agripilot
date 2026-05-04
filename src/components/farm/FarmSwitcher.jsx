@@ -105,57 +105,55 @@ export default function FarmSwitcher() {
     };
   }, [open]);
 
-  // Defensive null returns. The "no farm" empty state is owned
-  // by MyFarmPage's AddFarmEmpty render path; this component
-  // shouldn't try to do its own redirect.
-  if (!Array.isArray(farms) || farms.length === 0) return null;
-
-  const active = farms.find((f) => f && f.id === currentFarmId)
-              || farms[0]
-              || null;
-  if (!active) return null;
-  const activeName = active.farmName || active.name
-                  || tSafe('myFarm.unnamedFarm', 'Farm');
-
-  const isSingle = farms.length <= 1;
-  const labelPrefix = tSafe('farmSwitcher.label', 'Farm');
-
-  // Multi-Farm Switcher §3 — search filter. Case-insensitive
-  // substring match against farm name + region. When the query
-  // is empty (or the user has ≤ threshold farms), filtered ===
-  // farms.
-  const showSearch = farms.length > SEARCH_THRESHOLD;
+  // ─── Hook-order fix (May 2026) ───
+  // Both useMemo blocks were previously after the
+  // `if (!Array.isArray(farms) || farms.length === 0) return null`
+  // gate, which trips rules-of-hooks. Hoisted ABOVE every early
+  // return so the hook count is stable across the empty-farms
+  // transition. Both memos are pure derivations whose results
+  // are simply discarded on the no-farms branch.
+  const safeFarms = Array.isArray(farms) ? farms : [];
+  const showSearch = safeFarms.length > SEARCH_THRESHOLD;
   const filteredFarms = useMemo(() => {
-    if (!showSearch || !query.trim()) return farms;
+    if (!showSearch || !query.trim()) return safeFarms;
     const q = query.trim().toLowerCase();
-    return farms.filter((f) => {
+    return safeFarms.filter((f) => {
       const name = String(f.farmName || f.name || '').toLowerCase();
       const region = String(f.region || f.state || '').toLowerCase();
       return name.includes(q) || region.includes(q);
     });
-  }, [farms, query, showSearch]);
+  }, [safeFarms, query, showSearch]);
 
-  // Multi-Farm Switcher §6 — recent-farms quick-switch rail.
-  // Surfaces up to RECENT_FARMS_LIMIT IDs that aren't the
-  // currently-active farm. Hidden when search is active OR the
-  // recent-cohort is empty so it never duplicates rows shown
-  // below in the full list. Pure derivation — `getRecentFarmIds`
-  // reads localStorage on every render which is cheap (the
-  // store is capped at 10 rows).
   const recentRows = useMemo(() => {
     if (showSearch && query.trim()) return [];
     let ids = [];
     try { ids = getRecentFarmIds({ exclude: currentFarmId, limit: RECENT_FARMS_LIMIT }); }
     catch { ids = []; }
     if (!ids.length) return [];
-    const byId = new Map(farms.map((f) => [f.id, f]));
+    const byId = new Map(safeFarms.map((f) => [f.id, f]));
     const rows = [];
     for (const id of ids) {
       const row = byId.get(id);
       if (row) rows.push(row);
     }
     return rows;
-  }, [farms, currentFarmId, query, showSearch]);
+  }, [safeFarms, currentFarmId, query, showSearch]);
+
+  // Defensive null returns — moved BELOW every hook. The "no
+  // farm" empty state is owned by MyFarmPage's AddFarmEmpty
+  // render path; this component shouldn't try to do its own
+  // redirect.
+  if (safeFarms.length === 0) return null;
+
+  const active = safeFarms.find((f) => f && f.id === currentFarmId)
+              || safeFarms[0]
+              || null;
+  if (!active) return null;
+  const activeName = active.farmName || active.name
+                  || tSafe('myFarm.unnamedFarm', 'Farm');
+
+  const isSingle = safeFarms.length <= 1;
+  const labelPrefix = tSafe('farmSwitcher.label', 'Farm');
 
   function handleSelect(id) {
     setOpen(false);

@@ -113,48 +113,45 @@ export default function BottomTabNav() {
   // tab key fallback rather than humanised English.
   useTranslation();
 
-  // Self-hide during setup / onboarding flows so users don't
-  // accidentally navigate away mid-setup and leave a partial
-  // farm/garden record behind.
-  if (_isSetupPath(location?.pathname || '')) return null;
-
-  // Region-aware tab list (spec §10). Reads through the
-  // existing ProfileContext so we never need an extra fetch.
-  // Falls back to the farm tab list whenever profile / region
-  // is unknown — pilots running today are unaffected.
-  // Direct hook call — no try/catch (which would desync React's
-  // hook counter). useProfileOrNull returns null when no
-  // provider is mounted (login pages), allowing BottomTabNav to
-  // render safely there.
+  // ─── Hook-order fix (May 2026 React #300 hardening) ────────
+  // ALL hooks (useProfileOrNull, useExperience) MUST run on every
+  // render — not gated by the _isSetupPath() early return below
+  // and NOT wrapped in a try/catch. The previous shape had
+  // useExperience inside a `try { ... } catch {}` block which is
+  // a textbook hooks-rule violation: if the hook throws, React's
+  // hook counter desyncs and the next render trips error #300.
+  //
+  // useExperience has its own internal try/catch around the
+  // localStorage / event-listener wiring; calling it directly is
+  // safe.
   const _profileCtx = useProfileOrNull();
   const profile = (_profileCtx && _profileCtx.profile) || null;
   const country = profile?.country || profile?.countryCode || null;
-  // Context-driven UI spec §2 — `activeContextType` from
-  // useExperience is the canonical signal: 'farm' shows all
-  // tabs, 'garden' shows the strict 4-tab subset (no Funding /
-  // Sell). Falls back to the legacy farmType + region heuristic
-  // when useExperience can't resolve a snapshot (login screens
-  // mount BottomTabNav outside the experience scope).
+
+  const exp = useExperience();
   let activeContextType = null;
   let farmType = profile?.farmType || null;
-  try {
-    const exp = useExperience();
-    if (exp && (exp.activeContextType === 'garden' || exp.activeContextType === 'farm')) {
-      activeContextType = exp.activeContextType;
+  if (exp && (exp.activeContextType === 'garden' || exp.activeContextType === 'farm')) {
+    activeContextType = exp.activeContextType;
+  }
+  if (exp && exp.activeEntity && exp.activeEntity.farmType) {
+    farmType = exp.activeEntity.farmType;
+  } else if (exp && exp.experience === exp.EXPERIENCE.GARDEN) {
+    farmType = 'backyard';
+  } else if (exp && exp.experience === exp.EXPERIENCE.FARM) {
+    // Only override if the profile farmType IS a backyard one;
+    // otherwise leave the existing value (some farms ship as
+    // 'commercial', not 'small_farm').
+    if (!farmType || farmType === 'backyard' || farmType === 'home_garden') {
+      farmType = 'small_farm';
     }
-    if (exp && exp.activeEntity && exp.activeEntity.farmType) {
-      farmType = exp.activeEntity.farmType;
-    } else if (exp && exp.experience === exp.EXPERIENCE.GARDEN) {
-      farmType = 'backyard';
-    } else if (exp && exp.experience === exp.EXPERIENCE.FARM) {
-      // Only override if the profile farmType IS a backyard one;
-      // otherwise leave the existing value (some farms ship as
-      // 'commercial', not 'small_farm').
-      if (!farmType || farmType === 'backyard' || farmType === 'home_garden') {
-        farmType = 'small_farm';
-      }
-    }
-  } catch { /* outside hook scope — fall back to profile */ }
+  }
+
+  // Self-hide during setup / onboarding flows so users don't
+  // accidentally navigate away mid-setup and leave a partial
+  // farm/garden record behind. Lives BELOW every hook so the
+  // hook order is stable across the path-change transition.
+  if (_isSetupPath(location?.pathname || '')) return null;
   // Spec §2: prefer activeContextType. Only fall back to the
   // legacy region+farmType heuristic when context is unknown
   // (login flow / pre-onboarding paths).

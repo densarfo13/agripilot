@@ -83,15 +83,17 @@ export default function DashboardSafeLoader({
   backendAvailable = true,
   children,
 }) {
+  // ─── Hook-order fix (May 2026 React #300 hardening) ────────
+  // ALL hooks must run on every render. The flag-off short-
+  // circuit was previously between hook calls, which trips
+  // the rules-of-hooks linter. Keep the flag-off branch but
+  // move it BELOW every hook declaration; the safe-session
+  // bootstrap simply runs and is ignored when the flag is off.
   const location = useLocation();
   const navigate = useNavigate();
   const redirectCountRef = React.useRef(0);
 
-  // Flag off → render children straight through. Keeps
-  // existing pilots unchanged.
-  if (!isFeatureEnabled('FEATURE_SAFE_SESSION')) {
-    return children || null;
-  }
+  const safeSessionEnabled = isFeatureEnabled('FEATURE_SAFE_SESSION');
 
   const session = useSessionBootstrap({
     user, profile, farms, activeFarm,
@@ -102,13 +104,19 @@ export default function DashboardSafeLoader({
   // between dashboard and setup; only redirect once per
   // session, and never if the user is already there.
   React.useEffect(() => {
+    if (!safeSessionEnabled) return;
     if (session.status !== 'needs_onboarding') return;
     if (location.pathname === SETUP_PATH) return;
     if (redirectCountRef.current >= REDIRECT_LIMIT) return;
     redirectCountRef.current += 1;
     try { navigate(SETUP_PATH, { replace: true }); }
     catch { /* ignore */ }
-  }, [session.status, location.pathname, navigate]);
+  }, [safeSessionEnabled, session.status, location.pathname, navigate]);
+
+  // Flag off → render children straight through.
+  if (!safeSessionEnabled) {
+    return children || null;
+  }
 
   if (session.status === 'loading') {
     return <SafeSplash />;
