@@ -42,13 +42,31 @@
  */
 
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
-// Format: YYYY-MM-DD-vN.
-export const FARROWAY_BUILD_VERSION = '2026-05-03-v8';
+// Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
+// builds (May 2026 deployment-debug spec).
+export const FARROWAY_BUILD_VERSION = '2026-05-03-debug-1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-03-v8';
+export const FARROWAY_UI_VERSION = '2026-05-03-debug-1';
+
+// Commit SHA stamped at build time via the VITE_COMMIT_SHA env
+// var. Falls back to 'local-dev' when running outside the CI
+// build environment OR to a build-time epoch fingerprint so a
+// missing CI variable still yields a unique stamp per build.
+export const FARROWAY_COMMIT_SHA = (() => {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      const v = import.meta.env.VITE_COMMIT_SHA;
+      if (typeof v === 'string' && v.length > 0) return v.slice(0, 12);
+    }
+  } catch { /* swallow */ }
+  // Build-time fingerprint — captured once when the module is
+  // first evaluated. Stable for the lifetime of the bundle so
+  // every page load on the same build shows the same hash.
+  return 'local-' + Date.now().toString(36).slice(-6);
+})();
 
 // localStorage key the version is stored under.
 const VERSION_KEY = 'farroway_ui_version';

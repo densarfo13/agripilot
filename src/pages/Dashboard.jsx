@@ -17,7 +17,7 @@
 import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
+import { FARROWAY_BUILD_VERSION, FARROWAY_COMMIT_SHA } from '../lib/forceUiReset.js';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -1220,6 +1220,10 @@ export default function Dashboard() {
         }}
       >
         Farroway Build: {FARROWAY_BUILD_VERSION}
+        {' · '}
+        <span style={{ opacity: 0.65 }}>
+          {FARROWAY_COMMIT_SHA}
+        </span>
       </div>
     </div>
   );

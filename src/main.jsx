@@ -12,7 +12,19 @@ import {
   ensureUiVersion,
   killServiceWorkerAndCaches,
   validateLocalStorageShapes,
+  FARROWAY_BUILD_VERSION,
+  FARROWAY_COMMIT_SHA,
 } from './lib/forceUiReset.js';
+// Expose build constants on window for the deployment-sanity
+// logs below + DevTools `window.__FARROWAY_BUILD_VERSION`
+// inspection. Read-only convenience — never used as a state
+// store.
+try {
+  if (typeof window !== 'undefined') {
+    window.__FARROWAY_BUILD_VERSION = FARROWAY_BUILD_VERSION;
+    window.__FARROWAY_COMMIT_SHA    = FARROWAY_COMMIT_SHA;
+  }
+} catch { /* swallow */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
 const _farrowayResettingUi = ensureUiVersion();
@@ -70,6 +82,47 @@ try {
     // eslint-disable-next-line no-console
     console.log('Migration ran:', Boolean(migrationRan));
   }
+} catch { /* never throw from a diagnostic */ }
+
+// ── Deployment sanity logs (spec §7 of debug pass) ──────────────
+// Lets engineers confirm at a glance which build, branch, and
+// API target the user is actually running. Renders one block
+// per boot — never the token value, never user-identifying data.
+try {
+  // Pull the build constants without re-importing the module
+  // (forceUiReset.js was imported above; the constants are
+  // available via that import). We resolve them lazily inside
+  // a try block so a missing constant doesn't crash the boot.
+  // eslint-disable-next-line no-console
+  console.log('───────────────  Farroway deployment  ───────────────');
+  // eslint-disable-next-line no-console
+  console.log('App version:',
+    (typeof window !== 'undefined' && window.__FARROWAY_BUILD_VERSION)
+      || '(see "Farroway Build:" line above)');
+  // eslint-disable-next-line no-console
+  console.log('Current URL:',
+    typeof window !== 'undefined' && window.location ? window.location.href : '(no window)');
+  // eslint-disable-next-line no-console
+  console.log('Environment:',
+    (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE) || 'production');
+  // eslint-disable-next-line no-console
+  console.log('API base URL:',
+    (typeof import.meta !== 'undefined' && import.meta.env
+      && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL))
+      || '/api (relative — Vite proxy or Express prod)');
+  // Feature flags — just the public ones. Never log secrets.
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    const flags = {};
+    for (const k of Object.keys(import.meta.env)) {
+      if (k.startsWith('VITE_FEATURE_') || k.startsWith('FEATURE_')) {
+        flags[k] = import.meta.env[k];
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.log('Feature flags:', Object.keys(flags).length > 0 ? flags : '(none from import.meta.env)');
+  }
+  // eslint-disable-next-line no-console
+  console.log('───────────────────────────────────────────────────────');
 } catch { /* never throw from a diagnostic */ }
 
 import React from 'react';
