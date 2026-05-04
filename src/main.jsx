@@ -1,3 +1,13 @@
+// ── Forced UI cache/state reset (must run BEFORE anything else) ──
+//
+// Compares the in-bundle FARROWAY_UI_VERSION against the value in
+// localStorage. On mismatch: preserves the auth token + user,
+// clears known stale client-state keys, unregisters service
+// workers, drops every `farroway*` cache, then reloads ONCE.
+// The auth session is never cleared — the user is NOT logged out.
+import { ensureUiVersion } from './lib/forceUiReset.js';
+const _farrowayResettingUi = ensureUiVersion();
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
@@ -19,6 +29,13 @@ import './index.css';
 // runs in parallel; the two systems stay in sync via
 // farroway:langchange events.
 import './i18n/i18next.js';
+
+// When a UI version reset is in progress, ensureUiVersion() has
+// already started the async cleanup-then-reload pipeline. Skip
+// every side-effect below — none of them should mount on a page
+// that's about to navigate. The reload will re-enter main.jsx with
+// the new version stamped, and this gate becomes false.
+if (!_farrowayResettingUi) {
 
 // Initialize offline sync coordinator (auto-flushes on reconnect + visibility)
 initSyncCoordinator();
@@ -106,3 +123,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+} // end if (!_farrowayResettingUi)
