@@ -156,6 +156,20 @@ export function useWeatherSafe(opts) {
     })();
     const fallbackLabel = (loc && loc.label) || 'Your area';
 
+    // Spec §3: if no lat/lng available, skip the network call
+    // entirely. Weather data without coordinates is meaningless
+    // and we don't want to hit /api/weather with empty params.
+    // Show a prompt so the user knows adding a location helps.
+    if (!loc || !Number.isFinite(loc.lat) || !Number.isFinite(loc.lng)) {
+      setWeather({
+        ...FALLBACK_WEATHER,
+        locationLabel: 'Add location for better weather tips',
+      });
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
     // Cancel any prior in-flight request before starting a new one.
     try { abortRef.current?.abort(); } catch { /* swallow */ }
     const controller = new AbortController();

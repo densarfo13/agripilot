@@ -98,9 +98,9 @@ export const DISABLE_EVENTS = true;
  * LIVE_WEATHER_ENABLED — kill switch for the live /api/weather
  * fetch in `useWeatherSafe`.
  *
- * When false (default during the May 2026 pilot stability
- * restore): `useWeatherSafe` skips the network call entirely
- * and returns the documented fallback shape immediately:
+ * When true (re-enabled 2026-05-04): `useWeatherSafe` fetches
+ * /api/weather with a 6s timeout and AbortController. On any
+ * failure it paints the documented fallback shape:
  *
  *   { temp: null,
  *     condition: 'Weather unavailable',
@@ -109,20 +109,21 @@ export const DISABLE_EVENTS = true;
  *     locationLabel: 'Your area',
  *     source: 'fallback' }
  *
+ * Spec §3 (no-location skip): when the user has no saved
+ * lat/lng, the hook skips the network call entirely and
+ * returns the fallback with locationLabel set to
+ * 'Add location for better weather tips'. No /api/weather
+ * request is issued without coordinates.
+ *
  * The downstream UI is unchanged — PilotHome still renders the
  * weather hero card, weatherActionEngine still picks a task,
  * and useTodayTaskSafe still ships the spec-literal default.
- * The user simply doesn't see a live forecast until the live
- * pipeline is re-enabled.
  *
  * Why a kill switch (and not a removal): the network code is
- * production-ready and well-tested. We turn it off via a
- * single boolean now to remove ANY chance the in-flight
- * /api/weather request could surface a regression while we
- * stabilise the pilot. Flip back to true in a single commit
- * when the live pipeline is ready to ship.
+ * production-ready and well-tested. Flip back to false in a
+ * single commit if a regression surfaces post-deploy.
  */
-export const LIVE_WEATHER_ENABLED = false;
+export const LIVE_WEATHER_ENABLED = true;
 
 /**
  * FEATURE_EVENT_SYNC
