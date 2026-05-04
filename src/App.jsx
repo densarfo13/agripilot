@@ -41,6 +41,10 @@ import AppShellTheme from './components/system/AppShellTheme.jsx';
 // ngo = teal, buyer = amber). Pure observer; coexists with
 // AppShellTheme (different class prefix → no conflict).
 import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
+// Role-aware home redirect — sends the user to /home (farmer),
+// /dashboard (ngo), or /market (buyer) based on their signed-in
+// role. Drives the new role-routing system in lib/roleFeatures.js.
+import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
 import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
@@ -900,6 +904,16 @@ export default function App() {
               via marketStore.saveBuyerInterest; farmer phone
               is never exposed publicly. */}
           <Route path="/marketplace" element={<Marketplace />} />
+          {/* Role-routing canonical paths (May 2026).
+              /home    → role-aware redirect (farmer→/dashboard,
+                         ngo→/dashboard, buyer→/market).
+              /market  → canonical buyer landing → bounces to
+                         /market/browse which already exists.
+              These keep the spec's role-routing contract
+              clean while reusing the existing destination
+              pages — no codebase duplication. */}
+          <Route path="/home"   element={<RoleHomeRedirect />} />
+          <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
           <Route path="/start" element={<FarmerEntry />} />

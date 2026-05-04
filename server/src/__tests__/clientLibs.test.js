@@ -1546,6 +1546,108 @@ describe('RoleThemeApplicator structural smoke', () => {
   });
 });
 
+// ─── Role-based feature system (May 2026) ──────────────────
+describe('roleFeatures', () => {
+  it('getHomePathForRole returns the spec paths', async () => {
+    const { getHomePathForRole } = await import('../../../src/lib/roleFeatures.js');
+    expect(getHomePathForRole('farmer')).toBe('/home');
+    expect(getHomePathForRole('ngo')).toBe('/dashboard');
+    expect(getHomePathForRole('buyer')).toBe('/market');
+  });
+
+  it('unknown / null / non-string roles fall back to farmer', async () => {
+    const { getHomePathForRole } = await import('../../../src/lib/roleFeatures.js');
+    expect(getHomePathForRole(null)).toBe('/home');
+    expect(getHomePathForRole(undefined)).toBe('/home');
+    expect(getHomePathForRole('')).toBe('/home');
+    expect(getHomePathForRole(42)).toBe('/home');
+    expect(getHomePathForRole('platform_admin')).toBe('/home');
+  });
+
+  it('legacy ngo/buyer subtypes resolve to their canonical role', async () => {
+    const { getHomePathForRole, hasFeature } = await import('../../../src/lib/roleFeatures.js');
+    expect(getHomePathForRole('ngo_admin')).toBe('/dashboard');
+    expect(getHomePathForRole('ngo_officer')).toBe('/dashboard');
+    expect(getHomePathForRole('ngo_agent')).toBe('/dashboard');
+    expect(getHomePathForRole('buyer_admin')).toBe('/market');
+    expect(hasFeature('ngo_admin', 'analytics')).toBe(true);
+    expect(hasFeature('buyer_admin', 'marketplace')).toBe(true);
+  });
+
+  it('getNavTabsForRole returns the spec tab lists', async () => {
+    const { getNavTabsForRole } = await import('../../../src/lib/roleFeatures.js');
+    const farmer = getNavTabsForRole('farmer').map((t) => t.key);
+    const ngo    = getNavTabsForRole('ngo').map((t) => t.key);
+    const buyer  = getNavTabsForRole('buyer').map((t) => t.key);
+    expect(farmer).toEqual(['home', 'grow', 'tasks', 'progress', 'scan']);
+    expect(ngo).toEqual(['dashboard', 'farmers', 'analytics']);
+    expect(buyer).toEqual(['marketplace', 'listings', 'contact']);
+  });
+
+  it('hasFeature gates surfaces correctly per role', async () => {
+    const { hasFeature } = await import('../../../src/lib/roleFeatures.js');
+    // Farmer
+    expect(hasFeature('farmer', 'tasks')).toBe(true);
+    expect(hasFeature('farmer', 'scan')).toBe(true);
+    expect(hasFeature('farmer', 'analytics')).toBe(false);
+    expect(hasFeature('farmer', 'marketplace')).toBe(false);
+    // NGO
+    expect(hasFeature('ngo', 'dashboard')).toBe(true);
+    expect(hasFeature('ngo', 'farmers')).toBe(true);
+    expect(hasFeature('ngo', 'analytics')).toBe(true);
+    expect(hasFeature('ngo', 'tasks')).toBe(false);
+    expect(hasFeature('ngo', 'scan')).toBe(false);
+    // Buyer
+    expect(hasFeature('buyer', 'marketplace')).toBe(true);
+    expect(hasFeature('buyer', 'listings')).toBe(true);
+    expect(hasFeature('buyer', 'contact')).toBe(true);
+    expect(hasFeature('buyer', 'tasks')).toBe(false);
+  });
+
+  it('hasFeature returns false for unknown keys without throwing', async () => {
+    const { hasFeature } = await import('../../../src/lib/roleFeatures.js');
+    expect(hasFeature('farmer', 'banana')).toBe(false);
+    expect(hasFeature('farmer', '')).toBe(false);
+    expect(hasFeature('farmer', null)).toBe(false);
+    expect(hasFeature('farmer', undefined)).toBe(false);
+  });
+
+  it('returns frozen surface objects (no mutation possible)', async () => {
+    const { getRoleFeatures } = await import('../../../src/lib/roleFeatures.js');
+    const f = getRoleFeatures('farmer');
+    expect(Object.isFrozen(f)).toBe(true);
+    expect(Object.isFrozen(f.surfaces)).toBe(true);
+    expect(Object.isFrozen(f.navTabs)).toBe(true);
+    expect(Object.isFrozen(f.navTabs[0])).toBe(true);
+  });
+
+  it('every nav tab has key + path + label strings', async () => {
+    const { getNavTabsForRole } = await import('../../../src/lib/roleFeatures.js');
+    for (const role of ['farmer', 'ngo', 'buyer']) {
+      const tabs = getNavTabsForRole(role);
+      expect(tabs.length).toBeGreaterThan(0);
+      for (const tab of tabs) {
+        expect(typeof tab.key).toBe('string');
+        expect(typeof tab.path).toBe('string');
+        expect(typeof tab.label).toBe('string');
+        expect(tab.path.startsWith('/')).toBe(true);
+      }
+    }
+  });
+});
+
+describe('RoleHomeRedirect + RoleAwareBottomNav structural smoke', () => {
+  it('RoleHomeRedirect exports a default React component', async () => {
+    const mod = await import('../../../src/components/system/RoleHomeRedirect.jsx');
+    expect(typeof mod.default).toBe('function');
+  });
+
+  it('RoleAwareBottomNav exports a default React component', async () => {
+    const mod = await import('../../../src/components/RoleAwareBottomNav.jsx');
+    expect(typeof mod.default).toBe('function');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {
