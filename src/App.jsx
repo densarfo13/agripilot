@@ -35,6 +35,12 @@ import GlobalToastHost from './components/system/GlobalToastHost.jsx';
 // `theme-*` class to <body> so the gradient + cards re-tint
 // to match rain / heat / wind / dry / normal. Pure observer.
 import AppShellTheme from './components/system/AppShellTheme.jsx';
+// Role theme applicator — reads the signed-in user's role and
+// applies a `role-*` class to <body> so CTAs / links / badges /
+// progress bars all tint to the role accent (farmer = green,
+// ngo = teal, buyer = amber). Pure observer; coexists with
+// AppShellTheme (different class prefix → no conflict).
+import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 import { syncQueue } from './offline/syncManager.js';
 import { makeTransport as makeOfflineTransport } from './lib/sync/transport.js';
 import { refreshSession } from './lib/api.js';
@@ -1312,6 +1318,11 @@ export default function App() {
           renders nothing, just toggles a `theme-*` class on
           <body>. */}
       <AppShellTheme />
+      {/* Role theme applicator. Reads useAuthOrNull(); never
+          throws outside the provider. Toggles a `role-*` class
+          on <body> independently of the weather class so the
+          two systems compose. Pure observer. */}
+      <RoleThemeApplicator />
       </AuthLoadingGate>
       </SeasonProvider>
       </MarketProvider>

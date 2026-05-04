@@ -1490,6 +1490,62 @@ describe('AppShellTheme structural smoke', () => {
   });
 });
 
+// ─── Role-based theming (May 2026) ──────────────────────────
+describe('getRoleClass', () => {
+  it('maps known roles to their class', async () => {
+    const { getRoleClass } = await import('../../../src/lib/roleTheme.js');
+    expect(getRoleClass('farmer')).toBe('role-farmer');
+    expect(getRoleClass('ngo')).toBe('role-ngo');
+    expect(getRoleClass('buyer')).toBe('role-buyer');
+  });
+
+  it('handles ngo / buyer subtypes', async () => {
+    const { getRoleClass } = await import('../../../src/lib/roleTheme.js');
+    expect(getRoleClass('ngo_admin')).toBe('role-ngo');
+    expect(getRoleClass('ngo_officer')).toBe('role-ngo');
+    expect(getRoleClass('ngo_agent')).toBe('role-ngo');
+    expect(getRoleClass('buyer_admin')).toBe('role-buyer');
+  });
+
+  it('falls back to role-farmer for unknown / null / non-string inputs', async () => {
+    const { getRoleClass } = await import('../../../src/lib/roleTheme.js');
+    expect(getRoleClass()).toBe('role-farmer');
+    expect(getRoleClass(null)).toBe('role-farmer');
+    expect(getRoleClass(undefined)).toBe('role-farmer');
+    expect(getRoleClass('')).toBe('role-farmer');
+    expect(getRoleClass(42)).toBe('role-farmer');
+    expect(getRoleClass({ role: 'ngo' })).toBe('role-farmer');
+    expect(getRoleClass('platform_admin')).toBe('role-farmer');
+  });
+
+  it('is case-insensitive and trims whitespace', async () => {
+    const { getRoleClass } = await import('../../../src/lib/roleTheme.js');
+    expect(getRoleClass('NGO')).toBe('role-ngo');
+    expect(getRoleClass('  Buyer  ')).toBe('role-buyer');
+    expect(getRoleClass('Farmer')).toBe('role-farmer');
+  });
+
+  it('every output starts with role- and is non-empty', async () => {
+    const { getRoleClass, _internal } = await import('../../../src/lib/roleTheme.js');
+    for (const r of _internal.KNOWN_ROLES) {
+      const cls = getRoleClass(r);
+      expect(cls.startsWith('role-')).toBe(true);
+      expect(cls.length).toBeGreaterThan('role-'.length);
+    }
+  });
+});
+
+describe('RoleThemeApplicator structural smoke', () => {
+  it('exports a default React component + role-class allow-list', async () => {
+    const mod = await import('../../../src/components/system/RoleThemeApplicator.jsx');
+    expect(typeof mod.default).toBe('function');
+    expect(Array.isArray(mod._internal.ALL_ROLE_CLASSES)).toBe(true);
+    expect(mod._internal.ALL_ROLE_CLASSES).toEqual([
+      'role-farmer', 'role-ngo', 'role-buyer',
+    ]);
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

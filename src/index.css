@@ -36,6 +36,17 @@
   --warning:           #f4c430;
   --danger:            #ff6b6b;
 
+  /* ── Role accent tokens (May 2026) ───────────────────────
+     Default to the farmer palette so unauthenticated /
+     unknown-role boots still render the canonical green
+     accent. The .role-* classes below override these tokens
+     without touching --text-* or --card-* — text colour and
+     card backgrounds are stable across every role per the
+     spec's readability guarantee. */
+  --role-accent:     #2ecc71;
+  --role-accent-ink: #042c1a;
+  --role-overlay:    rgba(46, 204, 113, 0.10);
+
   /* ── Legacy Farroway brand tokens (kept for back-compat ──
      existing components still reference these). New work
      should prefer the nature-dark tokens above. */
@@ -82,17 +93,18 @@
 }
 
 html, body, #root { height: 100%; }
-/* Nature-dark shell — three-stop gradient + soft green halo.
-   The radial-gradient sits on top of the linear so the green
-   highlight at the top blooms over the deeper foliage below.
-   The whole stack listens to weather theme classes via
-   --bg-top / --bg-mid / --bg-bottom — a class swap on the
-   body re-tints the entire app. */
+/* Nature-dark shell — three-stop gradient + soft role halo.
+   The radial-gradient at the top reads from --role-overlay so
+   the bloom subtly reflects whichever role is signed in
+   (farmer / ngo / buyer). The linear gradient still reads
+   from --bg-top / --bg-mid / --bg-bottom so weather theme
+   classes (theme-rain / etc.) keep working unchanged. ONE
+   base background, role-tinted at the top. */
 body, .app-shell {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: var(--text-primary);
   background:
-    radial-gradient(circle at top, rgba(46, 204, 113, 0.14), transparent 38%),
+    radial-gradient(circle at top, var(--role-overlay), transparent 40%),
     linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bottom) 100%);
   background-attachment: fixed;
   min-height: 100vh;
@@ -953,15 +965,15 @@ select:focus {
 .primary-btn,
 .cta,
 button.primary {
-  background:    var(--accent-green);
-  color:         var(--accent-green-dark);
+  background:    var(--role-accent);
+  color:         var(--role-accent-ink);
   border:        none;
   border-radius: 14px;
   font-weight:   800;
   padding:       0.85rem 1.4rem;
   cursor:        pointer;
   min-height:    48px;
-  box-shadow:    0 8px 22px rgba(46, 204, 113, 0.28);
+  box-shadow:    0 8px 22px var(--role-overlay);
   transition:    transform 200ms ease, box-shadow 200ms ease;
 }
 .primary-btn:active,
@@ -1038,5 +1050,68 @@ body.theme-normal,
 
 .bottom-nav .active,
 .bottom-nav [data-active="true"] {
-  color: var(--accent-green);
+  color: var(--role-accent);
+}
+
+/* ─── Role-based theme overrides (May 2026) ─────────────────
+   Three role classes that override ONLY the three role
+   tokens. Text colour and card backgrounds stay constant —
+   contrast against the base background is never broken by a
+   role swap. Apply the class on <body> via lib/roleTheme.js
+   (or on .app-shell — both selectors land identically).
+*/
+.role-farmer,
+body.role-farmer,
+.app-shell.role-farmer {
+  --role-accent:     #2ecc71;
+  --role-accent-ink: #042c1a;
+  --role-overlay:    rgba(46, 204, 113, 0.12);
+}
+
+.role-ngo,
+body.role-ngo,
+.app-shell.role-ngo {
+  --role-accent:     #2aa7a1;   /* teal / blue-green */
+  --role-accent-ink: #062b2a;
+  --role-overlay:    rgba(42, 167, 161, 0.12);
+}
+
+.role-buyer,
+body.role-buyer,
+.app-shell.role-buyer {
+  --role-accent:     #f4a261;   /* warm amber */
+  --role-accent-ink: #2a1806;
+  --role-overlay:    rgba(244, 162, 97, 0.12);
+}
+
+/* Common interactive elements that should pick up the role
+   accent. Each rule reads from the role tokens — toggling the
+   role class on <body> re-tints all of them at once with no
+   per-component repaint. */
+.badge,
+.chip.active {
+  background: var(--role-overlay);
+  border:     1px solid var(--card-border);
+  color:      var(--text-primary);
+  border-radius: 999px;
+  padding:    4px 10px;
+  font-size:  12px;
+  font-weight: 700;
+}
+
+.link,
+a.link,
+.nav .active {
+  color: var(--role-accent);
+}
+
+.progress-bar__fill {
+  background: var(--role-accent);
+  transition: width 320ms ease;
+}
+
+.header-role-strip {
+  height: 4px;
+  background: linear-gradient(90deg, var(--role-accent), transparent);
+  opacity: 0.8;
 }
