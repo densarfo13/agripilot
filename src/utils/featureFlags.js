@@ -110,7 +110,7 @@ const DEFAULTS = Object.freeze({
   // 404. Each surface checks its flag at render time and
   // shows "Feature temporarily disabled for pilot." when off.
   FEATURE_SCAN:    false,
-  FEATURE_SELL:    false,
+  FEATURE_SELL:    true,  // Phase 1 restore — 2026-05-04
   FEATURE_BUYER:   false,
   FEATURE_NGO:     false,
   FEATURE_ADMIN:   false,

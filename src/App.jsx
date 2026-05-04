@@ -1183,9 +1183,11 @@ export default function App() {
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
             <Route path="/sell" element={
-              <FeatureGated flag="FEATURE_SELL" feature="sell">
-                <BackyardGuard surface="sell"><Sell /></BackyardGuard>
-              </FeatureGated>
+              <RouteErrorBoundary routeName="sell">
+                <FeatureGated flag="FEATURE_SELL" feature="sell">
+                  <BackyardGuard surface="sell"><Sell /></BackyardGuard>
+                </FeatureGated>
+              </RouteErrorBoundary>
             } />
             {/* /buy — simple buyer marketplace. The page itself
                 checks the `buyMarketplace` flag and renders a
