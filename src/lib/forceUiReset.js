@@ -44,12 +44,12 @@
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
 // builds (May 2026 deployment-debug spec).
-export const FARROWAY_BUILD_VERSION = '2026-05-04-no-sw-v1';
+export const FARROWAY_BUILD_VERSION = '2026-05-04-railway-check-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = '2026-05-04-no-sw-v1';
+export const FARROWAY_UI_VERSION = '2026-05-04-railway-check-v1';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
 // var. Falls back to 'local-dev' when running outside the CI
@@ -66,6 +66,22 @@ export const FARROWAY_COMMIT_SHA = (() => {
   // first evaluated. Stable for the lifetime of the bundle so
   // every page load on the same build shows the same hash.
   return 'local-' + Date.now().toString(36).slice(-6);
+})();
+
+// Build ID — separate channel from FARROWAY_BUILD_VERSION. The
+// version constant ships with the source; VITE_BUILD_ID is set
+// by the deploy environment (Railway / Vercel / etc.) so each
+// CI build can stamp its own identifier without a code change.
+// Falls back to FARROWAY_BUILD_VERSION when the env var is
+// missing so the marker is always non-empty.
+export const FARROWAY_BUILD_ID = (() => {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      const v = import.meta.env.VITE_BUILD_ID;
+      if (typeof v === 'string' && v.length > 0) return v.slice(0, 64);
+    }
+  } catch { /* swallow */ }
+  return FARROWAY_BUILD_VERSION;
 })();
 
 // localStorage key the version is stored under.
