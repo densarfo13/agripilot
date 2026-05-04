@@ -16,7 +16,7 @@
  *     sessionStorage loop guard
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // ─── In-memory localStorage / sessionStorage / window mocks ──
 function makeStorage() {
@@ -1790,6 +1790,154 @@ describe('crash-resistance smoke tests', () => {
     const raw = safeJsonParse('farroway_active_farm', null);
     const farm = validateFarm(raw) ? raw : defaultFarm;
     expect(farm).toBe(defaultFarm);
+  });
+});
+
+// ─── safeEventTracker — acceptance criteria (May 2026) ──────
+describe('safeEventTracker._internal._validate', () => {
+  // All tests exercise the exported _validate function directly
+  // (pure — no fetch, no localStorage, no network).
+  let _validate;
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import('../../../src/lib/safeEventTracker.js');
+    _validate = mod._internal._validate;
+  });
+
+  function _goodEvent(overrides = {}) {
+    return {
+      type:        'app_opened',
+      timestamp:   Date.now(),
+      payload:     {},
+      userId:      'u-1',
+      anonymousId: null,
+      ...overrides,
+    };
+  }
+
+  it('returns null for a fully-valid event', () => {
+    expect(_validate(_goodEvent())).toBeNull();
+  });
+
+  it('accepts anonymousId when userId is null', () => {
+    expect(_validate(_goodEvent({ userId: null, anonymousId: 'anon-abc' }))).toBeNull();
+  });
+
+  it('missing_type when type is absent', () => {
+    expect(_validate(_goodEvent({ type: undefined }))).toBe('missing_type');
+    expect(_validate(_goodEvent({ type: '' }))).toBe('missing_type');
+    expect(_validate(_goodEvent({ type: 42 }))).toBe('missing_type');
+  });
+
+  it('missing_timestamp when timestamp is absent or non-finite', () => {
+    expect(_validate(_goodEvent({ timestamp: undefined }))).toBe('missing_timestamp');
+    expect(_validate(_goodEvent({ timestamp: null }))).toBe('missing_timestamp');
+    expect(_validate(_goodEvent({ timestamp: NaN }))).toBe('missing_timestamp');
+    expect(_validate(_goodEvent({ timestamp: Infinity }))).toBe('missing_timestamp');
+    expect(_validate(_goodEvent({ timestamp: '2026-05-04' }))).toBe('missing_timestamp');
+  });
+
+  it('missing_payload when payload is null, array, or non-object', () => {
+    expect(_validate(_goodEvent({ payload: null }))).toBe('missing_payload');
+    expect(_validate(_goodEvent({ payload: [1, 2] }))).toBe('missing_payload');
+    expect(_validate(_goodEvent({ payload: 'string' }))).toBe('missing_payload');
+    expect(_validate(_goodEvent({ payload: 42 }))).toBe('missing_payload');
+    expect(_validate(_goodEvent({ payload: undefined }))).toBe('missing_payload');
+  });
+
+  it('empty object payload {} is valid', () => {
+    expect(_validate(_goodEvent({ payload: {} }))).toBeNull();
+  });
+
+  it('missing_identity when both userId and anonymousId are falsy', () => {
+    expect(_validate(_goodEvent({ userId: null, anonymousId: null }))).toBe('missing_identity');
+    expect(_validate(_goodEvent({ userId: undefined, anonymousId: undefined }))).toBe('missing_identity');
+    expect(_validate(_goodEvent({ userId: '', anonymousId: '' }))).toBe('missing_identity');
+  });
+});
+
+describe('safeEventTracker._internal constants', () => {
+  it('ALLOWED_EVENTS contains exactly the 5 spec events', async () => {
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    const events = [..._internal.ALLOWED_EVENTS];
+    expect(events.sort()).toEqual([
+      'app_opened', 'task_completed', 'task_viewed',
+      'weather_fallback_used', 'weather_loaded',
+    ]);
+  });
+
+  it('KILL_KEY is the expected localStorage key', async () => {
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    expect(_internal.KILL_KEY).toBe('farroway_disable_events');
+  });
+
+  it('TIMEOUT_MS is 8 seconds', async () => {
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    expect(_internal.TIMEOUT_MS).toBe(8_000);
+  });
+});
+
+describe('safeEventTracker._internal._isKilled', () => {
+  // _isKilled reads window.localStorage. In this server-side test
+  // environment there is no `window`, so we stub it per-test using
+  // vi.stubGlobal so the function can see our localStorage mock.
+  beforeEach(() => {
+    localStorage.clear();
+    // Expose the global localStorage mock as window.localStorage
+    // so the browser-targeted guard inside _isKilled resolves.
+    vi.stubGlobal('window', { localStorage });
+  });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('returns false when kill key is absent', async () => {
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    expect(_internal._isKilled()).toBe(false);
+  });
+
+  it('returns true when kill key === "true"', async () => {
+    localStorage.setItem('farroway_disable_events', 'true');
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    expect(_internal._isKilled()).toBe(true);
+  });
+
+  it('returns false when kill key === "false"', async () => {
+    localStorage.setItem('farroway_disable_events', 'false');
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    expect(_internal._isKilled()).toBe(false);
+  });
+
+  it('returns false for any other value ("1")', async () => {
+    localStorage.setItem('farroway_disable_events', '1');
+    const { _internal } = await import('../../../src/lib/safeEventTracker.js');
+    expect(_internal._isKilled()).toBe(false);
+  });
+});
+
+describe('safeEventTracker.trackSafeEvent — module loads + exports', () => {
+  it('exports trackSafeEvent as a function', async () => {
+    const { trackSafeEvent } = await import('../../../src/lib/safeEventTracker.js');
+    expect(typeof trackSafeEvent).toBe('function');
+  });
+
+  it('default export is the same function', async () => {
+    const mod = await import('../../../src/lib/safeEventTracker.js');
+    expect(mod.default).toBe(mod.trackSafeEvent);
+  });
+
+  it('calling trackSafeEvent never throws synchronously', async () => {
+    const { trackSafeEvent } = await import('../../../src/lib/safeEventTracker.js');
+    // Does not throw; returns undefined (fire-and-forget).
+    expect(() => trackSafeEvent('app_opened', {})).not.toThrow();
+    expect(() => trackSafeEvent(null)).not.toThrow();
+    expect(() => trackSafeEvent(undefined, null)).not.toThrow();
+    expect(() => trackSafeEvent('unknown_event', 'bad_payload')).not.toThrow();
+  });
+
+  it('returns undefined (callers must not await)', async () => {
+    const { trackSafeEvent } = await import('../../../src/lib/safeEventTracker.js');
+    const result = trackSafeEvent('task_viewed', {});
+    // Fire-and-forget — return value is undefined (the void Promise).
+    expect(result).toBeUndefined();
   });
 });
 

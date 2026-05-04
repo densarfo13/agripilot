@@ -71,18 +71,19 @@ const DEFAULTS = Object.freeze({
   // stay readable on-device for the admin aggregator.
   FEATURE_HEALTH_FEEDBACK_SYNC: false,
 
-  // Data Moat Layer follow-up — server sync for the canonical
-  // event log at `farroway_events`. Currently OFF for the pilot
-  // (May 2026 stability fix). The Zod schema on the server side
-  // doesn't line up with the client's enqueued shape, producing
-  // a tight 400 loop that spammed the offline queue's retry
-  // path. Source of truth for the flip is
-  // `src/lib/pilotFlags.js`; the value here matches it so any
-  // legacy reader of isFeatureEnabled() agrees with the bypass
-  // path. Local persistence at `farroway_events` is unaffected —
-  // that's a separate on-device store. Flip both back to true
-  // in a single commit when /api/events stabilises.
-  FEATURE_EVENT_SYNC: false,
+  // Pilot event tracker — re-enabled 2026-05-04 via the new
+  // safeEventTracker.js (src/lib/safeEventTracker.js). The old
+  // offline-queue path that caused the tight 400 loop is still
+  // dead (DISABLE_EVENTS=true in pilotFlags.js kills it before
+  // it can reach this flag). This flag now exclusively gates
+  // safeEventTracker, which:
+  //   • Sends directly to /api/events (no offline queue)
+  //   • Drops on 400 — no retry loop possible
+  //   • Max 1 retry on network failure, then drops
+  //   • Tracks only 5 allow-listed events
+  // App.jsx's queue dispatcher still reads PILOT_FEATURE_EVENT_SYNC
+  // from pilotFlags.js (still false) — the old path stays off.
+  FEATURE_EVENT_SYNC: true,
 
   // AI Task Engine v1 — when ON, the home screen mounts
   // TodayTaskCard at the top and calls POST /api/tasks/today

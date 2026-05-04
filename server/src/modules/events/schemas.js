@@ -78,6 +78,14 @@ export const KNOWN_EVENT_NAMES = [
   'listing_expiry_sweep',
   // Security
   'role_access_denied',
+  // Pilot event tracker (May 2026 — safeEventTracker.js).
+  // These five names are the ONLY events the new lightweight
+  // tracker fires. Added here so /api/events accepts them
+  // without returning 400, which would cause the tracker to
+  // permanently drop them (its 400-drop spec §3 rule).
+  'app_opened',          // replaces legacy 'app_open' for pilot tracking
+  'weather_loaded',      // live /api/weather succeeded for this session
+  'weather_fallback_used', // weather unavailable — fallback shape shown
 ];
 
 // Single event payload — matches what the frontend's

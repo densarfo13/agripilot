@@ -36,12 +36,13 @@
  *     access is wrapped).
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
 import { useWeatherSafe } from '../hooks/useWeatherSafe.js';
 import { decideWeatherAction } from '../lib/weatherActionEngine.js';
 import { getWeatherTask } from '../lib/weatherTaskEngine.js';
+import { trackSafeEvent } from '../lib/safeEventTracker.js';
 
 // ─── Local-storage helpers ─────────────────────────────────────
 function _safeGet(key) {
@@ -245,10 +246,54 @@ export default function PilotHome() {
       return sessionStorage.getItem('farroway_pilot_task_done') === '1';
     } catch { return false; }
   });
+
+  // ─── Pilot event tracking (safeEventTracker) ─────────────
+  // All calls are fire-and-forget — they NEVER block render or
+  // any user interaction. The ref prevents the weather event
+  // from firing more than once per session even if liveWeather
+  // re-renders. Rules-of-hooks: all hooks declared here,
+  // unconditionally, before the return statement.
+
+  // Ref guards the weather event — fires once when loading settles.
+  const _weatherEventFiredRef = useRef(false);
+
+  // app_opened + task_viewed: fire once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    trackSafeEvent('app_opened', {});
+    // task_viewed fires alongside app_opened because PilotHome
+    // always shows a task card on first paint.
+    trackSafeEvent('task_viewed', {
+      taskTitle: (view.task && view.task.title) || null,
+    });
+  }, []); // mount-only — intentional empty dep array
+
+  // weather_loaded / weather_fallback_used: fire once when the
+  // weather hook resolves (loading flips false). The ref ensures
+  // no double-fire if liveWeather object identity changes.
+  useEffect(() => {
+    if (weatherLoading) return;
+    if (_weatherEventFiredRef.current) return;
+    _weatherEventFiredRef.current = true;
+    if (liveWeather && liveWeather.source === 'weather-api') {
+      trackSafeEvent('weather_loaded', {
+        locationLabel: liveWeather.locationLabel || null,
+      });
+    } else {
+      trackSafeEvent('weather_fallback_used', {
+        locationLabel: (liveWeather && liveWeather.locationLabel) || null,
+      });
+    }
+  }, [weatherLoading, liveWeather]);
+
   function handleMarkDone() {
     try { sessionStorage.setItem('farroway_pilot_task_done', '1'); }
     catch { /* swallow */ }
     setTaskDone(true);
+    // task_completed: fire-and-forget — never blocks the state update.
+    trackSafeEvent('task_completed', {
+      taskTitle: (view.task && view.task.title) || null,
+    });
   }
 
   return (
