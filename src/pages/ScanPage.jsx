@@ -48,6 +48,11 @@ import { trackEvent as moatTrack } from '../core/analytics.js';
 import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
+// Crash-safe fallback used by:
+//   • Setup-required guard ("setup_required" reason)
+//   • Camera unavailable / permission denied
+//   • 3s load timeout
+import ScanFallback from '../components/scan/ScanFallback.jsx';
 // Advanced ML scan layer §9: ask the user "Was this helpful?"
 // after the result renders so we can build a training-data
 // foundation. Self-suppresses after one tap per scanId.
@@ -111,6 +116,14 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [savedEntryId, setSavedEntryId] = useState(null);
   const [tasksAdded, setTasksAdded] = useState(false);
+  // May 2026 scan-crash hardening §7-§8 — show "Preparing
+  // camera…" instead of a blank screen during initial mount;
+  // flip to true after the first useEffect tick so the spinner
+  // doesn't flash on a fast mount. A 3-second hard-stop in the
+  // same effect surfaces ScanFallback if the page somehow
+  // doesn't reach interactive state.
+  const [mounted, setMounted] = useState(false);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   // Thumbnail produced by ScanCapture for the history list.
   // Persisted via saveScanEntry; expires with the rest of the
   // history slot.
@@ -155,6 +168,34 @@ export default function ScanPage() {
       try { trackEvent('scan_opened', { experience }); } catch { /* ignore */ }
     }
   }, [flagOn, experience, navigate]);
+
+  // May 2026 scan-crash hardening §7-§8 — Mark the page mounted
+  // after a microtask so the loading state can render once,
+  // then flip. Also arm a 3-second hard stop that flips
+  // loadTimedOut → true if something stalls the mount path
+  // (slow JS chunk fetch, frozen render).
+  useEffect(() => {
+    if (!flagOn) return undefined;
+    let cancelled = false;
+    // Microtask flip — happens immediately, but the React
+    // render between mount and this state update IS the
+    // "Preparing camera…" frame.
+    const t0 = setTimeout(() => { if (!cancelled) setMounted(true); }, 0);
+    const t3 = setTimeout(() => {
+      if (cancelled) return;
+      // Only fire if we're still in capture state and the
+      // mount didn't move forward — covers the wedged-render
+      // case the spec calls out.
+      if (phase === 'capture') {
+        setLoadTimedOut(true);
+        try { trackEvent('scan_load_failed', { reason: 'timeout_3s' }); }
+        catch { /* swallow */ }
+      }
+    }, 3000);
+    return () => { cancelled = true; clearTimeout(t0); clearTimeout(t3); };
+    // Intentional one-shot — only fires on initial mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flagOn]);
 
   const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file }) => {
     setError('');
@@ -435,6 +476,63 @@ export default function ScanPage() {
   }, [navigate, result]);
 
   if (!flagOn) return null;
+
+  // ── Safe render guard (May 2026 scan-crash hardening §2) ──
+  //
+  // When the active profile has no crop / plantName attached,
+  // the ScanCapture surface still renders fine but the analyse
+  // path can't tell what crop the photo IS, which leads to
+  // confusing results. Surface the setup CTA upfront instead
+  // of letting the user shoot a photo into a void.
+  //
+  // The guard ONLY fires when both crop AND plantName AND
+  // cropId are absent — partial setup (a crop name without a
+  // plant name) keeps working.
+  const _hasCrop = !!(profile && (profile.crop || profile.plantName || profile.cropId));
+  if (!_hasCrop) {
+    try { trackEvent('scan_load_failed', { reason: 'setup_required' }); }
+    catch { /* swallow */ }
+    return (
+      <ScanFallback
+        reason="setup_required"
+        onSetup={() => { try { navigate('/onboarding'); } catch { /* swallow */ } }}
+      />
+    );
+  }
+
+  // 3-second timeout fallback — replaces the live page when the
+  // mount path stalls beyond the safety ceiling. Retry button
+  // reloads (giving the lazy chunks another chance); Upload
+  // photo opens a system file picker as a last-resort path.
+  if (loadTimedOut) {
+    return <ScanFallback reason="timeout" />;
+  }
+
+  // Initial-mount loading state — "Preparing camera…" so the
+  // user never sees a blank screen during the first paint.
+  if (!mounted) {
+    return (
+      <main style={STYLES.page} data-screen="scan-page" data-phase="loading">
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
+          color: 'rgba(255,255,255,0.7)',
+        }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            border: '3px solid rgba(255,255,255,0.12)',
+            borderTopColor: '#22C55E',
+            animation: 'farroway-spin 0.8s linear infinite',
+          }} />
+          <span>{tStrict('scan.page.loading', 'Preparing camera\u2026')}</span>
+        </div>
+      </main>
+    );
+  }
 
   const isBackyard = experience === 'backyard';
   const headerTitle = isBackyard

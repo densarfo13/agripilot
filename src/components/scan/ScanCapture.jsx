@@ -126,17 +126,42 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
 
   useEffect(() => {
     let cancelled = false;
+    let firedDeniedEvent = false;
+    const _logDenied = () => {
+      // Fire-and-forget analytics the FIRST time the page sees
+      // a denied state (either on initial query OR via the
+      // permission-state change listener). Repeated firings are
+      // suppressed via firedDeniedEvent.
+      if (firedDeniedEvent) return;
+      firedDeniedEvent = true;
+      try {
+        // eslint-disable-next-line no-console
+        console.warn('[FARROWAY_SCAN] camera_permission_denied');
+      } catch { /* swallow */ }
+      try {
+        import('../../lib/analytics.js').then((mod) => {
+          try { mod.safeTrackEvent && mod.safeTrackEvent('camera_permission_denied', {
+            page: '/scan',
+          }); } catch { /* never propagate */ }
+        }).catch(() => { /* tolerate */ });
+      } catch { /* never throw from a logger */ }
+    };
     (async () => {
       try {
         if (typeof navigator === 'undefined') return;
         if (!navigator.permissions || typeof navigator.permissions.query !== 'function') return;
         const status = await navigator.permissions.query({ name: 'camera' });
         if (cancelled) return;
-        if (status && status.state === 'denied') setCameraDenied(true);
+        if (status && status.state === 'denied') {
+          setCameraDenied(true);
+          _logDenied();
+        }
         if (status && typeof status.addEventListener === 'function') {
           status.addEventListener('change', () => {
             if (cancelled) return;
-            setCameraDenied(status.state === 'denied');
+            const denied = status.state === 'denied';
+            setCameraDenied(denied);
+            if (denied) _logDenied();
           });
         }
       } catch { /* permission query unsupported; silent degrade */ }

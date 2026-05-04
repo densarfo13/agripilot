@@ -1154,6 +1154,47 @@ describe('weatherApi.fetchWeather', () => {
   });
 });
 
+// ─── Scan crash-safety surfaces (May 2026) ─────────────────
+describe('ScanFallback / ScanErrorBoundary structural smoke', () => {
+  it('ScanFallback module loads without throwing', async () => {
+    const mod = await import('../../../src/components/scan/ScanFallback.jsx');
+    expect(typeof mod.default).toBe('function');
+  });
+
+  it('ScanErrorBoundary module loads + exposes a class with the React lifecycle methods', async () => {
+    const mod = await import('../../../src/components/scan/ScanErrorBoundary.jsx');
+    const Boundary = mod.default;
+    expect(typeof Boundary).toBe('function');
+    expect(typeof Boundary.getDerivedStateFromError).toBe('function');
+    // Lifecycle method exists on the prototype.
+    expect(typeof Boundary.prototype.componentDidCatch).toBe('function');
+    expect(typeof Boundary.prototype.render).toBe('function');
+  });
+
+  it('ScanErrorBoundary getDerivedStateFromError returns hasError + message', async () => {
+    const mod = await import('../../../src/components/scan/ScanErrorBoundary.jsx');
+    const Boundary = mod.default;
+    const state = Boundary.getDerivedStateFromError(new Error('boom'));
+    expect(state.hasError).toBe(true);
+    expect(state.errorMessage).toBe('boom');
+  });
+
+  it('ScanErrorBoundary truncates long error messages to 200 chars', async () => {
+    const mod = await import('../../../src/components/scan/ScanErrorBoundary.jsx');
+    const Boundary = mod.default;
+    const state = Boundary.getDerivedStateFromError(new Error('x'.repeat(500)));
+    expect(state.errorMessage.length).toBe(200);
+  });
+
+  it('ScanErrorBoundary tolerates a null error', async () => {
+    const mod = await import('../../../src/components/scan/ScanErrorBoundary.jsx');
+    const Boundary = mod.default;
+    const state = Boundary.getDerivedStateFromError(null);
+    expect(state.hasError).toBe(true);
+    expect(state.errorMessage).toBe('unknown');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

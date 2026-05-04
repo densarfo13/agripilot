@@ -190,6 +190,10 @@ const USExperienceSelection = lazy(() => import('./pages/onboarding/USExperience
 // the flag is off so deep links never strand the user.
 const ScanPage       = lazy(() => import('./pages/ScanPage.jsx'));
 const ScanResultPage = lazy(() => import('./pages/ScanResultPage.jsx'));
+// Scan-specific error boundary — eagerly imported (not lazy) so
+// it can catch a crash from ScanPage's own lazy-import / mount.
+// Wraps the /scan + /scan/result/:id routes in App.jsx below.
+import ScanErrorBoundary from './components/scan/ScanErrorBoundary.jsx';
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -1063,8 +1067,22 @@ export default function App() {
             {/* Scan detection — feature-flag gated. Pages
                 self-bounce to /scan-crop when off so deep links
                 stay reachable. */}
-            <Route path="/scan"                     element={<ScanPage />} />
-            <Route path="/scan/result/:scanId"       element={<ScanResultPage />} />
+            {/* /scan + /scan/result/:scanId wrapped in
+                ScanErrorBoundary so a render throw inside the
+                scan tree degrades to a useful "Upload photo +
+                Retry" fallback instead of the global recovery
+                card. The boundary fires `scan_component_error`
+                analytics on every catch. */}
+            <Route path="/scan"                     element={
+              <ScanErrorBoundary>
+                <ScanPage />
+              </ScanErrorBoundary>
+            } />
+            <Route path="/scan/result/:scanId"       element={
+              <ScanErrorBoundary>
+                <ScanResultPage />
+              </ScanErrorBoundary>
+            } />
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
                    element={
