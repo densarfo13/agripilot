@@ -1195,6 +1195,37 @@ describe('ScanFallback / ScanErrorBoundary structural smoke', () => {
   });
 });
 
+// ─── SafeCameraSurface (May 2026 scan rebuild) ──────────────
+describe('SafeCameraSurface internals', () => {
+  it('exports a default React component', async () => {
+    const mod = await import('../../../src/components/scan/SafeCameraSurface.jsx');
+    expect(typeof mod.default).toBe('function');
+  });
+
+  it('SAFE_MOCK_RESULT matches the spec exactly', async () => {
+    const { _internal } = await import('../../../src/components/scan/SafeCameraSurface.jsx');
+    expect(_internal.SAFE_MOCK_RESULT).toEqual({
+      status:     'needs_review',
+      label:      'Plant photo received',
+      message:    'Farroway saved your photo. Review or expert scan can be added next.',
+      confidence: null,
+    });
+    expect(Object.isFrozen(_internal.SAFE_MOCK_RESULT)).toBe(true);
+  });
+
+  it('camera timeout is set to 4 seconds per spec', async () => {
+    const { _internal } = await import('../../../src/components/scan/SafeCameraSurface.jsx');
+    expect(_internal.CAMERA_TIMEOUT_MS).toBe(4000);
+  });
+});
+
+describe('ScanFallback (May 2026 rebuild — embeds SafeCameraSurface)', () => {
+  it('exports a default React component', async () => {
+    const mod = await import('../../../src/components/scan/ScanFallback.jsx');
+    expect(typeof mod.default).toBe('function');
+  });
+});
+
 // ─── Crash-resistance smoke tests ────────────────────────────
 describe('crash-resistance smoke tests', () => {
   it('corrupted localStorage JSON does not crash safeJsonParse', async () => {

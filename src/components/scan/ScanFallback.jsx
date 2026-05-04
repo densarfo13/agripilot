@@ -6,56 +6,37 @@
  *     <ScanPage />
  *   </ScanErrorBoundary>
  *
- * Used in three situations
- *   1. Crash escape — ScanErrorBoundary catches a render throw
- *      and swaps the live page for this surface.
- *   2. Camera unavailable — getUserMedia rejected / unsupported
- *      / permission denied.
- *   3. 3-second load timeout — page hasn't finished mounting.
+ * What changed (May 2026 §1)
+ *   The previous ScanFallback was a static error screen with
+ *   Upload + Retry buttons. The new fallback EMBEDS the
+ *   SafeCameraSurface so the user lands on a fully-working
+ *   scan flow even when the live ScanPage crashed. Camera +
+ *   upload + safe-mock result + 4-second timeout are all
+ *   handled inside SafeCameraSurface.
  *
- * Affordances
- *   • Upload photo button (synthesises a file picker on tap).
- *   • Retry button (calls window.location.reload()).
- *   • "Set up your crop" link (when the page noticed missing
- *     setup state).
- *   • Plain-text instructions so a low-literacy farmer still
- *     understands what to do.
+ * Reasons supported (back-compat with the previous boundary)
+ *   crash             — ScanErrorBoundary caught a render throw
+ *   camera_unavailable
+ *   permission_denied
+ *   unsupported
+ *   timeout           — the 3s mount-load timeout in ScanPage
+ *   setup_required    — profile has no crop / plant / cropId
+ *
+ * For setup_required the surface is still a static prompt that
+ * routes to /onboarding — there's nothing to scan if the user
+ * hasn't told Farroway what crop they have.
  *
  * Strict-rule audit
  *   • Pure presentational. Never throws.
- *   • Inline styles only — matches the rest of the scan UI.
- *   • Never mounts the live camera; ALL retry paths defer to
- *     the page reload, which lets the original ScanPage try
- *     again from scratch.
+ *   • Inline styles only.
  */
 
-import React, { useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
+import SafeCameraSurface from './SafeCameraSurface.jsx';
 
-const REASON_COPY = Object.freeze({
-  crash:       {
-    title: 'Scan ran into a problem',
-    body:  'We couldn\u2019t open the scan tool. You can upload a photo from your gallery instead, or try again.',
-  },
-  camera_unavailable: {
-    title: 'Camera not available',
-    body:  'Your camera is off or blocked. You can still upload a photo from your gallery.',
-  },
-  permission_denied: {
-    title: 'Camera permission needed',
-    body:  'Allow camera access in your browser settings, or upload a photo from your gallery.',
-  },
-  unsupported: {
-    title: 'Camera not supported',
-    body:  'This device or browser doesn\u2019t support camera capture. Upload a photo to continue.',
-  },
-  timeout: {
-    title: 'Taking longer than expected',
-    body:  'The scan tool is slow to load. You can keep waiting, retry, or upload a photo from your gallery.',
-  },
-  setup_required: {
-    title: 'Setup required before scanning',
-    body:  'Add a crop or plant to your farm so Farroway knows what to look for.',
-  },
+const SETUP_COPY = Object.freeze({
+  title: 'Add your crop first',
+  body:  'Farroway needs a crop or plant on your farm before we can scan it. Set up your farm and the scan will work.',
 });
 
 export default function ScanFallback({
@@ -64,48 +45,57 @@ export default function ScanFallback({
   onUploadFile,
   onSetup,
 }) {
-  const fileInputRef = useRef(null);
-  const copy = REASON_COPY[reason] || REASON_COPY.crash;
+  // setup_required is a distinct surface — show a clear setup
+  // prompt instead of the camera flow.
+  if (reason === 'setup_required') {
+    return (
+      <SetupRequiredCard onSetup={onSetup} />
+    );
+  }
 
-  const handleUploadClick = useCallback(() => {
+  // For every other reason (crash / timeout / camera-denied /
+  // unsupported / unavailable), embed the safe camera surface
+  // so the user has a working flow IMMEDIATELY — no extra tap
+  // through an error screen first.
+  const handleResult = useCallback((res) => {
+    // Reuse onUploadFile when caller passed one (legacy
+    // signature). Otherwise no-op — SafeCameraSurface already
+    // showed the result preview.
     try {
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
+      if (typeof onUploadFile === 'function' && res && res.photo && res.photo.file) {
+        onUploadFile(res.photo.file);
       }
     } catch { /* swallow */ }
-  }, []);
-
-  const handleFileChange = useCallback((e) => {
-    try {
-      const file = e && e.target && e.target.files && e.target.files[0];
-      if (file && typeof onUploadFile === 'function') {
-        onUploadFile(file);
-        return;
-      }
-      // No upstream handler — reload so ScanPage gets a fresh
-      // mount with the user's selected file in its picker.
-      if (typeof window !== 'undefined' && window.location
-          && typeof window.location.reload === 'function') {
-        window.location.reload();
-      }
-    } catch { /* never throw from a fallback handler */ }
   }, [onUploadFile]);
 
-  const handleRetry = useCallback(() => {
+  const handleBackHome = useCallback(() => {
     try {
-      if (typeof onRetry === 'function') { onRetry(); return; }
-      if (typeof window !== 'undefined' && window.location
-          && typeof window.location.reload === 'function') {
-        window.location.reload();
+      if (typeof onRetry === 'function') {
+        onRetry();
+        return;
+      }
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.href = '/';
       }
     } catch { /* swallow */ }
   }, [onRetry]);
 
+  return (
+    <SafeCameraSurface
+      onResult={handleResult}
+      onBackHome={handleBackHome}
+    />
+  );
+}
+
+// ─── Setup-required sub-surface ─────────────────────────────
+
+function SetupRequiredCard({ onSetup }) {
   const handleSetup = useCallback(() => {
     try {
       if (typeof onSetup === 'function') { onSetup(); return; }
       if (typeof window !== 'undefined' && window.location) {
-        window.location.href = '/onboarding';
+        window.location.href = '/my-grow';
       }
     } catch { /* swallow */ }
   }, [onSetup]);
@@ -114,59 +104,22 @@ export default function ScanFallback({
     <main
       style={S.page}
       data-testid="scan-fallback"
-      data-reason={reason}
+      data-reason="setup_required"
     >
       <div style={S.card}>
-        <span aria-hidden="true" style={S.icon}>{'\uD83D\uDCF7'}</span>
-        <h1 style={S.title}>{copy.title}</h1>
-        <p style={S.body}>{copy.body}</p>
-
-        <p style={S.helpList}>
-          {'\u2022 Make sure you have good light.'}<br />
-          {'\u2022 Hold the phone steady.'}<br />
-          {'\u2022 Get close to the leaf, fruit, or stem.'}
-        </p>
-
+        <span aria-hidden="true" style={S.icon}>{'\uD83C\uDF31'}</span>
+        <h1 style={S.title}>{SETUP_COPY.title}</h1>
+        <p style={S.body}>{SETUP_COPY.body}</p>
         <div style={S.btnRow}>
-          {reason === 'setup_required' ? (
-            <button
-              type="button"
-              onClick={handleSetup}
-              style={S.btnPrimary}
-              data-testid="scan-fallback-setup"
-            >
-              Complete setup
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={handleUploadClick}
-                style={S.btnPrimary}
-                data-testid="scan-fallback-upload"
-              >
-                {'\uD83D\uDCC1 Upload photo'}
-              </button>
-              <button
-                type="button"
-                onClick={handleRetry}
-                style={S.btnGhost}
-                data-testid="scan-fallback-retry"
-              >
-                Try again
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={handleSetup}
+            style={S.btnPrimary}
+            data-testid="scan-fallback-setup"
+          >
+            Go to My Farm
+          </button>
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-          data-testid="scan-fallback-file-input"
-        />
       </div>
     </main>
   );
@@ -210,15 +163,6 @@ const S = {
     color: 'rgba(255,255,255,0.78)',
     lineHeight: 1.5,
   },
-  helpList: {
-    margin: '0.5rem 0 0',
-    textAlign: 'left',
-    fontSize: '0.875rem',
-    color: 'rgba(255,255,255,0.65)',
-    lineHeight: 1.7,
-    width: '100%',
-    padding: '0 0.5rem',
-  },
   btnRow: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -240,18 +184,5 @@ const S = {
     fontWeight: 700,
     cursor: 'pointer',
     boxShadow: '0 8px 22px rgba(34,197,94,0.25)',
-  },
-  btnGhost: {
-    flex: 1,
-    minWidth: '10rem',
-    minHeight: 48,
-    padding: '0.85rem 1.25rem',
-    border: '1px solid rgba(255,255,255,0.18)',
-    borderRadius: 12,
-    background: 'transparent',
-    color: '#fff',
-    fontSize: '0.9375rem',
-    fontWeight: 700,
-    cursor: 'pointer',
   },
 };

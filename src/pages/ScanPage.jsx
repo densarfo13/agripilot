@@ -143,13 +143,24 @@ export default function ScanPage() {
   // Final scan engine spec §2: prefer the canonical
   // multi-experience selector for the active id pair so the
   // scan attaches to whichever experience the BottomTabNav +
-  // ExperienceSwitcher are currently showing. Falls back to
-  // the legacy single-id model when the hook scope is missing.
+  // ExperienceSwitcher are currently showing.
+  //
+  // Hook-ordering fix (May 2026 scan-crash hardening): the
+  // previous version called useExperience() inside a try/catch.
+  // That is the React #310 anti-pattern — if the hook ever
+  // throws on a re-render the surrounding catch silently
+  // shifts React's hook counter and the page crashes with
+  // "Rendered more hooks than during the previous render",
+  // surfacing as "We hit a problem rendering this page" via
+  // the global ErrorBoundary. useExperience is documented
+  // never-throws (its read is a snapshot from the local
+  // multiExperience store), so we call it unconditionally and
+  // defensively coerce the result.
+  const xp = useExperience();
   let activeExperience = experience;
   let activeGardenId = null;
   let activeFarmId   = null;
   try {
-    const xp = useExperience();
     if (xp && xp.experience) {
       activeExperience = xp.experience === xp.EXPERIENCE.GARDEN ? 'garden'
                        : xp.experience === xp.EXPERIENCE.FARM   ? 'farm'
@@ -157,7 +168,7 @@ export default function ScanPage() {
       activeGardenId = xp.activeGardenId || null;
       activeFarmId   = xp.activeFarmId   || null;
     }
-  } catch { /* falls back to legacy single-id below */ }
+  } catch { /* defensive — coercion shouldn't throw, but guard anyway */ }
 
   // Off-flag: bounce to the existing scan flow so deep links don't
   // strand the user.
