@@ -112,9 +112,11 @@ const DEFAULTS = Object.freeze({
   FEATURE_SCAN:    false,
   FEATURE_SELL:    true,  // Phase 1 restore — 2026-05-04
   FEATURE_BUYER:           true,   // Phase 2 restore — 2026-05-04 (listing browse)
-  // Phase 3 gate — interest request sending + farmer approve/decline.
-  // Off in Phase 2: buyers can browse but not yet send interest.
-  FEATURE_BUYER_INTEREST:  false,
+  // Phase 3 restore — 2026-05-04: interest request sending +
+  // farmer approve/decline. Privacy: farmer contact revealed to
+  // buyer only after farmer accepts; buyer phone/email never shown
+  // to farmer in this UI.
+  FEATURE_BUYER_INTEREST:  true,
   FEATURE_NGO:     false,
   FEATURE_ADMIN:   false,
   FEATURE_FUNDING: false,
