@@ -25,7 +25,7 @@ const DEFAULTS = Object.freeze({
   // matcher at /opportunities — different surfaces, different
   // intents. Off by default; flip via
   // VITE_FARROWAY_FEATURE_FUNDINGHUB=1.
-  fundingHub: false,
+  fundingHub: true,   // Phase 7C restore — funding discovery 2026-05-05
   // Smart Funding Recommendations: turns the static catalog into
   // a personalised readiness-aware engine (computes a 0-100 score
   // + emits readiness tips). Sits on top of the Funding Hub —
@@ -134,7 +134,7 @@ const DEFAULTS = Object.freeze({
   // DEFAULT ON — the spec ships unconditionally. Flag retained as
   // an opt-out lever: set VITE_FARROWAY_FEATURE_GUIDEDFUNDINGAPPLICATION=0
   // at build time to revert to the direct external-link CTA.
-  guidedFundingApplication: true,
+  guidedFundingApplication: false, // Phase 7C: no applications yet — direct external link only
   // Monetization (free | pro): when on, surfaces the UpgradePrompt
   // below scan results, applies tier-aware scan-history caps via
   // `monetization/scanLimits`, and lets pro-only sections wrap in

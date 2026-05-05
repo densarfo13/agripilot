@@ -117,6 +117,29 @@ const STYLES = {
     border: '1px dashed rgba(255,255,255,0.10)',
     borderRadius: 14,
   },
+  filterBar: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+    padding: '10px 12px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 12,
+  },
+  filterInput: {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 8,
+    color: '#EAF2FF',
+    fontSize: 13,
+    padding: '6px 10px',
+    outline: 'none',
+    fontFamily: 'inherit',
+    minWidth: 140,
+    flex: '1 1 140px',
+  },
   globalDisclaimer: {
     marginTop: 24,
     padding: '12px 14px',
@@ -136,6 +159,17 @@ const STYLES = {
     textAlign: 'center',
   },
 };
+
+/**
+ * Phase 7C: extract the country/countries array from a card.
+ * Mirrors the private helper in fundingRecommendationEngine.js
+ * so the filter can compare against card country data.
+ */
+function _cardCountries(card) {
+  if (Array.isArray(card?.countries)) return card.countries;
+  if (typeof card?.country === 'string' && card.country) return [card.country];
+  return [];
+}
 
 function _useViewportWide(threshold = 880) {
   const [wide, setWide] = useState(() => {
@@ -189,6 +223,13 @@ export default function FundingHub() {
   } catch { authRole = null; }
 
   const wide = _useViewportWide();
+
+  // Phase 7C: client-side filter state.
+  // 'all' | 'farmer' | 'backyard'
+  const [filterType, setFilterType] = useState('all');
+  const [filterCrop, setFilterCrop] = useState('');
+  const [filterRegion, setFilterRegion] = useState('');
+
   const flagOn = isFeatureEnabled('fundingHub');
 
   const country = profile?.country || profile?.countryCode || null;
@@ -247,7 +288,49 @@ export default function FundingHub() {
   const recommendations = smart.recommendations;
   const readinessScore = smart.readinessScore;
   const readinessTips = smart.readinessTips;
-  const grouped = useMemo(() => groupByCategory(recommendations), [recommendations]);
+
+  // Phase 7C: apply client-side filters over the full recommendation list.
+  const filteredRecs = useMemo(() => {
+    let out = recommendations;
+    // Farm type: farmer = any non-backyard bestFor entries;
+    // backyard = has at least one backyard/home_garden entry.
+    if (filterType === 'farmer') {
+      out = out.filter((c) => {
+        const bf = c.bestFor || [];
+        // Global cards (empty bestFor) pass through; cards that are
+        // exclusively backyard are suppressed.
+        if (bf.length === 0) return true;
+        return bf.some((b) => b !== 'backyard' && b !== 'home_garden');
+      });
+    } else if (filterType === 'backyard') {
+      out = out.filter((c) => {
+        const bf = c.bestFor || [];
+        return bf.some((b) => b === 'backyard' || b === 'home_garden');
+      });
+    }
+    // Crop keyword: match against title / description / eligibility hint.
+    const cropQ = filterCrop.trim().toLowerCase();
+    if (cropQ) {
+      out = out.filter((c) =>
+        (c.title && c.title.toLowerCase().includes(cropQ)) ||
+        (c.description && c.description.toLowerCase().includes(cropQ)) ||
+        (c.eligibilityHint && c.eligibilityHint.toLowerCase().includes(cropQ))
+      );
+    }
+    // Region: global cards (empty countries) always pass through;
+    // country-scoped cards are shown only when the query matches.
+    const regionQ = filterRegion.trim().toLowerCase();
+    if (regionQ) {
+      out = out.filter((c) => {
+        const countries = _cardCountries(c).map((x) => String(x).toLowerCase());
+        return countries.length === 0 ||
+          countries.some((x) => x.includes(regionQ));
+      });
+    }
+    return out;
+  }, [recommendations, filterType, filterCrop, filterRegion]);
+
+  const grouped = useMemo(() => groupByCategory(filteredRecs), [filteredRecs]);
 
   // Page-view event — once on mount per visit. Spec uses
   // `funding_hub_viewed`; the older `funding_page_view` is also
@@ -306,8 +389,9 @@ export default function FundingHub() {
   }
 
   const isNgo = NGO_ROLES.has(userRole);
-  // Spec §1: show 3-5 best options max in the Recommended row.
-  const recommendedCards = recommendations.slice(0, 5);
+  // Spec §1: show up to 5 best options in the Recommended row,
+  // scoped to the current Phase 7C filter selection.
+  const recommendedCards = filteredRecs.slice(0, 5);
   const ctx = { country, userRole, experience: ux.experience };
 
   return (
@@ -324,6 +408,67 @@ export default function FundingHub() {
             )}
           </p>
         </div>
+      </div>
+
+      {/* Phase 7C: filter bar — type toggle (All/Farmer/Backyard),
+          keyword search (crop/title), and region text filter.
+          All filters are additive and client-side only — no fetches.
+          Advisory UI; never blocks viewing any card. */}
+      <div style={STYLES.filterBar} role="search" aria-label={tStrict('funding.filter.ariaLabel', 'Filter funding opportunities')}>
+        {/* Farm type toggle */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[
+            { key: 'all',      labelKey: 'funding.filter.all',      fallback: 'All' },
+            { key: 'farmer',   labelKey: 'funding.filter.farmer',   fallback: 'Farmer' },
+            { key: 'backyard', labelKey: 'funding.filter.backyard', fallback: 'Backyard' },
+          ].map(({ key, labelKey, fallback }) => {
+            const active = filterType === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilterType(key)}
+                aria-pressed={active}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 20,
+                  border: active
+                    ? '1px solid rgba(34,197,94,0.6)'
+                    : '1px solid rgba(255,255,255,0.15)',
+                  background: active
+                    ? 'rgba(34,197,94,0.14)'
+                    : 'transparent',
+                  color: active ? '#86EFAC' : 'rgba(255,255,255,0.65)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {tStrict(labelKey, fallback)}
+              </button>
+            );
+          })}
+        </div>
+        {/* Crop / keyword filter */}
+        <input
+          type="text"
+          value={filterCrop}
+          onChange={(e) => setFilterCrop(e.target.value)}
+          placeholder={tStrict('funding.filter.cropPlaceholder', 'Crop or keyword…')}
+          style={STYLES.filterInput}
+          aria-label={tStrict('funding.filter.cropAriaLabel', 'Filter by crop or keyword')}
+        />
+        {/* Region filter */}
+        <input
+          type="text"
+          value={filterRegion}
+          onChange={(e) => setFilterRegion(e.target.value)}
+          placeholder={tStrict('funding.filter.regionPlaceholder', 'Region or country…')}
+          style={STYLES.filterInput}
+          aria-label={tStrict('funding.filter.regionAriaLabel', 'Filter by region or country')}
+        />
       </div>
 
       {/* NGO program quick-links above the recommendations — only
@@ -345,10 +490,15 @@ export default function FundingHub() {
           </h2>
           {recommendedCards.length === 0 ? (
             <div style={STYLES.empty}>
-              {tStrict(
-                'funding.hub.emptyRecommended',
-                'No tailored matches yet. Add your country, crop, and farm size to get better recommendations.'
-              )}
+              {(filterCrop || filterRegion || filterType !== 'all')
+                ? tStrict(
+                    'funding.hub.emptyFiltered',
+                    'No funding opportunities match your current filters. Try adjusting the filter above.'
+                  )
+                : tStrict(
+                    'funding.hub.emptyRecommended',
+                    'No funding opportunities available yet. Add your country, crop, and farm size to get better recommendations.'
+                  )}
             </div>
           ) : (
             <div style={STYLES.cardsGrid}>

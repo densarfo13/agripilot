@@ -49,7 +49,7 @@ export const FARROWAY_BUILD_VERSION = 'ngo-basic-p5-v1';
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = 'trust-scoring-p7b-v1';
+export const FARROWAY_UI_VERSION = 'funding-discovery-p7c-v1';
 
 // Monotonically-increasing build sequence — drives the direction
 // guard. Lexicographic compare on the human-readable version
@@ -58,7 +58,7 @@ export const FARROWAY_UI_VERSION = 'trust-scoring-p7b-v1';
 // shipped LATER). The sequence is the only source of truth for
 // "newer vs older". Bump on every release that adds, removes, or
 // changes the migration logic.
-export const FARROWAY_BUILD_SEQUENCE = 46;
+export const FARROWAY_BUILD_SEQUENCE = 47;
 const SEQUENCE_KEY = 'farroway_build_sequence';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env

@@ -17,10 +17,15 @@
  * still feel native.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { trackFundingEvent } from '../../analytics/fundingAnalytics.js';
+import {
+  bookmarkOpportunity,
+  unbookmarkOpportunity,
+  isBookmarked,
+} from '../../funding/fundingBookmarks.js';
 import { FARM_TYPE_LABELS } from '../../config/fundingConfig.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import ApplicationPreviewModal from './ApplicationPreviewModal.jsx';
@@ -105,6 +110,19 @@ const STYLES = {
     color: 'rgba(255,255,255,0.45)',
     lineHeight: 1.4,
   },
+  saveBtn: {
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    textAlign: 'center',
+    width: '100%',
+    transition: 'border-color 0.15s, color 0.15s',
+  },
 };
 
 const PILL_TONE = {
@@ -122,6 +140,26 @@ export default function FundingCard({ card, context = {} }) {
   const guidedOn = isFeatureEnabled('guidedFundingApplication');
   const screenV2On = isFeatureEnabled('fundingScreenV2');
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Phase 7C: save/bookmark state. Hooks must be called before the
+  // early return — pass '' when card.id is absent so isBookmarked
+  // no-ops; the card will be discarded by the early return anyway.
+  const cardId = card && card.id ? String(card.id) : '';
+  const [saved, setSaved] = useState(() => {
+    try { return isBookmarked(cardId); } catch { return false; }
+  });
+  // Sync badge when the bookmark store emits a change (e.g. the
+  // user saved/unsaved from another card in the same list).
+  useEffect(() => {
+    if (!cardId) return undefined;
+    const onChanged = () => {
+      try { setSaved(isBookmarked(cardId)); } catch { /* swallow */ }
+    };
+    if (typeof window === 'undefined') return undefined;
+    window.addEventListener('farroway:funding_bookmarks_changed', onChanged);
+    return () => window.removeEventListener('farroway:funding_bookmarks_changed', onChanged);
+  }, [cardId]);
+
   if (!card || !card.id) return null;
   const cleanTitle = _cleanTitle(card.title);
   // Match-chip / footer surfaces need a profile snapshot. The
@@ -267,6 +305,42 @@ export default function FundingCard({ card, context = {} }) {
           {tStrict('funding.card.exploreOption', 'Explore this option')}
         </a>
       )}
+
+      {/* Phase 7C: save for later — advisory, never blocks main CTA. */}
+      <button
+        type="button"
+        onClick={() => {
+          try {
+            if (saved) {
+              unbookmarkOpportunity(card.id);
+              setSaved(false);
+            } else {
+              bookmarkOpportunity(card);
+              setSaved(true);
+              try {
+                trackFundingEvent('funding_saved', {
+                  cardId:   card.id,
+                  category: card.category,
+                  country:  context.country || null,
+                });
+              } catch { /* swallow */ }
+            }
+          } catch { /* never propagate */ }
+        }}
+        style={{
+          ...STYLES.saveBtn,
+          color: saved ? '#86EFAC' : 'rgba(255,255,255,0.6)',
+          borderColor: saved ? 'rgba(34,197,94,0.45)' : 'rgba(255,255,255,0.18)',
+        }}
+        data-testid={`funding-save-${card.id}`}
+        aria-label={saved
+          ? tStrict('funding.card.savedAriaLabel', 'Remove from saved')
+          : tStrict('funding.card.saveAriaLabel', 'Save for later')}
+      >
+        {saved
+          ? tStrict('funding.card.saved', '✓ Saved')
+          : tStrict('funding.card.save', 'Save for later')}
+      </button>
 
       <p style={STYLES.disclaimer}>
         {tStrict(

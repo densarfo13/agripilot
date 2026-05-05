@@ -119,7 +119,7 @@ const DEFAULTS = Object.freeze({
   FEATURE_BUYER_INTEREST:  true,
   FEATURE_NGO:     true,   // Phase 5 restore — 2026-05-04
   FEATURE_ADMIN:   true,   // Phase 6 restore — 2026-05-04
-  FEATURE_FUNDING: false,
+  FEATURE_FUNDING: true,   // Phase 7C restore — funding discovery 2026-05-05
   // Pilot stability restore (May 2026 spec §1) — public pricing
   // page hidden until the live pilot stabilises. Reachable
   // routes still render <DisabledFeatureFallback /> with the
