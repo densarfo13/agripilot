@@ -488,28 +488,10 @@ export default function ScanPage() {
 
   if (!flagOn) return null;
 
-  // ── Safe render guard (May 2026 scan-crash hardening §2) ──
-  //
-  // When the active profile has no crop / plantName attached,
-  // the ScanCapture surface still renders fine but the analyse
-  // path can't tell what crop the photo IS, which leads to
-  // confusing results. Surface the setup CTA upfront instead
-  // of letting the user shoot a photo into a void.
-  //
-  // The guard ONLY fires when both crop AND plantName AND
-  // cropId are absent — partial setup (a crop name without a
-  // plant name) keeps working.
-  const _hasCrop = !!(profile && (profile.crop || profile.plantName || profile.cropId));
-  if (!_hasCrop) {
-    try { trackEvent('scan_load_failed', { reason: 'setup_required' }); }
-    catch { /* swallow */ }
-    return (
-      <ScanFallback
-        reason="setup_required"
-        onSetup={() => { try { navigate('/onboarding'); } catch { /* swallow */ } }}
-      />
-    );
-  }
+  // Phase 4 restore (2026-05-04): crop guard removed — scan is
+  // accessible without a farm or crop. The analysis engine handles
+  // null cropId gracefully (getRuleBasedFallback returns conservative
+  // guidance). Setup is optional per the routing fix spec.
 
   // 3-second timeout fallback — replaces the live page when the
   // mount path stalls beyond the safety ceiling. Retry button

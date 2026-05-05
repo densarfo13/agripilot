@@ -195,8 +195,10 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       setError(tStrict('scan.error.tooLarge', 'That photo is too large. Try a smaller one.'));
       return;
     }
-    if (!String(next.type || '').startsWith('image/')) {
-      setError(tStrict('scan.error.notImage', 'Please pick an image file.'));
+    // Phase 4 spec: only jpeg/png/webp — reject HEIC, TIFF, BMP, etc.
+    const ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+    if (!ALLOWED_TYPES.has(String(next.type || '').toLowerCase())) {
+      setError(tStrict('scan.error.badType', 'Please use a JPEG, PNG, or WebP photo.'));
       return;
     }
     // Revoke any previous preview URL.
