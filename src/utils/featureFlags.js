@@ -166,6 +166,14 @@ const DEFAULTS = Object.freeze({
   // ProfileGuard / route logic runs unchanged so pilot tenants
   // see no behaviour change.
   FEATURE_SAFE_SESSION: true,
+
+  // Basic analytics (Phase 7D restore). Gates the farmer-facing
+  // /analytics page (read-only local snapshot: tasks, listings,
+  // interests, bookmarks, crop progress). When off, the route
+  // renders the DisabledFeatureFallback so deep links stay valid.
+  // Admin analytics at /admin/analytics is role-gated separately
+  // and unaffected by this flag.
+  FEATURE_ANALYTICS: true,  // Phase 7D restore — analytics basic 2026-05-05
 });
 
 function safeWindowFlag(name) {

@@ -427,6 +427,8 @@ const BuyerManagementPage = lazy(() => import('./pages/BuyerManagementPage.jsx')
 const BuyerTrustPage = lazy(() => import('./pages/BuyerTrustPage.jsx'));
 const BuyerView = lazy(() => import('./pages/BuyerView.jsx'));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage.jsx'));
+// Phase 7D — farmer-facing read-only analytics page.
+const FarmerAnalyticsPage = lazy(() => import('./pages/FarmerAnalyticsPage.jsx'));
 // Phase 3 §C — soft-launch monitoring dashboard. Reads the
 // canonical event store + computes DAU / completion / stuck /
 // crashes / retention numbers in-memory. Admin-only via the
@@ -1304,6 +1306,15 @@ export default function App() {
             <Route path="/funding" element={
               <FeatureGated flag="FEATURE_FUNDING" feature="funding">
                 <BackyardGuard><FundingHub /></BackyardGuard>
+              </FeatureGated>
+            } />
+            {/* /analytics — Phase 7D: farmer read-only analytics cards.
+                Route always mounted so deep links don't 404.
+                FeatureGated shows "Feature temporarily disabled" when
+                FEATURE_ANALYTICS is off. */}
+            <Route path="/analytics" element={
+              <FeatureGated flag="FEATURE_ANALYTICS" feature="analytics">
+                <FarmerAnalyticsPage />
               </FeatureGated>
             } />
             {/* /contact, /privacy, /terms moved to the public

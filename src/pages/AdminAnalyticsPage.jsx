@@ -18,6 +18,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { getFullDashboard, getNewFarmersByDay } from '../services/activityAggregator.js';
+// Phase 7D: device-local market metrics for the admin analytics panel.
+// Pure local reads — no network call, safe when offline.
+import { getListingsCreated, getInterestsReceived } from '../lib/farmerAnalytics.js';
 import InvestorMetricsCard from '../components/admin/InvestorMetricsCard.jsx';
 import SummaryCards from '../components/admin/SummaryCards.jsx';
 import InsightCards from '../components/admin/InsightCards.jsx';
@@ -112,6 +115,8 @@ export default function AdminAnalyticsPage() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chartDays, setChartDays] = useState(14);
+  // Phase 7D: device-local market counts — listings + interests.
+  const [marketMetrics, setMarketMetrics] = useState({ listings: 0, interests: 0 });
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -122,6 +127,17 @@ export default function AdminAnalyticsPage() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Phase 7D: read device-local market counts once on mount.
+  // Fire-and-forget — never blocks the existing dashboard render.
+  useEffect(() => {
+    try {
+      setMarketMetrics({
+        listings:  getListingsCreated(),
+        interests: getInterestsReceived(),
+      });
+    } catch { /* keep defaults */ }
+  }, []);
 
   // Recharts data — slice to selected range
   const chartData = useMemo(() => {
@@ -551,6 +567,37 @@ export default function AdminAnalyticsPage() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ═══ Phase 7D: Market Activity panel ════════════════
+              Listings created + Buyer interest count — reads from
+              localStorage (device-local; aggregates require server).
+              Never blocks render; falls back to 0 when data is absent.
+              NGO/Admin spec §analytics: "Listings created", "Buyer
+              interest count". */}
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <div className="card-header">{t('admin.marketActivity')}</div>
+        <div className="card-body">
+          <div style={S.statsGrid}>
+            <div style={S.statCard}>
+              <div style={S.statIcon}>📋</div>
+              <div style={{ ...S.statValue, color: '#86EFAC' }}>
+                {marketMetrics.listings}
+              </div>
+              <div style={S.muted}>{t('admin.listingsCreated')}</div>
+            </div>
+            <div style={S.statCard}>
+              <div style={S.statIcon}>🤝</div>
+              <div style={{ ...S.statValue, color: '#7DD3FC' }}>
+                {marketMetrics.interests}
+              </div>
+              <div style={S.muted}>{t('admin.buyerInterestCount')}</div>
+            </div>
+          </div>
+          <p style={{ ...S.muted, marginTop: '0.5rem', fontSize: '0.75rem' }}>
+            {t('admin.marketDeviceNote')}
+          </p>
         </div>
       </div>
 
