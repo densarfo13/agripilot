@@ -1158,22 +1158,63 @@ export default function App() {
             <Route path="/crop-fit" element={<CropFitIntake />} />
             <Route path="/crop-fit/us" element={<USCropRecommendations />} />
             <Route path="/crop-plan" element={<CropPlan />} />
-            <Route path="/ngo" element={<NGOOverview />} />
-            <Route path="/ngo/interventions" element={<InterventionCenter />} />
-            <Route path="/ngo/scores" element={<FarmerScoring />} />
+            {/* NGO surfaces — gated by FEATURE_NGO (Phase 5 restore).
+                Server APIs at /api/v2/ngo/* enforce role via 403;
+                FeatureGated adds a calm placeholder while flag is off
+                so deep-links never 404. RouteErrorBoundary isolates
+                any render crash from the shell. */}
+            <Route path="/ngo" element={
+              <RouteErrorBoundary routeName="ngo-overview">
+                <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                  <NGOOverview />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/ngo/interventions" element={
+              <RouteErrorBoundary routeName="ngo-interventions">
+                <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                  <InterventionCenter />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/ngo/scores" element={
+              <RouteErrorBoundary routeName="ngo-scores">
+                <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                  <FarmerScoring />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
             {/* /ngo/funding now renders the v3 FundingAdmin
                 management surface (see route below). The
                 legacy FundingReadiness page is kept reachable
                 at /ngo/funding-readiness for any internal
                 links that still point at it. */}
-            <Route path="/ngo/funding-readiness" element={<FundingReadiness />} />
+            <Route path="/ngo/funding-readiness" element={
+              <RouteErrorBoundary routeName="ngo-funding-readiness">
+                <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                  <FundingReadiness />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
             {/* Monetisation layer (additive). Distinct from the
                 server-fed NGOOverview above; reads local metrics
                 + pricing config so it works in demos / offline.
                 /pricing itself lives outside this protected block
                 so it can be demo'd without an account. */}
-            <Route path="/ngo/value"   element={<NgoValueDashboard />} />
-            <Route path="/ngo/control" element={<NgoControlPanel />} />
+            <Route path="/ngo/value" element={
+              <RouteErrorBoundary routeName="ngo-value">
+                <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                  <NgoValueDashboard />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/ngo/control" element={
+              <RouteErrorBoundary routeName="ngo-control">
+                <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                  <NgoControlPanel />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
             <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/today/quick" element={<TodayQuick />} />
 

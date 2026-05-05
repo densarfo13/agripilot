@@ -117,7 +117,7 @@ const DEFAULTS = Object.freeze({
   // buyer only after farmer accepts; buyer phone/email never shown
   // to farmer in this UI.
   FEATURE_BUYER_INTEREST:  true,
-  FEATURE_NGO:     false,
+  FEATURE_NGO:     true,   // Phase 5 restore — 2026-05-04
   FEATURE_ADMIN:   false,
   FEATURE_FUNDING: false,
   // Pilot stability restore (May 2026 spec §1) — public pricing
