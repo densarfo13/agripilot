@@ -111,7 +111,10 @@ const DEFAULTS = Object.freeze({
   // shows "Feature temporarily disabled for pilot." when off.
   FEATURE_SCAN:    false,
   FEATURE_SELL:    true,  // Phase 1 restore — 2026-05-04
-  FEATURE_BUYER:   false,
+  FEATURE_BUYER:           true,   // Phase 2 restore — 2026-05-04 (listing browse)
+  // Phase 3 gate — interest request sending + farmer approve/decline.
+  // Off in Phase 2: buyers can browse but not yet send interest.
+  FEATURE_BUYER_INTEREST:  false,
   FEATURE_NGO:     false,
   FEATURE_ADMIN:   false,
   FEATURE_FUNDING: false,

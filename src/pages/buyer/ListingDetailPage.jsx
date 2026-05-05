@@ -18,6 +18,7 @@ import { getListing, expressInterest } from '../../hooks/useMarket.js';
 import ListingCard from '../../components/market/ListingCard.jsx';
 import BuyerInterestForm from '../../components/market/BuyerInterestForm.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
+import { isFeatureEnabled } from '../../utils/featureFlags.js';
 
 export default function ListingDetailPage() {
   const { t } = useAppSettings();
@@ -57,6 +58,7 @@ export default function ListingDetailPage() {
   }
 
   const isActive = state.listing.status === 'active';
+  const interestEnabled = isFeatureEnabled('FEATURE_BUYER_INTEREST');
 
   return (
     <Shell>
@@ -77,7 +79,16 @@ export default function ListingDetailPage() {
         {tSafe('market.detail.contactNote', '')}
       </div>
 
-      {isActive ? (
+      {isActive && !interestEnabled && (
+        <div style={S.comingSoon} data-testid="interest-coming-soon">
+          <p style={S.comingSoonText}>
+            {tSafe('market.detail.interestComingSoon',
+              'Interest requests will be available soon.')}
+          </p>
+        </div>
+      )}
+
+      {isActive && interestEnabled && (
         <BuyerInterestForm
           onSubmit={handleSubmit}
           submitting={submitState.busy}
@@ -85,7 +96,9 @@ export default function ListingDetailPage() {
           error={submitState.error}
           onBrowseMore={() => navigate('/market/browse')}
         />
-      ) : (
+      )}
+
+      {!isActive && (
         <div style={S.closed} data-testid="listing-unavailable">
           <strong>
             {state.listing.status === 'reserved'
@@ -136,6 +149,12 @@ const S = {
     background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.22)',
     color: '#EAF2FF', fontSize: '0.8125rem', lineHeight: 1.4,
   },
+  comingSoon: {
+    padding: '0.875rem 1rem', borderRadius: '14px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px dashed rgba(255,255,255,0.15)',
+  },
+  comingSoonText: { margin: 0, fontSize: '0.875rem', color: '#9FB3C8' },
   closed: {
     padding: '1rem', borderRadius: '14px',
     background: 'rgba(255,255,255,0.03)',

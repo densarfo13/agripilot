@@ -1007,9 +1007,11 @@ export default function App() {
               via marketStore.saveBuyerInterest; farmer phone
               is never exposed publicly. */}
           <Route path="/marketplace" element={
-            <FeatureGated flag="FEATURE_BUYER" feature="buyer">
-              <Marketplace />
-            </FeatureGated>
+            <RouteErrorBoundary routeName="marketplace">
+              <FeatureGated flag="FEATURE_BUYER" feature="buyer">
+                <Marketplace />
+              </FeatureGated>
+            </RouteErrorBoundary>
           } />
           {/* Role-routing canonical paths (May 2026).
               /home    → role-aware redirect (farmer→/dashboard,
@@ -1338,10 +1340,34 @@ export default function App() {
             <Route path="/farmer/listings" element={<MyListingsPage />} />
             <Route path="/farmer/listings/new" element={<CreateListingPage />} />
             <Route path="/farmer/notifications" element={<NotificationsPage />} />
-            <Route path="/market/browse" element={<BrowseListingsPage />} />
-            <Route path="/market/listings/:id" element={<ListingDetailPage />} />
-            <Route path="/buyer/interests" element={<MyInterestsPage />} />
-            <Route path="/buyer/notifications" element={<BuyerNotificationsPage />} />
+            <Route path="/market/browse" element={
+              <RouteErrorBoundary routeName="market-browse">
+                <FeatureGated flag="FEATURE_BUYER" feature="buyer">
+                  <BrowseListingsPage />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/market/listings/:id" element={
+              <RouteErrorBoundary routeName="market-listing-detail">
+                <FeatureGated flag="FEATURE_BUYER" feature="buyer">
+                  <ListingDetailPage />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/buyer/interests" element={
+              <RouteErrorBoundary routeName="buyer-interests">
+                <FeatureGated flag="FEATURE_BUYER_INTEREST" feature="buyer-interest">
+                  <MyInterestsPage />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/buyer/notifications" element={
+              <RouteErrorBoundary routeName="buyer-notifications">
+                <FeatureGated flag="FEATURE_BUYER" feature="buyer">
+                  <BuyerNotificationsPage />
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
             <Route path="/onboarding/smart" element={<Navigate to="/onboarding/fast" replace />} />
             {/* Onboarding cleanup — duplicate /onboarding/fast
                 (FastOnboardingRoute) intentionally removed; the

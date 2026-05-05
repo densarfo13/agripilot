@@ -24,6 +24,7 @@ import {
 import ListingCard from '../../components/market/ListingCard.jsx';
 import BuyerFiltersBar from '../../components/market/BuyerFiltersBar.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
+import { isFeatureEnabled } from '../../utils/featureFlags.js';
 
 const EMPTY_FILTERS = {
   crop: '', country: '', stateCode: '', quantity: '', minQuality: '', deliveryMode: '',
@@ -113,19 +114,23 @@ export default function BrowseListingsPage() {
       || `${resultCount} listings`;
   }, [state.loading, state.error, resultCount, t]);
 
+  const interestEnabled = isFeatureEnabled('FEATURE_BUYER_INTEREST');
+
   return (
     <div style={S.page}>
       <div style={S.container}>
         <header style={S.header}>
           <h1 style={S.title}>{tSafe('market.browse.title', '')}</h1>
-          <button
-            type="button"
-            onClick={() => navigate('/buyer/interests')}
-            style={S.linkBtn}
-            data-testid="go-my-interests"
-          >
-            {tSafe('market.myInterests.link', '')}
-          </button>
+          {interestEnabled && (
+            <button
+              type="button"
+              onClick={() => navigate('/buyer/interests')}
+              style={S.linkBtn}
+              data-testid="go-my-interests"
+            >
+              {tSafe('market.myInterests.link', '')}
+            </button>
+          )}
         </header>
 
         <BuyerFiltersBar

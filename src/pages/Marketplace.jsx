@@ -31,6 +31,7 @@ import { useTranslation } from '../i18n/index.js';
 import { cropLabel } from '../utils/cropLabel.js';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 
 const C = FARROWAY_BRAND.colors;
 
@@ -41,6 +42,7 @@ export default function Marketplace() {
   const [cropFilter, setCropFilter]     = useState('');
   const [regionFilter, setRegionFilter] = useState('');
   const [activeListing, setActiveListing] = useState(null); // for interest form
+  const interestEnabled = isFeatureEnabled('FEATURE_BUYER_INTEREST');
 
   // Re-read storage when the user opens this tab in another
   // window — a farmer adding a listing on their phone should
@@ -167,12 +169,12 @@ export default function Marketplace() {
               <li key={l.id} style={S.tile}>
                 <ListingCard
                   listing={l}
-                  onInterested={() => {
+                  onInterested={interestEnabled ? () => {
                     safeTrackEvent(MARKET_EVENTS.LISTING_VIEWED, {
                       listingId: l.id, crop: l.crop,
                     });
                     setActiveListing(l);
-                  }}
+                  } : null}
                 />
               </li>
             ))}
@@ -180,7 +182,7 @@ export default function Marketplace() {
         )}
       </div>
 
-      {activeListing && (
+      {interestEnabled && activeListing && (
         <InterestModal
           listing={activeListing}
           onClose={() => setActiveListing(null)}
@@ -242,14 +244,16 @@ function ListingCard({ listing, onInterested }) {
         <p style={cardStyles.price}>{listing.priceRange}</p>
       )}
 
-      <button
-        type="button"
-        onClick={onInterested}
-        style={cardStyles.btn}
-        data-testid={`marketplace-interest-${listing.id}`}
-      >
-        {tSafe('market.interested', 'I\u2019m Interested')}
-      </button>
+      {typeof onInterested === 'function' && (
+        <button
+          type="button"
+          onClick={onInterested}
+          style={cardStyles.btn}
+          data-testid={`marketplace-interest-${listing.id}`}
+        >
+          {tSafe('market.interested', 'I\u2019m Interested')}
+        </button>
+      )}
     </article>
   );
 }
