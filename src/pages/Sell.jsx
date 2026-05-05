@@ -49,7 +49,9 @@ import { isFeatureEnabled } from '../config/features.js';
 import { isFeatureEnabled as isFlagEnabled } from '../utils/featureFlags.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 import useAutoPriceSuggestion from '../hooks/useAutoPriceSuggestion.js';
+import useTrustScore from '../hooks/useTrustScore.js';
 import PriceSuggestionWidget from '../components/sell/PriceSuggestionWidget.jsx';
+import TrustScoreBadge from '../components/trust/TrustScoreBadge.jsx';
 import MarketInsightCard from '../components/sell/MarketInsightCard.jsx';
 import BuyerExplanation  from '../components/sell/BuyerExplanation.jsx';
 import PostListingFlow   from '../components/sell/PostListingFlow.jsx';
@@ -125,6 +127,16 @@ export default function Sell() {
   const v2On = isFeatureEnabled('sellScreenV2');
   // Phase 7A: live price suggestion widget (FEATURE_PRICING flag).
   const pricingOn = isFlagEnabled('FEATURE_PRICING');
+  // Phase 7B: trust score for the seller's own profile (FEATURE_TRUST flag).
+  const trustOn = isFlagEnabled('FEATURE_TRUST');
+  // Resolve the seller's stable ID so the trust hook can fetch.
+  // user.sub (JWT subject) is the canonical user UUID; userId is the V2 fallback.
+  const selfFarmerId = user?.sub || user?.id || profile?.userId || null;
+  const {
+    score:    trustScore,
+    level:    trustLevel,
+    building: trustBuilding,
+  } = useTrustScore(trustOn ? (selfFarmerId || '') : '');
   // "Not sure yet" toggle for the quantity field. When on the
   // listing saves with `quantity: null` so buyers can still see
   // the offer and ask the farmer for a number directly.
@@ -452,6 +464,20 @@ export default function Sell() {
           {tSafe('market.sellSubtitle',
             'Let buyers know when your crop is ready.')}
         </p>
+
+        {/* Phase 7B: seller trust badge — advisory indicator.
+            Shows the farmer their own trust level so they understand
+            how they appear to buyers. Never blocks listing creation. */}
+        {trustOn ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <TrustScoreBadge
+              score={trustScore}
+              level={trustLevel}
+              building={trustBuilding}
+              size="md"
+            />
+          </div>
+        ) : null}
 
         {errMsg && (
           <p style={S.formError} role="alert">{errMsg}</p>

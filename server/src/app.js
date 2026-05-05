@@ -110,6 +110,8 @@ import v2NgoDashboardRoutes from '../routes/ngoDashboard.js';
 import v2AdminBasicRoutes from '../routes/adminBasic.js';
 // Phase 7A restore — pricing suggestion endpoint (public, aggregate only).
 import v2PricingSuggestRoutes from '../routes/pricingSuggest.js';
+// Phase 7B restore — trust score endpoint (public, aggregate only).
+import v2TrustScoreRoutes from '../routes/trustScore.js';
 import v2CropCycleRoutes, { createFarmerTodayRouter } from '../routes/cropCycles.js';
 import v2HarvestRoutes from '../routes/harvests.js';
 import recommendationsRouter from '../routes/recommendations.js';
@@ -1054,6 +1056,8 @@ app.use('/api/v2/ngo', v2NgoDashboardRoutes);
 app.use('/api/v2/admin', v2AdminBasicRoutes);
 // Phase 7A restore — pricing suggestion (public aggregate, no auth).
 app.use('/api/v2/pricing', v2PricingSuggestRoutes);
+// Phase 7B restore — trust score (public aggregate, no auth).
+app.use('/api/v2/trust', v2TrustScoreRoutes);
 app.use('/api/v2/crop-cycles', v2CropCycleRoutes);
 app.use('/api/v2/farmer', createFarmerTodayRouter());
 app.use('/api/v2/harvests', v2HarvestRoutes);

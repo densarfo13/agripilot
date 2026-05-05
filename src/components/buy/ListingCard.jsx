@@ -19,11 +19,15 @@
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
+import { isFeatureEnabled as isFlagEnabled } from '../../utils/featureFlags.js';
 import InterestForm from './InterestForm.jsx';
 import SellerBadges from '../marketplace/SellerBadges.jsx';
 import BoostedBadge from '../marketplace/BoostedBadge.jsx';
 import ScarcityBadges from '../marketplace/ScarcityBadges.jsx';
 import VerifiedBadge  from '../insights/VerifiedBadge.jsx';
+// Phase 7B: trust score badge — advisory, never blocks interaction.
+import useTrustScore from '../../hooks/useTrustScore.js';
+import TrustScoreBadge from '../trust/TrustScoreBadge.jsx';
 
 const S = {
   card: {
@@ -118,6 +122,14 @@ export default function ListingCard({
   style,
 }) {
   useTranslation();
+
+  // Phase 7B: trust score for the seller.
+  // Hook called here (before the early return) so React hook order is stable.
+  // When FEATURE_TRUST is off, we pass '' → hook skips fetch → building=true.
+  const trustEnabled = isFlagEnabled('FEATURE_TRUST');
+  const { score: trustScore, level: trustLevel, building: trustBuilding } =
+    useTrustScore(trustEnabled ? (listing?.farmerId || '') : '');
+
   if (!listing || !listing.id) return null;
 
   const cropLabel = String(listing.crop || '').trim();
@@ -140,6 +152,18 @@ export default function ListingCard({
         <h3 style={S.crop}>{cropDisplay}</h3>
         {qty ? <span style={S.unit}>{qty}</span> : null}
       </div>
+
+      {/* Phase 7B: seller trust badge — advisory only, never blocks
+          the buyer from sending interest. Shows "Building trust
+          score…" when the seller has no server record yet. */}
+      {trustEnabled && listing.farmerId ? (
+        <TrustScoreBadge
+          score={trustScore}
+          level={trustLevel}
+          building={trustBuilding}
+          size="sm"
+        />
+      ) : null}
 
       {/* Marketplace monetization §1: Boosted badge on highlighted
           listings. Self-suppresses when the listing has no active

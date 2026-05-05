@@ -125,6 +125,7 @@ const DEFAULTS = Object.freeze({
   // routes still render <DisabledFeatureFallback /> with the
   // canonical "Feature temporarily disabled for pilot." copy.
   FEATURE_PRICING: true,   // Phase 7A restore — pricing engine 2026-05-05
+  FEATURE_TRUST:   true,   // Phase 7B restore — trust scoring  2026-05-05
 
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.
