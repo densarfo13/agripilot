@@ -45,7 +45,6 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { tStrict } from '../../i18n/strictT.js';
 import { useTranslation } from '../../i18n/index.js';
 // Use the non-throwing context variant. ExperienceFallback can
@@ -237,11 +236,14 @@ export default function ExperienceFallback({ children }) {
     setRepairResolution(resolution);
   }, [needsRepair]);
 
-  // Auto-redirect to setup when no data exists. We use
-  // <Navigate> so React Router handles the transition cleanly
-  // (no full reload, no history-stack pollution).
+  // Setup is optional — do NOT auto-redirect when no farm/garden
+  // exists. Render children so each page shows its own empty state:
+  //   • /my-farm, /my-grow → MyFarmPage → AddFarmEmpty card
+  //   • /dashboard         → Dashboard → CompleteSetupCard inline
+  // The user adds a farm or garden by tapping the in-page CTA,
+  // never by an involuntary navigation away from their destination.
   if (needsRepair && repairResolution === 'no_data') {
-    return <Navigate to="/onboarding/simple" replace />;
+    return children || null;
   }
   // Repair fixed it — render the loading branch for one frame
   // while useExperience re-subscribes; the next render lands

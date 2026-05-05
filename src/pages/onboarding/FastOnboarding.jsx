@@ -280,6 +280,25 @@ const S = {
     textUnderlineOffset: 3,
     fontFamily: 'inherit',
   },
+  // "Skip for now" / "Use general guidance" — routing fix spec §7.
+  // Visually distinct from linkBtn: slightly muted, no underline,
+  // so it reads as secondary/optional without being invisible.
+  skipBtn: {
+    appearance: 'none',
+    display: 'block',
+    width: '100%',
+    background: 'transparent',
+    border: '1px solid rgba(234,242,255,0.18)',
+    borderRadius: 10,
+    color: 'rgba(234,242,255,0.55)',
+    fontSize: '0.8rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    padding: '0.5rem',
+    minHeight: 36,
+    fontFamily: 'inherit',
+    marginTop: '0.25rem',
+  },
   // High-Conversion Onboarding §1 — location status card. Single
   // tap target showing 📍 + status text. Idle/denied states are
   // tappable to (re-)trigger detection; granted state is purely
@@ -1047,6 +1066,33 @@ export default function FastOnboarding() {
                   'Hide manual entry')
               : tStrict('fastOnboarding.locationConfirm.enterManually',
                   'Enter manually')}
+          </button>
+
+          {/* Routing fix spec §7–§8 — "Skip for now" / "Use general
+              guidance". Do NOT trap the user on the location screen.
+              Tapping here stamps setupSkipped=true (prevents future
+              auto-prompts) and returns to Home. The app renders with
+              weather + task fallbacks; the user can add their location
+              any time from the inline "Add location" card on Home. */}
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('setupSkipped', 'true');
+                  localStorage.setItem('farroway_location_skipped', 'true');
+                }
+              } catch { /* swallow */ }
+              try {
+                trackEvent('setup_skipped', { from: 'fast-onboarding/location' });
+              } catch { /* swallow */ }
+              try { navigate('/dashboard', { replace: true }); }
+              catch { /* swallow */ }
+            }}
+            style={S.skipBtn}
+            data-testid="fast-onboarding-skip"
+          >
+            {tStrict('fastOnboarding.skip', 'Use general guidance')}
           </button>
 
           {showManualEntry ? (

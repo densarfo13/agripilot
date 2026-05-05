@@ -100,18 +100,17 @@ export default function DashboardSafeLoader({
     isAuthLoading, isProfileLoading, backendAvailable,
   });
 
-  // Anti-loop redirect to /setup. Spec §9: never bounce
-  // between dashboard and setup; only redirect once per
-  // session, and never if the user is already there.
+  // Setup is optional. The needs_onboarding render branch below
+  // shows EmptyFarmState (an inline "Add farm" card) so the user
+  // stays on their destination page and can tap the CTA when ready.
+  // No automatic redirect — tapping Home or My Grow must NEVER
+  // send the user to setup involuntarily.
   React.useEffect(() => {
-    if (!safeSessionEnabled) return;
-    if (session.status !== 'needs_onboarding') return;
-    if (location.pathname === SETUP_PATH) return;
-    if (redirectCountRef.current >= REDIRECT_LIMIT) return;
-    redirectCountRef.current += 1;
-    try { navigate(SETUP_PATH, { replace: true }); }
-    catch { /* ignore */ }
-  }, [safeSessionEnabled, session.status, location.pathname, navigate]);
+    // no-op: auto-redirect removed per routing fix spec.
+    // location, navigate, redirectCountRef are declared above and
+    // kept in hook-call position to preserve React's hook order.
+    void safeSessionEnabled; void session.status;
+  }, [safeSessionEnabled, session.status]);
 
   // Flag off → render children straight through.
   if (!safeSessionEnabled) {
@@ -134,14 +133,9 @@ export default function DashboardSafeLoader({
   }
 
   if (session.status === 'needs_onboarding') {
-    // We tried to redirect above but the limit may have
-    // tripped (e.g. the redirect path itself is broken).
-    // Render the recovery card as a safe terminal state.
-    if (redirectCountRef.current >= REDIRECT_LIMIT
-        && location.pathname !== SETUP_PATH) {
-      return <EmptyFarmState />;
-    }
-    return <SafeSplash />;
+    // No auto-redirect. Show the inline "Add farm" card so the
+    // user can continue from the page they tapped to reach.
+    return <EmptyFarmState />;
   }
 
   if (session.status === 'error') {
