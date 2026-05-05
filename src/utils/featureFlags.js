@@ -124,7 +124,7 @@ const DEFAULTS = Object.freeze({
   // page hidden until the live pilot stabilises. Reachable
   // routes still render <DisabledFeatureFallback /> with the
   // canonical "Feature temporarily disabled for pilot." copy.
-  FEATURE_PRICING: false,
+  FEATURE_PRICING: true,   // Phase 7A restore — pricing engine 2026-05-05
 
   // Advanced AI recommendations — LLM-backed forward
   // planning. Stays off until safety review lands.

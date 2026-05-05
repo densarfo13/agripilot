@@ -45,8 +45,11 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { ArrowRight } from '../components/icons/lucide.jsx';
 import { isFeatureEnabled } from '../config/features.js';
+// Phase 7A: FEATURE_PRICING flag check (separate from features.js camelCase system).
+import { isFeatureEnabled as isFlagEnabled } from '../utils/featureFlags.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 import useAutoPriceSuggestion from '../hooks/useAutoPriceSuggestion.js';
+import PriceSuggestionWidget from '../components/sell/PriceSuggestionWidget.jsx';
 import MarketInsightCard from '../components/sell/MarketInsightCard.jsx';
 import BuyerExplanation  from '../components/sell/BuyerExplanation.jsx';
 import PostListingFlow   from '../components/sell/PostListingFlow.jsx';
@@ -98,7 +101,6 @@ export default function Sell() {
       map[i.listingId] = (map[i.listingId] || 0) + 1;
     }
     return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myActiveListings.length]);
 
   // Prefill from the active farm so the farmer just confirms
@@ -121,6 +123,8 @@ export default function Sell() {
   const [successId, setSuccessId]   = useState(null);
   // Sell screen V2 — flag-gated additions (default off).
   const v2On = isFeatureEnabled('sellScreenV2');
+  // Phase 7A: live price suggestion widget (FEATURE_PRICING flag).
+  const pricingOn = isFlagEnabled('FEATURE_PRICING');
   // "Not sure yet" toggle for the quantity field. When on the
   // listing saves with `quantity: null` so buyers can still see
   // the offer and ask the farmer for a number directly.
@@ -133,6 +137,9 @@ export default function Sell() {
   const [detectedRegion, setDetectedRegion]   = useState('');
   const [detectedCountry, setDetectedCountry] = useState('');
   const [errMsg, setErrMsg]         = useState('');
+  // Phase 7A: tracks whether the farmer accepted a pricing suggestion.
+  // When true, the widget shows "✓ Applied" instead of "Use this price".
+  const [priceSuggestionApplied, setPriceSuggestionApplied] = useState(false);
 
   // Effective region/country for insights + listing payload —
   // V2 prefers the freshly detected value, with the farm/profile
@@ -158,7 +165,6 @@ export default function Sell() {
     if (priceTouched) return;
     if (!pricePrefill) return;
     setPriceRange(pricePrefill);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [v2On, pricePrefill, priceTouched]);
 
   // Track `listing_viewed` once per page mount so analytics can
@@ -229,6 +235,7 @@ export default function Sell() {
                 setPriceRange('');
                 setQtyUnknown(false);
                 setPriceTouched(false);
+                setPriceSuggestionApplied(false);
               }}
               style={S.btnGhost}
             >
@@ -569,6 +576,25 @@ export default function Sell() {
               data-testid="sell-ready-date"
             />
           </label>
+
+          {/* Phase 7A: price suggestion widget — informational, never blocks.
+              Fetches aggregate market data; falls back gracefully on any error.
+              Placing above the price field so farmer sees the data before
+              deciding their price. Only renders when FEATURE_PRICING=true
+              and a crop name has been entered. */}
+          {pricingOn && crop ? (
+            <PriceSuggestionWidget
+              crop={crop}
+              country={effectiveCountry}
+              accepted={priceSuggestionApplied}
+              onAccept={(rangeStr) => {
+                setPriceRange(rangeStr);
+                // Mark as touched so v2 auto-suggestion doesn't overwrite.
+                setPriceTouched(true);
+                setPriceSuggestionApplied(true);
+              }}
+            />
+          ) : null}
 
           <label style={S.label} htmlFor="sell-price">
             {tSafe('market.priceRange', 'Price range (optional)')}
