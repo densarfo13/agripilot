@@ -24,27 +24,41 @@ import { requireAuth, requireRole } from '../middleware/rbac.js';
 // filter would have been undefined and the query would have
 // returned every org's data. Adding extractOrganization here
 // guarantees a reviewer's queries are bounded to their own org.
-import { extractOrganization } from '../src/middleware/orgScope.js';
+import { extractOrganization, orgWhereFarmer } from '../src/middleware/orgScope.js';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// NGO endpoints are reviewer/admin only AND org-scoped. Route-level
-// stack is:
+// NGO endpoints are role-gated AND org-scoped. Route-level stack:
 //   authenticate         — populates req.user (id, role)
 //   requireAuth          — 401 guard
-//   requireReviewer      — 403 unless reviewer / admin
-//   extractOrganization  — populates req.organizationId so handlers
-//                          can pass it to orgWhereFarmer(req)
-const requireReviewer = requireRole('reviewer');
-const NGO_SCOPE = [authenticate, requireAuth, requireReviewer, extractOrganization];
+//   requireNgoRole       — 403 unless role ∈ NGO role set
+//   extractOrganization  — populates req.organizationId; handlers
+//                          call orgWhereFarmer(req) to scope queries
+//
+// Accepted roles (Phase 5 spec §Security):
+//   'reviewer'            — legacy NGO operator role
+//   'institutional_admin' — NGO admin (server-side name)
+//   'field_officer'       — field agent (server-side name)
+//   'ngo_admin'           — canonical client-side NGO admin role
+//   'field_agent'         — canonical client-side field agent role
+//   'ngo'                 — short alias (server normalisation maps this)
+//   'admin' / 'super_admin' — always bypass via rbac.js SUPER_ROLES
+const requireNgoRole = requireRole(
+  'reviewer', 'institutional_admin', 'field_officer',
+  'ngo_admin', 'field_agent', 'ngo',
+);
+const NGO_SCOPE = [authenticate, requireAuth, requireNgoRole, extractOrganization];
 
 const ACTIVE_WINDOW_DAYS = 30;
 
 // ─── GET /api/v2/ngo/overview ──────────────────────────────
-router.get('/overview', ...NGO_SCOPE, async (_req, res) => {
+// Org-scoped: all queries filter by req.organizationId via
+// orgWhereFarmer(req) so NGO A cannot see NGO B's data.
+router.get('/overview', ...NGO_SCOPE, async (req, res) => {
   const now = new Date();
   const activeSince = new Date(now.getTime() - ACTIVE_WINDOW_DAYS * 86_400_000);
+  const orgWhere = orgWhereFarmer(req); // {} for super_admin, { organizationId } otherwise
 
   const [
     totalFarmers,
@@ -52,12 +66,13 @@ router.get('/overview', ...NGO_SCOPE, async (_req, res) => {
     openHighRiskIssues,
     cropsInProgress,
   ] = await Promise.all([
-    prisma.farmProfile.count({ where: { status: 'active' } }),
+    prisma.farmProfile.count({ where: { status: 'active', ...orgWhere } }),
     prisma.farmProfile.count({
-      where: { status: 'active', updatedAt: { gte: activeSince } },
+      where: { status: 'active', updatedAt: { gte: activeSince }, ...orgWhere },
     }),
     prisma.issueReport.findMany({
-      where: { status: { in: ['open', 'in_review'] }, severity: 'high' },
+      where: { status: { in: ['open', 'in_review'] }, severity: 'high',
+               farmProfile: orgWhere.organizationId ? { organizationId: orgWhere.organizationId } : undefined },
       select: { farmProfileId: true },
       distinct: ['farmProfileId'],
     }),
@@ -66,6 +81,7 @@ router.get('/overview', ...NGO_SCOPE, async (_req, res) => {
         lifecycleStatus: { in: [
           'planned', 'planting', 'growing', 'flowering', 'harvest_ready',
         ] },
+        profile: orgWhere.organizationId ? { organizationId: orgWhere.organizationId } : undefined,
       },
     }).catch(() => 0),
   ]);
@@ -73,6 +89,7 @@ router.get('/overview', ...NGO_SCOPE, async (_req, res) => {
   res.json({
     totalFarmers,
     activeFarmers,
+    inactiveFarmers: Math.max(0, totalFarmers - activeFarmers),
     highRiskFarmers: openHighRiskIssues.length,
     cropsInProgress,
     generatedAt: now.toISOString(),
@@ -195,16 +212,32 @@ router.get('/intervention', ...NGO_SCOPE, async (req, res) => {
 });
 
 // ─── GET /api/v2/ngo/inactive-farmers ──────────────────────
+// Org-scoped: only returns farms within the caller's organization.
 router.get('/inactive-farmers', ...NGO_SCOPE, async (req, res) => {
   const days = Math.max(7, Math.min(90, parseInt(req.query.days, 10) || 14));
   const cutoff = new Date(Date.now() - days * 86_400_000);
+  const orgWhere = orgWhereFarmer(req);
   const farms = await prisma.farmProfile.findMany({
-    where: { status: 'active', updatedAt: { lt: cutoff } },
+    where: { status: 'active', updatedAt: { lt: cutoff }, ...orgWhere },
     orderBy: { updatedAt: 'asc' },
-    select: { id: true, farmName: true, farmerName: true, stateCode: true, country: true, updatedAt: true },
+    select: {
+      id: true, farmName: true, farmerName: true,
+      stateCode: true, country: true, updatedAt: true,
+      primaryCrop: true, region: true,
+    },
     take: 200,
   });
-  res.json({ cutoffDays: days, farms });
+  // Compute daysSinceLastActivity so the client risk classifier works.
+  const now = Date.now();
+  const farmersWithActivity = farms.map((f) => ({
+    ...f,
+    name: f.farmerName || f.farmName || 'Unnamed',
+    crop: f.primaryCrop || null,
+    daysSinceLastActivity: f.updatedAt
+      ? Math.floor((now - new Date(f.updatedAt).getTime()) / 86_400_000)
+      : null,
+  }));
+  res.json({ cutoffDays: days, farmers: farmersWithActivity, farms: farmersWithActivity });
 });
 
 // ─── GET /api/v2/ngo/overdue-clusters ──────────────────────

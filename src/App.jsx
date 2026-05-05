@@ -330,6 +330,8 @@ const CropRecommendations = lazy(() => import('./pages/CropRecommendations.jsx')
 const USCropRecommendations = lazy(() => import('./pages/USCropRecommendations.jsx'));
 const CropPlan = lazy(() => import('./pages/CropPlan.jsx'));
 const NGOOverview = lazy(() => import('./pages/NGOOverview.jsx'));
+// Phase 5 restore — basic NGO dashboard (overview cards + farmer list + risk labels).
+const NgoDashboardV1 = lazy(() => import('./pages/ngo/NgoDashboardV1.jsx'));
 const InterventionCenter = lazy(() => import('./pages/ngo/InterventionCenter.jsx'));
 const FarmerScoring = lazy(() => import('./pages/ngo/FarmerScoring.jsx'));
 const FundingReadiness = lazy(() => import('./pages/ngo/FundingReadiness.jsx'));
@@ -1164,10 +1166,16 @@ export default function App() {
                 FeatureGated adds a calm placeholder while flag is off
                 so deep-links never 404. RouteErrorBoundary isolates
                 any render crash from the shell. */}
+            {/* Phase 5 restore — basic NGO dashboard.
+                Client-side: RoleRoute blocks non-NGO from rendering the page.
+                Server-side: /api/v2/ngo/* routes enforce role + org scope (403 on violation).
+                DO NOT redirect users to setup from here — see routePolicy.js. */}
             <Route path="/ngo" element={
-              <RouteErrorBoundary routeName="ngo-overview">
+              <RouteErrorBoundary routeName="ngo-dashboard-v1">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
-                  <NGOOverview />
+                  <RoleRoute roles={[...STAFF_ROLES, 'ngo_admin', 'field_agent', 'ngo', 'reviewer']}>
+                    <NgoDashboardV1 />
+                  </RoleRoute>
                 </FeatureGated>
               </RouteErrorBoundary>
             } />
