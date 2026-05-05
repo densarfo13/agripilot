@@ -323,25 +323,15 @@ export default function FarmerDashboardPage() {
           setProfileError('');
           return;
         }
-        // ─── Pilot bypass (May 2026) ───
-        // Same rationale as the 404 branch above: never bounce
-        // a pilot user off the dashboard for a missing-profile
-        // server response.
-        if (BYPASS_SETUP_FOR_PILOT) {
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] farmer missing (empty payload) — pilot bypass keeps user on Home');
-          setShowOnboarding(true);
-          return;
-        }
+        // ─── Permanent routing fix (optional-setup-perm — 2026-05-05) ──
+        // Setup is optional. A missing-profile server response keeps
+        // the user on Home; the in-page "Complete Profile" CTA
+        // surfaces the setup path when THEY choose to tap it.
+        // DO NOT add navigate('/profile/setup') or any equivalent
+        // here — see src/core/routePolicy.js for the rule.
         // eslint-disable-next-line no-console
-        console.log('[BOOT] farmer missing (empty payload) — routing to /profile/setup');
+        console.log('[BOOT] farmer missing (empty payload) — showing onboarding prompt on Home');
         setShowOnboarding(true);
-        try {
-          navigate('/profile/setup', {
-            replace: true,
-            state: { reason: 'no_farmer_profile' },
-          });
-        } catch { /* swallow unmount race */ }
         return;
       }
 

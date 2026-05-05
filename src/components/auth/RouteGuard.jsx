@@ -36,6 +36,24 @@
  *     • surfaces the spec's exact wording instead of a 403
  *       response page from the server
  *
+ * ══════════════════════════════════════════════════════════════
+ * PERMANENT ROUTING RULE — DO NOT VIOLATE:
+ *
+ * RouteGuard checks ONLY:
+ *   1. user.role is in the route's allowed-roles list
+ *
+ * RouteGuard must NEVER check or block on:
+ *   • location missing
+ *   • crop / plant missing
+ *   • farm / garden completeness
+ *   • onboardingComplete flag
+ *   • any form of "profile is incomplete"
+ *
+ * Missing setup data → inline prompt cards (not route blocks).
+ * Auth missing → handled by AuthGuard before RouteGuard runs.
+ * See src/core/routePolicy.js for the canonical rule set.
+ * ══════════════════════════════════════════════════════════════
+ *
  * Strict-rule audit
  *   • Pure presentational — never mutates state.
  *   • Never throws — analytics call is try/catch'd.
