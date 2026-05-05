@@ -118,7 +118,7 @@ const DEFAULTS = Object.freeze({
   // to farmer in this UI.
   FEATURE_BUYER_INTEREST:  true,
   FEATURE_NGO:     true,   // Phase 5 restore — 2026-05-04
-  FEATURE_ADMIN:   false,
+  FEATURE_ADMIN:   true,   // Phase 6 restore — 2026-05-04
   FEATURE_FUNDING: false,
   // Pilot stability restore (May 2026 spec §1) — public pricing
   // page hidden until the live pilot stabilises. Reachable

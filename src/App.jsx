@@ -1054,10 +1054,11 @@ export default function App() {
           {/* Farm-issue management pipeline. Farmer submits, admin
               triages + assigns, field officer works + resolves. Kept
               local-first for v1; server endpoints will slot in later
-              without changing the UI shape. */}
+              without changing the UI shape.
+              NOTE: /admin/farm-issues moved to V2ProtectedLayout
+              below (Phase 6 fix — was unguarded in public block). */}
           <Route path="/report-issue"     element={<ReportIssuePage />} />
           <Route path="/my-issues"        element={<MyIssuesPage />} />
-          <Route path="/admin/farm-issues" element={<AdminFarmIssuesPage />} />
           <Route path="/officer/issues"   element={<OfficerIssuesPage />} />
           <Route path="/verify-email" element={<V2VerifyEmail />} />
           <Route path="/profile/setup" element={<V2ProfileSetup />} />
@@ -1322,24 +1323,50 @@ export default function App() {
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
                    element={
-                     <RoleRoute roles={STAFF_ROLES}>
-                       <NgoImpactPage />
-                     </RoleRoute>
+                     <RouteErrorBoundary routeName="ngo-impact">
+                       <FeatureGated flag="FEATURE_NGO" feature="ngo">
+                         <RoleRoute roles={STAFF_ROLES}>
+                           <NgoImpactPage />
+                         </RoleRoute>
+                       </FeatureGated>
+                     </RouteErrorBoundary>
                    } />
+            {/* Admin farm-issue inbox — moved from public block
+                (Phase 6 fix). Local-first page; requires auth +
+                staff role so a farmer who typed the URL directly
+                gets a clean "access denied" rather than raw data. */}
+            <Route path="/admin/farm-issues" element={
+              <RouteErrorBoundary routeName="admin-farm-issues">
+                <FeatureGated flag="FEATURE_ADMIN" feature="admin">
+                  <RoleRoute roles={STAFF_ROLES}>
+                    <AdminFarmIssuesPage />
+                  </RoleRoute>
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+
             {/* Funding Opportunities admin — same page on
                 /admin/funding and /ngo/funding so both staff
                 personas land on the same management surface. */}
             <Route path="/admin/funding"
                    element={
-                     <RoleRoute roles={STAFF_ROLES}>
-                       <FundingAdmin />
-                     </RoleRoute>
+                     <RouteErrorBoundary routeName="admin-funding">
+                       <FeatureGated flag="FEATURE_ADMIN" feature="admin">
+                         <RoleRoute roles={STAFF_ROLES}>
+                           <FundingAdmin />
+                         </RoleRoute>
+                       </FeatureGated>
+                     </RouteErrorBoundary>
                    } />
             <Route path="/ngo/funding"
                    element={
-                     <RoleRoute roles={STAFF_ROLES}>
-                       <FundingAdmin />
-                     </RoleRoute>
+                     <RouteErrorBoundary routeName="ngo-funding">
+                       <FeatureGated flag="FEATURE_ADMIN" feature="admin">
+                         <RoleRoute roles={STAFF_ROLES}>
+                           <FundingAdmin />
+                         </RoleRoute>
+                       </FeatureGated>
+                     </RouteErrorBoundary>
                    } />
 
             {/* NGO Program Distribution — Send a program
@@ -1347,15 +1374,23 @@ export default function App() {
                 on both /admin/programs and /ngo/programs. */}
             <Route path="/admin/programs"
                    element={
-                     <RoleRoute roles={STAFF_ROLES}>
-                       <CreateProgram />
-                     </RoleRoute>
+                     <RouteErrorBoundary routeName="admin-programs">
+                       <FeatureGated flag="FEATURE_ADMIN" feature="admin">
+                         <RoleRoute roles={STAFF_ROLES}>
+                           <CreateProgram />
+                         </RoleRoute>
+                       </FeatureGated>
+                     </RouteErrorBoundary>
                    } />
             <Route path="/ngo/programs"
                    element={
-                     <RoleRoute roles={STAFF_ROLES}>
-                       <CreateProgram />
-                     </RoleRoute>
+                     <RouteErrorBoundary routeName="ngo-programs">
+                       <FeatureGated flag="FEATURE_ADMIN" feature="admin">
+                         <RoleRoute roles={STAFF_ROLES}>
+                           <CreateProgram />
+                         </RoleRoute>
+                       </FeatureGated>
+                     </RouteErrorBoundary>
                    } />
 
             {/* v3 Field Agent Mode — gated to the 'agent'
