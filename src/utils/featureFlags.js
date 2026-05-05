@@ -109,7 +109,7 @@ const DEFAULTS = Object.freeze({
   // — the routes are always mounted so deep links don't
   // 404. Each surface checks its flag at render time and
   // shows "Feature temporarily disabled for pilot." when off.
-  FEATURE_SCAN:    false,
+  FEATURE_SCAN:    true,   // Phase 4 restore — 2026-05-04
   FEATURE_SELL:    true,  // Phase 1 restore — 2026-05-04
   FEATURE_BUYER:           true,   // Phase 2 restore — 2026-05-04 (listing browse)
   // Phase 3 restore — 2026-05-04: interest request sending +

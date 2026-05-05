@@ -62,7 +62,7 @@ const DEFAULTS = Object.freeze({
   // ScanCapture/Result/History components + scanDetectionEngine
   // fallback. Coexists with the existing /scan-crop surface;
   // VoiceAssistant's "scan" command still routes to /scan-crop.
-  scanDetection: false,
+  scanDetection: true,  // Phase 4 restore — 2026-05-04; scanApiEnabled stays false (rule-based fallback)
   // Scan API enabled: when off, `scanDetectionEngine` returns the
   // rule-based safe fallback without hitting any backend. Flip to
   // true once `/api/scan/analyze` lands on the server. Independent
