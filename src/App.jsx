@@ -332,6 +332,8 @@ const CropPlan = lazy(() => import('./pages/CropPlan.jsx'));
 const NGOOverview = lazy(() => import('./pages/NGOOverview.jsx'));
 // Phase 5 restore — basic NGO dashboard (overview cards + farmer list + risk labels).
 const NgoDashboardV1 = lazy(() => import('./pages/ngo/NgoDashboardV1.jsx'));
+// Phase 6 restore — basic admin dashboard (overview cards + activity + moderation).
+const AdminBasicPage = lazy(() => import('./pages/admin/AdminBasicPage.jsx'));
 const InterventionCenter = lazy(() => import('./pages/ngo/InterventionCenter.jsx'));
 const FarmerScoring = lazy(() => import('./pages/ngo/FarmerScoring.jsx'));
 const FundingReadiness = lazy(() => import('./pages/ngo/FundingReadiness.jsx'));
@@ -1224,6 +1226,20 @@ export default function App() {
                 </FeatureGated>
               </RouteErrorBoundary>
             } />
+            {/* Phase 6 restore — basic Admin dashboard.
+                Client-side: RoleRoute blocks non-admins (redirects to /).
+                Server-side: /api/v2/admin/* enforce super_admin | institutional_admin (403).
+                DO NOT add location/crop/farm checks here — see routePolicy.js. */}
+            <Route path="/admin" element={
+              <RouteErrorBoundary routeName="admin-basic">
+                <FeatureGated flag="FEATURE_ADMIN" feature="admin">
+                  <RoleRoute roles={ADMIN_ROLES}>
+                    <AdminBasicPage />
+                  </RoleRoute>
+                </FeatureGated>
+              </RouteErrorBoundary>
+            } />
+
             <Route path="/today" element={<FarmerTodayPage />} />
             <Route path="/today/quick" element={<TodayQuick />} />
 

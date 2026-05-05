@@ -107,6 +107,7 @@ import v2UsRecommendationRoutes from '../routes/usRecommendations.js';
 import v2IssueReportRoutes from '../routes/issueReports.js';
 import v2VerificationRoutes from '../routes/verification.js';
 import v2NgoDashboardRoutes from '../routes/ngoDashboard.js';
+import v2AdminBasicRoutes from '../routes/adminBasic.js';
 import v2CropCycleRoutes, { createFarmerTodayRouter } from '../routes/cropCycles.js';
 import v2HarvestRoutes from '../routes/harvests.js';
 import recommendationsRouter from '../routes/recommendations.js';
@@ -1047,6 +1048,8 @@ app.use('/api/v2/recommend/us', v2UsRecommendationRoutes);
 app.use('/api/v2/issues', v2IssueReportRoutes);
 app.use('/api/v2/verification', v2VerificationRoutes);
 app.use('/api/v2/ngo', v2NgoDashboardRoutes);
+// Phase 6 restore — basic admin dashboard endpoints.
+app.use('/api/v2/admin', v2AdminBasicRoutes);
 app.use('/api/v2/crop-cycles', v2CropCycleRoutes);
 app.use('/api/v2/farmer', createFarmerTodayRouter());
 app.use('/api/v2/harvests', v2HarvestRoutes);
