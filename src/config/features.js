@@ -442,7 +442,7 @@ const DEFAULTS = Object.freeze({
   // additionally prefills the optional message field with a
   // buyer-to-farmer template when this flag is on. Flag-off path:
   // legacy "View buyers" chip + /marketplace deep-link unchanged.
-  marketTransactionFlow: true,  // Phase 3 restore — 2026-05-04
+  marketTransactionFlow: false, // Phase 3 (not yet — buyer interest off in Phase 2)
   // Buy marketplace (simple): mounts the /buy route as a clean
   // buyer-facing list. Each card shows crop / quantity / location
   // / ready date and an inline "I'm interested" form (name +

@@ -156,7 +156,7 @@ export default function Marketplace() {
           <div style={S.empty} data-testid="marketplace-empty">
             <span style={S.emptyIcon} aria-hidden="true">{'\uD83C\uDF31'}</span>
             <p style={S.emptyText}>
-              {tSafe('market.noProduce', 'No produce available yet.')}
+              {tSafe('market.noProduce', 'No produce listings available yet.')}
             </p>
             <p style={S.emptyHint}>
               {tSafe('market.noProduceHint',
@@ -312,12 +312,12 @@ const cardStyles = {
     padding: '0.625rem 1rem',
     borderRadius: '10px',
     border: 'none',
-    background: '#22C55E',
+    background: '#D97706',             // buyer accent: amber
     color: C.white,
     fontSize: '0.9375rem',
     fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(217,119,6,0.28)',
     minHeight: '44px',
   },
 };
@@ -508,9 +508,9 @@ const modalStyles = {
     marginTop: '0.25rem',
     width: '100%',
     padding: '0.875rem 1.25rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: C.white,
+    border: 'none', background: '#D97706', color: C.white,
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(217,119,6,0.28)',
     minHeight: '48px',
   },
   successIcon: { fontSize: '2rem' },

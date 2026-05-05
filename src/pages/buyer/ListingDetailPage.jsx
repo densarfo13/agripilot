@@ -165,7 +165,7 @@ const S = {
   browseBtn: {
     alignSelf: 'flex-start',
     padding: '0.5rem 0.875rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#D97706', color: '#fff',  // buyer accent: amber
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
   },
 };

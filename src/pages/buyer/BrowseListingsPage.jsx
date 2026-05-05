@@ -109,7 +109,7 @@ export default function BrowseListingsPage() {
   const resultHeader = useMemo(() => {
     if (state.loading) return t('common.loading');
     if (state.error) return tSafe('market.browse.error', '');
-    if (resultCount === 0) return tSafe('market.browse.noResults', '');
+    if (resultCount === 0) return tSafe('market.browse.noResults', 'No produce listings available yet.');
     return t('market.browse.results', { count: resultCount })
       || `${resultCount} listings`;
   }, [state.loading, state.error, resultCount, t]);
@@ -143,7 +143,24 @@ export default function BrowseListingsPage() {
           busy={state.loading}
         />
 
-        <p style={S.resultHeader}>{resultHeader}</p>
+        {!state.loading && resultCount > 0 && (
+          <p style={S.resultHeader}>{resultHeader}</p>
+        )}
+
+        {/* Empty state — shown only when not loading and no results */}
+        {!state.loading && resultCount === 0 && (
+          <div style={S.empty} data-testid="browse-empty">
+            <span style={S.emptyIcon} aria-hidden="true">🌱</span>
+            <p style={S.emptyText}>
+              {tSafe('market.browse.noResults',
+                'No produce listings available yet.')}
+            </p>
+            <p style={S.emptyHint}>
+              {tSafe('market.browse.noResultsHint',
+                'New listings appear here as farmers mark crops ready.')}
+            </p>
+          </div>
+        )}
 
         <div style={S.list}>
           {state.listings.map((l) => (
@@ -154,7 +171,7 @@ export default function BrowseListingsPage() {
               onClick={() => navigate(`/market/listings/${l.id}`)}
               actions={
                 <button type="button" style={S.detailBtn}>
-                  {tSafe('market.action.viewDetail', '')}
+                  {tSafe('market.action.viewDetail', 'View listing')}
                 </button>
               }
             />
@@ -165,6 +182,9 @@ export default function BrowseListingsPage() {
   );
 }
 
+// Buyer accent: amber (#D97706). Nature-dark base: #0B1D34 → #081423.
+const AMBER = '#D97706';
+
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
   container: { maxWidth: '42rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
@@ -172,14 +192,23 @@ const S = {
   title: { fontSize: '1.25rem', fontWeight: 700, margin: 0 },
   linkBtn: {
     padding: '0.375rem 0.75rem', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
-    color: '#EAF2FF', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
+    border: `1px solid ${AMBER}`, background: 'transparent',
+    color: AMBER, fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
   },
   resultHeader: { color: '#9FB3C8', fontSize: '0.8125rem', margin: 0 },
   list: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
   detailBtn: {
     padding: '0.5rem 0.75rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: AMBER, color: '#fff',
     fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
   },
+  empty: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: '0.5rem', padding: '2.5rem 1rem', textAlign: 'center',
+    background: 'rgba(255,255,255,0.03)', borderRadius: '16px',
+    border: '1px dashed rgba(255,255,255,0.10)',
+  },
+  emptyIcon: { fontSize: '2rem', lineHeight: 1 },
+  emptyText: { margin: 0, fontSize: '1rem', fontWeight: 700, color: '#EAF2FF' },
+  emptyHint: { margin: 0, fontSize: '0.8125rem', color: '#9FB3C8', lineHeight: 1.5 },
 };
