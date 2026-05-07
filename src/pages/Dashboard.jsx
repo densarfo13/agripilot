@@ -975,16 +975,30 @@ export default function Dashboard() {
           (e.g. first render before useFarmerLoop has resolved). */}
       {loop.profile && (
         <HomeAssistant
+          // ── Mode ──────────────────────────────────────────────
+          // isGarden drives copy: "plant/garden" vs "crop/field".
+          userType={isGarden ? 'backyard' : 'farmer'}
+          // ── Decision (loop data — no extra fetch needed) ──────
           decisionOverride={{
             title:   heroHeadline,
             reason:  heroSubtext,
             cta:     heroCta,
-            // Weather string: "emoji label" derived from the loop's
-            // weatherDecision chip so the pill matches app state.
+            // Pre-formatted weather string from weatherDecision chip.
+            // HomeAssistant also receives weatherCondition below as a
+            // higher-priority source for the spec §2 keyword mapping.
             weather: loop.weatherDecision?.chipIcon
               ? `${loop.weatherDecision.chipIcon} ${loop.weatherDecision.actionLine}`
               : null,
           }}
+          // ── Weather condition keyword for spec §2 mapping ─────
+          // "rain" | "dry" | "hot" | "cold" | "humid" — the raw
+          // condition string from the weather service. HomeAssistant
+          // maps it to the exact user-facing pill text per spec §2.
+          weatherCondition={loop.weather?.condition ?? null}
+          // ── Connectivity + language ───────────────────────────
+          isOnline={isOnline}
+          language={language || 'English'}
+          // ── Callbacks ─────────────────────────────────────────
           onComplete={handleDoThisNow}
           onScan={() => {
             try { navigate(isGarden ? '/scan' : '/scan-crop'); }

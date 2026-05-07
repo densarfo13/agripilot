@@ -1,0 +1,322 @@
+/**
+ * HomeAssistant.css — calm full-screen home surface.
+ *
+ * Design rules:
+ *   • All animations 150–250 ms — feels instant, never busy.
+ *   • No bounce (cubic-bezier or ease-out only).
+ *   • No flash (fade-in starts from opacity: 0, tiny translateY).
+ *   • Staggered entrance: topbar → weather → orb → title → subtitle → cta.
+ *   • CTA press: scale(0.98) — tactile, minimal.
+ *   • Success: slide-up so it reads as arriving, not replacing.
+ *   • Orb: slow 3.5 s pulse — alive but calm.
+ *
+ * CSS custom property bridge:
+ *   Reads --primary, --text-primary, --card-bg, --card-border from
+ *   index.css so the component automatically inherits weather theme
+ *   tints (theme-rain / theme-heat / theme-dry etc.).
+ */
+
+/* ── Keyframes ─────────────────────────────────────────────────── */
+
+@keyframes ha-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes ha-orb-pulse {
+  0%   { transform: scale(1);    opacity: 0.88; }
+  50%  { transform: scale(1.07); opacity: 1;    }
+  100% { transform: scale(1);    opacity: 0.88; }
+}
+
+@keyframes ha-glow-pulse {
+  0%   { opacity: 0.18; }
+  50%  { opacity: 0.34; }
+  100% { opacity: 0.18; }
+}
+
+@keyframes ha-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Shell ─────────────────────────────────────────────────────── */
+
+.home-assistant {
+  /* Full-screen dark teal. Falls back to index.css gradient if
+     the class is rendered inside .app-shell (transparent bg). */
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0b2d2a 0%, #021a19 100%);
+  color: var(--text-primary, #e8f5e9);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  /* Space for the fixed bottom nav so the CTA never hides beneath it */
+  padding-bottom: 88px;
+  box-sizing: border-box;
+  /* Entrance: the whole screen fades in once so individual children
+     stagger relative to a fast common baseline. */
+  animation: ha-fade-in 180ms ease-out both;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────── */
+
+.home-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  opacity: 0.8;
+  animation: ha-fade-in 150ms ease-out both;
+}
+
+.home-topbar__online {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.home-topbar__online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.55);
+  flex-shrink: 0;
+}
+
+.home-topbar__offline {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(232, 245, 233, 0.45);
+  font-size: 13px;
+}
+
+.home-topbar__lang {
+  font-size: 13px;
+  color: rgba(232, 245, 233, 0.55);
+}
+
+/* ── Hero (center content) ─────────────────────────────────────── */
+
+.home-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* ── Weather pill ──────────────────────────────────────────────── */
+
+.home-weather-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: rgba(232, 245, 233, 0.80);
+  margin-bottom: 24px;
+  /* Slight blur so it reads as a frosted pill floating over the bg */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: ha-fade-in 200ms 40ms ease-out both;
+  white-space: nowrap;
+  max-width: calc(100vw - 40px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Orb / illustration ────────────────────────────────────────── */
+
+.home-orb {
+  position: relative;
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 28px;
+  animation: ha-orb-pulse 3.5s ease-in-out infinite;
+  will-change: transform, opacity;
+  /* Prevent glow pseudo-element from causing layout shift */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+}
+
+/* Soft glow ring behind the emoji */
+.home-orb::before {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.22) 0%, transparent 68%);
+  animation: ha-glow-pulse 3.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-orb__emoji {
+  position: relative;
+  z-index: 1;
+  user-select: none;
+}
+
+/* ── Headline ──────────────────────────────────────────────────── */
+
+.home-title {
+  font-size: clamp(22px, 5.5vw, 30px);
+  font-weight: 600;
+  color: var(--text-primary, #e8f5e9);
+  line-height: 1.25;
+  margin: 0 0 10px;
+  max-width: 320px;
+  animation: ha-fade-in 200ms 80ms ease-out both;
+}
+
+/* ── Subtext ───────────────────────────────────────────────────── */
+
+.home-subtitle {
+  font-size: 15px;
+  color: rgba(232, 245, 233, 0.60);
+  line-height: 1.55;
+  margin: 0 0 32px;
+  max-width: 280px;
+  animation: ha-fade-in 200ms 120ms ease-out both;
+}
+
+/* ── Primary CTA ───────────────────────────────────────────────── */
+
+.home-primary {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: none;
+  border-radius: 30px;
+  padding: 15px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #042c1a;
+  min-width: 180px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+  margin-bottom: 12px;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  /* Staggered: appears after subtitle */
+  animation: ha-fade-in 200ms 160ms ease-out both;
+  /* Press interaction */
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.home-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #26d966 0%, #18b351 100%);
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.32);
+}
+
+.home-primary:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.18);
+}
+
+.home-primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* ── Secondary scan action ─────────────────────────────────────── */
+
+.home-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 30px;
+  padding: 11px 24px;
+  font-size: 14px;
+  color: rgba(232, 245, 233, 0.68);
+  cursor: pointer;
+  margin-top: 6px;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  /* Slightly later stagger to read as secondary to the CTA */
+  animation: ha-fade-in 200ms 210ms ease-out both;
+  transition: border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.home-secondary:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: rgba(232, 245, 233, 0.90);
+}
+
+.home-secondary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* ── Success state ─────────────────────────────────────────────── */
+
+.home-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  /* Slides up so it feels like it "arrives" from below */
+  animation: ha-slide-up 220ms ease-out both;
+  margin-top: 4px;
+}
+
+.home-success__msg {
+  font-size: 17px;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.home-success__hook {
+  font-size: 14px;
+  color: rgba(232, 245, 233, 0.50);
+}
+
+/* ── Loading state ─────────────────────────────────────────────── */
+
+.home-assistant--loading {
+  /* Don't animate the shell entrance while content is missing —
+     prevents a flash-of-empty-layout flicker. */
+  animation: none;
+}
+
+/* ── Reduced-motion override ───────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .home-assistant,
+  .home-topbar,
+  .home-weather-pill,
+  .home-title,
+  .home-subtitle,
+  .home-primary,
+  .home-secondary,
+  .home-success {
+    animation: none;
+  }
+
+  .home-orb {
+    animation: none;
+    opacity: 1;
+  }
+
+  .home-orb::before {
+    animation: none;
+    opacity: 0.22;
+  }
+
+  .home-primary,
+  .home-secondary {
+    transition: none;
+  }
+}
