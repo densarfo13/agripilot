@@ -366,7 +366,7 @@ export function buildFarmActionPlan(ctx = {}) {
     generatedFor: Object.freeze({
       farmId: farm.id || null,
       crop:   canonicalCrop,
-      stage:  stageKey,
+      stage:  storedStageKey,
       date:   dateStr,
       climate,
       season,

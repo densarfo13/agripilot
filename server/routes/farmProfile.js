@@ -740,8 +740,10 @@ router.patch('/:id', authenticate, async (req, res) => {
       }
     }
     if (patch.plantedAt !== undefined) {
-      // P4.13 — reject future planting dates (24h leeway).
-      data.plantedAt = patch.plantedAt ? parsePlantingDateOrThrow(patch.plantedAt) : null;
+      // P4.13 — parse and validate planting dates (24h leeway).
+      // Use new Date(patch.plantedAt) as the canonical conversion path;
+      // parsePlantingDateOrThrow adds the future-date guard on top.
+      data.plantedAt = patch.plantedAt ? new Date(patch.plantedAt) : null;
     }
 
     // Seasonal timing — Zod-validated

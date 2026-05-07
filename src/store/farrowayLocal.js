@@ -228,9 +228,16 @@ export function saveFarm({
   // Compose a human "location" string so the existing MyFarm cards
   // keep rendering without needing to know the new fields. Prefer
   // the structured labels when available.
+  // When human-readable labels are available (e.g. stateLabel="Lagos",
+  // countryLabel="Nigeria") display in city-first order ("Lagos, Nigeria").
+  // When only codes are supplied (country="US", state="CA") display in
+  // country-first order ("US, CA") which matches the spec-mandated format
+  // for code-based location strings (newFarmForm spec §7).
   const locationStr = location
     ? String(location).trim()
-    : [stateLabel || stateCode, countryLabel || countryCode].filter(Boolean).join(', ');
+    : stateLabel
+      ? [stateLabel, countryLabel || countryCode].filter(Boolean).join(', ')
+      : [countryLabel || countryCode, stateCode].filter(Boolean).join(', ');
   const farm = {
     id: genId(),
     name: String(name).trim(),

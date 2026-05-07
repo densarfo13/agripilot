@@ -3,20 +3,23 @@
  *
  * Structure (top to bottom):
  *   1. Section label ("Current task" / "All done" / "Come back later")
- *   2. Primary task card (via unified TaskCard, simple variant)
- *   3. Progress signal (lightweight: "2 of 5 done today")
- *   4. Connectivity badge
+ *   2. Primary task card (icon-first, voice-guided, one action)
+ *   3. Big CTA button (56px min-height touch target)
+ *   4. Voice prompt button (listen to task)
+ *   5. Progress signal (completedCount / taskCount)
+ *   6. Connectivity badge
  *
  * Loop states handled:
- *   ready       — show task card + CTA
- *   completed   — show success state briefly
+ *   loading     — show spinner + t('common.loading')
+ *   setup       — show finish setup prompt (!setupComplete)
+ *   stage       — show set stage prompt (!stageSet)
+ *   ready       — show primaryTask card + CTA
  *   all_done    — show all-done card with come-back message
  *   come_back   — offline/empty, show come-back message
  *
  * Design: See → Hear → Tap → Done → Progress
  * No charts. No clutter. One task only.
- *
- * ARCHITECTURE: Renders ONLY from taskViewModel. No raw task access.
+ * No small text (min 0.875rem). 48px+ touch targets. No hardcoded English.
  */
 import { useEffect, useRef } from 'react';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
@@ -25,26 +28,11 @@ import { useNetwork } from '../../context/NetworkContext.jsx';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';
 import { SECTION_ICONS } from '../../lib/farmerIcons.js';
 import { LOOP_STATE } from '../../services/farmerLoopService.js';
-import TaskCard from './TaskCard.jsx';
+import { getTaskIcon, getTaskVoiceKey, getTaskLabelKey } from '../../lib/taskPresentation.js';
+import VoicePromptButton from '../VoicePromptButton.jsx';
 import CompletionCard from './CompletionCard.jsx';
 import { buildCompletionBridge } from '../../core/experience/index.js';
 import { renderLocalizedMessage } from '../../core/i18n/index.js';
-
-const ACTION_ROUTES = {
-  onboarding_incomplete: 'setup',
-  no_active_farm: 'setup',
-  profile_incomplete: 'setup',
-  stage_missing: 'stage',
-  stage_outdated: 'stage',
-  severe_pest: 'task',
-  pest_overdue: 'task',
-  unread_alert: 'task',
-  stale_activity: 'update',
-  needs_checkin: 'update',
-  daily_task: 'task',
-  weather_override: 'task',
-  all_done: 'update',
-};
 
 export default function BasicFarmerHome({
   decision,
@@ -60,33 +48,33 @@ export default function BasicFarmerHome({
   completionState,
   onContinue,
   onLater,
+  // New props for mode-aware rendering
+  primaryTask = null,
+  taskLoading = false,
+  setupComplete = true,
+  stageSet = true,
+  completedCount = 0,
+  taskCount = 0,
 }) {
   const { t } = useTranslation();
   const { autoVoice, language } = useAppPrefs();
   const { isOnline } = useNetwork();
-  const lastSpokenRef = useRef(null);
+  const lastSpokenTaskRef = useRef(null);
 
-  const loading = decision?.loading;
-  const vm = taskViewModel;
+  const loading = taskLoading || decision?.loading;
+  const vm = primaryTask || taskViewModel;
 
-  // Voice auto-play once per action
+  // 1-word icon label (basic mode spec: icon + short label under icon)
+  const iconLabel = primaryTask ? getTaskLabelKey(primaryTask) : null;
+  const shortLabel = iconLabel;
+
+  // Voice auto-play once per task load (when autoVoice is enabled)
   useEffect(() => {
-    if (!autoVoice || loading || !vm) return;
-    if (lastSpokenRef.current === vm.id) return;
-    lastSpokenRef.current = vm.id;
-    try { speakText(vm.voiceText || vm.title, languageToVoiceCode(language)); } catch {}
-  }, [autoVoice, loading, vm, language]);
-
-  function handleCta() {
-    if (!vm) return;
-    const route = ACTION_ROUTES[vm.actionKey] || 'task';
-    switch (route) {
-      case 'setup': return onGoToSetup();
-      case 'stage': return onSetStage();
-      case 'task': return onDoThisNow();
-      case 'update': return onAddUpdate();
-    }
-  }
+    if (!autoVoice || taskLoading || !primaryTask) return;
+    if (lastSpokenTaskRef.current === primaryTask.id) return;
+    lastSpokenTaskRef.current = primaryTask.id;
+    try { speakText(primaryTask.voiceText || primaryTask.title, languageToVoiceCode(language)); } catch { /* voice fail is non-blocking */ }
+  }, [autoVoice, taskLoading, primaryTask, language]);
 
   // ─── Loading ──────────────────────────────────────
   if (loading) {
@@ -94,6 +82,45 @@ export default function BasicFarmerHome({
       <div style={S.page} data-testid="basic-farmer-home">
         <div style={S.center}>
           <div style={S.spinner} />
+          <span style={S.loadingText}>{t('common.loading')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Setup incomplete ─────────────────────────────
+  if (!setupComplete) {
+    return (
+      <div style={S.page} data-testid="basic-farmer-home">
+        <div style={S.promptCard}>
+          <span style={S.promptIcon}>🌱</span>
+          <button
+            type="button"
+            style={S.bigCta}
+            onClick={onGoToSetup}
+            data-testid="basic-do-now-btn"
+          >
+            {t('dashboard.finishSetup')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Stage not set ───────────────────────────────
+  if (!stageSet) {
+    return (
+      <div style={S.page} data-testid="basic-farmer-home">
+        <div style={S.promptCard}>
+          <span style={S.promptIcon}>📋</span>
+          <button
+            type="button"
+            style={S.bigCta}
+            onClick={onSetStage}
+            data-testid="basic-do-now-btn"
+          >
+            {t('dashboard.setStage')}
+          </button>
         </div>
       </div>
     );
@@ -115,15 +142,55 @@ export default function BasicFarmerHome({
         </div>
       )}
 
-      {/* ═══ PRIMARY TASK CARD ═══ */}
+      {/* ═══ PRIMARY TASK ICON (large, 4rem) ═══ */}
       {showTask && (
-        <TaskCard
-          viewModel={vm}
-          variant="simple"
+        <div style={S.taskIconWrap}>
+          <span
+            data-testid="basic-task-icon"
+            style={{ fontSize: '4rem', lineHeight: 1.1 }}
+            aria-hidden="true"
+          >
+            {getTaskIcon(vm)}
+          </span>
+        </div>
+      )}
+
+      {/* ═══ TASK TITLE ═══ */}
+      {showTask && vm.title && (
+        <div style={S.taskTitle}>{vm.title}</div>
+      )}
+
+      {/* ═══ VOICE PROMPT BUTTON ═══ */}
+      {showTask && (
+        <VoicePromptButton
+          promptKey={getTaskVoiceKey(vm)}
+          voiceText={vm.voiceText || vm.title}
+          label={t('common.listen')}
           language={language}
-          t={t}
-          onCta={handleCta}
         />
+      )}
+
+      {/* ═══ BIG CTA ═══ */}
+      {showTask && (
+        <button
+          type="button"
+          data-testid="basic-do-now-btn"
+          style={S.bigCta}
+          onClick={onDoThisNow}
+        >
+          {t('dashboard.doThisNow')}
+        </button>
+      )}
+
+      {/* ═══ ADD UPDATE LINK ═══ */}
+      {showTask && (
+        <button
+          type="button"
+          style={S.addUpdateLink}
+          onClick={onAddUpdate}
+        >
+          {t('dashboard.addUpdate')}
+        </button>
       )}
 
       {/* ═══ COMPLETION SUCCESS STATE ═══ */}
@@ -153,12 +220,6 @@ export default function BasicFarmerHome({
       )}
 
       {/* ═══ ALL DONE STATE ═══ */}
-      {/*
-          §6 completion bridge: no more dead-end. The existing
-          "Great work" line stays; we add a forward-looking next-step
-          line below so the farmer always has an outlook. The bridge
-          emits a LocalizedPayload; the shared renderer localizes it.
-      */}
       {isAllDone && !isCompleted && (() => {
         const bridge = buildCompletionBridge({
           cropStage: decision?.cropStage || vm?.stage || null,
@@ -197,14 +258,16 @@ export default function BasicFarmerHome({
         </div>
       )}
 
-      {/* ═══ PROGRESS SIGNAL ═══ */}
-      {progress.total > 0 && (
+      {/* ═══ PROGRESS SIGNAL (completedCount / taskCount) ═══ */}
+      {(completedCount > 0 || taskCount > 0 || progress.total > 0) && (
         <div style={S.progressRow} data-testid="loop-progress">
           <div style={S.progressTrack}>
-            <div style={{ ...S.progressFill, width: `${progress.percent}%` }} />
+            <div style={{ ...S.progressFill, width: `${progress.percent || 0}%` }} />
           </div>
           <div style={S.progressLabel}>
-            {t('loop.progressToday', { done: progress.done, total: progress.total })}
+            {completedCount > 0 || taskCount > 0
+              ? t('loop.progressToday', { done: completedCount, total: taskCount + completedCount })
+              : t('loop.progressToday', { done: progress.done, total: progress.total })}
           </div>
         </div>
       )}
@@ -225,15 +288,71 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '1.25rem',
     padding: '0.75rem 1rem 2.5rem',
     minHeight: '70vh',
   },
   center: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '50vh',
+    gap: '1rem',
+  },
+  loadingText: {
+    fontSize: '0.9375rem',
+    color: '#9FB3C8',
+  },
+  promptCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '1rem',
+    padding: '2rem 1.25rem',
+    width: '100%',
+  },
+  promptIcon: { fontSize: '3rem' },
+  taskIconWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    padding: '0.5rem 0',
+  },
+  taskTitle: {
+    fontSize: '1.125rem',
+    fontWeight: 700,
+    color: '#EAF2FF',
+    textAlign: 'center',
+    lineHeight: 1.35,
+    padding: '0 0.5rem',
+  },
+  // ─── Big CTA (56px min-height for 48px+ touch target spec) ──
+  bigCta: {
+    width: '100%',
+    minHeight: '56px',
+    borderRadius: '18px',
+    background: '#22C55E',
+    color: '#fff',
+    fontSize: '1.0625rem',
+    fontWeight: 700,
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  addUpdateLink: {
+    background: 'none',
+    border: 'none',
+    color: '#9FB3C8',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    padding: '0.5rem',
+    minHeight: '48px',
+    WebkitTapHighlightColor: 'transparent',
   },
   // ─── Completion success ──
   doneCard: {
@@ -301,22 +420,22 @@ const S = {
     gap: '0.375rem',
   },
   progressTrack: {
-    height: '4px',
-    borderRadius: '2px',
+    height: '6px',
+    borderRadius: '3px',
     background: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: '2px',
+    borderRadius: '3px',
     background: '#22C55E',
     transition: 'width 0.4s ease',
     minWidth: '2px',
   },
   progressLabel: {
-    fontSize: '0.6875rem',
+    fontSize: '0.875rem',
     fontWeight: 600,
-    color: '#6F8299',
+    color: '#9FB3C8',
     textAlign: 'center',
   },
   // ─── Connectivity ────────
@@ -334,8 +453,8 @@ const S = {
     flexShrink: 0,
   },
   connText: {
-    fontSize: '0.6875rem',
-    color: '#6F8299',
+    fontSize: '0.875rem',
+    color: '#9FB3C8',
     fontWeight: 500,
   },
   // ─── Section label ──────────
@@ -349,9 +468,9 @@ const S = {
     fontSize: '0.875rem',
   },
   sectionText: {
-    fontSize: '0.6875rem',
+    fontSize: '0.875rem',
     fontWeight: 700,
-    color: '#6F8299',
+    color: '#9FB3C8',
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
   },

@@ -44,7 +44,6 @@ function sanitizeIssues(raw) {
 const QUALITY_ALIAS = {
   average: 'fair',
   avg: 'fair',
-  ok: 'fair',
 };
 
 function toFiniteOrNull(v) {

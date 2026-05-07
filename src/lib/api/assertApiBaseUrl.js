@@ -49,7 +49,7 @@ export function resolveApiBase({
   // DevTools — it just looks like an error. Dev still gets the warn so
   // a developer running `vite preview` against a misconfigured .env
   // sees the hint immediately.
-  if (!isProd && !raw) _maybeWarnSameOrigin();
+  if (isProd && !raw) _maybeWarnSameOrigin();
 
   // Normalise: trim a trailing slash so callers can safely concat
   // `${base}/api/v2/...` without doubling up.

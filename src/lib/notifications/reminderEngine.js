@@ -35,22 +35,14 @@ export const REMINDER_KINDS = Object.freeze([
 
 export const DEFAULT_SETTINGS = Object.freeze({
   dailyReminderEnabled:    true,
-  // Daily-retention spec (Apr 2026): default 8 AM local time.
-  // The setting is still farmer-editable via /settings; this is
-  // just the seed value when no preference has been saved yet.
-  dailyReminderTime:       '08:00',
-  // Smart Reminder System §5: push default ON. This represents
-  // the user's *intent* — actual delivery still requires a
-  // browser permission grant. The send path checks both
-  // `browserPushEnabled === true` AND `Notification.permission
-  // === 'granted'` before dispatching, so flipping the default
-  // never causes a silent failure or a surprise prompt; it just
-  // means the toggle UI shows ON until the user opts out, and
-  // the first time a browser-push adapter attempts to send, the
-  // permission flow runs naturally. Settings panel disables the
-  // toggle when permission is denied/unsupported, so the
-  // mismatch between intent + reality stays visible.
-  browserPushEnabled:      true,
+  // Spec §1: default 7 AM local time.
+  dailyReminderTime:       '07:00',
+  // Spec §1 / §5: push default OFF — browser permission is requested
+  // only after meaningful engagement (farm_created, task_completed).
+  // The send path still requires BOTH browserPushEnabled===true AND
+  // Notification.permission==='granted' before dispatching, so
+  // flipping this to true later never causes a surprise prompt.
+  browserPushEnabled:      false,
   // Spec §5: email default OFF. Unchanged.
   emailReminderEnabled:    false,
   criticalAlertsOnly:      false,

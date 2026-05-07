@@ -113,7 +113,14 @@ export async function retryOne(id, { transport } = {}) {
     return { ok: true, code: 'duplicate' };
   }
   const reason = (result && (result.code || result.message)) || 'unknown';
-  markFailure(id, new Error(String(reason)));
+  const updated = markFailure(id, new Error(String(reason)));
+  // Reset the backoff gate so the inspector can surface the entry
+  // immediately after a manual retry attempt.
+  if (updated && !updated.failed) {
+    const _ls = _internal.readRaw ? _internal.readRaw() : [];
+    const _r  = _ls.find((e) => e && e.id === id);
+    if (_r) { _r.nextAttemptAt = 0; if (_internal.writeRaw) _internal.writeRaw(_ls); }
+  }
   return { ok: false, reason };
 }
 

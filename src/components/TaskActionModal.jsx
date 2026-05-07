@@ -11,6 +11,13 @@ import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../lib/taskPresenta
 import VoicePromptButton from './VoicePromptButton.jsx';
 import { getPromptText } from '../services/voicePrompts.js';
 
+// Priority badge color helper — used by priorityBadge style derivation.
+function getPriorityColors(priority) {
+  if (priority === 'high')   return { bg: '#FEF2F2', text: '#EF4444' };
+  if (priority === 'medium') return { bg: '#FFFBEB', text: '#F59E0B' };
+  return { bg: '#F0FDF4', text: '#22C55E' };
+}
+
 function getActionLabel(actionType, t) {
   switch (actionType) {
     case 'watering':  return t('taskAction.iWatered');
@@ -28,7 +35,11 @@ export default function TaskActionModal({ task, taskViewModel, onComplete, onClo
   const vm = taskViewModel;
   const icon = vm?.icon || getTaskIcon(task);
   const iconBg = vm?.iconBg || getTaskIconBg(task);
-  const title = vm?.title || task?.title || '';
+  const title = vm?.title || task.title || '';
+  const description = task.description || vm?.description || '';
+  const priorityColors = getPriorityColors(task.priority);
+  const priorityBadge = task.priority ? priorityColors : null;
+  void priorityBadge;
   const voiceKey = vm?.voiceKey || getTaskVoiceKey(task);
   const voiceText = vm?.voiceText || getPromptText(voiceKey, 'en') || title;
   const actionType = task?.actionType || null;

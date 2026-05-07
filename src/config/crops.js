@@ -433,17 +433,17 @@ export function getCropLabel(code, lang = 'en') {
     }
     return enLabel;
   }
-  // No English entry either — completely unknown crop. Return a
-  // humanised form (never empty, never raw uppercase code).
+  // No English entry either — completely unknown crop. Return the
+  // original code string (never empty, never crash).
   if (_isDevForCropLabel()) {
     const k = `unknown:${norm}`;
     if (!_warnedMissingCrop.has(k)) {
       _warnedMissingCrop.add(k);
-      try { console.warn(`[getCropLabel] unknown crop id: "${norm}" — humanising.`); }
+      try { console.warn(`[getCropLabel] unknown crop id: "${norm}" — returning raw code.`); }
       catch { /* ignore */ }
     }
   }
-  return norm.replace(/_/g, ' ').replace(/^./, (ch) => ch.toUpperCase());
+  return String(code);
 }
 
 /**

@@ -175,9 +175,17 @@ describe('MFA role policy', () => {
 });
 
 // ─── Token revocation via tokenVersion ────────────────────
+//
+// Each test calls vi.resetModules() so auth.js is freshly loaded and
+// imports the same prisma mock instance that we configure below.
+// Without the reset, an earlier vi.resetModules() call (from the
+// requireStepUp or MFA-role tests) would leave auth.js pointing at a
+// new mock object while `prisma` at the top of this file still points
+// to the original — causing mockResolvedValue to have no effect.
 
 describe('Token revocation (tokenVersion)', () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
   });
 
@@ -185,11 +193,14 @@ describe('Token revocation (tokenVersion)', () => {
     // Simulate: user logged out (tokenVersion bumped to 2), but holds old token with tv=0
     const oldToken = jwt.sign({ sub: 'u1', role: 'super_admin', tv: 0 }, TEST_SECRET, { expiresIn: '1h' });
 
-    prisma.user.findUnique.mockResolvedValue({
+    // Import auth.js first so its internal prisma reference is cached.
+    // Then import database.js — we get the same cached mock instance.
+    const { authenticate } = await import('../middleware/auth.js');
+    const { default: freshPrisma } = await import('../config/database.js');
+    freshPrisma.user.findUnique.mockResolvedValue({
       id: 'u1', active: true, role: 'super_admin', organizationId: null, tokenVersion: 2,
     });
 
-    const { authenticate } = await import('../middleware/auth.js');
     const req = { headers: { authorization: `Bearer ${oldToken}` }, ip: '::1', originalUrl: '/test' };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();
@@ -205,11 +216,12 @@ describe('Token revocation (tokenVersion)', () => {
   it('accepts a JWT whose tv matches DB tokenVersion', async () => {
     const token = jwt.sign({ sub: 'u2', role: 'reviewer', tv: 3 }, TEST_SECRET, { expiresIn: '1h' });
 
-    prisma.user.findUnique.mockResolvedValue({
+    const { authenticate } = await import('../middleware/auth.js');
+    const { default: freshPrisma } = await import('../config/database.js');
+    freshPrisma.user.findUnique.mockResolvedValue({
       id: 'u2', active: true, role: 'reviewer', organizationId: null, tokenVersion: 3,
     });
 
-    const { authenticate } = await import('../middleware/auth.js');
     const req = { headers: { authorization: `Bearer ${token}` }, ip: '::1', originalUrl: '/test' };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();
@@ -225,11 +237,12 @@ describe('Token revocation (tokenVersion)', () => {
     // Existing users who logged in before tokenVersion was added get tv=undefined → treated as 0
     const legacyToken = jwt.sign({ sub: 'u3', role: 'field_officer' }, TEST_SECRET, { expiresIn: '1h' });
 
-    prisma.user.findUnique.mockResolvedValue({
+    const { authenticate } = await import('../middleware/auth.js');
+    const { default: freshPrisma } = await import('../config/database.js');
+    freshPrisma.user.findUnique.mockResolvedValue({
       id: 'u3', active: true, role: 'field_officer', organizationId: null, tokenVersion: 0,
     });
 
-    const { authenticate } = await import('../middleware/auth.js');
     const req = { headers: { authorization: `Bearer ${legacyToken}` }, ip: '::1', originalUrl: '/test' };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();

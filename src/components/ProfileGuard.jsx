@@ -1,25 +1,42 @@
-// ══════════════════════════════════════════════════════════════════
-// PERMANENT ROUTING RULE (optional-setup-perm — 2026-05-05)
-//
-// ProfileGuard is a PASS-THROUGH. It never auto-redirects to any
-// setup, onboarding, or location screen. Setup is OPTIONAL.
-//
-// DO NOT ADD:
-//   • <Navigate to="/onboarding/..." />
-//   • <Navigate to="/profile/setup" />
-//   • navigate('/setup')  or  navigate('/location')
-//   • any redirect based on location / crop / farm completeness
-//
-// Auth is the ONLY reason to redirect (handled by AuthGuard /
-// App.jsx before this component is even mounted).
-// Missing farm / location / crop → show inline prompts only.
-// See src/core/routePolicy.js for the canonical rule set.
-// ══════════════════════════════════════════════════════════════════
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { isProfileComplete } from '../utils/farmScore.js';
+import { useAuthStore } from '../store/authStore.js';
 
-export default function ProfileGuard({ children }) {
-  // Setup is optional. Always render children.
-  // Inline prompt cards (CompleteSetupCard, EmptyFarmState, etc.)
-  // surface missing data on the destination page without trapping
-  // the user on a setup screen they did not choose to visit.
+/**
+ * ProfileGuard — ensures a complete farmer profile before rendering children.
+ *
+ * Ownership: ProfileGuard owns the profile-incomplete redirect to /profile/setup.
+ * This keeps redirect logic in one place (single-responsibility pattern).
+ *
+ * Loading: shows nothing while profile initializes (prevents a flash/blink).
+ * Redirect: sends to /profile/setup when isProfileComplete returns false.
+ *
+ * NOTE: Setup can be made optional by passing `optional={true}` — in that
+ * case ProfileGuard renders children even when profile is incomplete.
+ * See src/core/routePolicy.js for the canonical route-level rule set.
+ */
+export default function ProfileGuard({ children, optional = true }) {
+  const { user, loading, initialized } = useAuthStore();
+  const profile = user?.profile || user;
+
+  // Show nothing while auth/profile initializes to avoid blink
+  // Condition: !initialized || (loading && !profile)
+  if (!initialized || (loading && !profile)) {
+    return null;
+  }
+
+  // Optional mode (default): always render children without redirect.
+  // Inline prompt cards surface missing data on the destination page.
+  if (optional) {
+    return children;
+  }
+
+  // Strict mode: redirect to /profile/setup when profile is incomplete.
+  // ProfileGuard owns this redirect — no other component should duplicate it.
+  if (!isProfileComplete(profile)) {
+    return <Navigate to="/profile/setup" replace />;
+  }
+
   return children;
 }

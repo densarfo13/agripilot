@@ -95,6 +95,18 @@ export function recommendCrops(ctx = {}) {
         addCrops(regionalCodes, `Grown in the region`);
       }
     }
+  } else if (cc) {
+    // No country-specific rules — fall back to regional crops so any
+    // country in a supported region (e.g. TZ in east_africa) still
+    // gets contextual recommendations.
+    const regionKey = getRegionForCountry(cc);
+    if (regionKey) {
+      const regionalCodes = getCropsForRegion(regionKey).map(e => e.code);
+      if (regionalCodes.length > 0) {
+        addCrops(regionalCodes, `Common in ${COUNTRY_NAMES[cc] || cc}`);
+        contextUsed.push('country');
+      }
+    }
   }
 
   // 2. Season

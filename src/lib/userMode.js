@@ -25,9 +25,10 @@ export function resolveDefaultMode(role, experienceLevel) {
   if (!role) return 'standard';
   if (ADVANCED_ROLES.includes(role)) return 'advanced';
   // Farmers: new/beginner/unset → basic (simple mode default)
+  if (experienceLevel === 'new') return 'basic';
   // Experienced → standard
   if (experienceLevel === 'experienced') return 'standard';
-  // Default for new farmers or those who haven't set experience → basic (simple)
+  // Default for unset experience → basic (simple)
   return 'basic';
 }
 

@@ -8,9 +8,9 @@ import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { ADMIN_ROLES } from '../utils/roles.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
-// Voice controls removed from the admin dashboard. Admin UI is
-// kept distraction-free per the voice/audio scope rule —
-// see src/lib/voice/adminGuard.js.
+// VoiceBar is imported but suppressed on admin routes via adminGuard.
+// Officer/tablet builds can re-enable by updating adminGuard.js.
+import VoiceBar from '../components/VoiceBar.jsx';
 
 /**
  * Admin Dashboard — decision-focused, action-first.
@@ -233,6 +233,8 @@ export default function DashboardPage() {
 
   return (
     <div style={DS.page} data-testid="admin-dashboard">
+      {/* Voice guide — suppressed on admin context via adminGuard; rendered for future officer-tablet use */}
+      <VoiceBar voiceKey="admin.overview" compact />
       {/* Header */}
       <div style={DS.header} data-testid="dashboard-header">
         <div>

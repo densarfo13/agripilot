@@ -14,11 +14,14 @@
 // ─── Error codes (stable, for programmatic use) ──────
 export const GPS_ERROR = {
   UNSUPPORTED: 'unsupported',
-  PERMISSION_DENIED: 'permission_denied',
+  ACCESS_DENIED: 'access_denied',
   UNAVAILABLE: 'unavailable',
   TIMEOUT: 'timeout',
   UNKNOWN: 'unknown',
 };
+
+// Friendly fallback shown on any GPS failure — no technical jargon
+export const GPS_FRIENDLY_ERROR = "We couldn't get your exact location. You can continue with your village or region.";
 
 // ─── Debug logger (temporary, for mobile field debugging) ─
 function gpsLog(msg, data) {
@@ -93,7 +96,7 @@ export function getCurrentPosition({ enableHighAccuracy = true, timeout = 15000 
       },
       (err) => {
         let code = GPS_ERROR.UNKNOWN;
-        if (err.code === 1) code = GPS_ERROR.PERMISSION_DENIED;
+        if (err.code === 1) code = GPS_ERROR.ACCESS_DENIED;
         else if (err.code === 2) code = GPS_ERROR.UNAVAILABLE;
         else if (err.code === 3) code = GPS_ERROR.TIMEOUT;
 

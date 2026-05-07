@@ -274,15 +274,7 @@ export default function ProfileSetup() {
     } catch (err) {
       clearTimeout(slowTimer);
       const code = err?.code;
-      if (code === 'permission_denied') {
-        setGpsError(t('setup.gpsPermissionDenied'));
-      } else if (code === 'timeout') {
-        setGpsError(t('setup.gpsTimeout'));
-      } else if (code === 'unavailable') {
-        setGpsError(t('setup.gpsSignalWeak'));
-      } else {
-        setGpsError(t('location.gpsFallback'));
-      }
+      setGpsError(t('location.gpsFallback'));
       setGpsSlowMsg('');
       safeTrackEvent('gps.failed', { code });
       console.warn('[ProfileSetup] GPS failed:', { code, message: err?.message });
@@ -529,7 +521,7 @@ export default function ProfileSetup() {
         <div style={S.card}>
           <div style={S.sectionHeader}>
             <span style={S.sectionIcon}>{'\uD83D\uDCCD'}</span>
-            <span style={S.sectionTitle}>{t('location.farmLocation')}</span>
+            <span style={S.sectionTitle}>{t('setup.farmLocation') || 'Farm Location'}</span>
           </div>
 
           {form.gpsLat ? (
@@ -564,17 +556,8 @@ export default function ProfileSetup() {
           {gpsError && <p style={S.gpsSoftMsg}>{gpsError}</p>}
           {gpsSlowMsg && !gpsError && <p style={S.gpsSoftMsg}>{gpsSlowMsg}</p>}
 
-          {/* Location text fallback */}
-          <div style={{ marginTop: '0.75rem' }}>
-            <label style={S.labelSmall}>{t('setup.location')}</label>
-            <input
-              value={form.location}
-              onChange={(e) => updateField('location', e.target.value)}
-              placeholder={t('setup.locationPlaceholder')}
-              style={S.input}
-            />
-            {fieldErrors.location && <p style={S.fieldError}>{fieldErrors.location}</p>}
-          </div>
+          {/* GPS is optional — farmers can skip */}
+          <p style={S.gpsSoftMsg}>{t('setup.gpsOptional')}</p>
 
           {/* Country — auto-detected, shown as small selector */}
           {form.country ? (
@@ -599,7 +582,7 @@ export default function ProfileSetup() {
                   updateField('country', newCountry);
                   if (!form.size) updateField('sizeUnit', defaultUnitForCountry(newCountry));
                 }}
-                style={S.select}
+                style={S.input}
               >
                 <option value="">{t('setup.selectCountry')}</option>
                 {COUNTRY_OPTIONS.map((name) => (
@@ -609,6 +592,18 @@ export default function ProfileSetup() {
               {fieldErrors.country && <p style={S.fieldError}>{fieldErrors.country}</p>}
             </div>
           )}
+
+          {/* Location text input */}
+          <div style={{ marginTop: '0.75rem' }}>
+            <label style={S.labelSmall}>{t('setup.location')}</label>
+            <input
+              value={form.location}
+              onChange={(e) => updateField('location', e.target.value)}
+              placeholder={t('setup.locationPlaceholder')}
+              style={S.input}
+            />
+            {fieldErrors.location && <p style={S.fieldError}>{fieldErrors.location}</p>}
+          </div>
         </div>
 
         {/* ─── Farmer & Farm Name ─────────────────────────── */}

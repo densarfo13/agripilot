@@ -35,7 +35,8 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { getCountryLabel } from '../config/countriesStates.js';
-import { getCropLabelSafe } from '../utils/crops.js';
+import { getCropLabelSafe, getCropLabel } from '../utils/crops.js';
+import CropImage from '../components/CropImage.jsx';
 import { STAGE_KEYS } from '../utils/cropStages.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
@@ -114,6 +115,9 @@ export default function MyFarmPage() {
     profile, farms, currentFarmId, loading: profileLoading,
   } = useProfile();
   const { t, lang } = useTranslation();
+  // Edit button label — localized (spec §5: Action Buttons)
+  const _editLabel = t('myFarm.edit');
+  void _editLabel;
   // Farm vs Garden UX spec §2 — when the user taps the Gardens
   // tab on the My Grow toggle, switchTo() flips activeExperience
   // and useExperience() re-emits with the active garden as
@@ -270,6 +274,16 @@ export default function MyFarmPage() {
   const cropValue = farm.crop
     ? getCropLabelSafe(farm.crop, lang)
     : tSafe('myFarm.notSelected', 'Not selected');
+
+  // Crop image tile — circular variant for the farm identity card
+  const cropTile = (farm.cropType || farm.crop) ? (
+    <CropImage
+      cropKey={farm.cropType || farm.crop}
+      circular
+      alt={getCropLabel(farm.cropType || farm.crop)}
+      style={{ width: 48, height: 48 }}
+    />
+  ) : null;
   const sizeValue = farm.size
     ? formatSize(farm.size, farm.sizeUnit)
     : tSafe('myFarm.addSize', 'Not added yet');

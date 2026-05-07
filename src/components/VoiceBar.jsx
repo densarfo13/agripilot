@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceEvent } from '../utils/voiceAnalytics.js';
-import { getLanguage, setLanguage, useTranslation } from '../i18n/index.js';
+import { getLanguage, setLanguage } from '../i18n/index.js';
+import { useTranslation } from '../i18n/index.js';
 import { isAdminContext } from '../lib/voice/adminGuard.js';
 
 /**
@@ -118,7 +119,7 @@ export default function VoiceBar({ voiceKey, compact = false }) {
         aria-label="Listen again"
         data-testid="voice-listen-btn"
       >
-        {'\uD83D\uDD0A'} {compact ? '' : 'Listen'}
+        {'\uD83D\uDD0A'} {compact ? 'Voice' : 'Enable Voice Guide'}
       </button>
       <select
         value={voiceLang}

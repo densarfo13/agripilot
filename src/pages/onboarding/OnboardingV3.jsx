@@ -615,10 +615,10 @@ export default function OnboardingV3() {
                       onClick={() => {
                         update('mainCrop', c.code);
                         if (c.code !== CROP_OTHER) {
-                          setCropQuery(getCropLabelSafe(c.code, lang));
+                          setCropQuery(getCropLabel(c.code, lang));
                         }
                       }}
-                      label={getCropLabelSafe(c.code, lang)}
+                      label={getCropLabel(c.code, lang)}
                       testid={`onboarding-crop-${c.code}`}
                     />
                   );

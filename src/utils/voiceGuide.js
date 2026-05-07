@@ -772,6 +772,26 @@ export function isVoiceAvailable() {
 import voiceService from '../services/voiceService.js';
 import { isAdminContext } from '../lib/voice/adminGuard.js';
 
+// ─── Direct browser TTS fallback ────────────────────────────────
+// Used when voiceService is unavailable (offline / unsupported env).
+// Speaks text directly via SpeechSynthesisUtterance with tuned rate
+// and pitch for comprehension. Cancels any current speech first.
+
+export function speakBrowserTTS(text, lang = 'en') {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return false;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = VOICE_RATE;
+  utterance.pitch = VOICE_PITCH;
+  utterance.volume = VOICE_VOLUME;
+  const langTag = LANG_TAGS[lang] || 'en';
+  const bestVoice = selectBestVoice(langTag);
+  if (bestVoice) utterance.voice = bestVoice;
+  utterance.lang = langTag;
+  window.speechSynthesis.speak(utterance);
+  return true;
+}
+
 // ─── Stop any current speech ────────────────────────────────────
 
 export function stopSpeech() {
@@ -805,19 +825,35 @@ export function speak(stepKey, lang = 'en') {
   // constructed downstream.
   if (isAdminContext()) return false;
   if (!isVoiceAvailable()) return false;
+  // Stop any current speech before playing the new prompt so
+  // overlapping audio never occurs.
+  stopSpeech();
   const stepTexts = VOICE_MAP[stepKey];
   if (!stepTexts) return false;
   const text = stepTexts[lang] || stepTexts.en;
   if (!text) return false;
 
-  // Route through voiceService — it handles prerecorded → provider → browser fallback
-  return voiceService.speakVoiceMapKey(stepKey, lang, stepTexts);
+  // Try pre-recorded audio first, then fall back to voiceService (provider → browser TTS)
+  tryPlayAudio(stepKey, lang).then((played) => {
+    if (played) return; // skip TTS if audio worked
+    voiceService.speakVoiceMapKey(stepKey, lang, stepTexts);
+  });
+  return true;
 }
 
 // Alias matching the spec utility name
 export const speakVoicePrompt = speak;
 
 // ─── Pre-warm voice list + provider status ──────────────────────
+// Chrome loads voices asynchronously and fires voiceschanged when ready.
+// Calling getVoices() here seeds the cache on browsers with synchronous loading.
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', () => {
+    window.speechSynthesis.getVoices(); // repopulate cache after async load (Chrome fix)
+    _voiceCache = new Map();            // bust stale cache after voice list changes
+  });
+}
 voiceService.warmup();
 
 // ─── Supported languages ────────────────────────────────────────

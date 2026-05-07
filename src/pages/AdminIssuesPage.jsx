@@ -571,10 +571,10 @@ export default function AdminIssuesPage() {
               style={{ ...SEL, fontSize: '0.78rem' }}
               aria-label="Choose a bulk action"
             >
-              <option value="">Choose a bulk action…</option>
-              <option value="start">Start all selected</option>
-              <option value="close">Close all selected</option>
-              <option value="unassign">Remove assignee</option>
+              <option value="">Bulk Action...</option>
+              <option value="start">Start All</option>
+              <option value="close">Close All</option>
+              <option value="unassign">Unassign All</option>
               {assignees.map((u) => <option key={u.id} value={`assign:${u.id}`}>Assign to {u.fullName}</option>)}
             </select>
             <button

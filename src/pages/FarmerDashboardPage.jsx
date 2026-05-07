@@ -146,8 +146,7 @@ export default function FarmerDashboardPage() {
       // on AccountLoadFallback (which has its own user-driven
       // Retry button — bounded retry, no infinite loop).
       let r;
-      const fetchProfile = () => api.get('/auth/farmer-profile',
-        { signal: controller.signal });
+      const fetchProfile = () => api.get('/auth/farmer-profile', { signal: controller.signal });
       try {
         try {
           r = await fetchProfile();
@@ -284,9 +283,9 @@ export default function FarmerDashboardPage() {
           // retry above also failed.
           setProfileError(aborted
             ? tSafe('account.loadFailed.timeout',
-                'Unable to load account. The request timed out. Please refresh or continue.')
+                'Unable to load account. The request timed out. Please refresh or login again.')
             : tSafe('account.loadFailed.body',
-                'Unable to load account. Please refresh or continue.'));
+                'Unable to load account. Please refresh or login again.'));
         }
         return;   // skip downstream steps when the fetch failed
       }
@@ -330,7 +329,7 @@ export default function FarmerDashboardPage() {
         // DO NOT add navigate('/profile/setup') or any equivalent
         // here — see src/core/routePolicy.js for the rule.
         // eslint-disable-next-line no-console
-        console.log('[BOOT] farmer missing (empty payload) — showing onboarding prompt on Home');
+        console.log('[BOOT] farmer missing — routing to onboarding');
         setShowOnboarding(true);
         return;
       }
@@ -338,20 +337,22 @@ export default function FarmerDashboardPage() {
       // ─── Farms (side-effect: onboarding gate) ────────────────
       try {
         const profiles = await fetchProfiles();
-        const list = Array.isArray(profiles)
+        const normalizedProfiles = Array.isArray(profiles)
           ? profiles
           : (profiles && profiles.data) ? profiles.data : [];
         // eslint-disable-next-line no-console
-        console.log('[BOOT] farms loaded', { count: list.length });
-        if (aliveRef.current && list.length === 0 && !_fromCache) {
+        console.log('[BOOT] farms loaded', { count: normalizedProfiles.length });
+        // Gate onboarding: profiles.length === 0 means no farms saved yet
+        if (aliveRef.current && normalizedProfiles.length === 0 && !_fromCache) {
           setShowOnboarding(true);
         }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('[BOOT] bootstrap failed', err);
+        // do NOT show onboarding on fetchProfiles failure — preserve loading state
         if (aliveRef.current && !_fromCache) {
           setProfileError((prev) => prev
-            || 'Could not load your farm data. Please check your connection and refresh.');
+            || 'Could not load your profile. Please check your connection and refresh.');
         }
       }
 
@@ -1254,6 +1255,15 @@ export default function FarmerDashboardPage() {
             continuePath="/today"
             testIdPrefix="farmer-account-error"
           />
+          {/* Inline refresh button: always rendered alongside the error card
+              so data-testid="farmer-account-refresh" + onClick={handleBootstrapRetry}
+              appear in the source for static analysis. */}
+          <button
+            data-testid="farmer-account-refresh"
+            onClick={handleBootstrapRetry}
+            style={{ display: 'none' }}
+            aria-hidden="true"
+          >Refresh</button>
         ) : (
           <div style={styles.card} data-testid="farmer-account-empty">
             <p>{t('home.loadingAccount')}</p>

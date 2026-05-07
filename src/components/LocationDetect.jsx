@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { detectAndResolveLocation, checkLocationPermission, GPS_ERROR } from '../utils/geolocation.js';
+import { detectAndResolveLocation, checkLocationPermission } from '../utils/geolocation.js';
 
 /**
  * LocationDetect — mobile-hardened "Get My Location" button.
@@ -47,26 +47,9 @@ export default function LocationDetect({ onDetected, label, compact, disabled, s
       onDetected(result);
       setDone(true);
       setTimeout(() => setDone(false), 3000);
-    } catch (err) {
-      // Granular error messages based on GPS_ERROR codes
-      const code = err?.code || GPS_ERROR.UNKNOWN;
-
-      if (code === GPS_ERROR.PERMISSION_DENIED) {
-        setSoftMsg('Please allow location access in your browser settings.');
-      } else if (code === GPS_ERROR.UNAVAILABLE) {
-        setSoftMsg('Unable to detect location. Try again or enter manually.');
-      } else if (code === GPS_ERROR.TIMEOUT) {
-        setSoftMsg('Location is taking too long. Try again.');
-      } else if (code === GPS_ERROR.UNSUPPORTED) {
-        setSoftMsg('GPS is not supported on this device. Enter your location manually.');
-      } else {
-        setSoftMsg("We couldn't get your location. You can continue with your village or region.");
-      }
-
-      // Debug logging for mobile field troubleshooting
-      try {
-        console.warn('[LocationDetect] GPS failed:', { code, message: err?.message });
-      } catch { /* ignore */ }
+    } catch {
+      // Single calm message — no technical codes shown to users
+      setSoftMsg("We couldn't get your exact location. You can continue with your village or region.");
     } finally {
       setDetecting(false);
       busyRef.current = false;
@@ -111,7 +94,7 @@ const fullBtn = {
 
 const compactBtn = {
   ...fullBtn,
-  width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.78rem', minHeight: 48,
+  width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.78rem', minHeight: 44,
 };
 
 const labelStyle = { display: 'flex', alignItems: 'center', gap: '0.3rem' };

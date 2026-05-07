@@ -35,6 +35,7 @@ router.get('/', asyncHandler(async (req, res) => {
     windowDays,
   };
 
+  // Org-scoped where clause: req.organizationId ? { organizationId: req.organizationId } : {}
   const orgFilter = buildFarmerScopeFilter(scopeOpts);
 
   const { activeFarmerWhere, inactiveFarmerWhere, setupIncompleteWhere } = buildActivityFilters(scopeOpts);

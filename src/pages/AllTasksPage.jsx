@@ -292,11 +292,11 @@ export default function AllTasksPage() {
   const viewModels = buildTaskListViewModels({ tasks, weatherGuidance: null, language: lang, t, mode: isBasic ? 'simple' : 'standard', cropStage, weather });
   const vmByTaskId = Object.fromEntries(viewModels.map(vm => [vm.taskId, vm]));
 
-  // Priority-sorted: high → medium → low (same cascade as Home)
-  const sorted = [...tasks].sort((a, b) => {
-    const order = { high: 0, medium: 1, low: 2 };
-    return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
-  });
+  // Priority-sorted: 'high' → 'medium' → 'low' (same cascade as Home)
+  const PRIORITY_ORDER = { 'high': 0, 'medium': 1, 'low': 2 };
+  const sorted = [...tasks].sort((a, b) =>
+    (PRIORITY_ORDER[a.priority] ?? 3) - (PRIORITY_ORDER[b.priority] ?? 3)
+  );
 
   // Split into current, next up, and rest
   const currentTask = sorted[0] || null;
@@ -441,7 +441,7 @@ export default function AllTasksPage() {
       {!loading && mode === 'online' && tasks.length === 0 && !taskCompletionState && (
         <div style={S.emptyWrap}>
           <span style={S.emptyIcon}>{'\u2728'}</span>
-          <p style={S.emptyTitle}>{t('tasks.allCaughtUp')}</p>
+          <p style={S.emptyTitle}>{t('allTasks.allCaughtUp')}</p>
           <p style={S.emptySubtext}>{t('tasks.noMoreTasks')}</p>
           <button type="button" onClick={() => navigate('/dashboard')} style={S.homeBtn}>
             {t('tasks.backHome')}

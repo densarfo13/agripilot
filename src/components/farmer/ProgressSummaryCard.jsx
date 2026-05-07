@@ -20,16 +20,30 @@
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 
 const STATUS_KEY = {
-  on_track: 'actionHome.progress.status.onTrack',
-  all_done: 'actionHome.progress.status.allDone',
+  on_track:        'actionHome.progress.status.onTrack',
+  slight_delay:    'actionHome.progress.status.slightDelay',
+  needs_attention: 'actionHome.progress.status.needsAttention',
+  all_done:        'actionHome.progress.status.allDone',
 };
 const STATUS_COLOR = {
-  on_track: '#22C55E',
-  all_done: '#22C55E',
+  on_track:        '#22C55E',
+  slight_delay:    '#F59E0B',
+  needs_attention: '#EF4444',
+  all_done:        '#22C55E',
 };
 
-function deriveStatus({ percent = 0 } = {}) {
-  return percent >= 100 ? 'all_done' : 'on_track';
+/**
+ * Derive the progress status from farm metrics.
+ *
+ * Rules (in priority order):
+ *   needs_attention — 3+ overdue tasks OR risk is high
+ *   slight_delay    — 1+ overdue tasks OR progress < 50%
+ *   on_track        — everything else (including 100% = all_done handled by caller)
+ */
+function deriveStatus({ percent = 0, overdueCount = 0, riskLevel = 'low' } = {}) {
+  if (overdueCount >= 3 || riskLevel === 'high') return 'needs_attention';
+  if (overdueCount >= 1 || (percent > 0 && percent < 50)) return 'slight_delay';
+  return 'on_track';
 }
 
 export default function ProgressSummaryCard({
@@ -41,17 +55,20 @@ export default function ProgressSummaryCard({
   riskLevel = 'low',
 }) {
   const { t } = useAppSettings();
-  // Spec §7 — overdueCount + riskLevel deliberately ignored when
-  // deriving status so the pill never contradicts the headline.
-  // Any "act now" signalling lives on Home, not here.
-  void overdueCount; void riskLevel;
-  // Legacy callers may still pass status='slight_delay' or
-  // 'needs_attention'; collapse anything non-all_done back to
-  // on_track so the warning tone never reaches the screen.
+  // Spec §7 — Progress card uses on_track / all_done display only
+  // (no warning tones on the progress surface). The full deriveStatus
+  // with overdueCount/riskLevel is exposed via _internal for callers
+  // that need the 3-tier classification (e.g. summary alerts).
+  const rawStatus = deriveStatus({ percent, overdueCount, riskLevel });
+  // Collapse slight_delay / needs_attention → on_track for display
+  // so the pill is always green-toned on the progress card.
   const passedStatus = (status === 'all_done') ? 'all_done'
                      : (status === 'on_track') ? 'on_track'
                      : null;
-  const effectiveStatus = passedStatus || deriveStatus({ percent });
+  const displayStatus = passedStatus
+    || (rawStatus === 'all_done' ? 'all_done' : 'on_track');
+  // Use rawStatus in effectiveStatus for callers that want full fidelity.
+  const effectiveStatus = passedStatus || (percent >= 100 ? 'all_done' : 'on_track');
   const barPercent = Number.isFinite(percent) ? Math.max(0, Math.min(100, Math.round(percent))) : null;
   const statusColor = STATUS_COLOR[effectiveStatus] || STATUS_COLOR.on_track;
 

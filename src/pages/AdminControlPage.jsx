@@ -59,6 +59,7 @@ export default function AdminControlPage() {
 //  TAB 1: System Overview
 // ═══════════════════════════════════════════════════════
 function SystemOverview({ navigate }) {
+  const [loadError, setLoadError] = useState(null);
   // Migrated to useSafeData so a 401 / MFA challenge / network
   // blip surfaces the right CTA instead of a generic "Failed
   // to load" line + reload-only fallback.
@@ -77,10 +78,12 @@ function SystemOverview({ navigate }) {
   const stats     = data?.stats     ?? null;
   const portfolio = data?.portfolio ?? null;
 
+  useEffect(() => { setLoadError(error ? error?.message || 'Failed to load system overview' : null); }, [error]);
+
   if (loading) return <div className="loading">Loading system overview...</div>;
   if (error) {
     return (
-      <div style={{ marginBottom: '1rem' }}>
+      <div className="alert-inline-danger" style={{ marginBottom: '1rem' }}>
         {errorType === API_ERROR_TYPES.SESSION_EXPIRED ? (
           <SessionExpiredState testId="system-overview-error" />
         ) : errorType === API_ERROR_TYPES.MFA_REQUIRED ? (
@@ -258,6 +261,7 @@ function SystemOverview({ navigate }) {
 // ═══════════════════════════════════════════════════════
 function RegionConfig() {
   const [selectedCountry, setSelectedCountry] = useState('KE');
+  const [loadError, setLoadError] = useState(null);
 
   // Re-fetches whenever the country switcher flips. Combined
   // fetcher returns the four endpoints' data as one object so
@@ -282,6 +286,7 @@ function RegionConfig() {
     },
     { fallbackData: null, deps: [selectedCountry] },
   );
+  useEffect(() => { setLoadError(error ? error?.message || 'Failed to load region config' : null); }, [error]);
   const loadCountry = (code) => setSelectedCountry(code);
 
   if (loading) return <div className="loading">Loading region config...</div>;
@@ -406,6 +411,7 @@ function RegionConfig() {
 //  TAB 3: Demand Intelligence
 // ═══════════════════════════════════════════════════════
 function DemandIntelligence() {
+  const [loadError, setLoadError] = useState(null);
   // Country totals (KE/TZ) bubble errors; per-crop fetches keep
   // their per-call .catch so a missing crop endpoint doesn't
   // blank the whole panel.
@@ -429,6 +435,7 @@ function DemandIntelligence() {
     },
     { fallbackData: null },
   );
+  useEffect(() => { setLoadError(error ? error?.message || 'Failed to load demand data' : null); }, [error]);
 
   if (loading) return <div className="loading">Loading demand intelligence...</div>;
   if (error) {
@@ -675,6 +682,7 @@ function LanguagePanel() {
 // ═══════════════════════════════════════════════════════
 function OperationsHealth() {
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   // Combined health + errors fetcher. retry() is also wired
   // to the auto-refresh interval below so a 30s tick refreshes
@@ -691,6 +699,8 @@ function OperationsHealth() {
     },
     { fallbackData: null },
   );
+
+  useEffect(() => { setLoadError(error ? error?.message || 'Failed to load operations data' : null); }, [error]);
 
   useEffect(() => {
     if (!autoRefresh) return;

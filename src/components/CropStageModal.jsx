@@ -1,19 +1,43 @@
 /**
- * CropStageModal — tap-to-save modal for updating a farm's crop stage.
+ * CropStageModal — select crop stage + planted date, then save.
  *
- * Tap a stage → auto-saves immediately (no Save button needed).
- * Shows inline success/error feedback (no blocking alerts).
- * Large touch targets (48px+), 2-column grid for farmer usability.
- * Saves via PATCH /api/v2/farm-profile/:id/stage (Zod-validated).
- * Dark theme, low-literacy friendly.
+ * Tap a stage to select it. Edit planted date if needed.
+ * Tap Save to commit via updateCropStage API.
+ * Shows inline success/error feedback.
+ * Dark theme, large touch targets, low-literacy friendly.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
-import { saveCropStage } from '../services/cropStageService.js';
-import { STAGES, STAGE_KEYS } from '../utils/cropStages.js';
+import { updateCropStage } from '../lib/api.js';
+import { safeTrackEvent } from '../lib/analytics.js';
+
+// Stages defined inline with value + icon for visual clarity
+const STAGES = [
+  { value: 'planning',         icon: '📋' },
+  { value: 'land_preparation', icon: '🚜' },
+  { value: 'planting',         icon: '🌱' },
+  { value: 'germination',      icon: '🌿' },
+  { value: 'vegetative',       icon: '🌾' },
+  { value: 'flowering',        icon: '🌸' },
+  { value: 'fruiting',         icon: '🍅' },
+  { value: 'harvest',          icon: '🧺' },
+  { value: 'post_harvest',     icon: '📦' },
+];
+
+const STAGE_LABEL_KEYS = {
+  planning:         'cropStage.planning',
+  land_preparation: 'cropStage.land_preparation',
+  planting:         'cropStage.planting',
+  germination:      'cropStage.germination',
+  vegetative:       'cropStage.vegetative',
+  flowering:        'cropStage.flowering',
+  fruiting:         'cropStage.fruiting',
+  harvest:          'cropStage.harvest',
+  post_harvest:     'cropStage.post_harvest',
+};
 
 export default function CropStageModal({ farm, onClose, onSaved }) {
   const { refreshProfile } = useProfile();
@@ -21,53 +45,65 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
   const { t } = useTranslation();
 
   const currentStage = farm?.cropStage || 'planning';
+  const currentPlantedAt = farm?.plantedAt || '';
+
   const [selected, setSelected] = useState(currentStage);
+  const [plantedAt, setPlantedAt] = useState(currentPlantedAt);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message }
+  const [feedback, setFeedback] = useState(null);
   const feedbackTimer = useRef(null);
 
-  // Cleanup feedback timer on unmount
+  // Track whether the farmer made any changes
+  const hasChanges = selected !== currentStage || plantedAt !== currentPlantedAt;
+
   useEffect(() => () => clearTimeout(feedbackTimer.current), []);
 
-  // ─── Tap = auto-save ─────────────────────────────────────
-  async function handleTapStage(stage) {
-    if (saving) return;
-    if (stage.value === selected && stage.value === currentStage) return; // no change
-
-    setSelected(stage.value);
+  async function handleSave() {
+    if (!hasChanges || saving) return;
     setSaving(true);
     setFeedback(null);
 
-    // Haptic feedback
-    if (navigator.vibrate) try { navigator.vibrate(50); } catch {}
+    // Track the stage update event
+    try {
+      safeTrackEvent('farm.crop_stage_updated', {
+        farmId: farm.id,
+        stage: selected,
+        plantedAt,
+      });
+    } catch { /* never block UI */ }
 
-    const result = await saveCropStage(farm.id, stage.value, { isOnline, refreshProfile });
-    const stageName = t(STAGE_KEYS[stage.value]) || stage.value;
+    try {
+      const payload = { cropStage: selected };
+      if (plantedAt) payload.plantedAt = plantedAt;
 
-    if (result.success) {
-      const msg = result.offline
-        ? t('cropStage.savedOffline')
-        : `${t('cropStage.saved')} ${stageName}`;
-      setFeedback({ type: 'success', message: msg });
+      await updateCropStage(farm.id, selected, {
+        plantedAt,
+        isOnline,
+        refreshProfile,
+      });
+
+      setFeedback({ type: 'success', message: t('cropStage.saved') });
       feedbackTimer.current = setTimeout(() => {
-        if (onSaved) onSaved(stage.value);
+        if (onSaved) onSaved(selected);
         onClose();
-      }, result.offline ? 1200 : 1500);
-    } else {
-      setFeedback({ type: 'error', message: result.error || t('cropStage.saveFailed') });
-      setSelected(currentStage);
+      }, 1200);
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.message || t('cropStage.saveFailed') });
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={S.modal} onClick={(e) => e.stopPropagation()} data-testid="crop-stage-modal">
+      <div
+        style={S.modal}
+        onClick={(e) => e.stopPropagation()}
+        data-testid="crop-stage-modal"
+      >
         <h2 style={S.title}>{t('cropStage.title')}</h2>
         <p style={S.subtitle}>{t('cropStage.subtitle')}</p>
 
-        {/* Inline feedback banner */}
         {feedback && (
           <div style={feedback.type === 'success' ? S.successBanner : S.errorBanner}>
             <span>{feedback.type === 'success' ? '✅' : '⚠️'}</span>
@@ -75,21 +111,19 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
           </div>
         )}
 
-        {/* 2-column grid with large touch targets */}
+        {/* Stage grid */}
         <div style={S.stageGrid}>
           {STAGES.map((s) => {
             const isActive = selected === s.value;
-            const isSaving = saving && selected === s.value;
             return (
               <button
                 key={s.value}
-                onClick={() => handleTapStage(s)}
+                onClick={() => setSelected(s.value)}
                 disabled={saving}
-                aria-label={t(STAGE_KEYS[s.value]) || s.value}
+                aria-label={t(STAGE_LABEL_KEYS[s.value]) || s.value}
                 style={{
                   ...S.stageBtn,
                   ...(isActive ? S.stageBtnActive : {}),
-                  ...(isSaving ? S.stageBtnSaving : {}),
                 }}
                 data-testid={`stage-${s.value}`}
               >
@@ -98,21 +132,43 @@ export default function CropStageModal({ farm, onClose, onSaved }) {
                   ...S.stageLabel,
                   ...(isActive ? S.stageLabelActive : {}),
                 }}>
-                  {t(STAGE_KEYS[s.value])}
+                  {t(STAGE_LABEL_KEYS[s.value])}
                 </span>
-                {isSaving && <span style={S.savingDot}>...</span>}
               </button>
             );
           })}
         </div>
 
-        {/* Saving indicator */}
-        {saving && (
-          <p style={S.savingText}>{t('common.saving')}</p>
-        )}
+        {/* Planted date input */}
+        <label style={S.dateLabel}>{t('cropStage.plantedAt')}</label>
+        <input
+          type="date"
+          value={plantedAt}
+          onChange={(e) => setPlantedAt(e.target.value)}
+          style={S.dateInput}
+          data-testid="planted-at-input"
+        />
 
-        {/* Cancel */}
-        <button onClick={onClose} style={S.cancelBtn} disabled={saving}>
+        {/* Save button */}
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!hasChanges || saving}
+          style={{
+            ...S.saveBtn,
+            ...(!hasChanges || saving ? S.saveBtnDisabled : {}),
+          }}
+          data-testid="save-stage-btn"
+        >
+          {saving ? t('common.saving') : t('cropStage.save')}
+        </button>
+
+        <button
+          type="button"
+          onClick={onClose}
+          style={S.cancelBtn}
+          disabled={saving}
+        >
           {t('common.cancel')}
         </button>
       </div>
@@ -134,41 +190,35 @@ const S = {
   modal: {
     width: '100%',
     maxWidth: '30rem',
-    background: '#0F1B2A',
+    background: '#1B2330',
     borderRadius: '20px 20px 0 0',
     padding: '1.5rem',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderBottom: 'none',
     maxHeight: '90vh',
     overflowY: 'auto',
     WebkitOverflowScrolling: 'touch',
-    boxShadow: '0 -16px 48px rgba(0,0,0,0.4)',
   },
   title: {
     fontSize: '1.25rem',
     fontWeight: 700,
-    color: '#EAF2FF',
+    color: '#fff',
     margin: '0 0 0.25rem 0',
     textAlign: 'center',
   },
   subtitle: {
     fontSize: '0.875rem',
-    color: '#6F8299',
+    color: 'rgba(255,255,255,0.55)',
     margin: '0 0 1rem 0',
     textAlign: 'center',
   },
-  // ─── Feedback banners (inline, non-blocking) ────────
   successBanner: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
     padding: '0.75rem 1rem',
-    borderRadius: '14px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.12)',
-    color: '#9FB3C8',
+    borderRadius: 12,
+    background: 'rgba(34,197,94,0.08)',
+    color: '#4ADE80',
     fontSize: '0.875rem',
-    fontWeight: 600,
     marginBottom: '0.75rem',
   },
   errorBanner: {
@@ -176,84 +226,99 @@ const S = {
     alignItems: 'center',
     gap: '0.5rem',
     padding: '0.75rem 1rem',
-    borderRadius: '14px',
-    background: 'rgba(239,68,68,0.06)',
-    border: '1px solid rgba(239,68,68,0.14)',
-    color: '#FCA5A5',
+    borderRadius: 12,
+    background: 'rgba(239,68,68,0.08)',
+    color: '#EF4444',
     fontSize: '0.875rem',
-    fontWeight: 600,
     marginBottom: '0.75rem',
   },
-  // ─── 2-column grid with large buttons ───────────────
   stageGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '0.625rem',
+    gap: '0.5rem',
     marginBottom: '1rem',
   },
   stageBtn: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '0.375rem',
-    padding: '1rem 0.75rem',
-    borderRadius: '14px',
-    border: '1px solid rgba(255,255,255,0.06)',
-    background: 'rgba(255,255,255,0.03)',
+    justifyContent: 'center',
+    gap: '0.25rem',
+    padding: '0.75rem 0.5rem',
+    minHeight: '70px',
+    borderRadius: 12,
+    background: 'rgba(255,255,255,0.05)',
+    border: '1.5px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.65)',
     cursor: 'pointer',
-    minHeight: '80px',
-    position: 'relative',
-    transition: 'transform 0.1s, background 0.15s',
     WebkitTapHighlightColor: 'transparent',
   },
   stageBtnActive: {
     background: 'rgba(34,197,94,0.12)',
-    border: '1px solid #22C55E',
-    transform: 'scale(1.03)',
-  },
-  stageBtnSaving: {
-    opacity: 0.7,
+    border: '1.5px solid rgba(34,197,94,0.4)',
+    color: '#4ADE80',
   },
   stageIcon: {
-    fontSize: '1.75rem',
+    fontSize: '1.25rem',
   },
   stageLabel: {
-    fontSize: '0.8125rem',
-    color: '#6F8299',
-    textAlign: 'center',
-    lineHeight: 1.3,
+    fontSize: '0.75rem',
     fontWeight: 600,
+    textAlign: 'center',
+    lineHeight: 1.2,
   },
   stageLabelActive: {
-    color: '#EAF2FF',
-    fontWeight: 700,
+    color: '#4ADE80',
   },
-  savingDot: {
-    position: 'absolute',
-    top: '0.375rem',
-    right: '0.5rem',
+  dateLabel: {
+    display: 'block',
     fontSize: '0.75rem',
-    color: '#9FB3C8',
-    fontWeight: 700,
-  },
-  savingText: {
-    textAlign: 'center',
-    color: '#9FB3C8',
-    fontSize: '0.875rem',
     fontWeight: 600,
-    margin: '0 0 0.75rem 0',
+    color: 'rgba(255,255,255,0.45)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    marginBottom: '0.35rem',
+  },
+  dateInput: {
+    width: '100%',
+    padding: '0.625rem 0.75rem',
+    borderRadius: 10,
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#fff',
+    fontSize: '0.9rem',
+    marginBottom: '1rem',
+    boxSizing: 'border-box',
+  },
+  saveBtn: {
+    width: '100%',
+    padding: '0.875rem',
+    minHeight: '52px',
+    borderRadius: 12,
+    background: '#22C55E',
+    color: '#fff',
+    fontWeight: 700,
+    fontSize: '0.9375rem',
+    border: 'none',
+    cursor: 'pointer',
+    marginBottom: '0.5rem',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  saveBtnDisabled: {
+    background: 'rgba(255,255,255,0.1)',
+    color: 'rgba(255,255,255,0.3)',
+    cursor: 'not-allowed',
   },
   cancelBtn: {
     width: '100%',
-    padding: '0.875rem',
-    borderRadius: '14px',
-    border: '1px solid rgba(255,255,255,0.06)',
-    background: 'rgba(255,255,255,0.03)',
-    color: '#9FB3C8',
-    fontSize: '0.9375rem',
+    padding: '0.75rem',
+    borderRadius: 12,
+    background: 'transparent',
+    color: 'rgba(255,255,255,0.55)',
     fontWeight: 600,
+    fontSize: '0.875rem',
+    border: '1px solid rgba(255,255,255,0.12)',
     cursor: 'pointer',
-    minHeight: '48px',
     WebkitTapHighlightColor: 'transparent',
   },
 };

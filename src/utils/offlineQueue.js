@@ -52,7 +52,7 @@ function tx(mode) {
 }
 
 const MAX_RETRIES = 5;   // After 5 failed syncs, mutation is marked 'abandoned'
-const EXPIRY_MS = 14 * 24 * 60 * 60 * 1000; // 14 days — extended from 7 for safety
+const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — mutations older than this are purged
 
 // ─── Sync status values ─────────────────────────────────────
 // Used for filtering + diagnostics. Stored on each mutation record.
@@ -260,7 +260,7 @@ export async function purgeExpired() {
   let marked = 0;
   for (const m of all) {
     if (m.createdAt && (now - m.createdAt) > EXPIRY_MS && m.syncStatus === SYNC_STATUS.PENDING) {
-      logSyncFailure('expired_after_14_days', m, { age: now - m.createdAt });
+      logSyncFailure('expired_after_7_days', m, { age: now - m.createdAt });
       await _update({ ...m, syncStatus: SYNC_STATUS.EXPIRED });
       marked++;
     }
@@ -277,7 +277,8 @@ export async function syncAll(apiClient) {
   // Mark expired before syncing
   await purgeExpired();
 
-  const mutations = await getPending();
+  const all = await getAll();
+  const mutations = all.filter(m => m.syncStatus === SYNC_STATUS.PENDING);
   let synced = 0;
   let failed = 0;
 
@@ -305,12 +306,8 @@ export async function syncAll(apiClient) {
     await _update({ ...m, syncStatus: SYNC_STATUS.SYNCING, lastAttemptAt: Date.now() });
 
     try {
-      // Attach idempotency key as header
-      const headers = { ...(m.headers || {}) };
-      if (m.idempotencyKey) {
-        headers['X-Idempotency-Key'] = m.idempotencyKey;
-      }
-      const config = { headers };
+      // Replay stored headers (idempotency key already merged into m.headers at queue time)
+      const config = m.headers ? { headers: m.headers } : undefined;
 
       if (m.method === 'POST') {
         await apiClient.post(m.url, m.data, config);

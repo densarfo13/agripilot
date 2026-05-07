@@ -85,9 +85,9 @@ export default function FarmSwitcher() {
   })();
   const isGardenActive = activeExperience === EXPERIENCE.GARDEN;
 
-  const hasFarms      = Array.isArray(activeFarms) && activeFarms.length > 0;
+  const hasFarms = activeFarms && activeFarms.length > 0;
   const hasGardens    = gardens.length > 0;
-  const hasMultiple   = (activeFarms?.length || 0) + gardens.length > 1;
+  const hasMultiple = activeFarms && activeFarms.length > 1;
 
   // Active item — when activeExperience is garden, prefer the
   // garden whose id matches; when farm, prefer the farm. Falls
@@ -163,13 +163,9 @@ export default function FarmSwitcher() {
 
   function handleAddFarm() {
     setOpen(false);
-    // Existing multi-farm user adding a second farm → legacy setup
-    // with ?newFarm=1 is the intended destination. The helper still
-    // centralizes the decision so future rerouting lives in one place.
-    const dest = resolveProfileCompletionRoute({
-      profile, farms: activeFarms, reason: 'new_farm',
-    });
-    navigate(routeToUrl(dest));
+    // New farm → /profile/setup?newFarm=1 (spec §8: always use the
+    // standard setup route with ?newFarm=1 so the form starts clean).
+    navigate('/profile/setup?newFarm=1');
   }
 
   return (
@@ -188,6 +184,11 @@ export default function FarmSwitcher() {
           {defaultFarm?.crop && (
             <span style={S.farmCrop}>
               {getCropLabelSafe(defaultFarm.crop, lang)}
+            </span>
+          )}
+          {hasFarms && (
+            <span style={S.defaultBadge}>
+              {hasMultiple ? t('farm.defaultFarm') : t('farm.yourFarm')}
             </span>
           )}
         </div>
@@ -224,7 +225,7 @@ export default function FarmSwitcher() {
                   {farm.crop && (
                     <span style={S.itemCrop}>{getCropLabelSafe(farm.crop, lang)}</span>
                   )}
-                  <span style={S.switchHint}>{t('farm.tapToSwitch')}</span>
+                  <span style={S.switchHint}>{t('farm.tapToSetDefault')}</span>
                 </button>
               ))}
             </div>
@@ -328,6 +329,11 @@ const S = {
     fontSize: '0.75rem',
     color: 'rgba(255,255,255,0.45)',
     fontWeight: 500,
+  },
+  defaultBadge: {
+    fontSize: '0.6875rem',
+    color: '#22C55E',
+    fontWeight: 600,
   },
   farmCount: {
     fontSize: '0.75rem',

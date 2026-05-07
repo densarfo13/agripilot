@@ -85,18 +85,20 @@ export function getTaskLabelKey(task) {
 }
 
 // ─── Task Voice Map (prompt IDs for voiceService) ─────────
-// Maps task types to voicePrompts IDs. Use with voiceService.speakPrompt().
-// Legacy i18n keys (task.voice.*) are bridged in voicePrompts.js KEY_TO_PROMPT.
+// Maps task types to i18n voice keys AND voicePrompts IDs.
+// The i18n keys (task.voice.*) are the canonical names; the
+// shorter prompt IDs (task.water etc.) are legacy aliases
+// bridged in voicePrompts.js KEY_TO_PROMPT for backward compat.
 export const taskVoiceKeys = {
-  watering:    'task.water',
-  planting:    'task.plant',
-  spraying:    'task.spray',
-  fertilizing: 'task.fertilize',
-  weeding:     'task.weed',
-  harvest:     'task.harvest',
-  pruning:     'task.prune',
-  scouting:    'task.scout',
-  default:     'task.default',
+  watering:    'task.voice.watering',
+  planting:    'task.voice.planting',
+  spraying:    'task.voice.spraying',
+  fertilizing: 'task.voice.fertilizing',
+  weeding:     'task.voice.weeding',
+  harvest:     'task.voice.harvest',
+  pruning:     'task.voice.pruning',
+  scouting:    'task.voice.scouting',
+  default:     'task.voice.default',
 };
 
 /**
@@ -109,6 +111,20 @@ export function getTaskVoiceKey(task) {
   }
   return taskVoiceKeys.default;
 }
+
+// ─── Task Label Map (i18n display keys) ───────────────────
+// Human-readable task type labels for UI surfaces.
+export const taskLabelKeys = {
+  watering:    'task.label.watering',
+  planting:    'task.label.planting',
+  spraying:    'task.label.spraying',
+  fertilizing: 'task.label.fertilizing',
+  weeding:     'task.label.weeding',
+  harvest:     'task.label.harvest',
+  pruning:     'task.label.pruning',
+  scouting:    'task.label.scouting',
+  default:     'task.label.default',
+};
 
 // ─── Task Action Button Map (translation keys) ───────────
 // CTA text when completing a task.
@@ -132,11 +148,12 @@ export function getTaskActionKey(task) {
 
 // ─── Task Color Map ────────────────────────────────────────
 // Priority-based colors for badges and accents.
-// High uses amber — red is reserved for block/danger states only.
+// Critical uses red (#EF4444), high/medium use amber (#F59E0B).
 export const priorityColors = {
-  high:   { text: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.2)' },
-  medium: { text: '#F59E0B', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.15)' },
-  low:    { text: '#6B7280', bg: 'rgba(107,114,128,0.10)', border: 'rgba(107,114,128,0.15)' },
+  critical: { text: '#EF4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)' },
+  high:     { text: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.2)' },
+  medium:   { text: '#F59E0B', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.15)' },
+  low:      { text: '#6B7280', bg: 'rgba(107,114,128,0.10)', border: 'rgba(107,114,128,0.15)' },
 };
 
 /**

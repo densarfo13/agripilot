@@ -172,7 +172,7 @@ export default function Login() {
     if (!trimmedEmail) {
       e.email = tSafe('auth.emailRequired', '');
     } else if (!isLikelyEmail(trimmedEmail)) {
-      e.email = tSafe('auth.emailInvalid', '');
+      e.email = tSafe('auth.emailInvalid', 'Enter a valid email address');
     }
     if (!password) {
       e.password = tSafe('auth.passwordRequired', '');
@@ -290,7 +290,7 @@ export default function Login() {
       return;
     }
     if (!isLikelyE164(trimmed)) {
-      setErrors({ phone: tSafe('auth.phoneInvalid', '') });
+      setErrors({ phone: tSafe('auth.phoneInvalid', 'Enter a full phone number including country code') });
       return;
     }
     setErrors({});
@@ -358,8 +358,19 @@ export default function Login() {
                 disabled={mfaLoading}
                 autoFocus
               />
+              {/* backup code input — accepts 6-digit TOTP or 10-char backup code */}
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={10}
+                value={mfaCode.length > 6 ? mfaCode : undefined}
+                onChange={(e) => setMfaCode(e.target.value)}
+                placeholder={tSafe('auth.mfa.backupCodePlaceholder', 'backup code (10 chars)')}
+                style={{ display: 'none' }}
+                aria-hidden="true"
+              />
               <p style={S.mfaHint}>
-                {tSafe('auth.mfa.backupCodeHint', '')}
+                {tSafe('auth.mfa.backupCodeHint', 'Lost your device? Enter your backup code instead.')}
               </p>
             </div>
 
@@ -379,7 +390,7 @@ export default function Login() {
             testId="login-mfa-back"
             style={{ marginTop: '1rem' }}
           >
-            {tSafe('auth.backToLogin', '')}
+            {tSafe('auth.backToLogin', 'Back to login')}
           </LoadingButton>
         </div>
       </div>
@@ -491,7 +502,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <div>
             <label style={S.label} htmlFor="login-email">
-              {tSafe('auth.email', '')}
+              {t('auth.email')}
             </label>
             <input
               id="login-email"
@@ -554,7 +565,7 @@ export default function Login() {
             loadingText={tSafe('auth.signingIn', '')}
             testId="login-submit"
           >
-            {tSafe('auth.signIn', '')}
+            {t('auth.signIn')}
           </LoadingButton>
         </form>
         )}

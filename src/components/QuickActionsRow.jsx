@@ -1,7 +1,10 @@
 /**
- * QuickActionsRow — 4-tile quick action grid (farmer-friendly labels)
+ * QuickActionsRow — 3-tile quick action row (farmer-friendly labels)
+ *
+ * Spec: exactly 3 actions — Add Update, My Farm, All Tasks.
+ * Each tile must be ≥ 80 px tall for thumb tap targets.
  */
-export default function QuickActionsRow({ onAddUpdate, onMyFarm, onAllTasks, onCheckPests, taskCount, t }) {
+export default function QuickActionsRow({ onAddUpdate, onMyFarm, onAllTasks, taskCount, t }) {
   return (
     <div style={S.quickSection}>
       <div style={S.quickTitle}>{t('dashboard.quickActions')}</div>
@@ -10,17 +13,13 @@ export default function QuickActionsRow({ onAddUpdate, onMyFarm, onAllTasks, onC
           <span style={S.quickIcon}>{'\uD83D\uDCF8'}</span>
           <span style={S.quickLabel}>{t('dashboard.addUpdate')}</span>
         </button>
-        <button onClick={onCheckPests} style={S.quickTile} data-testid="check-pests-btn">
-          <span style={S.quickIcon}>{'\uD83D\uDC1B'}</span>
-          <span style={S.quickLabel}>{t('dashboard.checkPests')}</span>
-        </button>
-        <button onClick={onMyFarm} style={S.quickTile}>
+        <button onClick={onMyFarm} style={S.quickTile} data-testid="my-farm-btn">
           <span style={S.quickIcon}>{'\uD83C\uDFE1'}</span>
           <span style={S.quickLabel}>{t('dashboard.myFarm')}</span>
         </button>
-        <button onClick={onAllTasks} style={S.quickTile}>
+        <button onClick={onAllTasks} style={S.quickTile} data-testid="all-tasks-btn">
           <span style={S.quickIcon}>{'\uD83D\uDCCB'}</span>
-          <span style={S.quickLabel}>{t('dashboard.allTasks')}</span>
+          <span style={S.quickLabel}>{t('dashboard.tasks')}</span>
           {taskCount > 0 && (
             <span style={S.quickBadge}>{taskCount}</span>
           )}

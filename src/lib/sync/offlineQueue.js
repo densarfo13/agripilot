@@ -221,6 +221,8 @@ export function markFailure(id, error, { permanent = false } = {}) {
   // Schedule next retry — exponential backoff capped at the last
   // entry. The engine respects nextAttemptAt and won't drain rows
   // whose deadline is still in the future.
+  // Index = attempts so the FIRST failure uses BACKOFF_MS[1] = 1s,
+  // second uses BACKOFF_MS[2] = 3s, etc.
   const idx = Math.min(entry.attempts, BACKOFF_MS.length - 1);
   entry.nextAttemptAt = Date.now() + (BACKOFF_MS[idx] || 30000);
   // Terminal: hit the retry cap, OR caller marked the failure

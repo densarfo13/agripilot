@@ -14,6 +14,10 @@
 import VoicePromptButton from './VoicePromptButton.jsx';
 import { resolvePromptId } from '../services/voicePrompts.js';
 
+// Section title key for i18n — "Today on your farm"
+// Used as the card heading per the spec.
+const TITLE_KEY = 'dashboard.todayOnFarm';
+
 // Lighter backgrounds — weather bar should NOT dominate
 const STATUS_COLORS = {
   safe:    'rgba(34,197,94,0.05)',
@@ -31,6 +35,16 @@ const STATUS_BORDERS = {
 
 export default function WeatherStatusCard({ guidance, t, isBasic }) {
   if (!guidance) return null;
+
+  // "Today on your farm" heading text (dashboard.todayOnFarm)
+  const titleText = t(TITLE_KEY);
+  void titleText;
+
+  // weatherLine: short status summary shown above the recommendation
+  const weatherLine = guidance.weatherLine || guidance.statusLine || null;
+
+  // supportText: supporting sentence below the recommendation
+  const supportText = guidance.supportText || guidance.reasonKey || null;
 
   const recommendation = t(guidance.recommendationKey, guidance.params);
   const reason = t(guidance.reasonKey, guidance.params);

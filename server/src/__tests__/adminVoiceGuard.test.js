@@ -41,7 +41,10 @@ afterEach(() => {
 });
 
 async function fresh() {
-  const guard = await import('../../../src/lib/voice/adminGuard.js?t=' + Math.random());
+  // vi.resetModules() replaces the old ?t=Math.random() cache-busting
+  // query-string pattern that Vitest cannot resolve for local file paths.
+  vi.resetModules();
+  const guard = await import('../../../src/lib/voice/adminGuard.js');
   return { guard };
 }
 
@@ -107,7 +110,8 @@ describe('isAdminContext (pathname)', () => {
 // inside each entry point sees the freshly-installed pathname.
 
 async function freshVoiceService() {
-  return import('../../../src/services/voiceService.js?t=' + Math.random());
+  vi.resetModules();
+  return import('../../../src/services/voiceService.js');
 }
 
 describe('voiceService — admin context entry points', () => {
@@ -159,7 +163,8 @@ describe('voiceService — farmer routes still speak', () => {
 
 // ─── voiceGuide.speak admin gate ─────────────────────────────────
 async function freshVoiceGuide() {
-  return import('../../../src/utils/voiceGuide.js?t=' + Math.random());
+  vi.resetModules();
+  return import('../../../src/utils/voiceGuide.js');
 }
 
 describe('voiceGuide.speak — admin context returns false', () => {

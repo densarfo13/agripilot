@@ -154,22 +154,11 @@ export function getDefaultUnit({ farmType, countryCode } = {}) {
 export function getAllowedUnits({ farmType, countryCode } = {}) {
   const def = getDefaultUnit({ farmType, countryCode });
   const ft  = normalizeFarmType(farmType);
-  const iso = String(countryCode || '').trim().toUpperCase();
 
   if (ft === 'backyard') {
     return def === 'sqft' ? ['sqft', 'sqm'] : ['sqm', 'sqft'];
   }
-  // Farm / commercial tier
-  if (iso === 'US') {
-    // Default acres but farmers occasionally enter raised-bed
-    // plots in sq ft — offer sqft as the second option.
-    return ['acres', 'sqft', 'hectares'];
-  }
-  if (iso === 'GH') {
-    // Ghana farms work in acres + hectares historically. Keep
-    // both as primaries; expose sqm + sqft as opt-in tail.
-    return ['acres', 'hectares', 'sqm', 'sqft'];
-  }
+  // Land-area tier: default first, then the other canonical unit.
   return def === 'acres' ? ['acres', 'hectares'] : ['hectares', 'acres'];
 }
 

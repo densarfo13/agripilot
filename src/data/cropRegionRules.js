@@ -134,6 +134,19 @@ export const CROP_REGION_RULES = [
   { crop: 'SESAME',   country: 'KE', common: false, beginnerGood: true,  foodFit: 'low',    profitFit: 'medium', goals: ['profit', 'local_sales'],             priority: 3, notes: 'Marginal areas; export crop' },
 
   // ═══════════════════════════════════════════════════════════
+  // TANZANIA (TZ) — East Africa
+  // ═══════════════════════════════════════════════════════════
+
+  { crop: 'MAIZE',       country: 'TZ', common: true,  beginnerGood: true,  foodFit: 'high',   profitFit: 'medium', goals: ['home_food', 'local_sales', 'profit'], priority: 1, notes: 'Staple grain; widely grown across the country' },
+  { crop: 'RICE',        country: 'TZ', common: true,  beginnerGood: false, foodFit: 'high',   profitFit: 'high',   goals: ['home_food', 'profit'],               priority: 1, notes: 'Mbeya, Kilombero, Iringa — major producing areas' },
+  { crop: 'CASSAVA',     country: 'TZ', common: true,  beginnerGood: true,  foodFit: 'high',   profitFit: 'medium', goals: ['home_food', 'local_sales'],          priority: 1, notes: 'Coastal and lake regions; drought-tolerant staple' },
+  { crop: 'BEAN',        country: 'TZ', common: true,  beginnerGood: true,  foodFit: 'high',   profitFit: 'medium', goals: ['home_food', 'local_sales'],          priority: 1, notes: 'Common legume; intercropped with maize' },
+  { crop: 'BANANA',      country: 'TZ', common: true,  beginnerGood: true,  foodFit: 'high',   profitFit: 'medium', goals: ['home_food', 'local_sales'],          priority: 1, notes: 'Kilimanjaro, Kagera regions; cooking and sweet varieties' },
+  { crop: 'SWEET_POTATO',country: 'TZ', common: true,  beginnerGood: true,  foodFit: 'high',   profitFit: 'low',    goals: ['home_food'],                         priority: 2, notes: 'Widely grown for food security' },
+  { crop: 'GROUNDNUT',   country: 'TZ', common: true,  beginnerGood: true,  foodFit: 'medium', profitFit: 'medium', goals: ['home_food', 'local_sales'],          priority: 2, notes: 'Shinyanga, Tabora; oilseed crop' },
+  { crop: 'COFFEE',      country: 'TZ', common: true,  beginnerGood: false, foodFit: 'low',    profitFit: 'high',   goals: ['profit'],                            priority: 2, notes: 'Kilimanjaro, Arusha; Arabica and Robusta export' },
+
+  // ═══════════════════════════════════════════════════════════
   // UNITED STATES — Maryland / Mid-Atlantic (US)
   // ═══════════════════════════════════════════════════════════
 

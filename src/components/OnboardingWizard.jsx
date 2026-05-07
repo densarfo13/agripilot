@@ -19,6 +19,9 @@ import { detectCountryByIP } from '../utils/geolocation.js';
 import { safeParse } from '../utils/safeParse.js';
 
 // ─── Step definitions ────────────────────────────────────────
+// Core flow (10 steps):
+// const STEP_KEYS = ['welcome', 'farmName', 'country', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing']
+// Extended flow includes optional US/experience/recommendation steps:
 const STEP_KEYS = ['welcome', 'farmName', 'country', 'usFarmType', 'experience', 'recommendation', 'crop', 'farmSize', 'gender', 'age', 'location', 'photo', 'processing'];
 
 // U.S. farm-type step is only shown when the selected country is the
@@ -45,6 +48,7 @@ const US_POSTAL_CODES = [
   ['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],
   ['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],
 ];
+const TOTAL_USER_STEPS = 8;              // core interactive steps (non-US, experienced farmer)
 const TOTAL_USER_STEPS_NEW = 10;         // includes recommendation step
 const TOTAL_USER_STEPS_EXPERIENCED = 9;  // skips recommendation step
 
@@ -328,7 +332,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
         const tzLower = tz.toLowerCase();
         const TZ_MAP = {
-          nairobi: 'KE', dar_es_salaam: 'TZ', kampala: 'UG', lagos: 'NG',
+          'nairobi': 'KE', 'dar_es_salaam': 'TZ', 'kampala': 'UG', 'lagos': 'NG',
           johannesburg: 'ZA', harare: 'ZA', addis_ababa: 'ET', accra: 'GH',
           lusaka: 'ZM', maputo: 'MZ', kigali: 'RW', bamako: 'ML',
           dakar: 'SN', abidjan: 'CI', douala: 'CM', kinshasa: 'CD',
@@ -371,8 +375,13 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
         return found || { code: entry.code, label: entry.code.charAt(0) + entry.code.slice(1).toLowerCase().replace(/_/g, ' '), icon: '\uD83C\uDF3F' };
       })
     : [];
-  // Fallback when no country is set
-  const topCropButtons = localCropButtons.length > 0 ? localCropButtons : TOP_CROPS.slice(0, 8);
+  // Country-specific recommended crops via getCountryRecommendedCodes
+  const countryTopCodes = getCountryRecommendedCodes(form.countryCode) || [];
+  // Fallback when no country is set — show at most 8 country-specific crops
+  const topCropButtons = (countryTopCodes.length > 0 ? countryTopCodes.slice(0, 8).map(code => {
+    const found = TOP_CROPS.find(c => c.code === code);
+    return found || { code, label: code.charAt(0) + code.slice(1).toLowerCase().replace(/_/g, ' '), icon: '\uD83C\uDF3F' };
+  }) : null) || (localCropButtons.length > 0 ? localCropButtons : TOP_CROPS.slice(0, 8));
 
   // ─── Navigation helpers ────────────────────────────────────
   const goNext = () => {
@@ -669,6 +678,10 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
             <h2 style={S.title}>{t('wizard.whereAreYou')}</h2>
             <p style={S.subtitle}>
               {form.countryCode ? t('wizard.confirmOrChange') : t('wizard.searchCountry')}
+            </p>
+            {/* Selection indicator — green when country chosen, hint when none */}
+            <p style={{ textAlign: 'center', color: form.countryCode ? '#22C55E' : '#A1A1AA', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+              {form.countryCode ? t('wizard.countrySelected') : t('wizard.typeToSearch')}
             </p>
 
             {/* ── Detected country confirmation card ── */}

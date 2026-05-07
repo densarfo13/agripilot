@@ -85,7 +85,7 @@ export default function CountrySelect({
         name={id ? `${id}-search` : undefined}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search country…"
+        placeholder="Search country..."
         /* Default the search input to `form-input` so it picks up the
            placeholder + focus-ring rules from index.css. Callers may
            still override via searchClassName for legacy screens. */

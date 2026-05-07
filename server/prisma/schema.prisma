@@ -30,7 +30,7 @@ model Organization {
 
   users               User[]
   farmers             Farmer[]
-  programs            Program[]
+  programs             Program[]
   approvalRequests    ApprovalRequest[]
   pilotChecklistItems PilotChecklistItem[]
   issues              Issue[]
@@ -43,14 +43,14 @@ model Organization {
 
 model Program {
   id             String    @id @default(uuid())
-  organizationId String    @map("organization_id")
-  name           String
-  description    String?
-  status         String    @default("active") // active | completed | archived
-  startDate      DateTime? @map("start_date")
-  endDate        DateTime? @map("end_date")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  organizationId  String       @map("organization_id")
+  name            String
+  description     String?
+  status          String       @default("active") // active | completed | archived
+  startDate       DateTime?    @map("start_date")
+  endDate         DateTime?    @map("end_date")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id])
   cohorts      Cohort[]
@@ -65,7 +65,7 @@ model Program {
 
 model Cohort {
   id          String    @id @default(uuid())
-  programId   String    @map("program_id")
+  programId   String   @map("program_id")
   name        String
   description String?
   status      String    @default("active") // active | completed | archived
@@ -471,9 +471,9 @@ model Farmer {
   inviteAcceptedAt       DateTime?          @map("invite_accepted_at")
   inviteResendMeta       Json?              @map("invite_resend_meta") // { timestamps: number[], totalCount: number, lastResentBy: string }
   assignedOfficerId      String?            @map("assigned_officer_id")
-  programId              String?            @map("program_id")
-  cohortId               String?            @map("cohort_id")
-  duplicateFlag          String?            @map("duplicate_flag") // 'possible_duplicate' | 'review_needed' | 'cleared' | null
+  programId            String?             @map("program_id")
+  cohortId             String?             @map("cohort_id")
+  duplicateFlag        String?              @map("duplicate_flag") // 'possible_duplicate' | 'review_needed' | 'cleared' | null
   duplicateOfId          String?            @map("duplicate_of_id") // farmerId of the suspected original
   duplicateScore         Int?               @map("duplicate_score") // 0-100 duplicate confidence score
   duplicateSignals       Json?              @map("duplicate_signals") // ['phone_exact', 'name_fuzzy_region_match', ...]
@@ -1368,9 +1368,9 @@ model FarmProfile {
   farmName                 String?   @map("farm_name")
   country                  String?   @map("country")
   locationName             String?   @map("location_name")
-  latitude                 Float?
-  longitude                Float?
-  locationLabel            String?   @map("location_label") // cached reverse-geocoded label e.g. "Accra, Ghana"
+  latitude        Float?
+  longitude       Float?
+  locationLabel   String?   @map("location_label") // cached reverse-geocoded label e.g. "Accra, Ghana"
   crop                     String
   // ─── NGO program tag ─────────────────────────────────
   program                  String? // mirrors User.program for farms created via NGO import
@@ -1426,8 +1426,8 @@ model FarmProfile {
   droneScans          V2DroneScan[]
   treatmentActions    V2TreatmentAction[]
   farmPestRisks       V2FarmPestRisk[]
-  harvestRecords      V2HarvestRecord[]
-  costRecords         V2FarmCostRecord[]
+  harvestRecords    V2HarvestRecord[]
+  costRecords       V2FarmCostRecord[]
   taskCompletions     V2FarmTaskCompletion[]
 
   @@index([farmerId], map: "idx_farm_profiles_farmer")
@@ -2798,7 +2798,7 @@ model V2HarvestRecord {
   idempotencyKey      String?   @map("idempotency_key") // Client-generated UUID for dedup
   clientCreatedAt     DateTime? @map("client_created_at") // Timestamp from client device
 
-  farm FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm                FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@unique([cropCycleId], map: "uq_harvest_records_cycle")
   @@index([farmId], map: "idx_harvest_records_farm")
@@ -2823,7 +2823,7 @@ model V2FarmCostRecord {
   idempotencyKey  String?   @map("idempotency_key") // Client-generated UUID for dedup
   clientCreatedAt DateTime? @map("client_created_at") // Timestamp from client device
 
-  farm FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm        FarmProfile @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@index([farmId], map: "idx_cost_records_farm")
   @@index([farmId, date], map: "idx_cost_records_farm_date")

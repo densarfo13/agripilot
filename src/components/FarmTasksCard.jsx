@@ -22,6 +22,12 @@ const PRIORITY_LABELS = {
   low: 'farmTasks.priorityLow',
 };
 
+const PRIORITY_COLORS = {
+  high: '#EF4444',
+  medium: '#F59E0B',
+  low: '#86EFAC',
+};
+
 // Task completion is now server-side via V2FarmTaskCompletion.
 // GET returns only pending tasks; POST /:taskId/complete marks done.
 
@@ -237,14 +243,14 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
                   <span style={S.taskTitle}>{vm?.title || getLocalizedTaskTitle(task.id, task.title, lang)}</span>
                 </div>
                 <div style={S.taskMeta}>
-                  <span style={{ ...S.priorityLabel, color: sty.priorityColor }}>
+                  <span style={{ ...S.priorityLabel, color: sty.priorityColor || PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.low }}>
                     {t(PRIORITY_LABELS[task.priority] || PRIORITY_LABELS.low)}
                   </span>
                   <span style={S.dueLabel}>{task.dueLabel}</span>
                 </div>
               </div>
-              {vm?.descriptionShort && (
-                <div style={S.taskDesc}>{vm.descriptionShort}</div>
+              {(vm?.descriptionShort || task.description) && (
+                <div style={S.taskDesc}>{vm?.descriptionShort || task.description}</div>
               )}
               {showNotes && task.reason && (
                 <div style={S.taskReason}>

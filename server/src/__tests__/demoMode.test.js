@@ -11,7 +11,7 @@
  *   • friendly empty/error wording
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 function installWindow({ demoQuery = false, demoSticky = false } = {}) {
   const map = new Map();
@@ -33,14 +33,17 @@ function installWindow({ demoQuery = false, demoSticky = false } = {}) {
 
 async function fresh() {
   // Re-import each suite so module-level state (if any) resets.
-  const demoMode   = await import('../../../src/config/demoMode.js?t=' + Math.random());
-  const fallbacks  = await import('../../../src/lib/demo/demoFallbacks.js?t=' + Math.random());
-  const adminNav   = await import('../../../src/lib/demo/adminNav.js?t=' + Math.random());
-  const mfaBypass  = await import('../../../src/lib/demo/mfaBypass.js?t=' + Math.random());
-  const sessionGuard = await import('../../../src/lib/demo/sessionGuard.js?t=' + Math.random());
-  const demoSeed   = await import('../../../src/lib/demo/demoSeed.js?t=' + Math.random());
-  const issueStore = await import('../../../src/lib/issues/issueStore.js?t=' + Math.random());
-  const farroway   = await import('../../../src/store/farrowayLocal.js?t=' + Math.random());
+  // vi.resetModules() replaces the old ?t=Math.random() cache-busting
+  // query-string pattern that Vitest cannot resolve for local file paths.
+  vi.resetModules();
+  const demoMode   = await import('../../../src/config/demoMode.js');
+  const fallbacks  = await import('../../../src/lib/demo/demoFallbacks.js');
+  const adminNav   = await import('../../../src/lib/demo/adminNav.js');
+  const mfaBypass  = await import('../../../src/lib/demo/mfaBypass.js');
+  const sessionGuard = await import('../../../src/lib/demo/sessionGuard.js');
+  const demoSeed   = await import('../../../src/lib/demo/demoSeed.js');
+  const issueStore = await import('../../../src/lib/issues/issueStore.js');
+  const farroway   = await import('../../../src/store/farrowayLocal.js');
   return { demoMode, fallbacks, adminNav, mfaBypass, sessionGuard, demoSeed, issueStore, farroway };
 }
 

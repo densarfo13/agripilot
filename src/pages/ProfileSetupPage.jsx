@@ -106,15 +106,7 @@ export default function ProfileSetupPage() {
       }));
     } catch (err) {
       const code = err?.code;
-      if (code === GPS_ERROR.PERMISSION_DENIED) {
-        setGpsError(t('setup.gpsPermissionDenied'));
-      } else if (code === GPS_ERROR.TIMEOUT) {
-        setGpsError(t('setup.gpsTimeout'));
-      } else if (code === GPS_ERROR.UNAVAILABLE) {
-        setGpsError(t('setup.gpsSignalWeak'));
-      } else {
-        setGpsError(t('location.gpsFallback'));
-      }
+      setGpsError(t('location.gpsFallback'));
       console.warn('[ProfileSetupPage] GPS failed:', { code, message: err?.message });
     } finally {
       setGpsLoading(false);

@@ -134,10 +134,6 @@ export const LANGUAGES = [
   { code: 'sw', label: 'Kiswahili', short: 'SW' },
   { code: 'ha', label: 'Hausa', short: 'HA' },
   { code: 'tw', label: 'Twi', short: 'TW' },
-  // Starter language — only high-priority shared strings are translated
-  // (see "Starter Hindi set" in translations.js). Other keys fall back
-  // to English via the resolver until Hindi is fully rolled out.
-  { code: 'hi', label: 'हिन्दी', short: 'HI' },
 ];
 
 const STORAGE_KEY = 'farroway:lang';
@@ -180,6 +176,16 @@ function applyHtmlLang(code) {
 export function setLanguage(code) {
   confirmLanguage(code);
   applyHtmlLang(code);
+  // Mirror the change into all three storage slots so every consumer
+  // (voice system, legacy server-side locale, and the new unified key)
+  // stays in sync without needing to know which reader uses which key.
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, code);
+      localStorage.setItem(LEGACY_VOICE_KEY, code);
+      localStorage.setItem(LEGACY_UI_KEY, code);
+    }
+  } catch { /* localStorage may be unavailable in some SSR or locked contexts */ }
   // confirmLanguage already dispatches the event, but we re-dispatch
   // here for older call sites that imported setLanguage directly
   // before the resolver existed.
@@ -245,13 +251,11 @@ function isStrictI18n() {
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env) {
       if (import.meta.env.VITE_I18N_STRICT === '1') return true;
-      if (import.meta.env.DEV) return true;
     }
   } catch { /* SSR */ }
   try {
     if (typeof process !== 'undefined' && process.env) {
       if (process.env.VITE_I18N_STRICT === '1') return true;
-      if (process.env.NODE_ENV === 'test')      return true;
     }
   } catch { /* ignore */ }
   return false;
@@ -277,10 +281,10 @@ export function t(key, lang, vars) {
           console.warn(`[i18n] Missing key: "${key}"`);
         }
       }
-      // Strict mode (dev/QA): make the gap visible. Production: stay
-      // user-friendly with the humanised key.
+      // Strict mode (dev/QA): make the gap visible. Production: return
+      // the raw key so callers can identify missing translations.
       if (strict) return `[MISSING:${key}]`;
-      return humanizeKey(key);
+      return key;
     }
     let text = entry[lang];
     if (!text && lang !== 'en') {

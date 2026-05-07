@@ -37,7 +37,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
+import { useTranslation } from '../i18n/index.js';
 import { CROPS, ALL_CROPS_WITH_OTHER, OTHER_CROP, getCropLabel, normalizeCropCode, parseCropValue, buildOtherCropValue, getCropLabelSafe } from '../utils/crops.js';
 import { STAGES, STAGE_KEYS, resolveStage, getStagesForCrop } from '../utils/cropStages.js';
 import {
@@ -239,43 +239,44 @@ export default function FarmForm({
   function validate() {
     const next = {};
     if (!form.farmName.trim()) {
-      next.farmName = tSafe('farm.err.nameRequired', '');
+      next.farmName = tSafe('farm.err.nameRequired', 'Farm name is required');
     }
     if (!form.crop) {
-      next.crop = tSafe('farm.err.cropRequired', '');
+      next.crop = tSafe('farm.err.cropRequired', 'Main crop is required');
     }
     if (form.crop === 'OTHER' && !form.otherCropName.trim()) {
-      next.otherCropName = tSafe('farm.err.otherCropRequired', '');
+      next.otherCropName = tSafe('farm.err.otherCropRequired', 'Please specify the crop name');
     }
     if (!form.country) {
-      next.country = tSafe('farm.err.countryRequired', '');
+      next.country = tSafe('farm.err.countryRequired', 'Country is required');
     }
     if (availableStates.length > 0 && !form.state) {
-      next.state = tSafe('farm.err.stateRequired', '');
+      next.state = tSafe('farm.err.stateRequired', 'State is required');
     }
     if (!form.farmType) {
-      next.farmType = tSafe('farm.err.farmTypeRequired', '');
+      next.farmType = tSafe('farm.err.farmTypeRequired', 'Farm type is required');
     }
     if (!form.farmSize) {
-      next.farmSize = tSafe('farm.err.sizeRequired', '');
+      next.farmSize = tSafe('farm.err.sizeRequired', 'Farm size is required');
     } else {
       const n = Number(form.farmSize);
       if (!Number.isFinite(n) || n <= 0) {
-        next.farmSize = tSafe('farm.err.sizePositive', '');
+        next.farmSize = tSafe('farm.err.sizePositive', 'Farm size must be a number greater than 0');
       }
     }
     if (!form.sizeUnit) {
-      next.sizeUnit = tSafe('farm.err.unitRequired', '');
+      next.sizeUnit = tSafe('farm.err.unitRequired', 'Size unit is required');
     }
     if (!form.cropStage) {
-      next.cropStage = tSafe('farm.err.stageRequired', '');
+      next.cropStage = tSafe('farm.err.stageRequired', 'Crop stage is required');
     }
     if (form.plantingDate) {
       const d = new Date(form.plantingDate);
       if (!Number.isFinite(d.getTime())) {
-        next.plantingDate = tSafe('farm.err.plantingDateInvalid', '');
+        next.plantingDate = tSafe('farm.err.plantingDateInvalid', 'Invalid planting date');
       } else if (d.getTime() > Date.now() + 86400000) {
-        next.plantingDate = tSafe('farm.err.plantingDateFuture', '');
+        // plantingDateFuture — planting date cannot be in the future
+        next.plantingDate = tSafe('farm.err.plantingDateFuture', 'Planting date cannot be in the future');
       }
     }
     setErrors(next);
@@ -346,7 +347,8 @@ export default function FarmForm({
   async function handleSubmit(event) {
     event.preventDefault();
     if (!validate()) {
-      setSubmitError(tSafe('farm.err.fixHighlighted', ''));
+      // fixHighlighted — fix the highlighted fields before saving
+      setSubmitError(tSafe('farm.err.fixHighlighted', 'Please fix the highlighted fields before saving'));
       return;
     }
     setIsSubmitting(true);
@@ -388,7 +390,7 @@ export default function FarmForm({
         }
       }
       setSubmitError(formatApiError(error,
-        tSafe('farm.err.saveFailed', '')));
+        tSafe('farm.err.saveFailed', 'Unable to save the farm right now. Please check your inputs and try again.')));
       // Swallow the console noise in prod, keep it in dev.
       if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
         // eslint-disable-next-line no-console
@@ -425,7 +427,7 @@ export default function FarmForm({
             : (tSafe('farm.createSubtitle', ''))}
         </p>
 
-        <Field label={tSafe('farm.fields.name', '')}
+        <Field label={t('farm.fields.name') || 'Farm Name'}
                required error={errors.farmName}>
           <input
             type="text"
@@ -635,7 +637,7 @@ export default function FarmForm({
             disabled={isSubmitting}
             data-testid="farm-cancel"
           >
-            {tSafe('common.cancel', '')}
+            {t('common.cancel') || 'Cancel'}
           </button>
           <button
             type="submit"

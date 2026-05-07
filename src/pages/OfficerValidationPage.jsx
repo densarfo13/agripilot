@@ -4,10 +4,23 @@ import { getCropLabel, getCropIcon, getCropLabelSafe } from '../utils/crops.js';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
-// Voice removed — officer routes are admin context per
-// src/lib/voice/adminGuard.js. Keeps the officer queue quiet +
-// focused. Farmer-facing voice is unaffected.
+// VoiceBar is imported but voice is suppressed on admin context routes
+// (src/lib/voice/adminGuard.js). Keys like officer.queue, officer.approve,
+// officer.reject, officer.empty and officer.flag are registered in the
+// voice map so future officer-tablet builds can re-enable them without
+// a code change.
+import VoiceBar from '../components/VoiceBar.jsx';
 import { useTranslation } from '../i18n/index.js';
+
+// Voice prompt keys available for officer flows (currently suppressed by
+// adminGuard): officer.queue, officer.approve, officer.reject, officer.empty
+const OFFICER_VOICE_KEYS = Object.freeze({
+  queue:   'officer.queue',
+  approve: 'officer.approve',
+  reject:  'officer.reject',
+  empty:   'officer.empty',
+  flag:    'officer.flag',
+});
 
 const VALIDATION_TIMEOUT_MS = 10000;
 
@@ -219,7 +232,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && queue.length === 0) {
     return (
       <div style={VS.page}>
-        {/* Voice bar removed for officer routes — admin context. */}
+        <VoiceBar voiceKey="officer.empty" compact />
         <div style={VS.emptyCenter} data-testid="validation-empty">
           <span style={{ fontSize: '3rem' }}>✅</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t('validation.queueClear')}</div>
@@ -233,7 +246,7 @@ export default function OfficerValidationPage() {
   if (totalPending === 0 && completedIds.size > 0) {
     return (
       <div style={VS.page}>
-        {/* Voice bar removed for officer routes — admin context. */}
+        <VoiceBar voiceKey="officer.empty" compact />
         <div style={VS.emptyCenter} data-testid="validation-done">
           <span style={{ fontSize: '3rem' }}>🎉</span>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t('validation.allDone')}</div>
@@ -264,7 +277,7 @@ export default function OfficerValidationPage() {
 
       {/* Voice guide for officers */}
       <div style={{ padding: '0.5rem 1rem 0', maxWidth: '600px', width: '100%', margin: '0 auto' }}>
-        {/* Voice bar removed for officer routes — admin context. */}
+        <VoiceBar voiceKey="officer.openItem" compact />
       </div>
 
       {current && (

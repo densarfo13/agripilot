@@ -697,10 +697,12 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
       }
 
       if (result.success) {
+        console.log(`${tag} email_sent provider=${result.provider}`);
         console.log(`${tag} delivery_ok provider=${result.provider}`);
       } else {
         // Full failure details already in the service logs above;
         // single summary line here for grep-ability.
+        console.error(`${tag} email_failed provider=${result.provider} error=${result.error}`);
         console.error(`${tag} delivery_failed provider=${result.provider} error=${result.error}`);
       }
 

@@ -480,9 +480,8 @@ function buildMissingDataNotes(input) {
   }
 
   if (benchmarkInsights && benchmarkInsights.noComparisonData) {
-    // Replaced legacy "Keep logging harvest and costs to unlock
-    // stronger benchmarking." with a softer, contextual note.
-    notes.push('Once you have data from two seasons, season-over-season comparison will appear on the Benchmark tab.');
+    // Soft note: encourage data logging to unlock stronger benchmarking.
+    notes.push('Keep logging harvest and costs to unlock stronger benchmarking across seasons.');
   }
 
   return notes;

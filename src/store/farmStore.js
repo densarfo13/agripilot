@@ -8,14 +8,11 @@ function generateIdempotencyKey() {
   return generateUUID();
 }
 
-/** Queue a mutation for later sync if offline */
-async function queueIfOffline(method, url, data, { headers = null, entityType = null, actionType = null, idempotencyKey = null } = {}) {
+/** Queue a mutation for later sync if offline — headers are replayed verbatim on reconnect */
+async function queueIfOffline(method, url, data, headers = null) {
   await enqueue({
     method, url, data,
     ...(headers ? { headers } : {}),
-    ...(entityType ? { entityType } : {}),
-    ...(actionType ? { actionType } : {}),
-    ...(idempotencyKey ? { idempotencyKey } : {}),
   });
 }
 
@@ -114,12 +111,7 @@ export const useFarmStore = create((set, get) => ({
     } catch (err) {
       if (isNetworkError(err)) {
         // Queue for offline sync — include idempotency key for dedup on replay
-        await queueIfOffline('POST', '/v1/farms', data, {
-          headers: { 'X-Idempotency-Key': idempotencyKey },
-          entityType: 'profile',
-          actionType: 'create',
-          idempotencyKey,
-        });
+        await queueIfOffline('POST', '/v1/farms', data, { 'X-Idempotency-Key': idempotencyKey });
         set({ loading: false, _createInFlight: false, error: 'Saved offline — will sync when reconnected.' });
         return { _offline: true, ...data };
       }

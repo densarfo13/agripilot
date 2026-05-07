@@ -85,10 +85,7 @@ export function unitLabel(unit) {
  */
 export function computeLandSizeFields(value, unit) {
   if (value == null || value === '' || isNaN(Number(value))) {
-    return {
-      landSizeValue: null, landSizeUnit: null,
-      landSizeHectares: null, normalizedAreaSqm: null,
-    };
+    return { landSizeValue: null, landSizeUnit: null, landSizeHectares: null };
   }
   const numVal = parseFloat(value);
   const u = (unit || 'ACRE').toUpperCase();

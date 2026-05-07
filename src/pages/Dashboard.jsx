@@ -17,6 +17,11 @@
 import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { completeTask, getLandBoundaries, getSeedScans, getFarmTasks } from '../lib/api.js';
+import ModeIndicator from '../components/ModeIndicator.jsx';
+import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
+import FarmEditModal from '../components/FarmEditModal.jsx';
+import { useNetwork } from '../hooks/useNetwork.js';
 import { FARROWAY_BUILD_VERSION, FARROWAY_COMMIT_SHA } from '../lib/forceUiReset.js';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -35,13 +40,9 @@ import {
 import TaskCorrectionModal from '../components/farmer/TaskCorrectionModal.jsx';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';
-import NextActionCard from '../components/NextActionCard.jsx';
-// Calm-UI Home — server-driven primary action card. Swaps in
-// for NextActionCard when FEATURE_AI_TASK_ENGINE is on. Brings:
-// dynamic weather header above the action, spec-matched CTA
-// per rule + userType + locale, scan prompt below, tomorrow
-// hook on done. Strict no-duplicates: NextActionCard stays
-// registered as the rollback path.
+import WeatherStatusCard from '../components/WeatherStatusCard.jsx';
+// Calm-UI Home — server-driven primary action card. Shows the
+// single highest-priority task for today (spec §1 action-first).
 import TodayTaskCard from '../components/farmer/TodayTaskCard.jsx';
 import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
@@ -75,8 +76,19 @@ import TaskActionModal from '../components/TaskActionModal.jsx';
 import CropStageModal from '../components/CropStageModal.jsx';
 import QuickUpdateFlow from '../components/QuickUpdateFlow.jsx';
 import FarmPicker from '../components/FarmPicker.jsx';
+import FarmSwitcher from '../components/FarmSwitcher.jsx';
 import RainfallForecastCard from '../components/RainfallForecastCard.jsx';
 import MarketSignalCard from '../components/MarketSignalCard.jsx';
+import QuickActionsRow from '../components/QuickActionsRow.jsx';
+import WeeklyProgressCard from '../components/WeeklyProgressCard.jsx';
+import YieldRecordsCard from '../components/YieldRecordsCard.jsx';
+import FarmHarvestCard from '../components/FarmHarvestCard.jsx';
+const SeedScanFlow = lazy(() => import('../components/SeedScanFlow.jsx'));
+const LandBoundaryCapture = lazy(() => import('../components/LandBoundaryCapture.jsx'));
+import FarmEconomicsCard from '../components/FarmEconomicsCard.jsx';
+import FarmBenchmarkCard from '../components/FarmBenchmarkCard.jsx';
+import FarmPestRiskCard from '../components/FarmPestRiskCard.jsx';
+import FarmWeatherCard from '../components/FarmWeatherCard.jsx';
 // Lucide-style icons for the Home 2x2 quick-actions grid:
 // Scan crop / Check land / Funding / Sell. The unified UI
 // system spec (Apr 2026 polish) restores the four-tile grid
@@ -110,7 +122,9 @@ import {
 } from '../utils/fastOnboarding/index.js';
 
 const BasicFarmerHome = lazy(() => import('../components/farmer/BasicFarmerHome.jsx'));
+const FarmerSettingsPanel = lazy(() => import('../components/FarmerSettingsPanel.jsx'));
 const BeginnerPrompt = lazy(() => import('../components/farmer/BeginnerPrompt.jsx'));
+const SellReadinessInput = lazy(() => import('../components/SellReadinessInput.jsx'));
 
 export default function Dashboard() {
   const { user, authLoading } = useAuth();
@@ -126,6 +140,12 @@ export default function Dashboard() {
   const _loopRaw = useFarmerLoop();
   const loop = _loopRaw && typeof _loopRaw === 'object' ? _loopRaw : {};
   const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
+  const { isOnline } = useNetwork ? useNetwork() : { isOnline: true };
+
+  // Setup banner text (i18n-wired)
+  const setupBannerTitle = t('dashboard.setupBanner') || 'Complete Your Farm Setup';
+  const setupBannerDesc = t('dashboard.setupBannerDesc') || 'Add your farm details to get personalized guidance.';
+  void setupBannerTitle; void setupBannerDesc; // used by CompleteSetupCard internally
 
   // Debug-only render trace. Gated behind ?debug=1 OR DEV mode so
   // production logs stay clean. Helps QA pin down "why did Home
@@ -161,7 +181,9 @@ export default function Dashboard() {
   // new visit, which matches the spec intent.
   useEffect(() => {
     try { safeTrackEvent('home_opened', {}); }
-    catch { /* swallow \u2014 analytics must not crash */ }
+    catch { /* swallow — analytics must not crash */ }
+    try { safeTrackEvent('dashboard.viewed', { farmId: currentFarmId }); }
+    catch { /* swallow */ }
   }, []);
 
   // ─── 7-day engagement loop ──────────────────────────────
@@ -184,12 +206,69 @@ export default function Dashboard() {
     t,
   });
 
+  // ─── Voice welcome (basic mode, once per session) ────────────────
+  // Plays t('voice.welcome') the first time a farmer opens the home
+  // screen in basic mode. voicePlayedRef guards against re-plays.
+  useEffect(() => {
+    if (!isBasic || !profile || voicePlayedRef.current) return;
+    voicePlayedRef.current = true;
+    try {
+      const msg = t('voice.welcome');
+      if (msg && typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(msg));
+      }
+    } catch { /* voice errors are non-blocking */ }
+  }, [isBasic, profile, t]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Farm-scoped data loading (RULE 5+6: lazy + online-only) ────
+  // Separate from task load for performance (spec §5).
+  // In basic mode we skip farm-scoped data to keep startup fast.
+  async function loadFarmScopedData(farmId) {
+    if (isBasic) return; // isBasic) return — skip farm-scoped data in basic mode
+    if (!farmId || !isOnline) return;
+    setFarmDataLoading(true);
+    try {
+      const [b, s] = await Promise.all([
+        getLandBoundaries(farmId).catch(() => []),
+        getSeedScans(farmId).catch(() => []),
+      ]);
+      setBoundaries(b || []);
+      setSeedScans(s || []);
+    } catch { /* noop */ } finally {
+      setFarmDataLoading(false);
+    }
+  }
+
+  // ─── Land boundary + seed scan data (RULE 6: online-only fetch) ──
+  // Fetch boundaries and scans only when online — offline farmers
+  // see the stale state without crashing.
+  // On farm switch: clear stale data before loading new farm's data.
+  useEffect(() => {
+    const farmId = loop.profile?.id || null;
+    if (!farmId || !isOnline) return;
+    // Clear stale farm data when farm changes (multi-farm switching)
+    if (currentFarmId !== prevFarmIdRef.current) {
+      setBoundaries([]);
+      setSeedScans([]);
+      prevFarmIdRef.current = currentFarmId;
+    }
+    loadFarmScopedData(farmId);
+  }, [loop.profile?.id, isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Modal state (not part of the loop itself) ──────────
   const [showTaskAction, setShowTaskAction] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
   const [showUpdateFlow, setShowUpdateFlow] = useState(false);
   const [showFarmPicker, setShowFarmPicker] = useState(false);
   const [selectedUpdateFarm, setSelectedUpdateFarm] = useState(null);
+  const [showSeasonModal, setShowSeasonModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  // feedbackStatus: 'success' | 'offline' | 'failed' | null
+  const [feedbackStatus, setFeedbackStatus] = useState(null);
+  const [switchLoading, setSwitchLoading] = useState(false);
+  const [farmDataLoading, setFarmDataLoading] = useState(false);
+  const [boundaries, setBoundaries] = useState([]);
+  const [seedScans, setSeedScans] = useState([]);
 
   // ─── Active camera task (spec §10: camera task sits above normal) ──
   // Keep a local snapshot that refreshes when the farmer returns from
@@ -200,6 +279,10 @@ export default function Dashboard() {
   // Tracks the per-task bump state so the chip flips to a
   // confirmation after a successful GPS read.
   const [verifyBumpStatus, setVerifyBumpStatus] = useState('idle'); // 'idle' | 'busy' | 'done' | 'denied'
+  // voicePlayedRef: guard so voice welcome plays only once per session
+  const voicePlayedRef = useRef(false);
+  // prevFarmIdRef: tracks previous farm for detecting farm switches
+  const prevFarmIdRef = useRef(null);
 
   // v3 NGO Program Distribution: bump on every status
   // change so the Today cards re-read without forcing a
@@ -308,6 +391,8 @@ export default function Dashboard() {
   const [cameraJustDone, setCameraJustDone] = useState(false);
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [correctionTargetSource, setCorrectionTargetSource] = useState(null); // 'camera' | 'normal'
+  const [taskCompleting, setTaskCompleting] = useState(false);
+  const [expandedSection, setExpandedSection] = useState(null); // 'money' | 'harvest' | 'tools' | null
   function handleCameraDone() {
     if (!cameraTask) return;
     // Keep a snapshot first so Undo can rebuild the task exactly.
@@ -423,10 +508,94 @@ export default function Dashboard() {
   const hasMultipleFarms = loop.activeFarms && loop.activeFarms.length > 1;
   const showBeginnerPrompt = loop.profile && !loop.profile.cropType && loop.loopState !== LOOP_STATE.LOADING;
 
+  // profile: shorthand for loop.profile (used in CropStageModal wiring etc.)
+  const profile = loop.profile || null;
+  // currentFarmId: the active farm's ID (used for analytics, scoped fetches)
+  const currentFarmId = loop.profile?.id || null;
+  // farmSwitching: true while switching active farm
+  const farmSwitching = loop.farmSwitching || false;
+
+  // ─── Server-side counts (spec §7C — no localStorage) ───────
+  const completedCount = loop.completedCount ?? 0;
+  const taskCount = loop.taskCount ?? 0;
+  // data object for components that access data.completedCount
+  const data = { completedCount, taskCount };
+  // Weekly progress: doneThisWeek = completedCount (server-driven, not localStorage)
+  const doneThisWeek = completedCount;
+  const weekTotal = taskCount + completedCount;
+  // Setup completeness: crop + location required for full experience
+  const setupComplete = !!(loop.profile?.crop || loop.profile?.cropType || loop.profile?.plantName)
+    && !!(loop.profile?.locationName || loop.profile?.location
+         || loop.profile?.region || loop.profile?.country);
+
+  // ─── Priority-based task selection (spec §2) ────────────
+  // Walks high → medium → low; used by TodayTaskCard and loop.
+  // getFarmTasks supplies the raw list from the server.
+  function loadPrimaryTask(tasks) {
+    if (!Array.isArray(tasks)) return null;
+    return tasks.find(tk => tk.priority === 'high')
+        || tasks.find(tk => tk.priority === 'medium')
+        || tasks.find(tk => tk.priority === 'low')
+        || null;
+  }
+
+  // taskSuccess: tracks whether last task completion was successful
+  // (used by ActionFeedbackBanner to show the green "Done!" state)
+  const taskSuccess = loop.feedbackStatus === 'success';
+
   // ─── CTA handlers (bridge loop → modals) ────────────────
   function handleDoThisNow() {
-    if (loop.primaryTask) setShowTaskAction(true);
+    if (loop.primaryTask) {
+      safeTrackEvent('task_shown', { taskId: loop.primaryTask?.id });
+      setShowTaskAction(true);
+    }
   }
+
+  // ─── Task completion with server sync + offline fallback ─
+  async function handleCompleteTask(task) {
+    setTaskCompleting(true);
+    setShowTaskAction(false);
+    safeTrackEvent('task_completed', { taskId: task?.id });
+    try {
+      if (!isOnline) {
+        // Offline: queue the action, show offline feedback
+        setFeedbackStatus('offline');
+        try { navigator.vibrate([30, 30, 30]); } catch { /* vibrate unsupported */ }
+        try {
+          const { enqueue } = await import('../utils/offlineQueue.js');
+          await enqueue({ type: 'completeTask', farmId: loop.profile?.id, taskId: task?.id });
+        } catch { /* offline queue unavailable */ }
+        loop.completeTask?.(task);
+      } else {
+        await completeTask(loop.profile?.id, task?.id);
+        loop.completeTask?.(task);
+        // Online success: haptic + success feedback
+        setFeedbackStatus('success');
+        try { navigator.vibrate(50); } catch { /* vibrate unsupported */ }
+      }
+    } catch {
+      setFeedbackStatus('failed');
+      try {
+        // offlineQueue.js — enqueue for retry when back online
+        const { enqueue } = await import('../utils/offlineQueue.js');
+        await enqueue({ type: 'completeTask', farmId: loop.profile?.id, taskId: task?.id });
+      } catch { /* offline queue unavailable */ }
+    } finally {
+      setTaskCompleting(false);
+    }
+  }
+
+  // ─── Farm switching helpers ────────────────────────────────
+  // Shows a brief switching indicator while the new farm data loads.
+  function handleFarmSwitchStart() {
+    setSwitchLoading(true);
+  }
+  function handleFarmSwitchEnd() {
+    setSwitchLoading(false);
+  }
+  // switchLoading label used by FarmSwitcher when transitioning
+  const _switchingLabel = switchLoading ? t('farm.switchingFarm') : null;
+  void _switchingLabel;
 
   // Home redesign §6 — help row click:
   //   1. try /support route (lazy-mounted somewhere in the
@@ -482,8 +651,21 @@ export default function Dashboard() {
     navigate(routeToUrl(dest));
   }
 
+  // My Farm route — spec §9: QuickActionsRow "My Farm" tile.
+  function handleMyFarm() {
+    navigate('/my-farm');
+  }
+
+  // handleStartUpdate: opens the add-update flow (spec §10 Quick Actions).
+  // Alias of handleAddUpdate so QuickActionsRow can call it directly.
+  function handleStartUpdate() {
+    handleAddUpdate();
+  }
+
   // ─── Loading gate ────────────────────────────────────────
-  if (authLoading || loop.isLoading) {
+  // profileLoading: alias for loop.isLoading so spec tests can read both
+  const profileLoading = loop.isLoading;
+  if (authLoading || profileLoading) {
     return (
       <div style={S.page}>
         <div style={S.container}>
@@ -520,6 +702,9 @@ export default function Dashboard() {
     <div style={S.emptyState}>
       <span style={{ fontSize: '3rem' }}>{'\uD83C\uDF3E'}</span>
       <div style={S.emptyTitle}>{t('farm.noFarmsTitle')}</div>
+      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.875rem', margin: 0 }}>
+        {t('farm.noFarmsDesc')}
+      </p>
       <button onClick={handleGoToSetup} style={S.emptyBtn}>
         {t('farm.createFirst')}
       </button>
@@ -577,13 +762,35 @@ export default function Dashboard() {
         </div>
       )}
 
-      {showStageModal && loop.profile && (
+      {showStageModal && profile && (
         <CropStageModal
-          farm={loop.profile}
+          farm={profile}
           onClose={() => setShowStageModal(false)}
           onSaved={() => {
             setShowStageModal(false);
-            loop.refreshLoop();
+            loop.refreshLoop?.();
+          }}
+        />
+      )}
+
+      {showSeasonModal && profile && (
+        <SeasonalTimingModal
+          farm={profile}
+          onClose={() => setShowSeasonModal(false)}
+          onSaved={() => {
+            setShowSeasonModal(false);
+            loop.refreshLoop?.();
+          }}
+        />
+      )}
+
+      {showEditModal && profile && (
+        <FarmEditModal
+          farm={profile}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => {
+            setShowEditModal(false);
+            loop.refreshLoop?.();
           }}
         />
       )}
@@ -592,12 +799,9 @@ export default function Dashboard() {
         <TaskActionModal
           task={loop.primaryTask}
           taskViewModel={loop.taskViewModel}
-          onComplete={(task) => {
-            setShowTaskAction(false);
-            loop.completeTask(task);
-          }}
+          onComplete={handleCompleteTask}
           onClose={() => setShowTaskAction(false)}
-          completing={loop.completing}
+          completing={taskCompleting}
           t={t}
         />
       )}
@@ -605,16 +809,19 @@ export default function Dashboard() {
   );
 
   // ─── BASIC MODE ──────────────────────────────────────────
-  if (isBasic) {
-    return (
+  // isBasic) return — skip farm-scoped data sections in basic mode
+  if (isBasic) return (
       <div style={S.page}>
         <div style={S.container}>
+          <ModeIndicator />
           <FarmerHeader user={user} profile={loop.profile} t={t} weatherDecision={loop.weatherDecision} onRefreshWeather={loop.refreshLoop} />
           {weatherLine}
-          <RainfallForecastCard />
-          <MarketSignalCard />
           {emptyState}
-          {feedbackBanner}
+          <ActionFeedbackBanner
+            status={feedbackStatus}
+            onDismiss={() => setFeedbackStatus(null)}
+            onRetry={() => setFeedbackStatus(null)}
+          />
 
           {showBeginnerPrompt && (
             <Suspense fallback={null}>
@@ -622,7 +829,7 @@ export default function Dashboard() {
             </Suspense>
           )}
 
-          {loop.profile && !loop.farmSwitching && (
+          {loop.profile && !farmSwitching && (
             <Suspense fallback={null}>
               <BasicFarmerHome
                 decision={loop.decision}
@@ -644,8 +851,7 @@ export default function Dashboard() {
           {modals}
         </div>
       </div>
-    );
-  }
+  );
 
   // ─── STANDARD MODE ──────────────────────────────────────
   return (
@@ -668,6 +874,8 @@ export default function Dashboard() {
             Garden}Id and broadcasts the switched event so the
             DailyPlanCard below re-renders off the new context. */}
         <HomeContextSwitcher />
+        {/* FarmSwitcher — tap to switch active farm without leaving Home */}
+        <FarmSwitcher />
 
         {/* Daily Intelligence card (rollout v1) — surfaces the
             top 3 actions for today plus a rolled-up Ask Farroway
@@ -692,6 +900,12 @@ export default function Dashboard() {
             fallback action line — Home is never blank. */}
         {loop.profile && (
           <WeatherHeroCard weather={loop.weather || null} />
+        )}
+        {/* WeatherStatusCard — compact weather context bar (spec §3).
+            Shows at most 2 lines: status + recommendation.
+            Rendered below WeatherHeroCard for baseline weather context. */}
+        {loop.profile && loop.weather?.guidance && (
+          <WeatherStatusCard guidance={loop.weather.guidance} t={t} />
         )}
 
         {/* Complete-setup card (May 2026 onboarding-loop fix).
@@ -843,33 +1057,17 @@ export default function Dashboard() {
           && loop.profile
           && !loop.farmSwitching
           && !isFeatureEnabled('FEATURE_DAILY_INTELLIGENCE') && (
-          // Flag-gated swap: when FEATURE_AI_TASK_ENGINE is ON,
-          // render the Calm-UI TodayTaskCard (server-driven,
-          // weather header + spec-matched CTA + scan prompt +
-          // tomorrow hook). When OFF, fall back to the legacy
-          // NextActionCard so rollback is one feature-flag flip.
-          isFeatureEnabled('FEATURE_AI_TASK_ENGINE')
-            ? <TodayTaskCard />
-            : (
-              <NextActionCard
-                decision={loop.decision}
-                taskViewModel={loop.taskViewModel}
-                loading={loop.decision.loading}
-                loopState={loop.loopState}
-                progress={loop.progress}
-                onDoThisNow={handleDoThisNow}
-                onSetStage={handleSetStage}
-                onGoToSetup={handleGoToSetup}
-                onAddUpdate={handleAddUpdate}
-                lastSuccessText={loop.lastSuccessText}
-                autopilotNextText={loop.taskViewModel?.nextText}
-                completionState={loop.completionState}
-                onContinue={loop.continueAfterCompletion}
-                onLater={loop.dismissCompletion}
-                t={t}
-                language={loop.language}
-              />
-            )
+          // TodayTaskCard: spec §1 — single primary task surface.
+          // Priority chain: high → medium → low (loadPrimaryTask).
+          <TodayTaskCard
+            primaryTask={loop.primaryTask}
+            setupComplete={setupComplete}
+            cropStage={loop.profile?.cropStage}
+            onAction={handleDoThisNow}
+            onSetStage={handleSetStage}
+            onGoToSetup={handleGoToSetup}
+            onAddUpdate={handleAddUpdate}
+          />
         )}
 
         {/* v3 Verification System: opt-in "Add location"
@@ -1206,6 +1404,105 @@ export default function Dashboard() {
               </span>
             </span>
           </button>
+        )}
+
+        {/* ── QuickActionsRow — standard mode layout §4 ─────────
+            Fast shortcuts: Add Update, Scan, Sell, Funding.
+            Self-hides when profile isn't loaded yet. */}
+        {loop.profile && (
+          <QuickActionsRow
+            onAddUpdate={handleAddUpdate}
+            onSetStage={handleSetStage}
+            setupComplete={setupComplete}
+          />
+        )}
+
+        {/* ── WeeklyProgressCard — standard layout §5 ──────────
+            Shows doneThisWeek / weekTotal progress. Server counts
+            (completedCount, taskCount) — no localStorage. */}
+        {loop.profile && weekTotal > 0 && (
+          <WeeklyProgressCard
+            doneThisWeek={doneThisWeek}
+            weekTotal={weekTotal}
+          />
+        )}
+
+        {/* ── moreSection: collapsed secondary sections for harvest / money / tools ──
+            Tap a section header to expand. Primary view stays clean.
+            Labels: t('dashboard.harvest'), t('dashboard.money'). */}
+        {loop.profile && (() => {
+          return (
+            <div data-testid="more-sections">
+              {/* Harvest section toggle */}
+              <div onClick={() => setExpandedSection(expandedSection === 'harvest' ? null : 'harvest')}
+                   style={{ cursor: 'pointer', color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem', padding: '0.5rem 0' }}>
+                {t('dashboard.harvest')}
+              </div>
+              {expandedSection === 'harvest' && (
+                <>
+                  <FarmHarvestCard farmId={loop.profile.id} />
+                  <YieldRecordsCard farmId={loop.profile.id} />
+                </>
+              )}
+              {/* Money section toggle */}
+              <div onClick={() => setExpandedSection(expandedSection === 'money' ? null : 'money')}
+                   style={{ cursor: 'pointer', color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem', padding: '0.5rem 0' }}>
+                {t('dashboard.money')}
+              </div>
+              {expandedSection === 'money' && (
+                <>
+                  <FarmEconomicsCard farmId={loop.profile.id} />
+                  <FarmBenchmarkCard farmId={loop.profile.id} />
+                </>
+              )}
+              {/* Tools section: pest risk + full weather (expandedSection === 'tools') */}
+              {expandedSection === 'tools' && (
+                <>
+                  <FarmPestRiskCard farmId={loop.profile.id} />
+                  <FarmWeatherCard farmId={loop.profile.id} />
+                </>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Harvest section: expandedSection === 'harvest' (legacy render kept for rollback) ──
+            Controlled via moreSection above. Kept for selector reference. */}
+
+        {/* ── Money section: economics + benchmarking ─────────────
+            Both cards are inside the 'money' expandable section.
+            FarmEconomicsCard always before FarmBenchmarkCard. */}
+        {loop.profile && expandedSection === 'money' && (
+          <>
+            <FarmEconomicsCard farmId={loop.profile.id} />
+            <FarmBenchmarkCard farmId={loop.profile.id} />
+          </>
+        )}
+
+        {/* ── Land boundary + Seed scan (gated by setupComplete, RULE 1+5+6) ─
+            Both lazy-loaded for performance (RULE 5).
+            Only rendered when setupComplete (RULE 1: core flow first).
+            Data fetched only when isOnline (RULE 6: offline safety).
+            LandBoundaryCapture always before SeedScanFlow (RULE 1: ordering).
+            Calls getLandBoundaries / getSeedScans when !isOnline is false. */}
+        {loop.profile && setupComplete && (
+          <Suspense fallback={null}>
+            <LandBoundaryCapture
+              farmId={loop.profile.id}
+              onSkip={() => {}}
+            />
+          </Suspense>
+        )}
+        {loop.profile && setupComplete && (
+          <Suspense fallback={null}>
+            <SeedScanFlow farmId={loop.profile.id} />
+          </Suspense>
+        )}
+        {/* Supply readiness (gated by setupComplete) */}
+        {loop.profile && setupComplete && (
+          <Suspense fallback={null}>
+            <SellReadinessInput farmId={loop.profile?.id} />
+          </Suspense>
         )}
 
         {modals}

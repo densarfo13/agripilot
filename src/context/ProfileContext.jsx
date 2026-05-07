@@ -259,6 +259,8 @@ export function ProfileProvider({ children }) {
       if (result.profile?.id) persistFarmId(result.profile.id);
 
       if (result.offline) {
+        // Ensure item is queued for background sync (enqueueProfileSync(payload))
+        enqueueProfileSync(payload);
         setSyncStatus('idle');
         log('farm', 'profile_save_offline');
       } else {

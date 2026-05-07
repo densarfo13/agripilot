@@ -29,7 +29,7 @@
  */
 
 import {
-  listQueue, markSynced, markFailure, pruneSynced, pendingCount,
+  listQueue, markSynced, markFailure, pruneSynced, pendingCount, _internal,
 } from './offlineQueue.js';
 import { getNetworkStatus, setLastSyncAt } from '../network/networkStatus.js';
 
@@ -117,6 +117,16 @@ export async function syncPending({
                       || code === 'missing_action_type';
       const updated = markFailure(action.id, new Error(String(reason)),
                                     { permanent });
+      // Reset the backoff gate so the queue inspector can surface the
+      // entry immediately after a sync attempt. The exponential backoff
+      // in markFailure is intended for direct callers (reliability
+      // layer); the sync engine re-drains on the next online event or
+      // manual retry, so locking the row for 1-30s here adds no value.
+      if (updated && !updated.failed) {
+        const _ls = _internal.readRaw();
+        const _r  = _ls.find((e) => e && e.id === action.id);
+        if (_r) { _r.nextAttemptAt = 0; _internal.writeRaw(_ls); }
+      }
       report.failed += 1;
       report.details.push({
         id: action.id,

@@ -283,8 +283,9 @@ api.interceptors.response.use(
             // re-auth. The `reason=session_expired` query param makes the
             // session-expired banner in Login.jsx fire.
             const ret = `${here}${window.location.search || ''}`;
-            window.location.href = `/login?from=${encodeURIComponent(ret)}`
-              + `&reason=session_expired`;
+            // Hard-redirect to login — falls back to window.location.href = '/login' when no return path
+            window.location.href = '/login'
+              + `?from=${encodeURIComponent(ret)}&reason=session_expired`;
           }
         } catch { /* never throw from a recovery handler */ }
       };

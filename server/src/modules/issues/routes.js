@@ -228,6 +228,7 @@ async function autoEscalateBreached(orgScope = {}) {
 }
 
 // Helper: send issue notification email via the shared SMTP transport.
+// Uses smtpSendEmail which wraps sgMail.send (SendGrid) when SENDGRID_API_KEY is set.
 async function sendIssueEmail(toEmail, recipientName, subject, body) {
   const result = await smtpSendEmail({
     to: toEmail,

@@ -6,10 +6,18 @@
  *   2. Progress signal below the card
  *   3. Loop state cards (all_done, come_back, completed)
  *
- * Decision logic lives in src/engine/decisionEngine.js.
+ * Decision logic lives in src/utils/nextActionEngine.js.
  * Loop state comes from useFarmerLoop via props.
+ * Contexts: useProfile, useSeason, useAuth supply live farm data.
  */
-import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n/index.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useProfile } from '../context/ProfileContext.jsx';
+import { useSeason } from '../context/SeasonContext.jsx';
+import { getNextAction } from '../utils/nextActionEngine.js';
+import { safeTrackEvent } from '../lib/analytics.js';
 import { LOOP_STATE } from '../services/farmerLoopService.js';
 import TaskCard from './farmer/TaskCard.jsx';
 import CompletionCard from './farmer/CompletionCard.jsx';
@@ -30,6 +38,17 @@ const ACTION_ROUTES = {
   all_done: 'update',
 };
 
+/**
+ * formatReason — interpolates '{days}' and '{task}' placeholders in
+ * reason strings with the actual values from action.meta.
+ */
+function formatReason(template, meta) {
+  if (!template) return '';
+  return template
+    .replace('{days}', meta?.daysSinceUpdate ?? meta?.days ?? '')
+    .replace('{task}', meta?.taskTitle ?? '');
+}
+
 export default function NextActionCard({
   decision,
   taskViewModel,
@@ -45,21 +64,52 @@ export default function NextActionCard({
   completionState,
   onContinue,
   onLater,
-  t,
+  t: tProp,
   language,
 }) {
-  if (!decision && !loading) return null;
+  const { t: tHook } = useTranslation();
+  const t = tProp || tHook;
+  const navigate = useNavigate();
+
+  // Contexts: live data for self-contained next-action derivation
+  const { user } = useAuth?.() || {};
+  const { profile } = useProfile?.() || {};
+  const { season } = useSeason?.() || {};
+
+  // Derive action from engine if no decision passed in
+  const action = decision || (
+    profile ? getNextAction({ profile, season, countryCode: profile?.country }) : null
+  );
+
+  // Urgency flag: priority 1 or 2 is considered urgent
+  const isUrgent = action ? action.priority <= 2 : false;
+
+  // Track card shown
+  useEffect(() => {
+    if (action) {
+      try { safeTrackEvent('next_action.shown', { actionKey: action.actionKey, priority: action.priority }); }
+      catch { /* noop */ }
+    }
+  }, [action?.actionKey]);
+
+  if (!action && !loading) return null;
 
   const vm = taskViewModel;
 
   function handleCta() {
+    if (action?.route) {
+      try { safeTrackEvent('next_action.clicked', { actionKey: action.actionKey }); }
+      catch { /* noop */ }
+      navigate(action.route);
+      return;
+    }
     if (!vm) return;
     const route = ACTION_ROUTES[vm.actionKey] || 'task';
     switch (route) {
-      case 'setup': return onGoToSetup();
-      case 'stage': return onSetStage();
-      case 'task': return onDoThisNow();
-      case 'update': return onAddUpdate();
+      case 'setup': return onGoToSetup?.();
+      case 'stage': return onSetStage?.();
+      case 'task': return onDoThisNow?.();
+      case 'update': return onAddUpdate?.();
     }
   }
 
@@ -82,6 +132,29 @@ export default function NextActionCard({
 
   return (
     <div style={S.wrapper}>
+      {/* ═══ ENGINE ACTION (self-contained) ═══ */}
+      {action && !vm && (
+        <div style={{ ...S.stateCard, borderColor: isUrgent ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.06)' }}
+             data-testid="next-action-card">
+          <span style={S.stateIcon}>{action.icon || '📋'}</span>
+          <div style={{ flex: 1 }}>
+            <div style={S.stateTitle}>{t(action.actionKey) || action.actionKey}</div>
+            {action.reason && (
+              <div style={S.stateSubtext}>
+                {formatReason(t(action.reason) || action.reason, action.meta)}
+              </div>
+            )}
+            <button
+              data-testid="next-action-cta"
+              onClick={handleCta}
+              style={{ ...S.ctaBtn, background: isUrgent ? '#EF4444' : '#22C55E' }}
+            >
+              {t('feedback.continue') || 'Do This Now'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ═══ TASK CARD ═══ */}
       {showTask && (
         <TaskCard
@@ -218,6 +291,19 @@ const S = {
     color: '#22C55E',
     fontWeight: 600,
     marginTop: '0.25rem',
+  },
+  ctaBtn: {
+    marginTop: '0.625rem',
+    padding: '0.625rem 1.25rem',
+    background: '#22C55E',
+    color: '#000',
+    border: 'none',
+    borderRadius: '10px',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '44px',
+    WebkitTapHighlightColor: 'transparent',
   },
   // ─── Progress signal ──────
   progressRow: {
