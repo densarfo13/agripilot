@@ -62,6 +62,9 @@ import HomeProgressBar from '../components/farmer/HomeProgressBar.jsx';
 // visibility for the farmer-only Funding/Sell shortcuts on
 // the action stack. Backyard users get false → shortcuts hide.
 import { isFeatureVisible as _isFeatureVisible } from '../core/featuresByUserType.js';
+// Scan Plant entry point (Phase 7E): feature flag + role guard.
+import { useAuth } from '../context/AuthContext.jsx';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -115,6 +118,14 @@ export default function MyFarmPage() {
     profile, farms, currentFarmId, loading: profileLoading,
   } = useProfile();
   const { t, lang } = useTranslation();
+  // Scan Plant entry point — only farmers (role='farmer'|''|agent),
+  // never admins / buyers / NGO. Checked via useAuth so the gate
+  // works even if an admin somehow visits /my-grow directly.
+  // Must be called unconditionally before any early return (rules-of-hooks).
+  const { user: _authUser } = useAuth();
+  const _userRole = String(_authUser?.role || '').toLowerCase();
+  const _isFarmerUser = !_userRole || _userRole === 'farmer' || _userRole === 'agent';
+  const _scanOn = _isFarmerUser && isFeatureEnabled('FEATURE_SCAN');
   // Edit button label — localized (spec §5: Action Buttons)
   const _editLabel = t('myFarm.edit');
   void _editLabel;
@@ -674,6 +685,35 @@ export default function MyFarmPage() {
           <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
         </button>
       </div>
+
+      {/* ── Scan Plant (Phase 7E entry point) ─────────────────
+          Secondary action card: navigate to /scan for a quick
+          crop-leaf photo check. Shown only when FEATURE_SCAN=true
+          AND the current user is a farmer (not Buyer/NGO/Admin).
+          NOT a floating FAB — a plain full-width button, positioned
+          below the action stack so it doesn't compete with Edit Farm.
+          /scan is wrapped in <ScanErrorBoundary> in App.jsx, so any
+          failure there shows the graceful fallback, not a crash. */}
+      {_scanOn && (
+        <button
+          type="button"
+          onClick={() => { try { navigate('/scan'); } catch { /* swallow */ } }}
+          style={S.scanCard}
+          data-testid="my-farm-scan-plant"
+          aria-label={tSafe('myFarm.scan.ariaLabel', 'Scan plant — check leaves or crop photo')}
+        >
+          <span style={S.scanCardIcon} aria-hidden="true">📷</span>
+          <span style={S.scanCardBody}>
+            <span style={S.scanCardLabel}>
+              {tSafe('myFarm.scan.label', 'Scan plant')}
+            </span>
+            <span style={S.scanCardSub}>
+              {tSafe('myFarm.scan.sub', 'Check leaves or crop photo')}
+            </span>
+          </span>
+          <span style={S.scanCardArrow} aria-hidden="true">{'→'}</span>
+        </button>
+      )}
 
       {/* Final Farroway Navigation §7 — farmer-only Funding +
           Sell shortcuts. Hidden for backyard users per spec
@@ -1360,6 +1400,57 @@ const S = {
     display: 'inline-flex',
     alignItems: 'center',
     whiteSpace: 'nowrap',
+  },
+
+  // ── Scan Plant Card (Phase 7E entry point) ─────────────────
+  // Row-layout card matching the visual weight of helpCard —
+  // dark background, green-tint border, icon + two-line text +
+  // arrow chevron. Never floating; margin + width keep it
+  // aligned with every other card on the page.
+  scanCard: {
+    margin: '0.75rem 1rem 0',
+    width: 'calc(100% - 2rem)',
+    appearance: 'none',
+    background: '#102C47',
+    border: '1px solid rgba(34,197,94,0.32)',
+    borderRadius: 14,
+    padding: '0.85rem 1rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    cursor: 'pointer',
+    textAlign: 'left',
+    minHeight: 56,
+    color: '#FFFFFF',
+    fontFamily: 'inherit',
+    boxShadow: '0 4px 12px rgba(34,197,94,0.06)',
+  },
+  scanCardIcon: {
+    fontSize: '1.375rem',
+    flex: '0 0 auto',
+    lineHeight: 1,
+  },
+  scanCardBody: {
+    flex: '1 1 auto',
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  scanCardLabel: {
+    fontSize: '0.9375rem',
+    fontWeight: 700,
+    color: '#FFFFFF',
+  },
+  scanCardSub: {
+    fontSize: '0.8rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.60)',
+  },
+  scanCardArrow: {
+    color: '#86EFAC',
+    fontSize: '1.1rem',
+    flex: '0 0 auto',
   },
 
   // Bottom spacer — keeps the help card off the bottom nav.
