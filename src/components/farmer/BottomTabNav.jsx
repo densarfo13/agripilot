@@ -1,16 +1,26 @@
 /**
  * BottomTabNav — persistent bottom navigation for farmer-facing screens.
  *
- * 5 tabs: Home, My Farm, Tasks, Progress, Sell.
- * Icons always visible, label under icon, active tab
- * highlighted with green indicator. Large tap targets,
- * mobile-first, premium dark styling.
+ * Role/mode split:
+ *   Farmer  (6 tabs): Home · My Farm · Tasks · Progress · Funding · Sell
+ *   Garden  (5 tabs): Home · My Grow · Tasks · Progress · Scan
  *
- * Sell is intentionally LAST in the row so the primary
- * action surface (Home → My Farm → Tasks → Progress) keeps
- * its existing position. Farmers who never list produce
- * never see anything change about their daily flow; for
- * those who do, the entry is one tap from anywhere.
+ * Both share Home / Tasks / Progress. Divergent tabs:
+ *   • Farmer gets  My Farm + Funding + Sell (no Scan in bottom nav)
+ *   • Garden gets  My Grow + Scan           (no Funding/Sell)
+ *
+ * Mode detection (spec §3): profile.mode === "garden"
+ *   OR profile.farmType === "backyard"
+ *   OR profile.userType === "backyard"
+ *   OR activeContextType === "garden" (ExperienceSwitcher)
+ *   Default: farmer
+ *
+ * Scan placement (spec §4):
+ *   • Farmer: Scan appears as a card inside My Farm only (FEATURE_SCAN gated)
+ *   • Garden: Scan is a bottom-nav tab (FEATURE_SCAN gated; hidden when off)
+ *
+ * Icons always visible, label under icon, active tab highlighted with
+ * green indicator. Large tap targets, mobile-first, premium dark styling.
  */
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
@@ -33,33 +43,34 @@ import { isFeatureEnabled } from '../../config/features.js';
 import { resolveRegionUX } from '../../core/regionUXEngine.js';
 import { getNavigationItems } from '../../navigation/getNavigationItems.js';
 // Multi-experience selector — when the active experience is
-// 'garden', the nav switches to BACKYARD_TABS regardless of the
+// 'garden', the nav switches to GARDEN_TABS regardless of the
 // profile's farmType, so a user with both a garden and a farm
 // flips nav surfaces instantly on switch.
 import useExperience from '../../hooks/useExperience.js';
+// Surface-level feature flags (UPPER_SNAKE_CASE system). Used for
+// FEATURE_SCAN tab visibility. Distinct from the camelCase
+// config/features.js system above.
+import { isFeatureEnabled as isSurfaceEnabled } from '../../utils/featureFlags.js';
 
-// Farmer/Backyard Split spec (Phase 1 §A.5) — bottom nav is
-// SPLIT by userType so the two experiences never share a
-// surface. The previous "single 5-tab for everyone" was the
-// right call for the pilot but obscures the divergence the
-// product team wants visible at launch:
+// ── Canonical tab definitions ────────────────────────────────────────────
 //
-//   Farmer  (6 tabs): Home · My Farm · Tasks · Progress · Funding · Sell
-//   Backyard (5 tabs): Home · My Grow · Tasks · Progress · Scan
-//
-// Both share Home / Tasks / Progress; the divergent tabs
-// (My Farm vs My Grow, Funding+Sell vs Scan) are the surfaces
-// that DO differ between experiences. Resolution comes from
-// useUserMode() (canonical hook) → falls back to the
-// activeContextType heuristic → 'farmer' default.
-// Calm-UI Upgrade spec §9 — "Use one bottom nav. No separate
-// nav systems." The earlier farmer/backyard split is reverted
-// in favour of a single 5-tab structure shared by every
-// userType. Funding + Sell move to Progress as farmer-only
-// shortcuts (spec §8). The Scan tab covers both experiences:
-// label adapts to "scan plant" (backyard) or "scan crop"
-// (farmer) inside the destination page, not the nav.
-const TABS = [
+// Farmer nav (6 tabs) — spec §1:
+//   Home · My Farm · Tasks · Progress · Funding · Sell
+//   Scan does NOT appear here; it lives as a card inside My Farm.
+const FARMER_TABS = [
+  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
+  { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'My Farm' },
+  { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
+  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
+  { key: 'funding',  path: '/funding',   icon: NAV_ICONS.funding,  labelKey: 'nav.funding',  fallback: 'Funding' },
+  { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell,     labelKey: 'nav.sell',     fallback: 'Sell' },
+];
+
+// Garden / backyard nav (5 tabs) — spec §2:
+//   Home · My Grow · Tasks · Progress · Scan
+//   Funding and Sell do NOT appear here.
+//   Scan tab is hidden when FEATURE_SCAN is off (route stays mounted).
+const GARDEN_TABS = [
   { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'grow',     path: '/my-grow',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
@@ -67,11 +78,9 @@ const TABS = [
   { key: 'scan',     path: '/scan',      icon: NAV_ICONS.scan,     labelKey: 'nav.scan',     fallback: 'Scan' },
 ];
 
-// Aliases preserved so any external import that still references
-// FARMER_TABS / BACKYARD_TABS resolves cleanly. New callers should
-// just import the unified TABS array.
-const FARMER_TABS = TABS;
-const BACKYARD_TABS = TABS;
+// Unified alias kept for the regionUxSystem fallback path only.
+// External callers that still import BACKYARD_TABS get GARDEN_TABS.
+const BACKYARD_TABS = GARDEN_TABS;
 
 // Setup / onboarding paths where the bottom nav must self-hide
 // (Adaptive setup spec \u00a75 + high-trust onboarding spec \u00a77 \u2014
@@ -152,18 +161,23 @@ export default function BottomTabNav() {
   // farm/garden record behind. Lives BELOW every hook so the
   // hook order is stable across the path-change transition.
   if (_isSetupPath(location?.pathname || '')) return null;
-  // Spec §2: prefer activeContextType. Only fall back to the
-  // legacy region+farmType heuristic when context is unknown
-  // (login flow / pre-onboarding paths).
-  const isBackyard = (activeContextType === 'garden')
+
+  // ── Garden / farmer mode detection (spec §3) ───────────────
+  // Priority order:
+  //   1. activeContextType from useExperience (ExperienceSwitcher signal)
+  //   2. Explicit profile fields: mode, userType, farmType
+  //   3. Legacy country+farmType heuristic via shouldUseBackyardExperience
+  //   4. Default: farmer
+  const isGarden = (activeContextType === 'garden')
+    || (profile?.mode === 'garden')
+    || (profile?.userType === 'backyard')
     || (activeContextType == null
         && shouldUseBackyardExperience(country, farmType));
 
-  // Farmer/Backyard Split spec (Phase 1 §A.5) — pick the tab
-  // set by userType. The legacy regionUxSystem flag-gated path
-  // is preserved for any pilot that still relies on the 4-tab
-  // subset; when the flag is OFF (default), the canonical
-  // farmer-6 / backyard-5 split applies.
+  // ── Tab selection (spec §1 / §2) ───────────────────────────
+  // The legacy regionUxSystem flag-gated path is preserved for
+  // pilots that rely on the 4-tab subset. When off (default),
+  // the canonical farmer-6 / garden-5 split applies.
   let tabs;
   if (isFeatureEnabled('regionUxSystem')) {
     const ux = resolveRegionUX({
@@ -179,36 +193,24 @@ export default function BottomTabNav() {
       labelKey: it.key,
       fallback: it.fallback,
     }));
+  } else if (isGarden) {
+    // Garden mode (spec §2): Home · My Grow · Tasks · Progress · Scan
+    // Scan tab hidden when FEATURE_SCAN is off; route stays mounted
+    // so deep links resolve cleanly. Funding + Sell never appear.
+    tabs = isSurfaceEnabled('FEATURE_SCAN')
+      ? GARDEN_TABS
+      : GARDEN_TABS.filter((t) => t.key !== 'scan');
   } else {
-    // Single canonical 5-tab nav per Calm-UI Upgrade §9. The
-    // 'grow' tab's label adapts to the active experience so
-    // farmers see "My Farm" and backyard users see "My Grow"
-    // — they never see the OTHER experience's wording. Title
-    // on the destination page (MyFarmPage Header) follows the
-    // same isBackyard signal so the tab + page agree.
-    tabs = TABS.map((t) => {
-      if (t.key !== 'grow') return t;
-      return {
-        ...t,
-        labelKey: isBackyard ? 'nav.myGrow' : 'nav.myFarm',
-        fallback: isBackyard ? 'My Grow'    : 'My Farm',
-      };
-    });
-    // Pilot stability filter (May 2026): hide the Scan tab when
-    // FEATURE_SCAN is off. The route stays mounted (deep links
-    // resolve cleanly) but the tab disappears so the bottom nav
-    // shows only the four core pilot surfaces:
-    //   Home · My Farm/My Grow · Tasks · Progress.
-    // Existing nav.scan label etc. is unchanged so a flag flip
-    // restores the tab without code churn.
-    if (!isFeatureEnabled('FEATURE_SCAN')) {
-      tabs = tabs.filter((t) => t.key !== 'scan');
-    }
+    // Farmer mode (spec §1): Home · My Farm · Tasks · Progress · Funding · Sell
+    // Scan does NOT appear in the bottom nav — it lives as a card
+    // inside the My Farm page when FEATURE_SCAN is on.
+    tabs = FARMER_TABS;
   }
-  // Reference TABS so the linter doesn't flag the legacy
-  // export as unused — kept on disk for any caller importing
-  // the deprecated symbol.
-  void TABS;
+
+  // Reference BACKYARD_TABS so the linter doesn't flag the legacy
+  // export as unused — kept on disk for callers importing the
+  // deprecated symbol.
+  void BACKYARD_TABS;
 
   const currentPath = location.pathname;
 

@@ -104,7 +104,7 @@ function _surfaceCopy(surface) {
       return {
         emoji:  '\uD83C\uDF31',
         title:  tSafe('contextEmpty.funding.title',
-          'Funding is available for farms only.'),
+          'This feature is for farm mode.'),
         body:   tSafe('contextEmpty.funding.body',
           'Add a farm \u2014 even a small one \u2014 to unlock funding programs and matched opportunities.'),
         cta:    tSafe('contextEmpty.funding.cta', 'Add a farm'),
@@ -113,7 +113,7 @@ function _surfaceCopy(surface) {
       return {
         emoji:  '\uD83D\uDED2',
         title:  tSafe('contextEmpty.sell.title',
-          'Selling is available for farms only.'),
+          'This feature is for farm mode.'),
         body:   tSafe('contextEmpty.sell.body',
           'Add a farm to list crops on the market and connect with buyers.'),
         cta:    tSafe('contextEmpty.sell.cta', 'Add a farm'),
@@ -122,7 +122,7 @@ function _surfaceCopy(surface) {
       return {
         emoji:  '\uD83C\uDF31',
         title:  tSafe('contextEmpty.default.title',
-          'This surface is for farms only.'),
+          'This feature is for farm mode.'),
         body:   tSafe('contextEmpty.default.body',
           'Add a farm to access this feature.'),
         cta:    tSafe('contextEmpty.default.cta', 'Add a farm'),
