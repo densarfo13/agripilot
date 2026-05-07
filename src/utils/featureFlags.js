@@ -191,6 +191,16 @@ const DEFAULTS = Object.freeze({
   // Admin analytics at /admin/analytics is role-gated separately
   // and unaffected by this flag.
   FEATURE_ANALYTICS: true,  // Phase 7D restore — analytics basic 2026-05-05
+
+  // Push notification preparation (safe mode). Gates:
+  //   • PushPrepSettingsBlock in the Settings page
+  //   • pushPrep.js preference store (farroway_notification_preferences_v1)
+  //   • Device token placeholder storage (farroway_device_token_v1)
+  // Does NOT enable: actual push sending, service workers, background
+  // polling, cron jobs, retry loops, SMS, or email automation.
+  // Permission prompt is user-triggered only — never fires on mount.
+  // Off → block hidden, helpers are safe no-ops, no localStorage writes.
+  FEATURE_PUSH_PREP: true,  // Preparation only — 2026-05-07
 });
 
 function safeWindowFlag(name) {

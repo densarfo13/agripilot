@@ -30,6 +30,9 @@ import {
 import { logout } from '../utils/logout.js';
 import { resetApp } from '../utils/resetApp.js';
 import ConfirmModal from '../components/ConfirmModal.jsx';
+// Push notification preparation block — self-suppresses when
+// FEATURE_PUSH_PREP is off or the browser lacks Notification API.
+import PushPrepSettingsBlock from '../components/push/PushPrepSettingsBlock.jsx';
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -144,6 +147,13 @@ export default function Settings() {
             isLast
           />
         </section>
+
+        {/* ─── A1. Push notification preparation ────────────────
+            Self-suppresses when FEATURE_PUSH_PREP is off or the
+            browser doesn't support Notification API. Renders the
+            daily-task + buyer-alert toggles and the permission
+            prompt button. Never prompts on mount. */}
+        <PushPrepSettingsBlock />
 
         {/* ─── B. Communication ─────────────────────────────── */}
         <section style={S.card} data-testid="settings-communication">
