@@ -112,6 +112,9 @@ import WeatherHeroCard from '../components/WeatherHeroCard.jsx';
 // loop fix, so this card replaces the previous hard-redirect
 // path with an in-app affordance the user can tap when ready.
 import CompleteSetupCard from '../components/home/CompleteSetupCard.jsx';
+// Calm-UI Home redesign (May 2026) — replaces the cluttered card-stack
+// standard mode with a full-screen assistant-style hero surface.
+import CalmHomeHero from '../components/home/CalmHomeHero.jsx';
 import useEngagementDay from '../hooks/useEngagementDay.js';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -528,6 +531,67 @@ export default function Dashboard() {
     && !!(loop.profile?.locationName || loop.profile?.location
          || loop.profile?.region || loop.profile?.country);
 
+  // ─── Calm-UI Home redesign (May 2026) ───────────────────
+  // isGarden: true when the active context is a garden / backyard.
+  // Drives CalmHomeHero copy, illustration, scan route, and mode pill.
+  const isGarden = mode === 'backyard'
+    || mode === 'garden'
+    || loop?.profile?.mode === 'garden'
+    || loop?.profile?.userType === 'backyard';
+
+  // isDone: primary task completed or all tasks done for today.
+  // Drives the hero's completed state (celebration + tomorrow hook).
+  const isDone = loop.loopState === LOOP_STATE.COMPLETED
+    || loop.loopState === LOOP_STATE.ALL_DONE;
+
+  // heroHeadline — derive from the active task, then fall back to
+  // mode-specific copy. isDone takes priority so the celebration
+  // message always shows on the completed state.
+  const heroHeadline = (() => {
+    try {
+      if (isDone) return tSafe('home.hero.done.headline', 'Nice — you stayed ahead today \uD83C\uDF31');
+      const vm = loop.taskViewModel;
+      if (vm?.title) return vm.title;
+      const pt = loop.primaryTask;
+      if (pt?.todayTaskTitle) return pt.todayTaskTitle;
+      if (pt?.title) return pt.title;
+      return isGarden
+        ? tSafe('home.hero.garden.headline', 'Check your plant today')
+        : tSafe('home.hero.farmer.headline', 'Inspect your crop today');
+    } catch { return ''; }
+  })();
+
+  // heroSubtext — task guidance line, then weather decision, then fallback.
+  const heroSubtext = (() => {
+    try {
+      if (isDone) return tSafe('home.hero.done.subtext', 'Check again tomorrow morning');
+      const vm = loop.taskViewModel;
+      if (vm?.actionLine) return vm.actionLine;
+      const pt = loop.primaryTask;
+      if (pt?.reason) return pt.reason;
+      const wd = loop.weatherDecision;
+      if (wd?.actionLine && wd?.severity !== 'safe') return wd.actionLine;
+      return isGarden
+        ? tSafe('home.hero.garden.subtext', 'Soil may still be moist. Check before watering.')
+        : tSafe('home.hero.farmer.subtext', 'Dry conditions may affect your field.');
+    } catch { return ''; }
+  })();
+
+  // heroCta — CTA label from task, then mode-specific fallback.
+  const heroCta = (() => {
+    try {
+      if (isDone) return tSafe('home.hero.done.cta', 'Done for today \u2713');
+      const vm = loop.taskViewModel;
+      if (vm?.cta) return vm.cta;
+      const pt = loop.primaryTask;
+      if (pt?.ctaLabel) return pt.ctaLabel;
+      if (pt?.cta) return pt.cta;
+      return isGarden
+        ? tSafe('home.hero.garden.cta', 'Check now \u2713')
+        : tSafe('home.hero.farmer.cta', 'Inspect now \u2713');
+    } catch { return ''; }
+  })();
+
   // ─── Priority-based task selection (spec §2) ────────────
   // Walks high → medium → low; used by TodayTaskCard and loop.
   // getFarmTasks supplies the raw list from the server.
@@ -853,7 +917,109 @@ export default function Dashboard() {
       </div>
   );
 
-  // ─── STANDARD MODE ──────────────────────────────────────
+  // ─── STANDARD MODE (Calm Home — May 2026) ──────────────
+  // Full-screen assistant UI replacing the old card-stack.
+  // Spec: calm background · weather pill · illustration ·
+  //       big headline · one primary CTA · secondary scan.
+  // The legacy layout is preserved below as dead code for
+  // emergency rollback — Rollup tree-shakes it from the
+  // production bundle automatically.
+  return (
+    <div style={S.calmPage} data-testid="dashboard-calm">
+      {/* Context / farm switchers — self-hide for single-entity users */}
+      <HomeContextSwitcher />
+      <FarmSwitcher />
+
+      {/* Classified error banners — float above the hero (not inside it)
+          so they never break the calm full-screen layout. */}
+      {loop.loadErrorType === API_ERROR_TYPES.SESSION_EXPIRED && (
+        <div style={S.floatBanner}>
+          <SessionExpiredState testId="dashboard-load-error" />
+        </div>
+      )}
+      {loop.loadErrorType === API_ERROR_TYPES.MFA_REQUIRED && (
+        <div style={S.floatBanner}>
+          <MfaRequiredState testId="dashboard-load-error" />
+        </div>
+      )}
+      {loop.loadErrorType === API_ERROR_TYPES.NETWORK_ERROR && (
+        <div style={S.floatBanner}>
+          <NetworkErrorState onRetry={loop.refreshLoop} testId="dashboard-load-error" />
+        </div>
+      )}
+      {loop.loadErrorType === API_ERROR_TYPES.API_ERROR && (
+        <div style={S.floatBanner}>
+          <ErrorState
+            message="We could not load your tasks. Your data is safe — try again in a moment."
+            onRetry={loop.refreshLoop}
+            testId="dashboard-load-error"
+          />
+        </div>
+      )}
+
+      {/* Task feedback toast (success / offline / failed) */}
+      {feedbackBanner}
+
+      {/* No-profile empty state — when the user has no farm/garden yet */}
+      {emptyState}
+
+      {/* CalmHomeHero — the main screen.
+          Replaces: WeatherHeroCard, WeatherStatusCard, DailyPlanCard,
+          TodayTaskCard, QuickActionsRow, progress block, collapsible
+          sections. One screen. One action. Weather always visible. */}
+      {loop.profile && (
+        <CalmHomeHero
+          isGarden={isGarden}
+          isDone={isDone}
+          weather={loop.weather || null}
+          weatherDecision={loop.weatherDecision || null}
+          headline={heroHeadline}
+          subtext={heroSubtext}
+          ctaLabel={heroCta}
+          isOnline={isOnline}
+          language={language}
+          userId={_userId}
+          profile={loop.profile}
+          onPrimaryAction={handleDoThisNow}
+          onScan={() => {
+            try { navigate(isGarden ? '/scan' : '/scan-crop'); }
+            catch { /* swallow */ }
+          }}
+        />
+      )}
+
+      {/* Modals — always mounted so React portals work correctly */}
+      {modals}
+
+      {/* Task correction modal (Undo / Something wrong) */}
+      {showCorrectionModal && (
+        <TaskCorrectionModal
+          onPick={handleCorrectionPicked}
+          onCancel={() => {
+            setShowCorrectionModal(false);
+            setCorrectionTargetSource(null);
+          }}
+        />
+      )}
+
+      {/* Build version stamp */}
+      <div
+        aria-hidden="true"
+        data-testid="farroway-build-stamp"
+        style={S.buildStamp}
+      >
+        Farroway Build: {FARROWAY_BUILD_VERSION}
+        {' · '}
+        <span style={{ opacity: 0.65 }}>{FARROWAY_COMMIT_SHA}</span>
+      </div>
+    </div>
+  );
+
+  // ─── LEGACY STANDARD MODE (dead code — rollback target) ──
+  // To revert: delete the new return above and this comment,
+  // then restore the return below. Rollup tree-shakes this
+  // block in production — it does NOT ship to end users.
+  // eslint-disable-next-line no-unreachable
   return (
     <div style={S.page}>
       <div style={S.container}>
@@ -1553,6 +1719,40 @@ export default function Dashboard() {
 
 // ─── Styles ─────────────────────────────────────────────────
 const S = {
+
+  // ─── Calm Home (new standard mode) ──────────────────────
+  // Minimal wrapper — CalmHomeHero provides its own full-screen
+  // background. This layer is just a positioning container.
+  calmPage: {
+    minHeight: '100vh',
+    background: 'transparent',
+    position: 'relative',
+    padding: 0,
+  },
+
+  // Floating error banner strip — sits above the hero
+  // without disrupting its layout.
+  floatBanner: {
+    position: 'relative',
+    zIndex: 20,
+    padding: '0.5rem 0.75rem 0',
+  },
+
+  // Build stamp — fixed footer (same visual as legacy)
+  buildStamp: {
+    position: 'fixed',
+    bottom: 8,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: '10px',
+    opacity: 0.6,
+    color: '#9fd3c7',
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+
+  // ─── Legacy styles (used by loading + basic mode) ────────
   page: {
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
