@@ -73,6 +73,24 @@ const DEFAULTS = Object.freeze({
   // scan. Off by default so the new scan surface ships read-only
   // until the task pipeline is verified.
   scanToTask: false,
+  // ML scan safe mode (Phase 7E): enables the lightweight image-upload
+  // analysis placeholder with structured category output.
+  //
+  // ACTIVE categories: healthy | yellowing | holes_or_pest_damage |
+  //   spots_or_disease_concern | needs_review
+  // ACTIVE confidence labels: low | medium | high
+  // Failure always shows "Photo saved. Review needed." — never crashes.
+  //
+  // Does NOT enable:
+  //   • heavy ML model loading in browser
+  //   • disease diagnosis / certainty claims
+  //   • automatic treatment instructions
+  //   • background camera analysis
+  //   • external AI API dependency required for page render
+  //
+  // Set VITE_FARROWAY_FEATURE_MLSCAN=0 to revert to the plain
+  // rule-based fallback wording.
+  mlScan: true,  // Phase 7E restore — 2026-05-07
   // Twi voice guidance: enables the short-phrase Twi dictionary
   // + auto-play hooks on Home greeting, Task tap, and Scan
   // result. Reuses the existing voiceEngine 3-tier fallback so

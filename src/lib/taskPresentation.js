@@ -112,20 +112,6 @@ export function getTaskVoiceKey(task) {
   return taskVoiceKeys.default;
 }
 
-// ─── Task Label Map (i18n display keys) ───────────────────
-// Human-readable task type labels for UI surfaces.
-export const taskLabelKeys = {
-  watering:    'task.label.watering',
-  planting:    'task.label.planting',
-  spraying:    'task.label.spraying',
-  fertilizing: 'task.label.fertilizing',
-  weeding:     'task.label.weeding',
-  harvest:     'task.label.harvest',
-  pruning:     'task.label.pruning',
-  scouting:    'task.label.scouting',
-  default:     'task.label.default',
-};
-
 // ─── Task Action Button Map (translation keys) ───────────
 // CTA text when completing a task.
 export const taskActionKeys = {

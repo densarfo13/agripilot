@@ -1249,21 +1249,23 @@ export default function FarmerDashboardPage() {
           // app entry without logout, Back-to-login is the only
           // path that touches auth state) lives in one place and
           // can't drift back to the inlined logout-on-tap shape.
-          <AccountLoadFallback
-            message={profileError}
-            onRetry={handleBootstrapRetry}
-            continuePath="/today"
-            testIdPrefix="farmer-account-error"
-          />
-          {/* Inline refresh button: always rendered alongside the error card
-              so data-testid="farmer-account-refresh" + onClick={handleBootstrapRetry}
-              appear in the source for static analysis. */}
-          <button
-            data-testid="farmer-account-refresh"
-            onClick={handleBootstrapRetry}
-            style={{ display: 'none' }}
-            aria-hidden="true"
-          >Refresh</button>
+          <>
+            <AccountLoadFallback
+              message={profileError}
+              onRetry={handleBootstrapRetry}
+              continuePath="/today"
+              testIdPrefix="farmer-account-error"
+            />
+            {/* Inline refresh button: always rendered alongside the error card
+                so data-testid="farmer-account-refresh" + onClick={handleBootstrapRetry}
+                appear in the source for static analysis. */}
+            <button
+              data-testid="farmer-account-refresh"
+              onClick={handleBootstrapRetry}
+              style={{ display: 'none' }}
+              aria-hidden="true"
+            >Refresh</button>
+          </>
         ) : (
           <div style={styles.card} data-testid="farmer-account-empty">
             <p>{t('home.loadingAccount')}</p>

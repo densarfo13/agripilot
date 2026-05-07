@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../context/ProfileContext.js';
 import { useTranslation } from '../i18n/useStrictTranslation.js';
-import { useNetwork } from '../hooks/useNetwork.js';
+import { useNetwork } from '../context/NetworkContext.jsx';
 import { getWeeklySummary } from '../lib/api.js';
 
 // Priority color mapping
@@ -64,9 +64,10 @@ export default function WeeklySummaryCard() {
   // Track farm switches to reload the summary.
   const prevFarmIdRef = useRef(null);
 
-  if (!profile) return null;
-
-  const farmId = profile.currentFarmId || profile.farmId;
+  // Derive farmId safely — null when profile is absent so the effect
+  // guard `if (!farmId …)` simply skips the fetch (rules-of-hooks
+  // requires useEffect to be called unconditionally, before any guard).
+  const farmId = profile ? (profile.currentFarmId || profile.farmId) : null;
 
   useEffect(() => {
     if (!farmId || farmId === prevFarmIdRef.current) return;
@@ -80,6 +81,7 @@ export default function WeeklySummaryCard() {
       .finally(() => setLoading(false));
   }, [farmId]);
 
+  if (!profile) return null;
   if (!summary) return null;
 
   return (

@@ -190,4 +190,4 @@ export function attachAutoSync({ transport = DEFAULT_TRANSPORT, pollIntervalMs =
   };
 }
 
-export const _internal = Object.freeze({ DEFAULT_TRANSPORT });
+export const _syncEngineInternal = Object.freeze({ DEFAULT_TRANSPORT });

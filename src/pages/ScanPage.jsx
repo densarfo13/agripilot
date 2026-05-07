@@ -21,6 +21,13 @@ import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { resolveRegionUX } from '../core/regionUXEngine.js';
 import { analyzeScan } from '../core/scanDetectionEngine.js';
+// Phase 7E — ML scan safe mode: lightweight category enrichment.
+// When mlScan is on, analyzeImageSafe attaches a structured
+// category + message to the result so the result card can render
+// the five safe categories (healthy / yellowing / holes or pest
+// damage / spots or disease concern / needs review) without any
+// heavy model loading or external API dependency.
+import { analyzeImageSafe, ML_CATEGORIES, CATEGORY_MESSAGES } from '../lib/mlScanAnalyzer.js';
 // Hybrid engine layers context (active experience + weather +
 // region) on top of the image-only verdict so the result is
 // safer + more actionable. See src/core/hybridScanEngine.js.
@@ -109,7 +116,8 @@ export default function ScanPage() {
   useTranslation();
   const navigate = useNavigate();
 
-  const flagOn = isFeatureEnabled('scanDetection');
+  const flagOn   = isFeatureEnabled('scanDetection');
+  const mlScanOn = isFeatureEnabled('mlScan');
 
   const [phase, setPhase] = useState('capture');
   const [result, setResult] = useState(null);
@@ -357,6 +365,31 @@ export default function ScanPage() {
         } catch { /* ignore */ }
       } catch { /* hybrid disabled — fall through to engine output */ }
 
+      // Phase 7E — ML scan safe mode: attach structured category +
+      // message so ScanResultCard can render the five safe-category
+      // chip + cautious observation text. analyzeImageSafe never
+      // throws — it always returns needs_review on any error.
+      if (mlScanOn) {
+        try {
+          const mlResult = analyzeImageSafe({
+            cropId:      profile?.crop || profile?.cropId || null,
+            plantName:   profile?.plantName || null,
+            experience,
+            imageBase64, // accepted but not analyzed (no model)
+          });
+          refinedOut = {
+            ...refinedOut,
+            category:  mlResult.category,
+            mlStatus:  mlResult.status,
+            mlLabel:   mlResult.label,
+            // `message` is the primary cautious observation text.
+            // Prefer an existing API explanation when it exists so
+            // the real ML response wins over the placeholder copy.
+            message:   refinedOut.message || mlResult.message,
+          };
+        } catch { /* analyzeImageSafe should not throw, but guard */ }
+      }
+
       setResult(refinedOut);
       setPhase('result');
       try { trackEvent('scan_analyzed', { experience, source: out?.meta?.source, confidence: out?.confidence }); }
@@ -386,18 +419,49 @@ export default function ScanPage() {
         }
       } catch { /* ignore */ }
     } catch (err) {
-      setError(tStrict(
-        'scan.error.analyze',
-        'We could not analyze that photo. Try again.'
-      ));
-      setPhase('error');
-      // Data Moat Layer \u00a78 \u2014 scan_failed routes through the
-      // moat service (which mirrors to analyticsStore so the
-      // legacy admin "scan failures" dashboard stays in sync).
-      // Direct analyticsStore.trackEvent removed to avoid a
-      // double-fire.
-      try { moatTrack('scan_failed', { reason: err && err.message }); }
-      catch { /* ignore */ }
+      // Phase 7E — ML scan safe mode: when mlScan is on, a failed
+      // analysis does NOT crash to an error screen. Instead we show
+      // a needs_review result with "Photo saved. Review needed." so
+      // the user always leaves with an actionable message and the
+      // photo can still be saved to history.
+      if (mlScanOn) {
+        try {
+          setResult({
+            scanId:             'scan_mlf_' + Date.now().toString(36),
+            possibleIssue:      'Needs Review',
+            category:           ML_CATEGORIES.NEEDS_REVIEW,
+            mlStatus:           ML_CATEGORIES.NEEDS_REVIEW,
+            mlLabel:            'Needs Review',
+            confidence:         'low',
+            message:            CATEGORY_MESSAGES.needs_review,
+            recommendedActions: ['Share with a local agronomist for a closer look.'],
+            suggestedTasks:     [],
+            shouldSeekHelp:     false,
+            safetyWarning:      null,
+            meta:               { source: 'ml_failure_fallback' },
+          });
+          setPhase('result');
+          try { moatTrack('scan_failed', { reason: 'ml_failure_fallback' }); }
+          catch { /* ignore */ }
+        } catch {
+          // If even the fallback result fails, fall through to error state.
+          setError(tStrict('scan.error.analyze', 'We could not analyze that photo. Try again.'));
+          setPhase('error');
+        }
+      } else {
+        setError(tStrict(
+          'scan.error.analyze',
+          'We could not analyze that photo. Try again.'
+        ));
+        setPhase('error');
+        // Data Moat Layer \u00a78 \u2014 scan_failed routes through the
+        // moat service (which mirrors to analyticsStore so the
+        // legacy admin "scan failures" dashboard stays in sync).
+        // Direct analyticsStore.trackEvent removed to avoid a
+        // double-fire.
+        try { moatTrack('scan_failed', { reason: err && err.message }); }
+        catch { /* ignore */ }
+      }
     }
   }, [experience, activeExperience, profile]);
 

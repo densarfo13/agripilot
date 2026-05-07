@@ -29,6 +29,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
+import { CATEGORY_LABELS } from '../../lib/mlScanAnalyzer.js';
 import { playVoice } from '../../utils/voicePlayer.js';
 import { twiVoice } from '../../i18n/twiVoice.js';
 import VoiceReplayButton from '../voice/VoiceReplayButton.jsx';
@@ -182,6 +183,29 @@ const STYLES = {
     color: 'rgba(255,255,255,0.50)',
     lineHeight: 1.5,
   },
+  // Phase 7E — ML category chip
+  categoryChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    padding: '3px 10px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.07)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.75)',
+  },
+  // Phase 7E — ML message block (cautious observation text)
+  mlMessage: {
+    margin: 0,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.80)',
+    lineHeight: 1.55,
+    fontStyle: 'italic',
+  },
 };
 
 function _confidencePill(level) {
@@ -255,6 +279,7 @@ export default function ScanResultCard({
 
   if (!result) return null;
   const scanToTaskOn = isFeatureEnabled('scanToTask');
+  const mlScanOn     = isFeatureEnabled('mlScan');
 
   // High-trust scan output (spec \u00a71\u2013\u00a76): run the raw result
   // through the policy module so we ALWAYS render the same
@@ -364,6 +389,28 @@ export default function ScanResultCard({
           </span>
         </div>
       </div>
+
+      {/* Phase 7E — ML category chip + cautious observation message.
+          Rendered when mlScan flag is on AND the result carries a
+          valid category from mlScanAnalyzer. Self-hides cleanly
+          when mlScan is off or result.category is absent so older
+          scan verdicts are unaffected. */}
+      {mlScanOn && result.category ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span
+            style={STYLES.categoryChip}
+            data-testid="scan-ml-category"
+            data-category={result.category}
+          >
+            🔍 {CATEGORY_LABELS[result.category] || result.category}
+          </span>
+          {result.message ? (
+            <p style={STYLES.mlMessage} data-testid="scan-ml-message">
+              {result.message}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Spec \u00a71 "Why" \u2014 one-paragraph plain-language reason.
           Skips the section entirely when the engine has nothing

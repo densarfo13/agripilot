@@ -18,10 +18,12 @@ import {
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 
 export default function GuidedFarmingCard({ profile, season, onRecordUpdate }) {
+  // Hooks must be called before any early returns (rules-of-hooks).
+  const { t } = useTranslation();
+
   if (!isGuidedMode(profile)) return null;
   if (!season) return null;
 
-  const { t } = useTranslation();
   const seasonId = season?.id || season;
   const current  = getCurrentStep(seasonId);
   const progress = getGuidedProgress(seasonId);

@@ -21,7 +21,7 @@ import { completeTask, getLandBoundaries, getSeedScans, getFarmTasks } from '../
 import ModeIndicator from '../components/ModeIndicator.jsx';
 import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
 import FarmEditModal from '../components/FarmEditModal.jsx';
-import { useNetwork } from '../hooks/useNetwork.js';
+import { useNetwork } from '../context/NetworkContext.jsx';
 import { FARROWAY_BUILD_VERSION, FARROWAY_COMMIT_SHA } from '../lib/forceUiReset.js';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -140,7 +140,7 @@ export default function Dashboard() {
   const _loopRaw = useFarmerLoop();
   const loop = _loopRaw && typeof _loopRaw === 'object' ? _loopRaw : {};
   const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
-  const { isOnline } = useNetwork ? useNetwork() : { isOnline: true };
+  const { isOnline } = useNetwork();
 
   // Setup banner text (i18n-wired)
   const setupBannerTitle = t('dashboard.setupBanner') || 'Complete Your Farm Setup';
