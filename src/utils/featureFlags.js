@@ -116,6 +116,17 @@ const DEFAULTS = Object.freeze({
   // pipeline — uses the safe TASK_SUGGESTIONS map from mlScanAnalyzer.
   // Off → suggestion block is hidden; scan result still shows normally.
   FEATURE_SCAN_TASK_SUGGESTION: true,  // Phase 7F — 2026-05-07
+
+  // In-app notification center (safe mode). Gates:
+  //   • NotificationBell in the ProtectedLayout header
+  //   • /notifications list page
+  //   • safeNotify() trigger helpers (task_completed, buyer_interest,
+  //     buyer_request_approved, buyer_request_declined, listing_expired,
+  //     scan_task_added)
+  // Does NOT enable: push notifications, SMS, email, background polling,
+  // retry loops. Notifications are local-first (farroway_notifications
+  // localStorage key). Off → bell hidden, triggers are no-ops.
+  FEATURE_NOTIFICATIONS: true,  // Safe mode — 2026-05-07
   FEATURE_SELL:    true,  // Phase 1 restore — 2026-05-04
   FEATURE_BUYER:           true,   // Phase 2 restore — 2026-05-04 (listing browse)
   // Phase 3 restore — buyer interest sending + farmer approve/decline.

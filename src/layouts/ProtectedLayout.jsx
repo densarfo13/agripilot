@@ -25,6 +25,10 @@ import UserFeedbackPromptHost from '../components/feedback/UserFeedbackPromptHos
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
+// In-app notification bell — safe mode (no push/SMS/email).
+// Self-hides when FEATURE_NOTIFICATIONS is off; never blocks render.
+import NotificationBell from '../components/NotificationBell.jsx';
+import { isFeatureEnabled as isSurfaceEnabled } from '../utils/featureFlags.js';
 
 const InnerPageLoader = () => (
   <div style={S.innerLoader}>
@@ -102,6 +106,18 @@ export default function ProtectedLayout() {
                   </button>
                 )}
                 {!onboarding && <AutoVoiceToggle />}
+                {/* In-app notification bell — safe mode (no push/SMS).
+                    Self-hides when FEATURE_NOTIFICATIONS is off. Placed
+                    before logout so it's always reachable with one tap.
+                    userId is the server-assigned sub/id — never PII. */}
+                {!onboarding && isSurfaceEnabled('FEATURE_NOTIFICATIONS') && (() => {
+                  try {
+                    const bellUserId = String(user?.sub || user?.id || '');
+                    return bellUserId
+                      ? <NotificationBell userId={bellUserId} testId="header-notification-bell" />
+                      : null;
+                  } catch { return null; }
+                })()}
                 {!onboarding && (
                   <button
                     onClick={logout}
