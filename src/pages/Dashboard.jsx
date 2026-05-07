@@ -150,6 +150,32 @@ export default function Dashboard() {
   const { rainfall, fetchedAt: forecastFetchedAt } = useForecast();
   const { isOnline } = useNetwork();
 
+  // ─── Derived state — MUST sit above every useEffect that reads them ──
+  //
+  // TDZ root cause (Dashboard-*.js "Cannot access 'ae' before init"):
+  //   `const profile` was at line 520 BELOW the voice-welcome useEffect
+  //   whose dependency array `[isBasic, profile, t]` evaluated `profile`
+  //   at render time.  In dev, V8's JIT compiler elided the TDZ check;
+  //   Terser's production minification re-batched the const chain, making
+  //   the violation lethal.  Moving these to immediately after the hooks
+  //   fixes it permanently — they only read `loop` which is already live.
+  //
+  const profile       = loop.profile     || null;
+  const currentFarmId = loop.profile?.id || null;
+  const farmSwitching = loop.farmSwitching || false;
+  // Convenience counts — server-driven, no localStorage (spec §7C).
+  const completedCount  = loop.completedCount  ?? 0;
+  const taskCount       = loop.taskCount       ?? 0;
+  const data            = { completedCount, taskCount };
+  const doneThisWeek    = completedCount;
+  const weekTotal       = taskCount + completedCount;
+  const hasMultipleFarms  = !!(loop.activeFarms && loop.activeFarms.length > 1);
+  const showBeginnerPrompt = !!(loop.profile && !loop.profile.cropType
+    && loop.loopState !== LOOP_STATE.LOADING);
+  const setupComplete = !!(loop.profile?.crop || loop.profile?.cropType || loop.profile?.plantName)
+    && !!(loop.profile?.locationName || loop.profile?.location
+         || loop.profile?.region    || loop.profile?.country);
+
   // Setup banner text (i18n-wired)
   const setupBannerTitle = t('dashboard.setupBanner') || 'Complete Your Farm Setup';
   const setupBannerDesc = t('dashboard.setupBannerDesc') || 'Add your farm details to get personalized guidance.';
@@ -512,29 +538,6 @@ export default function Dashboard() {
       window.history.replaceState(null, '', location.pathname);
     } catch { /* ignore */ }
   }, [location.search, location.pathname, loop.primaryTask?.id]);
-
-  const hasMultipleFarms = loop.activeFarms && loop.activeFarms.length > 1;
-  const showBeginnerPrompt = loop.profile && !loop.profile.cropType && loop.loopState !== LOOP_STATE.LOADING;
-
-  // profile: shorthand for loop.profile (used in CropStageModal wiring etc.)
-  const profile = loop.profile || null;
-  // currentFarmId: the active farm's ID (used for analytics, scoped fetches)
-  const currentFarmId = loop.profile?.id || null;
-  // farmSwitching: true while switching active farm
-  const farmSwitching = loop.farmSwitching || false;
-
-  // ─── Server-side counts (spec §7C — no localStorage) ───────
-  const completedCount = loop.completedCount ?? 0;
-  const taskCount = loop.taskCount ?? 0;
-  // data object for components that access data.completedCount
-  const data = { completedCount, taskCount };
-  // Weekly progress: doneThisWeek = completedCount (server-driven, not localStorage)
-  const doneThisWeek = completedCount;
-  const weekTotal = taskCount + completedCount;
-  // Setup completeness: crop + location required for full experience
-  const setupComplete = !!(loop.profile?.crop || loop.profile?.cropType || loop.profile?.plantName)
-    && !!(loop.profile?.locationName || loop.profile?.location
-         || loop.profile?.region || loop.profile?.country);
 
   // ─── Calm-UI Home redesign (May 2026) ───────────────────
   // isGarden: true when the active context is a garden / backyard.

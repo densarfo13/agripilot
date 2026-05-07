@@ -39,6 +39,7 @@
     "guards": "npm run guard:prisma && npm run guard:migration && npm run guard:crops && npm run guard:i18n && npm run guard:i18n-parity && npm run guard:duplicate-crops && npm run guard:crop-render && npm run guard:mobile && npm run guard:telemetry && npm run guard:ios-quirks && npm run guard:server-boot && npm run guard:env",
     "check:i18n": "node scripts/check-i18n.js",
     "check:crop-labels": "node scripts/check-raw-crop-render.js",
+    "check:deps": "node scripts/ci/check-circular-deps.mjs",
     "launch-gate": "node scripts/launch-gate.mjs",
     "launch-gate:fast": "node scripts/launch-gate.mjs --fast --no-build",
     "launch-gate:final": "npm run launch-gate:fast && npm run guard:i18n && npm run guard:crop-render && npm run guard:mobile && npm run guard:telemetry && npm run guard:ios-quirks",

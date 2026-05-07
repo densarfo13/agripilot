@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { tSafe } from '../i18n/tSafe.js';
 import { getFarmInputs } from '../lib/api.js';
-import { useProfile } from '../context/ProfileContext.js';
+import { useProfile } from '../context/ProfileContext.jsx';
 
 // Category icons for different input types
 const CATEGORY_ICONS = {

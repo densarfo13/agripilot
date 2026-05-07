@@ -47,6 +47,7 @@ import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
 import PilotHome from './pages/PilotHome.jsx';
 import HomeErrorBoundary from './components/system/HomeErrorBoundary.jsx';
+import { DashboardErrorBoundary } from './components/system/DashboardErrorBoundary.jsx';
 import {
   BYPASS_SETUP_FOR_PILOT,
   FEATURE_EVENT_SYNC as PILOT_FEATURE_EVENT_SYNC,
@@ -1125,9 +1126,11 @@ export default function App() {
             <Route path="/onboarding/starter-guide" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/dashboard" element={
               <RouteErrorBoundary routeName="home">
-                <RoleAwareDashboard>
-                  <ExperienceFallback><V2Dashboard /></ExperienceFallback>
-                </RoleAwareDashboard>
+                <DashboardErrorBoundary>
+                  <RoleAwareDashboard>
+                    <ExperienceFallback><V2Dashboard /></ExperienceFallback>
+                  </RoleAwareDashboard>
+                </DashboardErrorBoundary>
               </RouteErrorBoundary>
             } />
             <Route path="/tasks" element={
