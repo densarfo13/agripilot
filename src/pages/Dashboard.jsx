@@ -115,6 +115,11 @@ import CompleteSetupCard from '../components/home/CompleteSetupCard.jsx';
 // Calm-UI Home redesign (May 2026) — replaces the cluttered card-stack
 // standard mode with a full-screen assistant-style hero surface.
 import CalmHomeHero from '../components/home/CalmHomeHero.jsx';
+// HomeAssistant — the primary Home surface (user-supplied design, fixed).
+// Self-contained: fetches /api/decision/today; receives decisionOverride
+// from Dashboard when loop data is available so the hero always shows
+// real task content without an extra network round-trip.
+import HomeAssistant from '../components/home/HomeAssistant.jsx';
 import useEngagementDay from '../hooks/useEngagementDay.js';
 import {
   resolveProfileCompletionRoute, routeToUrl,
@@ -963,24 +968,24 @@ export default function Dashboard() {
       {/* No-profile empty state — when the user has no farm/garden yet */}
       {emptyState}
 
-      {/* CalmHomeHero — the main screen.
-          Replaces: WeatherHeroCard, WeatherStatusCard, DailyPlanCard,
-          TodayTaskCard, QuickActionsRow, progress block, collapsible
-          sections. One screen. One action. Weather always visible. */}
+      {/* HomeAssistant — the primary Home surface.
+          Passes loop data as decisionOverride so the assistant shows
+          real task content without a redundant /api/decision/today
+          fetch. Falls back to that endpoint when loop data is absent
+          (e.g. first render before useFarmerLoop has resolved). */}
       {loop.profile && (
-        <CalmHomeHero
-          isGarden={isGarden}
-          isDone={isDone}
-          weather={loop.weather || null}
-          weatherDecision={loop.weatherDecision || null}
-          headline={heroHeadline}
-          subtext={heroSubtext}
-          ctaLabel={heroCta}
-          isOnline={isOnline}
-          language={language}
-          userId={_userId}
-          profile={loop.profile}
-          onPrimaryAction={handleDoThisNow}
+        <HomeAssistant
+          decisionOverride={{
+            title:   heroHeadline,
+            reason:  heroSubtext,
+            cta:     heroCta,
+            // Weather string: "emoji label" derived from the loop's
+            // weatherDecision chip so the pill matches app state.
+            weather: loop.weatherDecision?.chipIcon
+              ? `${loop.weatherDecision.chipIcon} ${loop.weatherDecision.actionLine}`
+              : null,
+          }}
+          onComplete={handleDoThisNow}
           onScan={() => {
             try { navigate(isGarden ? '/scan' : '/scan-crop'); }
             catch { /* swallow */ }
