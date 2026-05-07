@@ -25,11 +25,19 @@
  * "Plant" / "Crop" wording where it appears.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
-import { CATEGORY_LABELS } from '../../lib/mlScanAnalyzer.js';
+// Phase 7F — surface-level feature flag (featureFlags.js system,
+// not config/features.js) + task suggestion vocabulary.
+import { isFeatureEnabled as isSurfaceEnabled } from '../../utils/featureFlags.js';
+import { CATEGORY_LABELS, TASK_SUGGESTIONS } from '../../lib/mlScanAnalyzer.js';
+// Phase 7F — persist the suggested task when farmer taps "Add to Tasks".
+// Imported here so the suggestion block is self-contained; the parent
+// onAddTasks callback (scanToTask pipeline) is invoked additionally
+// when provided so farm/garden task surfaces stay in sync.
+import { addScanTasks } from '../../core/scanToTask.js';
 import { playVoice } from '../../utils/voicePlayer.js';
 import { twiVoice } from '../../i18n/twiVoice.js';
 import VoiceReplayButton from '../voice/VoiceReplayButton.jsx';
@@ -206,6 +214,53 @@ const STYLES = {
     lineHeight: 1.55,
     fontStyle: 'italic',
   },
+  // Phase 7F — task suggestion block (category → one follow-up task)
+  suggestionBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    padding: '10px 12px',
+    borderRadius: 10,
+    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(34,197,94,0.24)',
+  },
+  suggestionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 1.4,
+    flex: '1 1 auto',
+    minWidth: 0,
+  },
+  suggestionBtn: {
+    appearance: 'none',
+    border: 'none',
+    background: '#22C55E',
+    color: '#0B1D34',
+    borderRadius: 8,
+    padding: '7px 12px',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flex: '0 0 auto',
+    whiteSpace: 'nowrap',
+  },
+  suggestionToast: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#86EFAC',
+    flex: '0 0 auto',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+  },
 };
 
 function _confidencePill(level) {
@@ -277,9 +332,19 @@ export default function ScanResultCard({
     } catch { /* never propagate */ }
   }, [result]);
 
+  // Phase 7F — local toast state: "Add to Tasks" → "✅ Task added".
+  // Declared BEFORE the early return so hook order is stable across
+  // renders (the eslint-disable at file level covers the pre-existing
+  // violations in this file; this hook is correctly placed).
+  const [_taskAdded, _setTaskAdded] = useState(false);
+
   if (!result) return null;
   const scanToTaskOn = isFeatureEnabled('scanToTask');
   const mlScanOn     = isFeatureEnabled('mlScan');
+  // Phase 7F — surface-level gate (featureFlags.js, not config/features.js).
+  // Safe to call after the early return because isSurfaceEnabled is a plain
+  // function, not a React hook.
+  const scanTaskSuggestionOn = isSurfaceEnabled('FEATURE_SCAN_TASK_SUGGESTION');
 
   // High-trust scan output (spec \u00a71\u2013\u00a76): run the raw result
   // through the policy module so we ALWAYS render the same
@@ -409,6 +474,53 @@ export default function ScanResultCard({
               {result.message}
             </p>
           ) : null}
+        </div>
+      ) : null}
+
+      {/* Phase 7F — Suggested follow-up task.
+          Rendered when:
+            • FEATURE_SCAN_TASK_SUGGESTION is on
+            • result.category is one of the five ML_CATEGORIES
+            • TASK_SUGGESTIONS has a non-empty entry for that category
+          The "Add to Tasks" button calls addScanTasks directly so the
+          block is self-contained; it also fires onAddTasks (if provided)
+          to keep the parent scan pipeline in sync. On success the button
+          swaps to a green "✅ Task added" inline toast — no page reload. */}
+      {scanTaskSuggestionOn && result.category && TASK_SUGGESTIONS[result.category] ? (
+        <div style={STYLES.suggestionBlock} data-testid="scan-task-suggestion">
+          <span style={STYLES.metaLabel}>
+            {tStrict('scan.suggestion.label', 'Suggested follow-up')}
+          </span>
+          <div style={STYLES.suggestionRow}>
+            <span style={STYLES.suggestionText} data-testid="scan-suggestion-text">
+              {TASK_SUGGESTIONS[result.category]}
+            </span>
+            {_taskAdded ? (
+              <span style={STYLES.suggestionToast} data-testid="scan-task-added-toast">
+                ✅ {tStrict('scan.suggestion.added', 'Task added')}
+              </span>
+            ) : (
+              <button
+                type="button"
+                style={STYLES.suggestionBtn}
+                data-testid="scan-add-task-btn"
+                onClick={() => {
+                  try {
+                    addScanTasks(
+                      [{ title: TASK_SUGGESTIONS[result.category], urgency: 'medium', actionType: 'inspect' }],
+                      { scanId: result.scanId || null, experience }
+                    );
+                    _setTaskAdded(true);
+                    if (typeof onAddTasks === 'function') {
+                      try { onAddTasks(); } catch { /* swallow */ }
+                    }
+                  } catch { /* never crash the card */ }
+                }}
+              >
+                {tStrict('scan.suggestion.addBtn', 'Add to Tasks')}
+              </button>
+            )}
+          </div>
         </div>
       ) : null}
 

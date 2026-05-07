@@ -133,8 +133,25 @@ export function isValidCategory(value) {
   return typeof value === 'string' && value in CATEGORY_LABELS;
 }
 
+/**
+ * Per-category suggested follow-up task title (Phase 7F).
+ *
+ * Rules (matching CATEGORY_MESSAGES):
+ *   • Action-framed, farmer-language, no diagnosis or dosage claims.
+ *   • Short enough to scan at a glance on a phone.
+ *   • maps 1-to-1 with ML_CATEGORIES keys.
+ */
+export const TASK_SUGGESTIONS = Object.freeze({
+  healthy:                  'Continue daily crop check',
+  yellowing:                'Check soil moisture and inspect leaves',
+  holes_or_pest_damage:     'Inspect under leaves for pests',
+  spots_or_disease_concern: 'Separate affected leaves and monitor',
+  needs_review:             'Take a clearer photo or inspect manually',
+});
+
 export const _internal = Object.freeze({
   SAFE_FALLBACK,
   CATEGORY_LABELS,
   CATEGORY_MESSAGES,
+  TASK_SUGGESTIONS,
 });

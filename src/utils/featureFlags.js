@@ -110,6 +110,12 @@ const DEFAULTS = Object.freeze({
   // 404. Each surface checks its flag at render time and
   // shows "Feature temporarily disabled for pilot." when off.
   FEATURE_SCAN:    true,   // Phase 4 restore — 2026-05-04
+  // Scan task suggestion (Phase 7F): after a scan result, show a
+  // one-line suggested follow-up task keyed to the ML category, with
+  // an "Add to Tasks" button. Does NOT require ML model or scanToTask
+  // pipeline — uses the safe TASK_SUGGESTIONS map from mlScanAnalyzer.
+  // Off → suggestion block is hidden; scan result still shows normally.
+  FEATURE_SCAN_TASK_SUGGESTION: true,  // Phase 7F — 2026-05-07
   FEATURE_SELL:    true,  // Phase 1 restore — 2026-05-04
   FEATURE_BUYER:           true,   // Phase 2 restore — 2026-05-04 (listing browse)
   // Phase 3 restore — buyer interest sending + farmer approve/decline.
