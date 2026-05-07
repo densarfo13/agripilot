@@ -33,6 +33,7 @@ import { deriveWeatherRisk } from '../../intelligence/weatherRiskModel.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { CloudRain, AlertTriangle } from '../../components/icons/lucide.jsx';
 import { getTodayFeed, completeCycleTask, skipCycleTask, reportCycleIssue, submitCycleHarvest, listCropCycles } from '../../hooks/useCropCycles.js';
+import { withBootstrapTimeout } from '../../utils/withBootstrapTimeout.js';
 import { usePreferenceSync } from '../../hooks/usePreferenceSync.js';
 import { localizeServerTask } from '../../utils/generateLocalizedTask.js';
 import { evaluateCropFit } from '../../utils/cropFit.js';
@@ -171,32 +172,60 @@ export default function FarmerTodayPage() {
   // profile on mount, and PATCHes the profile when either changes.
   // Fire-and-forget; never blocks the UI.
   usePreferenceSync();
-  const [state, setState] = useState({ loading: true, today: null, cycles: null, error: null });
+  // Bootstrap state machine: booting → partial | ready | degraded.
+  // `phase` tracks where we are for diagnostic logging + the warning banner.
+  const [state, setState] = useState({
+    loading: true,
+    today: null,
+    cycles: null,
+    error: null,
+    phase: 'booting',
+  });
 
   const reload = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
-    // 5-second per-call timeout — if the API hangs longer the
-    // offline engine takes over so the screen never stays blank.
-    // Individual calls are wrapped so a single endpoint failure
-    // doesn't discard partial data from the other.
-    const withTimeout = (p, ms = 5000) =>
-      Promise.race([
-        p,
-        new Promise((_, rej) =>
-          setTimeout(() => rej(Object.assign(new Error('api_timeout'), { code: 'timeout' })), ms)),
-      ]);
-    try {
-      const [today, cycles] = await Promise.all([
-        withTimeout(getTodayFeed()).catch(() => null),
-        withTimeout(listCropCycles()).catch(() => null),
-      ]);
-      setState({ loading: false, today, cycles, error: null });
-    } catch (err) {
-      setState({ loading: false, today: null, cycles: null, error: err?.code || 'error' });
-    }
+    setState((s) => ({ ...s, loading: true, error: null, phase: 'booting' }));
+    // Use Promise.allSettled + withBootstrapTimeout (3s per call) so:
+    //   • A single hanging endpoint cannot block the entire dashboard.
+    //   • Each call resolves with null on timeout/error — never throws.
+    //   • The offline task engine provides content when both return null.
+    const [todayResult, cyclesResult] = await Promise.allSettled([
+      withBootstrapTimeout(getTodayFeed(), 3000, null, 'getTodayFeed'),
+      withBootstrapTimeout(listCropCycles(), 3000, null, 'listCropCycles'),
+    ]);
+    const today  = todayResult.status  === 'fulfilled' ? todayResult.value  : null;
+    const cycles = cyclesResult.status === 'fulfilled' ? cyclesResult.value : null;
+    const hasPartial = today !== null || cycles !== null;
+    setState({
+      loading: false,
+      today,
+      cycles,
+      error: (!today && !cycles) ? 'offline' : null,
+      phase: hasPartial ? 'ready' : 'degraded',
+    });
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // ── 3-second deadlock detector ─────────────────────────────────
+  // Belt-and-suspenders: if state.loading is STILL true after 3 seconds
+  // (e.g. reload() was never called, a promise was leaked, or a browser
+  // bug prevented the microtask from firing) force a transition to the
+  // degraded state so the dashboard renders with local engine data.
+  // This fires on every reload attempt and cleans itself up cleanly.
+  useEffect(() => {
+    if (!state.loading) return undefined;
+    const deadlockTimer = setTimeout(() => {
+      setState((s) => {
+        if (!s.loading) return s; // already resolved — no-op
+        try {
+          // eslint-disable-next-line no-console
+          console.warn('[FARROWAY_BOOT] 3s loading deadlock detected — forcing degraded state.');
+        } catch { /* ignore */ }
+        return { ...s, loading: false, error: s.error || 'timeout', phase: 'degraded' };
+      });
+    }, 3000);
+    return () => clearTimeout(deadlockTimer);
+  }, [state.loading]);
 
   // Lightweight feedback gate. Increment a "meaningful uses"
   // counter on first mount, decide whether to surface the

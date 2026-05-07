@@ -99,16 +99,21 @@ export default function DashboardShell({ children }) {
   const contentRef = useRef(null);
 
   useEffect(() => {
-    // 2-second watchdog — fires before the main.jsx 4-second gate.
-    // Reads innerText length of the content div; if still zero, the
-    // loading chain is stuck and we surface the safe fallback.
-    const timer = setTimeout(() => {
+    // Two-stage watchdog:
+    //
+    // Stage 1 (2 s) — blank-content guard. If innerText is empty AND
+    // there are no child elements, the whole render chain stalled.
+    // Force the safe fallback immediately.
+    //
+    // Stage 2 (4 s) — stuck-loading guard. Even if Stage 1 saw content
+    // (e.g. "Loading your farm…"), if [data-testid="today-loading"] is
+    // STILL in the DOM at 4 seconds the loading state is deadlocked.
+    // Force the safe fallback so the farmer never sees an infinite spinner.
+    const stage1 = setTimeout(() => {
       try {
         const el = contentRef.current;
         if (!el) return;
-        const textLen = typeof el.innerText === 'string'
-          ? el.innerText.trim().length
-          : 0;
+        const textLen    = typeof el.innerText === 'string' ? el.innerText.trim().length : 0;
         const childCount = el.children ? el.children.length : 0;
         if (textLen === 0 && childCount === 0) {
           // eslint-disable-next-line no-console
@@ -117,7 +122,25 @@ export default function DashboardShell({ children }) {
         }
       } catch { /* never throw from a watchdog */ }
     }, 2000);
-    return () => clearTimeout(timer);
+
+    const stage2 = setTimeout(() => {
+      try {
+        const el = contentRef.current;
+        if (!el) return;
+        // If the loading sentinel is still present, the dashboard is deadlocked.
+        const loadingNode = el.querySelector('[data-testid="today-loading"]');
+        if (loadingNode) {
+          // eslint-disable-next-line no-console
+          console.warn('[FARROWAY_SHELL] Loading state stuck at 4s — showing safe fallback.');
+          setShowFallback(true);
+        }
+      } catch { /* never throw from a watchdog */ }
+    }, 4000);
+
+    return () => {
+      clearTimeout(stage1);
+      clearTimeout(stage2);
+    };
     // Run once on mount only — the watchdog is a one-shot safety net.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

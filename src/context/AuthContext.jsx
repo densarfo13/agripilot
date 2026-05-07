@@ -10,6 +10,7 @@ import {
   requestPhoneOtp as requestPhoneOtpApi,
   verifyPhoneOtp as verifyPhoneOtpApi,
 } from '../lib/api.js';
+import { withBootstrapTimeout } from '../utils/withBootstrapTimeout.js';
 import { logActivity } from '../services/activityLogger.js';
 import { clearSessionState } from '../lib/auth/clearSessionState.js';
 import { startInactivityWatcher } from '../lib/auth/inactivityWatcher.js';
@@ -134,24 +135,32 @@ export function AuthProvider({ children }) {
     // ─── Step 1: Proactive refresh ───────────────────────────
     // The access_token cookie expires after 15 min (browser deletes it).
     // Call /refresh first to ensure a fresh access token exists before /me.
+    // Capped at 3 seconds — if the server is offline or slow, skip and
+    // let /me handle the retry so boot never hangs past 6 seconds total.
     if (cached) {
       if (isDev) console.log('[AUTH] Pre-flight refresh (have cached session)');
-      await refreshSession(); // best-effort; /me retry handles failure
+      await withBootstrapTimeout(refreshSession(), 3000, null, 'refreshSession');
     }
 
     // ─── Step 2: Validate with /me ───────────────────────────
+    // 5-second cap — the finally block below always sets authLoading=false
+    // so even a completely unresponsive server releases the auth gate.
     try {
-      const data = await getCurrentUser();
+      const data = await withBootstrapTimeout(getCurrentUser(), 5000, null, 'getCurrentUser');
+      // withBootstrapTimeout resolves with null on timeout — treat as network error.
+      if (!data) throw Object.assign(new Error('Failed to fetch'), { status: 0 });
       const serverUser = data.user || null;
       if (isDev) console.log('[AUTH] /me success, role:', serverUser?.role);
       setUser(serverUser);
       setIsOfflineSession(false);
       cacheSession(serverUser);
     } catch (err) {
-      if (isDev) console.warn('[AUTH] /me failed:', err.status, err.message);
+      if (isDev) console.warn('[AUTH] /me failed:', err?.status, err?.message);
 
-      const isNetworkError = !err.status || err.message === 'Failed to fetch';
-      const isAuthError = err.status === 401 || err.status === 403;
+      const errStatus  = err?.status  ?? 0;
+      const errMessage = err?.message ?? '';
+      const isNetworkError = !errStatus || errMessage === 'Failed to fetch';
+      const isAuthError    = errStatus === 401 || errStatus === 403;
 
       if (isNetworkError) {
         // Offline — keep cached user, re-validate when online
@@ -170,14 +179,14 @@ export function AuthProvider({ children }) {
         }
       } else if (isAuthError) {
         // 401/403 after refresh attempt = session truly dead
-        if (isDev) console.log('[AUTH] Session invalid (', err.status, ') — logging out');
+        if (isDev) console.log('[AUTH] Session invalid (', errStatus, ') — logging out');
         setUser(null);
         setIsOfflineSession(false);
         clearSessionCache();
       } else {
         // Server error (500, etc.) — NOT a session problem.
         // Keep cached user alive; don't kick farmer to login for transient errors.
-        if (isDev) console.log('[AUTH] Server error (', err.status, ') — keeping cached session');
+        if (isDev) console.log('[AUTH] Server error (', errStatus, ') — keeping cached session');
         if (cached) {
           setUser(cached);
           setIsOfflineSession(true);

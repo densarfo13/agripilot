@@ -1,34 +1,78 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { isProfileComplete } from '../utils/farmScore.js';
-import { useAuthStore } from '../store/authStore.js';
-
 /**
  * ProfileGuard — ensures a complete farmer profile before rendering children.
  *
  * Ownership: ProfileGuard owns the profile-incomplete redirect to /profile/setup.
  * This keeps redirect logic in one place (single-responsibility pattern).
  *
- * Loading: shows a visible loading skeleton while profile initializes.
- * NEVER returns null — a blank screen is never safe here because
- * ProfileGuard wraps the entire ProtectedLayout (header + nav + page content).
- * Returning null would blank the whole page for the duration of auth init.
+ * Loading behaviour (infinite-loading fix, May 2026):
+ *   useAuthStore does NOT export `initialized` or `loading` fields — they were
+ *   always `undefined`, making `!initialized` permanently true and causing an
+ *   infinite loading skeleton.
  *
- * Redirect: sends to /profile/setup when isProfileComplete returns false.
+ *   In optional mode (the default used by ProtectedLayout): auth loading is
+ *   already handled by the surrounding AuthGuard. ProfileGuard simply renders
+ *   children so pages manage their own partial-data states.
  *
- * NOTE: Setup can be made optional by passing `optional={true}` — in that
- * case ProfileGuard renders children even when profile is incomplete.
- * See src/core/routePolicy.js for the canonical route-level rule set.
+ *   In strict mode (optional=false): we read `authLoading` from AuthContext
+ *   (which does track real loading state) and only show the skeleton while
+ *   that is true, capped at 4 seconds by a local timer.
+ *
+ * NEVER returns null — see blank-screen spec §1.
  */
+import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { isProfileComplete } from '../utils/farmScore.js';
+import { useAuthStore } from '../store/authStore.js';
+// AuthContext provides the real auth-loading signal for strict mode.
+// useAuthOrNull is used so this component can also render outside the
+// AuthProvider (belt-and-suspenders for SSR / test environments).
+import { useAuthOrNull } from '../context/AuthContext.jsx';
+
 export default function ProfileGuard({ children, optional = true }) {
-  const { user, loading, initialized } = useAuthStore();
+  const { user } = useAuthStore();
   const profile = user?.profile || user;
 
-  // Safe loading state — ALWAYS render visible content so the 4-second
-  // blank-screen watchdog in main.jsx never fires during auth init.
-  // The previous `return null` caused FARROWAY_BLANK because ProfileGuard
-  // wraps the entire ProtectedLayout; null here blanked the full page.
-  if (!initialized || (loading && !profile)) {
+  // ── Optional mode (default) ────────────────────────────────────
+  // AuthGuard already blocked until auth was resolved. ProfileGuard's
+  // job here is only to be a pass-through; each page owns its own
+  // partial-data loading state.
+  // DO NOT gate on `initialized` from authStore — that field does not
+  // exist in the store and would evaluate as `undefined` (→ always true
+  // → infinite spinner).
+  if (optional) {
+    return children;
+  }
+
+  // ── Strict mode ────────────────────────────────────────────────
+  // Used when explicit=false. Show a loading skeleton while auth is
+  // resolving, then check profile completeness.
+  return (
+    <StrictGuard profile={profile}>{children}</StrictGuard>
+  );
+}
+
+/**
+ * StrictGuard — encapsulates the auth-loading hook so it only runs in
+ * strict mode (avoids calling useAuthOrNull unconditionally in the
+ * optional-mode fast path where it's never needed).
+ */
+function StrictGuard({ profile, children }) {
+  // useAuthOrNull is the non-throwing variant — safe to call even outside
+  // AuthProvider. Call unconditionally to satisfy rules-of-hooks.
+  const auth = useAuthOrNull();
+  const authLoading = auth?.authLoading ?? false;
+
+  // Safety cap: never show the loading skeleton for more than 4 seconds.
+  // If auth hasn't resolved by then, render children anyway so the user
+  // sees something rather than a permanent spinner.
+  const [forceRender, setForceRender] = useState(false);
+  useEffect(() => {
+    if (!authLoading) return undefined;
+    const t = setTimeout(() => setForceRender(true), 4000);
+    return () => clearTimeout(t);
+  }, [authLoading]);
+
+  if (authLoading && !forceRender) {
     return (
       <div style={LOADING_S.page} data-testid="profile-guard-loading">
         <div style={LOADING_S.spinner} aria-hidden="true" />
@@ -38,14 +82,6 @@ export default function ProfileGuard({ children, optional = true }) {
     );
   }
 
-  // Optional mode (default): always render children without redirect.
-  // Inline prompt cards surface missing data on the destination page.
-  if (optional) {
-    return children;
-  }
-
-  // Strict mode: redirect to /profile/setup when profile is incomplete.
-  // ProfileGuard owns this redirect — no other component should duplicate it.
   if (!isProfileComplete(profile)) {
     return <Navigate to="/profile/setup" replace />;
   }
@@ -53,10 +89,6 @@ export default function ProfileGuard({ children, optional = true }) {
   return children;
 }
 
-// Spinner animation is already declared in AuthGuard.jsx via the
-// farroway-spin @keyframes injected by main.jsx. Using the same
-// class keeps the animation consistent and doesn't duplicate the
-// keyframe injection.
 const LOADING_S = {
   page: {
     minHeight: '100vh',
