@@ -46,6 +46,7 @@ const FALLBACK_RESPONSE = Object.freeze({
   rainChance:    null,
   windSpeed:     null,
   locationLabel: 'Your area',
+  weatherType:   'unknown',
   source:        'fallback',
 });
 
@@ -59,12 +60,14 @@ function _toPublicShape(provider, locationLabel) {
   const rain = Number.isFinite(provider.rainChancePct) ? provider.rainChancePct : null;
   const wind = Number.isFinite(provider.windKph) ? provider.windKph : null;
   const condition = _summariseCondition({ tempHigh, rain, wind });
+  const weatherType = _deriveWeatherType({ tempHigh, rain, wind, condition });
   return {
     temp:          tempHigh != null ? Math.round(tempHigh) : null,
     condition,
     rainChance:    rain != null ? Math.round(rain) : null,
     windSpeed:     wind != null ? Math.round(wind) : null,
     locationLabel,
+    weatherType,
     source:        'weather-api',
   };
 }
@@ -76,6 +79,36 @@ function _summariseCondition({ tempHigh, rain, wind }) {
   if (tempHigh != null && tempHigh < 12) return 'Cold';
   if (rain != null && rain <= 20 && tempHigh != null) return 'Clear and dry';
   return 'Mild conditions';
+}
+
+/**
+ * Derive the weatherType enum value used by the frontend for
+ * animation class selection and weather-task routing.
+ *
+ * Priority ladder (first match wins):
+ *   rain ≥ 60%                    → 'rain'
+ *   temp ≥ 32 °C                  → 'heat'
+ *   wind ≥ 25 km/h                → 'wind'
+ *   rain ≤ 20% and sunny/clear    → 'sunny'
+ *   rain ≤ 20%                    → 'dry'
+ *   condition includes 'cloud'    → 'cloudy'
+ *   mild (20 < rain < 60)         → 'sunny'
+ *   all else                      → 'unknown'
+ *
+ * @returns {'sunny'|'rain'|'cloudy'|'wind'|'heat'|'dry'|'unknown'}
+ */
+function _deriveWeatherType({ tempHigh, rain, wind, condition }) {
+  const c = typeof condition === 'string' ? condition.toLowerCase() : '';
+  if ((rain != null && rain >= 60) || c.includes('rain')) return 'rain';
+  if (tempHigh != null && tempHigh >= 32)                  return 'heat';
+  if ((wind != null && wind >= 25) || c.includes('wind'))  return 'wind';
+  if (rain != null && rain <= 20) {
+    if (c.includes('sun') || c.includes('clear') || c.includes('dry')) return 'sunny';
+    return 'dry';
+  }
+  if (c.includes('cloud') || c.includes('overcast')) return 'cloudy';
+  if (c.includes('sun') || c.includes('clear'))      return 'sunny';
+  return 'unknown';
 }
 
 function _coerceLat(raw) {
@@ -147,6 +180,7 @@ export const _internal = Object.freeze({
   FALLBACK_RESPONSE,
   _toPublicShape,
   _summariseCondition,
+  _deriveWeatherType,
   _coerceLat,
   _coerceLng,
   _coerceRegion,

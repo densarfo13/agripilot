@@ -933,11 +933,71 @@ select:focus {
   content: none;
 }
 
+/* ── sunny — soft golden glow in top-right corner (less intense than heat) */
+.weather-sunny::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(253, 224, 71, 0.28) 0%, transparent 70%);
+  animation: farroway-sunny-pulse 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes farroway-sunny-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.55; }
+  50%      { transform: scale(1.12); opacity: 0.85; }
+}
+
+/* ── cloudy — translucent cloud layer drifting slowly left to right */
+.weather-cloudy::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 40% at 30% 25%,
+    rgba(200, 215, 235, 0.12) 0%,
+    transparent 65%
+  );
+  animation: farroway-cloud-drift 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes farroway-cloud-drift {
+  from { transform: translateX(-10px); opacity: 0.7; }
+  to   { transform: translateX(14px);  opacity: 1;   }
+}
+
+/* ── unknown — calm leaf / nature shimmer — gentle green radial pulse */
+.weather-unknown::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(34, 197, 94, 0.08) 0%,
+    transparent 55%
+  );
+  animation: farroway-leaf-calm 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes farroway-leaf-calm {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1.0; transform: scale(1.06); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .weather-rain::before,
   .weather-heat::before,
   .weather-wind::before,
-  .weather-dry::before {
+  .weather-dry::before,
+  .weather-sunny::before,
+  .weather-cloudy::before,
+  .weather-unknown::before {
     animation: none;
   }
   .weather-hero { animation: none; }

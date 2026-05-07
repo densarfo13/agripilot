@@ -2,70 +2,92 @@
  * WeatherHeroCard — Home Screen v2 weather hero with subtle
  * animated effects.
  *
- *   <WeatherHeroCard weather={loop.weather} />
+ *   <WeatherHeroCard weather={liveWeather} />
+ *
+ * Accepts the shape returned by useLiveWeather:
+ *   {
+ *     temp, condition, rainChance, windSpeed,
+ *     locationLabel, weatherType, source
+ *   }
+ * Also accepts the legacy shape (location, no weatherType) for
+ * backward compat with the Dashboard loop.weather payload.
+ *
+ * Animation class selection (CSS in src/index.css):
+ *   1. weather.weatherType  (from useLiveWeather / backend)
+ *   2. getWeatherAction(w).type (local numeric derivation)
+ *   3. 'unknown'            (ultimate fallback → calm leaf pulse)
  *
  * Rules
- *   • Large rounded card (≥ 260 px) with a navy/green gradient.
- *   • Animated effect layer reflects the active weather type:
- *       rain → falling rain lines
- *       heat → soft sun-glow pulse in the corner
- *       wind → drifting wind streaks
- *       dry  → slow background pulse
- *       normal → no animation
- *   • Animations are intentionally low-cost: pure CSS transforms
- *     on a single ::before pseudo-element. Smooth on mobile.
- *   • When the weather payload is missing the card renders
- *     "Weather unavailable" + the fallback action.
- *
- * Strict-rule audit
  *   • Pure presentational. Never throws.
- *   • CSS animations live in src/index.css under the
- *     `.weather-rain::before` / `.weather-heat::before` /
- *     `.weather-wind::before` / `.weather-dry::before` rules
- *     — global keyframes are loaded once at boot.
- *   • Inline styles are kept to layout-only; visuals + animations
- *     come from the global stylesheet so prefers-reduced-motion
- *     can disable them centrally.
+ *   • CSS animations use a single ::before pseudo-element per
+ *     condition, disabled by prefers-reduced-motion.
+ *   • locationLabel preferred over legacy location field.
+ *   • Fallback strings use em-dash so layout never collapses.
  */
 
 import React from 'react';
 import { getWeatherAction } from '../lib/weatherActionEngine.js';
 
+// All types that have a CSS class in index.css.
+const VALID_TYPES = new Set([
+  'rain', 'heat', 'wind', 'dry',
+  'sunny', 'cloudy', 'unknown', 'normal',
+]);
+
 export default function WeatherHeroCard({ weather }) {
   const w = (weather && typeof weather === 'object' && !Array.isArray(weather))
     ? weather : {};
+
+  // Insight / action text from the numeric decision engine.
   const action = getWeatherAction(w);
 
-  // Display values — fall through to em-dash placeholders when
-  // the underlying field is missing so the layout never collapses.
+  // CSS animation class:
+  //   Prefer weather.weatherType (richer vocabulary: sunny/cloudy/unknown)
+  //   over action.type (rain/heat/wind/dry/normal).
+  const rawType = (typeof w.weatherType === 'string' && VALID_TYPES.has(w.weatherType))
+    ? w.weatherType
+    : (VALID_TYPES.has(action.type) ? action.type : 'unknown');
+
+  // Display values — em-dash fallbacks so layout never collapses.
   const tempDisplay = (w.temp != null && Number.isFinite(Number(w.temp)))
-    ? Math.round(Number(w.temp)) + '\u00B0'
-    : '\u2014\u00B0';
-  const conditionDisplay = (typeof w.condition === 'string' && w.condition.length > 0)
+    ? Math.round(Number(w.temp)) + '°'
+    : '—°';
+
+  const conditionDisplay = (typeof w.condition === 'string'
+      && w.condition.trim()
+      && w.condition !== 'Weather unavailable')
     ? w.condition
     : 'Weather unavailable';
+
   const rainDisplay = (w.rainChance != null && Number.isFinite(Number(w.rainChance)))
     ? Number(w.rainChance) + '%'
-    : '\u2014';
+    : '—';
+
   const windRaw = w.windSpeed != null ? w.windSpeed : w.wind;
   const windDisplay = (windRaw != null && Number.isFinite(Number(windRaw)))
     ? Number(windRaw) + ' km/h'
-    : '\u2014';
-  const locationDisplay = (typeof w.location === 'string' && w.location.length > 0)
-    ? w.location
+    : '—';
+
+  // Prefer locationLabel (useLiveWeather shape) over legacy location field.
+  const locationDisplay =
+    (typeof w.locationLabel === 'string' && w.locationLabel.trim()
+     && w.locationLabel !== 'Your area')
+      ? w.locationLabel.trim()
+    : (typeof w.location === 'string' && w.location.trim())
+      ? w.location.trim()
     : 'Your area';
 
   return (
     <section
-      className={`weather-hero weather-${action.type}`}
+      className={`weather-hero weather-${rawType}`}
       data-testid="weather-hero-card"
-      data-weather-type={action.type}
+      data-weather-type={rawType}
     >
       <div className="weather-bg-effect" aria-hidden="true" />
 
       <div className="weather-top">
         <div className="weather-headline">
-          <p className="eyebrow">{'Today\u2019s Weather'}</p>
+          <p className="eyebrow">{'Today’s Weather'}</p>
           <h1>
             <span className="weather-icon" aria-hidden="true">{action.icon}</span>
             {' '}
@@ -83,8 +105,8 @@ export default function WeatherHeroCard({ weather }) {
       </div>
 
       <div className="weather-action">
-        <p><span aria-hidden="true">{'\uD83D\uDCA1 '}</span>{action.insight}</p>
-        <strong><span aria-hidden="true">{'\uD83D\uDC49 '}</span>{action.action}</strong>
+        <p><span aria-hidden="true">{'💡 '}</span>{action.insight}</p>
+        <strong><span aria-hidden="true">{'👉 '}</span>{action.action}</strong>
       </div>
     </section>
   );

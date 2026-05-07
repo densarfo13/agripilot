@@ -1,50 +1,40 @@
 /**
- * PilotHome — emergency safe-default Home screen for the live
- * pilot. Always renders SOMETHING, no matter what's missing.
+ * PilotHome — safe-default Home screen for the live pilot.
  *
- *   <Route path="/home" element={<PilotHome />} />
- *
- * Why this exists
- * ───────────────
- * The previous Home implementation (FarmerDashboardPage) is rich
- * but it depends on a long chain of context providers + server
- * calls + cached state. Any one of those breaking — a missing
- * profile, an empty farms array, a 404 from /me, a stale
- * weather payload — could either redirect the user away or
- * paint a blank screen. PilotHome takes the opposite approach:
- *
- *   • Reads everything from localStorage with try/catch + safe
- *     defaults. No context providers required.
+ * Always renders SOMETHING, no matter what's missing:
+ *   • No context providers required — reads from localStorage.
  *   • NEVER calls navigate() — no automatic redirect can fire.
  *   • NEVER returns null. Every code path renders visible UI.
- *   • Hard-coded fallback weather + task copy so the user
- *     always sees actionable content, even on first launch.
- *   • Inline styles only — no CSS-modules / theme dependency
- *     can cause the page to render unstyled.
- *   • A "Complete your setup" card surfaces missing data
- *     INLINE rather than redirecting away. The card is
- *     optional; the page renders fine without it.
- *   • Visible debug footer prints the build version, current
- *     route, and resolved userType so engineers can sanity
- *     check the live deploy at a glance.
+ *
+ * Weather pipeline (May 2026 spec):
+ *   1. Resolve location from farm record / farroway_location /
+ *      farroway_active_farm (cascading — see _resolveLocationObj).
+ *   2. Pass resolved location to useLiveWeather(loc).
+ *      • If lat/lng found → GET /api/weather with 6s timeout.
+ *      • If no coords → hook returns fallback shape with
+ *        locationLabel = 'Add location for weather tips'.
+ *      • On any failure → hook returns fallback shape. Never throws.
+ *   3. Render <WeatherHeroCard weather={weather} /> — animated by
+ *      weather.weatherType (sunny/rain/cloudy/wind/heat/dry/unknown).
+ *   4. Derive today's task from getWeatherTask(weather) — pure fn.
+ *   5. Show "Add location" CTA when no coords found.
+ *   6. Debug console.log for weather source + type.
  *
  * Strict-rule audit
- *   • Pure presentational. Synchronous render. Never throws.
- *   • Auth + identity untouched. The page assumes the auth
- *     guard upstream has already passed.
- *   • Safe under SSR + locked-down browsers (every storage
- *     access is wrapped).
+ *   • All hooks declared unconditionally — rules-of-hooks safe.
+ *   • SSR-safe — every localStorage / window access is wrapped.
+ *   • Auth + identity untouched.
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FARROWAY_BUILD_VERSION } from '../lib/forceUiReset.js';
-import { useWeatherSafe } from '../hooks/useWeatherSafe.js';
-import { decideWeatherAction } from '../lib/weatherActionEngine.js';
-import { getWeatherTask } from '../lib/weatherTaskEngine.js';
-import { trackSafeEvent } from '../lib/safeEventTracker.js';
+import { useLiveWeather } from '../hooks/useLiveWeather.js';
+import { getWeatherTask }  from '../lib/weatherTaskEngine.js';
+import { trackSafeEvent }  from '../lib/safeEventTracker.js';
+import WeatherHeroCard     from '../components/WeatherHeroCard.jsx';
 
-// ─── Local-storage helpers ─────────────────────────────────────
+// ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
   try {
     if (typeof localStorage === 'undefined') return null;
@@ -56,8 +46,7 @@ function _safeJsonGet(key) {
   try {
     const raw = _safeGet(key);
     if (raw == null) return null;
-    const parsed = JSON.parse(raw);
-    return parsed;
+    return JSON.parse(raw);
   } catch { return null; }
 }
 
@@ -69,27 +58,11 @@ function _safePath() {
   } catch { return '/home'; }
 }
 
-// ─── Resolved view-model with safe defaults ────────────────────
+// ─── Resolvers ──────────────────────────────────────────────────
 function _resolveUserType() {
   const v = _safeGet('userType') || _safeGet('farroway_user_type');
   if (typeof v === 'string' && v.trim()) return v.trim();
   return 'farmer';
-}
-
-function _resolveLocation() {
-  // Try a few well-known keys; any of them returning a non-empty
-  // string counts as "set." Returning null is fine — the renderer
-  // shows a fallback message in that case.
-  const farm = _safeJsonGet('farroway_active_farm');
-  if (farm && typeof farm === 'object') {
-    const candidates = [
-      farm.locationName, farm.location, farm.region, farm.country,
-    ];
-    for (const c of candidates) {
-      if (typeof c === 'string' && c.trim()) return c.trim();
-    }
-  }
-  return null;
 }
 
 function _resolveFarm() {
@@ -108,198 +81,191 @@ function _resolveCrop(farm) {
   return 'crop';
 }
 
-function _resolveWeather() {
-  // Defensive optional-chained reads for every property — even
-  // if a future cache version stores a non-object or a Proxy
-  // with throwing getters, we never crash the render.
-  const w = _safeJsonGet('farroway_cached_weather');
-  try {
-    if (w && typeof w === 'object') {
-      const condition = (w?.condition ?? w?.summary ?? w?.description) || null;
-      const temp = (typeof w?.temp === 'number') ? w.temp
-                : (typeof w?.temperature === 'number') ? w.temperature
-                : null;
-      if (condition || temp != null) {
-        return {
-          condition: condition || 'Conditions logged',
-          advice: 'Plan around current conditions for best results.',
-          temp,
-        };
-      }
+/**
+ * Resolve a location object { lat, lng, label, region } from the
+ * best available source:
+ *   1. farm.latitude / farm.longitude (GPS coordinates)
+ *   2. farm.locationName / farm.region / farm.country (label-only)
+ *   3. null
+ *
+ * useLiveWeather handles farroway_location + farroway_active_farm
+ * localStorage as its own internal fallback, so we only extract
+ * coordinates here to give the hook the earliest possible signal.
+ */
+function _resolveLocationObj(farm) {
+  if (!farm || typeof farm !== 'object') return null;
+
+  const lat = Number.isFinite(Number(farm.latitude))  ? Number(farm.latitude)  : null;
+  const lng = Number.isFinite(Number(farm.longitude)) ? Number(farm.longitude) : null;
+
+  const candidates = [
+    farm.locationName, farm.location, farm.region, farm.country,
+  ];
+  const label = (() => {
+    for (const c of candidates) {
+      if (typeof c === 'string' && c.trim()) return c.trim();
     }
-  } catch { /* fall through to null */ }
+    return null;
+  })();
+
+  // If we have GPS → rich object.
+  if (lat != null && lng != null) {
+    return { lat, lng, label, region: farm.region || null };
+  }
+  // Label-only → no coordinates but the hook can still show the
+  // label in the fallback card without making a network request.
+  if (label) {
+    return { lat: null, lng: null, label, region: null };
+  }
   return null;
 }
 
-// ─── Component ─────────────────────────────────────────────────
+function _resolveLocationLabel(farm) {
+  if (!farm || typeof farm !== 'object') return null;
+  const candidates = [farm.locationName, farm.location, farm.region, farm.country];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.trim();
+  }
+  return null;
+}
+
+// ─── Component ──────────────────────────────────────────────────
 export default function PilotHome() {
   const [now] = useState(() => new Date());
 
-  // Boot diagnostic — single greppable line per mount. Never logs
-  // PII; just confirms PilotHome ran.
+  // Boot diagnostic — single greppable line per mount.
   useEffect(() => {
     try {
+      const farm = _resolveFarm();
       // eslint-disable-next-line no-console
       console.log('PilotHome mounted', {
-        path: _safePath(),
-        userType: _resolveUserType(),
-        hasLocation: !!_resolveLocation(),
-        hasFarm: !!_resolveFarm(),
+        path:        _safePath(),
+        userType:    _resolveUserType(),
+        hasLocation: !!_resolveLocationLabel(farm),
+        hasFarm:     !!farm,
       });
     } catch { /* swallow */ }
   }, []);
 
-  // Resolve LOCAL view-model with hard fallbacks. Pure
-  // localStorage reads — no network, no async work. Wrapped in
-  // try/catch so a single resolver throwing cannot crash the
-  // render.
+  // Resolve LOCAL view-model from localStorage. Pure + synchronous.
   const local = useMemo(() => {
-    let userType, location, farm, crop;
+    let userType, farm, crop, locationObj;
     try {
-      userType = _resolveUserType();   // never null
-      location = _resolveLocation();   // string | null
-      farm     = _resolveFarm();       // object | null
-      crop     = _resolveCrop(farm);   // never null
+      userType    = _resolveUserType();
+      farm        = _resolveFarm();
+      crop        = _resolveCrop(farm);
+      locationObj = _resolveLocationObj(farm);
     } catch {
-      userType = 'farmer';
-      location = null;
-      farm     = null;
-      crop     = 'crop';
+      userType    = 'farmer';
+      farm        = null;
+      crop        = 'crop';
+      locationObj = null;
     }
-    return { userType, location, farm, crop };
+    return { userType, farm, crop, locationObj };
   }, []);
 
-  // ─── Live weather pipeline (May 2026 Weather → Task spec) ──
-  // useWeatherSafe always returns a usable `weather` object —
-  // never null, never throws — so we can render the large
-  // weather card synchronously even on first paint.
-  const { weather: liveWeather, loading: weatherLoading } = useWeatherSafe();
+  // ─── Live weather pipeline ───────────────────────────────────
+  // useLiveWeather:
+  //   • Accepts optional location object (from farm record / profile).
+  //   • Falls back to localStorage (farroway_location → farroway_active_farm).
+  //   • Returns FALLBACK_WEATHER when no coords found — never throws.
+  //   • 6-second AbortController timeout.
+  const { weather, loading: weatherLoading, refetch: _refetchWeather } =
+    useLiveWeather(local.locationObj);
 
-  // Derive a weather-driven action envelope (insight + action +
-  // taskTitle + taskReason + urgency + cta). Pure decision tree
-  // from src/lib/weatherActionEngine.js.
-  const weatherAction = useMemo(() => {
+  // Debug logging spec §7 — fires once when loading settles.
+  const _debugFiredRef = useRef(false);
+  useEffect(() => {
+    if (weatherLoading) return;
+    if (_debugFiredRef.current) return;
+    _debugFiredRef.current = true;
     try {
-      return decideWeatherAction({
-        weather: liveWeather,
-        crop:    local.crop && local.crop !== 'crop' ? local.crop : null,
-      });
-    } catch {
-      return null;
-    }
-  }, [liveWeather, local.crop]);
+      // eslint-disable-next-line no-console
+      console.log('Live weather source:', weather.source);
+      // eslint-disable-next-line no-console
+      console.log('Live weather type:',   weather.weatherType);
+    } catch { /* swallow */ }
+  }, [weatherLoading, weather]);
 
-  // Derive today's task directly from live weather.
-  // getWeatherTask() is a pure function that always returns
+  // Today's task — derived from live weather. Pure fn, always returns
   // { title, reason, cta } — never null, never throws.
-  // It handles all edge cases (no weather, unavailable, etc.)
-  // internally, so no belt-and-braces wrapper is needed here.
-  const view = useMemo(() => {
-    const task = (() => {
-      try { return getWeatherTask(liveWeather); }
-      catch {
-        return {
-          title:  'Check soil moisture around your crop',
-          reason: 'Water only if soil feels dry.',
-          cta:    'Mark as done',
-        };
-      }
-    })();
-    const setupIncomplete = !local.location || !local.farm;
-    return {
-      userType: local.userType,
-      location: local.location,
-      farm:     local.farm,
-      crop:     local.crop,
-      weather:  liveWeather,  // safe — useWeatherSafe always returns a shape
-      task,
-      setupIncomplete,
-    };
-  }, [local, liveWeather]);
+  const weatherTask = useMemo(() => {
+    try { return getWeatherTask(weather); }
+    catch {
+      return {
+        title:  'Check soil moisture around your crop',
+        reason: 'Water only if soil feels dry.',
+        cta:    'Mark as done',
+      };
+    }
+  }, [weather]);
+
+  // Does the user have any saved location (for the Add Location CTA)?
+  const hasLocation = !!(
+    weather.source === 'weather-api'
+    || (weather.locationLabel
+        && weather.locationLabel !== 'Add location for weather tips'
+        && weather.locationLabel !== 'Your area')
+  );
+  const showAddLocationCta = !weatherLoading && !hasLocation;
+
+  const setupIncomplete = !local.farm;
 
   const greeting = (() => {
     try {
-      const hour = now.getHours();
-      if (hour < 12) return 'Good morning';
-      if (hour < 18) return 'Good afternoon';
+      const h = now.getHours();
+      if (h < 12) return 'Good morning';
+      if (h < 18) return 'Good afternoon';
       return 'Good evening';
     } catch { return 'Hello'; }
   })();
 
-  // Hard-default to 'Farmer' so even a malformed view.userType
-  // (null, number, etc.) cannot crash the title-case fallback.
   const userTypeLabel = (() => {
     try {
-      const ut = view?.userType;
+      const ut = local.userType;
       if (typeof ut !== 'string' || !ut.trim()) return 'Farmer';
       if (ut === 'farmer') return 'Farmer';
       return ut.charAt(0).toUpperCase() + ut.slice(1);
     } catch { return 'Farmer'; }
   })();
 
-  // Mark-as-done is purely cosmetic in PilotHome — it persists
-  // a sessionStorage flag so the same task doesn't re-render
-  // mid-session. Real task tracking happens in the richer
-  // dashboard once the pilot stabilises.
+  // Mark-as-done — cosmetic in PilotHome (sessionStorage only).
   const [taskDone, setTaskDone] = useState(() => {
-    try {
-      return sessionStorage.getItem('farroway_pilot_task_done') === '1';
-    } catch { return false; }
+    try { return sessionStorage.getItem('farroway_pilot_task_done') === '1'; }
+    catch { return false; }
   });
 
-  // ─── Pilot event tracking (safeEventTracker) ─────────────
-  // All calls are fire-and-forget — they NEVER block render or
-  // any user interaction. The ref prevents the weather event
-  // from firing more than once per session even if liveWeather
-  // re-renders. Rules-of-hooks: all hooks declared here,
-  // unconditionally, before the return statement.
-
-  // Ref guards the weather event — fires once when loading settles.
+  // ─── Pilot event tracking ────────────────────────────────────
   const _weatherEventFiredRef = useRef(false);
 
-  // app_opened + task_viewed: fire once on mount.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     trackSafeEvent('app_opened', {});
-    // task_viewed fires alongside app_opened because PilotHome
-    // always shows a task card on first paint.
-    trackSafeEvent('task_viewed', {
-      taskTitle: (view.task && view.task.title) || null,
-    });
-  }, []); // mount-only — intentional empty dep array
+    trackSafeEvent('task_viewed', { taskTitle: weatherTask.title || null });
+  }, []); // mount-only
 
-  // weather_loaded / weather_fallback_used: fire once when the
-  // weather hook resolves (loading flips false). The ref ensures
-  // no double-fire if liveWeather object identity changes.
   useEffect(() => {
     if (weatherLoading) return;
     if (_weatherEventFiredRef.current) return;
     _weatherEventFiredRef.current = true;
-    if (liveWeather && liveWeather.source === 'weather-api') {
-      trackSafeEvent('weather_loaded', {
-        locationLabel: liveWeather.locationLabel || null,
-      });
+    if (weather && weather.source === 'weather-api') {
+      trackSafeEvent('weather_loaded', { locationLabel: weather.locationLabel || null });
     } else {
-      trackSafeEvent('weather_fallback_used', {
-        locationLabel: (liveWeather && liveWeather.locationLabel) || null,
-      });
+      trackSafeEvent('weather_fallback_used', { locationLabel: (weather && weather.locationLabel) || null });
     }
-  }, [weatherLoading, liveWeather]);
+  }, [weatherLoading, weather]);
 
   function handleMarkDone() {
-    try { sessionStorage.setItem('farroway_pilot_task_done', '1'); }
-    catch { /* swallow */ }
+    try { sessionStorage.setItem('farroway_pilot_task_done', '1'); } catch { /* swallow */ }
     setTaskDone(true);
-    // task_completed: fire-and-forget — never blocks the state update.
-    trackSafeEvent('task_completed', {
-      taskTitle: (view.task && view.task.title) || null,
-    });
+    trackSafeEvent('task_completed', { taskTitle: weatherTask.title || null });
   }
 
   return (
     <div style={S.page} data-testid="pilot-home">
       <div style={S.shell}>
-        {/* Header */}
+
+        {/* ── Header ──────────────────────────────────────────── */}
         <header style={S.header}>
           <div>
             <p style={S.greeting}>{greeting}, {userTypeLabel}.</p>
@@ -307,88 +273,62 @@ export default function PilotHome() {
           </div>
           <span style={S.statusPill}>
             <span style={S.statusDot} />
-            <span>Live</span>
+            <span>{weatherLoading ? 'Updating…' : 'Live'}</span>
           </span>
         </header>
 
-        {/* Large weather card with live insight + action.
-            Every property uses `?.` + `??` so a null
-            view.weather can never throw. The insight and
-            action come from decideWeatherAction in
-            src/lib/weatherActionEngine.js — same decision tree
-            that drives today's task, so the user sees a
-            consistent story across both cards. */}
-        <section style={S.weatherHero} data-testid="pilot-home-weather">
-          <div style={S.weatherHeroTopRow}>
-            <p style={S.weatherEyebrow}>
-              {weatherLoading ? 'Updating weather…' : 'Weather'}
-            </p>
-            <span style={S.weatherIcon} aria-hidden="true">
-              {(weatherAction && weatherAction.icon) || '\uD83C\uDF24\uFE0F'}
-            </span>
+        {/* ── Animated weather hero ────────────────────────────
+             WeatherHeroCard:
+               • Renders CSS animation class weather-{weatherType}
+               • Derives insight + action text from getWeatherAction()
+               • Never throws — fallback displays "Weather unavailable"
+             Loading state: show a slim skeleton row above the card. */}
+        {weatherLoading && (
+          <div style={S.weatherLoading} aria-busy="true" aria-label="Loading weather">
+            <span>Checking weather…</span>
           </div>
-          <h2 style={S.weatherHeroTitle}>
-            {view?.weather?.condition ?? 'Weather unavailable'}
-            {view?.weather?.temp != null
-              ? ' \u00B7 ' + Math.round(view.weather.temp) + '\u00B0'
-              : ''}
-          </h2>
-          <p style={S.weatherInsight}>
-            {(weatherAction && weatherAction.insight)
-              || 'Weather data unavailable.'}
-          </p>
-          <p style={S.weatherAction}>
-            {(weatherAction && weatherAction.action)
-              || 'Add location later for weather-aware tips.'}
-          </p>
-          <div style={S.weatherStatRow}>
-            {view?.weather?.rainChance != null ? (
-              <span style={S.weatherStat} data-testid="pilot-home-weather-rain">
-                <span style={S.weatherStatLabel}>Rain</span>
-                <span style={S.weatherStatVal}>
-                  {Math.round(view.weather.rainChance)}%
-                </span>
-              </span>
-            ) : null}
-            {view?.weather?.windSpeed != null ? (
-              <span style={S.weatherStat} data-testid="pilot-home-weather-wind">
-                <span style={S.weatherStatLabel}>Wind</span>
-                <span style={S.weatherStatVal}>
-                  {Math.round(view.weather.windSpeed)} km/h
-                </span>
-              </span>
-            ) : null}
-            {view?.weather?.locationLabel
-             && view.weather.locationLabel !== 'Your area' ? (
-              <span style={S.weatherStat} data-testid="pilot-home-weather-location">
-                <span style={S.weatherStatLabel}>Location</span>
-                <span style={S.weatherStatVal}>
-                  {view.weather.locationLabel}
-                </span>
-              </span>
-            ) : null}
-          </div>
-        </section>
+        )}
 
-        {/* Today's task — always present, even with safe
-            defaults. getTodayTask guarantees every field is
-            present, but we still optional-chain at the read
-            site as belt-and-braces. */}
+        <WeatherHeroCard weather={weather} />
+
+        {/* ── Add location CTA ─────────────────────────────────
+             Shown only when:
+               • Weather loaded (not loading)
+               • No coordinates found in any location source
+             Links to /profile/setup — never auto-redirects. */}
+        {showAddLocationCta && (
+          <section style={S.locationCard} data-testid="pilot-home-add-location">
+            <p style={S.locationLabel}>📍 No location set</p>
+            <p style={S.locationBody}>
+              Add your location to unlock live weather and tailored crop guidance.
+            </p>
+            <Link
+              to="/profile/setup"
+              style={S.btnGhost}
+              data-testid="pilot-home-add-location-cta"
+            >
+              Add location
+            </Link>
+          </section>
+        )}
+
+        {/* ── Today's task ─────────────────────────────────────
+             Derived from live weather via getWeatherTask().
+             Title changes based on weatherType:
+               rain  → "Check drainage around your crop"
+               heat  → "Water crops early morning or late evening"
+               wind  → "Support weak plants"
+               dry   → "Check soil moisture"
+               other → "Inspect your crops" */}
         <section
           style={taskDone ? S.cardDone : S.card}
           data-testid="pilot-home-task"
         >
           <p style={S.cardLabel}>Today's task</p>
-          <h2 style={S.cardTitle}>
-            {view?.task?.title ?? 'Check soil moisture'}
-          </h2>
-          <p style={S.cardBody}>
-            {view?.task?.reason
-              ?? view?.task?.description
-              ?? 'Water only if soil feels dry'}
-          </p>
+          <h2 style={S.cardTitle}>{weatherTask.title}</h2>
+          <p style={S.cardBody}>{weatherTask.reason}</p>
           {taskDone ? (
-            <p style={S.doneNote}>{'\u2714'} Marked as done — nice work.</p>
+            <p style={S.doneNote}>✔ Marked as done — nice work.</p>
           ) : (
             <button
               type="button"
@@ -396,19 +336,18 @@ export default function PilotHome() {
               style={S.btnPrimary}
               data-testid="pilot-home-task-cta"
             >
-              {view?.task?.cta ?? 'Mark as done'}
+              {weatherTask.cta}
             </button>
           )}
         </section>
 
-        {/* Optional "Complete your setup" card — only when needed */}
-        {view.setupIncomplete ? (
+        {/* ── Optional setup card ──────────────────────────────── */}
+        {setupIncomplete ? (
           <section style={S.setupCard} data-testid="pilot-home-setup-card">
             <p style={S.setupLabel}>Optional</p>
             <h2 style={S.setupTitle}>Complete your setup</h2>
             <p style={S.setupBody}>
-              Add crop or location for better guidance. Home will
-              keep working without it.
+              Add crop or location for better guidance. Home keeps working without it.
             </p>
             <Link
               to="/profile/setup"
@@ -420,11 +359,7 @@ export default function PilotHome() {
           </section>
         ) : null}
 
-        {/* Quick links — May 2026 stable-pilot restore: only
-            the four enabled tabs (Home / My Farm / My Grow /
-            Tasks / Progress). Scan is gated off behind
-            FEATURE_SCAN=false; surfacing a link to it would
-            land users on the disabled-feature fallback. */}
+        {/* ── Quick links ──────────────────────────────────────── */}
         <section style={S.linksGrid}>
           <Link to="/my-farm"  style={S.linkTile}>My Farm</Link>
           <Link to="/my-grow"  style={S.linkTile}>My Grow</Link>
@@ -432,21 +367,25 @@ export default function PilotHome() {
           <Link to="/progress" style={S.linkTile}>Progress</Link>
         </section>
 
-        {/* Debug footer (May 2026 spec §6) — visible build,
-            route, and resolved userType so engineers can
-            confirm the live deploy without DevTools. Compact
-            and low-contrast so it never competes with content. */}
+        {/* ── Debug footer ─────────────────────────────────────── */}
         <footer style={S.debugFooter} data-testid="pilot-home-debug">
-          <span>Farroway Build: {FARROWAY_BUILD_VERSION}</span>
+          <span>Build: {FARROWAY_BUILD_VERSION}</span>
           <span>Route: {_safePath()}</span>
-          <span>UserType: {view.userType}</span>
+          <span>UserType: {local.userType}</span>
+          <span>WeatherType: {weather.weatherType || '—'}</span>
+          <span>Source: {weather.source || '—'}</span>
         </footer>
+
       </div>
     </div>
   );
 }
 
-// ─── Styles (inline, no theme dependency) ──────────────────────
+// ─── Inline styles ───────────────────────────────────────────────
+// Inline so zero CSS-module / theme dependency can cause a blank
+// shell. The WeatherHeroCard uses its own global CSS classes from
+// src/index.css (loaded at app boot, not theme-dependent).
+
 const C = {
   bgTop:    '#0B1D34',
   bgBottom: '#081423',
@@ -463,284 +402,217 @@ const C = {
 const S = {
   page: {
     minHeight:  '100vh',
-    background: 'linear-gradient(180deg, ' + C.bgTop + ' 0%, ' + C.bgBottom + ' 100%)',
+    background: `linear-gradient(180deg, ${C.bgTop} 0%, ${C.bgBottom} 100%)`,
     color:      C.ink,
     padding:    '1.5rem 1rem 4rem',
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", '
-              + 'Roboto, sans-serif',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   shell: {
-    maxWidth: '32rem',
-    margin: '0 auto',
-    display: 'flex',
+    maxWidth:      '32rem',
+    margin:        '0 auto',
+    display:       'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap:           '1rem',
   },
   header: {
-    display: 'flex',
-    alignItems: 'flex-start',
+    display:        'flex',
+    alignItems:     'flex-start',
     justifyContent: 'space-between',
-    gap: '1rem',
-    marginBottom: '0.25rem',
+    gap:            '1rem',
+    marginBottom:   '0.25rem',
   },
   greeting: {
-    margin: 0,
-    fontSize: '0.875rem',
-    color: C.inkDim,
+    margin:     0,
+    fontSize:   '0.875rem',
+    color:      C.inkDim,
     fontWeight: 600,
   },
   title: {
-    margin: '0.25rem 0 0',
-    fontSize: '1.5rem',
-    fontWeight: 800,
+    margin:        '0.25rem 0 0',
+    fontSize:      '1.5rem',
+    fontWeight:    800,
     letterSpacing: '-0.01em',
   },
   statusPill: {
-    display: 'inline-flex',
+    display:    'inline-flex',
     alignItems: 'center',
-    gap: '0.4rem',
-    padding: '0.3rem 0.6rem',
+    gap:        '0.4rem',
+    padding:    '0.3rem 0.6rem',
     background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    border:     '1px solid rgba(34,197,94,0.32)',
     borderRadius: '999px',
-    fontSize: '0.75rem',
+    fontSize:   '0.75rem',
     fontWeight: 700,
-    color: '#86EFAC',
+    color:      '#86EFAC',
     flexShrink: 0,
   },
   statusDot: {
-    width: 8,
-    height: 8,
+    width:       8,
+    height:      8,
     borderRadius: '50%',
-    background: C.green,
-    boxShadow: '0 0 0 4px rgba(34,197,94,0.18)',
+    background:  C.green,
+    boxShadow:   '0 0 0 4px rgba(34,197,94,0.18)',
   },
-  card: {
-    background: C.panel,
-    border: '1px solid ' + C.border,
-    borderRadius: '16px',
-    padding: '1.25rem 1.1rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  // Larger weather hero — spec §6: "large weather card +
-  // weather insight/action above today's task". Sized so the
-  // condition + temp reads at a glance from arm's length.
-  weatherHero: {
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(255,255,255,0.04) 100%)',
-    border: '1px solid ' + C.border,
-    borderRadius: '20px',
-    padding: '1.5rem 1.25rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.6rem',
-  },
-  weatherHeroTopRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  weatherEyebrow: {
-    margin: 0,
-    fontSize: '0.6875rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: C.inkFaint,
-  },
-  weatherIcon: {
-    fontSize: '1.5rem',
-    lineHeight: 1,
-  },
-  weatherHeroTitle: {
-    margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 800,
-    letterSpacing: '-0.01em',
-    lineHeight: 1.2,
-  },
-  weatherInsight: {
-    margin: 0,
-    fontSize: '1rem',
-    fontWeight: 700,
-    color: C.ink,
-    lineHeight: 1.4,
-  },
-  weatherAction: {
-    margin: 0,
-    fontSize: '0.9375rem',
-    color: C.inkDim,
-    lineHeight: 1.55,
-  },
-  weatherStatRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '0.45rem',
-    marginTop: '0.4rem',
-  },
-  weatherStat: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.4rem',
-    padding: '0.3rem 0.6rem',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '999px',
-    fontSize: '0.75rem',
-  },
-  weatherStatLabel: {
-    color: C.inkFaint,
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    fontSize: '0.6875rem',
-  },
-  weatherStatVal: {
-    color: C.ink,
+  weatherLoading: {
+    padding:    '0.5rem 0.75rem',
+    fontSize:   '0.8125rem',
+    color:      C.inkFaint,
+    fontWeight: 600,
+    letterSpacing: '0.04em',
     fontFamily: 'monospace',
   },
-  cardDone: {
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.28)',
-    borderRadius: '16px',
-    padding: '1.25rem 1.1rem',
-    display: 'flex',
+  locationCard: {
+    background:    'rgba(34,197,94,0.06)',
+    border:        '1px dashed rgba(34,197,94,0.28)',
+    borderRadius:  '16px',
+    padding:       '1rem 1.1rem',
+    display:       'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
+    gap:           '0.35rem',
+  },
+  locationLabel: {
+    margin:         0,
+    fontSize:       '0.8125rem',
+    fontWeight:     700,
+    color:          '#86EFAC',
+    letterSpacing:  '0.03em',
+  },
+  locationBody: {
+    margin:     0,
+    fontSize:   '0.9rem',
+    color:      C.inkDim,
+    lineHeight: 1.5,
+  },
+  card: {
+    background:    C.panel,
+    border:        `1px solid ${C.border}`,
+    borderRadius:  '16px',
+    padding:       '1.25rem 1.1rem',
+    display:       'flex',
+    flexDirection: 'column',
+    gap:           '0.5rem',
+  },
+  cardDone: {
+    background:    'rgba(34,197,94,0.06)',
+    border:        '1px solid rgba(34,197,94,0.28)',
+    borderRadius:  '16px',
+    padding:       '1.25rem 1.1rem',
+    display:       'flex',
+    flexDirection: 'column',
+    gap:           '0.5rem',
   },
   cardLabel: {
-    margin: 0,
-    fontSize: '0.6875rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: C.inkFaint,
+    margin:         0,
+    fontSize:       '0.6875rem',
+    fontWeight:     700,
+    letterSpacing:  '0.08em',
+    textTransform:  'uppercase',
+    color:          C.inkFaint,
   },
   cardTitle: {
-    margin: 0,
-    fontSize: '1.125rem',
+    margin:     0,
+    fontSize:   '1.125rem',
     fontWeight: 700,
-    color: C.ink,
+    color:      C.ink,
     lineHeight: 1.3,
   },
   cardBody: {
-    margin: 0,
-    fontSize: '0.9375rem',
-    color: C.inkDim,
+    margin:     0,
+    fontSize:   '0.9375rem',
+    color:      C.inkDim,
     lineHeight: 1.55,
   },
-  metaPill: {
-    margin: '0.5rem 0 0',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.45rem',
-    padding: '0.3rem 0.6rem',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '999px',
-    fontSize: '0.75rem',
-    alignSelf: 'flex-start',
-  },
-  metaLabel: {
-    color: C.inkFaint,
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    fontSize: '0.6875rem',
-  },
-  metaVal: { color: C.ink, fontFamily: 'monospace' },
   btnPrimary: {
-    alignSelf: 'flex-start',
-    marginTop: '0.5rem',
-    padding: '0.85rem 1.4rem',
-    border: 'none',
+    alignSelf:    'flex-start',
+    marginTop:    '0.5rem',
+    padding:      '0.85rem 1.4rem',
+    border:       'none',
     borderRadius: '12px',
-    background: C.green,
-    color: C.ink,
-    fontSize: '0.9375rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    minHeight: 46,
-    boxShadow: '0 8px 22px ' + C.greenSh,
+    background:   C.green,
+    color:        C.ink,
+    fontSize:     '0.9375rem',
+    fontWeight:   700,
+    cursor:       'pointer',
+    minHeight:    46,
+    boxShadow:    `0 8px 22px ${C.greenSh}`,
   },
   btnGhost: {
-    alignSelf: 'flex-start',
-    marginTop: '0.5rem',
-    padding: '0.7rem 1.1rem',
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.18)',
-    background: 'transparent',
-    color: C.ink,
-    fontSize: '0.875rem',
-    fontWeight: 700,
+    alignSelf:      'flex-start',
+    marginTop:      '0.5rem',
+    padding:        '0.7rem 1.1rem',
+    borderRadius:   '10px',
+    border:         '1px solid rgba(255,255,255,0.18)',
+    background:     'transparent',
+    color:          C.ink,
+    fontSize:       '0.875rem',
+    fontWeight:     700,
     textDecoration: 'none',
-    minHeight: 40,
-    display: 'inline-flex',
-    alignItems: 'center',
+    minHeight:      40,
+    display:        'inline-flex',
+    alignItems:     'center',
     justifyContent: 'center',
   },
   doneNote: {
-    margin: '0.25rem 0 0',
-    fontSize: '0.875rem',
+    margin:     '0.25rem 0 0',
+    fontSize:   '0.875rem',
     fontWeight: 600,
-    color: '#86EFAC',
+    color:      '#86EFAC',
   },
   setupCard: {
-    background: 'rgba(245,158,11,0.06)',
-    border: '1px dashed rgba(245,158,11,0.35)',
-    borderRadius: '16px',
-    padding: '1.25rem 1.1rem',
-    display: 'flex',
+    background:    `rgba(245,158,11,0.06)`,
+    border:        '1px dashed rgba(245,158,11,0.35)',
+    borderRadius:  '16px',
+    padding:       '1.25rem 1.1rem',
+    display:       'flex',
     flexDirection: 'column',
-    gap: '0.5rem',
+    gap:           '0.5rem',
   },
   setupLabel: {
-    margin: 0,
-    fontSize: '0.6875rem',
-    fontWeight: 700,
+    margin:        0,
+    fontSize:      '0.6875rem',
+    fontWeight:    700,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
-    color: C.amber,
+    color:         C.amber,
   },
   setupTitle: {
-    margin: 0,
-    fontSize: '1.0625rem',
+    margin:     0,
+    fontSize:   '1.0625rem',
     fontWeight: 700,
-    color: C.ink,
+    color:      C.ink,
   },
   setupBody: {
-    margin: 0,
-    fontSize: '0.9375rem',
-    color: C.inkDim,
+    margin:     0,
+    fontSize:   '0.9375rem',
+    color:      C.inkDim,
     lineHeight: 1.5,
   },
   linksGrid: {
-    display: 'grid',
+    display:             'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '0.65rem',
-    marginTop: '0.25rem',
+    gap:                 '0.65rem',
+    marginTop:           '0.25rem',
   },
   linkTile: {
-    padding: '0.95rem 0.85rem',
-    background: C.panel,
-    border: '1px solid ' + C.border,
-    borderRadius: '12px',
-    color: C.ink,
-    fontSize: '0.9375rem',
-    fontWeight: 700,
+    padding:        '0.95rem 0.85rem',
+    background:     C.panel,
+    border:         `1px solid ${C.border}`,
+    borderRadius:   '12px',
+    color:          C.ink,
+    fontSize:       '0.9375rem',
+    fontWeight:     700,
     textDecoration: 'none',
-    textAlign: 'center',
+    textAlign:      'center',
   },
   debugFooter: {
-    marginTop: '1.5rem',
-    padding: '0.6rem 0.75rem',
-    borderTop: '1px dashed rgba(255,255,255,0.08)',
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '0.75rem',
-    fontSize: '0.6875rem',
-    color: C.inkFaint,
+    marginTop:  '1.5rem',
+    padding:    '0.6rem 0.75rem',
+    borderTop:  '1px dashed rgba(255,255,255,0.08)',
+    display:    'flex',
+    flexWrap:   'wrap',
+    gap:        '0.75rem',
+    fontSize:   '0.6875rem',
+    color:      C.inkFaint,
     fontFamily: 'monospace',
     letterSpacing: '0.04em',
   },
