@@ -459,6 +459,9 @@ const AdminInterventionEffectiveness = lazy(() => import('./pages/admin/Interven
 const AdminOperationalQueues = lazy(() => import('./pages/admin/OperationalQueues.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
+// Permanent safe bootstrap wrapper for /today — always renders something
+// even when FarmerTodayPage crashes or API calls hang past 4 seconds.
+import DashboardShell from './components/DashboardShell.jsx';
 // Legacy profile guard + provider use the old farmStore-based flow (Bearer token auth)
 import LegacyProfileGuard from './components/ProfileGuard.jsx';
 import { ProfileProvider as LegacyProfileProvider } from './context/ProfileContextLegacy.jsx';
@@ -1242,7 +1245,11 @@ export default function App() {
               </RouteErrorBoundary>
             } />
 
-            <Route path="/today" element={<FarmerTodayPage />} />
+            <Route path="/today" element={
+              <DashboardShell>
+                <FarmerTodayPage />
+              </DashboardShell>
+            } />
             <Route path="/today/quick" element={<TodayQuick />} />
 
             {/* Buyer + Funding/Impact layer — v3 local-first

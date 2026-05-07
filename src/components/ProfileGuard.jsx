@@ -9,7 +9,11 @@ import { useAuthStore } from '../store/authStore.js';
  * Ownership: ProfileGuard owns the profile-incomplete redirect to /profile/setup.
  * This keeps redirect logic in one place (single-responsibility pattern).
  *
- * Loading: shows nothing while profile initializes (prevents a flash/blink).
+ * Loading: shows a visible loading skeleton while profile initializes.
+ * NEVER returns null — a blank screen is never safe here because
+ * ProfileGuard wraps the entire ProtectedLayout (header + nav + page content).
+ * Returning null would blank the whole page for the duration of auth init.
+ *
  * Redirect: sends to /profile/setup when isProfileComplete returns false.
  *
  * NOTE: Setup can be made optional by passing `optional={true}` — in that
@@ -20,10 +24,18 @@ export default function ProfileGuard({ children, optional = true }) {
   const { user, loading, initialized } = useAuthStore();
   const profile = user?.profile || user;
 
-  // Show nothing while auth/profile initializes to avoid blink
-  // Condition: !initialized || (loading && !profile)
+  // Safe loading state — ALWAYS render visible content so the 4-second
+  // blank-screen watchdog in main.jsx never fires during auth init.
+  // The previous `return null` caused FARROWAY_BLANK because ProfileGuard
+  // wraps the entire ProtectedLayout; null here blanked the full page.
   if (!initialized || (loading && !profile)) {
-    return null;
+    return (
+      <div style={LOADING_S.page} data-testid="profile-guard-loading">
+        <div style={LOADING_S.spinner} aria-hidden="true" />
+        <span style={LOADING_S.brand}>Farroway</span>
+        <span style={LOADING_S.text}>Loading your farm…</span>
+      </div>
+    );
   }
 
   // Optional mode (default): always render children without redirect.
@@ -40,3 +52,39 @@ export default function ProfileGuard({ children, optional = true }) {
 
   return children;
 }
+
+// Spinner animation is already declared in AuthGuard.jsx via the
+// farroway-spin @keyframes injected by main.jsx. Using the same
+// class keeps the animation consistent and doesn't duplicate the
+// keyframe injection.
+const LOADING_S = {
+  page: {
+    minHeight: '100vh',
+    background: '#0B1D34',
+    color: '#FFFFFF',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.75rem',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  spinner: {
+    width: '2rem',
+    height: '2rem',
+    border: '3px solid rgba(255,255,255,0.1)',
+    borderTopColor: '#22C55E',
+    borderRadius: '50%',
+    animation: 'farroway-spin 0.8s linear infinite',
+  },
+  brand: {
+    fontSize: '1.25rem',
+    fontWeight: 700,
+    color: '#22C55E',
+    letterSpacing: '0.02em',
+  },
+  text: {
+    fontSize: '0.875rem',
+    color: 'rgba(255,255,255,0.5)',
+  },
+};

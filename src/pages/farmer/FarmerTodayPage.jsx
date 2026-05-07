@@ -175,8 +175,21 @@ export default function FarmerTodayPage() {
 
   const reload = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }));
+    // 5-second per-call timeout — if the API hangs longer the
+    // offline engine takes over so the screen never stays blank.
+    // Individual calls are wrapped so a single endpoint failure
+    // doesn't discard partial data from the other.
+    const withTimeout = (p, ms = 5000) =>
+      Promise.race([
+        p,
+        new Promise((_, rej) =>
+          setTimeout(() => rej(Object.assign(new Error('api_timeout'), { code: 'timeout' })), ms)),
+      ]);
     try {
-      const [today, cycles] = await Promise.all([getTodayFeed(), listCropCycles()]);
+      const [today, cycles] = await Promise.all([
+        withTimeout(getTodayFeed()).catch(() => null),
+        withTimeout(listCropCycles()).catch(() => null),
+      ]);
       setState({ loading: false, today, cycles, error: null });
     } catch (err) {
       setState({ loading: false, today: null, cycles: null, error: err?.code || 'error' });
@@ -503,7 +516,14 @@ export default function FarmerTodayPage() {
   );
 
   if (state.loading) {
-    return <Shell><p style={S.muted}>{t('common.loading')}</p></Shell>;
+    // Use a hardcoded fallback so the watchdog never sees textLen=0
+    // when the translation system hasn't hydrated yet.
+    const loadingText = (t && t('common.loading')) || 'Loading your farm…';
+    return (
+      <Shell>
+        <p style={S.muted} data-testid="today-loading">{loadingText}</p>
+      </Shell>
+    );
   }
 
   const tasksDone = state.cycles?.cycles?.reduce(
@@ -1052,8 +1072,38 @@ export default function FarmerTodayPage() {
         tStrict('farm.suggest.weatherRisk', ''))
     : '';
 
+  // ─── Safe defaults — never crash on missing data ─────────────
+  // All downstream JSX accesses these through the safe aliases so
+  // no null-deref can blank the screen even when the API returned
+  // nothing (offline, timeout, server error).
+  const safeTasks   = Array.isArray(secondaryTasks) ? secondaryTasks : [];
+  const safeAlerts  = Array.isArray(riskAlerts)     ? riskAlerts     : [];
+  const safeWAlerts = Array.isArray(weatherAlerts)  ? weatherAlerts  : [];
+
   return (
     <Shell>
+      {/* Offline/error notice — amber strip, never blocking. Shows
+          when the API returned nothing (timeout, 500, offline) so
+          the farmer knows the data is stale. Hidden on happy path. */}
+      {state.error ? (
+        <div style={S.errorBanner} data-testid="today-error-banner" role="alert">
+          <span aria-hidden="true">⚠️</span>
+          <span>
+            {state.error === 'timeout'
+              ? 'Connection slow — showing local data.'
+              : 'Some data is unavailable. Showing what we have locally.'}
+          </span>
+          <button
+            type="button"
+            onClick={reload}
+            style={S.errorBannerRetry}
+            data-testid="today-error-retry"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
       {/* Greeting block — small title + subtitle. Renders only
           when the hook produced text; otherwise silent. */}
       {(greeting?.title || greeting?.subtitle) && (
@@ -1820,6 +1870,34 @@ const S = {
   },
   pageSummary: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 0.5rem', lineHeight: 1.45 },
   muted: { color: '#9FB3C8' },
+  // Offline/timeout error banner — amber strip at top of page.
+  errorBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 14px',
+    borderRadius: 10,
+    background: 'rgba(245,158,11,0.12)',
+    border: '1px solid rgba(245,158,11,0.32)',
+    color: '#FDE68A',
+    fontSize: 13,
+    lineHeight: 1.4,
+    flexWrap: 'wrap',
+  },
+  errorBannerRetry: {
+    marginLeft: 'auto',
+    appearance: 'none',
+    border: '1px solid rgba(245,158,11,0.45)',
+    background: 'transparent',
+    color: '#FDE68A',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flexShrink: 0,
+  },
   progressChip: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '0.5rem 0.875rem', borderRadius: '999px',
