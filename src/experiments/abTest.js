@@ -37,7 +37,12 @@
  *     filter out the unstable cohort if needed.
  */
 
-import { trackEvent } from '../core/analytics.js';
+// NOTE: trackEvent is loaded DYNAMICALLY inside getAssignment() to
+// break the static cycle with core/analytics.js (which already
+// imports getActiveAssignments from this module). A static back-
+// import creates a two-way ESM cycle → TDZ crash in Rollup/Vite
+// production builds ("Cannot access 'X' before initialization").
+// The dynamic import pattern mirrors src/core/userType.js §mode_switched.
 
 // Spec §1 — three pricing variants. Probabilities equal-weight
 // so each gets ~33% of new users. The variant `id` is what
@@ -172,12 +177,24 @@ export function getAssignment(experimentName) {
   // count exposures-per-variant honestly.
   if (!_safeReadSession(sessKey)) {
     _safeWriteSession(sessKey, '1');
+    // Dynamic import — avoids the static cycle with analytics.js.
+    // analytics.js statically imports getActiveAssignments from
+    // this module; a static back-import would create a TDZ crash
+    // in production Rollup bundles. The dynamic import fires after
+    // both modules have fully initialized, so trackEvent is always
+    // available by the time the Promise resolves.
     try {
-      trackEvent('experiment_exposure', {
-        experiment: experimentName,
-        variant:    variantId,
-      });
-    } catch { /* analytics never blocks */ }
+      import('../core/analytics.js').then((mod) => {
+        if (mod && typeof mod.trackEvent === 'function') {
+          try {
+            mod.trackEvent('experiment_exposure', {
+              experiment: experimentName,
+              variant:    variantId,
+            });
+          } catch { /* analytics never blocks assignment */ }
+        }
+      }).catch(() => { /* swallow — exposure missed, not fatal */ });
+    } catch { /* dynamic import not available (SSR / test env) */ }
     // First-exposure flag returned to the caller so it can
     // differentiate cold-start renders from re-renders within
     // the same session.

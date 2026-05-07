@@ -58,6 +58,18 @@ import { getUserType as _getUserType } from './userType.js';
 // (every variant they've been bucketed into) and stamp it on
 // every event. Lets the analytics pipeline split conversion +
 // retention by variant without a join.
+//
+// CIRCULAR-IMPORT SAFETY (2026-05-07):
+//   abTest.js previously had a static import of trackEvent from
+//   THIS module, creating a two-way static ESM cycle that produced
+//   "Cannot access 'X' before initialization" TDZ crashes in
+//   Rollup/Vite production builds. That static back-import has been
+//   removed from abTest.js and replaced with the dynamic import
+//   pattern (matching src/core/userType.js §mode_switched). This
+//   direction (analytics → abTest) is now the ONLY static edge
+//   between the two modules, which is safe: abTest initialises
+//   first, then analytics completes, then abTest's dynamic import
+//   resolves against the now-complete analytics module.
 import { getActiveAssignments as _getActiveAssignments } from '../experiments/abTest.js';
 // Server-sync mirror (Data Moat Layer follow-up). Event writes
 // ALSO land on the lightweight offline queue when
@@ -71,6 +83,19 @@ import { getActiveAssignments as _getActiveAssignments } from '../experiments/ab
 import { addToQueue } from '../offline/offlineQueue.js';
 import { isFeatureEnabled } from '../utils/featureFlags.js';
 import { DISABLE_EVENTS } from '../lib/pilotFlags.js';
+
+// ── Startup diagnostic (TDZ-fix breadcrumb) ──────────────────────
+// Fires at most ONCE per process. In dev builds this confirms that
+// analytics.js initialized without a TDZ crash — i.e. the static
+// cycle with abTest.js has been successfully broken. In production
+// the NODE_ENV guard keeps the console clean.
+try {
+  if (typeof process !== 'undefined' && process.env
+      && process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.log('[analytics] initialized — circular-import TDZ fix active');
+  }
+} catch { /* swallow — diagnostic never blocks the module */ }
 
 // One-shot diagnostic — log "Event system disabled" at most
 // once per process so engineers can confirm the kill switch
