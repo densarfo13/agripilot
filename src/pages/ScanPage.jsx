@@ -74,6 +74,12 @@ import ScanLocalExpertCTA from '../components/scan/ScanLocalExpertCTA.jsx';
 // warning + disclaimer. Renders below the result card.
 import TreatmentGuidanceCard from '../components/scan/TreatmentGuidanceCard.jsx';
 import ScanHistory from '../components/scan/ScanHistory.jsx';
+// FEATURE_SCAN_USEFULNESS — clean farmer-friendly result card +
+// local-first history at farroway_scan_history_v1.
+import { FEATURE_SCAN_USEFULNESS } from '../lib/pilotFlags.js';
+import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
+import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
+import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
 
 const STYLES = {
   page: {
@@ -492,6 +498,14 @@ export default function ScanPage() {
         language:  null,
       });
       setSavedEntryId(entry?.id || null);
+      // FEATURE_SCAN_USEFULNESS: also write the lightweight entry to
+      // farroway_scan_history_v1 so UsefulScanHistory can display it
+      // without depending on the per-farm history slot.
+      if (FEATURE_SCAN_USEFULNESS) {
+        try {
+          saveScanUseful(result, { experience: activeExperience });
+        } catch { /* non-fatal — old history still written above */ }
+      }
       try { trackEvent('scan_saved', {
         id: entry?.id,
         experience: activeExperience,
@@ -500,6 +514,17 @@ export default function ScanPage() {
       catch { /* ignore */ }
     } catch { /* ignore */ }
   }, [result, profile, activeExperience, activeGardenId, activeFarmId, pendingThumbnail]);
+
+  // FEATURE_SCAN_USEFULNESS: called by UsefulResultCard when the
+  // follow-up task button is tapped. Stamps the entry in the
+  // lightweight history so the history row shows a ✅ dot.
+  const onUsefulTaskAdded = useCallback(() => {
+    if (!result) return;
+    setTasksAdded(true);
+    if (FEATURE_SCAN_USEFULNESS && result.scanId) {
+      try { markTaskAdded(result.scanId); } catch { /* non-fatal */ }
+    }
+  }, [result]);
 
   const onAddTasks = useCallback(() => {
     if (!result) return;
@@ -611,93 +636,80 @@ export default function ScanPage() {
       ) : null}
 
       {phase === 'result' && result ? (
-        <>
-          <ScanResultCard
-            result={result}
-            experience={experience}
-            onRetake={onRetake}
-            onAsk={onAsk}
-            onAddTasks={onAddTasks}
-            onSave={onSave}
-            alreadySaved={!!savedEntryId}
-            alreadyAddedTasks={tasksAdded}
-          />
-          {/* High-confidence ML spec §2: 2-3 yes/no checks
-              before committing to a specific named condition.
-              The questions come from the server when available
-              (analyze response includes `verificationQuestions`)
-              or fall through to the on-device hybrid engine. */}
-          {Array.isArray(result.verificationQuestions) && result.verificationQuestions.length > 0 ? (
-            <ScanVerificationChecklist
-              scanId={result.scanId || null}
-              questions={result.verificationQuestions}
+        FEATURE_SCAN_USEFULNESS ? (
+          // FEATURE_SCAN_USEFULNESS — clean farmer-friendly card.
+          // saveScanUseful is idempotent (same scanId → no-op).
+          (() => {
+            try { saveScanUseful(result, { experience: activeExperience }); } catch { /* ignore */ }
+            return (
+              <UsefulResultCard
+                result={result}
+                experience={activeExperience}
+                onRetake={onRetake}
+                onTaskAdded={onUsefulTaskAdded}
+              />
+            );
+          })()
+        ) : (
+          <>
+            <ScanResultCard
+              result={result}
+              experience={experience}
+              onRetake={onRetake}
+              onAsk={onAsk}
+              onAddTasks={onAddTasks}
+              onSave={onSave}
+              alreadySaved={!!savedEntryId}
+              alreadyAddedTasks={tasksAdded}
             />
-          ) : null}
-          {/* High-confidence ML spec §5: surface a "confirm with
-              local expert" CTA when the verdict is risky enough
-              (fast spread, sub-high confidence, or high-value
-              crop). The component self-suppresses otherwise. */}
-          <ScanLocalExpertCTA
-            confidence={result.confidence}
-            issue={result.possibleIssue}
-            spreadFast={result.spreadFast || false}
-            cropName={result.cropName || profile?.crop || profile?.cropId || null}
-          />
-          {/* Treatment guidance — non-chemical actions first,
-              class-only chemical guidance, prevention tips,
-              warning when triggered, disclaimer always. The
-              "Add to Today's Plan" CTA inside this card forwards
-              to the existing onAddTasks handler so chemical
-              guidance is never persisted as a task. */}
-          <TreatmentGuidanceCard
-            issue={result.possibleIssue}
-            confidence={result.confidence}
-            activeExperience={activeExperience}
-            country={profile?.country || null}
-            region={profile?.region  || null}
-            cropName={result.cropName || profile?.crop || profile?.cropId || null}
-            plantName={profile?.plantName || null}
-            scaleType={result.scaleType  || null}
-            repeatedIssue={false}
-            weather={null}
-            onAddToPlan={(actions) => {
-              // Reuse the existing scan\u2192task path. The actions
-              // here are the non-chemical immediateActions only
-              // (the card slices the array before calling us).
-              // Wording is sanitised through scanResultPolicy so
-              // any forbidden tokens are rewritten before persistence.
-              // addScanTasks now caps immediate at 2 internally
-              // and ALSO appends the policy follow-up task
-              // ("Check this again tomorrow"), so we just shape
-              // the actions into suggestedTasks and delegate.
-              if (!Array.isArray(actions) || actions.length === 0) return;
-              try {
-                const adapted = actions.map((title, i) => ({
-                  id:         `treatment_${i}_${Date.now().toString(36)}`,
-                  title:      sanitizeScanText(String(title || '')),
-                  reason:     '',
-                  urgency:    'medium',
-                  actionType: 'treatment',
-                })).filter((t) => t.title);
-                if (result && Array.isArray(result.suggestedTasks)) {
-                  // Prepend so the treatment actions sit ahead of
-                  // any engine-emitted follow-up; the policy
-                  // follow-up task is appended separately by
-                  // addScanTasks via context.followUpTask in
-                  // onAddTasks below.
-                  // eslint-disable-next-line no-param-reassign
-                  result.suggestedTasks = [...adapted, ...result.suggestedTasks];
-                } else if (result) {
-                  // eslint-disable-next-line no-param-reassign
-                  result.suggestedTasks = adapted;
-                }
-                onAddTasks();
-              } catch { /* swallow */ }
-            }}
-            alreadyAddedTasks={tasksAdded}
-          />
-          <ScanFeedbackPrompt scanId={result.scanId || null} />
-        </>
+            {Array.isArray(result.verificationQuestions) && result.verificationQuestions.length > 0 ? (
+              <ScanVerificationChecklist
+                scanId={result.scanId || null}
+                questions={result.verificationQuestions}
+              />
+            ) : null}
+            <ScanLocalExpertCTA
+              confidence={result.confidence}
+              issue={result.possibleIssue}
+              spreadFast={result.spreadFast || false}
+              cropName={result.cropName || profile?.crop || profile?.cropId || null}
+            />
+            <TreatmentGuidanceCard
+              issue={result.possibleIssue}
+              confidence={result.confidence}
+              activeExperience={activeExperience}
+              country={profile?.country || null}
+              region={profile?.region  || null}
+              cropName={result.cropName || profile?.crop || profile?.cropId || null}
+              plantName={profile?.plantName || null}
+              scaleType={result.scaleType  || null}
+              repeatedIssue={false}
+              weather={null}
+              onAddToPlan={(actions) => {
+                if (!Array.isArray(actions) || actions.length === 0) return;
+                try {
+                  const adapted = actions.map((title, i) => ({
+                    id:         'treatment_' + i + '_' + Date.now().toString(36),
+                    title:      sanitizeScanText(String(title || '')),
+                    reason:     '',
+                    urgency:    'medium',
+                    actionType: 'treatment',
+                  })).filter((t) => t.title);
+                  if (result && Array.isArray(result.suggestedTasks)) {
+                    // eslint-disable-next-line no-param-reassign
+                    result.suggestedTasks = [...adapted, ...result.suggestedTasks];
+                  } else if (result) {
+                    // eslint-disable-next-line no-param-reassign
+                    result.suggestedTasks = adapted;
+                  }
+                  onAddTasks();
+                } catch { /* swallow */ }
+              }}
+              alreadyAddedTasks={tasksAdded}
+            />
+            <ScanFeedbackPrompt scanId={result.scanId || null} />
+          </>
+        )
       ) : null}
 
       {phase === 'error' ? (
@@ -731,7 +743,9 @@ export default function ScanPage() {
         </div>
       ) : null}
 
-      <ScanHistory />
+      {/* FEATURE_SCAN_USEFULNESS: show the lightweight useful history
+          (farroway_scan_history_v1); fall back to the original. */}
+      {FEATURE_SCAN_USEFULNESS ? <UsefulScanHistory /> : <ScanHistory />}
     </main>
   );
 }

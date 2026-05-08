@@ -69,10 +69,12 @@ const DEFAULTS = Object.freeze({
   // of `scanDetection` so the UI can ship before the API.
   scanApiEnabled: false,
   // Scan-to-task: enables the "Add to Today's Plan" button on
-  // the result card and creates up to 2 follow-up tasks from a
-  // scan. Off by default so the new scan surface ships read-only
-  // until the task pipeline is verified.
-  scanToTask: false,
+  // the result card and creates follow-up tasks from a scan.
+  // Enabled with FEATURE_SCAN_USEFULNESS (2026-05-07) — the
+  // UsefulResultCard "Add follow-up task" button depends on
+  // addScanTasks() which is gated here. One spec-exact action
+  // per safe category; no chemical / dosage claims.
+  scanToTask: true,  // FEATURE_SCAN_USEFULNESS — 2026-05-07
   // ML scan safe mode (Phase 7E): enables the lightweight image-upload
   // analysis placeholder with structured category output.
   //

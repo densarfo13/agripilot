@@ -244,4 +244,39 @@ export const HABIT_LAST_COMPLETED_KEY = 'farroway_last_task_completed_date_v1';
  */
 export const HABIT_REMINDER_PREF_KEY = 'farroway_daily_reminder_pref_v1';
 
+/**
+ * FEATURE_SCAN_USEFULNESS — enable the focused crop scan polish layer.
+ *
+ * When true:
+ *   • ScanPage renders UsefulResultCard instead of the complex multi-
+ *     layer result stack. The card shows per-category farmer-friendly
+ *     guidance: what we noticed / what to check next / suggested task.
+ *   • "Add follow-up task" button appears inline on the result card;
+ *     tapping it persists the task via scanToTask and shows an inline
+ *     ✅ toast — no page reload.
+ *   • Scan results are saved to farroway_scan_history_v1 (a new local-
+ *     first slot keyed on the scan date + id) so the history strip can
+ *     read without depending on the older per-farm history key.
+ *   • UsefulScanHistory renders below the result with the 6 most
+ *     recent entries; tapping a row opens the detail page.
+ *
+ * Safe categories (no ML required — always has a useful fallback):
+ *   healthy | yellowing | holes or pest damage |
+ *   spots or disease concern | unclear photo (needs_review)
+ *
+ * What FEATURE_SCAN_USEFULNESS does NOT restore:
+ *   • No heavy browser ML model or external AI dependency
+ *   • No disease certainty claims ("confirmed disease" etc.)
+ *   • No pesticide treatment instructions or dosage claims
+ *   • No automatic camera startup
+ *   • No blocking render
+ */
+export const FEATURE_SCAN_USEFULNESS = true;
+
+/**
+ * SCAN_HISTORY_KEY — localStorage key for the scan usefulness history
+ * (farroway_scan_history_v1). Managed by src/lib/scan/scanHistoryStore.js.
+ */
+export const SCAN_HISTORY_KEY = 'farroway_scan_history_v1';
+
 export default BYPASS_SETUP_FOR_PILOT;
