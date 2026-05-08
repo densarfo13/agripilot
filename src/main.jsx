@@ -1,3 +1,9 @@
+// ── Console noise filter (install FIRST — must run before any log) ─
+// Suppresses chrome-extension, tabs:outgoing.message.ready, and
+// cornhusk/shared-service spam in production. No-op in dev builds.
+import { installConsoleFilter } from './lib/consoleFilter.js';
+installConsoleFilter();
+
 // ── Forced UI cache/state reset + SW disable (run BEFORE everything) ──
 //
 //   ensureUiVersion()             — compares the bundled

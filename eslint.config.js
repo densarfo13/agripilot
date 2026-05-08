@@ -66,10 +66,12 @@ export default [
       // on every render. Violating this rule causes React error
       // #300 (StrictMode) or #310 (production).
       'react-hooks/rules-of-hooks': 'error',
-      // Soft warning — surfaces stale-closure / dependency-array
-      // bugs without blocking the build. Promote to 'error' once
-      // the existing exemptions are cleared.
-      'react-hooks/exhaustive-deps': 'warn',
+      // Hard error — stale-closure / missing-dep bugs are now CI
+      // failures. Every useEffect/useCallback/useMemo dependency
+      // array must be exhaustive. Use // eslint-disable-next-line
+      // react-hooks/exhaustive-deps sparingly with a comment
+      // explaining WHY the dep is intentionally excluded.
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
 ];

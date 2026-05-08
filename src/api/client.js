@@ -20,6 +20,12 @@ const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // Send httpOnly cookies for V2 cookie auth
+  // Global request timeout (ms). Individual requests can override via
+  // axiosConfig.timeout. Without this, a stalled server can hold the
+  // connection open indefinitely — causing infinite spinners on Home.
+  // 10 s is generous enough for slow rural networks and short enough
+  // to surface problems before the user assumes the app is broken.
+  timeout: 10_000,
 });
 
 // Attach token + idempotency key to every mutation request
