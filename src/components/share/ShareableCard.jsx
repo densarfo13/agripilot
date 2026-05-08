@@ -59,6 +59,7 @@ export default function ShareableCard({
   nickname    = 'My Plant',
   stage       = 'growing',
   emoji,                       // optional override
+  photo       = null,          // dataURL when user has uploaded a plant photo
   caption     = 'Steady care makes a difference.',
   subtitle    = '',
   brandLabel  = 'Farroway',
@@ -66,12 +67,14 @@ export default function ShareableCard({
 }) {
   const displayEmoji = (typeof emoji === 'string' && emoji.trim()) ? emoji : _stageEmoji(stage);
   const stageLabel   = String(stage || '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  const hasPhoto     = typeof photo === 'string' && photo.trim().length > 0;
 
   return (
     <article
       style={{ ...S.card, width: `${size}px`, height: `${size}px` }}
       data-testid="shareable-card"
       data-stage={stage}
+      data-has-photo={hasPhoto ? 'true' : 'false'}
     >
       {/* Soft sunlight glow at top-left */}
       <div style={S.glow} aria-hidden="true" />
@@ -79,13 +82,28 @@ export default function ShareableCard({
       {/* Subtle grain noise — adds organic texture without raster cost */}
       <div style={S.grain} aria-hidden="true" />
 
-      {/* Plant emoji as the visual anchor. Sized large; sits in
-          the upper area so the caption gets prime real estate
-          underneath. When real photos ship, swap this for an
-          <img loading="lazy" decoding="async" /> element with
-          object-fit: cover. */}
+      {/* Visual anchor — real plant photo when uploaded, otherwise
+          the stage emoji. The photo is rendered with object-fit:
+          cover so any aspect ratio composes cleanly into the
+          square card. A soft top-glow gradient stays above the
+          photo for the warm-sunlight feel even on dark images. */}
       <div style={S.heroWrap}>
-        <span style={S.heroEmoji} aria-hidden="true">{displayEmoji}</span>
+        {hasPhoto ? (
+          <>
+            <img
+              src={photo}
+              alt={nickname || 'My Plant'}
+              style={S.heroImg}
+              draggable="false"
+              loading="lazy"
+              decoding="async"
+              data-testid="shareable-card-photo"
+            />
+            <div style={S.heroOverlay} aria-hidden="true" />
+          </>
+        ) : (
+          <span style={S.heroEmoji} aria-hidden="true">{displayEmoji}</span>
+        )}
       </div>
 
       {/* Content block — nickname, stage chip, caption */}
@@ -166,6 +184,25 @@ const S = {
     lineHeight: 1,
     filter: 'drop-shadow(0 6px 12px rgba(35,71,51,0.22))',
     transform: 'translateY(-2%)',
+  },
+  // Real-photo hero — fills the upper card half. object-fit: cover
+  // ensures portrait + landscape uploads both compose cleanly.
+  heroImg: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  // Subtle top→bottom warm wash over the photo so the bottom edge
+  // blends into the cream body without a hard line. Keeps the
+  // sunlight feel consistent on dark photos.
+  heroOverlay: {
+    position: 'absolute',
+    inset: 0,
+    background: `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 35%, rgba(243,232,208,0.18) 92%, ${C.creamSoft} 100%)`,
+    pointerEvents: 'none',
   },
   body: {
     flex: '1 1 auto',

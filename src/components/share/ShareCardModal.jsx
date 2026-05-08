@@ -31,6 +31,9 @@ import {
   shareCard, canShareNatively, canCopyToClipboard,
 } from '../../lib/share/shareCard.js';
 import { pickCaption, inferCategory } from '../../lib/share/encouragementCaptions.js';
+import {
+  renderShareCardPng, triggerPngDownload, canShareImageFiles,
+} from '../../lib/share/cardToPng.js';
 
 export default function ShareCardModal({
   open            = false,
@@ -101,6 +104,71 @@ export default function ShareCardModal({
     else                               setStatus('failed');
   }, [nickname, localizedCaption]);
 
+  // Build the PNG blob shared by Download + Image-share. Returns
+  // null when rendering failed (caller surfaces a 'failed' toast).
+  const buildPngBlob = useCallback(async () => {
+    try {
+      return await renderShareCardPng({
+        nickname,
+        stage,
+        photoUrl: plant?.photo || null,
+        caption:  localizedCaption,
+        brand:    'Farroway',
+        size:     720,
+      });
+    } catch { return null; }
+  }, [nickname, stage, plant, localizedCaption]);
+
+  const handleDownload = useCallback(async () => {
+    setStatus(null);
+    const blob = await buildPngBlob();
+    if (!blob) { setStatus('failed'); return; }
+    const safeName = (nickname || 'plant')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 32) || 'plant';
+    const ok = triggerPngDownload(blob, `farroway-${safeName}.png`);
+    setStatus(ok ? 'downloaded' : 'failed');
+  }, [buildPngBlob, nickname]);
+
+  const handleShareImage = useCallback(async () => {
+    setStatus(null);
+    const blob = await buildPngBlob();
+    if (!blob) { setStatus('failed'); return; }
+    try {
+      const file = new File([blob], 'farroway-plant.png', { type: 'image/png' });
+      if (typeof navigator !== 'undefined'
+          && typeof navigator.share === 'function'
+          && (typeof navigator.canShare !== 'function'
+              || navigator.canShare({ files: [file] }))) {
+        await navigator.share({
+          files:  [file],
+          title:  nickname,
+          text:   `${localizedCaption}  ${tSafe('share.hashtag', '#FarrowayGarden')}`,
+        });
+        setStatus('shared');
+        return;
+      }
+    } catch (err) {
+      const name = err && err.name;
+      if (name === 'AbortError' || /abort|cancel/i.test(String(err?.message || ''))) {
+        setStatus('cancelled');
+        return;
+      }
+      // Fall through to download.
+    }
+    // No image share path — fall back to a download so the user
+    // still walks away with a shareable file.
+    const safeName = (nickname || 'plant')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 32) || 'plant';
+    const ok = triggerPngDownload(blob, `farroway-${safeName}.png`);
+    setStatus(ok ? 'downloaded' : 'failed');
+  }, [buildPngBlob, nickname, localizedCaption]);
+
   const handleCopy = useCallback(async () => {
     setStatus(null);
     try {
@@ -157,6 +225,7 @@ export default function ShareCardModal({
           <ShareableCard
             nickname={nickname}
             stage={stage}
+            photo={plant?.photo || null}
             caption={localizedCaption}
           />
         </div>
@@ -164,15 +233,30 @@ export default function ShareCardModal({
         {/* Tiny status toast — replaces itself; never accumulates. */}
         {status && (
           <p style={S.toast} data-testid="share-card-status" data-status={status}>
-            {status === 'shared'    && tSafe('share.toast.shared',    'Shared.')}
-            {status === 'copied'    && tSafe('share.toast.copied',    'Copied to clipboard.')}
-            {status === 'cancelled' && tSafe('share.toast.cancelled', 'Share cancelled.')}
-            {status === 'failed'    && tSafe('share.toast.failed',    'Could not share — try again.')}
+            {status === 'shared'     && tSafe('share.toast.shared',     'Shared.')}
+            {status === 'downloaded' && tSafe('share.toast.downloaded', 'Image saved to your device.')}
+            {status === 'copied'     && tSafe('share.toast.copied',     'Copied to clipboard.')}
+            {status === 'cancelled'  && tSafe('share.toast.cancelled',  'Share cancelled.')}
+            {status === 'failed'     && tSafe('share.toast.failed',     'Could not share — try again.')}
           </p>
         )}
 
         <footer style={S.foot}>
-          {canShareNatively() ? (
+          {/* Image share — primary path on mobile (Instagram, WhatsApp,
+              Messages all accept image/png via the native share sheet).
+              Renders the SVG → PNG client-side; falls back to a download
+              when the platform doesn't support file sharing. */}
+          {canShareImageFiles() ? (
+            <button
+              type="button"
+              onClick={handleShareImage}
+              style={S.primaryBtn}
+              data-testid="share-card-share-image-btn"
+            >
+              {tSafe('share.action.shareImage', 'Share image')}
+            </button>
+          ) : null}
+          {canShareNatively() && !canShareImageFiles() ? (
             <button
               type="button"
               onClick={handleShare}
@@ -182,11 +266,22 @@ export default function ShareCardModal({
               {shareLabel}
             </button>
           ) : null}
+          {/* Always-available image download — works in every browser
+              that supports canvas + URL.createObjectURL (universal
+              modern). */}
+          <button
+            type="button"
+            onClick={handleDownload}
+            style={canShareImageFiles() || canShareNatively() ? S.secondaryBtn : S.primaryBtn}
+            data-testid="share-card-download-btn"
+          >
+            {tSafe('share.action.download', 'Download image')}
+          </button>
           {canCopyToClipboard() ? (
             <button
               type="button"
               onClick={handleCopy}
-              style={canShareNatively() ? S.secondaryBtn : S.primaryBtn}
+              style={S.secondaryBtn}
               data-testid="share-card-copy-btn"
             >
               {copyLabel}

@@ -194,6 +194,22 @@ export const SHARE_TRANSLATIONS = Object.freeze({
     tw: 'Kɔpi nsɛm',
     hi: 'पाठ कॉपी करें',
   },
+  'share.action.shareImage': {
+    en: 'Share image',
+    fr: 'Partager l\'image',
+    sw: 'Shiriki picha',
+    ha: 'Raba hoto',
+    tw: 'Kyɛ mfoni',
+    hi: 'तस्वीर साझा करें',
+  },
+  'share.action.download': {
+    en: 'Download image',
+    fr: 'Télécharger l\'image',
+    sw: 'Pakua picha',
+    ha: 'Sauke hoto',
+    tw: 'Twe mfoni',
+    hi: 'तस्वीर डाउनलोड करें',
+  },
 
   // ── Toast statuses ────────────────────────────────────────
   'share.toast.shared': {
@@ -228,15 +244,23 @@ export const SHARE_TRANSLATIONS = Object.freeze({
     tw: 'Yɛantumi ankyɛ — sɔ hwɛ bio.',
     hi: 'साझा नहीं कर सका — फिर प्रयास करें।',
   },
+  'share.toast.downloaded': {
+    en: 'Image saved to your device.',
+    fr: 'Image enregistrée sur votre appareil.',
+    sw: 'Picha imehifadhiwa kwenye kifaa chako.',
+    ha: 'An adana hoto a kan na\'urar ka.',
+    tw: 'Yɛakora mfoni no wo afidie no so.',
+    hi: 'तस्वीर आपके डिवाइस में सहेजी गई।',
+  },
 
   // ── Safety footer + hashtag ──────────────────────────────
   'share.safetyNote': {
-    en: 'Only the card text and a Farroway link are shared — never your location, photos, or contact details.',
-    fr: 'Seul le texte de la carte et un lien Farroway sont partagés — jamais votre localisation, vos photos ou vos coordonnées.',
-    sw: 'Maandishi ya kadi na kiungo cha Farroway tu hushirikishwa — kamwe si eneo lako, picha, au mawasiliano.',
-    ha: 'Rubutun katin da hanyar haɗin Farroway kawai ake rabawa — ba wurinka, hotuna, ko bayanan tuntuɓarka ba.',
-    tw: 'Card no nsɛm ne Farroway link nko ara na yɛkyɛ — yɛnkyɛ wo baabi, mfoni, anaa wʼɛkwan.',
-    hi: 'केवल कार्ड का पाठ और Farroway लिंक साझा किया जाता है — कभी आपका स्थान, फ़ोटो, या संपर्क विवरण नहीं।',
+    en: 'Only the card you see — your nickname, caption, and any plant photo you added — is shared. Your location and contact details stay private.',
+    fr: 'Seule la carte que vous voyez — votre surnom, votre légende et la photo de plante que vous avez ajoutée — est partagée. Votre localisation et vos coordonnées restent privées.',
+    sw: 'Kadi unayoiona tu — jina lako la utani, maelezo, na picha ya mmea uliyoongeza — inashirikishwa. Eneo lako na mawasiliano hubaki ya faragha.',
+    ha: 'Katin da kake gani kawai — lakabin ka, taken, da hoton tsiron da ka ƙara — ake rabawa. Wurinka da bayanan tuntuɓarka sun rage masu zaman kansu.',
+    tw: 'Card a wohwɛ no nko ara — wo din, wo nsɛm, ne afifideɛ mfoni a wode aka ho — na yɛkyɛ. Wo baabi ne wʼɛkwan no, ɛyɛ wʼankasa dea.',
+    hi: 'केवल आप जो कार्ड देख रहे हैं — आपका उपनाम, कैप्शन, और जोड़ी गई पौधे की तस्वीर — साझा होती है। आपका स्थान और संपर्क विवरण निजी रहते हैं।',
   },
   'share.hashtag': {
     en: '#FarrowayGarden',

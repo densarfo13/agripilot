@@ -26,10 +26,11 @@
  *   • Localized via tSafe + useStrictTranslation; safe English fallbacks.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import usePlantIdentity from '../../hooks/usePlantIdentity.js';
+import { compressImageFile } from '../../lib/plant/photoUpload.js';
 
 // ─── Enum option lists ────────────────────────────────────────────
 
@@ -113,6 +114,41 @@ export default function PlantEditModal({ open = false, onClose }) {
     };
   }, [open, onClose]);
 
+  // Photo upload state — local, not persisted until Save.
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Photo handler — runs the source File through canvas-resize +
+  // JPEG-compress (no external deps); rejects oversized / wrong-type
+  // files via null return. Sets photoError so the user sees what
+  // went wrong instead of a silent no-op.
+  const handlePhotoFile = useCallback(async (file) => {
+    if (!file) return;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const dataUrl = await compressImageFile(file, { maxDim: 800, quality: 0.82 });
+      if (!dataUrl) {
+        setPhotoError('compress-failed');
+      } else {
+        setDraft((prev) => ({ ...prev, photo: dataUrl }));
+      }
+    } catch {
+      setPhotoError('compress-failed');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }, []);
+
+  const handleRemovePhoto = useCallback(() => {
+    setDraft((prev) => ({ ...prev, photo: null }));
+    setPhotoError(null);
+    // Clear the file input so re-selecting the same file fires onChange.
+    try { if (fileInputRef.current) fileInputRef.current.value = ''; }
+    catch { /* swallow */ }
+  }, []);
+
   if (!open) return null;
 
   function update(field, value) {
@@ -126,6 +162,7 @@ export default function PlantEditModal({ open = false, onClose }) {
       save({
         nickname:      draft.nickname || null,
         plantType:     draft.plantType || null,
+        photo:         draft.photo         || null,
         indoorOutdoor: draft.indoorOutdoor || null,
         containerType: draft.containerType || null,
         containerSize: draft.containerSize || null,
@@ -169,6 +206,77 @@ export default function PlantEditModal({ open = false, onClose }) {
         </header>
 
         <div style={S.body}>
+          {/* Photo — circular preview + Change/Remove buttons.
+              Hidden file input is triggered by the visible "Change"
+              button so the picker UX stays consistent across
+              browsers. Compression runs on a worker-friendly canvas;
+              no external image libraries required. */}
+          <div style={S.photoRow} data-testid="plant-edit-photo-row">
+            <div style={S.photoPreview}>
+              {draft.photo ? (
+                <img
+                  src={draft.photo}
+                  alt={tSafe('plant.field.photo.alt', 'Plant photo')}
+                  style={S.photoImg}
+                  draggable="false"
+                  data-testid="plant-edit-photo-img"
+                />
+              ) : (
+                <span style={S.photoEmpty} aria-hidden="true">🌿</span>
+              )}
+            </div>
+            <div style={S.photoActions}>
+              <span style={S.label}>{tSafe('plant.field.photo', 'Plant photo')}</span>
+              <div style={S.photoBtnRow}>
+                <button
+                  type="button"
+                  style={photoBusy ? { ...S.photoBtn, ...S.photoBtnBusy } : S.photoBtn}
+                  onClick={() => {
+                    try { fileInputRef.current?.click(); } catch { /* swallow */ }
+                  }}
+                  disabled={photoBusy}
+                  data-testid="plant-edit-photo-change"
+                >
+                  {photoBusy
+                    ? tSafe('plant.field.photo.busy',   'Resizing…')
+                    : (draft.photo
+                        ? tSafe('plant.field.photo.change', 'Change')
+                        : tSafe('plant.field.photo.add',    'Add photo'))}
+                </button>
+                {draft.photo ? (
+                  <button
+                    type="button"
+                    style={S.photoRemoveBtn}
+                    onClick={handleRemovePhoto}
+                    data-testid="plant-edit-photo-remove"
+                  >
+                    {tSafe('plant.field.photo.remove', 'Remove')}
+                  </button>
+                ) : null}
+              </div>
+              {photoError ? (
+                <p style={S.photoError} data-testid="plant-edit-photo-error">
+                  {tSafe('plant.field.photo.error',
+                    'Could not use that photo. Try a smaller image (under 12 MB).')}
+                </p>
+              ) : null}
+              {/* Hidden picker — accepts common phone-camera formats.
+                  capture="environment" hints mobile to open the rear camera. */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*"
+                capture="environment"
+                onChange={(e) => {
+                  const file = e?.target?.files?.[0];
+                  if (file) handlePhotoFile(file);
+                }}
+                style={S.fileInput}
+                data-testid="plant-edit-photo-input"
+              />
+            </div>
+          </div>
+
           {/* Nickname */}
           <label style={S.field}>
             <span style={S.label}>{tSafe('plant.field.nickname', 'Nickname')}</span>
@@ -297,6 +405,7 @@ function _draftFromPlant(plant) {
   return {
     nickname:      plant && plant.nickname && plant.nickname !== 'My Plant' ? plant.nickname : '',
     plantType:     plant?.plantType     || '',
+    photo:         plant?.photo         || null,
     indoorOutdoor: plant?.indoorOutdoor || '',
     containerType: plant?.containerType || '',
     containerSize: plant?.containerSize || '',
@@ -406,6 +515,88 @@ const S = {
     minHeight: '44px',
   },
   saveBtnBusy: { opacity: 0.6, cursor: 'not-allowed' },
+
+  // ── Photo upload row ────────────────────────────────────────────
+  photoRow: {
+    display: 'flex',
+    gap: '0.85rem',
+    alignItems: 'center',
+    paddingBottom: '0.6rem',
+    borderBottom: '1px solid rgba(255,255,255,0.06)',
+  },
+  photoPreview: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    overflow: 'hidden',
+    flexShrink: 0,
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset',
+  },
+  photoImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  photoEmpty: {
+    fontSize: '1.6rem',
+    lineHeight: 1,
+    opacity: 0.55,
+  },
+  photoActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.35rem',
+    flex: '1 1 auto',
+    minWidth: 0,
+  },
+  photoBtnRow: {
+    display: 'flex',
+    gap: '0.4rem',
+    flexWrap: 'wrap',
+  },
+  photoBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(34,197,94,0.10)',
+    color: '#86EFAC',
+    padding: '0.45rem 0.8rem',
+    borderRadius: '999px',
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  photoBtnBusy: {
+    opacity: 0.6,
+    cursor: 'wait',
+  },
+  photoRemoveBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(255,255,255,0.10)',
+    background: 'transparent',
+    color: 'rgba(255,255,255,0.65)',
+    padding: '0.45rem 0.8rem',
+    borderRadius: '999px',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  photoError: {
+    margin: '0.1rem 0 0',
+    fontSize: '0.72rem',
+    color: '#FCA5A5',
+    lineHeight: 1.4,
+  },
+  fileInput: {
+    display: 'none',
+  },
 };
 
 // Test surface

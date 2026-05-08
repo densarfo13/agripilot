@@ -291,6 +291,49 @@ export const PLANT_COMPANION_TRANSLATIONS = Object.freeze({
     sw: 'Jina la utani',      ha: 'Lakabi',
     tw: 'Din',                hi: 'उपनाम',
   },
+  'plant.field.photo': {
+    en: 'Plant photo',        fr: 'Photo de la plante',
+    sw: 'Picha ya mmea',      ha: 'Hoton tsiro',
+    tw: 'Afifideɛ mfoni',     hi: 'पौधे की तस्वीर',
+  },
+  'plant.field.photo.alt': {
+    en: 'Plant photo',        fr: 'Photo de plante',
+    sw: 'Picha ya mmea',      ha: 'Hoton tsiro',
+    tw: 'Afifideɛ mfoni',     hi: 'पौधे की तस्वीर',
+  },
+  'plant.field.photo.add': {
+    en: 'Add photo',          fr: 'Ajouter une photo',
+    sw: 'Ongeza picha',       ha: 'Ƙara hoto',
+    tw: 'Fa mfoni ka ho',     hi: 'फ़ोटो जोड़ें',
+  },
+  'plant.field.photo.change': {
+    en: 'Change',             fr: 'Modifier',
+    sw: 'Badilisha',          ha: 'Canza',
+    tw: 'Sesa',               hi: 'बदलें',
+  },
+  'plant.field.photo.remove': {
+    en: 'Remove',             fr: 'Supprimer',
+    sw: 'Ondoa',              ha: 'Cire',
+    tw: 'Yi fi mu',           hi: 'हटाएँ',
+  },
+  'plant.field.photo.busy': {
+    en: 'Resizing…',          fr: 'Redimensionnement…',
+    sw: 'Inarekebisha…',      ha: 'Ana gyara…',
+    tw: 'Yɛresesa…',          hi: 'आकार बदला जा रहा…',
+  },
+  'plant.field.photo.error': {
+    en: 'Could not use that photo. Try a smaller image (under 12 MB).',
+    fr: 'Impossible d\'utiliser cette photo. Essayez une image plus petite (moins de 12 Mo).',
+    sw: 'Haikuweza kutumia picha hiyo. Jaribu picha ndogo zaidi (chini ya MB 12).',
+    ha: 'Ba a iya amfani da wannan hoton ba. Gwada ƙaramin hoto (ƙasa da 12 MB).',
+    tw: 'Yɛantumi amfa saa mfoni no. Sɔ mfoni ketewa hwɛ (a ɛnyɛ kɛse sen 12 MB).',
+    hi: 'वह फ़ोटो उपयोग नहीं कर सका। छोटी तस्वीर आज़माएँ (12 MB से कम)।',
+  },
+  'plant.fallback.nickname': {
+    en: 'My Plant',           fr: 'Ma Plante',
+    sw: 'Mmea Wangu',         ha: 'Tsiroń Na',
+    tw: 'Mʼafifideɛ',         hi: 'मेरा पौधा',
+  },
   'plant.field.nickname.placeholder': {
     en: 'Balcony Tomato',
     fr: 'Tomate du balcon',
