@@ -243,15 +243,19 @@ describe('i18n module — exports and integration', () => {
     expect(tSw('common.retry')).toBe('Jaribu tena');
   });
 
-  it('exports LANGUAGES array with 5 entries', () => {
+  it('exports LANGUAGES array with 6 entries (en/fr/sw/ha/tw/hi)', () => {
+    // Hindi (hi) added in commit c167abc as part of the global
+    // localization rollout — keeps SUPPORTED_LANGUAGES (in
+    // languageConfig.js) and LANGUAGES (in i18n/index.js) in sync.
     expect(Array.isArray(mod.LANGUAGES)).toBe(true);
-    expect(mod.LANGUAGES.length).toBe(5);
+    expect(mod.LANGUAGES.length).toBe(6);
     const codes = mod.LANGUAGES.map(l => l.code);
     expect(codes).toContain('en');
     expect(codes).toContain('fr');
     expect(codes).toContain('sw');
     expect(codes).toContain('ha');
     expect(codes).toContain('tw');
+    expect(codes).toContain('hi');
   });
 
   it('LANGUAGES entries have code, label, and short', () => {
