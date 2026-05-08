@@ -218,7 +218,8 @@ export default function Dashboard() {
     catch { /* swallow — analytics must not crash */ }
     try { safeTrackEvent('dashboard.viewed', { farmId: currentFarmId }); }
     catch { /* swallow */ }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-only — intentionally fires once per page visit; currentFarmId is the INITIAL farm
 
   // ─── 7-day engagement loop ──────────────────────────────
   // Pure derivation from the retention store. Gates the three
@@ -335,7 +336,8 @@ export default function Dashboard() {
         _farmer, getActiveFundingOpportunities(),
       ).length;
     } catch { return 0; }
-  }, [_farmer?.region, _farmer?.cropType, _farmer?.country]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_farmer?.region, _farmer?.cropType, _farmer?.country]); // fine-grained deps intentional — only re-run when funding-relevant fields change
 
   const dashboardPrograms = useMemo(() => {
     const fid = _farmer

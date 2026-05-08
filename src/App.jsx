@@ -247,6 +247,13 @@ import ScanErrorBoundary from './components/scan/ScanErrorBoundary.jsx';
 // Progress so a crash on one tab degrades to a small in-route
 // fallback instead of unmounting the whole app.
 import RouteErrorBoundary from './components/system/RouteErrorBoundary.jsx';
+// Safe Runtime Layer: global last-resort boundary + per-route shell.
+// AppCrashBoundary — global overlay with nav links (inside BrowserRouter
+//   so <Link> works in the recovery UI); resets on routeKey change.
+// SafeRouteShell — per-route error boundary + 8 s loading timeout;
+//   replaces RouteErrorBoundary on the five main farmer routes.
+import { AppCrashBoundary } from './components/system/AppCrashBoundary.jsx';
+import { SafeRouteShell } from './components/system/SafeRouteShell.jsx';
 // Feature-flag gate — wraps disabled-for-pilot routes so they
 // render a calm placeholder instead of mounting an unstable
 // surface. Falls open (renders children) on flag-system error.
@@ -486,6 +493,23 @@ const PageLoader = () => (
     </div>
   </div>
 );
+
+/**
+ * AppCrashBoundaryWithLocation — thin function-component wrapper that
+ * reads useLocation() (hook — cannot be in a class component) and passes
+ * location.pathname as `routeKey` to AppCrashBoundary so the class-based
+ * boundary auto-resets when the user navigates to a different route.
+ *
+ * Must live INSIDE <BrowserRouter> (useLocation requirement).
+ */
+function AppCrashBoundaryWithLocation({ children }) {
+  const location = useLocation();
+  return (
+    <AppCrashBoundary routeKey={location.pathname}>
+      {children}
+    </AppCrashBoundary>
+  );
+}
 
 function ProtectedRoute({ children, allowSetup }) {
   const token = useAuthStore(s => s.token);
@@ -994,6 +1018,12 @@ export default function App() {
           actually pick up production deploys instead of being
           stuck on stale builds. */}
       <SWUpdateBanner />
+      {/* Safe Runtime Layer: global crash boundary. Sits inside the
+          router so Link/useNavigate work in the recovery UI, and
+          outside every per-route boundary so it catches anything
+          that escapes SafeRouteShell. Resets automatically when
+          the user navigates to a new route (routeKey = pathname). */}
+      <AppCrashBoundaryWithLocation>
       <AuthLoadingGate>
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -1041,9 +1071,9 @@ export default function App() {
               "/" entry below where staff/admin still benefit
               from the role-aware landing logic. */}
           <Route path="/home"   element={
-            <HomeErrorBoundary>
+            <SafeRouteShell routeName="home" loadingMs={5000}>
               <PilotHome />
-            </HomeErrorBoundary>
+            </SafeRouteShell>
           } />
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
@@ -1125,23 +1155,23 @@ export default function App() {
             <Route path="/onboarding/farmer-type" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/onboarding/starter-guide" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/dashboard" element={
-              <RouteErrorBoundary routeName="home">
+              <SafeRouteShell routeName="dashboard">
                 <DashboardErrorBoundary>
                   <RoleAwareDashboard>
                     <ExperienceFallback><V2Dashboard /></ExperienceFallback>
                   </RoleAwareDashboard>
                 </DashboardErrorBoundary>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/tasks" element={
-              <RouteErrorBoundary routeName="tasks">
+              <SafeRouteShell routeName="tasks">
                 <AllTasksPage />
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/my-farm" element={
-              <RouteErrorBoundary routeName="my-farm">
+              <SafeRouteShell routeName="my-farm">
                 <ExperienceFallback><MyFarmPage /></ExperienceFallback>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             {/* Phase 1 §A.5 — backyard nav tab points at /my-grow.
                 We mount the same MyFarmPage so all the existing
@@ -1151,9 +1181,9 @@ export default function App() {
                 the userType is backyard, "My Farm" when farmer.
                 Strict no-duplicates: NO parallel /my-grow page. */}
             <Route path="/my-grow" element={
-              <RouteErrorBoundary routeName="my-grow">
+              <SafeRouteShell routeName="my-grow">
                 <ExperienceFallback><MyFarmPage /></ExperienceFallback>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             {/* /help moved to the public block above (go-live audit). */}
             {/* Simple Onboarding (rollout v1) — gated by
@@ -1162,9 +1192,9 @@ export default function App() {
                 pilots are unaffected. */}
             <Route path="/onboarding/simple" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/progress" element={
-              <RouteErrorBoundary routeName="progress">
+              <SafeRouteShell routeName="progress">
                 <FarmerProgressPage />
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />
@@ -1650,6 +1680,7 @@ export default function App() {
           two systems compose. Pure observer. */}
       <RoleThemeApplicator />
       </AuthLoadingGate>
+      </AppCrashBoundaryWithLocation>
       </SeasonProvider>
       </MarketProvider>
       </ForecastProvider>

@@ -238,11 +238,11 @@ export default function PilotHome() {
   // ─── Pilot event tracking ────────────────────────────────────
   const _weatherEventFiredRef = useRef(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     trackSafeEvent('app_opened', {});
     trackSafeEvent('task_viewed', { taskTitle: weatherTask.title || null });
-  }, []); // mount-only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-only — fires once; weatherTask.title is the initial task title at mount
 
   useEffect(() => {
     if (weatherLoading) return;
