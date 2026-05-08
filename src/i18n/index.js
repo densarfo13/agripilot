@@ -83,6 +83,9 @@ import { SHARE_TRANSLATIONS }                  from './shareTranslations.js';
 // Mode-experience overlay — labels, emotional goals, task vocab,
 // farm empty states. Consumed by getModeExperience() callers.
 import { MODE_EXPERIENCE_TRANSLATIONS }        from './modeExperienceTranslations.js';
+// Region overlay — season labels + insight chips emitted by
+// regionIntelligence (rainy/dry/harmattan/monsoon/frost/heat/etc).
+import { REGION_TRANSLATIONS }                 from './regionTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -174,6 +177,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     task vocab, farm empty-state copy.
   for (const key of Object.keys(MODE_EXPERIENCE_TRANSLATIONS)) {
     const row = MODE_EXPERIENCE_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1h. Region overlay — season labels + insight chips + caution
+  //     notes consumed by regionIntelligence callers.
+  for (const key of Object.keys(REGION_TRANSLATIONS)) {
+    const row = REGION_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {
