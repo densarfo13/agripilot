@@ -41,6 +41,7 @@ import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
 import WeatherHeroCard           from '../components/WeatherHeroCard.jsx';
+import MorningBriefingCard       from '../components/home/MorningBriefingCard.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 
 // ─── Local-storage helpers ──────────────────────────────────────
@@ -309,9 +310,26 @@ export default function PilotHome() {
           </div>
         </header>
 
+        {/* ── 1b. Morning Briefing Card ────────────────────────
+             Calm, high-value daily summary. Always renders
+             (FALLBACK_BRIEFING covers the no-context path).
+             FeatureShell isolates any render crash so a broken
+             briefing never blanks the rest of Home. */}
+        <FeatureShell name="morning-briefing" silent>
+          <MorningBriefingCard
+            userTypeLabel={userTypeLabel}
+            weather={weather}
+            ctxIntel={ctxIntel}
+            taskDone={taskDone}
+            now={now}
+          />
+        </FeatureShell>
+
         {/* ── 2. Weather card ──────────────────────────────────
-             Slim skeleton while loading; FeatureShell isolates
-             any render crash so a broken card never blanks Home. */}
+             Animated visual companion to the briefing's text
+             summary. Slim skeleton while loading; FeatureShell
+             isolates any render crash so a broken card never
+             blanks Home. */}
         {weatherLoading && (
           <div style={S.weatherLoading} aria-busy="true" aria-label="Loading weather">
             <span>Checking weather…</span>
@@ -331,30 +349,13 @@ export default function PilotHome() {
           </p>
         )}
 
-        {/* ── 3a. Context alert banner ─────────────────────────
-             Shown only for critical / warning signals (heat,
-             strong wind, heavy rain). Info-priority alerts are
-             suppressed — the weather card already covers them.
-             FeatureShell isolates any crash so the alert never
-             blanks the rest of Home. */}
-        {ctxIntel.alert
-          && (ctxIntel.alert.priority === 'critical'
-              || ctxIntel.alert.priority === 'warning')
-          && (
-          <FeatureShell name="ctx-alert" silent>
-            <div style={S.ctxAlert} data-testid="pilot-home-ctx-alert">
-              <span style={S.ctxAlertTitle}>{ctxIntel.alert.title}</span>
-              <span style={S.ctxAlertMsg}>{ctxIntel.alert.message}</span>
-            </div>
-          </FeatureShell>
-        )}
-
         {/* ── 3. Today's task ──────────────────────────────────
-             ctxIntel.todayTask is mode-aware (farm / garden),
-             crop-stage-aware, and scan-aware — richer than the
-             plain weatherTask. Falls back to soil-moisture check
-             when no signal is present. weatherTask is kept as a
-             reference for backward-compat event tracking below. */}
+             Action surface — the briefing above shows the same
+             title at-a-glance; this card is where the user
+             actually marks the task done. ctxIntel.todayTask is
+             mode-aware (farm / garden), crop-stage-aware, and
+             scan-aware. weatherTask is kept as a backwards-compat
+             reference for event tracking. */}
         <section
           style={taskDone ? S.cardDone : S.card}
           data-testid="pilot-home-task"
@@ -380,27 +381,24 @@ export default function PilotHome() {
           )}
         </section>
 
-        {/* ── 3b. Quick recommendation chip ────────────────────
-             Shown when the engine produces a non-generic nudge
-             (sell prompt, funding hint, scan follow-up, or care
-             tip). Hidden for 'general' type so the screen is
-             never cluttered with filler advice. */}
+        {/* ── 3b. Recommendation CTA (action surface) ──────────
+             The briefing above shows the recommendation TEXT;
+             this strip provides the optional CTA link so the
+             surface stays interactive. Hidden for 'general'
+             type and when no actionPath exists — the briefing
+             itself already carries the message. */}
         {ctxIntel.recommendation
           && ctxIntel.recommendation.type !== 'general'
+          && ctxIntel.recommendation.actionPath
           && (
           <FeatureShell name="ctx-recommendation" silent>
-            <div style={S.ctxRec} data-testid="pilot-home-ctx-recommendation">
-              <span style={S.ctxRecText}>{ctxIntel.recommendation.text}</span>
-              {ctxIntel.recommendation.actionPath && (
-                <Link
-                  to={ctxIntel.recommendation.actionPath}
-                  style={S.ctxRecLink}
-                  data-testid="pilot-home-ctx-recommendation-link"
-                >
-                  {ctxIntel.recommendation.action}
-                </Link>
-              )}
-            </div>
+            <Link
+              to={ctxIntel.recommendation.actionPath}
+              style={S.ctxRecLink}
+              data-testid="pilot-home-ctx-recommendation-link"
+            >
+              {ctxIntel.recommendation.action || 'View'} →
+            </Link>
           </FeatureShell>
         )}
 
@@ -622,55 +620,23 @@ const S = {
   },
 
   // ── Context Intelligence styles ──────────────────────────────
+  // Alert + recommendation banners are now subsumed by the
+  // MorningBriefingCard (warning chip + recommendation line).
+  // The standalone CTA link below is the only interactive
+  // surface that survives — the briefing is read-only by
+  // design (calm hierarchy, no buttons).
 
-  // Alert banner — warning/critical weather signals only.
-  // Amber palette to distinguish from the green brand.
-  ctxAlert: {
-    display:       'flex',
-    flexDirection: 'column',
-    gap:           '0.25rem',
-    padding:       '0.75rem 1rem',
-    background:    'rgba(251,191,36,0.10)',
-    border:        '1px solid rgba(251,191,36,0.28)',
-    borderRadius:  '12px',
-  },
-  ctxAlertTitle: {
-    fontSize:   '0.8125rem',
-    fontWeight: 700,
-    color:      '#FCD34D',
-  },
-  ctxAlertMsg: {
-    fontSize:   '0.875rem',
-    fontWeight: 500,
-    color:      'rgba(255,255,255,0.75)',
-    lineHeight: 1.45,
-  },
-
-  // Recommendation chip — a single-line nudge with optional CTA link.
-  ctxRec: {
-    display:    'flex',
-    alignItems: 'center',
-    gap:        '0.6rem',
-    padding:    '0.7rem 1rem',
-    background: 'rgba(34,197,94,0.07)',
-    border:     '1px solid rgba(34,197,94,0.18)',
-    borderRadius: '12px',
-    flexWrap:   'wrap',
-  },
-  ctxRecText: {
-    flex:       '1 1 auto',
-    fontSize:   '0.875rem',
-    fontWeight: 500,
-    color:      'rgba(255,255,255,0.80)',
-    lineHeight: 1.45,
-  },
   ctxRecLink: {
-    flexShrink:     0,
+    alignSelf:      'flex-start',
     fontSize:       '0.8125rem',
     fontWeight:     700,
     color:          '#86EFAC',
     textDecoration: 'none',
     whiteSpace:     'nowrap',
+    padding:        '0.45rem 0.75rem',
+    background:     'rgba(34,197,94,0.07)',
+    border:         '1px solid rgba(34,197,94,0.18)',
+    borderRadius:   '999px',
   },
 
   // Sell / harvest prompt — full-width link tile at harvest stage.
