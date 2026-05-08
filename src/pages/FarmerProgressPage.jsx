@@ -223,43 +223,18 @@ export default function FarmerProgressPage() {
             )}
           </div>
 
-          {/* ═══ 1b. PROGRESS ENGINE (score + status + next action) ═══ */}
-          <div style={S.engineCard} data-testid="progress-engine-card">
-            <div style={S.engineHeader}>
-              <span style={S.engineScore}>{progressSnapshot.progressScore}</span>
-              <span style={S.engineScoreUnit}>/ 100</span>
-              <span style={{ ...S.engineStatusPill, ...engineStatusStyle(progressSnapshot.status) }}>
-                {engineStatusLabel}
-              </span>
-            </div>
-            <div style={S.engineTrack}>
-              <div style={{ ...S.engineFill, width: `${progressSnapshot.progressScore}%` }} />
-            </div>
-            {/* Gap-fix §5: one-line explanation of what the score
-                means right now — ties score to stage + action, so the
-                number is never shown without meaning. */}
-            {progressSnapshot.explanationFallback && (
-              <div style={S.engineExplain} data-testid="progress-explanation">
-                {t(progressSnapshot.explanationKey) || progressSnapshot.explanationFallback}
-              </div>
-            )}
-            <div style={S.engineMetaRow}>
-              <span style={S.engineMetaLabel}>
-                {progressSnapshot.completedCount} / {progressSnapshot.totalCount}
-              </span>
-              <span style={S.engineMetaLabel}>
-                {tSafe('progress.stage_progress', '')}:{' '}
-                {progressSnapshot.stageCompletionPercent}%
-              </span>
-            </div>
-            {engineNextActionText && (
-              <div style={S.engineNextAction} data-testid="progress-next-best-action">
-                <span style={S.engineNextLabel}>
-                  {tSafe('progress.next_best_action', '')}
-                </span>
-                <span style={S.engineNextText}>{engineNextActionText}</span>
-              </div>
-            )}
+          {/* ═══ 1b. PROGRESS ENGINE (DISABLED on live UI per
+                Wire-up audit May 2026 spec §7) ══════════════════
+                The 0/100 score card + "Needs attention" pill +
+                competitive comparison band have been removed from
+                the visible page. The progress data still drives
+                analytics + voice playback, but the new premium
+                hero owns the framing. The block below stays as a
+                hidden sentinel so QA can confirm the regression
+                is gone, and the next-best-action surfaces inline
+                instead of inside a numeric score card. */}
+          <div data-testid="progress-engine-card" data-removed="premium-2026-05" hidden>
+            {engineNextActionText ? engineNextActionText : null}
           </div>
 
           {/* ═══ 2. SIMPLE COMPLETION SUMMARY ═══ */}

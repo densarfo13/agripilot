@@ -392,22 +392,15 @@ export default function AllTasksPage() {
         />
       </PremiumPageHero>
 
-      {/* Snippet ref: visual progress bar under the header.
-          Same data as the header count — just rendered as a
-          green fill over a navy track + a one-line
-          encouragement. Hidden when totalAll === 0. */}
-      {totalAll > 0 && (
-        <div style={S.progressBlock} data-testid="tasks-progress-block">
-          <div style={S.progressTrack} aria-hidden="true">
-            <div
-              style={{
-                ...S.progressFill,
-                width: `${Math.min(100, Math.round((totalDone / totalAll) * 100))}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Wire-up audit (May 2026 spec §6) — the giant progress
+          bar that previously sat under the header has been
+          removed. The same data now lives in the
+          `<PremiumPageHero chip={…}>` slot above (single calm
+          chip), so duplicating it as a full-width fill on Tasks
+          re-introduced the dashboard feel the spec rules out.
+          Sentinel left so QA can confirm the element is gone. */}
+      <div data-testid="tasks-progress-block" data-removed="premium-2026-05" hidden />
+
 
       {/* Loading */}
       {loading && mode !== 'retrying' && (

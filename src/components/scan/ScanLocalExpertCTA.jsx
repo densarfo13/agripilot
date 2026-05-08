@@ -109,7 +109,8 @@ export default function ScanLocalExpertCTA({
   function handleTap() {
     try { trackEvent('scan_expert_cta_tap', { issue, tier, reasons }); }
     catch { /* swallow */ }
-    try { navigate('/help'); }
+    // Wire-up audit (May 2026 §11) — canonical contact route.
+    try { navigate('/support/contact'); }
     catch { /* swallow */ }
   }
 

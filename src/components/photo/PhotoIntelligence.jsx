@@ -167,8 +167,13 @@ export default function PhotoIntelligence({
   }
 
   function handleContact() {
+    // Wire-up audit (May 2026 §11) — every "Need help?" /
+    // "Contact our team" link points at /support/contact (the
+    // canonical contact surface, mounted in App.jsx as an alias
+    // of <ContactPage />). The legacy /help still works but
+    // /support/contact is the single source-of-truth route.
     onClose && onClose();
-    navigate('/help');
+    navigate('/support/contact');
   }
 
   if (!open) return null;
