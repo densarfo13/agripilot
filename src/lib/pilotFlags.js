@@ -205,4 +205,43 @@ export const OFFLINE_TASK_QUEUE_KEY = 'farroway_offline_task_actions_v1';
  */
 export const OFFLINE_LISTING_DRAFTS_KEY = 'farroway_listing_drafts_v1';
 
+/**
+ * FEATURE_DAILY_HABIT — enable the focused daily habit loop.
+ *
+ * When true:
+ *   • Daily streak counter is maintained in localStorage at
+ *     HABIT_STREAK_KEY. Streak increments once per day on task
+ *     completion; resets to 0 after 2 consecutive missed days.
+ *   • Task completion persists across page refreshes at
+ *     HABIT_LAST_COMPLETED_KEY (localStorage, not sessionStorage).
+ *     If the stored date ≠ today, a fresh task is shown.
+ *   • After completion, Home shows:
+ *       "All done for today. Check tomorrow's task."
+ *   • Streak chip appears in the Home header when streak ≥ 1.
+ *   • Simple reminder preference stored at HABIT_REMINDER_PREF_KEY
+ *     (no push/SMS/email — preference only, for future use).
+ *
+ * What FEATURE_DAILY_HABIT does NOT restore:
+ *   • No push notifications / SMS / email automation
+ *   • No gamified leaderboards or XP systems
+ *   • No complex scheduling workers or background cron
+ *   • No /api/events traffic
+ */
+export const FEATURE_DAILY_HABIT = true;
+
+/** localStorage key for the daily streak (farroway_daily_streak_v1). */
+export const HABIT_STREAK_KEY = 'farroway_daily_streak_v1';
+
+/**
+ * localStorage key for the last task-completed date
+ * (farroway_last_task_completed_date_v1). Persists across reloads.
+ */
+export const HABIT_LAST_COMPLETED_KEY = 'farroway_last_task_completed_date_v1';
+
+/**
+ * localStorage key for the simple reminder preference
+ * (farroway_daily_reminder_pref_v1). No push/SMS — preference only.
+ */
+export const HABIT_REMINDER_PREF_KEY = 'farroway_daily_reminder_pref_v1';
+
 export default BYPASS_SETUP_FOR_PILOT;

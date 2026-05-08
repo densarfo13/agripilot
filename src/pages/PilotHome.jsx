@@ -35,8 +35,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveWeather }  from '../hooks/useLiveWeather.js';
+import useDailyHabit       from '../hooks/useDailyHabit.js';
 import { getWeatherTask }  from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }  from '../lib/safeEventTracker.js';
+import { FEATURE_DAILY_HABIT } from '../lib/pilotFlags.js';
 import WeatherHeroCard     from '../components/WeatherHeroCard.jsx';
 import { FeatureShell }    from '../components/system/FeatureShell.jsx';
 
@@ -130,6 +132,12 @@ function _resolveLocationLabel(farm) {
 export default function PilotHome() {
   const [now] = useState(() => new Date());
 
+  // ─── Daily habit hook (always called — rules-of-hooks) ──────
+  // Provides streak, completedToday, markDone backed by localStorage.
+  // When FEATURE_DAILY_HABIT is false, values are unused but the hook
+  // still runs safely (pure localStorage reads, no side-effects).
+  const habit = useDailyHabit();
+
   // Boot diagnostic — single greppable line per mount.
   useEffect(() => {
     try {
@@ -220,11 +228,16 @@ export default function PilotHome() {
     } catch { return 'Farmer'; }
   })();
 
-  // Mark-as-done — cosmetic (sessionStorage only).
-  const [taskDone, setTaskDone] = useState(() => {
+  // Mark-as-done — persisted across reloads via FEATURE_DAILY_HABIT.
+  // When the flag is on, `taskDone` comes from localStorage (date-keyed
+  // so a new calendar day always shows fresh). When the flag is off,
+  // fall back to sessionStorage (old behaviour — cosmetic only).
+  const [_sessionTaskDone, _setSessionTaskDone] = useState(() => {
+    if (FEATURE_DAILY_HABIT) return false; // habit hook owns the state
     try { return sessionStorage.getItem('farroway_pilot_task_done') === '1'; }
     catch { return false; }
   });
+  const taskDone = FEATURE_DAILY_HABIT ? habit.completedToday : _sessionTaskDone;
 
   // ─── Pilot event tracking ────────────────────────────────────
   const _weatherEventFiredRef = useRef(false);
@@ -247,8 +260,14 @@ export default function PilotHome() {
   }, [weatherLoading, weather]);
 
   function handleMarkDone() {
-    try { sessionStorage.setItem('farroway_pilot_task_done', '1'); } catch { /* swallow */ }
-    setTaskDone(true);
+    if (FEATURE_DAILY_HABIT) {
+      // Persist to localStorage (date-keyed) + increment streak.
+      habit.markDone();
+    } else {
+      // Legacy path — sessionStorage only.
+      try { sessionStorage.setItem('farroway_pilot_task_done', '1'); } catch { /* swallow */ }
+      _setSessionTaskDone(true);
+    }
     trackSafeEvent('task_completed', { taskTitle: weatherTask.title || null });
   }
 
@@ -262,10 +281,23 @@ export default function PilotHome() {
             <p style={S.greeting}>{greeting}, {userTypeLabel}.</p>
             <h1 style={S.title}>Today on Farroway</h1>
           </div>
-          <span style={S.statusPill}>
-            <span style={S.statusDot} />
-            <span>{weatherLoading ? 'Updating…' : 'Live'}</span>
-          </span>
+          <div style={S.headerRight}>
+            {/* Streak chip — only when FEATURE_DAILY_HABIT is on and
+                streak ≥ 1. Zero-layout-impact when hidden. */}
+            {FEATURE_DAILY_HABIT && habit.streak >= 1 && (
+              <span
+                style={S.streakPill}
+                title={`${habit.streak}-day streak`}
+                data-testid="pilot-home-streak"
+              >
+                🔥 {habit.streak}
+              </span>
+            )}
+            <span style={S.statusPill}>
+              <span style={S.statusDot} />
+              <span>{weatherLoading ? 'Updating…' : 'Live'}</span>
+            </span>
+          </div>
         </header>
 
         {/* ── 2. Weather card ──────────────────────────────────
@@ -301,7 +333,11 @@ export default function PilotHome() {
           <h2 style={S.cardTitle}>{weatherTask.title}</h2>
           <p style={S.cardBody}>{weatherTask.reason}</p>
           {taskDone ? (
-            <p style={S.doneNote}>✔ Marked as done — nice work.</p>
+            <p style={S.doneNote} data-testid="pilot-home-done-note">
+              {FEATURE_DAILY_HABIT
+                ? '✔ All done for today. Check tomorrow\'s task.'
+                : '✔ Marked as done — nice work.'}
+            </p>
           ) : (
             <button
               type="button"
@@ -365,6 +401,26 @@ const S = {
     justifyContent: 'space-between',
     gap:            '1rem',
     marginBottom:   '0.25rem',
+  },
+  headerRight: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        '0.5rem',
+    flexShrink: 0,
+  },
+  streakPill: {
+    display:      'inline-flex',
+    alignItems:   'center',
+    gap:          '0.2rem',
+    padding:      '0.3rem 0.6rem',
+    background:   'rgba(251,191,36,0.14)',
+    border:       '1px solid rgba(251,191,36,0.35)',
+    borderRadius: '999px',
+    fontSize:     '0.75rem',
+    fontWeight:   700,
+    color:        '#FCD34D',
+    flexShrink:   0,
+    cursor:       'default',
   },
   greeting: {
     margin:     0,
