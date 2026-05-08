@@ -52,7 +52,14 @@ import {
   BYPASS_SETUP_FOR_PILOT,
   FEATURE_EVENT_SYNC as PILOT_FEATURE_EVENT_SYNC,
   DISABLE_EVENTS,
+  FEATURE_OFFLINE_SAFE,
 } from './lib/pilotFlags.js';
+// Focused offline reliability layer (FEATURE_OFFLINE_SAFE).
+// Coexists with the existing OfflineBanner + OfflineSyncBanner;
+// this layer exclusively handles the spec-defined storage keys
+// and bounded sync (max 1 retry, 400s dropped, no interval).
+import OfflineSafeStatusBanner from './components/OfflineSafeStatusBanner.jsx';
+import { installSafeOnlineSync } from './lib/offline/safeOnlineSync.js';
 
 // One-shot warner for /api/events 400 responses. Prevents the
 // console-spam loop from a permanently-malformed payload —
@@ -650,6 +657,41 @@ export default function App() {
   // Drain the new IndexedDB outbox at /api/sync on a 15s tick.
   // Single-flight guard inside; safe to mount once at the root.
   useSyncLoop();
+
+  // FEATURE_OFFLINE_SAFE: install the bounded online sync once.
+  // Only runs when the flag is on. Wires window.addEventListener('online')
+  // + a 2s boot flush. No interval, no blocking render.
+  useEffect(() => {
+    if (!FEATURE_OFFLINE_SAFE) return;
+    // The task sender maps action types to their existing API endpoints.
+    // Imported lazily so the module stays out of the critical-path bundle.
+    const taskSender = async (action) => {
+      const { default: apiClient } = await import('./api/client.js');
+      const { type, taskId, farmId, note, reason } = action || {};
+      if (type === 'task_complete') {
+        if (!taskId) return;
+        return apiClient.post(
+          farmId
+            ? `/farm-tasks/${farmId}/tasks/${encodeURIComponent(taskId)}/complete`
+            : `/tasks/${encodeURIComponent(taskId)}/complete`,
+          { note: note || '' },
+        );
+      }
+      if (type === 'task_skip') {
+        if (!taskId) return;
+        return apiClient.post(
+          farmId
+            ? `/farm-tasks/${farmId}/tasks/${encodeURIComponent(taskId)}/skip`
+            : `/tasks/${encodeURIComponent(taskId)}/skip`,
+          { reason: reason || '' },
+        );
+      }
+      // Unknown type — resolve silently (no-op on server).
+    };
+    const cleanup = installSafeOnlineSync({ taskSender });
+    return cleanup;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadTranslations(getCurrentLang())
@@ -1683,6 +1725,11 @@ export default function App() {
           src/offline/*. Coexists with the existing OfflineBanner
           (which serves the heavy IndexedDB sync engine). */}
       <OfflineSyncBanner />
+      {/* FEATURE_OFFLINE_SAFE: focused offline status strip.
+          Shows "Offline mode — changes will save on this device."
+          and "Back online — syncing safely." (auto-hides 3s).
+          Coexists with OfflineSyncBanner (different data source). */}
+      {FEATURE_OFFLINE_SAFE && <OfflineSafeStatusBanner />}
       {/* Global ephemeral toast host. The store lives in
           src/lib/globalToast.js so non-React callers (task
           completion, sync recovery) can fire toasts without

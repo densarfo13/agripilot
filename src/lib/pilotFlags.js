@@ -172,4 +172,37 @@ export const EVENT_QUEUE_KEYS = Object.freeze([
   'farroway_events',            // local event log — DISABLE_EVENTS spec §4
 ]);
 
+/**
+ * FEATURE_OFFLINE_SAFE — enable the focused offline-reliability layer.
+ *
+ * When true:
+ *   • OfflineSafeStatusBanner mounts in the app shell showing:
+ *       offline → "Offline mode — changes will save on this device."
+ *       back online → "Back online — syncing safely." (auto-hides 3s)
+ *   • Task completions are queued locally at OFFLINE_TASK_QUEUE_KEY
+ *     and synced when the device reconnects (max 1 retry; 400s dropped).
+ *   • Listing drafts are saved locally at OFFLINE_LISTING_DRAFTS_KEY.
+ *   • Home renders using cached data when offline — no blank screen.
+ *
+ * What FEATURE_OFFLINE_SAFE does NOT restore:
+ *   • No background polling / setInterval syncs
+ *   • No service-worker / PWA cache
+ *   • No bulk sync engine or IndexedDB conflict resolution
+ *   • No /api/events pipeline (DISABLE_EVENTS remains true)
+ *   • No aggressive retries (max 1 retry per action entry)
+ */
+export const FEATURE_OFFLINE_SAFE = true;
+
+/**
+ * OFFLINE_TASK_QUEUE_KEY — localStorage key for the task completion
+ * queue managed by src/lib/offline/taskActionQueue.js.
+ */
+export const OFFLINE_TASK_QUEUE_KEY = 'farroway_offline_task_actions_v1';
+
+/**
+ * OFFLINE_LISTING_DRAFTS_KEY — localStorage key for the listing draft
+ * store managed by src/lib/offline/listingDraftStore.js.
+ */
+export const OFFLINE_LISTING_DRAFTS_KEY = 'farroway_listing_drafts_v1';
+
 export default BYPASS_SETUP_FOR_PILOT;
