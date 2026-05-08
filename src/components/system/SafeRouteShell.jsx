@@ -118,9 +118,26 @@ export class SafeRouteShell extends Component {
   componentDidCatch(err, info) {
     try {
       const routeName = this.props.routeName || 'unknown';
+      const failingComponent =
+        info?.componentStack?.trim().split('\n')[1]?.trim() || 'unknown';
+
+      // Wire-up audit (May 2026 §11) — surface the route + the
+      // actual JS error in the console so QA can grep for the
+      // exact failing route rather than guessing. One single
+      // formatted line; the analytics dispatch below stays
+      // unchanged so dashboards keep working.
+      try {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[Farroway] Route crashed: /${routeName} → ${failingComponent}\n` +
+          `${err?.message || String(err)}\n` +
+          `${err?.stack || ''}`,
+        );
+      } catch { /* ignore — never re-throw into crashed boundary */ }
+
       const payload = {
         message:   err?.message ?? String(err),
-        component: info?.componentStack?.trim().split('\n')[1]?.trim() || 'unknown',
+        component: failingComponent,
         route:     routeName,
         source:    'SafeRouteShell',
       };

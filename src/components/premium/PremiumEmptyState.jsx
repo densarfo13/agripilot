@@ -26,7 +26,8 @@
 
 import React from 'react';
 import PremiumCard from './PremiumCard.jsx';
-import { PREMIUM_TOKENS as T } from './index.js';
+// Wire-up audit (May 2026) — see tokens.js header.
+import { PREMIUM_TOKENS as T } from './tokens.js';
 
 function _defaultLeafIcon() {
   return (

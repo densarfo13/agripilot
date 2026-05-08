@@ -37,7 +37,8 @@
  */
 
 import React from 'react';
-import { PREMIUM_TOKENS as T } from './index.js';
+// Wire-up audit (May 2026) — see tokens.js header.
+import { PREMIUM_TOKENS as T } from './tokens.js';
 
 const ACCENT = {
   green:   { ink: T.greenInk, soft: T.greenSoft, border: T.greenBorder },
@@ -58,8 +59,11 @@ export default function PremiumPageHero({
   testId = 'premium-page-hero',
   children = null,
 }) {
-  const a = ACCENT[accent] || ACCENT.green;
-  const isGarden = mode === 'garden';
+  // Wire-up audit (May 2026) — coerce both inputs through
+  // String() before lookup so a stale prop shape (number, null,
+  // boolean) can't read from `ACCENT[undefined]`.
+  const a = ACCENT[String(accent)] || ACCENT.green;
+  const isGarden = String(mode) === 'garden';
 
   // Stack: vertical dark gradient ON TOP of the image so text
   // stays legible regardless of underlying photo. Garden mode
@@ -100,18 +104,32 @@ export default function PremiumPageHero({
             {eyebrow}
           </span>
         )}
-        {chip && (
-          <span
-            style={{
-              ...S.chip,
-              color: ACCENT[chip.tone || 'neutral'].ink,
-              background: ACCENT[chip.tone || 'neutral'].soft,
-              border: `1px solid ${ACCENT[chip.tone || 'neutral'].border}`,
-            }}
-          >
-            {chip.label}
-          </span>
-        )}
+        {chip && (() => {
+          // Wire-up audit (May 2026) — defensive accessor. The
+          // chip prop SHOULD be `{ label, tone }` but a caller
+          // could legitimately pass a malformed object during
+          // hot-reload or stale-cache rehydration. Falling
+          // through to the neutral palette guarantees a real
+          // ACCENT row exists, so the destructure on the next
+          // line never reads from `undefined.ink`.
+          const tone = (chip && typeof chip.tone === 'string' && ACCENT[chip.tone])
+            ? chip.tone : 'neutral';
+          const accent = ACCENT[tone] || ACCENT.neutral;
+          const label = (chip && chip.label != null) ? String(chip.label) : '';
+          if (!label) return null;
+          return (
+            <span
+              style={{
+                ...S.chip,
+                color:      accent.ink,
+                background: accent.soft,
+                border:     `1px solid ${accent.border}`,
+              }}
+            >
+              {label}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Title + subtitle */}

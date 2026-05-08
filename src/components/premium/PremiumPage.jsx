@@ -30,7 +30,10 @@
  */
 
 import React from 'react';
-import { PREMIUM_TOKENS as T } from './index.js';
+// Wire-up audit (May 2026) — import tokens from the leaf
+// `tokens.js` module to avoid a circular dependency with
+// `index.js`. See tokens.js header for the full rationale.
+import { PREMIUM_TOKENS as T } from './tokens.js';
 
 export default function PremiumPage({
   mode = 'farm',
@@ -41,15 +44,24 @@ export default function PremiumPage({
   testId = null,
   children,
 }) {
-  const isGarden = mode === 'garden';
+  // Wire-up audit (May 2026) — defensive token access. Even
+  // though `tokens.js` exports a frozen object, a circular
+  // import bug or a future build-tool reordering could surface
+  // `T` as undefined here. The `T && T.field` chain plus
+  // hard-coded fallbacks guarantee the page renders SOMETHING
+  // visible rather than throwing during the first paint.
+  const isGarden = String(mode) === 'garden';
   const themeClass = isGarden ? 'ff-theme-garden' : 'ff-theme-farm';
-  const bgTop = isGarden ? T.bgGardenTop : T.bgTop;
-  const bgBot = isGarden ? T.bgGardenBot : T.bgBottom;
+  const bgTop = isGarden ? (T && T.bgGardenTop) || '#0B2421'
+                         : (T && T.bgTop)       || '#0B1D34';
+  const bgBot = isGarden ? (T && T.bgGardenBot) || '#08231C'
+                         : (T && T.bgBottom)    || '#081423';
+  const inkColor = (T && T.ink) || '#FFFFFF';
 
   const pageStyle = {
     minHeight:  '100vh',
     background: `linear-gradient(180deg, ${bgTop} 0%, ${bgBot} 100%)`,
-    color:      T.ink,
+    color:      inkColor,
     padding:    `1.25rem 1rem ${bottomPad}`,
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     ...(style || {}),

@@ -16,7 +16,8 @@
  */
 
 import React from 'react';
-import { PREMIUM_TOKENS as T } from './index.js';
+// Wire-up audit (May 2026) — see tokens.js header.
+import { PREMIUM_TOKENS as T } from './tokens.js';
 
 const TONES = {
   green:   { ink: T.greenInk, soft: T.greenSoft, border: T.greenBorder },
