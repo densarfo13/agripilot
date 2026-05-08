@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Field with wind streaks">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#243240"/>
+      <stop offset="55%" stop-color="#172832"/>
+      <stop offset="100%" stop-color="#0b1820"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a4a32"/>
+      <stop offset="100%" stop-color="#0c2418"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <g stroke="rgba(200,225,235,0.18)" stroke-linecap="round" fill="none">
+    <path d="M40,140 q 80,-12 160,0" stroke-width="2"/>
+    <path d="M260,180 q 90,-10 180,2" stroke-width="2"/>
+    <path d="M520,120 q 70,-8 140,4" stroke-width="2"/>
+    <path d="M120,220 q 100,-12 200,0" stroke-width="1.6"/>
+    <path d="M460,240 q 110,-10 220,2" stroke-width="1.6"/>
+  </g>
+  <path d="M0,300 Q200,272 400,294 T800,288 L800,360 L0,360 Z" fill="rgba(80,140,90,0.4)"/>
+  <path d="M0,360 Q200,330 400,352 T800,344 L800,420 L0,420 Z" fill="rgba(55,100,65,0.55)"/>
+</svg>

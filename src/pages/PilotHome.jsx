@@ -43,9 +43,10 @@ import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
 import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
-import MorningBriefingCard       from '../components/home/MorningBriefingCard.jsx';
 import ScanSecondaryButton       from '../components/home/ScanSecondaryButton.jsx';
+import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
+import useExperience             from '../hooks/useExperience.js';
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -143,6 +144,13 @@ export default function PilotHome() {
   // When FEATURE_DAILY_HABIT is false, values are unused but the hook
   // still runs safely (pure localStorage reads, no side-effects).
   const habit = useDailyHabit();
+
+  // ─── Experience snapshot (multi-farm / multi-garden) ─────────
+  // Drives the FarmGardenProfileCard at the top of Home. Hook is
+  // called unconditionally so rules-of-hooks holds even when the
+  // snapshot is empty (in which case `xp.activeEntity` is null
+  // and the card falls back to mode-default labels).
+  const xp = useExperience();
 
   // Boot diagnostic — DEV ONLY (production cleanup spec §11:
   // suppress boot console spam in production builds).
@@ -321,6 +329,37 @@ export default function PilotHome() {
   // Falls back to 'farm' so unauthenticated boots still tint.
   const themeClass = ctxIntel.mode === 'garden' ? 'ff-theme-garden' : 'ff-theme-farm';
 
+  // ─── Profile-card source-of-truth ───────────────────────────
+  // FarmGardenProfileCard needs the active entity + count.
+  // useExperience returns gardens / farms arrays + the active
+  // entity; we derive the card props from the snapshot. The
+  // hook is called unconditionally above (rules-of-hooks safe);
+  // a try/catch only guards property access so a malformed
+  // snapshot can never blank Home.
+  let experienceMode   = ctxIntel.mode === 'garden' ? 'garden' : 'farm';
+  let experienceEntity = null;
+  let experienceCount  = null;
+  try {
+    if (xp) {
+      experienceEntity = xp.activeEntity || null;
+      // Prefer the store-canonical experience over ctxIntel when
+      // they disagree.
+      if (xp.experience === 'garden' || xp.experience === 'backyard') {
+        experienceMode = 'garden';
+      } else if (xp.experience === 'farm' || xp.experience === 'farmer') {
+        experienceMode = 'farm';
+      }
+      const list = experienceMode === 'garden' ? xp.gardens : xp.farms;
+      experienceCount = Array.isArray(list) ? list.length : null;
+    }
+  } catch { /* swallow — show mode-default labels */ }
+  // Fall back to the localStorage farm record so first-run pilot
+  // accounts (one farm, no multi-experience entries yet) still
+  // see a populated card.
+  if (!experienceEntity && local.farm && experienceMode === 'farm') {
+    experienceEntity = local.farm;
+  }
+
   return (
     <div
       style={S.page}
@@ -355,18 +394,17 @@ export default function PilotHome() {
           </div>
         </header>
 
-        {/* ── 1b. Morning Briefing Card ────────────────────────
-             Calm, high-value daily summary. Always renders
-             (FALLBACK_BRIEFING covers the no-context path).
-             FeatureShell isolates any render crash so a broken
-             briefing never blanks the rest of Home. */}
-        <FeatureShell name="morning-briefing" silent>
-          <MorningBriefingCard
-            userTypeLabel={userTypeLabel}
-            weather={weather}
-            ctxIntel={ctxIntel}
-            taskDone={taskDone}
-            now={now}
+        {/* ── 1b. Farm/Garden profile selector ─────────────────
+             Compact dark-glass card — active grow name + count
+             chevron. Tapping opens /my-farm or /my-grow. Replaces
+             the old "Tip for today" briefing card; the
+             WeatherHeroActionCard below now carries the daily
+             insight + recommendation surface. */}
+        <FeatureShell name="profile-card" silent>
+          <FarmGardenProfileCard
+            mode={experienceMode}
+            entity={experienceEntity}
+            count={experienceCount}
           />
         </FeatureShell>
 
@@ -452,39 +490,13 @@ export default function PilotHome() {
           </section>
         )}
 
-        {/* ── 3b. Recommendation CTA (action surface) ──────────
-             The briefing above shows the recommendation TEXT;
-             this strip provides the optional CTA link so the
-             surface stays interactive. Hidden for 'general'
-             type and when no actionPath exists — the briefing
-             itself already carries the message. */}
-        {ctxIntel.recommendation
-          && ctxIntel.recommendation.type !== 'general'
-          && ctxIntel.recommendation.actionPath
-          && (
-          <FeatureShell name="ctx-recommendation" silent>
-            <Link
-              to={ctxIntel.recommendation.actionPath}
-              style={S.ctxRecLink}
-              data-testid="pilot-home-ctx-recommendation-link"
-            >
-              {ctxIntel.recommendation.action || 'View'} →
-            </Link>
-          </FeatureShell>
-        )}
-
-        {/* ── 4. Quick actions ─────────────────────────────────── */}
-        <section style={S.linksGrid}>
-          <Link to="/my-farm"  style={S.linkTile}>My Farm</Link>
-          <Link to="/my-grow"  style={S.linkTile}>My Grow</Link>
-          <Link to="/tasks"    style={S.linkTile}>Tasks</Link>
-          <Link to="/progress" style={S.linkTile}>Progress</Link>
-        </section>
-
-        {/* ── 5. Sell / funding prompt ─────────────────────────
+        {/* ── 4. Sell / funding prompt ─────────────────────────
              Visible only at harvest stage (farm mode only).
-             Lives below the quick actions so it never disrupts
-             the primary task flow. */}
+             The Quick Actions grid + the Recommendation CTA strip
+             have been removed (Home Mockup spec §1: bottom nav
+             owns navigation, no dashboard overload on Home). The
+             sell/funding prompt is the single conditional CTA
+             allowed below the on-track surface, gated to harvest. */}
         {ctxIntel.sellPrompt && (
           <Link
             to="/sell"

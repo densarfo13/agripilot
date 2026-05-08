@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Calm green field">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a3a2c"/>
+      <stop offset="55%" stop-color="#0f2a20"/>
+      <stop offset="100%" stop-color="#091c14"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22512f"/>
+      <stop offset="100%" stop-color="#0e2a18"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="rgba(180,230,150,0.18)"/>
+      <stop offset="100%" stop-color="rgba(180,230,150,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <rect width="800" height="480" fill="url(#glow)"/>
+  <path d="M0,310 Q200,290 400,305 T800,300 L800,360 L0,360 Z" fill="rgba(60,120,70,0.35)"/>
+  <path d="M0,360 Q200,340 400,355 T800,350 L800,420 L0,420 Z" fill="rgba(40,90,55,0.55)"/>
+</svg>

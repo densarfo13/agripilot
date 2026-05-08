@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Soft cloudy field">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a3640"/>
+      <stop offset="55%" stop-color="#1a2a2a"/>
+      <stop offset="100%" stop-color="#0d1a18"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2c4d36"/>
+      <stop offset="100%" stop-color="#0e2618"/>
+    </linearGradient>
+    <radialGradient id="cloud1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(170,180,190,0.45)"/>
+      <stop offset="100%" stop-color="rgba(170,180,190,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <ellipse cx="180" cy="100" rx="200" ry="55" fill="url(#cloud1)"/>
+  <ellipse cx="500" cy="80" rx="240" ry="48" fill="url(#cloud1)"/>
+  <ellipse cx="720" cy="140" rx="160" ry="40" fill="url(#cloud1)"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <path d="M0,310 Q200,288 400,302 T800,298 L800,360 L0,360 Z" fill="rgba(70,130,90,0.35)"/>
+  <path d="M0,360 Q200,340 400,354 T800,350 L800,420 L0,420 Z" fill="rgba(50,100,70,0.55)"/>
+</svg>

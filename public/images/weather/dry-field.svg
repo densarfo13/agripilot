@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Warm dry field">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a3520"/>
+      <stop offset="55%" stop-color="#2e2014"/>
+      <stop offset="100%" stop-color="#15110a"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6a5430"/>
+      <stop offset="100%" stop-color="#221a0e"/>
+    </linearGradient>
+    <radialGradient id="amber" cx="72%" cy="22%" r="55%">
+      <stop offset="0%" stop-color="rgba(255,180,90,0.40)"/>
+      <stop offset="100%" stop-color="rgba(255,180,90,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <rect width="800" height="480" fill="url(#amber)"/>
+  <circle cx="600" cy="100" r="48" fill="rgba(255,200,120,0.7)"/>
+  <path d="M0,310 Q200,290 400,304 T800,298 L800,360 L0,360 Z" fill="rgba(150,120,60,0.4)"/>
+  <path d="M0,360 Q200,340 400,354 T800,348 L800,420 L0,420 Z" fill="rgba(110,90,45,0.6)"/>
+  <g stroke="rgba(60,40,20,0.5)" stroke-width="0.8" stroke-linecap="round" fill="none">
+    <path d="M120,395 l 40,15"/>
+    <path d="M240,410 l 60,18"/>
+    <path d="M460,400 l 50,16"/>
+    <path d="M600,415 l 70,18"/>
+  </g>
+</svg>

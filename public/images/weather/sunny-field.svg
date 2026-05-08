@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sunlit field">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3d5a2a"/>
+      <stop offset="55%" stop-color="#243d1c"/>
+      <stop offset="100%" stop-color="#0f1f10"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a7a36"/>
+      <stop offset="100%" stop-color="#1c3a18"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="78%" cy="18%" r="40%">
+      <stop offset="0%" stop-color="rgba(255,220,140,0.55)"/>
+      <stop offset="55%" stop-color="rgba(255,200,100,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,200,100,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <rect width="800" height="480" fill="url(#sunGlow)"/>
+  <circle cx="620" cy="90" r="55" fill="rgba(255,235,170,0.7)"/>
+  <path d="M0,300 Q200,275 400,295 T800,290 L800,360 L0,360 Z" fill="rgba(105,160,80,0.40)"/>
+  <path d="M0,360 Q200,338 400,352 T800,348 L800,420 L0,420 Z" fill="rgba(70,120,55,0.55)"/>
+</svg>

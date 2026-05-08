@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hot afternoon over field">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a3320"/>
+      <stop offset="55%" stop-color="#352016"/>
+      <stop offset="100%" stop-color="#180e08"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5e6a30"/>
+      <stop offset="100%" stop-color="#221c0c"/>
+    </linearGradient>
+    <radialGradient id="hot" cx="74%" cy="18%" r="55%">
+      <stop offset="0%" stop-color="rgba(255,160,80,0.55)"/>
+      <stop offset="100%" stop-color="rgba(255,160,80,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <rect width="800" height="480" fill="url(#hot)"/>
+  <circle cx="620" cy="80" r="60" fill="rgba(255,180,90,0.85)"/>
+  <path d="M0,300 Q200,278 400,294 T800,288 L800,360 L0,360 Z" fill="rgba(140,140,60,0.4)"/>
+  <path d="M0,360 Q200,338 400,352 T800,348 L800,420 L0,420 Z" fill="rgba(95,95,45,0.6)"/>
+</svg>

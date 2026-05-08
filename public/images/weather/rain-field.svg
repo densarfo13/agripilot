@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Rain over wet field">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2735"/>
+      <stop offset="55%" stop-color="#152232"/>
+      <stop offset="100%" stop-color="#0a1722"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f3d2a"/>
+      <stop offset="100%" stop-color="#0a1c12"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(60,80,100,0.55)"/>
+      <stop offset="100%" stop-color="rgba(40,55,70,0)"/>
+    </linearGradient>
+    <pattern id="rainP" x="0" y="0" width="22" height="40" patternUnits="userSpaceOnUse">
+      <line x1="6" y1="0" x2="2" y2="22" stroke="rgba(180,210,235,0.32)" stroke-width="1.2"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="480" fill="url(#sky)"/>
+  <ellipse cx="200" cy="80" rx="180" ry="44" fill="url(#cloud)"/>
+  <ellipse cx="540" cy="60" rx="220" ry="38" fill="url(#cloud)"/>
+  <rect width="800" height="280" fill="url(#rainP)" opacity="0.7"/>
+  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
+  <path d="M0,300 Q200,278 400,290 T800,287 L800,360 L0,360 Z" fill="rgba(50,100,70,0.35)"/>
+  <path d="M0,360 Q200,338 400,352 T800,348 L800,420 L0,420 Z" fill="rgba(35,75,50,0.6)"/>
+  <ellipse cx="200" cy="412" rx="80" ry="3" fill="rgba(150,200,225,0.18)"/>
+  <ellipse cx="500" cy="420" rx="120" ry="3.5" fill="rgba(150,200,225,0.18)"/>
+</svg>
