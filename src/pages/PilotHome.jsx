@@ -34,13 +34,14 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useLiveWeather }  from '../hooks/useLiveWeather.js';
-import useDailyHabit       from '../hooks/useDailyHabit.js';
-import { getWeatherTask }  from '../lib/weatherTaskEngine.js';
-import { trackSafeEvent }  from '../lib/safeEventTracker.js';
-import { FEATURE_DAILY_HABIT } from '../lib/pilotFlags.js';
-import WeatherHeroCard     from '../components/WeatherHeroCard.jsx';
-import { FeatureShell }    from '../components/system/FeatureShell.jsx';
+import { useLiveWeather }        from '../hooks/useLiveWeather.js';
+import useDailyHabit             from '../hooks/useDailyHabit.js';
+import useContextIntelligence    from '../hooks/useContextIntelligence.js';
+import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
+import { trackSafeEvent }        from '../lib/safeEventTracker.js';
+import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
+import WeatherHeroCard           from '../components/WeatherHeroCard.jsx';
+import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -200,6 +201,14 @@ export default function PilotHome() {
     }
   }, [weather]);
 
+  // ─── Context Intelligence Engine ─────────────────────────────
+  // Mode-aware task, alert, and recommendation.
+  // Unconditional hook call — rules-of-hooks safe.
+  // Never throws; always returns a non-null object.
+  // We pass the farm record from local so the engine has crop /
+  // cropStage / indoor / containerSize without a second localStorage read.
+  const ctxIntel = useContextIntelligence({ weather, farm: local.farm });
+
   // Small inline hint — only when weather loaded AND no location
   // coords found. Never a large card; never a blocking warning.
   const hasLocation = !!(
@@ -322,16 +331,37 @@ export default function PilotHome() {
           </p>
         )}
 
+        {/* ── 3a. Context alert banner ─────────────────────────
+             Shown only for critical / warning signals (heat,
+             strong wind, heavy rain). Info-priority alerts are
+             suppressed — the weather card already covers them.
+             FeatureShell isolates any crash so the alert never
+             blanks the rest of Home. */}
+        {ctxIntel.alert
+          && (ctxIntel.alert.priority === 'critical'
+              || ctxIntel.alert.priority === 'warning')
+          && (
+          <FeatureShell name="ctx-alert" silent>
+            <div style={S.ctxAlert} data-testid="pilot-home-ctx-alert">
+              <span style={S.ctxAlertTitle}>{ctxIntel.alert.title}</span>
+              <span style={S.ctxAlertMsg}>{ctxIntel.alert.message}</span>
+            </div>
+          </FeatureShell>
+        )}
+
         {/* ── 3. Today's task ──────────────────────────────────
-             Title changes with weather: rain → drainage,
-             heat → water timing, wind → support plants, etc. */}
+             ctxIntel.todayTask is mode-aware (farm / garden),
+             crop-stage-aware, and scan-aware — richer than the
+             plain weatherTask. Falls back to soil-moisture check
+             when no signal is present. weatherTask is kept as a
+             reference for backward-compat event tracking below. */}
         <section
           style={taskDone ? S.cardDone : S.card}
           data-testid="pilot-home-task"
         >
           <p style={S.cardLabel}>Today's task</p>
-          <h2 style={S.cardTitle}>{weatherTask.title}</h2>
-          <p style={S.cardBody}>{weatherTask.reason}</p>
+          <h2 style={S.cardTitle}>{ctxIntel.todayTask.title}</h2>
+          <p style={S.cardBody}>{ctxIntel.todayTask.reason}</p>
           {taskDone ? (
             <p style={S.doneNote} data-testid="pilot-home-done-note">
               {FEATURE_DAILY_HABIT
@@ -345,10 +375,34 @@ export default function PilotHome() {
               style={S.btnPrimary}
               data-testid="pilot-home-task-cta"
             >
-              {weatherTask.cta}
+              {ctxIntel.todayTask.cta}
             </button>
           )}
         </section>
+
+        {/* ── 3b. Quick recommendation chip ────────────────────
+             Shown when the engine produces a non-generic nudge
+             (sell prompt, funding hint, scan follow-up, or care
+             tip). Hidden for 'general' type so the screen is
+             never cluttered with filler advice. */}
+        {ctxIntel.recommendation
+          && ctxIntel.recommendation.type !== 'general'
+          && (
+          <FeatureShell name="ctx-recommendation" silent>
+            <div style={S.ctxRec} data-testid="pilot-home-ctx-recommendation">
+              <span style={S.ctxRecText}>{ctxIntel.recommendation.text}</span>
+              {ctxIntel.recommendation.actionPath && (
+                <Link
+                  to={ctxIntel.recommendation.actionPath}
+                  style={S.ctxRecLink}
+                  data-testid="pilot-home-ctx-recommendation-link"
+                >
+                  {ctxIntel.recommendation.action}
+                </Link>
+              )}
+            </div>
+          </FeatureShell>
+        )}
 
         {/* ── 4. Quick actions ─────────────────────────────────── */}
         <section style={S.linksGrid}>
@@ -357,6 +411,20 @@ export default function PilotHome() {
           <Link to="/tasks"    style={S.linkTile}>Tasks</Link>
           <Link to="/progress" style={S.linkTile}>Progress</Link>
         </section>
+
+        {/* ── 5. Sell / funding prompt ─────────────────────────
+             Visible only at harvest stage (farm mode only).
+             Lives below the quick actions so it never disrupts
+             the primary task flow. */}
+        {ctxIntel.sellPrompt && (
+          <Link
+            to="/sell"
+            style={S.ctxSellTile}
+            data-testid="pilot-home-ctx-sell-prompt"
+          >
+            {ctxIntel.sellPrompt}
+          </Link>
+        )}
 
       </div>
     </div>
@@ -551,5 +619,73 @@ const S = {
     fontWeight:     700,
     textDecoration: 'none',
     textAlign:      'center',
+  },
+
+  // ── Context Intelligence styles ──────────────────────────────
+
+  // Alert banner — warning/critical weather signals only.
+  // Amber palette to distinguish from the green brand.
+  ctxAlert: {
+    display:       'flex',
+    flexDirection: 'column',
+    gap:           '0.25rem',
+    padding:       '0.75rem 1rem',
+    background:    'rgba(251,191,36,0.10)',
+    border:        '1px solid rgba(251,191,36,0.28)',
+    borderRadius:  '12px',
+  },
+  ctxAlertTitle: {
+    fontSize:   '0.8125rem',
+    fontWeight: 700,
+    color:      '#FCD34D',
+  },
+  ctxAlertMsg: {
+    fontSize:   '0.875rem',
+    fontWeight: 500,
+    color:      'rgba(255,255,255,0.75)',
+    lineHeight: 1.45,
+  },
+
+  // Recommendation chip — a single-line nudge with optional CTA link.
+  ctxRec: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        '0.6rem',
+    padding:    '0.7rem 1rem',
+    background: 'rgba(34,197,94,0.07)',
+    border:     '1px solid rgba(34,197,94,0.18)',
+    borderRadius: '12px',
+    flexWrap:   'wrap',
+  },
+  ctxRecText: {
+    flex:       '1 1 auto',
+    fontSize:   '0.875rem',
+    fontWeight: 500,
+    color:      'rgba(255,255,255,0.80)',
+    lineHeight: 1.45,
+  },
+  ctxRecLink: {
+    flexShrink:     0,
+    fontSize:       '0.8125rem',
+    fontWeight:     700,
+    color:          '#86EFAC',
+    textDecoration: 'none',
+    whiteSpace:     'nowrap',
+  },
+
+  // Sell / harvest prompt — full-width link tile at harvest stage.
+  // Green-tinted to signal opportunity, not urgency.
+  ctxSellTile: {
+    display:        'block',
+    padding:        '1rem 1.1rem',
+    background:     'rgba(34,197,94,0.10)',
+    border:         '1px solid rgba(34,197,94,0.32)',
+    borderRadius:   '14px',
+    color:          '#86EFAC',
+    fontSize:       '0.9375rem',
+    fontWeight:     700,
+    textDecoration: 'none',
+    textAlign:      'center',
+    lineHeight:     1.4,
   },
 };
