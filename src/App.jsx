@@ -1375,25 +1375,33 @@ export default function App() {
             {/* Scan detection — feature-flag gated. Pages
                 self-bounce to /scan-crop when off so deep links
                 stay reachable. */}
-            {/* /scan + /scan/result/:scanId wrapped in
-                ScanErrorBoundary so a render throw inside the
-                scan tree degrades to a useful "Upload photo +
-                Retry" fallback instead of the global recovery
-                card. The boundary fires `scan_component_error`
-                analytics on every catch. */}
+            {/* /scan + /scan/result/:scanId — Safe Runtime Layer.
+                SafeRouteShell (outer) fires the 8 s loading
+                timeout and catches any render throw that escapes
+                ScanErrorBoundary. ScanErrorBoundary (inner) still
+                handles scan-specific recovery UI ("Upload photo +
+                Retry"). Camera permission denial is handled by
+                ScanCapture's native file picker — the user always
+                has a library fallback. When scanApiEnabled=false
+                the engine returns a rule-based safe mock result so
+                the page renders without any network call. */}
             <Route path="/scan" element={
-              <FeatureGated flag="FEATURE_SCAN" feature="scan">
-                <ScanErrorBoundary>
-                  <ScanPage />
-                </ScanErrorBoundary>
-              </FeatureGated>
+              <SafeRouteShell routeName="scan" loadingMs={5000}>
+                <FeatureGated flag="FEATURE_SCAN" feature="scan">
+                  <ScanErrorBoundary>
+                    <ScanPage />
+                  </ScanErrorBoundary>
+                </FeatureGated>
+              </SafeRouteShell>
             } />
             <Route path="/scan/result/:scanId" element={
-              <FeatureGated flag="FEATURE_SCAN" feature="scan">
-                <ScanErrorBoundary>
-                  <ScanResultPage />
-                </ScanErrorBoundary>
-              </FeatureGated>
+              <SafeRouteShell routeName="scan-result">
+                <FeatureGated flag="FEATURE_SCAN" feature="scan">
+                  <ScanErrorBoundary>
+                    <ScanResultPage />
+                  </ScanErrorBoundary>
+                </FeatureGated>
+              </SafeRouteShell>
             } />
             <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
             <Route path="/ngo/impact"
