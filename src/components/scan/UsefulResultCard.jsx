@@ -34,63 +34,102 @@ import { addScanTasks } from '../../core/scanToTask.js';
 
 const GUIDANCE = Object.freeze({
   healthy: Object.freeze({
-    emoji:    '✅',
-    label:    'Looks Healthy',
-    noticed:  'Your crop appears healthy. No obvious issues detected.',
+    emoji:        '✅',
+    label:        'Looks Healthy',
+    confidence:   'low',
+    noticed:      'Your crop appears healthy. No obvious issues detected.',
     checks: [
       'Continue daily crop monitoring.',
       'Check that water and nutrients are sufficient.',
       'Look for any early stress signs over the next few days.',
     ],
-    task:     'Continue monitoring your crop daily.',
+    recommendation: 'Continue your current care routine and check the plant again tomorrow.',
+    task:         'Continue daily crop check',
   }),
 
   yellowing: Object.freeze({
-    emoji:    '🌿',
-    label:    'Yellowing Leaves',
-    noticed:  'We noticed yellowing that may be caused by water stress, nutrient issues, or pests.',
+    emoji:        '🌿',
+    label:        'Possible Yellowing',
+    confidence:   'medium',
+    noticed:      'We noticed yellowing that may be caused by water stress, nutrient issues, or pests.',
     checks: [
       'Check soil moisture — water if the top inch feels dry.',
       'Inspect lower leaves closely for yellowing pattern.',
       'Look under leaves for pests or sticky residue.',
     ],
-    task:     'Check soil moisture and inspect lower leaves.',
+    recommendation: 'Adjust watering if soil is dry or waterlogged. Avoid wetting leaves at night.',
+    task:         'Check soil moisture and lower leaves',
   }),
 
   holes_or_pest_damage: Object.freeze({
-    emoji:    '🐛',
-    label:    'Holes or Pest Damage',
-    noticed:  'We noticed holes or irregular leaf edges that may indicate pest activity.',
+    emoji:        '🐛',
+    label:        'Possible Pest Damage',
+    confidence:   'medium',
+    noticed:      'We noticed holes or irregular leaf edges that may indicate pest activity.',
     checks: [
       'Inspect under leaves for insects, eggs, or sticky residue.',
       'Check stems and the soil near the base of the plant.',
       'Look for trails, droppings, or chewed roots.',
     ],
-    task:     'Inspect under leaves for pests.',
+    recommendation: 'Hand-remove visible insects where safe. Consider local agronomy advice if damage spreads.',
+    task:         'Inspect under leaves for pests',
   }),
 
   spots_or_disease_concern: Object.freeze({
-    emoji:    '🍂',
-    label:    'Spots or Disease Concern',
-    noticed:  'We noticed spots that may indicate a fungal or bacterial concern.',
+    emoji:        '🍂',
+    label:        'Possible Leaf Disease Concern',
+    confidence:   'medium',
+    noticed:      'Small brown or yellow spots on leaves may indicate a fungal or bacterial concern.',
     checks: [
-      'Separate and isolate affected leaves where possible.',
+      'Look under leaves and check if spots are spreading.',
       'Avoid watering from above — water at the base instead.',
       'Monitor nearby plants over 2–3 days for any spread.',
     ],
-    task:     'Separate affected leaves and monitor for spread.',
+    recommendation: 'Remove heavily affected leaves and avoid wetting leaves when watering.',
+    task:         'Monitor affected leaves and avoid overhead watering',
+  }),
+
+  // Plantix-style upgrade — two new safe categories.
+  wilting: Object.freeze({
+    emoji:        '💧',
+    label:        'Possible Wilting',
+    confidence:   'medium',
+    noticed:      'Wilting may be caused by under-watering, root issues, or heat stress.',
+    checks: [
+      'Feel soil 5 cm below the surface to check moisture.',
+      'Inspect roots and stem base for rot or pests.',
+      'Note the time of day — heat-wilt usually recovers by evening.',
+    ],
+    recommendation: 'Water gently if soil is dry. Improve drainage if soil feels waterlogged.',
+    task:         'Check soil moisture and the root area',
+  }),
+
+  nutrient_stress: Object.freeze({
+    emoji:        '🌱',
+    label:        'Possible Nutrient Stress',
+    confidence:   'medium',
+    noticed:      'Pale, off-colour, or stunted growth may suggest nutrient stress.',
+    checks: [
+      'Check whether older or newer leaves show the colour change first.',
+      'Note recent fertiliser or feeding history.',
+      'Inspect for waterlogged or compacted soil that limits uptake.',
+    ],
+    recommendation: 'Add a balanced feed if soil is dry. Avoid over-fertilising.',
+    task:         'Check leaf colour and growth pattern',
   }),
 
   needs_review: Object.freeze({
-    emoji:    '📷',
-    label:    'Unclear Photo',
-    noticed:  'The photo didn\'t give us enough detail to identify a specific issue.',
+    emoji:        '📷',
+    label:        'Needs Review',
+    confidence:   'low',
+    noticed:      'The photo didn\'t give us enough detail to identify a specific issue.',
     checks: [
       'Take the photo outdoors in good natural light.',
       'Get close to the affected leaf or area.',
       'Remove shadows and avoid blurry shots.',
     ],
-    task:     'Take a clearer photo in good light.',
+    recommendation: 'Take another clear photo or inspect manually.',
+    task:         'Inspect plant manually',
   }),
 });
 
@@ -128,6 +167,43 @@ const S = {
     background: 'rgba(255,255,255,0.08)',
     border: '1px solid rgba(255,255,255,0.18)',
     color: 'rgba(255,255,255,0.80)',
+  },
+  // Confidence pill — sits beside the category chip. Tone shifts
+  // by level so users feel the difference at a glance without
+  // alarming language.
+  confChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    padding: '3px 9px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.13)',
+    color: 'rgba(255,255,255,0.72)',
+  },
+  confDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.55)',
+  },
+  // Recommended-action section — green-tinted to signal "what to do"
+  // distinct from the white observation text and the green-bordered
+  // task block. Stays calm: no alarming red.
+  recBlock: {
+    padding: '10px 13px',
+    borderRadius: 10,
+    background: 'rgba(34,197,94,0.04)',
+    border: '1px solid rgba(34,197,94,0.16)',
+  },
+  recText: {
+    margin: 0,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 1.5,
   },
   // Section label
   sectionLabel: {
@@ -245,9 +321,16 @@ export default function UsefulResultCard({
     const category = (result && result.category) ? result.category : 'needs_review';
     const guidance  = GUIDANCE[category] || _FALLBACK;
     const scanId    = (result && result.scanId) ? result.scanId : null;
+    // Prefer the Plantix-style result.taskTitle when present (the
+    // future ML backend will populate it); else use the per-category
+    // default from GUIDANCE. Either way the title is short, calm,
+    // and actionable.
+    const title = (result && typeof result.taskTitle === 'string' && result.taskTitle.trim())
+      ? result.taskTitle.trim()
+      : guidance.task;
     try {
       addScanTasks(
-        [{ title: guidance.task, urgency: 'medium', actionType: 'inspect' }],
+        [{ title, urgency: 'medium', actionType: 'inspect' }],
         { scanId, experience }
       );
     } catch { /* never crash the card */ }
@@ -268,7 +351,7 @@ export default function UsefulResultCard({
       data-category={category}
       data-experience={experience}
     >
-      {/* Category chip */}
+      {/* Category chip + confidence pill (Plantix-style header) */}
       <div style={S.chipRow}>
         <span
           style={S.chip}
@@ -276,24 +359,56 @@ export default function UsefulResultCard({
         >
           {guidance.emoji} {guidance.label}
         </span>
+        {/* Confidence is read from result.confidence when present (the
+            future ML backend will set it), else falls back to the
+            per-category default in GUIDANCE. Always rendered so the
+            user sees how strong the signal is. */}
+        <span
+          style={S.confChip}
+          data-testid="useful-result-confidence"
+          data-confidence={(result && result.confidence) || guidance.confidence}
+        >
+          <span style={S.confDot} aria-hidden="true" />
+          Confidence: {((result && result.confidence) || guidance.confidence || 'low')
+            .replace(/^./, (c) => c.toUpperCase())}
+        </span>
       </div>
 
       {/* What we noticed */}
       <div>
         <div style={S.sectionLabel}>What we noticed</div>
         <p style={S.noticedText} data-testid="useful-result-noticed">
-          {guidance.noticed}
+          {(result && result.noticed) || guidance.noticed}
         </p>
       </div>
 
       {/* What to check next */}
       <div>
         <div style={S.sectionLabel}>What to check next</div>
-        <ul style={S.checkList} data-testid="useful-result-checks">
-          {guidance.checks.map((check, i) => (
-            <li key={i}>{check}</li>
-          ))}
-        </ul>
+        {/* If the result carries a single checkNext string (Plantix-
+            style backend shape) render it as a paragraph; else fall
+            back to the per-category checks list. */}
+        {result && result.checkNext ? (
+          <p style={S.noticedText} data-testid="useful-result-checks">
+            {result.checkNext}
+          </p>
+        ) : (
+          <ul style={S.checkList} data-testid="useful-result-checks">
+            {guidance.checks.map((check, i) => (
+              <li key={i}>{check}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Recommended action — separate from the suggested task so
+          the user reads "what to do" before being asked to add a
+          reminder for tomorrow. */}
+      <div style={S.recBlock} data-testid="useful-result-recommendation-block">
+        <div style={S.sectionLabel}>Recommended action</div>
+        <p style={S.recText} data-testid="useful-result-recommendation">
+          {(result && result.recommendation) || guidance.recommendation}
+        </p>
       </div>
 
       {/* Suggested task */}
@@ -301,7 +416,9 @@ export default function UsefulResultCard({
         <div style={S.sectionLabel}>Suggested task</div>
         <div style={S.taskRow}>
           <span style={S.taskText} data-testid="useful-result-task-text">
-            {guidance.task}
+            {(result && typeof result.taskTitle === 'string' && result.taskTitle.trim())
+              ? result.taskTitle.trim()
+              : guidance.task}
           </span>
           {taskAdded ? (
             <span style={S.taskToast} data-testid="useful-result-task-toast">

@@ -22,11 +22,17 @@ import { SCAN_HISTORY_KEY } from '../../lib/scan/scanHistoryStore.js';
 
 // ─── Per-category display ─────────────────────────────────────────
 
+// Plantix-style upgrade — added wilting + nutrient_stress so the
+// history list renders the new safe categories with proper
+// labels and emojis. Unknown categories still fall through the
+// _meta() default below.
 const CATEGORY_META = Object.freeze({
   healthy:                  { emoji: '✅', label: 'Healthy' },
   yellowing:                { emoji: '🌿', label: 'Yellowing' },
   holes_or_pest_damage:     { emoji: '🐛', label: 'Pest damage' },
-  spots_or_disease_concern: { emoji: '🍂', label: 'Spots' },
+  spots_or_disease_concern: { emoji: '🍂', label: 'Leaf spots' },
+  wilting:                  { emoji: '💧', label: 'Wilting' },
+  nutrient_stress:          { emoji: '🌱', label: 'Nutrient stress' },
   needs_review:             { emoji: '📷', label: 'Unclear photo' },
 });
 
