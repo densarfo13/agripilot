@@ -37,6 +37,7 @@ import { Link } from 'react-router-dom';
 import { useLiveWeather }        from '../hooks/useLiveWeather.js';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
+import { tSafe }                 from '../i18n/tSafe.js';
 import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
@@ -234,8 +235,18 @@ export default function PilotHome() {
     } catch { return 'Hello'; }
   })();
 
+  // Garden Mode polish: greet the user as "Gardener" when the
+  // active grow mode is garden, regardless of the legacy userType
+  // record (which most pilot accounts have stamped as 'farmer'
+  // for historical reasons). ctxIntel.mode is the canonical
+  // source — driven by farroway_active_grow_mode + ExperienceTabs.
+  // Localized via tSafe so non-English locales pick up the
+  // gardener label without a code change.
   const userTypeLabel = (() => {
     try {
+      if (ctxIntel.mode === 'garden') {
+        return tSafe('gardenMode.userLabel', 'Gardener');
+      }
       const ut = local.userType;
       if (typeof ut !== 'string' || !ut.trim()) return 'Farmer';
       if (ut === 'farmer') return 'Farmer';

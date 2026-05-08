@@ -69,6 +69,10 @@ import { BRIEFING_SCAN_TRANSLATIONS }          from './briefingScanTranslations.
 // wind lodging, rice flood drainage, leafy heat, etc.). Same shape
 // as BRIEFING_SCAN_TRANSLATIONS.
 import { INTELLIGENCE_TRANSLATIONS }           from './intelligenceTranslations.js';
+// Garden Mode polish overlay — gardener label, garden-friendly
+// empty states, garden voice answers, scan chip variants. Same
+// shape, same merge contract.
+import { GARDEN_MODE_TRANSLATIONS }            from './gardenModeTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -113,6 +117,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     Translator-authored values in T always win.
   for (const key of Object.keys(INTELLIGENCE_TRANSLATIONS)) {
     const row = INTELLIGENCE_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1d. Garden Mode overlay — gardener label, garden empty states,
+  //     garden voice answers, scan chip variants.
+  for (const key of Object.keys(GARDEN_MODE_TRANSLATIONS)) {
+    const row = GARDEN_MODE_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {
