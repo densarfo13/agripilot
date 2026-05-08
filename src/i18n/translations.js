@@ -13580,6 +13580,13 @@ const T = {
   'progress.hero.title':     { en: 'Your growth journey',        fr: 'Votre parcours de croissance',           sw: 'Safari yako ya ukuaji',    ha: 'Tafiyar girmanka',         tw: 'Wo nyini\u025B akwantuo',                  hi: '\u0906\u092A\u0915\u0940 \u0935\u093F\u0915\u093E\u0938 \u092F\u093E\u0924\u094D\u0930\u093E' },
   'progress.hero.subtitle':  { en: 'Watch each stage build toward harvest.', fr: 'Voyez chaque \u00e9tape mener \u00e0 la r\u00e9colte.', sw: 'Tazama kila hatua ikielekea mavuno.', ha: 'Duba kowane mataki yana kai ga girbi.', tw: 'Hw\u025B s\u025Bdi\u025B kwan biara siw twa toa.',  hi: '\u0939\u0930 \u091A\u0930\u0923 \u0915\u094B \u0915\u091F\u093E\u0908 \u0915\u0940 \u0913\u0930 \u092C\u0922\u093C\u0924\u0947 \u0939\u0941\u090F \u0926\u0947\u0916\u0947\u0902\u0964' },
   'tasks.hero.subtitle':     { en: 'One clear task at a time \u2014 pick the next one.', fr: 'Une t\u00e2che claire \u00e0 la fois, choisissez la suivante.', sw: 'Kazi moja wazi kwa wakati \u2014 chagua inayofuata.', ha: 'Aiki \u0257aya bayyananne a kowane lokaci \u2014 ka zabi na gaba.', tw: 'Adwuma baako p\u025B b\u025Bba s\u025B \u2014 yi a edi hɔ.', hi: '\u090F\u0915 \u0938\u093E\u0925 \u090F\u0915 \u0938\u094D\u092A\u0937\u094D\u091F \u0915\u093E\u0930\u094D\u092F \u2014 \u0905\u0917\u0932\u093E \u091A\u0941\u0928\u0947\u0902\u0964' },
+
+  // ─── Home wiring spec (May 2026) ───────
+  // Home location-hint + safe-fallback copy. Aligned to spec
+  // wording: "Add location for weather tips" (was: "for live
+  // weather"). Defensive English fallbacks ship with each row.
+  'home.locationHint.cta':   { en: 'Add location',          fr: 'Ajouter un lieu',           sw: 'Ongeza eneo',           ha: 'Ƙara wuri',                 tw: 'Ka beae si',                hi: '\u0938\u094D\u0925\u093E\u0928 \u091C\u094B\u0921\u093C\u0947\u0902' },
+  'home.locationHint.body':  { en: 'for weather tips',      fr: 'pour des conseils m\u00e9t\u00e9o',     sw: 'kwa vidokezo vya hali ya hewa', ha: 'don shawarwarin yanayi',     tw: 'ma wim tebea afotuo',           hi: '\u092E\u094C\u0938\u092E \u0938\u0941\u091D\u093E\u0935 \u0915\u0947 \u0932\u093F\u090F' },
 };
 
 export default T;

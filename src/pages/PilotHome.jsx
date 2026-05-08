@@ -430,16 +430,28 @@ export default function PilotHome() {
             taskDone={taskDone}
             onCta={taskDone
               ? () => { try { navigate('/scan'); } catch { /* swallow */ } }
-              : handleMarkDone}
+              // Wire-up audit (May 2026 §6) — when the daily task
+              // is OPEN, the weather CTA navigates to /tasks so
+              // the user can actually work the task. Marking it
+              // done is reserved for the explicit "Mark done"
+              // button on the Today's task card below — clicking
+              // a hero CTA should never silently complete work
+              // the user hasn't actually performed yet.
+              : () => { try { navigate('/tasks'); } catch { /* swallow */ } }}
           />
         </FeatureShell>
 
         {/* Inline location hint — one calm line, no container,
-            no warning. Links to My Farm where location is edited. */}
+            no warning. Links to My Farm where location is edited.
+            Wire-up audit (May 2026 §3) — copy aligned to "Add
+            location for weather tips". */}
         {showLocationHint && (
           <p style={S.locationHint} data-testid="pilot-home-location-hint">
-            <Link to="/my-farm" style={S.locationHintLink}>Add location</Link>
-            {' '}for live weather
+            <Link to="/my-farm" style={S.locationHintLink}>
+              {tSafe('home.locationHint.cta', 'Add location')}
+            </Link>
+            {' '}
+            {tSafe('home.locationHint.body', 'for weather tips')}
           </p>
         )}
 
