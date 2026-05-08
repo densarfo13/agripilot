@@ -155,8 +155,20 @@ export function getRecentSyncLogs(count = 20) {
 }
 
 // ─── Global error handler (catches unhandled throws + rejections) ──
+// Extension-origin errors are excluded — they are not app errors and
+// must not fill the ring-buffer with unactionable noise.
+function _isExtensionStack(event) {
+  try {
+    const filename = event?.filename || '';
+    const stack = event?.error?.stack || event?.reason?.stack || '';
+    return filename.includes('chrome-extension://') || filename.includes('moz-extension://')
+      || stack.includes('chrome-extension://') || stack.includes('moz-extension://');
+  } catch { return false; }
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
+    if (_isExtensionStack(event)) return;
     logError('crash', event.error || event.message, {
       filename: event.filename,
       lineno: event.lineno,
@@ -164,6 +176,7 @@ if (typeof window !== 'undefined') {
   });
 
   window.addEventListener('unhandledrejection', (event) => {
+    if (_isExtensionStack(event)) return;
     logError('crash', event.reason || 'Unhandled promise rejection');
   });
 }

@@ -1,8 +1,12 @@
 // ── Console noise filter (install FIRST — must run before any log) ─
 // Suppresses chrome-extension, tabs:outgoing.message.ready, and
 // cornhusk/shared-service spam in production. No-op in dev builds.
-import { installConsoleFilter } from './lib/consoleFilter.js';
+import { installConsoleFilter, installGlobalErrorFilter } from './lib/consoleFilter.js';
 installConsoleFilter();
+// Extension error isolation: capture-phase listeners intercept
+// chrome-extension:// / moz-extension:// errors before analytics
+// bubble-phase listeners can fire an app_error event for them.
+installGlobalErrorFilter();
 
 // ── Forced UI cache/state reset + SW disable (run BEFORE everything) ──
 //
@@ -41,6 +45,7 @@ import {
   DISABLE_EVENTS,
 } from './lib/pilotFlags.js';
 import { setOnboardingComplete } from './utils/onboarding.js';
+import { logStartup } from './core/runtime/logger.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
 
@@ -431,10 +436,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // from a user's DevTools console, the boot failed BEFORE
 // createRoot. If it's present but the page is still blank,
 // the watchdog below will say so within 4 seconds.
-try {
-  // eslint-disable-next-line no-console
-  console.log('App mounted successfully');
-} catch { /* swallow */ }
+logStartup();
 
 // ── Blank-screen watchdog ───────────────────────────────────────
 // React's createRoot() returns synchronously; the actual paint
@@ -471,9 +473,6 @@ try {
             }
           } catch { /* swallow */ }
         } else {
-          // eslint-disable-next-line no-console
-          console.log('[FARROWAY_PAINT] Render confirmed.',
-            'children:', childCount, 'textLen:', textLen);
           // Clear any prior blank-screen marker — last boot painted.
           try {
             if (typeof localStorage !== 'undefined') {

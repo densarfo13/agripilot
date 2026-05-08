@@ -49,13 +49,20 @@
 // Each entry is tested with String.prototype.includes() against
 // the stringified first argument of the console call.
 const DENY_PATTERNS = [
-  'chrome-extension://',         // any Chrome extension log
-  'tabs:outgoing.message.ready', // Chrome tab internal channel
-  'cornhusk/shared-service',     // third-party SDK noise
-  '[webpack]',                   // webpack dev-server leak
-  '[HMR]',                       // Vite / webpack hot-module replacement
-  'Download the React DevTools',  // React suggestion (production build)
+  'chrome-extension://',                       // any Chrome extension log
+  'tabs:outgoing.message.ready',               // Chrome tab internal channel
+  'cornhusk/shared-service',                   // third-party SDK noise
+  '[webpack]',                                 // webpack dev-server leak
+  '[HMR]',                                     // Vite / webpack hot-module replacement
+  'Download the React DevTools',               // React suggestion (production build)
   'You are running React in development mode', // React dev warning
+  'content-script.js',                         // extension content-script injection noise
+  'Invalid URL',                               // extension URL parse errors leaking into app
+  '[BOOT] ',                                   // FarmerDashboardPage verbose boot spam
+  '[FARROWAY_PAINT]',                          // blank-screen watchdog success branch (verbose)
+  'PilotHome mounted',                         // PilotHome lifecycle spam
+  'Live weather source:',                      // weather hook verbose trace
+  'Live weather type:',                        // weather hook verbose trace
 ];
 
 // ─── State ────────────────────────────────────────────────────────
@@ -158,6 +165,70 @@ export function restoreConsole() {
  */
 export function isConsoleFilterActive() {
   return _installed;
+}
+
+// ─── Global window error / rejection isolation ────────────────────
+
+/**
+ * Return true when a window ErrorEvent or PromiseRejectionEvent
+ * can be traced back to a browser extension rather than the app.
+ *
+ * Checks both the event's filename attribute and the error stack —
+ * extensions inject from chrome-extension:// or moz-extension://
+ * URLs, and those strings appear in both locations reliably.
+ *
+ * @param {ErrorEvent|PromiseRejectionEvent} ev
+ * @returns {boolean}
+ */
+function _isExtensionError(ev) {
+  try {
+    const EXTENSION_PREFIXES = ['chrome-extension://', 'moz-extension://', 'safari-extension://'];
+    // ErrorEvent has .filename; PromiseRejectionEvent has .reason with .stack
+    const filename = ev?.filename || '';
+    const stack = ev?.error?.stack || ev?.reason?.stack || '';
+    for (const prefix of EXTENSION_PREFIXES) {
+      if (filename.includes(prefix) || stack.includes(prefix)) return true;
+    }
+  } catch { /* never throw from filter */ }
+  return false;
+}
+
+let _globalErrorFilterInstalled = false;
+
+/**
+ * Install capture-phase window listeners that intercept errors
+ * originating from browser extensions before they reach analytics
+ * listeners (which use bubble phase).
+ *
+ * Calling this BEFORE installCrashListeners() ensures extension
+ * errors are stopped before they fire an `app_error` analytics
+ * event or pollute the ring-buffer crash log.
+ *
+ * Idempotent — safe to call multiple times.
+ * Only runs in browser environments — no-op in SSR / tests.
+ */
+export function installGlobalErrorFilter() {
+  try {
+    if (typeof window === 'undefined') return;
+    if (_globalErrorFilterInstalled) return;
+    _globalErrorFilterInstalled = true;
+
+    window.addEventListener('error', (ev) => {
+      try {
+        if (_isExtensionError(ev)) {
+          ev.stopImmediatePropagation();
+        }
+      } catch { /* never throw from filter */ }
+    }, /* capture phase */ true);
+
+    window.addEventListener('unhandledrejection', (ev) => {
+      try {
+        if (_isExtensionError(ev)) {
+          ev.stopImmediatePropagation();
+        }
+      } catch { /* never throw from filter */ }
+    }, /* capture phase */ true);
+  } catch { /* never throw from setup */ }
 }
 
 export default installConsoleFilter;

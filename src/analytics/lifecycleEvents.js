@@ -137,6 +137,17 @@ export function installCrashListeners() {
   try {
     window.addEventListener('error', (ev) => {
       try {
+        // Skip errors originating from browser extensions — they are
+        // not app errors and must not pollute the app_error analytics
+        // stream. installGlobalErrorFilter() (capture phase) has
+        // already stopped propagation, but we guard here too in case
+        // the filter was not installed before this listener.
+        const filename = ev?.filename || '';
+        const stack = ev?.error?.stack || '';
+        if (filename.includes('chrome-extension://') || filename.includes('moz-extension://')
+            || stack.includes('chrome-extension://') || stack.includes('moz-extension://')) {
+          return;
+        }
         fireAppError({
           surface:     'window_onerror',
           errorReason: ev?.error?.message || ev?.message || 'window_error',
@@ -146,6 +157,10 @@ export function installCrashListeners() {
     window.addEventListener('unhandledrejection', (ev) => {
       try {
         const reason = ev?.reason;
+        const stack = reason?.stack || '';
+        if (stack.includes('chrome-extension://') || stack.includes('moz-extension://')) {
+          return;
+        }
         fireAppError({
           surface:     'unhandled_rejection',
           errorReason: (reason && (reason.message || String(reason))) || 'unhandled_rejection',

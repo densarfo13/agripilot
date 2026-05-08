@@ -109,7 +109,7 @@ export default function FarmerDashboardPage() {
     bootDeadlineRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
       // eslint-disable-next-line no-console
-      console.error('[BOOT] bootstrap hard-deadline hit at 10s — forcing loading=false');
+      console.error('[Farroway] dashboard load timeout — forcing loading=false');
       setLoading(false);
       setProfileError((prev) => prev
         || 'Unable to load account. Please refresh or login again.');
@@ -117,24 +117,11 @@ export default function FarmerDashboardPage() {
 
     setLoading(true);
     setProfileError('');
-    // eslint-disable-next-line no-console
-    console.log('[BOOT] starting dashboard bootstrap');
 
     try {
       // Session snapshot — already hydrated by AuthProvider; we just
-      // log which path we're on.
+      // read which user we're on.
       const currentUser = useAuthStore.getState().user || user;
-      if (currentUser) {
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] session ok');
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] user ok');
-      } else {
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] no session');
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] user missing');
-      }
 
       // ─── Farmer profile fetch ────────────────────────────────
       // 503 retry contract: the hardened backend route (commit
@@ -153,8 +140,6 @@ export default function FarmerDashboardPage() {
         } catch (firstErr) {
           const firstStatus = firstErr && firstErr.response && firstErr.response.status;
           if (firstStatus !== 503) throw firstErr;
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] 503 — retrying once after 1500ms');
           await new Promise((resolve) => setTimeout(resolve, 1500));
           if (!aliveRef.current) return;
           // The retry may itself throw — let it propagate to the
@@ -174,13 +159,9 @@ export default function FarmerDashboardPage() {
         // them clearly. This stops the no-session boot path from
         // painting the console red on every fresh install.
         const handledStatus = status === 401 || status === 403 || status === 404;
-        if (handledStatus || aborted) {
+        if (!handledStatus && !aborted) {
           // eslint-disable-next-line no-console
-          console.log('[BOOT] bootstrap recoverable',
-            { status: status || null, aborted: !!aborted });
-        } else {
-          // eslint-disable-next-line no-console
-          console.error('[BOOT] bootstrap failed', err);
+          console.error('[Farroway] dashboard bootstrap failed', err);
         }
 
         // 401 / 403 — clear the session and bounce to /login.
@@ -212,8 +193,6 @@ export default function FarmerDashboardPage() {
           if (cachedProfile404
               && (cachedProfile404.id || cachedProfile404.userId
                   || cachedProfile404.farmerId)) {
-            // eslint-disable-next-line no-console
-            console.log('[BOOT] 404 — using cached farmer profile (no redirect)');
             setProfile(cachedProfile404);
             setProfileError('');
             return;
@@ -235,8 +214,6 @@ export default function FarmerDashboardPage() {
             crop:     null,
             location: null,
           };
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] 404 — using safe-default farmer profile (no redirect)');
           setProfile(SAFE_DEFAULT_PROFILE);
           setProfileError('');
           // Mirror the safe default into the cache so subsequent
@@ -264,13 +241,9 @@ export default function FarmerDashboardPage() {
           catch { return null; }
         })();
         if (cachedProfile) {
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] farmer loaded (cache)');
           setProfile(cachedProfile);
           setProfileError('');
         } else if (!navigator.onLine && currentUser) {
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] farmer loaded (offline user)');
           setProfile(currentUser);
           setProfileError('');
         } else {
@@ -297,8 +270,6 @@ export default function FarmerDashboardPage() {
       const payload = r && r.data;
       const farmer = (payload && (payload.farmer || payload.profile)) || payload || null;
       if (farmer) {
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] farmer loaded');
         setProfile(farmer);
         setProfileError('');
         try { localStorage.setItem('farroway:farmerProfile', JSON.stringify(farmer)); }
@@ -316,8 +287,6 @@ export default function FarmerDashboardPage() {
         if (cachedProfileEmpty
             && (cachedProfileEmpty.id || cachedProfileEmpty.userId
                 || cachedProfileEmpty.farmerId)) {
-          // eslint-disable-next-line no-console
-          console.log('[BOOT] empty payload — using cached farmer profile (no redirect)');
           setProfile(cachedProfileEmpty);
           setProfileError('');
           return;
@@ -328,8 +297,6 @@ export default function FarmerDashboardPage() {
         // surfaces the setup path when THEY choose to tap it.
         // DO NOT add navigate('/profile/setup') or any equivalent
         // here — see src/core/routePolicy.js for the rule.
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] farmer missing — routing to onboarding');
         setShowOnboarding(true);
         return;
       }
@@ -340,15 +307,13 @@ export default function FarmerDashboardPage() {
         const normalizedProfiles = Array.isArray(profiles)
           ? profiles
           : (profiles && profiles.data) ? profiles.data : [];
-        // eslint-disable-next-line no-console
-        console.log('[BOOT] farms loaded', { count: normalizedProfiles.length });
         // Gate onboarding: profiles.length === 0 means no farms saved yet
         if (aliveRef.current && normalizedProfiles.length === 0 && !_fromCache) {
           setShowOnboarding(true);
         }
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('[BOOT] bootstrap failed', err);
+        console.error('[Farroway] dashboard bootstrap failed', err);
         // do NOT show onboarding on fetchProfiles failure — preserve loading state
         if (aliveRef.current && !_fromCache) {
           setProfileError((prev) => prev
@@ -359,12 +324,9 @@ export default function FarmerDashboardPage() {
       // ─── Referral + analytics (non-blocking) ────────────────
       try { fetchReferral(); } catch { /* noop */ }
       try { trackEvent('dashboard_viewed'); } catch { /* noop */ }
-
-      // eslint-disable-next-line no-console
-      console.log('[BOOT] dashboard ready');
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('[BOOT] bootstrap failed', err);
+      console.error('[Farroway] dashboard bootstrap failed', err);
       if (!aliveRef.current) return;
       setProfileError('Failed to load account. Please refresh or login again.');
     } finally {
@@ -380,8 +342,6 @@ export default function FarmerDashboardPage() {
 
   // Retry entry point bound to the error-card button.
   const handleBootstrapRetry = useCallback(() => {
-    // eslint-disable-next-line no-console
-    console.log('[BOOT] retry requested');
     runBootstrap();
   }, [runBootstrap]);
 

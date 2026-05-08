@@ -12,3 +12,4 @@
 export * from './safeDefaults.js';
 export * from './validators.js';
 export * from './safeAsync.js';
+export * from './logger.js';
