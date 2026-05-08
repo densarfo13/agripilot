@@ -37,6 +37,9 @@
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
+import usePlantIdentity from '../../hooks/usePlantIdentity.js';
+import usePlantTimeline from '../../hooks/usePlantTimeline.js';
+import { pickMessage } from '../../lib/plant/reassuranceEngine.js';
 
 // ─── Constants ─────────────────────────────────────────────────
 
@@ -130,6 +133,15 @@ export default function MorningBriefingCard({
   // pick up the new strings on this render.
   useStrictTranslation();
 
+  // Plant companion state — only used in garden mode. Hooks ALWAYS
+  // called (rules-of-hooks) but downstream values are gated on
+  // ctxIntel.mode === 'garden' so the farm-mode card doesn't pick
+  // up garden plant memory. Both stores are localStorage-backed
+  // and never throw.
+  const { plant } = usePlantIdentity();
+  const { count: timelineCount, hasFirstScan, hasFirstFlower, hasFirstFruit } = usePlantTimeline(0);
+  const isGarden = !!(ctxIntel && ctxIntel.mode === 'garden');
+
   // Build the briefing in a single try/catch so a malformed input
   // can never blank Home — every render path resolves to text.
   let greeting, wxLine, wxIcon, accent, taskTitle, taskReason,
@@ -159,6 +171,27 @@ export default function MorningBriefingCard({
       ? al.title : null;
 
     estimatedTime = _estimateTime(task);
+
+    // Garden Mode polish: prefix the task title with the plant
+    // nickname when one has been set, so "Check soil moisture
+    // around your tomato" reads "Check soil moisture around
+    // Balcony Tomato". Strict opt-in — only when:
+    //   • mode is garden (farm mode wording stays operational)
+    //   • the user has stamped a custom nickname (not the
+    //     'My Plant' fallback)
+    //   • the task title contains the bare crop name we can
+    //     swap. We don't try to rewrite arbitrary task titles.
+    if (isGarden
+        && plant && plant.nickname
+        && plant.nickname !== 'My Plant'
+        && plant.plantType
+        && task && typeof task.title === 'string'
+        && task.title.toLowerCase().includes(String(plant.plantType).toLowerCase())) {
+      // Replace ONE occurrence of the plant type with the nickname,
+      // case-preserving via a manual swap.
+      const re = new RegExp('\\b' + plant.plantType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+      taskTitle = task.title.replace(re, plant.nickname);
+    }
   } catch {
     greeting       = `${tSafe('briefing.greeting.morning', 'Good morning')}, ${userTypeLabel || 'Farmer'}`;
     wxLine         = tSafe('briefing.weather.unknown', FALLBACK_BRIEFING.weatherSummary);
@@ -169,6 +202,33 @@ export default function MorningBriefingCard({
     recommendation = null;
     warning        = null;
     estimatedTime  = tSafe('briefing.time.5', FALLBACK_BRIEFING.estimatedTime);
+  }
+
+  // Garden Mode emotional layer: derive a single reassurance/recovery/
+  // delight message based on plant memory. Returns null in farm mode
+  // (the card renders without the new chip). Pure pickMessage call —
+  // safe to inline; never throws.
+  let reassurance = null;
+  if (isGarden) {
+    try {
+      const ctx = ctxIntel || {};
+      reassurance = pickMessage({
+        recentScanCategory: ctx.mode === 'garden' && ctx.alert ? null : null, // engine reads from intel internally
+        // We feed the same scan category the context engine read so
+        // the reassurance line and the task line agree about what
+        // the user just observed.
+        ...(ctx && ctx.scanInsightCategory
+            ? { recentScanCategory: ctx.scanInsightCategory }
+            : {}),
+        // Surface plant memory derived from the timeline + scan
+        // history hooks above.
+        firstScanLogged:    hasFirstScan,
+        firstFlowerLogged:  hasFirstFlower,
+        firstFruitLogged:   hasFirstFruit,
+        timelineCount,
+        isFirstSession:    !plant || !plant.plantType,
+      });
+    } catch { reassurance = null; }
   }
 
   return (
@@ -227,6 +287,21 @@ export default function MorningBriefingCard({
           <p style={S.rec} data-testid="morning-briefing-rec">
             <span style={S.recIcon} aria-hidden="true">💡</span>
             <span>{recommendation}</span>
+          </p>
+        )}
+
+        {/* Garden Mode reassurance / delight / recovery line — soft
+            single sentence chosen by reassuranceEngine based on
+            plant memory (timeline + scan history + streak).
+            Only renders in garden mode and only when the engine
+            returns a message. Never alarming; never guilt-inducing. */}
+        {reassurance && (
+          <p
+            style={reassurance.severity === 'positive' ? S.reassurePositive : S.reassureCalm}
+            data-testid="morning-briefing-reassurance"
+            data-reassurance-kind={reassurance.kind}
+          >
+            {tSafe(reassurance.key, reassurance.fallback)}
           </p>
         )}
 
@@ -352,6 +427,30 @@ const S = {
     fontSize:   '0.95rem',
     lineHeight: 1.2,
     flexShrink: 0,
+  },
+  // Garden Mode reassurance line — calm green tint for soft
+  // observations / beginner guidance. No icon, no border, no
+  // box; reads as a quiet companion sentence beneath the
+  // recommendation.
+  reassureCalm: {
+    margin:     0,
+    fontSize:   '0.8125rem',
+    fontWeight: 500,
+    color:      'rgba(255,255,255,0.62)',
+    lineHeight: 1.5,
+    fontStyle:  'italic',
+    paddingTop: '0.1rem',
+  },
+  // Reassurance — POSITIVE variant (delight / recovery). Slightly
+  // warmer green to read as a small celebration without becoming
+  // a flashy badge.
+  reassurePositive: {
+    margin:     0,
+    fontSize:   '0.8125rem',
+    fontWeight: 600,
+    color:      '#86EFAC',
+    lineHeight: 1.5,
+    paddingTop: '0.1rem',
   },
   warning: {
     margin:       0,

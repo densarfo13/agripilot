@@ -73,6 +73,10 @@ import { INTELLIGENCE_TRANSLATIONS }           from './intelligenceTranslations.
 // empty states, garden voice answers, scan chip variants. Same
 // shape, same merge contract.
 import { GARDEN_MODE_TRANSLATIONS }            from './gardenModeTranslations.js';
+// Plant Companion overlay — timeline milestones, reassurance,
+// recovery, delight, and beginner guidance. Consumed by the
+// reassurance engine + plant timeline UI.
+import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -129,6 +133,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     garden voice answers, scan chip variants.
   for (const key of Object.keys(GARDEN_MODE_TRANSLATIONS)) {
     const row = GARDEN_MODE_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e. Plant Companion overlay — timeline / reassurance / delight
+  //     / beginner. Same shape, same merge contract.
+  for (const key of Object.keys(PLANT_COMPANION_TRANSLATIONS)) {
+    const row = PLANT_COMPANION_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {
