@@ -1211,27 +1211,27 @@ export default function App() {
                 Server-side: /api/v2/ngo/* routes enforce role + org scope (403 on violation).
                 DO NOT redirect users to setup from here — see routePolicy.js. */}
             <Route path="/ngo" element={
-              <RouteErrorBoundary routeName="ngo-dashboard-v1">
+              <SafeRouteShell routeName="ngo-dashboard-v1">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
                   <RoleRoute roles={[...STAFF_ROLES, 'ngo_admin', 'field_agent', 'ngo', 'reviewer']}>
                     <NgoDashboardV1 />
                   </RoleRoute>
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/ngo/interventions" element={
-              <RouteErrorBoundary routeName="ngo-interventions">
+              <SafeRouteShell routeName="ngo-interventions">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
                   <InterventionCenter />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/ngo/scores" element={
-              <RouteErrorBoundary routeName="ngo-scores">
+              <SafeRouteShell routeName="ngo-scores">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
                   <FarmerScoring />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             {/* /ngo/funding now renders the v3 FundingAdmin
                 management surface (see route below). The
@@ -1239,11 +1239,11 @@ export default function App() {
                 at /ngo/funding-readiness for any internal
                 links that still point at it. */}
             <Route path="/ngo/funding-readiness" element={
-              <RouteErrorBoundary routeName="ngo-funding-readiness">
+              <SafeRouteShell routeName="ngo-funding-readiness">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
                   <FundingReadiness />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             {/* Monetisation layer (additive). Distinct from the
                 server-fed NGOOverview above; reads local metrics
@@ -1251,31 +1251,31 @@ export default function App() {
                 /pricing itself lives outside this protected block
                 so it can be demo'd without an account. */}
             <Route path="/ngo/value" element={
-              <RouteErrorBoundary routeName="ngo-value">
+              <SafeRouteShell routeName="ngo-value">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
                   <NgoValueDashboard />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/ngo/control" element={
-              <RouteErrorBoundary routeName="ngo-control">
+              <SafeRouteShell routeName="ngo-control">
                 <FeatureGated flag="FEATURE_NGO" feature="ngo">
                   <NgoControlPanel />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             {/* Phase 6 restore — basic Admin dashboard.
                 Client-side: RoleRoute blocks non-admins (redirects to /).
                 Server-side: /api/v2/admin/* enforce super_admin | institutional_admin (403).
                 DO NOT add location/crop/farm checks here — see routePolicy.js. */}
             <Route path="/admin" element={
-              <RouteErrorBoundary routeName="admin-basic">
+              <SafeRouteShell routeName="admin-basic">
                 <FeatureGated flag="FEATURE_ADMIN" feature="admin">
                   <RoleRoute roles={ADMIN_ROLES}>
                     <AdminBasicPage />
                   </RoleRoute>
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
 
             <Route path="/today" element={
@@ -1418,26 +1418,26 @@ export default function App() {
             } />
             <Route path="/ngo/impact"
                    element={
-                     <RouteErrorBoundary routeName="ngo-impact">
+                     <SafeRouteShell routeName="ngo-impact">
                        <FeatureGated flag="FEATURE_NGO" feature="ngo">
                          <RoleRoute roles={STAFF_ROLES}>
                            <NgoImpactPage />
                          </RoleRoute>
                        </FeatureGated>
-                     </RouteErrorBoundary>
+                     </SafeRouteShell>
                    } />
             {/* Admin farm-issue inbox — moved from public block
                 (Phase 6 fix). Local-first page; requires auth +
                 staff role so a farmer who typed the URL directly
                 gets a clean "access denied" rather than raw data. */}
             <Route path="/admin/farm-issues" element={
-              <RouteErrorBoundary routeName="admin-farm-issues">
+              <SafeRouteShell routeName="admin-farm-issues">
                 <FeatureGated flag="FEATURE_ADMIN" feature="admin">
                   <RoleRoute roles={STAFF_ROLES}>
                     <AdminFarmIssuesPage />
                   </RoleRoute>
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
 
             {/* Funding Opportunities admin — same page on
@@ -1445,23 +1445,23 @@ export default function App() {
                 personas land on the same management surface. */}
             <Route path="/admin/funding"
                    element={
-                     <RouteErrorBoundary routeName="admin-funding">
+                     <SafeRouteShell routeName="admin-funding">
                        <FeatureGated flag="FEATURE_ADMIN" feature="admin">
                          <RoleRoute roles={STAFF_ROLES}>
                            <FundingAdmin />
                          </RoleRoute>
                        </FeatureGated>
-                     </RouteErrorBoundary>
+                     </SafeRouteShell>
                    } />
             <Route path="/ngo/funding"
                    element={
-                     <RouteErrorBoundary routeName="ngo-funding">
+                     <SafeRouteShell routeName="ngo-funding">
                        <FeatureGated flag="FEATURE_ADMIN" feature="admin">
                          <RoleRoute roles={STAFF_ROLES}>
                            <FundingAdmin />
                          </RoleRoute>
                        </FeatureGated>
-                     </RouteErrorBoundary>
+                     </SafeRouteShell>
                    } />
 
             {/* NGO Program Distribution — Send a program
@@ -1469,23 +1469,23 @@ export default function App() {
                 on both /admin/programs and /ngo/programs. */}
             <Route path="/admin/programs"
                    element={
-                     <RouteErrorBoundary routeName="admin-programs">
+                     <SafeRouteShell routeName="admin-programs">
                        <FeatureGated flag="FEATURE_ADMIN" feature="admin">
                          <RoleRoute roles={STAFF_ROLES}>
                            <CreateProgram />
                          </RoleRoute>
                        </FeatureGated>
-                     </RouteErrorBoundary>
+                     </SafeRouteShell>
                    } />
             <Route path="/ngo/programs"
                    element={
-                     <RouteErrorBoundary routeName="ngo-programs">
+                     <SafeRouteShell routeName="ngo-programs">
                        <FeatureGated flag="FEATURE_ADMIN" feature="admin">
                          <RoleRoute roles={STAFF_ROLES}>
                            <CreateProgram />
                          </RoleRoute>
                        </FeatureGated>
-                     </RouteErrorBoundary>
+                     </SafeRouteShell>
                    } />
 
             {/* v3 Field Agent Mode — gated to the 'agent'
