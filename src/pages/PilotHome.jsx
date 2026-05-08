@@ -33,6 +33,7 @@ import { useLiveWeather } from '../hooks/useLiveWeather.js';
 import { getWeatherTask }  from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }  from '../lib/safeEventTracker.js';
 import WeatherHeroCard     from '../components/WeatherHeroCard.jsx';
+import { FeatureShell }   from '../components/system/FeatureShell.jsx';
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -289,7 +290,13 @@ export default function PilotHome() {
           </div>
         )}
 
-        <WeatherHeroCard weather={weather} />
+        {/* FeatureShell isolates WeatherHeroCard crashes so a render
+            error in the card never blanks the whole Home screen.
+            silent=true: if WeatherHeroCard throws, render nothing
+            (the Today's task card below still shows). */}
+        <FeatureShell name="weather" silent>
+          <WeatherHeroCard weather={weather} />
+        </FeatureShell>
 
         {/* ── Add location CTA ─────────────────────────────────
              Shown only when:
