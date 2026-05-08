@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Garden hero">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f3d34"/>
+      <stop offset="100%" stop-color="#0a1d18"/>
+    </linearGradient>
+    <radialGradient id="warm" cx="80%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="rgba(255,210,140,0.30)"/>
+      <stop offset="100%" stop-color="rgba(255,210,140,0)"/>
+    </radialGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5fa85f"/>
+      <stop offset="100%" stop-color="#1d4a2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="320" fill="url(#sky)"/>
+  <rect width="800" height="320" fill="url(#warm)"/>
+  <g>
+    <ellipse cx="200" cy="290" rx="80" ry="6" fill="rgba(0,0,0,0.35)"/>
+    <ellipse cx="600" cy="295" rx="100" ry="7" fill="rgba(0,0,0,0.35)"/>
+  </g>
+  <g transform="translate(150,160)">
+    <path d="M50,140 L50,40" stroke="#2d5a2d" stroke-width="3" stroke-linecap="round"/>
+    <path d="M50,80 C 30,72 16,56 18,40 38,42 50,52 50,80 Z" fill="url(#leaf)"/>
+    <path d="M50,68 C 70,62 84,46 82,30 62,32 50,42 50,68 Z" fill="url(#leaf)" opacity="0.92"/>
+  </g>
+  <g transform="translate(540,150)">
+    <path d="M60,150 L60,40" stroke="#2d5a2d" stroke-width="3" stroke-linecap="round"/>
+    <path d="M60,90 C 36,82 18,62 22,42 46,44 60,56 60,90 Z" fill="url(#leaf)"/>
+    <path d="M60,72 C 84,66 100,46 98,28 76,30 60,42 60,72 Z" fill="url(#leaf)" opacity="0.92"/>
+  </g>
+</svg>

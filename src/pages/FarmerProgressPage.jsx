@@ -31,6 +31,9 @@ import { getTaskCompletions, getFeedback } from '../store/farrowayLocal.js';
 import VoiceButton from '../components/VoiceButton.jsx';
 import { tSafe } from '../i18n/tSafe.js';
 import { useNavigate } from 'react-router-dom';
+import {
+  PremiumPage, PremiumPageHero,
+} from '../components/premium/index.js';
 // Define Tab Tap Behavior §4 — farmer-only Funding/Sell
 // shortcuts on Progress. Visibility gated by the central
 // per-userType registry (backyard users get false →
@@ -166,12 +169,30 @@ export default function FarmerProgressPage() {
   if (!profile) return null;
 
   return (
-    <div style={S.page} data-testid="farmer-progress-page">
-      {/* Page title */}
-      <div style={S.pageHeader}>
-        <span style={S.pageIcon}>{SECTION_ICONS.completed}</span>
-        <h1 style={S.pageTitle}>{t('progress.title')}</h1>
-      </div>
+    <PremiumPage
+      mode="farm"
+      testId="farmer-progress-page"
+      maxWidth="36rem"
+      bottomPad="1.5rem"
+    >
+      {/* ── Hero (premium upgrade) ────────────────────────────
+           Progress page now reads as a "growth journey" rather
+           than an analytics screen. The realistic timeline
+           background sets emotional context; the existing card
+           stack below stays unchanged so all current behaviour
+           is preserved. */}
+      <PremiumPageHero
+        mode="farm"
+        eyebrow={tSafe('premium.eyebrow.progress', 'Growth journey')}
+        title={tSafe('progress.hero.title',    'Your growth journey')}
+        subtitle={tSafe(
+          'progress.hero.subtitle',
+          'Watch each stage build toward harvest.',
+        )}
+        bgImage="/images/page-hero/progress.svg"
+        accent="green"
+        testId="progress-hero"
+      />
 
       {loading && (
         <div style={S.loadingWrap}>
@@ -400,7 +421,7 @@ export default function FarmerProgressPage() {
           ) : null}
         </div>
       )}
-    </div>
+    </PremiumPage>
   );
 }
 

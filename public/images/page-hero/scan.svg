@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Scan hero">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e2a32"/>
+      <stop offset="100%" stop-color="#06151a"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ed957"/>
+      <stop offset="100%" stop-color="#2d6a2d"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="320" fill="url(#sky)"/>
+  <g transform="translate(220,40)">
+    <rect x="0" y="0" width="360" height="240" rx="22" fill="rgba(255,255,255,0.04)" stroke="rgba(126,217,87,0.35)" stroke-width="1.6"/>
+    <path d="M24,24 L24,8 L40,8" fill="none" stroke="#86EFAC" stroke-width="2"/>
+    <path d="M336,24 L336,8 L320,8" fill="none" stroke="#86EFAC" stroke-width="2"/>
+    <path d="M24,216 L24,232 L40,232" fill="none" stroke="#86EFAC" stroke-width="2"/>
+    <path d="M336,216 L336,232 L320,232" fill="none" stroke="#86EFAC" stroke-width="2"/>
+    <line x1="24" y1="120" x2="336" y2="120" stroke="rgba(126,217,87,0.7)" stroke-width="1.4"/>
+    <g transform="translate(160,90)">
+      <path d="M20,80 L20,20" stroke="#2d6a2d" stroke-width="3" stroke-linecap="round"/>
+      <path d="M20,52 C -4,42 -10,22 -2,8 16,16 20,30 20,52 Z" fill="url(#leaf)"/>
+      <path d="M20,40 C 44,32 50,12 42,-2 28,4 20,18 20,40 Z" fill="url(#leaf)" opacity="0.9"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sell hero">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a3520"/>
+      <stop offset="100%" stop-color="#11180a"/>
+    </linearGradient>
+    <radialGradient id="amber" cx="50%" cy="60%" r="55%">
+      <stop offset="0%" stop-color="rgba(255,200,90,0.22)"/>
+      <stop offset="100%" stop-color="rgba(255,200,90,0)"/>
+    </radialGradient>
+    <linearGradient id="basket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a06a30"/>
+      <stop offset="100%" stop-color="#3e2614"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="320" fill="url(#sky)"/>
+  <rect width="800" height="320" fill="url(#amber)"/>
+  <g transform="translate(310,90)">
+    <ellipse cx="90" cy="180" rx="110" ry="14" fill="rgba(0,0,0,0.40)"/>
+    <path d="M10,120 L170,120 L156,196 L24,196 Z" fill="url(#basket)" stroke="#5b3a1f" stroke-width="1.5" stroke-linejoin="round"/>
+    <g>
+      <circle cx="50"  cy="116" r="22" fill="#d24a2a"/>
+      <circle cx="92"  cy="106" r="24" fill="#e85a35"/>
+      <circle cx="134" cy="118" r="22" fill="#c43620"/>
+      <circle cx="74"  cy="98"  r="20" fill="#e85a35"/>
+      <circle cx="116" cy="92"  r="20" fill="#d24a2a"/>
+    </g>
+    <g stroke="rgba(0,0,0,0.25)" stroke-width="1" fill="none">
+      <line x1="14" y1="135" x2="166" y2="135"/>
+      <line x1="14" y1="155" x2="164" y2="155"/>
+      <line x1="14" y1="175" x2="160" y2="175"/>
+    </g>
+  </g>
+</svg>

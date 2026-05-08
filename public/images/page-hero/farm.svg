@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Farm hero">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f3a2a"/>
+      <stop offset="100%" stop-color="#0c1d12"/>
+    </linearGradient>
+    <linearGradient id="row" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6b3a"/>
+      <stop offset="100%" stop-color="#102014"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="320" fill="url(#sky)"/>
+  <rect x="0" y="190" width="800" height="130" fill="url(#row)"/>
+  <g fill="rgba(40,90,55,0.55)">
+    <path d="M0,210 Q200,196 400,206 T800,202 L800,250 L0,250 Z"/>
+    <path d="M0,250 Q200,232 400,244 T800,240 L800,290 L0,290 Z"/>
+  </g>
+  <g stroke="rgba(120,180,110,0.35)" stroke-width="1.4">
+    <line x1="80" y1="220" x2="80" y2="200"/>
+    <line x1="160" y1="222" x2="160" y2="200"/>
+    <line x1="260" y1="220" x2="260" y2="198"/>
+    <line x1="360" y1="223" x2="360" y2="200"/>
+    <line x1="460" y1="219" x2="460" y2="198"/>
+    <line x1="560" y1="221" x2="560" y2="199"/>
+    <line x1="660" y1="220" x2="660" y2="198"/>
+    <line x1="740" y1="220" x2="740" y2="198"/>
+  </g>
+</svg>

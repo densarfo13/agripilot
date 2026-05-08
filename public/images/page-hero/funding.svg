@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Funding hero">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#163a30"/>
+      <stop offset="100%" stop-color="#071c14"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ed957"/>
+      <stop offset="100%" stop-color="#2d6a2d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="rgba(126,217,87,0.30)"/>
+      <stop offset="100%" stop-color="rgba(126,217,87,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="320" fill="url(#sky)"/>
+  <g transform="translate(330,90)">
+    <ellipse cx="80" cy="180" rx="100" ry="12" fill="rgba(0,0,0,0.38)"/>
+    <circle cx="80" cy="120" r="62" fill="url(#glow)"/>
+    <circle cx="80" cy="120" r="44" fill="#1d4a2a" stroke="#86EFAC" stroke-width="2"/>
+    <text x="80" y="132" text-anchor="middle" font-family="Inter, sans-serif" font-size="34" font-weight="800" fill="#86EFAC">$</text>
+    <g transform="translate(80,38)">
+      <path d="M0,38 L0,8" stroke="#2d6a2d" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M0,24 C -16,16 -22,2 -16,-10 -2,-6 0,8 0,24 Z" fill="url(#leaf)"/>
+      <path d="M0,16 C 16,10 22,-4 16,-16 4,-12 0,0 0,16 Z" fill="url(#leaf)" opacity="0.9"/>
+    </g>
+  </g>
+</svg>

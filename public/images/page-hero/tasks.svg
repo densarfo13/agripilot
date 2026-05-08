@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Tasks hero">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a3a30"/>
+      <stop offset="100%" stop-color="#091f18"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="320" fill="url(#sky)"/>
+  <g transform="translate(160,90)">
+    <rect x="0" y="0" width="480" height="56" rx="14" fill="rgba(34,197,94,0.10)" stroke="rgba(134,239,172,0.45)" stroke-width="1.5"/>
+    <circle cx="34" cy="28" r="11" fill="rgba(34,197,94,0.30)" stroke="#86EFAC" stroke-width="1.6"/>
+    <path d="M28,28 l5,5 l9,-10" stroke="#86EFAC" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="60" y="20" width="240" height="6" rx="3" fill="rgba(255,255,255,0.55)"/>
+    <rect x="60" y="32" width="160" height="5" rx="2.5" fill="rgba(255,255,255,0.30)"/>
+  </g>
+  <g transform="translate(160,170)">
+    <rect x="0" y="0" width="480" height="56" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+    <circle cx="34" cy="28" r="11" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.4"/>
+    <rect x="60" y="20" width="220" height="6" rx="3" fill="rgba(255,255,255,0.45)"/>
+    <rect x="60" y="32" width="180" height="5" rx="2.5" fill="rgba(255,255,255,0.22)"/>
+  </g>
+</svg>

@@ -54,6 +54,7 @@ import OrganizationPilotCTA from '../components/funding/OrganizationPilotCTA.jsx
 import NgoProgramTools from '../components/funding/NgoProgramTools.jsx';
 import { FEATURE_ACTIVATION_POLISH } from '../lib/pilotFlags.js';
 import FundingEligibilityPrompt from '../components/activation/FundingEligibilityPrompt.jsx';
+import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 
 const NGO_ROLES = new Set(['ngo_admin', 'government_program']);
 
@@ -401,20 +402,23 @@ export default function FundingHub() {
   const hasRegion = !!(region || country);
 
   return (
-    <main style={STYLES.page} data-screen="funding-hub" data-flag="on" data-experience={ux.experience}>
-      <div style={STYLES.header}>
-        <div>
-          <h1 style={STYLES.title}>
-            {tStrict('funding.hub.title', 'Opportunities for you')}
-          </h1>
-          <p style={STYLES.subtitle}>
-            {tStrict(
-              'funding.hub.subtitle',
-              'Find relevant funding, support programs, training, and partnerships based on your location and activity.'
-            )}
-          </p>
-        </div>
-      </div>
+    <PremiumPage mode="farm" testId="funding-hub" maxWidth="46rem" bottomPad="2rem">
+      {/* ── Hero (premium upgrade) ────────────────────────────
+           Funding feels supportive + opportunity-focused.
+           Realistic background with a leaf-and-coin glyph
+           replaces the plain heading row. */}
+      <PremiumPageHero
+        mode="farm"
+        eyebrow={tStrict('premium.eyebrow.funding', 'Funding')}
+        title={tStrict('funding.hub.title', 'Opportunities for you')}
+        subtitle={tStrict(
+          'funding.hub.subtitle',
+          'Find relevant funding, support programs, training, and partnerships based on your location and activity.',
+        )}
+        bgImage="/images/page-hero/funding.svg"
+        accent="green"
+        testId="funding-hub-hero"
+      />
 
       {/* Phase 7C: filter bar — type toggle (All/Farmer/Backyard),
           keyword search (crop/title), and region text filter.
@@ -570,6 +574,6 @@ export default function FundingHub() {
           'Farroway helps you discover possible funding, support, training, and partnership opportunities. Farroway does not guarantee eligibility, approval, funding, or program availability. Always verify requirements with the official program or organization.'
         )}
       </div>
-    </main>
+    </PremiumPage>
   );
 }

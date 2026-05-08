@@ -31,6 +31,7 @@ import React, { useCallback, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth }    from '../context/AuthContext.jsx';
+import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 import {
   saveListing, getActiveListings, getBuyerInterests,
 } from '../market/marketStore.js';
@@ -384,7 +385,21 @@ export default function Sell() {
   }
 
   return (
-    <main style={S.page}>
+    <PremiumPage mode="farm" testId="sell-page" maxWidth="36rem" bottomPad="1.5rem">
+      {/* ── Hero (premium upgrade) ────────────────────────────
+           Marketplace-ready feel. Realistic produce illustration
+           sets a trustworthy, ready-to-sell tone before the form
+           below loads. */}
+      <PremiumPageHero
+        mode="farm"
+        eyebrow="Sell"
+        title="Reach buyers for your harvest"
+        subtitle="List your produce, see who's interested."
+        bgImage="/images/page-hero/sell.svg"
+        accent="green"
+        testId="sell-hero"
+      />
+
       {/* Spec §2: status overlay above the form. Renders one card
           per active listing on this farm (usually 0 or 1), with the
           buyer-interest count + a "View buyers" CTA. The form below
@@ -750,7 +765,7 @@ export default function Sell() {
             'We never share your phone or email. Buyer interest goes through Farroway first.')}
         </p>
       </div>
-    </main>
+    </PremiumPage>
   );
 }
 

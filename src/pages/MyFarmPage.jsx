@@ -31,6 +31,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+import {
+  PremiumPage, PremiumPageHero,
+} from '../components/premium/index.js';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -421,10 +424,59 @@ export default function MyFarmPage() {
     }, 120);
   }
 
+  // Premium-page hero copy — mode-aware. The legacy `<Header>`
+  // local component is preserved below for any consumer that
+  // re-imports it, but the visible chrome on the page now uses
+  // the shared `<PremiumPageHero>` so My Farm / My Grow read in
+  // the same visual language as Home (dark glass + realistic
+  // background). Eyebrow + title + subtitle are localised; the
+  // background SVG falls back gracefully if missing.
+  const _heroEyebrow = isBackyardActive
+    ? tSafe('premium.eyebrow.myGrow', 'My Grow')
+    : tSafe('premium.eyebrow.myFarm', 'My Farm');
+  const _heroTitle = (() => {
+    if (isBackyardActive) {
+      return tSafe('myGrow.hero.title', 'Your living garden');
+    }
+    return tSafe('myFarm.hero.title', 'Your farm at a glance');
+  })();
+  const _heroSubtitle = (() => {
+    if (isBackyardActive) {
+      return tSafe(
+        'myGrow.hero.subtitle',
+        'Care for your plants, watch them grow.',
+      );
+    }
+    return tSafe(
+      'myFarm.hero.subtitle',
+      'Plan, monitor, and grow with confidence.',
+    );
+  })();
+
   return (
-    <div style={S.page} data-testid="my-farm-page">
-      {/* ── 1. Header (spec §1) ─────────────────────────────── */}
-      <Header t={t} isBackyard={isBackyardActive} />
+    <PremiumPage
+      mode={isBackyardActive ? 'garden' : 'farm'}
+      testId="my-farm-page"
+      maxWidth="36rem"
+      bottomPad="1.5rem"
+    >
+      {/* ── 1. Hero band (premium upgrade) ────────────────────
+           Replaces the small icon + heading row with a realistic
+           dark-glass hero that matches the Home design language.
+           The legacy `<Header>` local component is still defined
+           below for any consumer that reaches into it; this
+           surface is what the user actually sees. */}
+      <PremiumPageHero
+        mode={isBackyardActive ? 'garden' : 'farm'}
+        eyebrow={_heroEyebrow}
+        title={_heroTitle}
+        subtitle={_heroSubtitle}
+        bgImage={isBackyardActive
+          ? '/images/page-hero/garden.svg'
+          : '/images/page-hero/farm.svg'}
+        accent="green"
+        testId="my-farm-hero"
+      />
 
       {/* Farms / Gardens toggle — always visible (forceShow).
           current reads from isGardenMode (the explicit persisted
@@ -977,7 +1029,7 @@ export default function MyFarmPage() {
       {/* Floating voice + camera launchers used to live here, but
           they cluttered the My Farm / My Grow profile. Scan / mic
           actions are owned exclusively by the /scan tab now. */}
-    </div>
+    </PremiumPage>
   );
 }
 

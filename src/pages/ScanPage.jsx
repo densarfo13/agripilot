@@ -81,6 +81,7 @@ import { FEATURE_SCAN_USEFULNESS } from '../lib/pilotFlags.js';
 import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
 import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
 import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
+import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 
 const STYLES = {
   page: {
@@ -638,11 +639,26 @@ export default function ScanPage() {
     : tStrict('scan.page.subtitle.farm', 'Photograph the affected area and we\u2019ll suggest possible issues.');
 
   return (
-    <main style={STYLES.page} data-screen="scan-page" data-experience={experience} data-phase={phase}>
-      <div>
-        <h1 style={STYLES.title}>{headerTitle}</h1>
-        <p style={STYLES.subtitle}>{headerSubtitle}</p>
-      </div>
+    <PremiumPage
+      mode={isBackyard ? 'garden' : 'farm'}
+      testId="scan-page"
+      maxWidth="36rem"
+      bottomPad="2rem"
+    >
+      {/* ── Hero (premium upgrade) ────────────────────────────
+           "AI camera for agriculture" tone — realistic frame
+           illustration, gentle scan line. The phase-specific
+           cards below own the actual capture/analyze/result UI;
+           this hero anchors the page identity. */}
+      <PremiumPageHero
+        mode={isBackyard ? 'garden' : 'farm'}
+        eyebrow={tStrict('premium.eyebrow.scan', 'Scan')}
+        title={headerTitle}
+        subtitle={headerSubtitle}
+        bgImage="/images/page-hero/scan.svg"
+        accent="green"
+        testId="scan-page-hero"
+      />
 
       {phase === 'capture' ? (
         <ScanCapture experience={experience} onContinue={onContinue} />
@@ -767,6 +783,6 @@ export default function ScanPage() {
       {/* FEATURE_SCAN_USEFULNESS: show the lightweight useful history
           (farroway_scan_history_v1); fall back to the original. */}
       {FEATURE_SCAN_USEFULNESS ? <UsefulScanHistory /> : <ScanHistory />}
-    </main>
+    </PremiumPage>
   );
 }

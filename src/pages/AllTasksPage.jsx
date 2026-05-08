@@ -55,6 +55,9 @@ import {
   isQuickOnboarded, hasFiredQuickVoice, markQuickVoiceFired,
 } from '../utils/quickOnboarding.js';
 import { speak } from '../core/farroway/voice.js';
+import {
+  PremiumPage, PremiumPageHero,
+} from '../components/premium/index.js';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -353,21 +356,41 @@ export default function AllTasksPage() {
   if (!profile) return null;
 
   return (
-    <div style={S.page} data-testid="all-tasks-page">
-      {/* Header */}
-      <div style={S.header}>
-        <span style={S.pageIcon}>{NAV_ICONS.tasks}</span>
-        <h1 style={S.pageTitle}>{t('nav.tasks')}</h1>
-        {/* Tap-to-hear: localized page title + today's progress count. */}
+    <PremiumPage
+      mode={mode === 'garden' ? 'garden' : 'farm'}
+      testId="all-tasks-page"
+      maxWidth="36rem"
+      bottomPad="1.5rem"
+    >
+      {/* ── Hero (premium upgrade) ────────────────────────────
+           Tasks page now opens with a calm dark-glass hero
+           rather than a small icon row. The progress count chip
+           travels into the hero's right-side chip slot when at
+           least one task exists; voice playback is exposed
+           inline below so screen-reader + voice users keep
+           parity. */}
+      <PremiumPageHero
+        mode={mode === 'garden' ? 'garden' : 'farm'}
+        eyebrow={tSafe('premium.eyebrow.tasks', 'Today')}
+        title={t('nav.tasks')}
+        subtitle={tSafe(
+          'tasks.hero.subtitle',
+          'One clear task at a time — pick the next one.',
+        )}
+        bgImage="/images/page-hero/tasks.svg"
+        accent="green"
+        chip={totalAll > 0
+          ? {
+              label: t('loop.progressToday', { done: totalDone, total: totalAll }),
+              tone:  'green',
+            }
+          : null}
+        testId="all-tasks-hero"
+      >
         <VoiceButton
           text={`${t('nav.tasks')}${totalAll > 0 ? '. ' + t('loop.progressToday', { done: totalDone, total: totalAll }) : ''}`}
         />
-        {totalAll > 0 && (
-          <span style={S.headerCount}>
-            {t('loop.progressToday', { done: totalDone, total: totalAll })}
-          </span>
-        )}
-      </div>
+      </PremiumPageHero>
 
       {/* Snippet ref: visual progress bar under the header.
           Same data as the header count — just rendered as a
@@ -699,7 +722,7 @@ export default function AllTasksPage() {
 
       {/* Floating voice + camera launchers used to live here. The
           Scan tab in the bottom-nav owns scan / mic actions now. */}
-    </div>
+    </PremiumPage>
   );
 }
 
