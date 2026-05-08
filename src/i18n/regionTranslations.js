@@ -240,6 +240,74 @@ export const REGION_TRANSLATIONS = Object.freeze({
     tw: 'Adaka nketewa hia nsuo bɛboro pɛnkoro da koro mu.',
     hi: 'छोटे पात्रों को दिन में एक से अधिक बार पानी चाहिए।',
   },
+
+  // ── RegionSettingsCard ───────────────────────────────────
+  'region.settings.title': {
+    en: 'Region',     fr: 'Région',     sw: 'Eneo',     ha: 'Yanki',    tw: 'Mantam',   hi: 'क्षेत्र',
+  },
+  'region.settings.subtitle': {
+    en: 'Helps Farroway match local seasons, crops, and units.',
+    fr: 'Aide Farroway à adapter les saisons, cultures et unités locales.',
+    sw: 'Husaidia Farroway kulingana na misimu, mazao, na vipimo vya eneo.',
+    ha: 'Yana taimaka wa Farroway daidaita lokutan yanki, amfanin gona, da raka’oji.',
+    tw: 'Ɛboa Farroway ma ɛhwehwɛ wʼadi mmerɛ, nnɔbae, ne nsusudeɛ.',
+    hi: 'Farroway को स्थानीय मौसम, फसलें और इकाइयाँ मिलाने में मदद करता है।',
+  },
+  'region.settings.countryLabel': {
+    en: 'Country',    fr: 'Pays',       sw: 'Nchi',     ha: 'Ƙasa',     tw: 'Ɔman',     hi: 'देश',
+  },
+  'region.settings.autoDetect': {
+    en: 'Auto-detect (recommended)',
+    fr: 'Détection automatique (recommandé)',
+    sw: 'Tambua kiotomatiki (inapendekezwa)',
+    ha: 'Gano kai tsaye (an ba da shawara)',
+    tw: 'Hwehwɛ no ɔno ara (yɛkamfo kyerɛ)',
+    hi: 'स्वचालित पहचान (अनुशंसित)',
+  },
+  'region.settings.preview.climate': {
+    en: 'Climate', fr: 'Climat', sw: 'Hali ya hewa', ha: 'Yanayi', tw: 'Wim tebea', hi: 'जलवायु',
+  },
+  'region.settings.preview.season': {
+    en: 'This month', fr: 'Ce mois-ci', sw: 'Mwezi huu', ha: 'Wannan watan',
+    tw: 'Bosome yi', hi: 'इस माह',
+  },
+  'region.settings.preview.units': {
+    en: 'Units', fr: 'Unités', sw: 'Vipimo', ha: 'Raka’oji', tw: 'Nsusudeɛ', hi: 'इकाइयाँ',
+  },
+  'region.settings.preview.commonCrops': {
+    en: 'Common crops', fr: 'Cultures courantes', sw: 'Mazao ya kawaida',
+    ha: 'Amfanin gona na kowa', tw: 'Nnɔbae a ɛtaa wɔ hɔ', hi: 'सामान्य फसलें',
+  },
+  'region.settings.clear': {
+    en: 'Reset to auto-detect',
+    fr: 'Réinitialiser à la détection automatique',
+    sw: 'Rudisha kwa utambuzi kiotomatiki',
+    ha: 'Sake saita zuwa gano kai tsaye',
+    tw: 'San kɔ no ɔno ara hwehwɛ so',
+    hi: 'स्वचालित पहचान पर रीसेट करें',
+  },
+  'region.settings.privacy': {
+    en: 'Region picks are kept on this device. Farroway never asks for your exact location.',
+    fr: 'Les choix de région restent sur cet appareil. Farroway ne demande jamais votre localisation exacte.',
+    sw: 'Chaguzi za eneo huhifadhiwa kwenye kifaa hiki. Farroway haombi mahali pako halisi.',
+    ha: 'An adana zaɓuɓɓukan yanki a wannan na’urar. Farroway ba ya tambayar ainihin wurinka.',
+    tw: 'Mantam a wopaw no tena saa afidie yi so. Farroway mmisa wo baabi pɔtee da.',
+    hi: 'क्षेत्र चयन इस डिवाइस पर रहते हैं। Farroway कभी आपका सटीक स्थान नहीं माँगता।',
+  },
+
+  // ── Plant type group labels (PlantEditModal region-aware select) ──
+  'plant.field.type.regional': {
+    en: 'Suggested for your region',
+    fr: 'Suggéré pour votre région',
+    sw: 'Imependekezwa kwa eneo lako',
+    ha: 'An shawarta don yankinka',
+    tw: 'Yɛkamfo kyerɛ wʼadi',
+    hi: 'आपके क्षेत्र के लिए सुझाया',
+  },
+  'plant.field.type.allPlants': {
+    en: 'All plants', fr: 'Toutes les plantes', sw: 'Mimea yote',
+    ha: 'Dukkan tsire-tsire', tw: 'Afifideɛ nyinaa', hi: 'सभी पौधे',
+  },
 });
 
 export default REGION_TRANSLATIONS;

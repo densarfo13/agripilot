@@ -26,11 +26,12 @@
  *   • Localized via tSafe + useStrictTranslation; safe English fallbacks.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import usePlantIdentity from '../../hooks/usePlantIdentity.js';
 import { compressImageFile } from '../../lib/plant/photoUpload.js';
+import useRegionPreference from '../../hooks/useRegionPreference.js';
 
 // ─── Enum option lists ────────────────────────────────────────────
 
@@ -82,6 +83,35 @@ const INDOOR_OPTIONS = Object.freeze([
 export default function PlantEditModal({ open = false, onClose }) {
   useStrictTranslation();
   const { plant, save } = usePlantIdentity();
+  // Region awareness — when the user has set a country override
+  // (or a known country flows through detection), the regional
+  // common-crops list goes to the top of the plant picker so the
+  // dropdown matches what's actually grown locally.
+  const { regionContext } = useRegionPreference();
+
+  // Build a region-aware plant-type list:
+  //   • "Suggested for your region" group  → regionContext.commonCrops
+  //     intersected with the canonical PLANT_TYPES catalog
+  //   • "All plants" group                 → remaining catalog entries
+  // When the region is unknown, the regional group is empty and the
+  // dropdown falls back to the original alphabetical list.
+  const plantTypeGroups = useMemo(() => {
+    try {
+      const all = PLANT_TYPES;
+      const regional = (regionContext && Array.isArray(regionContext.commonCrops))
+        ? regionContext.commonCrops : [];
+      const regionalSet = new Set(regional);
+      const inRegion = all.filter((p) => regionalSet.has(p.slug));
+      // Sort the regional group by the order they appear in
+      // regionContext.commonCrops so the most-common-locally crop
+      // surfaces first.
+      inRegion.sort((a, b) => regional.indexOf(a.slug) - regional.indexOf(b.slug));
+      const others   = all.filter((p) => !regionalSet.has(p.slug));
+      return { regional: inRegion, others };
+    } catch {
+      return { regional: [], others: PLANT_TYPES };
+    }
+  }, [regionContext]);
 
   // Local form state — initialized from the persisted plant on open.
   const [draft, setDraft] = useState(() => _draftFromPlant(plant));
@@ -292,7 +322,11 @@ export default function PlantEditModal({ open = false, onClose }) {
             />
           </label>
 
-          {/* Plant type */}
+          {/* Plant type — region-aware. Crops common in the user's
+              region are grouped at the top under "Suggested for your
+              region"; the rest fall under "All plants". When the
+              region is unknown the regional group is empty and the
+              alphabetical list renders directly under the placeholder. */}
           <label style={S.field}>
             <span style={S.label}>{tSafe('plant.field.type', 'Plant type')}</span>
             <select
@@ -302,11 +336,39 @@ export default function PlantEditModal({ open = false, onClose }) {
               data-testid="plant-edit-type"
             >
               <option value="">{tSafe('common.unspecified', '— select —')}</option>
-              {PLANT_TYPES.map((p) => (
-                <option key={p.slug} value={p.slug}>
-                  {tSafe('crop.' + p.slug, p.label)}
-                </option>
-              ))}
+              {plantTypeGroups.regional.length > 0 ? (
+                <optgroup
+                  label={tSafe('plant.field.type.regional',
+                    'Suggested for your region')}
+                  data-testid="plant-edit-type-regional"
+                >
+                  {plantTypeGroups.regional.map((p) => (
+                    <option key={'r-' + p.slug} value={p.slug}>
+                      {tSafe('crop.' + p.slug, p.label)}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              {plantTypeGroups.regional.length > 0 ? (
+                <optgroup
+                  label={tSafe('plant.field.type.allPlants', 'All plants')}
+                  data-testid="plant-edit-type-all"
+                >
+                  {plantTypeGroups.others.map((p) => (
+                    <option key={'o-' + p.slug} value={p.slug}>
+                      {tSafe('crop.' + p.slug, p.label)}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : (
+                // No regional split — render the flat catalog so the
+                // markup stays clean for users without a country pick.
+                plantTypeGroups.others.map((p) => (
+                  <option key={p.slug} value={p.slug}>
+                    {tSafe('crop.' + p.slug, p.label)}
+                  </option>
+                ))
+              )}
             </select>
           </label>
 
