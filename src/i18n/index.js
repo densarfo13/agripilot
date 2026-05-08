@@ -77,6 +77,9 @@ import { GARDEN_MODE_TRANSLATIONS }            from './gardenModeTranslations.js
 // recovery, delight, and beginner guidance. Consumed by the
 // reassurance engine + plant timeline UI.
 import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslations.js';
+// Garden Share overlay — encouragement captions, modal chrome,
+// toast statuses, safety footer. Consumed by ShareCardModal.
+import { SHARE_TRANSLATIONS }                  from './shareTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -145,6 +148,17 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     / beginner. Same shape, same merge contract.
   for (const key of Object.keys(PLANT_COMPANION_TRANSLATIONS)) {
     const row = PLANT_COMPANION_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1f. Garden Share overlay — caption picker rows + modal chrome.
+  for (const key of Object.keys(SHARE_TRANSLATIONS)) {
+    const row = SHARE_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {

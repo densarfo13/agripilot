@@ -74,6 +74,10 @@ import useGrowMode from '../hooks/useGrowMode.js';
 import PlantEditModal from '../components/plant/PlantEditModal.jsx';
 import usePlantIdentity from '../hooks/usePlantIdentity.js';
 import usePlantTimeline from '../hooks/usePlantTimeline.js';
+// Garden Mode share — opt-in only, never auto-fires; the modal
+// renders a beautiful preview card with native share + clipboard
+// fallback. Lazy-imported to keep the main bundle slim.
+import ShareCardModal from '../components/share/ShareCardModal.jsx';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -156,6 +160,9 @@ export default function MyFarmPage() {
   const _plantIdentity = usePlantIdentity();
   const _plantTimeline = usePlantTimeline(5);
   const [_plantModalOpen, _setPlantModalOpen] = useState(false);
+  // Share modal state — opt-in only. Never auto-opens; only fires
+  // when the user taps the Share button on the plant companion card.
+  const [_shareModalOpen, _setShareModalOpen] = useState(false);
 
   // Spec §1 redesign: removed the previous useEffect that ran
   // `getTodayTasks` + `processNotifications`. Those side effects
@@ -459,16 +466,31 @@ export default function MyFarmPage() {
                 ) : null}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => _setPlantModalOpen(true)}
-              style={S_PLANT.editBtn}
-              data-testid="plant-companion-edit"
-            >
-              {_plantIdentity.hasPlant
-                ? tSafe('plant.modal.openCta',       'Edit plant')
-                : tSafe('plant.modal.openCta.first', 'Add your plant')}
-            </button>
+            <div style={S_PLANT.headBtnRow}>
+              {/* Share button — only when the user has stamped a plant.
+                  No auto-share, no auto-prompts; opt-in only. */}
+              {_plantIdentity.hasPlant && (
+                <button
+                  type="button"
+                  onClick={() => _setShareModalOpen(true)}
+                  style={S_PLANT.shareBtn}
+                  data-testid="plant-companion-share"
+                  aria-label={tSafe('share.modal.openCta', 'Share')}
+                >
+                  {tSafe('share.modal.openCta', 'Share')}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => _setPlantModalOpen(true)}
+                style={S_PLANT.editBtn}
+                data-testid="plant-companion-edit"
+              >
+                {_plantIdentity.hasPlant
+                  ? tSafe('plant.modal.openCta',       'Edit plant')
+                  : tSafe('plant.modal.openCta.first', 'Add your plant')}
+              </button>
+            </div>
           </header>
 
           {/* Recent care moments — the timeline list. Empty-state
@@ -509,6 +531,21 @@ export default function MyFarmPage() {
       <PlantEditModal
         open={_plantModalOpen}
         onClose={() => _setPlantModalOpen(false)}
+      />
+
+      {/* Share modal — also always mounted, opens only when the user
+          taps the Share button. Never auto-opens. Memory passed for
+          caption category inference. */}
+      <ShareCardModal
+        open={_shareModalOpen}
+        onClose={() => _setShareModalOpen(false)}
+        plant={_plantIdentity.plant}
+        memory={{
+          firstScanLogged:    _plantTimeline.hasFirstScan,
+          firstFlowerLogged:  _plantTimeline.hasFirstFlower,
+          firstFruitLogged:   _plantTimeline.hasFirstFruit,
+          timelineCount:      _plantTimeline.count,
+        }}
       />
 
       {/* ── 2. Farm Selector (spec §2) ─────────────────────────
@@ -1716,11 +1753,37 @@ const S_PLANT = {
     margin: 0, fontSize: '0.75rem', fontWeight: 500,
     color: 'rgba(255,255,255,0.65)', lineHeight: 1.4,
   },
+  // Container for the share + edit buttons in the header. Stays
+  // tight on small screens (gap stacks vertically if needed).
+  headBtnRow: {
+    display: 'flex',
+    gap: '0.4rem',
+    flexShrink: 0,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
   editBtn: {
     appearance: 'none',
     border: '1px solid rgba(255,255,255,0.12)',
     background: 'rgba(255,255,255,0.05)',
     color: '#FFFFFF',
+    padding: '0.45rem 0.8rem',
+    borderRadius: '999px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+  },
+  // Share button — terracotta accent so it visually distinguishes
+  // from the muted Edit pill but stays calm (low-saturation tint,
+  // no full-color CTA). Spec §6: warm cream, sage, terracotta.
+  shareBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(201,123,69,0.40)',
+    background: 'rgba(201,123,69,0.12)',
+    color: '#F0CFB0',
     padding: '0.45rem 0.8rem',
     borderRadius: '999px',
     fontSize: '0.75rem',

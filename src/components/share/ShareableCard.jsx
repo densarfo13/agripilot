@@ -1,0 +1,240 @@
+/**
+ * ShareableCard — premium Garden Mode share card.
+ *
+ *   <ShareableCard
+ *     nickname="Balcony Tomato"
+ *     stage="flowering"
+ *     emoji="🌼"
+ *     caption="Steady care makes a difference."
+ *     subtitle="2 weeks of steady care"
+ *   />
+ *
+ * Visual style (spec §6):
+ *   • warm cream + sage green palette
+ *   • terracotta accent
+ *   • soft lighting / subtle gradients
+ *   • realistic plant texture (CSS-rendered for now — real photos
+ *     drop in later via the same nickname/photo data flow)
+ *   • mobile-first 1:1 ratio so screenshots look correct on
+ *     Instagram and WhatsApp
+ *
+ * Strict-rule audit
+ *   • Pure presentation. No hooks. No I/O.
+ *   • Inline styles only. No CSS-module dependency.
+ *   • Never throws — defensive defaults for every prop.
+ *   • All visible text via tSafe — see ShareCardModal which
+ *     supplies localized strings.
+ */
+
+import React from 'react';
+
+// ─── Stage emoji map ─────────────────────────────────────────────
+const STAGE_EMOJI = Object.freeze({
+  seedling:      '🌱',
+  growing:       '🌿',
+  vegetative:    '🌿',
+  flowering:     '🌼',
+  fruiting:      '🍅',
+  ready_to_pick: '🌾',
+  harvest:       '🌾',
+  resting:       '💤',
+  dormant:       '💤',
+});
+
+function _stageEmoji(stage) {
+  const s = String(stage || '').toLowerCase();
+  if (!s) return '🌿';
+  return STAGE_EMOJI[s] || (
+    s.includes('flower')   ? '🌼' :
+    s.includes('fruit')    ? '🍅' :
+    s.includes('harvest') || s.includes('ready') ? '🌾' :
+    s.includes('seed')     ? '🌱' :
+    '🌿'
+  );
+}
+
+// ─── Component ────────────────────────────────────────────────────
+
+export default function ShareableCard({
+  nickname    = 'My Plant',
+  stage       = 'growing',
+  emoji,                       // optional override
+  caption     = 'Steady care makes a difference.',
+  subtitle    = '',
+  brandLabel  = 'Farroway',
+  size        = 360,           // square px — 360 default fits Instagram square
+}) {
+  const displayEmoji = (typeof emoji === 'string' && emoji.trim()) ? emoji : _stageEmoji(stage);
+  const stageLabel   = String(stage || '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+  return (
+    <article
+      style={{ ...S.card, width: `${size}px`, height: `${size}px` }}
+      data-testid="shareable-card"
+      data-stage={stage}
+    >
+      {/* Soft sunlight glow at top-left */}
+      <div style={S.glow} aria-hidden="true" />
+
+      {/* Subtle grain noise — adds organic texture without raster cost */}
+      <div style={S.grain} aria-hidden="true" />
+
+      {/* Plant emoji as the visual anchor. Sized large; sits in
+          the upper area so the caption gets prime real estate
+          underneath. When real photos ship, swap this for an
+          <img loading="lazy" decoding="async" /> element with
+          object-fit: cover. */}
+      <div style={S.heroWrap}>
+        <span style={S.heroEmoji} aria-hidden="true">{displayEmoji}</span>
+      </div>
+
+      {/* Content block — nickname, stage chip, caption */}
+      <div style={S.body}>
+        <h2 style={S.nickname}>{nickname || 'My Plant'}</h2>
+        {stageLabel ? (
+          <span style={S.stageChip}>{stageLabel}</span>
+        ) : null}
+        <p style={S.caption}>{caption}</p>
+        {subtitle ? <p style={S.subtitle}>{subtitle}</p> : null}
+      </div>
+
+      {/* Brand strip — terracotta accent line + soft brand label */}
+      <div style={S.brandStrip} aria-hidden="true" />
+      <p style={S.brand}>{brandLabel}</p>
+    </article>
+  );
+}
+
+// ─── Palette + styles ────────────────────────────────────────────
+// Spec §6:  warm cream / sage green / terracotta / soft lighting
+
+const C = {
+  cream:      '#F3E8D0',
+  creamSoft:  '#E8DEC4',
+  sage:       '#355D49',
+  sageDeep:   '#234733',
+  ink:        '#2A3A2D',
+  inkSoft:    '#5C6B5E',
+  terracotta: '#C97B45',
+  terracottaSoft: '#D6915E',
+};
+
+const S = {
+  card: {
+    position:     'relative',
+    overflow:     'hidden',
+    borderRadius: '24px',
+    background:   `linear-gradient(180deg, ${C.cream} 0%, ${C.creamSoft} 60%, #DDD3B4 100%)`,
+    boxShadow:    [
+      '0 1px 0 0 rgba(255,255,255,0.6) inset',
+      '0 18px 40px -12px rgba(35,71,51,0.32)',
+      '0 6px 14px -4px rgba(35,71,51,0.18)',
+    ].join(', '),
+    fontFamily:   'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    color:        C.ink,
+    display:      'flex',
+    flexDirection: 'column',
+    // 1:1 visual feels right for square social slots; mobile-first.
+    aspectRatio:  '1 / 1',
+  },
+  glow: {
+    position: 'absolute',
+    top: '-30%', left: '-20%',
+    width: '70%', height: '70%',
+    background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55) 0%, transparent 65%)',
+    pointerEvents: 'none',
+  },
+  grain: {
+    position: 'absolute', inset: 0,
+    backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.20  0 0 0 0 0.16  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+    backgroundSize: '180px 180px',
+    opacity: 0.55,
+    mixBlendMode: 'multiply',
+    pointerEvents: 'none',
+  },
+  heroWrap: {
+    position: 'relative',
+    height: '52%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background:
+      `radial-gradient(ellipse 80% 60% at 50% 65%, rgba(53,93,73,0.18) 0%, transparent 70%)`,
+  },
+  heroEmoji: {
+    fontSize: '7rem',
+    lineHeight: 1,
+    filter: 'drop-shadow(0 6px 12px rgba(35,71,51,0.22))',
+    transform: 'translateY(-2%)',
+  },
+  body: {
+    flex: '1 1 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    padding: '0.85rem 1.2rem 1.1rem',
+    gap: '0.4rem',
+    position: 'relative',
+  },
+  nickname: {
+    margin: 0,
+    fontSize: '1.5rem',
+    fontWeight: 800,
+    color: C.sageDeep,
+    letterSpacing: '-0.005em',
+    lineHeight: 1.2,
+    // Defensive — clip if the user picked a 40-char nickname.
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  stageChip: {
+    alignSelf: 'flex-start',
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    padding: '0.2rem 0.55rem',
+    borderRadius: '999px',
+    background: 'rgba(53,93,73,0.10)',
+    color: C.sage,
+    marginTop: '0.1rem',
+  },
+  caption: {
+    margin: '0.45rem 0 0',
+    fontSize: '0.9375rem',
+    fontWeight: 500,
+    lineHeight: 1.45,
+    color: C.ink,
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: C.inkSoft,
+    fontStyle: 'italic',
+  },
+  brandStrip: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: '34px',
+    height: '2px',
+    background: `linear-gradient(90deg, transparent 0%, ${C.terracotta} 35%, ${C.terracottaSoft} 65%, transparent 100%)`,
+    opacity: 0.65,
+  },
+  brand: {
+    position: 'absolute',
+    right: '1.1rem', bottom: '0.55rem',
+    margin: 0,
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    color: C.terracotta,
+  },
+};
+
+export const _internal = Object.freeze({
+  STAGE_EMOJI,
+  _stageEmoji,
+  C,
+});
