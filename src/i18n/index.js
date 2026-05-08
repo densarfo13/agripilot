@@ -64,6 +64,11 @@ import { JSON_LOCALE_OVERLAY }                 from './jsonLocaleLoader.js';
 // and the spec-exact safety disclaimer. Shape: `{ key: { locale: value } }`,
 // merged directly into the main dictionary as empty-slot fill.
 import { BRIEFING_SCAN_TRANSLATIONS }          from './briefingScanTranslations.js';
+// Intelligence engine overlay — crop-specific task titles + reasons
+// emitted by contextEngine._cropSpecific (tomato leaf spot, maize
+// wind lodging, rice flood drainage, leafy heat, etc.). Same shape
+// as BRIEFING_SCAN_TRANSLATIONS.
+import { INTELLIGENCE_TRANSLATIONS }           from './intelligenceTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -96,6 +101,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     Direct empty-slot merge so any translator-authored value in T wins.
   for (const key of Object.keys(BRIEFING_SCAN_TRANSLATIONS)) {
     const row = BRIEFING_SCAN_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1c. Intelligence engine overlay — same shape, same merge contract.
+  //     Translator-authored values in T always win.
+  for (const key of Object.keys(INTELLIGENCE_TRANSLATIONS)) {
+    const row = INTELLIGENCE_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {

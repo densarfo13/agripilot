@@ -165,11 +165,252 @@ function _scanFollowup(category, name, mode) {
   return null;
 }
 
+// ─── Crop-specific intelligence (Weather AI + Crop Stage Engine spec §4) ──
+//
+// Returns a tuned task for a specific (crop × stage × weather) combo,
+// or null if no crop-specific rule fires. Crop-specific rules have
+// HIGHER priority than generic weather rules but LOWER priority than
+// scan signals — so a recent scan still overrides crop tuning, but
+// crop tuning overrides the generic "rain → drainage" default.
+//
+// All keys map to translation entries in i18n/intelligenceTranslations.js;
+// the strings here are the English fallbacks consumed by tSafe at the UI.
+
+function _cropSpecific(ctx, mode) {
+  const {
+    weatherType, crop, cropStage,
+    temp, rainChance, humidityPct, windSpeedKph,
+  } = ctx;
+
+  const name  = (typeof crop === 'string' && crop.trim()) ? crop.trim() : '';
+  if (!name) return null;
+  const c     = name.toLowerCase();
+  const stage = _s(cropStage);
+  const isFlower  = stage.includes('flower');
+  const isFruit   = stage.includes('fruit');
+  const isVeg     = stage.includes('vegetative') || stage.includes('growth');
+  const isRain    = weatherType === 'rain' || (_n(rainChance) !== null && rainChance >= 60);
+  const isHumid   = (_n(humidityPct) !== null && humidityPct >= 75) || isRain;
+  const isHot     = weatherType === 'heat' || (_n(temp) !== null && temp >= 32);
+  const isDry     = weatherType === 'dry'  || (_n(rainChance) !== null && rainChance <= 20);
+  const isWind    = weatherType === 'wind' || (_n(windSpeedKph) !== null && windSpeedKph >= 25);
+
+  // ── Tomato — leaf-spot watch in humid flowering/fruiting ──────────
+  if (c.includes('tomato')) {
+    if ((isFlower || isFruit) && isHumid) {
+      return {
+        title:        `Watch ${name} for leaf spots today`,
+        titleKey:     'intel.crop.tomato.leafSpot.title',
+        reason:       'Humid weather during flowering can raise leaf-spot pressure. Check lower leaves and remove any with spreading marks.',
+        reasonKey:    'intel.crop.tomato.leafSpot.reason',
+        urgency:      'high',
+        cta:          'Inspect leaves',
+        category:     'pest-check',
+        cropSpecific: 'tomato',
+      };
+    }
+    if (isHot) {
+      return {
+        title:        `Avoid midday watering for your ${name}`,
+        titleKey:     'intel.crop.tomato.heat.title',
+        reason:       'Tomato roots stress in midday heat. Water early morning or after sunset, not in direct sun.',
+        reasonKey:    'intel.crop.tomato.heat.reason',
+        urgency:      'medium',
+        cta:          'Mark as done',
+        category:     'watering',
+        cropSpecific: 'tomato',
+      };
+    }
+  }
+
+  // ── Pepper — leaf curl / moisture stress in heat or flowering ─────
+  if (c.includes('pepper') || c.includes('chilli') || c.includes('chili')) {
+    if (isHot) {
+      return {
+        title:        `Check ${name} for leaf curl in the heat`,
+        titleKey:     'intel.crop.pepper.heat.title',
+        reason:       'Pepper leaves curl when stressed by heat or low moisture. Check soil moisture and provide shade if leaves curl tightly.',
+        reasonKey:    'intel.crop.pepper.heat.reason',
+        urgency:      'high',
+        cta:          'Inspect leaves',
+        category:     'pest-check',
+        cropSpecific: 'pepper',
+      };
+    }
+    if (isFlower) {
+      return {
+        title:        `Keep ${name} watering steady during flowering`,
+        titleKey:     'intel.crop.pepper.flowering.title',
+        reason:       'Pepper drops flowers when watering swings between dry and wet. Aim for steady moisture.',
+        reasonKey:    'intel.crop.pepper.flowering.reason',
+        urgency:      'medium',
+        cta:          'Mark as done',
+        category:     'flowering',
+        cropSpecific: 'pepper',
+      };
+    }
+  }
+
+  // ── Maize / Corn — wind support + dry-vegetative root-zone check ──
+  if (c.includes('maize') || c.includes('corn')) {
+    if (isWind) {
+      return {
+        title:        `Check ${name} stalks for wind damage`,
+        titleKey:     'intel.crop.maize.wind.title',
+        reason:       'Maize is prone to lodging in strong wind. Inspect tall stalks and stake or hill the base if leaning.',
+        reasonKey:    'intel.crop.maize.wind.reason',
+        urgency:      'high',
+        cta:          'Check stalks',
+        category:     'wind',
+        cropSpecific: 'maize',
+      };
+    }
+    if (isVeg && isDry) {
+      return {
+        title:        `Check ${name} root-zone moisture`,
+        titleKey:     'intel.crop.maize.vegDry.title',
+        reason:       'Vegetative-stage maize needs steady root moisture. Feel the soil 5 cm down and water if dry.',
+        reasonKey:    'intel.crop.maize.vegDry.reason',
+        urgency:      'high',
+        cta:          'Check soil',
+        category:     'watering',
+        cropSpecific: 'maize',
+      };
+    }
+  }
+
+  // ── Rice — water-level guidance dominates ─────────────────────────
+  if (c.includes('rice') || c.includes('paddy')) {
+    if (isRain) {
+      return {
+        title:        `Check ${name} field drainage`,
+        titleKey:     'intel.crop.rice.rain.title',
+        reason:       'Heavy rain can flood the paddy beyond optimal depth. Check drainage outlets and bunds.',
+        reasonKey:    'intel.crop.rice.rain.reason',
+        urgency:      'high',
+        cta:          'Check field',
+        category:     'drainage',
+        cropSpecific: 'rice',
+      };
+    }
+    if (isDry || isHot) {
+      return {
+        title:        `Check ${name} water level`,
+        titleKey:     'intel.crop.rice.dry.title',
+        reason:       'Rice needs careful water control. Avoid letting the field dry out for long.',
+        reasonKey:    'intel.crop.rice.dry.reason',
+        urgency:      'high',
+        cta:          'Check water',
+        category:     'water-level',
+        cropSpecific: 'rice',
+      };
+    }
+  }
+
+  // ── Okra — pest pressure on young leaves ──────────────────────────
+  if (c.includes('okra') || c.includes('lady')) {
+    if (isVeg || isFlower) {
+      return {
+        title:        `Inspect ${name} leaves for holes or insects`,
+        titleKey:     'intel.crop.okra.pest.title',
+        reason:       'Young okra leaves and pods attract pests. Check under leaves and along stems.',
+        reasonKey:    'intel.crop.okra.pest.reason',
+        urgency:      'medium',
+        cta:          'Inspect',
+        category:     'pest-check',
+        cropSpecific: 'okra',
+      };
+    }
+  }
+
+  // ── Cassava — avoid waterlogging ──────────────────────────────────
+  if (c.includes('cassava') || c.includes('manioc') || c.includes('yuca')) {
+    if (isRain) {
+      return {
+        title:        `Check drainage around your ${name}`,
+        titleKey:     'intel.crop.cassava.rain.title',
+        reason:       'Cassava roots rot in waterlogged soil. Check drainage and clear water around the base.',
+        reasonKey:    'intel.crop.cassava.rain.reason',
+        urgency:      'high',
+        cta:          'Check soil',
+        category:     'drainage',
+        cropSpecific: 'cassava',
+      };
+    }
+    return {
+      title:        `Inspect ${name} leaves for yellowing`,
+      titleKey:     'intel.crop.cassava.general.title',
+      reason:       'Yellowing cassava leaves can signal cassava mosaic or stressed roots. A quick visual check helps catch it early.',
+      reasonKey:    'intel.crop.cassava.general.reason',
+      urgency:      'medium',
+      cta:          'Inspect',
+      category:     'pest-check',
+      cropSpecific: 'cassava',
+    };
+  }
+
+  // ── Leafy greens — heat sensitive ─────────────────────────────────
+  if (c.includes('lettuce') || c.includes('spinach') || c.includes('cabbage')
+      || c.includes('greens') || c.includes('kale') || c.includes('amaranth')) {
+    if (isHot) {
+      return {
+        title:        `Shade or water your ${name} early today`,
+        titleKey:     'intel.crop.leafy.heat.title',
+        reason:       'Leafy greens wilt fast in heat. Provide partial shade or water before 9 am to keep leaves crisp.',
+        reasonKey:    'intel.crop.leafy.heat.reason',
+        urgency:      'high',
+        cta:          'Water now',
+        category:     'watering',
+        cropSpecific: 'leafy',
+      };
+    }
+    return {
+      title:        `Check under ${name} leaves for pests`,
+      titleKey:     'intel.crop.leafy.pest.title',
+      reason:       'Leafy greens attract aphids and caterpillars. Lift a few outer leaves and check for damage.',
+      reasonKey:    'intel.crop.leafy.pest.reason',
+      urgency:      'medium',
+      cta:          'Inspect',
+      category:     'pest-check',
+      cropSpecific: 'leafy',
+    };
+  }
+
+  // ── Onion — avoid excess moisture ─────────────────────────────────
+  if (c.includes('onion') || c.includes('shallot')) {
+    if (isRain) {
+      return {
+        title:        `Improve drainage around your ${name}`,
+        titleKey:     'intel.crop.onion.rain.title',
+        reason:       'Onions rot in waterlogged soil. Check that water drains away from the bulbs.',
+        reasonKey:    'intel.crop.onion.rain.reason',
+        urgency:      'high',
+        cta:          'Check soil',
+        category:     'drainage',
+        cropSpecific: 'onion',
+      };
+    }
+    return {
+      title:        `Watch ${name} leaf tips for browning`,
+      titleKey:     'intel.crop.onion.general.title',
+      reason:       'Onion leaf-tip browning can signal water or nutrient stress. A quick check today helps catch it early.',
+      reasonKey:    'intel.crop.onion.general.reason',
+      urgency:      'medium',
+      cta:          'Inspect',
+      category:     'pest-check',
+      cropSpecific: 'onion',
+    };
+  }
+
+  return null;
+  // void(mode) — kept for future mode-specific crop tuning.
+}
+
 // ─── Farm task rules ──────────────────────────────────────────────
 
 /**
  * Derive today's task for farmer mode.
- * Priority: scan → harvest/fruiting → weather → crop stage → fallback.
+ * Priority: scan → crop-specific → harvest/fruiting → weather → crop stage → fallback.
  */
 function _farmTask(ctx) {
   const {
@@ -186,6 +427,12 @@ function _farmTask(ctx) {
     const t = _scanFollowup(recentScanCategory, name, 'farm');
     if (t) return t;
   }
+
+  // 1b. Crop-specific intelligence — fires when (crop × stage × weather)
+  //     matches a known nuance (tomato leaf spot in humid flowering,
+  //     maize wind lodging, rice flood drainage, etc.).
+  const cropTask = _cropSpecific(ctx, 'farm');
+  if (cropTask) return cropTask;
 
   // 2. Harvest / fruiting — market-facing nudge (spec: "harvest stage → Ready to sell?")
   if (stage.includes('harvest') || stage.includes('fruit')) {
@@ -314,6 +561,12 @@ function _gardenTask(ctx) {
     const t = _scanFollowup(recentScanCategory, name, 'garden');
     if (t) return t;
   }
+
+  // 1b. Crop-specific intelligence — same engine as farm mode but
+  //     fires AFTER scan and BEFORE the indoor/container heuristics.
+  //     Garden-mode tomato/pepper/leafy benefit from these nuances too.
+  const cropTask = _cropSpecific(ctx, 'garden');
+  if (cropTask) return cropTask;
 
   // 2. Indoor + low / no direct light (spec: "indoor + low light → sunlight reminder")
   if (isIndoor && (weatherType === 'cloudy' || weatherType === 'unknown')) {
