@@ -34,6 +34,8 @@
  *     init time; all reads happen inside helpers.
  */
 
+import { safeUrl } from '../utils/safeUrl.js';
+
 export const ATTRIBUTION_KEY = 'farroway_attribution';
 
 const REFERRER_HOST_MAP = Object.freeze({
@@ -91,11 +93,12 @@ function _safeReadJson(key) {
 }
 
 function _hostFromUrl(rawUrl) {
-  try {
-    if (!rawUrl) return '';
-    const url = new URL(String(rawUrl));
-    return String(url.hostname || '').toLowerCase().replace(/^www\./, '');
-  } catch { return ''; }
+  // safeUrl returns null for empty / malformed input rather than
+  // throwing — keeps the console clean of "Invalid URL" noise that
+  // the caller never reads (we only need the hostname).
+  const url = safeUrl(rawUrl);
+  if (!url) return '';
+  return String(url.hostname || '').toLowerCase().replace(/^www\./, '');
 }
 
 function _bucketFromReferrer(referrer) {
@@ -147,8 +150,11 @@ export function captureFromUrl({ url, referrer } = {}) {
   let utmMedium = null;
   let utmCampaign = null;
   let referralCode = null;
-  try {
-    const u = new URL(String(resolvedUrl || ''));
+  // safeUrl null-checks empty input rather than throwing — keeps
+  // the boot console clean of "Invalid URL" noise on first paint
+  // when window.location.href hasn't fully resolved yet.
+  const u = safeUrl(resolvedUrl);
+  if (u) try {
     utmSource   = _normaliseSource(u.searchParams.get('utm_source'));
     utmMedium   = u.searchParams.get('utm_medium')   || null;
     utmCampaign = u.searchParams.get('utm_campaign') || null;

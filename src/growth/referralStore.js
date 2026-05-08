@@ -31,6 +31,7 @@
  */
 
 import { trackEvent } from '../analytics/analyticsStore.js';
+import { safeUrl } from '../utils/safeUrl.js';
 
 export const REFERRAL_CODE_KEY     = 'farroway_referral_code';
 export const REFERRAL_INVITES_KEY  = 'farroway_referral_invites';
@@ -198,9 +199,11 @@ export function markReferralRewarded(inviteId) {
  */
 export function captureIncomingReferralFromURL() {
   if (typeof window === 'undefined' || !window.location) return null;
-  let url;
-  try { url = new URL(window.location.href); }
-  catch { return null; }
+  // safeUrl validates the input and returns null on any malformed
+  // href instead of throwing — keeps console clean of "Invalid URL"
+  // noise on tabs without a real navigation context (popups, etc.).
+  const url = safeUrl(window.location.href);
+  if (!url) return null;
   const code = String(url.searchParams.get('ref') || '').trim().toLowerCase();
   if (!code) return null;
 
