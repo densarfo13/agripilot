@@ -34,6 +34,53 @@ import { normalizeCrop } from './crops.js';
 // soil mound so the UI never shows a broken image icon.
 export const CROP_IMAGE_PLACEHOLDER = '/crops/fallback-crop.webp';
 
+// Generic placeholder served from the new /images/placeholders
+// folder — used when even the legacy fallback is unavailable.
+// SVG keeps the asset weight at <2 KB and renders crisply at any
+// size without an extra request per crop.
+export const CROP_IMAGE_PLACEHOLDER_SVG = '/images/placeholders/crop.svg';
+
+/**
+ * V2 path table — production-photo slots under /public/images/crops.
+ * These rows map to curated real-photo WebP files (16 priority crops
+ * for the pilot). When the file is not yet on disk, the runtime
+ * fallback chain in `getCropImagePath` will degrade to the legacy
+ * /crops/*.webp illustrations and finally to the SVG placeholder.
+ *
+ * Adding a new slot: drop the .webp into /public/images/crops with
+ * the exact filename below, then this row resolves automatically.
+ */
+export const CROP_IMAGE_PATHS_V2 = Object.freeze({
+  tomato:         '/images/crops/tomato.webp',
+  maize:          '/images/crops/maize.webp',
+  pepper:         '/images/crops/pepper.webp',
+  cassava:        '/images/crops/cassava.webp',
+  onion:          '/images/crops/onion.webp',
+  'leafy-greens': '/images/crops/leafy-greens.webp',
+  leafy_greens:   '/images/crops/leafy-greens.webp',
+  leafygreens:    '/images/crops/leafy-greens.webp',
+  okra:           '/images/crops/okra.webp',
+  rice:           '/images/crops/rice.webp',
+  yam:            '/images/crops/yam.webp',
+  plantain:       '/images/crops/plantain.webp',
+  beans:          '/images/crops/beans.webp',
+  potato:         '/images/crops/potato.webp',
+  carrot:         '/images/crops/carrot.webp',
+  basil:          '/images/crops/basil.webp',
+  spinach:        '/images/crops/spinach.webp',
+  herbs:          '/images/crops/herbs.webp',
+});
+
+/**
+ * Tracks which V2 photo files have actually shipped under
+ * /public/images/crops. Empty by default — populate as curated
+ * photos are committed. Until a key is in this set, callers that
+ * want photo-only resolution can branch on `hasRealCropPhoto`.
+ */
+export const AVAILABLE_CROP_PHOTOS_V2 = Object.freeze(new Set([
+  // Real-photo files land here as they're sourced + committed.
+]));
+
 /**
  * Canonical lowercase crop key → image path. Keys match the codes in
  * src/config/crops.js (normalised to lowercase) so the mapping is
@@ -146,6 +193,13 @@ export function getCropImagePath(cropKey) {
   const raw = String(cropKey || '').trim().toLowerCase();
   if (!raw) return null;
 
+  // V2 production-photo path takes priority — only resolves when
+  // the curated real photo is listed in AVAILABLE_CROP_PHOTOS_V2,
+  // so a row in CROP_IMAGE_PATHS_V2 without a shipped file will
+  // fall through to the legacy illustration cleanly.
+  const v2Hit = _resolveV2Path(raw, cropKey);
+  if (v2Hit) return v2Hit;
+
   // Try the exact lowercase form first (handles 'sweet-potato' /
   // 'oil-palm' / 'sweet_potato' verbatim).
   if (CROP_IMAGE_PATHS[raw]) return CROP_IMAGE_PATHS[raw];
@@ -163,6 +217,41 @@ export function getCropImagePath(cropKey) {
   if (normalised && CROP_IMAGE_PATHS[normalised]) return CROP_IMAGE_PATHS[normalised];
 
   return null;
+}
+
+/**
+ * Internal: resolves a V2 photo path only when the asset is known
+ * to ship in the AVAILABLE_CROP_PHOTOS_V2 set. Pure function — no
+ * network calls. The runtime onError fallback in <CropImage /> is
+ * the second line of defence if the set drifts from disk reality.
+ */
+function _resolveV2Path(rawLower, originalKey) {
+  if (!rawLower || AVAILABLE_CROP_PHOTOS_V2.size === 0) return null;
+  const variants = new Set([
+    rawLower,
+    rawLower.replace(/[\s_]+/g, '-'),
+    rawLower.replace(/[\s-]+/g, '_'),
+  ]);
+  const norm = normalizeCrop(originalKey);
+  if (norm) variants.add(String(norm).toLowerCase());
+  for (const v of variants) {
+    if (CROP_IMAGE_PATHS_V2[v] && AVAILABLE_CROP_PHOTOS_V2.has(v)) {
+      return CROP_IMAGE_PATHS_V2[v];
+    }
+  }
+  return null;
+}
+
+/**
+ * hasRealCropPhoto — true when a curated real-photo WebP for this
+ * crop key has shipped under /public/images/crops. Useful for UI
+ * surfaces that want to A/B branch on "have we got a real photo
+ * yet?" without inspecting paths directly.
+ */
+export function hasRealCropPhoto(cropKey) {
+  const raw = String(cropKey || '').trim().toLowerCase();
+  if (!raw) return false;
+  return _resolveV2Path(raw, cropKey) !== null;
 }
 
 /**

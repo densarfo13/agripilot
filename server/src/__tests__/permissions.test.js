@@ -1,3 +1,6 @@
+// Defensive env stamp BEFORE any other import (see vitest.env.js).
+import '../../../vitest.env.js';
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**

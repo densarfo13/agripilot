@@ -1,4 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Defensive env stamp BEFORE any other import — guarantees
+// DATABASE_URL et al. are present at the moment env.js runs
+// `required()` even when another test file's vi.resetModules()
+// has wiped the module cache. Idempotent.
+import '../../../vitest.env.js';
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock dependencies
 vi.mock('jsonwebtoken', () => ({

@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "test": "cd server && npm test",
+    "test:security": "cd server && npm run test:security",
+    "test:auth": "cd server && npm run test:auth",
+    "test:isolated": "cd server && npm run test:isolated",
     "dev": "vite",
     "prebuild": "node scripts/build-icons.mjs",
     "build": "vite build && cd server && npx prisma generate && npx tsc -p intelligence/tsconfig.json",

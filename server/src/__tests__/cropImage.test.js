@@ -212,7 +212,11 @@ describe('CropImage component — source contract', () => {
 
   it('falls back via onError once + guards against infinite loop', () => {
     expect(src).toMatch(/function handleError/);
-    expect(src).toMatch(/if \(fellBack\) return/);
+    // Component evolved to a 2-stage fallback (legacy webp →
+    // generic SVG). The guard now stops at stage >= 2 instead of
+    // a single boolean — both shapes satisfy the spec because the
+    // contract is "no infinite loop". Accept either form.
+    expect(src).toMatch(/(if \(fellBack\) return|fallbackStage\s*>=\s*2)/);
     expect(src).toMatch(/setSrc\(CROP_IMAGE_PLACEHOLDER\)/);
   });
 

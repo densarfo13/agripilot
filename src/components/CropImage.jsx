@@ -36,7 +36,7 @@
 
 import { useState } from 'react';
 import {
-  getCropImagePath, CROP_IMAGE_PLACEHOLDER,
+  getCropImagePath, CROP_IMAGE_PLACEHOLDER, CROP_IMAGE_PLACEHOLDER_SVG,
 } from '../config/cropImages.js';
 
 export default function CropImage({
@@ -54,15 +54,25 @@ export default function CropImage({
   const mapped = getCropImagePath(cropKey);
   const initial = mapped || CROP_IMAGE_PLACEHOLDER;
   const [src, setSrc] = useState(initial);
-  const [fellBack, setFellBack] = useState(!mapped);
+  // Two-stage fallback: 0 = real asset, 1 = legacy placeholder webp,
+  // 2 = generic SVG placeholder. Stops looping once we land on the
+  // SVG (which is shipped in-tree and can't 404).
+  const [fallbackStage, setFallbackStage] = useState(mapped ? 0 : 1);
+  const [loaded, setLoaded] = useState(false);
 
   function handleError() {
-    if (fellBack) return;   // already tried the fallback — stop
-    setFellBack(true);
-    setSrc(CROP_IMAGE_PLACEHOLDER);
+    if (fallbackStage >= 2) return;        // already on SVG — stop
+    if (fallbackStage === 0) {
+      setFallbackStage(1);
+      setSrc(CROP_IMAGE_PLACEHOLDER);
+      return;
+    }
+    setFallbackStage(2);
+    setSrc(CROP_IMAGE_PLACEHOLDER_SVG);
   }
 
   function handleLoad() {
+    setLoaded(true);
     if (typeof onLoadedSrc === 'function') onLoadedSrc(src);
   }
 
@@ -84,8 +94,22 @@ export default function CropImage({
       style={wrapperStyle}
       data-testid={testId || 'crop-image'}
       data-crop-key={String(cropKey || '').toLowerCase() || 'unknown'}
-      data-fallback={fellBack ? 'true' : undefined}
+      data-fallback={fallbackStage > 0 ? 'true' : undefined}
+      data-fallback-stage={fallbackStage}
     >
+      {/* Skeleton placeholder shown until the <img> reports `load`.
+          Sits behind the image (z-order) so there is no layout
+          shift — the wrapper already has fixed width/height. */}
+      {!loaded && (
+        <div
+          aria-hidden="true"
+          style={{
+            ...S.skeleton,
+            borderRadius: radius,
+          }}
+          data-testid="crop-image-skeleton"
+        />
+      )}
       <img
         src={src}
         alt={imgAriaLabel}
@@ -98,6 +122,8 @@ export default function CropImage({
         style={{
           ...S.img,
           borderRadius: radius,
+          opacity: loaded ? 1 : 0,
+          transition: 'opacity 220ms ease-out',
           ...(imgStyle || {}),
         }}
       />
@@ -124,5 +150,15 @@ const S = {
     objectFit: 'cover',
     objectPosition: 'center',
     display: 'block',
+    position: 'relative',
+    zIndex: 1,
+  },
+  skeleton: {
+    position: 'absolute',
+    inset: 0,
+    background: 'linear-gradient(110deg, rgba(255,255,255,0.04) 8%, rgba(255,255,255,0.10) 18%, rgba(255,255,255,0.04) 33%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.4s linear infinite',
+    zIndex: 0,
   },
 };
