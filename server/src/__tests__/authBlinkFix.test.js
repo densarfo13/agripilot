@@ -212,8 +212,19 @@ describe('No duplicate redirect patterns', () => {
     expect(src).toContain('setProfile(null)');
   });
 
-  it('ProfileGuard shows loading while profile initializes', () => {
+  it('ProfileGuard shows loading while auth is resolving', () => {
+    // ProfileGuard was refactored: it no longer reads
+    // `initialized` from authStore (that field never existed —
+    // it evaluated to `undefined` and trapped users in an
+    // infinite spinner). Strict mode now gates on `authLoading`
+    // from useAuthOrNull with a 4-second safety cap so the user
+    // never sees a permanent spinner.
     const src = read('src/components/ProfileGuard.jsx');
-    expect(src).toContain('!initialized || (loading && !profile)');
+    expect(src).toContain('authLoading');
+    expect(src).toContain('profile-guard-loading');
+    // Hard cap: setTimeout flips forceRender so children mount
+    // even when auth never resolves.
+    expect(src).toMatch(/setForceRender\(true\)/);
+    expect(src).toContain('setTimeout(');
   });
 });

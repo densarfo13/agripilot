@@ -18,9 +18,20 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Resolve the project root from the test file location so the
+// existsSync / readFileSync calls below survive parallel test
+// execution (vitest may mutate process.cwd() across workers,
+// turning these into pollution-only failures).
+//   File path: <root>/server/src/__tests__/cropImage.test.js
+//   Levels up: __tests__ → src → server → <root>  (3 hops)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(PROJECT_ROOT, rel), 'utf8');
 }
 
 import {
@@ -149,7 +160,7 @@ describe('CROP_IMAGE_PATHS catalog', () => {
 
 describe('public assets', () => {
   it('fallback-crop.webp exists in /public/crops', () => {
-    expect(fs.existsSync(path.join(process.cwd(), 'public/crops/fallback-crop.webp'))).toBe(true);
+    expect(fs.existsSync(path.join(PROJECT_ROOT, 'public/crops/fallback-crop.webp'))).toBe(true);
   });
 
   it('every spec-mandated WebP is physically on disk', () => {
@@ -160,7 +171,7 @@ describe('public assets', () => {
       'potato', 'fallback-crop',
     ];
     for (const key of required) {
-      const file = path.join(process.cwd(), 'public', 'crops', `${key}.webp`);
+      const file = path.join(PROJECT_ROOT, 'public', 'crops', `${key}.webp`);
       expect(fs.existsSync(file), `${key}.webp should be shipped`).toBe(true);
       // Sanity: mobile-friendly size (well under 200 KB ceiling).
       const stats = fs.statSync(file);

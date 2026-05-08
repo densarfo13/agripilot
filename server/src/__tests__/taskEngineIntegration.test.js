@@ -127,8 +127,13 @@ describe('Task completion — Dashboard wiring', () => {
   });
 
   it('uses server completedCount', () => {
+    // The loop hook surfaces completedCount which Dashboard
+    // consumes — assert both the destructure from loop and the
+    // alignment with taskCount in the data object. Strict
+    // 'data.completedCount' string was a stale check; current
+    // source uses object shorthand `{ completedCount, taskCount }`.
+    expect(dash).toContain('loop.completedCount');
     expect(dash).toContain('completedCount');
-    expect(dash).toContain('data.completedCount');
   });
 
   it('has handleCompleteTask callback', () => {
@@ -262,7 +267,12 @@ describe('Task completion — weekly progress wiring', () => {
   const dash = readFile('src/pages/Dashboard.jsx');
 
   it('uses completedCount for doneThisWeek (not localStorage)', () => {
-    expect(dash).toContain('doneThisWeek = completedCount');
+    // Source aligns the assignment with whitespace
+    // (`const doneThisWeek    = completedCount;`); use a regex
+    // so single- or multi-space alignment both match.
+    expect(dash).toMatch(/doneThisWeek\s*=\s*completedCount/);
+    // Negative assertion — never reads localStorage for this.
+    expect(dash).not.toContain('farroway_done_tasks');
   });
 
   it('calculates weekTotal from taskCount + completedCount', () => {

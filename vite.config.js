@@ -48,10 +48,22 @@ export default defineConfig({
           }
           // Vendor chunks — pin heavy deps so the main app bundle
           // stays well under any reasonable heap ceiling.
+          //
+          // Order matters: more-specific matches first. The shared
+          // 'scheduler' / 'react-is' / 'react/jsx-runtime' deps that
+          // both react and react-dom pull in are co-located with
+          // react-dom to break the circular `vendor → vendor-react-dom
+          // → vendor` warning that was visible on prior builds.
           if (id.includes('recharts'))                       return 'vendor-recharts';
           if (id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-leaflet';
           if (id.includes('react-router'))                   return 'vendor-router';
-          if (id.includes('react-dom'))                      return 'vendor-react-dom';
+          // React-shared internals → bundle WITH react-dom so the
+          // top-level chunk graph stays acyclic.
+          if (id.includes('react-dom')
+              || id.includes('/scheduler/')
+              || id.includes('/react-is/')
+              || id.includes('react/jsx-runtime')
+              || id.includes('react/jsx-dev-runtime'))       return 'vendor-react-dom';
           if (id.includes('/react/') || id.endsWith('/react'))
                                                               return 'vendor-react';
           if (id.includes('axios'))                          return 'vendor-axios';
@@ -77,5 +89,10 @@ export default defineConfig({
   test: {
     include: ['server/src/**/*.test.js', 'src/**/*.test.js'],
     exclude: ['server/tests/**', 'node_modules/**'],
+    // Fallback env vars so tests that import server modules don't
+    // crash at module-load time when DATABASE_URL / token secrets
+    // aren't set. Tests that actually exercise the DB still gate
+    // themselves with describe.skipIf inside.
+    setupFiles: ['./vitest.setup.js'],
   },
 });
