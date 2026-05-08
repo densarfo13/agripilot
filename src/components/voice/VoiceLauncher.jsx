@@ -24,7 +24,13 @@ export default function VoiceLauncher({
 }) {
   const [open, setOpen] = React.useState(false);
 
-  if (!isFeatureEnabled('FEATURE_VOICE_ASSISTANT')) return null;
+  // Honor either flag — FEATURE_VOICE_ASSISTANT (legacy) or
+  // FEATURE_VOICE_GUIDE (Voice Guide v1 spec). Both surface the
+  // same assistant. Hidden only when BOTH are off.
+  if (!isFeatureEnabled('FEATURE_VOICE_ASSISTANT')
+      && !isFeatureEnabled('FEATURE_VOICE_GUIDE')) {
+    return null;
+  }
 
   const text = label || tSafe('voice.askFarroway', 'Ask Farroway');
   const styles = pickStyles(variant);

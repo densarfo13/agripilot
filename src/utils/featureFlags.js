@@ -27,6 +27,13 @@ const DEFAULTS = Object.freeze({
   // are unaffected.
   FEATURE_VOICE_ASSISTANT: true,
 
+  // Voice Guide v1 alias — same flag, friendlier name used in
+  // the new low-literacy spec. Both flags resolve to the same
+  // assistant surface so callers can opt into either name.
+  // Keep them in sync; flipping one without the other will
+  // produce inconsistent visibility.
+  FEATURE_VOICE_GUIDE: true,
+
   // Open-ended LLM-backed voice chat. MUST stay off until the
   // safety review the spec calls out lands — guided questions
   // only for now.

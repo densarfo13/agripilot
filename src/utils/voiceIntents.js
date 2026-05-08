@@ -215,6 +215,215 @@ export const INTENTS = Object.freeze([
       'Bude shafin Taimako. Daga can za ka iya karanta tambayoyi ko tuntuɓi ƙungiyarmu kai tsaye.',
     ),
   },
+
+  // ── Voice Guide v1 — additional spec intents ────────────────
+  // All answers stay action-first, low-literacy, and confidence-safe
+  // ("may", "check", "consider"). No certainty claims, no exact
+  // pesticide dosages, no "this will cure". Critical issues route
+  // to local agronomy advice via the existing escalation flow.
+
+  {
+    id: 'scan_help',
+    action: 'answer+navigate',
+    navigate: '/scan',
+    patterns: P(
+      [
+        'how do i scan',
+        'how to scan',
+        'scan my plant',
+        'scan a leaf',
+        'use the scan',
+        'open scan',
+        'how does scan work',
+      ],
+      [
+        'sɛn na mɛyɛ scan',
+        'bue scan',
+        'scan me afifideɛ',
+      ],
+      [
+        'yaya zan scan',
+        'bude scan',
+        'scan tsire',
+      ],
+    ),
+    answers: P(
+      'Tap Scan, then take a clear photo of the leaf in good light. We will tell you what we noticed and what to check next.',
+      'Mia Scan, na twa mfoni a ɛda hɔ pefee wɔ hann pa mu. Yɛbɛkyerɛ wo deɛ yɛahunu ne deɛ ɛsɛ sɛ wohwɛ.',
+      'Danna Scan, sannan ɗauki hoton ganye a wuri mai haske. Za mu gaya maka abin da muka lura kuma abin da za a duba.',
+    ),
+  },
+
+  {
+    id: 'yellowing_leaves',
+    action: 'answer',
+    patterns: P(
+      [
+        // Cover possessive ("my") and non-possessive forms.
+        'why are leaves yellow',
+        'why are my leaves yellow',
+        'why is my leaf yellow',
+        'leaves are yellow',
+        'my leaves are yellow',
+        'my leaves yellow',
+        'my plant is yellow',
+        'yellow leaves',
+        'yellowing leaves',
+        'leaf turning yellow',
+        'plant turning yellow',
+        'yellow plant',
+        'leaves turning yellow',
+        'leaves are turning yellow',
+        'my leaves are turning yellow',
+      ],
+      [
+        'aba akɔ akokɔsradeɛ',
+        'aba ayɛ akokɔsradeɛ',
+        'ahaban yɛ akokɔsradeɛ',
+      ],
+      [
+        'ganyaye sun zama rawaya',
+        'me yasa ganyaye suka yi rawaya',
+        'rawayar ganyaye',
+      ],
+    ),
+    answers: P(
+      'Yellow leaves may come from too much water, dry soil, pests, or low nutrients. Check soil moisture and look under leaves.',
+      'Akokɔsradeɛ aba bɛtumi afiri nsuo bebree, asase a awo, mmoawa, anaa nuhuro ketewa. Hwɛ asase no mu nsuo na hwɛ aba no ase.',
+      'Rawayar ganyaye na iya zuwa daga yawan ruwa, ƙasa busasshiya, kwari, ko ƙarancin abinci. Duba danshin ƙasa kuma duba ƙarƙashin ganyaye.',
+    ),
+  },
+
+  {
+    id: 'pest_damage',
+    action: 'answer+navigate',
+    navigate: '/scan',
+    patterns: P(
+      [
+        'pests on my plant',
+        'pests on leaves',
+        'insects on plant',
+        'bugs on plant',
+        'holes in leaves',
+        'something eating leaves',
+        'pest damage',
+      ],
+      [
+        'mmoawa wɔ me dua so',
+        'mmoawa di me aba',
+        'tokuro wɔ aba mu',
+      ],
+      [
+        'kwari a tsiro na',
+        'kwari na cin ganyaye',
+        'rami a ganyaye',
+      ],
+    ),
+    answers: P(
+      'Look under leaves and along stems for insects or eggs. Remove badly damaged leaves. Consider neem oil if pests spread, and follow label instructions.',
+      'Hwɛ aba no ase ne nnua no nyinaa hyia mmoawa anaa nkesua. Yi aba a ɛyɛ basaa pa ara no fi mu. Susu neem ngo ho sɛ mmoawa no bɛkɔ so a, na di nhyerɛnsɛm a ɛwɔ ho akyi.',
+      'Duba ƙarƙashin ganyaye da kan ganda don ganin kwari ko ƙwai. Cire ganyayen da suka lalace sosai. Yi la’akari da man neem idan kwari na yaduwa, kuma bi umarnin lakabi.',
+    ),
+  },
+
+  {
+    id: 'funding_help',
+    action: 'answer+navigate',
+    navigate: '/funding',
+    patterns: P(
+      [
+        'is there funding',
+        'are there grants',
+        'farm loan',
+        'farming funding',
+        'funding for farmers',
+        'how do i get funding',
+        'do you have grants',
+      ],
+      [
+        'sika wɔ hɔ ma akuafoɔ',
+        'sika boa',
+        'mɛnya sika',
+      ],
+      [
+        'akwai tallafi',
+        'akwai bashin manomi',
+        'yaya zan sami tallafi',
+      ],
+    ),
+    answers: P(
+      'Funding options will appear based on your crop and region. Tap Funding to see what is available now.',
+      'Sika a ɛboa ho akwan bɛda adi gyina wo nnɔbae ne wo mantam so. Mia Sika no na hwɛ deɛ ɛwɔ hɔ seesei.',
+      'Hanyoyin tallafi za su bayyana bisa ga amfanin gonarka da yankinka. Danna Tallafi don ganin abin da ke nan yanzu.',
+    ),
+  },
+
+  {
+    id: 'repeat_task',
+    action: 'answer',
+    patterns: P(
+      [
+        'repeat',
+        'say again',
+        'say that again',
+        'read it again',
+        'read again',
+        'repeat task',
+        'play again',
+        'one more time',
+      ],
+      [
+        'san ka bio',
+        'kenkan no bio',
+        'ka bio',
+      ],
+      [
+        'sake fada',
+        'maimaita',
+        'sake karantawa',
+      ],
+    ),
+    answers: P(
+      'Reading the last answer again. Tap Read again any time to hear it.',
+      'Yɛrekenkan mmuaeɛ a etwaam no bio. Mia Kenkan bio bere biara a wopɛ sɛ wote.',
+      'Sake karanta amsar da ta gabata. Danna Sake karantawa duk lokacin da kake son ji.',
+    ),
+  },
+
+  {
+    id: 'language_help',
+    action: 'answer+navigate',
+    navigate: '/settings',
+    patterns: P(
+      [
+        'change language',
+        'switch language',
+        'speak twi',
+        'speak hausa',
+        'speak french',
+        'speak swahili',
+        'speak hindi',
+        'set language',
+        'i want twi',
+        'i want hausa',
+      ],
+      [
+        'sesa kasa',
+        'kasa Twi',
+        'sesa me kasa',
+      ],
+      [
+        'canza yare',
+        'yi magana hausa',
+        'sauya yare',
+      ],
+    ),
+    answers: P(
+      'Open Settings to change the app language. We support English, Twi, Hausa, French, Kiswahili, and Hindi.',
+      'Bue Nhyehyɛeɛ na sesa app no kasa. Yɛsoa Borɔfo, Twi, Hausa, French, Kiswahili, ne Hindi.',
+      'Bude Saiti don canza yaren app. Muna goyon bayan Turanci, Twi, Hausa, Faransanci, Kiswahili, da Hindi.',
+    ),
+  },
 ]);
 
 /**
