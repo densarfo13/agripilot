@@ -16,12 +16,15 @@
  */
 
 export const SUPPORTED_LANGUAGES = Object.freeze({
-  en: Object.freeze({ label: 'English', nativeLabel: 'English' }),
-  tw: Object.freeze({ label: 'Twi',     nativeLabel: 'Twi' }),
-  ha: Object.freeze({ label: 'Hausa',   nativeLabel: 'Hausa' }),
-  fr: Object.freeze({ label: 'French',  nativeLabel: 'Fran\u00E7ais' }),
-  es: Object.freeze({ label: 'Spanish', nativeLabel: 'Espa\u00F1ol' }),
-  hi: Object.freeze({ label: 'Hindi',   nativeLabel: '\u0939\u093F\u0928\u094D\u0926\u0940' }),
+  en: Object.freeze({ label: 'English',   nativeLabel: 'English' }),
+  tw: Object.freeze({ label: 'Twi',       nativeLabel: 'Twi' }),
+  ha: Object.freeze({ label: 'Hausa',     nativeLabel: 'Hausa' }),
+  fr: Object.freeze({ label: 'French',    nativeLabel: 'Fran\u00E7ais' }),
+  // Kiswahili added (global localization spec) \u2014 translation modules
+  // already carry sw entries throughout translations.js.
+  sw: Object.freeze({ label: 'Kiswahili', nativeLabel: 'Kiswahili' }),
+  es: Object.freeze({ label: 'Spanish',   nativeLabel: 'Espa\u00F1ol' }),
+  hi: Object.freeze({ label: 'Hindi',     nativeLabel: '\u0939\u093F\u0928\u094D\u0926\u0940' }),
 });
 
 /**

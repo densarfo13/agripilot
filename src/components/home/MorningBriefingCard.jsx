@@ -35,9 +35,14 @@
  */
 
 import React from 'react';
+import { tSafe } from '../../i18n/tSafe.js';
+import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 
 // ─── Constants ─────────────────────────────────────────────────
 
+// English fallbacks live here. tSafe(key, fallback) returns the
+// translation when the active locale has one; otherwise the
+// English fallback below renders.
 const FALLBACK_BRIEFING = Object.freeze({
   weatherSummary: 'Steady weather today',
   taskTitle:      'Check your crops today and monitor soil moisture.',
@@ -45,17 +50,17 @@ const FALLBACK_BRIEFING = Object.freeze({
   estimatedTime:  '5 mins',
 });
 
-// Weather lines stay short and calm. Mode-specific phrasing is
-// handled by the contextEngine via the task title + recommendation;
-// this line is the at-a-glance headline only.
+// Weather line definitions — keys + icons + accent class. Each
+// `label` is a translation key consumed via tSafe so the headline
+// localizes with the active language.
 const WEATHER_LINES = Object.freeze({
-  rain:    { label: 'Rain expected today',         icon: '🌧',  accent: 'cool'    },
-  heat:    { label: 'Hot weather expected today',  icon: '🔥',  accent: 'hot'     },
-  dry:     { label: 'Dry conditions today',        icon: '🌵',  accent: 'warm'    },
-  sunny:   { label: 'Sunny and clear today',       icon: '☀',   accent: 'warm'    },
-  cloudy:  { label: 'Cloudy and mild today',       icon: '☁',   accent: 'cool'    },
-  wind:    { label: 'Strong wind today',           icon: '💨',  accent: 'slate'   },
-  unknown: { label: 'Steady weather today',        icon: '🌤',  accent: 'neutral' },
+  rain:    { key: 'briefing.weather.rain',    fallback: 'Rain expected today',         icon: '🌧',  accent: 'cool'    },
+  heat:    { key: 'briefing.weather.heat',    fallback: 'Hot weather expected today',  icon: '🔥',  accent: 'hot'     },
+  dry:     { key: 'briefing.weather.dry',     fallback: 'Dry conditions today',        icon: '🌵',  accent: 'warm'    },
+  sunny:   { key: 'briefing.weather.sunny',   fallback: 'Sunny and clear today',       icon: '☀',   accent: 'warm'    },
+  cloudy:  { key: 'briefing.weather.cloudy',  fallback: 'Cloudy and mild today',       icon: '☁',   accent: 'cool'    },
+  wind:    { key: 'briefing.weather.wind',    fallback: 'Strong wind today',           icon: '💨',  accent: 'slate'   },
+  unknown: { key: 'briefing.weather.unknown', fallback: 'Steady weather today',        icon: '🌤',  accent: 'neutral' },
 });
 
 const ACCENT_GRADIENTS = Object.freeze({
@@ -68,16 +73,22 @@ const ACCENT_GRADIENTS = Object.freeze({
 
 // ─── Helpers ───────────────────────────────────────────────────
 
-/** Time-of-day greeting. Never throws. */
+/** Time-of-day greeting. Never throws. Localized via tSafe. */
 function _greeting(now, label) {
   let h = 12;
   try {
     const d = (now instanceof Date) ? now : new Date();
     h = d.getHours();
   } catch { /* swallow */ }
-  const part = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
+  const partKey = h < 12 ? 'briefing.greeting.morning'
+                : h < 18 ? 'briefing.greeting.afternoon'
+                :          'briefing.greeting.evening';
+  const partFallback = h < 12 ? 'Good morning'
+                     : h < 18 ? 'Good afternoon'
+                     :          'Good evening';
+  const part = tSafe(partKey, partFallback);
   const who  = (typeof label === 'string' && label.trim()) ? label.trim() : 'Farmer';
-  return `Good ${part}, ${who}`;
+  return `${part}, ${who}`;
 }
 
 /** Resolve the weather line + icon + accent for the supplied weather. */
@@ -90,19 +101,19 @@ function _weatherLine(weather) {
 }
 
 /**
- * Map a task → estimated time band.
+ * Map a task → estimated time band, localized.
  * Spec: 2 mins | 5 mins | 10 mins.
  *   • light / low-urgency  → 2 mins
  *   • harvest / weeding    → 10 mins
  *   • everything else      → 5 mins
  */
 function _estimateTime(task) {
-  if (!task || typeof task !== 'object') return '5 mins';
+  if (!task || typeof task !== 'object') return tSafe('briefing.time.5', '5 mins');
   const cat = String(task.category || '').toLowerCase();
   const urg = String(task.urgency  || 'medium').toLowerCase();
-  if (cat === 'harvest' || cat === 'weeding') return '10 mins';
-  if (cat === 'light'   || urg === 'low')     return '2 mins';
-  return '5 mins';
+  if (cat === 'harvest' || cat === 'weeding') return tSafe('briefing.time.10', '10 mins');
+  if (cat === 'light'   || urg === 'low')     return tSafe('briefing.time.2',  '2 mins');
+  return tSafe('briefing.time.5', '5 mins');
 }
 
 // ─── Component ─────────────────────────────────────────────────
@@ -114,6 +125,11 @@ export default function MorningBriefingCard({
   taskDone      = false,
   now           = null,
 }) {
+  // Subscribe to language change so the card re-renders when the
+  // user picks a different locale — the tSafe lookups below will
+  // pick up the new strings on this render.
+  useStrictTranslation();
+
   // Build the briefing in a single try/catch so a malformed input
   // can never blank Home — every render path resolves to text.
   let greeting, wxLine, wxIcon, accent, taskTitle, taskReason,
@@ -122,13 +138,15 @@ export default function MorningBriefingCard({
     greeting = _greeting(now, userTypeLabel);
 
     const wx = _weatherLine(weather);
-    wxLine   = wx.label;
+    wxLine   = tSafe(wx.key, wx.fallback);
     wxIcon   = wx.icon;
     accent   = ACCENT_GRADIENTS[wx.accent] || ACCENT_GRADIENTS.neutral;
 
     const task = ctxIntel && ctxIntel.todayTask;
-    taskTitle  = (task && task.title)  || FALLBACK_BRIEFING.taskTitle;
-    taskReason = (task && task.reason) || FALLBACK_BRIEFING.taskReason;
+    taskTitle  = (task && task.title)
+      || tSafe('briefing.fallback.task',  FALLBACK_BRIEFING.taskTitle);
+    taskReason = (task && task.reason)
+      || tSafe('briefing.fallback.reason', FALLBACK_BRIEFING.taskReason);
 
     const rec = ctxIntel && ctxIntel.recommendation;
     recommendation = (rec && rec.type !== 'general' && rec.text)
@@ -142,15 +160,15 @@ export default function MorningBriefingCard({
 
     estimatedTime = _estimateTime(task);
   } catch {
-    greeting       = `Good morning, ${userTypeLabel || 'Farmer'}`;
-    wxLine         = FALLBACK_BRIEFING.weatherSummary;
+    greeting       = `${tSafe('briefing.greeting.morning', 'Good morning')}, ${userTypeLabel || 'Farmer'}`;
+    wxLine         = tSafe('briefing.weather.unknown', FALLBACK_BRIEFING.weatherSummary);
     wxIcon         = WEATHER_LINES.unknown.icon;
     accent         = ACCENT_GRADIENTS.neutral;
-    taskTitle      = FALLBACK_BRIEFING.taskTitle;
-    taskReason     = FALLBACK_BRIEFING.taskReason;
+    taskTitle      = tSafe('briefing.fallback.task',   FALLBACK_BRIEFING.taskTitle);
+    taskReason     = tSafe('briefing.fallback.reason', FALLBACK_BRIEFING.taskReason);
     recommendation = null;
     warning        = null;
-    estimatedTime  = FALLBACK_BRIEFING.estimatedTime;
+    estimatedTime  = tSafe('briefing.time.5', FALLBACK_BRIEFING.estimatedTime);
   }
 
   return (

@@ -28,6 +28,8 @@
 
 import { useCallback, useState } from 'react';
 import { addScanTasks } from '../../core/scanToTask.js';
+import { tSafe } from '../../i18n/tSafe.js';
+import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 
 // ─── Per-category guidance ────────────────────────────────────────
 // Spec-exact wording. Honest, action-framed, no certainty claims.
@@ -413,6 +415,9 @@ export default function UsefulResultCard({
   onTaskAdded,
 }) {
   // All hooks declared unconditionally — rules-of-hooks safe.
+  // Subscribe to language change so the card re-renders when the
+  // user picks a different locale.
+  useStrictTranslation();
   const [taskAdded, setTaskAdded] = useState(false);
   const [escalationSent, setEscalationSent] = useState(false);
 
@@ -484,14 +489,20 @@ export default function UsefulResultCard({
           data-confidence={(result && result.confidence) || guidance.confidence}
         >
           <span style={S.confDot} aria-hidden="true" />
-          Confidence: {((result && result.confidence) || guidance.confidence || 'low')
-            .replace(/^./, (c) => c.toUpperCase())}
+          {tSafe('scan.confidence.label', 'Confidence')}: {(() => {
+            const lvl = String((result && result.confidence) || guidance.confidence || 'low').toLowerCase();
+            const k   = `scan.confidence.${lvl}`;
+            const fb  = lvl.replace(/^./, (c) => c.toUpperCase());
+            return tSafe(k, fb);
+          })()}
         </span>
       </div>
 
       {/* What we noticed */}
       <div>
-        <div style={S.sectionLabel}>What we noticed</div>
+        <div style={S.sectionLabel}>
+          {tSafe('scan.section.noticed', 'What we noticed')}
+        </div>
         <p style={S.noticedText} data-testid="useful-result-noticed">
           {(result && result.noticed) || guidance.noticed}
         </p>
@@ -499,7 +510,9 @@ export default function UsefulResultCard({
 
       {/* What to check next */}
       <div>
-        <div style={S.sectionLabel}>What to check next</div>
+        <div style={S.sectionLabel}>
+          {tSafe('scan.section.checkNext', 'What to check next')}
+        </div>
         {/* If the result carries a single checkNext string (Plantix-
             style backend shape) render it as a paragraph; else fall
             back to the per-category checks list. */}
@@ -520,7 +533,9 @@ export default function UsefulResultCard({
           the user reads "what to do" before being asked to add a
           reminder for tomorrow. */}
       <div style={S.recBlock} data-testid="useful-result-recommendation-block">
-        <div style={S.sectionLabel}>Recommended action</div>
+        <div style={S.sectionLabel}>
+          {tSafe('scan.section.recommendation', 'Recommended action')}
+        </div>
         <p style={S.recText} data-testid="useful-result-recommendation">
           {(result && result.recommendation) || guidance.recommendation}
         </p>
@@ -532,7 +547,9 @@ export default function UsefulResultCard({
           chemicals, no "this will cure" guarantees. */}
       {Array.isArray(guidance.treatments) && guidance.treatments.length > 0 && (
         <div style={S.treatBlock} data-testid="useful-result-treatments">
-          <div style={S.sectionLabel}>Suggested treatment approaches</div>
+          <div style={S.sectionLabel}>
+            {tSafe('scan.section.treatments', 'Suggested treatment approaches')}
+          </div>
           <ul style={S.treatList} data-testid="useful-result-treatments-list">
             {guidance.treatments.map((t, i) => (
               <li key={i}>{t}</li>
@@ -543,7 +560,9 @@ export default function UsefulResultCard({
 
       {/* Suggested task */}
       <div style={S.taskBlock} data-testid="useful-result-task-block">
-        <div style={S.sectionLabel}>Suggested task</div>
+        <div style={S.sectionLabel}>
+          {tSafe('scan.section.task', 'Suggested task')}
+        </div>
         <div style={S.taskRow}>
           <span style={S.taskText} data-testid="useful-result-task-text">
             {(result && typeof result.taskTitle === 'string' && result.taskTitle.trim())
@@ -552,7 +571,7 @@ export default function UsefulResultCard({
           </span>
           {taskAdded ? (
             <span style={S.taskToast} data-testid="useful-result-task-toast">
-              ✅ Task added
+              {tSafe('scan.toast.taskAdded', '✅ Task added')}
             </span>
           ) : (
             <button
@@ -561,7 +580,7 @@ export default function UsefulResultCard({
               data-testid="useful-result-add-task-btn"
               onClick={handleAddTask}
             >
-              Add follow-up task
+              {tSafe('scan.button.addTask', 'Add follow-up task')}
             </button>
           )}
         </div>
@@ -576,7 +595,7 @@ export default function UsefulResultCard({
             style={S.btn}
             data-testid="useful-result-retake"
           >
-            📷 Retake photo
+            {tSafe('scan.button.retake', '📷 Retake photo')}
           </button>
         ) : null}
       </div>
@@ -590,7 +609,10 @@ export default function UsefulResultCard({
           style={S.escalToast}
           data-testid="useful-result-agronomy-sent"
         >
-          ✅ Request saved. We&apos;ll route this to a local agronomy contact when one is available.
+          {tSafe(
+            'scan.toast.agronomySent',
+            '✅ Request saved. We\'ll route this to a local agronomy contact when one is available.',
+          )}
         </p>
       ) : (
         <button
@@ -599,18 +621,22 @@ export default function UsefulResultCard({
           style={S.escalBtn}
           data-testid="useful-result-agronomy-cta"
         >
-          🌾 Get local agronomy advice
+          {tSafe('scan.button.agronomy', '🌾 Get local agronomy advice')}
         </button>
       )}
 
       {/* Spec-exact safety disclaimer — always rendered, even on
           'healthy' results, so the user understands the result is
-          guidance and never a guaranteed diagnosis. */}
+          guidance and never a guaranteed diagnosis. Localized via
+          tSafe with the spec-exact English fallback. */}
       <p
         style={S.disclaimer}
         data-testid="useful-result-disclaimer"
       >
-        Results are guidance only. Local agronomy advice may help confirm treatment options.
+        {tSafe(
+          'scan.disclaimer.safe',
+          'Results are guidance only. Local agronomy advice may help confirm treatment options.',
+        )}
       </p>
     </article>
   );

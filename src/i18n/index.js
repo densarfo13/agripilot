@@ -59,6 +59,11 @@ import { NGO_MAP_DASHBOARD_TRANSLATIONS }      from './ngoMapDashboardTranslatio
 // §11 of the localization rollout spec; until now they shipped
 // in the repo but were never wired into the live t() resolver.
 import { JSON_LOCALE_OVERLAY }                 from './jsonLocaleLoader.js';
+// Briefing + Scan overlay — keys for the Morning Briefing Card,
+// scan section labels, treatment guidance header, agronomy CTA,
+// and the spec-exact safety disclaimer. Shape: `{ key: { locale: value } }`,
+// merged directly into the main dictionary as empty-slot fill.
+import { BRIEFING_SCAN_TRANSLATIONS }          from './briefingScanTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -84,6 +89,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
         if (!T[key][lang]) T[key][lang] = dict[key];
       } else {
         T[key] = { [lang]: dict[key] };
+      }
+    }
+  }
+  // 1b. Briefing + Scan overlay — shape matches T (`key → {locale: value}`).
+  //     Direct empty-slot merge so any translator-authored value in T wins.
+  for (const key of Object.keys(BRIEFING_SCAN_TRANSLATIONS)) {
+    const row = BRIEFING_SCAN_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
       }
     }
   }
@@ -128,12 +145,16 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
 })();
 
 // ── Language list (matches VOICE_LANGUAGES in voiceGuide.js) ──
+// Kept in sync with SUPPORTED_LANGUAGES in i18n/languageConfig.js.
+// Six locales for the global rollout: English, French, Kiswahili,
+// Hausa, Twi, Hindi.
 export const LANGUAGES = [
-  { code: 'en', label: 'English', short: 'EN' },
-  { code: 'fr', label: 'Français', short: 'FR' },
+  { code: 'en', label: 'English',   short: 'EN' },
+  { code: 'fr', label: 'Français',  short: 'FR' },
   { code: 'sw', label: 'Kiswahili', short: 'SW' },
-  { code: 'ha', label: 'Hausa', short: 'HA' },
-  { code: 'tw', label: 'Twi', short: 'TW' },
+  { code: 'ha', label: 'Hausa',     short: 'HA' },
+  { code: 'tw', label: 'Twi',       short: 'TW' },
+  { code: 'hi', label: 'हिन्दी',       short: 'HI' },
 ];
 
 const STORAGE_KEY = 'farroway:lang';
