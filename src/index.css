@@ -460,40 +460,87 @@ select option:checked {
     0 6px 14px -4px rgba(0, 0, 0, 0.28);
 }
 
-/* ── Farm / Garden theme tints (visual realism §4) ─────────────────
-   Subtle hue shift on the page shell to differentiate the two
-   modes WITHOUT changing the type/contrast tokens. Apply
-   .ff-theme-farm or .ff-theme-garden to the page <div>; the
-   shell gradient picks up the role.
+/* ── Farm / Garden theme tints (Premium Atmosphere upgrade) ────────
+   Spec-exact agricultural palettes. Farm mode runs deep forest
+   greens with warm soil-brown accent; Garden mode runs softer
+   greens with cream undertones. Type/contrast tokens stay
+   untouched so readability is identical across modes.
 
-   Farmer mode: deep natural greens + warm soil browns.
-   Garden mode: softer greens + warm cream / earthy accents.
+   Farm palette  (deep natural greens + warm soil amber):
+     #0F2D1F → #163826 → #234733 → #2F5A42  + #C8A46A accent
+   Garden palette (softer greens + warm cream):
+     #18392B → #254836 → #355D49           + #F3E8D0 / #D6C3A3 accents
 */
 .ff-theme-farm {
-  --ff-shell-top:    #0B1F2A;
-  --ff-shell-mid:    #102A2E;
-  --ff-shell-bottom: #0E2A1E;
-  --ff-shell-accent: rgba(120, 86, 50, 0.06);  /* warm soil hint */
+  --ff-shell-top:    #0F2D1F;
+  --ff-shell-mid:    #163826;
+  --ff-shell-mid2:   #234733;
+  --ff-shell-bottom: #2F5A42;
+  /* Warm soil amber — used as a soft top-of-screen sun glow */
+  --ff-shell-accent: rgba(200, 164, 106, 0.08);
+  /* Vignette tint pushes the corners into deeper forest tones */
+  --ff-shell-vignette: rgba(8, 18, 12, 0.45);
 }
 .ff-theme-garden {
-  --ff-shell-top:    #0F2624;
-  --ff-shell-mid:    #143230;
-  --ff-shell-bottom: #1A3128;
-  --ff-shell-accent: rgba(220, 200, 160, 0.05); /* warm cream hint */
+  --ff-shell-top:    #18392B;
+  --ff-shell-mid:    #254836;
+  --ff-shell-mid2:   #2F5340;
+  --ff-shell-bottom: #355D49;
+  /* Warm cream / earthy accent — softer than the farm amber */
+  --ff-shell-accent: rgba(243, 232, 208, 0.06);
+  --ff-shell-vignette: rgba(12, 22, 16, 0.40);
 }
 
-/* When a theme class is applied, the page background uses the
-   themed gradient + a soft accent overlay. The fallback (no
-   theme class) uses the existing dark green gradient. */
+/* When a theme class is applied, the page background composes
+   four layers from top to bottom:
+     1. Warm sunlight glow at the horizon (radial accent)
+     2. Soft vignette pulling corners into deeper forest tones
+     3. Subtle SVG-noise grain for organic texture
+     4. The themed vertical gradient (top → mid → mid2 → bottom)
+   This produces a premium, layered, agricultural atmosphere
+   without any image assets. Grain is a tiny inline SVG so it
+   adds zero network cost and respects build budgets. */
 .ff-theme-farm,
 .ff-theme-garden {
-  background:
-    radial-gradient(ellipse 80% 40% at 50% 0%,
+  background-image:
+    /* 1. Top-of-screen sunlight glow (warm accent) */
+    radial-gradient(ellipse 90% 35% at 50% 0%,
       var(--ff-shell-accent) 0%, transparent 70%),
+    /* 2. Corner vignette — calm, never heavy */
+    radial-gradient(ellipse 130% 90% at 50% 50%,
+      transparent 55%, var(--ff-shell-vignette) 100%),
+    /* 3. Organic grain — tiny inline SVG noise; ~4 KB once
+          inlined in CSS, identical between themes so it
+          de-duplicates in the gzip stream. */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.045 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    /* 4. Themed vertical gradient — four-stop for richer depth */
     linear-gradient(180deg,
       var(--ff-shell-top) 0%,
-      var(--ff-shell-mid) 50%,
+      var(--ff-shell-mid) 32%,
+      var(--ff-shell-mid2) 66%,
       var(--ff-shell-bottom) 100%) !important;
+  background-attachment: fixed, fixed, fixed, fixed !important;
+  background-size: auto, auto, 180px 180px, auto !important;
+  background-blend-mode: normal, multiply, soft-light, normal !important;
+}
+
+/* Reduced-motion + reduced-data: drop the SVG grain layer for
+   users who request lighter rendering. The themed gradient
+   alone still reads as premium. */
+@media (prefers-reduced-data: reduce) {
+  .ff-theme-farm,
+  .ff-theme-garden {
+    background-image:
+      radial-gradient(ellipse 90% 35% at 50% 0%,
+        var(--ff-shell-accent) 0%, transparent 70%),
+      radial-gradient(ellipse 130% 90% at 50% 50%,
+        transparent 55%, var(--ff-shell-vignette) 100%),
+      linear-gradient(180deg,
+        var(--ff-shell-top) 0%,
+        var(--ff-shell-mid) 32%,
+        var(--ff-shell-mid2) 66%,
+        var(--ff-shell-bottom) 100%) !important;
+  }
 }
 
 /* Universal button press state. Applies to every <button>
