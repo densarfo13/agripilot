@@ -65,6 +65,10 @@ import { isFeatureVisible as _isFeatureVisible } from '../core/featuresByUserTyp
 // Scan Plant entry point (Phase 7E): feature flag + role guard.
 import { useAuth } from '../context/AuthContext.jsx';
 import { isFeatureEnabled } from '../utils/featureFlags.js';
+// Explicit grow-mode toggle — persists 'farm'|'garden' to
+// farroway_active_grow_mode and re-renders on every tap so the
+// header, details, and shortcuts all adapt without a route change.
+import useGrowMode from '../hooks/useGrowMode.js';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -136,6 +140,10 @@ export default function MyFarmPage() {
   // present so the detail card immediately swaps to the picked
   // experience without a route change.
   const _exp = useExperience();
+  // Explicit grow-mode toggle — highest-priority source of truth for
+  // isGardenMode. Unconditional (before any early return) so the hook
+  // order stays stable on every render path (rules-of-hooks safe).
+  const { mode: _growMode } = useGrowMode();
 
   // Spec §1 redesign: removed the previous useEffect that ran
   // `getTodayTasks` + `processNotifications`. Those side effects
@@ -245,13 +253,18 @@ export default function MyFarmPage() {
     || farms?.[0]
     || null;
 
-  // Safe-launch backyard-as-farm-type spec §1: derive whether the
-  // active row is a backyard / home-garden record so the header,
-  // buttons, and switch shortcut adapt without rewriting the data
-  // model. Both legacy ('home_garden') and canonical ('backyard')
-  // tags resolve to the garden surface.
+  // isGardenMode — the explicit user toggle (highest priority).
+  // Always reflects the persisted farroway_active_grow_mode value,
+  // so the UI adapts even when the user has no garden entity yet.
+  const isGardenMode = _growMode === 'garden';
+
+  // isBackyardActive — used for entity-level checks that need to
+  // know the ACTUAL entity type (crop image, manage links, etc.).
+  // The explicit toggle wins; entity type is a secondary signal for
+  // users who haven't toggled but have a backyard-typed record.
   const _activeFarmType = String(farm?.farmType || '').toLowerCase();
-  const isBackyardActive = _activeFarmType === 'backyard'
+  const isBackyardActive = isGardenMode
+                        || _activeFarmType === 'backyard'
                         || _activeFarmType === 'home_garden'
                         || _activeFarmType === 'home';
 
@@ -394,13 +407,15 @@ export default function MyFarmPage() {
       {/* ── 1. Header (spec §1) ─────────────────────────────── */}
       <Header t={t} isBackyard={isBackyardActive} />
 
-      {/* Farm vs Garden UX spec §2 — Farms / Gardens toggle.
-          Always visible on My Grow (forceShow). mode="switch"
-          flips activeExperience without navigating; the page
-          re-reads its active entity from useExperience() and
-          re-renders the detail card for the picked experience. */}
+      {/* Farms / Gardens toggle — always visible (forceShow).
+          current reads from isGardenMode (the explicit persisted
+          toggle) so the active tab reflects the user's last tap,
+          not just whether a garden entity exists. mode="switch"
+          keeps the user on this route; ExperienceTabs.go() writes
+          farroway_active_grow_mode before calling switchTo() so
+          the nav and page both update immediately. */}
       <ExperienceTabs
-        current={isBackyardActive ? 'garden' : 'farm'}
+        current={isGardenMode ? 'garden' : 'farm'}
         mode="switch"
         forceShow
       />
@@ -510,34 +525,70 @@ export default function MyFarmPage() {
         />
       </div>
 
-      {/* ── 4. Setup Card (spec §4 redesign) ───────────────────
-          Single unified card; renders ONLY when the farm is
-          missing crop/location/size. Replaces the prior split
-          messages (avoids "duplicated setup messages" — spec §8). */}
+      {/* ── Missing fields — inline hint only (no blocker card).
+          When data is incomplete, list just the missing fields
+          with a small "Edit" pill each. Never blocks access to
+          the rest of the page. */}
       {setupIncomplete && (
-        <section style={S.setupCard} data-testid="my-farm-setup-card">
-          <span style={S.setupBadge}>
-            {tSafe('myFarm.setupBadge', 'Setup incomplete')}
-          </span>
-          <h2 style={S.setupTitle}>
-            {tSafe('myFarm.setupTitle', 'Complete your farm setup')}
-          </h2>
-          <p style={S.setupBody}>
-            {tSafe('myFarm.setupBody',
-              'Add crop, location, and farm size to get personalized tasks and smart guidance.')}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate(editFarmUrl)}
-            style={S.setupCta}
-            data-testid="my-farm-setup-cta"
-          >
-            <span>{tSafe('myFarm.setupCta', 'Complete setup')}</span>
-            <span aria-hidden="true" style={{ display: 'inline-flex', marginLeft: 8 }}>
-              <ArrowRight size={16} />
-            </span>
-          </button>
-        </section>
+        <div style={S.missingHint} data-testid="my-farm-missing-hint">
+          {!farm.crop && (
+            <div style={S.missingRow}>
+              <span style={S.missingField}>
+                {t('myFarm.crop')}:&nbsp;
+                <span style={S.missingVal}>
+                  {tSafe('myFarm.notSelected', 'Not selected')}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate(editFarmUrl)}
+                style={S.missingEditBtn}
+                data-testid="my-farm-missing-crop-edit"
+              >
+                {tSafe('myFarm.edit.short', 'Edit')}
+              </button>
+            </div>
+          )}
+          {!(farm.location || farm.locationLabel
+              || farm.country || farm.countryCode) && (
+            <div style={S.missingRow}>
+              <span style={S.missingField}>
+                {t('myFarm.location')}:&nbsp;
+                <span style={S.missingVal}>
+                  {tSafe('myFarm.addLocation', 'Add location')}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate(editFarmUrl)}
+                style={S.missingEditBtn}
+                data-testid="my-farm-missing-location-edit"
+              >
+                {tSafe('myFarm.edit.short', 'Edit')}
+              </button>
+            </div>
+          )}
+          {!farm.size && (
+            <div style={S.missingRow}>
+              <span style={S.missingField}>
+                {isGardenMode
+                  ? tSafe('myGrow.size', 'Container / Bed size')
+                  : t('myFarm.size')}:&nbsp;
+                <span style={S.missingVal}>
+                  {tSafe('myFarm.addSize', 'Not added yet')}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate(editFarmUrl)}
+                style={S.missingEditBtn}
+                data-testid="my-farm-missing-size-edit"
+              >
+                {tSafe('myFarm.edit.short', 'Edit')}
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── 4. My Farm Details (spec §4) ───────────────────────
@@ -548,7 +599,9 @@ export default function MyFarmPage() {
       <section style={S.detailsCard} data-testid="my-farm-details">
         <div style={S.detailsHead}>
           <h2 style={S.detailsTitle}>
-            {tSafe('myFarm.details.title', 'My Farm Details')}
+            {isGardenMode
+              ? tSafe('myGrow.details.title', 'My Grow Details')
+              : tSafe('myFarm.details.title', 'My Farm Details')}
           </h2>
           <button
             type="button"
@@ -575,7 +628,9 @@ export default function MyFarmPage() {
           />
           <DetailRow
             icon={<Ruler size={16} />}
-            label={t('myFarm.size')}
+            label={isGardenMode
+              ? tSafe('myGrow.size', 'Container / Bed size')
+              : t('myFarm.size')}
             value={sizeValue}
             placeholder={!farm.size}
           />
@@ -687,14 +742,12 @@ export default function MyFarmPage() {
       </div>
 
       {/* ── Scan Plant (Phase 7E entry point) ─────────────────
-          Secondary action card: navigate to /scan for a quick
-          crop-leaf photo check. Shown only when FEATURE_SCAN=true
-          AND the current user is a farmer (not Buyer/NGO/Admin).
-          NOT a floating FAB — a plain full-width button, positioned
-          below the action stack so it doesn't compete with Edit Farm.
-          /scan is wrapped in <ScanErrorBoundary> in App.jsx, so any
-          failure there shows the graceful fallback, not a crash. */}
-      {_scanOn && (
+          Farm mode only: scan appears as a contextual card inside
+          My Farm. In garden mode, Scan is the dedicated bottom-nav
+          tab (GARDEN_TABS) so the card is hidden there to avoid
+          duplicate affordances on the same surface.
+          /scan is wrapped in <ScanErrorBoundary> in App.jsx. */}
+      {_scanOn && !isGardenMode && (
         <button
           type="button"
           onClick={() => { try { navigate('/scan'); } catch { /* swallow */ } }}
@@ -1101,6 +1154,51 @@ const S = {
     width: 1, height: 1, padding: 0, margin: -1,
     overflow: 'hidden', clip: 'rect(0,0,0,0)',
     border: 0,
+  },
+
+  // ── Missing-fields inline hint (replaces setup blocker card) ─
+  // Small, unobtrusive — never blocks the page. Each missing field
+  // renders a single row: "Field: value  [Edit]".
+  missingHint: {
+    margin: '0.75rem 1rem 0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  missingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 10,
+    padding: '8px 12px',
+  },
+  missingField: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: 500,
+    flex: '1 1 auto',
+    minWidth: 0,
+  },
+  missingVal: {
+    color: 'rgba(255,255,255,0.38)',
+    fontStyle: 'italic',
+  },
+  missingEditBtn: {
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(34,197,94,0.40)',
+    color: '#86EFAC',
+    borderRadius: 8,
+    padding: '4px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flex: '0 0 auto',
+    minHeight: 28,
   },
 
   // ── Setup Card (spec §3) ────────────────────────────────────

@@ -45,6 +45,11 @@ import { tSafe } from '../../i18n/tSafe.js';
 // backyard-only-shows-Gardens gate below. Top-level ESM
 // import (Vite is ESM-only); pure derivation, never throws.
 import { getUserType as _getUserTypeForTabs } from '../../core/userType.js';
+// growMode — write the explicit toggle choice unconditionally so
+// the bottom nav and page update even when the user has no
+// entities of that type yet (new farmers who tap "Gardens"
+// before adding a garden record).
+import { writeGrowMode } from '../../lib/growMode.js';
 
 const C = {
   panel:    '#102C47',
@@ -114,6 +119,13 @@ export default function ExperienceTabs({
   function go(target) {
     // No-op when tapping the already-active tab.
     if (target === current) return;
+
+    // Write the explicit mode choice FIRST, unconditionally.
+    // switchTo() below only succeeds when entities of that type
+    // already exist; writeGrowMode always succeeds so the nav and
+    // page update even for users who have no garden/farm yet.
+    try { writeGrowMode(target); } catch { /* swallow */ }
+
     try {
       // Flip the active experience BEFORE navigating so the
       // destination page reads the new context on first paint.

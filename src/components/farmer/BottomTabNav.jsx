@@ -51,6 +51,11 @@ import useExperience from '../../hooks/useExperience.js';
 // FEATURE_SCAN tab visibility. Distinct from the camelCase
 // config/features.js system above.
 import { isFeatureEnabled as isSurfaceEnabled } from '../../utils/featureFlags.js';
+// Explicit grow-mode toggle — checked FIRST in isGarden so the nav
+// flips immediately on ExperienceTabs tap, even when the user has
+// no garden/farm entities yet (switchExperience returns false in
+// that case, so activeContextType never updates).
+import useGrowMode from '../../hooks/useGrowMode.js';
 
 // ── Canonical tab definitions ────────────────────────────────────────────
 //
@@ -138,6 +143,10 @@ export default function BottomTabNav() {
   const country = profile?.country || profile?.countryCode || null;
 
   const exp = useExperience();
+  // Explicit grow-mode key — highest priority for isGarden below.
+  // Unconditional hook call (rules-of-hooks safe; lives alongside
+  // the existing useExperience call, before any early return).
+  const { mode: _growMode } = useGrowMode();
   let activeContextType = null;
   let farmType = profile?.farmType || null;
   if (exp && (exp.activeContextType === 'garden' || exp.activeContextType === 'farm')) {
@@ -168,7 +177,14 @@ export default function BottomTabNav() {
   //   2. Explicit profile fields: mode, userType, farmType
   //   3. Legacy country+farmType heuristic via shouldUseBackyardExperience
   //   4. Default: farmer
-  const isGarden = (activeContextType === 'garden')
+  // Priority order (highest → lowest):
+  //   1. Explicit farroway_active_grow_mode toggle (always wins)
+  //   2. activeContextType from useExperience (entity-based)
+  //   3. Explicit profile fields
+  //   4. Country+farmType heuristic
+  //   5. Default: farmer
+  const isGarden = (_growMode === 'garden')
+    || (activeContextType === 'garden')
     || (profile?.mode === 'garden')
     || (profile?.userType === 'backyard')
     || (activeContextType == null
