@@ -1047,11 +1047,11 @@ export default function App() {
               via marketStore.saveBuyerInterest; farmer phone
               is never exposed publicly. */}
           <Route path="/marketplace" element={
-            <RouteErrorBoundary routeName="marketplace">
+            <SafeRouteShell routeName="marketplace">
               <FeatureGated flag="FEATURE_BUYER" feature="buyer">
                 <Marketplace />
               </FeatureGated>
-            </RouteErrorBoundary>
+            </SafeRouteShell>
           } />
           {/* Role-routing canonical paths (May 2026).
               /home    → role-aware redirect (farmer→/dashboard,
@@ -1293,18 +1293,22 @@ export default function App() {
                 + super_admin) so a regular farmer who
                 stumbles onto the URL is redirected. */}
             <Route path="/sell" element={
-              <RouteErrorBoundary routeName="sell">
+              <SafeRouteShell routeName="sell">
                 <FeatureGated flag="FEATURE_SELL" feature="sell">
                   <BackyardGuard surface="sell"><Sell /></BackyardGuard>
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             {/* /buy — simple buyer marketplace. The page itself
                 checks the `buyMarketplace` flag and renders a
                 "coming soon" notice when off, so the route is
                 always live + safe (no 404 on stray nav taps).
                 Coexists with /marketplace + /market/browse. */}
-            <Route path="/buy"                element={<Buy />} />
+            <Route path="/buy" element={
+              <SafeRouteShell routeName="buy">
+                <Buy />
+              </SafeRouteShell>
+            } />
             {/* /operator — marketplace operator dashboard. The page
                 checks the `operatorTools` flag and renders a "coming
                 soon" notice when off, so the route is always live +
@@ -1336,17 +1340,21 @@ export default function App() {
             <Route path="/setup/garden"       element={<QuickGardenSetup />} />
             <Route path="/setup/farm"         element={<QuickFarmSetup />} />
             <Route path="/opportunities" element={
-              <FeatureGated flag="FEATURE_FUNDING" feature="funding">
-                <BackyardGuard surface="funding"><Opportunities /></BackyardGuard>
-              </FeatureGated>
+              <SafeRouteShell routeName="opportunities">
+                <FeatureGated flag="FEATURE_FUNDING" feature="funding">
+                  <BackyardGuard surface="funding"><Opportunities /></BackyardGuard>
+                </FeatureGated>
+              </SafeRouteShell>
             } />
             {/* /funding — Funding Hub. The page itself checks the
                 feature flag and renders a "rolling out" message
                 when off, so the route is always live + safe. */}
             <Route path="/funding" element={
-              <FeatureGated flag="FEATURE_FUNDING" feature="funding">
-                <BackyardGuard><FundingHub /></BackyardGuard>
-              </FeatureGated>
+              <SafeRouteShell routeName="funding">
+                <FeatureGated flag="FEATURE_FUNDING" feature="funding">
+                  <BackyardGuard><FundingHub /></BackyardGuard>
+                </FeatureGated>
+              </SafeRouteShell>
             } />
             {/* /analytics — Phase 7D: farmer read-only analytics cards.
                 Route always mounted so deep links don't 404.
@@ -1403,7 +1411,11 @@ export default function App() {
                 </FeatureGated>
               </SafeRouteShell>
             } />
-            <Route path="/opportunities/:id"  element={<FundingOpportunityDetail />} />
+            <Route path="/opportunities/:id" element={
+              <SafeRouteShell routeName="opportunities-detail">
+                <FundingOpportunityDetail />
+              </SafeRouteShell>
+            } />
             <Route path="/ngo/impact"
                    element={
                      <RouteErrorBoundary routeName="ngo-impact">
@@ -1500,32 +1512,32 @@ export default function App() {
             <Route path="/farmer/listings/new" element={<CreateListingPage />} />
             <Route path="/farmer/notifications" element={<NotificationsPage />} />
             <Route path="/market/browse" element={
-              <RouteErrorBoundary routeName="market-browse">
+              <SafeRouteShell routeName="market-browse">
                 <FeatureGated flag="FEATURE_BUYER" feature="buyer">
                   <BrowseListingsPage />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/market/listings/:id" element={
-              <RouteErrorBoundary routeName="market-listing-detail">
+              <SafeRouteShell routeName="market-listing-detail">
                 <FeatureGated flag="FEATURE_BUYER" feature="buyer">
                   <ListingDetailPage />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/buyer/interests" element={
-              <RouteErrorBoundary routeName="buyer-interests">
+              <SafeRouteShell routeName="buyer-interests">
                 <FeatureGated flag="FEATURE_BUYER_INTEREST" feature="buyer-interest">
                   <MyInterestsPage />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/buyer/notifications" element={
-              <RouteErrorBoundary routeName="buyer-notifications">
+              <SafeRouteShell routeName="buyer-notifications">
                 <FeatureGated flag="FEATURE_BUYER" feature="buyer">
                   <BuyerNotificationsPage />
                 </FeatureGated>
-              </RouteErrorBoundary>
+              </SafeRouteShell>
             } />
             <Route path="/onboarding/smart" element={<Navigate to="/onboarding/fast" replace />} />
             {/* Onboarding cleanup — duplicate /onboarding/fast
