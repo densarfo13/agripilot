@@ -80,6 +80,9 @@ import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslation
 // Garden Share overlay — encouragement captions, modal chrome,
 // toast statuses, safety footer. Consumed by ShareCardModal.
 import { SHARE_TRANSLATIONS }                  from './shareTranslations.js';
+// Mode-experience overlay — labels, emotional goals, task vocab,
+// farm empty states. Consumed by getModeExperience() callers.
+import { MODE_EXPERIENCE_TRANSLATIONS }        from './modeExperienceTranslations.js';
 import {
   formatNumber,
   formatCount,
@@ -159,6 +162,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   // 1f. Garden Share overlay — caption picker rows + modal chrome.
   for (const key of Object.keys(SHARE_TRANSLATIONS)) {
     const row = SHARE_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1g. Mode-experience overlay — labels, emotional goals,
+  //     task vocab, farm empty-state copy.
+  for (const key of Object.keys(MODE_EXPERIENCE_TRANSLATIONS)) {
+    const row = MODE_EXPERIENCE_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {
