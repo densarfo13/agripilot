@@ -430,6 +430,71 @@ select option:checked {
 .ff-card-stagger > *:nth-child(2) { animation-delay: 60ms; }
 .ff-card-stagger > *:nth-child(3) { animation-delay: 120ms; }
 .ff-card-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.ff-card-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.ff-card-stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ── Premium card surface (Visual realism polish, May 2026) ────────
+   Softer borders, layered depth shadow, tactile feel. Combine with
+   ff-card or ff-card-stagger for fade-in animation.
+   Designed for Home Briefing, Task cards, Scan Result cards. */
+.ff-card-premium {
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.025) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 28px -8px rgba(0, 0, 0, 0.30),
+    0 4px 8px -2px rgba(0, 0, 0, 0.18);
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+/* Tactile press feedback for tappable premium cards. Apply
+   ff-card-premium-tap to a card that acts as a button. */
+.ff-card-premium-tap:active {
+  transform: scale(0.985) translateZ(0);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 6px 14px -4px rgba(0, 0, 0, 0.28);
+}
+
+/* ── Farm / Garden theme tints (visual realism §4) ─────────────────
+   Subtle hue shift on the page shell to differentiate the two
+   modes WITHOUT changing the type/contrast tokens. Apply
+   .ff-theme-farm or .ff-theme-garden to the page <div>; the
+   shell gradient picks up the role.
+
+   Farmer mode: deep natural greens + warm soil browns.
+   Garden mode: softer greens + warm cream / earthy accents.
+*/
+.ff-theme-farm {
+  --ff-shell-top:    #0B1F2A;
+  --ff-shell-mid:    #102A2E;
+  --ff-shell-bottom: #0E2A1E;
+  --ff-shell-accent: rgba(120, 86, 50, 0.06);  /* warm soil hint */
+}
+.ff-theme-garden {
+  --ff-shell-top:    #0F2624;
+  --ff-shell-mid:    #143230;
+  --ff-shell-bottom: #1A3128;
+  --ff-shell-accent: rgba(220, 200, 160, 0.05); /* warm cream hint */
+}
+
+/* When a theme class is applied, the page background uses the
+   themed gradient + a soft accent overlay. The fallback (no
+   theme class) uses the existing dark green gradient. */
+.ff-theme-farm,
+.ff-theme-garden {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%,
+      var(--ff-shell-accent) 0%, transparent 70%),
+    linear-gradient(180deg,
+      var(--ff-shell-top) 0%,
+      var(--ff-shell-mid) 50%,
+      var(--ff-shell-bottom) 100%) !important;
+}
 
 /* Universal button press state. Applies to every <button>
    AND any element with class "ff-press" so links styled as
@@ -990,6 +1055,131 @@ select:focus {
   50%      { opacity: 1.0; transform: scale(1.06); }
 }
 
+/* ── Layered atmospheric effects (visual realism polish, May 2026) ──
+   The ::after layer adds a second, slower-moving atmosphere on top
+   of the ::before primary effect. This gives each weather state a
+   tactile, "alive" feel without busy or distracting motion.
+   prefers-reduced-motion disables them along with the primary
+   layer below. */
+
+/* Rain — soft mist below the primary droplet streaks. */
+.weather-rain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 80%,
+      rgba(160, 200, 220, 0.10) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Sunny — soft warm wash beneath the radial glow, plus subtle
+   diagonal light rays drifting slowly across the card. */
+.weather-sunny::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(160deg,
+      rgba(253, 224, 71, 0.05) 0%, transparent 55%),
+    repeating-linear-gradient(155deg,
+      transparent 0px, transparent 60px,
+      rgba(253, 224, 71, 0.04) 62px, transparent 64px);
+  animation: farroway-sun-rays 8s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes farroway-sun-rays {
+  from { transform: translateX(-30px); }
+  to   { transform: translateX(30px); }
+}
+
+/* Heat — shimmer effect beneath the corner glow. Subtle vertical
+   warp via background-position drift. */
+.weather-heat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 30% at 50% 100%,
+      rgba(255, 196, 87, 0.08) 0%, transparent 70%);
+  animation: farroway-heat-shimmer 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes farroway-heat-shimmer {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.95; }
+}
+
+/* Cloudy — second cloud layer drifting in the opposite direction
+   for parallax depth. */
+.weather-cloudy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 35% at 75% 65%,
+      rgba(180, 195, 215, 0.08) 0%, transparent 60%);
+  animation: farroway-cloud-drift-back 8s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes farroway-cloud-drift-back {
+  from { transform: translateX(8px);   opacity: 0.6; }
+  to   { transform: translateX(-12px); opacity: 1;   }
+}
+
+/* Wind — second diagonal stream at half speed for depth. */
+.weather-wind::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    155deg,
+    transparent 0px,
+    transparent 35px,
+    rgba(255, 255, 255, 0.06) 37px,
+    transparent 40px
+  );
+  animation: farroway-wind-slow 4s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes farroway-wind-slow {
+  from { transform: translateX(-20px); }
+  to   { transform: translateX(40px); }
+}
+
+/* Dry — subtle haze layer on the horizon. */
+.weather-dry::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg,
+      transparent 60%,
+      rgba(255, 196, 87, 0.06) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Keep the primary effect layer above the secondary one. */
+.weather-rain::before,
+.weather-heat::before,
+.weather-wind::before,
+.weather-dry::before,
+.weather-sunny::before,
+.weather-cloudy::before,
+.weather-unknown::before {
+  z-index: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .weather-rain::before,
   .weather-heat::before,
@@ -997,7 +1187,13 @@ select:focus {
   .weather-dry::before,
   .weather-sunny::before,
   .weather-cloudy::before,
-  .weather-unknown::before {
+  .weather-unknown::before,
+  .weather-rain::after,
+  .weather-heat::after,
+  .weather-wind::after,
+  .weather-dry::after,
+  .weather-sunny::after,
+  .weather-cloudy::after {
     animation: none;
   }
   .weather-hero { animation: none; }

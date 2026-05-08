@@ -286,9 +286,20 @@ export default function PilotHome() {
     trackSafeEvent('task_completed', { taskTitle: weatherTask.title || null });
   }
 
+  // Theme class — drives the subtle farm/garden hue shift on the
+  // page shell (visual realism polish §4). ctxIntel.mode is the
+  // canonical source of truth (set by ExperienceTabs / growMode).
+  // Falls back to 'farm' so unauthenticated boots still tint.
+  const themeClass = ctxIntel.mode === 'garden' ? 'ff-theme-garden' : 'ff-theme-farm';
+
   return (
-    <div style={S.page} data-testid="pilot-home">
-      <div style={S.shell}>
+    <div
+      style={S.page}
+      className={`${themeClass} ff-page`}
+      data-testid="pilot-home"
+      data-mode={ctxIntel.mode}
+    >
+      <div style={S.shell} className="ff-card-stagger">
 
         {/* ── 1. Greeting ─────────────────────────────────────── */}
         <header style={S.header}>
@@ -547,23 +558,36 @@ const S = {
     textDecoration: 'none',
     fontWeight:     600,
   },
+  // Visual realism polish (May 2026): premium tactile card —
+  // layered background gradient, soft inset highlight, two-tier
+  // depth shadow. Matches MorningBriefingCard so the surface
+  // language is consistent across Home.
   card: {
-    background:    C.panel,
-    border:        `1px solid ${C.border}`,
-    borderRadius:  '16px',
-    padding:       '1.25rem 1.1rem',
+    background:    'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.025) 100%)',
+    border:        '1px solid rgba(255,255,255,0.07)',
+    borderRadius:  '18px',
+    padding:       '1.3rem 1.15rem',
     display:       'flex',
     flexDirection: 'column',
-    gap:           '0.5rem',
+    gap:           '0.55rem',
+    boxShadow: [
+      '0 1px 0 0 rgba(255,255,255,0.04) inset',
+      '0 12px 28px -8px rgba(0,0,0,0.30)',
+      '0 4px 8px -2px rgba(0,0,0,0.18)',
+    ].join(', '),
   },
   cardDone: {
-    background:    'rgba(34,197,94,0.06)',
+    background:    'linear-gradient(180deg, rgba(34,197,94,0.085) 0%, rgba(34,197,94,0.04) 100%)',
     border:        '1px solid rgba(34,197,94,0.28)',
-    borderRadius:  '16px',
-    padding:       '1.25rem 1.1rem',
+    borderRadius:  '18px',
+    padding:       '1.3rem 1.15rem',
     display:       'flex',
     flexDirection: 'column',
-    gap:           '0.5rem',
+    gap:           '0.55rem',
+    boxShadow: [
+      '0 1px 0 0 rgba(255,255,255,0.04) inset',
+      '0 10px 24px -8px rgba(0,0,0,0.28)',
+    ].join(', '),
   },
   cardLabel: {
     margin:        0,
@@ -612,16 +636,22 @@ const S = {
     gap:                 '0.65rem',
     marginTop:           '0.25rem',
   },
+  // Visual realism polish: link tiles get the same layered surface
+  // treatment as the briefing/task cards (subtle gradient + softer
+  // border + inset highlight) so the navigation feels consistent
+  // with the primary content cards.
   linkTile: {
-    padding:        '0.95rem 0.85rem',
-    background:     C.panel,
-    border:         `1px solid ${C.border}`,
-    borderRadius:   '12px',
+    padding:        '1rem 0.85rem',
+    background:     'linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)',
+    border:         '1px solid rgba(255,255,255,0.06)',
+    borderRadius:   '14px',
     color:          C.ink,
     fontSize:       '0.9375rem',
     fontWeight:     700,
     textDecoration: 'none',
     textAlign:      'center',
+    boxShadow:      '0 1px 0 0 rgba(255,255,255,0.03) inset, 0 6px 14px -6px rgba(0,0,0,0.25)',
+    transition:     'transform 160ms ease-out, box-shadow 160ms ease-out',
   },
 
   // ── Context Intelligence styles ──────────────────────────────

@@ -227,13 +227,21 @@ export default function MorningBriefingCard({
 // ─── Styles ────────────────────────────────────────────────────
 
 const S = {
+  // Visual realism polish (May 2026): layered depth shadow +
+  // soft inset highlight + lighter top→darker bottom gradient
+  // background. The card now reads as a tactile, layered surface
+  // instead of a flat pane — premium without being heavy.
   card: {
     position:     'relative',
     overflow:     'hidden',
-    background:   'rgba(255,255,255,0.04)',
-    border:       '1px solid rgba(255,255,255,0.10)',
+    background:   'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.025) 100%)',
+    border:       '1px solid rgba(255,255,255,0.07)',
     borderRadius: '18px',
-    boxShadow:    '0 12px 36px rgba(0,0,0,0.18)',
+    boxShadow:    [
+      '0 1px 0 0 rgba(255,255,255,0.04) inset', // soft top highlight
+      '0 12px 28px -8px rgba(0,0,0,0.30)',      // ambient depth
+      '0 4px 8px -2px rgba(0,0,0,0.18)',        // contact shadow
+    ].join(', '),
   },
   accent: {
     height:    '4px',
