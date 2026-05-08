@@ -140,8 +140,10 @@ export default function PilotHome() {
   // still runs safely (pure localStorage reads, no side-effects).
   const habit = useDailyHabit();
 
-  // Boot diagnostic — single greppable line per mount.
+  // Boot diagnostic — DEV ONLY (production cleanup spec §11:
+  // suppress boot console spam in production builds).
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     try {
       const farm = _resolveFarm();
       // eslint-disable-next-line no-console
@@ -175,9 +177,12 @@ export default function PilotHome() {
   const { weather, loading: weatherLoading } =
     useLiveWeather(local.locationObj);
 
-  // Debug console — fires once when loading settles.
+  // Debug console — DEV ONLY. Fires once when loading settles
+  // (production cleanup spec §11: no "Source:" / "WeatherType:"
+  // diagnostics in production console).
   const _debugFiredRef = useRef(false);
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     if (weatherLoading) return;
     if (_debugFiredRef.current) return;
     _debugFiredRef.current = true;

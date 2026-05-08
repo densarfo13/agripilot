@@ -1026,16 +1026,21 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Build version stamp */}
-      <div
-        aria-hidden="true"
-        data-testid="farroway-build-stamp"
-        style={S.buildStamp}
-      >
-        Farroway Build: {FARROWAY_BUILD_VERSION}
-        {' · '}
-        <span style={{ opacity: 0.65 }}>{FARROWAY_COMMIT_SHA}</span>
-      </div>
+      {/* Build version stamp — DEV ONLY.
+          Production cleanup spec §11: no "Build:" / "Route:" /
+          "UserType:" debug text in user-facing UI. The stamp
+          stays available in dev mode for QA snapshots. */}
+      {import.meta.env.DEV && (
+        <div
+          aria-hidden="true"
+          data-testid="farroway-build-stamp"
+          style={S.buildStamp}
+        >
+          Farroway Build: {FARROWAY_BUILD_VERSION}
+          {' · '}
+          <span style={{ opacity: 0.65 }}>{FARROWAY_COMMIT_SHA}</span>
+        </div>
+      )}
     </div>
   );
 
@@ -1715,28 +1720,31 @@ export default function Dashboard() {
           on mobile (z-index 0) but visible on the home surface
           itself; opacity is low enough to never compete with the
           primary action. */}
-      <div
-        aria-hidden="true"
-        data-testid="farroway-build-stamp"
-        style={{
-          position: 'fixed',
-          bottom: 8,
-          left: 0,
-          right: 0,
-          textAlign: 'center',
-          fontSize: '10px',
-          opacity: 0.6,
-          color: '#9fd3c7',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      >
-        Farroway Build: {FARROWAY_BUILD_VERSION}
-        {' · '}
-        <span style={{ opacity: 0.65 }}>
-          {FARROWAY_COMMIT_SHA}
-        </span>
-      </div>
+      {/* Legacy build stamp — DEV ONLY (production cleanup spec §11). */}
+      {import.meta.env.DEV && (
+        <div
+          aria-hidden="true"
+          data-testid="farroway-build-stamp"
+          style={{
+            position: 'fixed',
+            bottom: 8,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            fontSize: '10px',
+            opacity: 0.6,
+            color: '#9fd3c7',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        >
+          Farroway Build: {FARROWAY_BUILD_VERSION}
+          {' · '}
+          <span style={{ opacity: 0.65 }}>
+            {FARROWAY_COMMIT_SHA}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

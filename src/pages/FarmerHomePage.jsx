@@ -35,7 +35,20 @@ export default function FarmerHomePage() {
 
   useEffect(() => { loadData(); }, [farmerId]);
 
-  if (loading) return <div className="loading">Loading farmer dashboard...</div>;
+  // Production-quality polish (§7 loading states): use a minimal
+  // skeleton instead of a full-screen "Loading..." string. The
+  // page is admin/NGO-only, but the same calm-loading rule applies.
+  if (loading) {
+    return (
+      <div
+        className="loading"
+        style={{ padding: '1rem', color: 'var(--text-muted, #6F8299)', fontSize: '0.9rem' }}
+        aria-busy="true"
+      >
+        Loading farmer details…
+      </div>
+    );
+  }
   if (!farmer) return null;
 
   return (

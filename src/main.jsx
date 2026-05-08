@@ -125,11 +125,11 @@ try {
   }
 } catch { /* never throw from boot */ }
 
-// Farmer-profile fallback marker (spec §7). The client's 404
-// handler already supplies a safe-default profile; this single
-// boot-time line tells engineers the fallback codepath is
-// armed without having to hit the dashboard to verify.
-try {
+// Farmer-profile fallback marker (spec §7) — DEV ONLY.
+// Production cleanup spec §11: informational-only boot lines
+// are suppressed in production. The fallback handler still
+// runs unconditionally; only the console echo is gated.
+if (import.meta.env.DEV) try {
   // eslint-disable-next-line no-console
   console.log('Farmer profile fallback active');
 } catch { /* swallow */ }
@@ -147,8 +147,12 @@ try {
       catch { /* swallow — quota / private mode */ }
       try { localStorage.setItem('farroway_user_type', 'farmer'); }
       catch { /* swallow */ }
-      // eslint-disable-next-line no-console
-      console.log('[Farroway] userType defaulted to "farmer" (was missing).');
+      // DEV-only echo (production cleanup §11) — the default
+      // is still applied unconditionally; only the log is gated.
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log('[Farroway] userType defaulted to "farmer" (was missing).');
+      }
     }
   }
 } catch { /* never throw from boot */ }
@@ -237,17 +241,20 @@ try {
     // eslint-disable-next-line no-console
     console.log('Migration ran:', Boolean(migrationRan));
     // CHECK 5 — list every localStorage key currently on the
-    // device. Names only, never values, so token / user data
-    // is never logged. Lets engineers spot stale keys that
-    // are blocking new UI from rendering.
+    // device. DEV ONLY (production cleanup spec §11: no verbose
+    // diagnostic dumps in production console). Names only,
+    // never values; in DEV this lets engineers spot stale keys
+    // blocking new UI from rendering.
     try {
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const k = localStorage.key(i);
-        if (typeof k === 'string') keys.push(k);
+      if (import.meta.env.DEV) {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i += 1) {
+          const k = localStorage.key(i);
+          if (typeof k === 'string') keys.push(k);
+        }
+        // eslint-disable-next-line no-console
+        console.log('LocalStorage keys:', keys);
       }
-      // eslint-disable-next-line no-console
-      console.log('LocalStorage keys:', keys);
     } catch { /* swallow */ }
 
     // Onboarding-loop diagnostic (May 2026): three booleans that
@@ -277,10 +284,11 @@ try {
 } catch { /* never throw from a diagnostic */ }
 
 // ── Deployment sanity logs (spec §7 of debug pass) ──────────────
-// Lets engineers confirm at a glance which build, branch, and
-// API target the user is actually running. Renders one block
-// per boot — never the token value, never user-identifying data.
-try {
+// DEV ONLY (production cleanup spec §11: no boot-time deployment
+// banner in production console — it's the largest single source
+// of console noise on boot). Engineers running locally still see
+// the full block.
+if (import.meta.env.DEV) try {
   // Pull the build constants without re-importing the module
   // (forceUiReset.js was imported above; the constants are
   // available via that import). We resolve them lazily inside
