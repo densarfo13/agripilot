@@ -44,12 +44,17 @@
 // Bump on EVERY deploy. Visible in console + bottom-of-Home stamp.
 // Format: YYYY-MM-DD-vN OR YYYY-MM-DD-debug-N for diagnostic
 // builds (May 2026 deployment-debug spec).
-export const FARROWAY_BUILD_VERSION = 'ngo-basic-p5-v1';
+//
+// Wire-up audit (May 2026 §14) — bumped to mark the premium-pages
+// rollout (PremiumPage / PremiumPageHero across Home, Tasks, Progress,
+// MyFarm/MyGrow, Scan, Sell, Funding) so a stale build never serves
+// the old UI without the version-mismatch reset firing.
+export const FARROWAY_BUILD_VERSION = 'premium-pages-2026-05-08-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = 'analytics-basic-p7d-v1';
+export const FARROWAY_UI_VERSION = 'premium-pages-2026-05-08-v1';
 
 // Monotonically-increasing build sequence — drives the direction
 // guard. Lexicographic compare on the human-readable version
@@ -163,8 +168,16 @@ const SHAPED_LOCAL_KEYS = Object.freeze([
 
 // Console diagnostic — emitted on every boot so engineers can
 // confirm both the live UI version and the actual build hash.
+//
+// Wire-up audit (May 2026 §14) — adds the canonical
+// `[Farroway] Active UI build:` line so QA can grep the
+// console for the deployed build at a glance. Single line,
+// no noise — the legacy two-line format is preserved beneath
+// for backwards-compat with existing dashboards.
 function _stampVersion() {
   try {
+    // eslint-disable-next-line no-console
+    console.log('[Farroway] Active UI build:', FARROWAY_BUILD_VERSION);
     // eslint-disable-next-line no-console
     console.log('Farroway Build:', FARROWAY_BUILD_VERSION);
     // eslint-disable-next-line no-console

@@ -1163,6 +1163,15 @@ export default function App() {
               to the public block here. */}
           <Route path="/help"    element={<HelpPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          {/* Wire-up audit (May 2026 spec §11) — every "Need help?"
+              / "Contact our team" link in the app points at
+              /support/contact. The actual surfaces still live at
+              /help and /contact (long-standing routes); these
+              aliases mount the same components so no link is
+              dead. /support/faq mirrors /help (FAQ + how-to). */}
+          <Route path="/support"          element={<HelpPage />} />
+          <Route path="/support/contact"  element={<ContactPage />} />
+          <Route path="/support/faq"      element={<HelpPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms"   element={<Terms />} />
           <Route element={<V2ProtectedLayout />}>

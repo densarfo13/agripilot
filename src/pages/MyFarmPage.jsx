@@ -399,12 +399,15 @@ export default function MyFarmPage() {
   }
 
   function handleHelpClick() {
-    // Try the in-app /support route first; if the URL hasn't
-    // changed within a beat, fall back to a mailto. This avoids
-    // both dead clicks and double-firing on a real /support route.
+    // Wire-up audit (May 2026 spec §11) — "Need help?" routes to
+    // /support/contact (the canonical contact surface). The
+    // route is mounted in App.jsx as an alias of <ContactPage />,
+    // so the click never lands on a missing page. The mailto
+    // fallback below stays as a last-resort safety net for
+    // browsers that block client-side navigation.
     const before = (typeof window !== 'undefined' && window.location)
       ? String(window.location.pathname || '') : '';
-    try { navigate('/support'); }
+    try { navigate('/support/contact'); }
     catch {
       try {
         if (typeof window !== 'undefined') {
