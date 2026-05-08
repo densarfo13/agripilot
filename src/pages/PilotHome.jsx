@@ -34,6 +34,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useNavigate }           from 'react-router-dom';
 import { useLiveWeather }        from '../hooks/useLiveWeather.js';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
@@ -41,8 +42,9 @@ import { tSafe }                 from '../i18n/tSafe.js';
 import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
-import WeatherHeroCard           from '../components/WeatherHeroCard.jsx';
+import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
 import MorningBriefingCard       from '../components/home/MorningBriefingCard.jsx';
+import ScanSecondaryButton       from '../components/home/ScanSecondaryButton.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 
 // ─── Local-storage helpers ──────────────────────────────────────
@@ -133,6 +135,7 @@ function _resolveLocationLabel(farm) {
 
 // ─── Component ──────────────────────────────────────────────────
 export default function PilotHome() {
+  const navigate = useNavigate();
   const [now] = useState(() => new Date());
 
   // ─── Daily habit hook (always called — rules-of-hooks) ──────
@@ -367,19 +370,30 @@ export default function PilotHome() {
           />
         </FeatureShell>
 
-        {/* ── 2. Weather card ──────────────────────────────────
-             Animated visual companion to the briefing's text
-             summary. Slim skeleton while loading; FeatureShell
-             isolates any render crash so a broken card never
-             blanks Home. */}
+        {/* ── 2. Weather Hero Action Card ──────────────────────
+             Premium realistic hero — temperature, condition, rain,
+             wind, location PLUS one short insight + one
+             recommended action + a single CTA. Drives the next
+             action when the day's task isn't done; switches to a
+             positive "on track" surface once it is. Visuals reuse
+             the global .weather-hero CSS animations (rain drops,
+             sun glow, wind streaks) — pure CSS, prefers-reduced-
+             motion-respecting. */}
         {weatherLoading && (
           <div style={S.weatherLoading} aria-busy="true" aria-label="Loading weather">
             <span>Checking weather…</span>
           </div>
         )}
 
-        <FeatureShell name="weather" silent>
-          <WeatherHeroCard weather={weather} />
+        <FeatureShell name="weather-hero-action" silent>
+          <WeatherHeroActionCard
+            weather={weather}
+            mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'}
+            taskDone={taskDone}
+            onCta={taskDone
+              ? () => { try { navigate('/scan'); } catch { /* swallow */ } }
+              : handleMarkDone}
+          />
         </FeatureShell>
 
         {/* Inline location hint — one calm line, no container,
@@ -391,27 +405,22 @@ export default function PilotHome() {
           </p>
         )}
 
-        {/* ── 3. Today's task ──────────────────────────────────
-             Action surface — the briefing above shows the same
-             title at-a-glance; this card is where the user
-             actually marks the task done. ctxIntel.todayTask is
-             mode-aware (farm / garden), crop-stage-aware, and
-             scan-aware. weatherTask is kept as a backwards-compat
-             reference for event tracking. */}
-        <section
-          style={taskDone ? S.cardDone : S.card}
-          data-testid="pilot-home-task"
-        >
-          <p style={S.cardLabel}>Today's task</p>
-          <h2 style={S.cardTitle}>{ctxIntel.todayTask.title}</h2>
-          <p style={S.cardBody}>{ctxIntel.todayTask.reason}</p>
-          {taskDone ? (
-            <p style={S.doneNote} data-testid="pilot-home-done-note">
-              {FEATURE_DAILY_HABIT
-                ? '✔ All done for today. Check tomorrow\'s task.'
-                : '✔ Marked as done — nice work.'}
-            </p>
-          ) : (
+        {/* ── 3. Today's task / Done state ─────────────────────
+             When the task is open: shows the action surface where
+             the user marks done. When done: replaced by a single
+             positive line ("All set for now") + one optional
+             secondary action (Scan crop / Scan plant). The
+             WeatherHeroActionCard above has already echoed the
+             "on track" message + offered the same scan CTA, so
+             this card stays calm and complementary. */}
+        {!taskDone && (
+          <section
+            style={S.card}
+            data-testid="pilot-home-task"
+          >
+            <p style={S.cardLabel}>Today's task</p>
+            <h2 style={S.cardTitle}>{ctxIntel.todayTask.title}</h2>
+            <p style={S.cardBody}>{ctxIntel.todayTask.reason}</p>
             <button
               type="button"
               onClick={handleMarkDone}
@@ -420,8 +429,28 @@ export default function PilotHome() {
             >
               {ctxIntel.todayTask.cta}
             </button>
-          )}
-        </section>
+          </section>
+        )}
+
+        {taskDone && (
+          <section
+            style={S.cardDone}
+            data-testid="pilot-home-task"
+            data-state="done"
+          >
+            <h2 style={S.doneHeadline} data-testid="pilot-home-done-note">
+              {tSafe('home.allSetForNow', 'All set for now ✓')}
+            </h2>
+            <p style={S.cardBody}>
+              {tSafe('home.checkTomorrow', 'Check again tomorrow morning.')}
+            </p>
+            {/* ONE optional secondary action — keeps the surface
+                useful without re-introducing dashboard clutter. */}
+            <ScanSecondaryButton
+              mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'}
+            />
+          </section>
+        )}
 
         {/* ── 3b. Recommendation CTA (action surface) ──────────
              The briefing above shows the recommendation TEXT;
@@ -655,6 +684,13 @@ const S = {
     fontSize:   '0.875rem',
     fontWeight: 600,
     color:      '#86EFAC',
+  },
+  doneHeadline: {
+    margin:     0,
+    fontSize:   '1.15rem',
+    fontWeight: 800,
+    color:      '#86EFAC',
+    letterSpacing: '-0.005em',
   },
   linksGrid: {
     display:             'grid',
