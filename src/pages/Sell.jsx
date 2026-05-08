@@ -27,7 +27,7 @@
  *     first single column.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useAuth }    from '../context/AuthContext.jsx';
@@ -58,6 +58,10 @@ import PostListingFlow   from '../components/sell/PostListingFlow.jsx';
 import RegionDetectChip  from '../components/sell/RegionDetectChip.jsx';
 import FarmerInterestPanel from '../components/marketplace/FarmerInterestPanel.jsx';
 import { consumeInsightActionStamp } from '../insights/insightActionStamp.js';
+// FEATURE_ACTIVATION_POLISH — sell empty state + harvest-ready prompt.
+import { FEATURE_ACTIVATION_POLISH } from '../lib/pilotFlags.js';
+import SellEmptyPrompt from '../components/activation/SellEmptyPrompt.jsx';
+import HarvestReadyPrompt from '../components/activation/HarvestReadyPrompt.jsx';
 
 const C = FARROWAY_BRAND.colors;
 const UNITS = ['kg', 'bags', 'crates'];
@@ -189,6 +193,13 @@ export default function Sell() {
     // read so a later unrelated visit can't double-fire.
     try { consumeInsightActionStamp({ route: '/sell' }); }
     catch { /* swallow */ }
+  }, []);
+
+  // FEATURE_ACTIVATION_POLISH: ref + scroll helper for empty-state CTA.
+  const formRef = useRef(null);
+  const scrollToForm = useCallback(() => {
+    try { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    catch { /* ignore */ }
   }, []);
 
   // Empty-state: no farm yet → tell farmer where to go.
@@ -455,7 +466,20 @@ export default function Sell() {
         </div>
       )}
 
-      <div style={S.card}>
+      {/* FEATURE_ACTIVATION_POLISH: empty state — shown when the farmer
+          has no active listings. Gives context and scrolls to the form. */}
+      {FEATURE_ACTIVATION_POLISH && myActiveListings.length === 0 ? (
+        <SellEmptyPrompt onListProduceClick={scrollToForm} />
+      ) : null}
+
+      {/* FEATURE_ACTIVATION_POLISH: harvest-ready banner — shown when the
+          farmer's crop stage indicates harvest is imminent. Self-hides
+          when stage is not harvest-ready. Never blocks or redirects. */}
+      {FEATURE_ACTIVATION_POLISH ? (
+        <HarvestReadyPrompt profile={profile} onListClick={scrollToForm} />
+      ) : null}
+
+      <div ref={formRef} style={S.card}>
         <BrandLogo variant="light" size="md" />
         <h1 style={S.title}>
           {tSafe('market.sellTitle', 'Sell your produce')}

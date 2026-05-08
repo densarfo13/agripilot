@@ -52,6 +52,8 @@ import FundingCard from '../components/funding/FundingCard.jsx';
 import FundingReadinessCard from '../components/funding/FundingReadinessCard.jsx';
 import OrganizationPilotCTA from '../components/funding/OrganizationPilotCTA.jsx';
 import NgoProgramTools from '../components/funding/NgoProgramTools.jsx';
+import { FEATURE_ACTIVATION_POLISH } from '../lib/pilotFlags.js';
+import FundingEligibilityPrompt from '../components/activation/FundingEligibilityPrompt.jsx';
 
 const NGO_ROLES = new Set(['ngo_admin', 'government_program']);
 
@@ -394,6 +396,10 @@ export default function FundingHub() {
   const recommendedCards = filteredRecs.slice(0, 5);
   const ctx = { country, userRole, experience: ux.experience };
 
+  // FEATURE_ACTIVATION_POLISH: eligibility nudge signals.
+  const hasCrop   = !!(cropId);
+  const hasRegion = !!(region || country);
+
   return (
     <main style={STYLES.page} data-screen="funding-hub" data-flag="on" data-experience={ux.experience}>
       <div style={STYLES.header}>
@@ -489,17 +495,34 @@ export default function FundingHub() {
             {tStrict('funding.section.recommended', 'Recommended for you')}
           </h2>
           {recommendedCards.length === 0 ? (
-            <div style={STYLES.empty}>
-              {(filterCrop || filterRegion || filterType !== 'all')
-                ? tStrict(
-                    'funding.hub.emptyFiltered',
-                    'No funding opportunities match your current filters. Try adjusting the filter above.'
-                  )
-                : tStrict(
+            (filterCrop || filterRegion || filterType !== 'all') ? (
+              <div style={STYLES.empty}>
+                {tStrict(
+                  'funding.hub.emptyFiltered',
+                  'No funding opportunities match your current filters. Try adjusting the filter above.'
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={STYLES.empty}>
+                  {tStrict(
                     'funding.hub.emptyRecommended',
-                    'No funding opportunities available yet. Add your country, crop, and farm size to get better recommendations.'
+                    'Funding options will appear based on your crop and region.'
                   )}
-            </div>
+                </div>
+                {/* FEATURE_ACTIVATION_POLISH: nudge farmer to add region
+                    when they have a crop but no location on record. */}
+                {FEATURE_ACTIVATION_POLISH ? (
+                  <FundingEligibilityPrompt
+                    hasCrop={hasCrop}
+                    hasRegion={hasRegion}
+                    onAddRegion={() => {
+                      try { navigate('/profile'); } catch { /* ignore */ }
+                    }}
+                  />
+                ) : null}
+              </div>
+            )
           ) : (
             <div style={STYLES.cardsGrid}>
               {recommendedCards.map((card) => (

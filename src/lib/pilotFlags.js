@@ -279,4 +279,33 @@ export const FEATURE_SCAN_USEFULNESS = true;
  */
 export const SCAN_HISTORY_KEY = 'farroway_scan_history_v1';
 
+/**
+ * FEATURE_ACTIVATION_POLISH — enable buyer + funding activation polish.
+ *
+ * When true:
+ *   • Sell page shows a polished empty state when no produce is listed:
+ *       "No produce listed yet."
+ *       "When your crop is ready, list it so buyers can find it."
+ *       CTA: "List produce"
+ *   • Sell page shows a "Ready to sell?" banner when the farmer's active
+ *     farm is in a harvest-ready stage (harvest / post_harvest /
+ *     ready_to_sell / ready). The banner does NOT force any action.
+ *   • Funding Hub shows a calm empty state when no recommendations match:
+ *       "Funding options will appear based on your crop and region."
+ *       CTA: "Add region for better funding options"
+ *   • Funding Hub shows a "View funding options" eligibility prompt when
+ *     the farmer has a crop but no region on record.
+ *   • Buyer interest status labels use farmer-friendly wording:
+ *       Pending / Approved / Declined / Needs response
+ *     (shown alongside the existing FarmerInterestPanel pills).
+ *
+ * What FEATURE_ACTIVATION_POLISH does NOT restore:
+ *   • No complex matching engine, no auto-apply grants
+ *   • No underwriting or payment flows
+ *   • No advanced buyer messaging
+ *   • No private farmer data exposure
+ *   • No API polling loop
+ */
+export const FEATURE_ACTIVATION_POLISH = true;
+
 export default BYPASS_SETUP_FOR_PILOT;

@@ -35,6 +35,8 @@ import {
   getStaleInterests,
 } from '../../market/marketTransaction.js';
 import { isFeatureEnabled } from '../../config/features.js';
+import { FEATURE_ACTIVATION_POLISH } from '../../lib/pilotFlags.js';
+import BuyerStatusPill from '../activation/BuyerStatusPill.jsx';
 import ContactBuyerModal from './ContactBuyerModal.jsx';
 import RepeatPromptCard from './RepeatPromptCard.jsx';
 import BoostListingButton from './BoostListingButton.jsx';
@@ -265,17 +267,24 @@ export default function FarmerInterestPanel({ listing, farmerName = '', style })
                       <span style={S.buyerSub}>{buyerNote}</span>
                     ) : null}
                   </div>
-                  <span
-                    style={{
-                      ...S.pill,
-                      color: tone.color,
-                      background: tone.bg,
-                      border: `1px solid ${tone.border}`,
-                    }}
-                    data-testid={`farmer-interest-status-${interest.id}`}
-                  >
-                    {statusLabel(status)}
-                  </span>
+                  {FEATURE_ACTIVATION_POLISH ? (
+                    <BuyerStatusPill
+                      status={status}
+                      data-testid={`farmer-interest-status-${interest.id}`}
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        ...S.pill,
+                        color: tone.color,
+                        background: tone.bg,
+                        border: `1px solid ${tone.border}`,
+                      }}
+                      data-testid={`farmer-interest-status-${interest.id}`}
+                    >
+                      {statusLabel(status)}
+                    </span>
+                  )}
                 </div>
                 {!isSold ? (
                   <div style={S.actionRow}>
