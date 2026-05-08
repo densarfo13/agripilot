@@ -44,6 +44,11 @@ const GUIDANCE = Object.freeze({
       'Look for any early stress signs over the next few days.',
     ],
     recommendation: 'Continue your current care routine and check the plant again tomorrow.',
+    treatments: [
+      'Continue regular monitoring',
+      'Maintain consistent watering and feeding',
+      'Watch for early stress signs over the next few days',
+    ],
     task:         'Continue daily crop check',
   }),
 
@@ -58,6 +63,11 @@ const GUIDANCE = Object.freeze({
       'Look under leaves for pests or sticky residue.',
     ],
     recommendation: 'Adjust watering if soil is dry or waterlogged. Avoid wetting leaves at night.',
+    treatments: [
+      'Check soil moisture and adjust watering frequency',
+      'Review nutrient balance — consider a balanced feed if soil is dry',
+      'Avoid overwatering and improve drainage if needed',
+    ],
     task:         'Check soil moisture and lower leaves',
   }),
 
@@ -72,6 +82,11 @@ const GUIDANCE = Object.freeze({
       'Look for trails, droppings, or chewed roots.',
     ],
     recommendation: 'Hand-remove visible insects where safe. Consider local agronomy advice if damage spreads.',
+    treatments: [
+      'Inspect under leaves and along stems',
+      'Consider neem oil or insecticidal soap (follow label instructions)',
+      'Remove heavily damaged leaves to reduce pest spread',
+    ],
     task:         'Inspect under leaves for pests',
   }),
 
@@ -86,6 +101,12 @@ const GUIDANCE = Object.freeze({
       'Monitor nearby plants over 2–3 days for any spread.',
     ],
     recommendation: 'Remove heavily affected leaves and avoid wetting leaves when watering.',
+    treatments: [
+      'Improve airflow — space plants and trim dense foliage',
+      'Avoid overhead watering; water at the base instead',
+      'Consider approved local fungicide guidance (follow label instructions)',
+      'Monitor spread over the next few days',
+    ],
     task:         'Monitor affected leaves and avoid overhead watering',
   }),
 
@@ -101,6 +122,11 @@ const GUIDANCE = Object.freeze({
       'Note the time of day — heat-wilt usually recovers by evening.',
     ],
     recommendation: 'Water gently if soil is dry. Improve drainage if soil feels waterlogged.',
+    treatments: [
+      'Check root zone moisture before watering',
+      'Improve drainage if soil is saturated',
+      'Provide partial shade during the hottest part of the day',
+    ],
     task:         'Check soil moisture and the root area',
   }),
 
@@ -115,6 +141,11 @@ const GUIDANCE = Object.freeze({
       'Inspect for waterlogged or compacted soil that limits uptake.',
     ],
     recommendation: 'Add a balanced feed if soil is dry. Avoid over-fertilising.',
+    treatments: [
+      'Review soil nutrition — consider a balanced feed (follow label instructions)',
+      'Observe new leaf growth over the next few days',
+      'Avoid over-fertilising — more is rarely better',
+    ],
     task:         'Check leaf colour and growth pattern',
   }),
 
@@ -129,6 +160,10 @@ const GUIDANCE = Object.freeze({
       'Remove shadows and avoid blurry shots.',
     ],
     recommendation: 'Take another clear photo or inspect manually.',
+    treatments: [
+      'Take a clearer photo in good natural light',
+      'Inspect the plant manually for any visible issues',
+    ],
     task:         'Inspect plant manually',
   }),
 });
@@ -204,6 +239,47 @@ const S = {
     fontSize: 14,
     color: 'rgba(255,255,255,0.85)',
     lineHeight: 1.5,
+  },
+  // Suggested treatment approaches block — calm card with simple
+  // bullets. No alarming colours; same surface language as the
+  // rest of the card so it never reads like a warning.
+  treatBlock: {
+    padding: '10px 13px',
+    borderRadius: 10,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  treatList: {
+    margin: '4px 0 0',
+    paddingLeft: 18,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 5,
+    lineHeight: 1.45,
+  },
+  // "Get local agronomy advice" escalation button — sits right
+  // above the disclaimer so the user always has a path off-app
+  // to a human expert.
+  escalBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(245,158,11,0.32)',
+    background: 'rgba(245,158,11,0.10)',
+    color: '#FCD34D',
+    borderRadius: 10,
+    padding: '10px 14px',
+    fontSize: 13.5,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    alignSelf: 'flex-start',
+  },
+  escalToast: {
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: '#FCD34D',
+    margin: 0,
   },
   // Section label
   sectionLabel: {
@@ -307,6 +383,29 @@ const S = {
 
 // ─── Component ───────────────────────────────────────────────────
 
+// localStorage key used by the escalation queue. We persist the
+// request so it survives reloads and a future NGO/agronomist
+// integration can pick up the queue without changing this UI.
+const AGRONOMY_REQUEST_KEY = 'farroway_agronomy_requests_v1';
+
+function _saveAgronomyRequest(payload) {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const raw = localStorage.getItem(AGRONOMY_REQUEST_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    const arr = Array.isArray(list) ? list : [];
+    // 50-entry cap, oldest dropped — matches scanHistoryStore convention.
+    arr.push({
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
+    const trimmed = arr.length > 50 ? arr.slice(arr.length - 50) : arr;
+    localStorage.setItem(AGRONOMY_REQUEST_KEY, JSON.stringify(trimmed));
+    return true;
+  } catch { /* quota / private mode — non-fatal */ }
+  return false;
+}
+
 export default function UsefulResultCard({
   result,
   experience = 'generic',
@@ -315,6 +414,7 @@ export default function UsefulResultCard({
 }) {
   // All hooks declared unconditionally — rules-of-hooks safe.
   const [taskAdded, setTaskAdded] = useState(false);
+  const [escalationSent, setEscalationSent] = useState(false);
 
   const handleAddTask = useCallback(() => {
     if (taskAdded) return;
@@ -343,6 +443,21 @@ export default function UsefulResultCard({
   // Safe category lookup.
   const category = (result && result.category) ? String(result.category) : 'needs_review';
   const guidance  = GUIDANCE[category] || _FALLBACK;
+
+  // Escalation handler — saves the request locally and flips the
+  // button to a calm acknowledgement. Future NGO/agronomist
+  // integration only needs to read AGRONOMY_REQUEST_KEY; this UI
+  // does not change.
+  const handleEscalate = useCallback(() => {
+    if (escalationSent) return;
+    _saveAgronomyRequest({
+      scanId:     (result && result.scanId)   || null,
+      category:   (result && result.category) || category,
+      confidence: (result && result.confidence) || guidance.confidence,
+      experience,
+    });
+    setEscalationSent(true);
+  }, [escalationSent, result, category, guidance.confidence, experience]);
 
   return (
     <article
@@ -411,6 +526,21 @@ export default function UsefulResultCard({
         </p>
       </div>
 
+      {/* Suggested treatment approaches — calm bullet list. Wording
+          stays confidence-safe ("consider", "may help", "follow
+          label instructions"). No exact dosages, no restricted
+          chemicals, no "this will cure" guarantees. */}
+      {Array.isArray(guidance.treatments) && guidance.treatments.length > 0 && (
+        <div style={S.treatBlock} data-testid="useful-result-treatments">
+          <div style={S.sectionLabel}>Suggested treatment approaches</div>
+          <ul style={S.treatList} data-testid="useful-result-treatments-list">
+            {guidance.treatments.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Suggested task */}
       <div style={S.taskBlock} data-testid="useful-result-task-block">
         <div style={S.sectionLabel}>Suggested task</div>
@@ -451,11 +581,36 @@ export default function UsefulResultCard({
         ) : null}
       </div>
 
-      {/* Disclaimer */}
-      <p style={S.disclaimer}>
-        Farroway provides guidance based on the photo and available information.
-        Results are not guaranteed. Contact a local expert for severe or
-        spreading issues.
+      {/* Local agronomy escalation — always visible. Saves a request
+          locally so a future NGO/agronomist integration can pick it
+          up. Switches to a calm acknowledgement after one tap; never
+          reloads the page or navigates away. */}
+      {escalationSent ? (
+        <p
+          style={S.escalToast}
+          data-testid="useful-result-agronomy-sent"
+        >
+          ✅ Request saved. We&apos;ll route this to a local agronomy contact when one is available.
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={handleEscalate}
+          style={S.escalBtn}
+          data-testid="useful-result-agronomy-cta"
+        >
+          🌾 Get local agronomy advice
+        </button>
+      )}
+
+      {/* Spec-exact safety disclaimer — always rendered, even on
+          'healthy' results, so the user understands the result is
+          guidance and never a guaranteed diagnosis. */}
+      <p
+        style={S.disclaimer}
+        data-testid="useful-result-disclaimer"
+      >
+        Results are guidance only. Local agronomy advice may help confirm treatment options.
       </p>
     </article>
   );
