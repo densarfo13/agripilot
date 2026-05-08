@@ -590,7 +590,14 @@ export default function UsefulResultCard({
               data-testid="useful-result-add-task-btn"
               onClick={handleAddTask}
             >
-              {tSafe('scan.button.addTask', 'Add follow-up task')}
+              {/* Mode-aware button language (spec §6) — warmer in
+                  garden mode, operational in farm mode. Falls back
+                  to the generic key when no experience is supplied. */}
+              {experience === 'backyard' || experience === 'garden'
+                ? tSafe('scan.button.addCareTask', 'Add care task')
+                : (experience === 'farm' || experience === 'farmer'
+                    ? tSafe('scan.button.addFieldTask', 'Add field task')
+                    : tSafe('scan.button.addTask',     'Add follow-up task'))}
             </button>
           )}
         </div>
@@ -605,7 +612,11 @@ export default function UsefulResultCard({
             style={S.btn}
             data-testid="useful-result-retake"
           >
-            {tSafe('scan.button.retake', '📷 Retake photo')}
+            {experience === 'backyard' || experience === 'garden'
+              ? tSafe('scan.button.retakePlant', '📷 Retake plant photo')
+              : (experience === 'farm' || experience === 'farmer'
+                  ? tSafe('scan.button.retakeCrop', '📷 Retake crop photo')
+                  : tSafe('scan.button.retake',     '📷 Retake photo'))}
           </button>
         ) : null}
       </div>

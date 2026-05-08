@@ -418,6 +418,27 @@ select option:checked {
    into without local <style> tags.
 */
 @keyframes farroway-slide-up   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* Scan-line sweep — used by ScanAnalyzing's photo frame to show
+   the analysis is in progress. 2.4s loop covers the typical
+   capture-to-result window; CSS-only so no JS animation timer
+   is involved. translate3d for GPU compositing. */
+@keyframes farroway-scan-line-sweep {
+  0%   { transform: translate3d(0, 0,    0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translate3d(0, 100%, 0); opacity: 0; }
+}
+/* Soft outer-edge pulse on the scan frame. Pure box-shadow ramp
+   so it composites without affecting layout. */
+@keyframes farroway-scan-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(34,197,94,0.32); }
+  50%      { box-shadow: 0 0 0 8px rgba(34,197,94,0.00); }
+}
+.ff-scan-line  { animation: farroway-scan-line-sweep 2.4s ease-in-out infinite; will-change: transform, opacity; }
+.ff-scan-pulse { animation: farroway-scan-pulse      2.4s ease-out infinite; will-change: box-shadow; }
+@media (prefers-reduced-motion: reduce) {
+  .ff-scan-line, .ff-scan-pulse { animation: none; }
+}
 @keyframes farroway-check-pop  { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes farroway-shimmer-x  { 0% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
 @keyframes farroway-progress-fill { from { width: 0%; } to { width: var(--ff-progress, 0%); } }

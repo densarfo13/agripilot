@@ -54,6 +54,7 @@ import { trackEvent as moatTrack } from '../core/analytics.js';
 // + ExperienceSwitcher are showing on screen.
 import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
+import ScanAnalyzing from '../components/scan/ScanAnalyzing.jsx';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 // Crash-safe fallback used by:
 //   • Setup-required guard ("setup_required" reason)
@@ -143,6 +144,12 @@ export default function ScanPage() {
   // history slot.
   const [pendingThumbnail, setPendingThumbnail] = useState(null);
 
+  // Photo URL captured at the moment the user tapped Analyze —
+  // shown in the premium ScanAnalyzing surface so the analysis
+  // sequence is visually anchored to the actual photo, not a
+  // black rectangle. Cleared when phase moves back to capture.
+  const [analyzingImageUrl, setAnalyzingImageUrl] = useState(null);
+
   // Read profile defensively — the page must work in a logged-out
   // / no-active-farm state.
   const profile = useMemo(() => {
@@ -226,6 +233,11 @@ export default function ScanPage() {
     setError('');
     setPhase('analyzing');
     setPendingThumbnail(thumbnail || null);
+    // Stamp the live preview URL so ScanAnalyzing can show the
+    // actual photo while the engine runs. Falls back to the
+    // thumbnail dataURL when imageUrl was an ObjectURL we shouldn't
+    // hold onto past the capture lifetime.
+    setAnalyzingImageUrl(thumbnail || imageUrl || null);
     try {
       try { trackEvent('scan_photo_taken', { experience, hasFile: !!file }); }
       catch { /* ignore */ }
@@ -477,6 +489,7 @@ export default function ScanPage() {
     setSavedEntryId(null);
     setTasksAdded(false);
     setPendingThumbnail(null);
+    setAnalyzingImageUrl(null);
     setPhase('capture');
   }, []);
 
@@ -631,8 +644,16 @@ export default function ScanPage() {
         <p style={STYLES.subtitle}>{headerSubtitle}</p>
       </div>
 
-      {phase === 'capture' || phase === 'analyzing' ? (
+      {phase === 'capture' ? (
         <ScanCapture experience={experience} onContinue={onContinue} />
+      ) : null}
+
+      {phase === 'analyzing' ? (
+        <ScanAnalyzing
+          imageUrl={analyzingImageUrl}
+          experience={experience}
+          onCancel={onRetake}
+        />
       ) : null}
 
       {phase === 'result' && result ? (
