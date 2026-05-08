@@ -259,6 +259,142 @@ export const PLANT_COMPANION_TRANSLATIONS = Object.freeze({
     tw: 'Twa mfoni a ɛda hɔ pefee wɔ owia hann mu.',
     hi: 'प्राकृतिक रोशनी में स्पष्ट फ़ोटो लें।',
   },
+
+  // ── PlantEditModal — title + field labels ──────────────────────
+  'plant.modal.title': {
+    en: 'Edit your plant',
+    fr: 'Modifier votre plante',
+    sw: 'Hariri mmea wako',
+    ha: 'Gyara tsironka',
+    tw: 'Sesa wʼafifideɛ',
+    hi: 'अपना पौधा संपादित करें',
+  },
+  'plant.modal.openCta': {
+    en: 'Edit plant',
+    fr: 'Modifier la plante',
+    sw: 'Hariri mmea',
+    ha: 'Gyara tsiro',
+    tw: 'Sesa afifideɛ',
+    hi: 'पौधा संपादित करें',
+  },
+  'plant.modal.openCta.first': {
+    en: 'Add your plant',
+    fr: 'Ajouter votre plante',
+    sw: 'Ongeza mmea wako',
+    ha: 'Ƙara tsironka',
+    tw: 'Fa wʼafifideɛ ka ho',
+    hi: 'अपना पौधा जोड़ें',
+  },
+
+  'plant.field.nickname': {
+    en: 'Nickname',           fr: 'Surnom',
+    sw: 'Jina la utani',      ha: 'Lakabi',
+    tw: 'Din',                hi: 'उपनाम',
+  },
+  'plant.field.nickname.placeholder': {
+    en: 'Balcony Tomato',
+    fr: 'Tomate du balcon',
+    sw: 'Nyanya ya Balcony',
+    ha: 'Tumatir na Balcony',
+    tw: 'Balcony Ntɔmate',
+    hi: 'बालकनी टमाटर',
+  },
+  'plant.field.type': {
+    en: 'Plant type',         fr: 'Type de plante',
+    sw: 'Aina ya mmea',       ha: 'Nau\'in tsiro',
+    tw: 'Afifideɛ suban',     hi: 'पौधे का प्रकार',
+  },
+  'plant.field.indoor': {
+    en: 'Indoor or outdoor',
+    fr: 'Intérieur ou extérieur',
+    sw: 'Ndani au nje',
+    ha: 'Ciki ko waje',
+    tw: 'Fie mu anaa abɔnten',
+    hi: 'अंदर या बाहर',
+  },
+  'plant.field.containerType': {
+    en: 'Container',          fr: 'Récipient',
+    sw: 'Chombo',             ha: 'Akwati',
+    tw: 'Adaka',              hi: 'पात्र',
+  },
+  'plant.field.containerSize': {
+    en: 'Container size',     fr: 'Taille du récipient',
+    sw: 'Ukubwa wa chombo',   ha: 'Girman akwati',
+    tw: 'Adaka kɛseɛ',        hi: 'पात्र का आकार',
+  },
+  'plant.field.stage': {
+    en: 'Growth stage',       fr: 'Étape de croissance',
+    sw: 'Hatua ya ukuaji',    ha: 'Matakin girma',
+    tw: 'Nyini bere',         hi: 'विकास अवस्था',
+  },
+
+  // ── Indoor/outdoor options ─────────────────────────────────────
+  'plant.indoor.indoor':  { en: 'Indoor',  fr: 'Intérieur', sw: 'Ndani', ha: 'Ciki', tw: 'Fie mu',    hi: 'अंदर' },
+  'plant.indoor.outdoor': { en: 'Outdoor', fr: 'Extérieur', sw: 'Nje',   ha: 'Waje', tw: 'Abɔnten',   hi: 'बाहर' },
+
+  // ── Container types ────────────────────────────────────────────
+  'plant.container.pot': {
+    en: 'Pot',                fr: 'Pot',
+    sw: 'Chungu',             ha: 'Tukunya',
+    tw: 'Kuruwa',             hi: 'गमला',
+  },
+  'plant.container.raisedBed': {
+    en: 'Raised bed',         fr: 'Bac surélevé',
+    sw: 'Kitanda kilichoinuliwa', ha: 'Gadon da aka ɗaga',
+    tw: 'Mpa a ɛkorɔn',       hi: 'ऊँची क्यारी',
+  },
+  'plant.container.balcony': {
+    en: 'Balcony planter',    fr: 'Jardinière de balcon',
+    sw: 'Sufuria ya baraza',  ha: 'Akwatin baranda',
+    tw: 'Balcony adaka',      hi: 'बालकनी प्लांटर',
+  },
+  'plant.container.window': {
+    en: 'Window box',         fr: 'Jardinière de fenêtre',
+    sw: 'Sanduku la dirisha', ha: 'Akwatin taga',
+    tw: 'Mfɛnsere adaka',     hi: 'खिड़की बॉक्स',
+  },
+  'plant.container.ground': {
+    en: 'Ground',             fr: 'Pleine terre',
+    sw: 'Ardhi',              ha: 'Ƙasa',
+    tw: 'Asase mu',           hi: 'ज़मीन',
+  },
+
+  // ── Container sizes ────────────────────────────────────────────
+  'plant.size.small':  { en: 'Small',  fr: 'Petit',  sw: 'Ndogo',     ha: 'Karami',    tw: 'Ketewa',     hi: 'छोटा' },
+  'plant.size.medium': { en: 'Medium', fr: 'Moyen',  sw: 'Wastani',   ha: 'Matsakaici',tw: 'Mfinimfini', hi: 'मध्यम' },
+  'plant.size.large':  { en: 'Large',  fr: 'Grand',  sw: 'Kubwa',     ha: 'Babba',     tw: 'Kɛseɛ',      hi: 'बड़ा' },
+
+  // ── Growth stages ──────────────────────────────────────────────
+  'plant.stage.seedling':    { en: 'Seedling',     fr: 'Semis',         sw: 'Mche mchanga', ha: 'Tsire-tsire',  tw: 'Aba a afi ase',  hi: 'अंकुर' },
+  'plant.stage.growing':     { en: 'Growing',      fr: 'En croissance', sw: 'Inakua',       ha: 'Yana girma',   tw: 'Renyini',        hi: 'बढ़ रहा' },
+  'plant.stage.flowering':   { en: 'Flowering',    fr: 'En floraison',  sw: 'Inachanua',    ha: 'Yana fure',    tw: 'Nhwiren',        hi: 'फूल आ रहे' },
+  'plant.stage.fruiting':    { en: 'Fruiting',     fr: 'En fructification', sw: 'Inazaa',   ha: 'Yana yan itace', tw: 'Aba',          hi: 'फल आ रहे' },
+  'plant.stage.readyToPick': { en: 'Ready to pick',fr: 'Prêt à cueillir', sw: 'Tayari kuvuna', ha: 'Shirye don ɗauka', tw: 'Wobɛtwa', hi: 'तोड़ने के लिए तैयार' },
+  'plant.stage.resting':     { en: 'Resting',      fr: 'Au repos',      sw: 'Inapumzika',   ha: 'Yana hutawa',  tw: 'Ɛrehome',        hi: 'विश्राम' },
+
+  // ── Common buttons used by the modal ───────────────────────────
+  'common.save':        { en: 'Save',        fr: 'Enregistrer', sw: 'Hifadhi',   ha: 'Adana',     tw: 'Kora',          hi: 'सहेजें' },
+  'common.cancel':      { en: 'Cancel',      fr: 'Annuler',     sw: 'Ghairi',    ha: 'Soke',      tw: 'Twa kyene',     hi: 'रद्द करें' },
+  'common.close':       { en: 'Close',       fr: 'Fermer',      sw: 'Funga',     ha: 'Rufe',      tw: 'To mu',         hi: 'बंद करें' },
+  'common.unspecified': { en: '— select —',  fr: '— choisir —', sw: '— chagua —',ha: '— zaɓa —',  tw: '— yi paw —',    hi: '— चुनें —' },
+
+  // ── My Grow page section labels ────────────────────────────────
+  'plant.section.recent': {
+    en: 'Recent care moments',
+    fr: 'Récents moments de soin',
+    sw: 'Wakati wa hivi karibuni wa utunzaji',
+    ha: 'Lokutan kulawa na kwanan nan',
+    tw: 'Ɔhwɛ bere a etwaam',
+    hi: 'हाल के देखभाल पल',
+  },
+  'plant.section.empty': {
+    en: 'Care moments will appear here as you tend to your plant.',
+    fr: 'Les moments de soin apparaîtront ici à mesure que vous prenez soin de votre plante.',
+    sw: 'Wakati wa utunzaji utaonekana hapa unapokitunza mmea wako.',
+    ha: 'Lokutan kulawa za su bayyana a nan yayin da kake kula da tsironka.',
+    tw: 'Ɔhwɛ bere bɛda adi wɔ ha bere a wohwɛ wʼafifideɛ no.',
+    hi: 'जैसे-जैसे आप अपने पौधे की देखभाल करेंगे, देखभाल के पल यहाँ दिखाई देंगे।',
+  },
 });
 
 export default PLANT_COMPANION_TRANSLATIONS;

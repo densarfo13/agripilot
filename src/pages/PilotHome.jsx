@@ -294,7 +294,22 @@ export default function PilotHome() {
       try { sessionStorage.setItem('farroway_pilot_task_done', '1'); } catch { /* swallow */ }
       _setSessionTaskDone(true);
     }
-    trackSafeEvent('task_completed', { taskTitle: weatherTask.title || null });
+    // Pilot analytics — fired in both modes.
+    trackSafeEvent('task_completed', { taskTitle: ctxIntel.todayTask.title || null });
+    // Garden Mode: notify the timeline bridge so a 'task_completed'
+    // milestone is appended. The bridge gates on grow mode, so
+    // dispatching here in farm mode is a harmless no-op.
+    try {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('farroway:task_completed_garden', {
+          detail: {
+            taskTitle: ctxIntel.todayTask.title || null,
+            category:  ctxIntel.todayTask.category || null,
+            stage:     local.farm?.cropStage || null,
+          },
+        }));
+      }
+    } catch { /* swallow */ }
   }
 
   // Theme class — drives the subtle farm/garden hue shift on the

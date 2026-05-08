@@ -334,6 +334,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+// Plant timeline auto-fire bridge — listens for plant_added /
+// scan_added_to_tasks / task_completed_garden window events and
+// appends timeline entries. Idempotent install; safe to call once
+// at boot. Garden-mode-only writes; farm-mode events are dropped
+// inside the bridge handlers.
+import { installTimelineBridge } from './lib/plant/timelineBridge.js';
+try { installTimelineBridge(); } catch { /* never throw from boot */ }
 // Go-live audit fix: surface the 3-button recovery card
 // (Repair session / Restart setup / Clear local cache) for any
 // runtime exception that escapes a child component. The outer

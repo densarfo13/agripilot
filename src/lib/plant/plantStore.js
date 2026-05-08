@@ -122,9 +122,28 @@ export function readPlant() {
  *
  * Fires `farroway:plant_changed` so React hooks listening for it
  * re-render in the same tab without needing a storage event.
+ *
+ * Also dispatches `farroway:plant_added` ONCE (the first time
+ * the user stamps a meaningful field — nickname or plantType).
+ * Timeline subscribers append a 'plant.timeline.added' entry so
+ * the user's first plant is celebrated in the timeline.
  */
 export function savePlant(partial) {
-  const next = _normalize({ ...readPlant(), ...((partial && typeof partial === 'object') ? partial : {}) });
+  // Detect "first stamp": before-save state had no plant identity,
+  // and the new partial sets nickname (≠ fallback) or plantType.
+  const before  = readPlant();
+  const beforeHas = !!(before && (
+    (before.nickname && before.nickname !== PLANT_FALLBACK.nickname)
+    || before.plantType
+  ));
+
+  const next = _normalize({ ...before, ...((partial && typeof partial === 'object') ? partial : {}) });
+
+  const afterHas = !!(next && (
+    (next.nickname && next.nickname !== PLANT_FALLBACK.nickname)
+    || next.plantType
+  ));
+
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(PLANT_STORE_KEY, JSON.stringify(next));
@@ -133,6 +152,11 @@ export function savePlant(partial) {
   try {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(new CustomEvent('farroway:plant_changed', { detail: { plant: next } }));
+      // First-stamp celebration — emit only when this transition
+      // crosses from "no plant" → "has plant".
+      if (!beforeHas && afterHas) {
+        window.dispatchEvent(new CustomEvent('farroway:plant_added', { detail: { plant: next } }));
+      }
     }
   } catch { /* swallow */ }
   return next;

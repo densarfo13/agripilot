@@ -439,6 +439,16 @@ export default function UsefulResultCard({
         { scanId, experience }
       );
     } catch { /* never crash the card */ }
+    // Garden Mode: notify the timeline bridge so a 'scan_saved'
+    // milestone is appended. Non-garden surfaces dispatch this too;
+    // the bridge gates on grow mode and drops farm-mode events.
+    try {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('farroway:scan_added_to_tasks', {
+          detail: { category, scanId, taskTitle: title },
+        }));
+      }
+    } catch { /* swallow */ }
     setTaskAdded(true);
     if (typeof onTaskAdded === 'function') {
       try { onTaskAdded(); } catch { /* ignore */ }

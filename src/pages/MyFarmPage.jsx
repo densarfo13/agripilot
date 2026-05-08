@@ -69,6 +69,11 @@ import { isFeatureEnabled } from '../utils/featureFlags.js';
 // farroway_active_grow_mode and re-renders on every tap so the
 // header, details, and shortcuts all adapt without a route change.
 import useGrowMode from '../hooks/useGrowMode.js';
+// Garden Mode plant companion — edit modal + timeline list section.
+// Hooks called unconditionally; surfaces gated on isGardenMode.
+import PlantEditModal from '../components/plant/PlantEditModal.jsx';
+import usePlantIdentity from '../hooks/usePlantIdentity.js';
+import usePlantTimeline from '../hooks/usePlantTimeline.js';
 
 function formatSize(size, unit) {
   if (!size && size !== 0) return null;
@@ -144,6 +149,13 @@ export default function MyFarmPage() {
   // isGardenMode. Unconditional (before any early return) so the hook
   // order stays stable on every render path (rules-of-hooks safe).
   const { mode: _growMode } = useGrowMode();
+
+  // Plant companion state — hooks called unconditionally; values
+  // are only consumed in the garden-mode JSX block below so the
+  // farm-mode render is unaffected.
+  const _plantIdentity = usePlantIdentity();
+  const _plantTimeline = usePlantTimeline(5);
+  const [_plantModalOpen, _setPlantModalOpen] = useState(false);
 
   // Spec §1 redesign: removed the previous useEffect that ran
   // `getTodayTasks` + `processNotifications`. Those side effects
@@ -418,6 +430,85 @@ export default function MyFarmPage() {
         current={isGardenMode ? 'garden' : 'farm'}
         mode="switch"
         forceShow
+      />
+
+      {/* ── Plant Companion (Garden Mode only) ─────────────────
+          Compact card with the active plant's nickname + an Edit
+          CTA, followed by the most recent timeline entries. Hidden
+          in farm mode entirely. */}
+      {isGardenMode && (
+        <section style={S_PLANT.card} data-testid="plant-companion-card">
+          <header style={S_PLANT.head}>
+            <div style={S_PLANT.headLeft}>
+              <span style={S_PLANT.headEmoji} aria-hidden="true">🌿</span>
+              <div style={S_PLANT.headText}>
+                <p style={S_PLANT.headTitle}>
+                  {_plantIdentity.plant?.nickname || tSafe('plant.fallback.nickname', 'My Plant')}
+                </p>
+                {_plantIdentity.plant?.plantType ? (
+                  <p style={S_PLANT.headMeta}>
+                    {tSafe('crop.' + _plantIdentity.plant.plantType, _plantIdentity.plant.plantType)}
+                    {_plantIdentity.plant?.growthStage ? (
+                      <>
+                        {' · '}
+                        {tSafe('plant.stage.' + _stageKey(_plantIdentity.plant.growthStage),
+                          _plantIdentity.plant.growthStage)}
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => _setPlantModalOpen(true)}
+              style={S_PLANT.editBtn}
+              data-testid="plant-companion-edit"
+            >
+              {_plantIdentity.hasPlant
+                ? tSafe('plant.modal.openCta',       'Edit plant')
+                : tSafe('plant.modal.openCta.first', 'Add your plant')}
+            </button>
+          </header>
+
+          {/* Recent care moments — the timeline list. Empty-state
+              copy renders when no entries exist yet. */}
+          <div style={S_PLANT.timeline}>
+            <p style={S_PLANT.timelineLabel}>
+              {tSafe('plant.section.recent', 'Recent care moments')}
+            </p>
+            {_plantTimeline.recent.length > 0 ? (
+              <ul style={S_PLANT.list} data-testid="plant-timeline-list">
+                {_plantTimeline.recent.slice(0, 5).map((entry) => (
+                  <li key={entry.id} style={S_PLANT.row}>
+                    <span style={S_PLANT.rowEmoji} aria-hidden="true">{entry.emoji}</span>
+                    <div style={S_PLANT.rowText}>
+                      <span style={S_PLANT.rowMessage}>
+                        {tSafe(entry.messageKey, entry.params?.nickname
+                          ? `${entry.params.nickname}`
+                          : entry.messageKey, entry.params)}
+                      </span>
+                      <span style={S_PLANT.rowDate}>{_formatDate(entry.createdAt)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={S_PLANT.emptyText} data-testid="plant-timeline-empty">
+                {tSafe('plant.section.empty',
+                  'Care moments will appear here as you tend to your plant.')}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Modal (always mounted, opens on demand). Backdrop click +
+          Esc both close. Save dispatches farroway:plant_added on the
+          first meaningful stamp so the timeline gets seeded. */}
+      <PlantEditModal
+        open={_plantModalOpen}
+        onClose={() => _setPlantModalOpen(false)}
       />
 
       {/* ── 2. Farm Selector (spec §2) ─────────────────────────
@@ -1572,5 +1663,96 @@ const S = {
     borderRadius: '6px',
     background: 'rgba(255,255,255,0.06)',
     width: '100%',
+  },
+};
+
+// ─── Plant Companion (Garden Mode) helpers + styles ───────────────
+
+/**
+ * Map an arbitrary growthStage value to the canonical i18n suffix
+ * used by plant.stage.* keys. Handles both the legacy 'ready_to_pick'
+ * underscored form and the i18n key's camelCase 'readyToPick' form.
+ */
+function _stageKey(stage) {
+  const s = String(stage || '').toLowerCase();
+  if (!s) return 'growing';
+  if (s.includes('seed'))    return 'seedling';
+  if (s.includes('flower'))  return 'flowering';
+  if (s.includes('fruit'))   return 'fruiting';
+  if (s.includes('ready') || s.includes('harvest')) return 'readyToPick';
+  if (s.includes('rest') || s.includes('dorm'))     return 'resting';
+  return 'growing';
+}
+
+function _formatDate(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleDateString(); }
+  catch { return String(iso).slice(0, 10); }
+}
+
+const S_PLANT = {
+  card: {
+    margin: '0 1rem 0.75rem',
+    padding: '0.95rem 1rem',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.7rem',
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 18px -8px rgba(0,0,0,0.25)',
+  },
+  head: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+  },
+  headLeft: { display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 },
+  headEmoji: { fontSize: '1.45rem', lineHeight: 1, flexShrink: 0 },
+  headText:  { display: 'flex', flexDirection: 'column', gap: '0.1rem', minWidth: 0 },
+  headTitle: { margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3 },
+  headMeta:  {
+    margin: 0, fontSize: '0.75rem', fontWeight: 500,
+    color: 'rgba(255,255,255,0.65)', lineHeight: 1.4,
+  },
+  editBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(255,255,255,0.12)',
+    background: 'rgba(255,255,255,0.05)',
+    color: '#FFFFFF',
+    padding: '0.45rem 0.8rem',
+    borderRadius: '999px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+  },
+  timeline: {
+    paddingTop: '0.55rem',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+    display: 'flex', flexDirection: 'column', gap: '0.4rem',
+  },
+  timelineLabel: {
+    margin: 0,
+    fontSize: '0.65rem',
+    fontWeight: 800,
+    letterSpacing: '0.07em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  list: { listStyle: 'none', margin: 0, padding: 0,
+          display: 'flex', flexDirection: 'column', gap: '0.4rem' },
+  row:  { display: 'flex', alignItems: 'flex-start', gap: '0.55rem' },
+  rowEmoji: { fontSize: '1rem', lineHeight: 1.3, flexShrink: 0 },
+  rowText: { display: 'flex', flexDirection: 'column', minWidth: 0 },
+  rowMessage: { fontSize: '0.8125rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.4 },
+  rowDate:    { fontSize: '0.6875rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.1rem' },
+  emptyText:  {
+    margin: 0, fontSize: '0.8125rem',
+    color: 'rgba(255,255,255,0.55)', lineHeight: 1.5,
+    fontStyle: 'italic',
   },
 };
