@@ -26,9 +26,11 @@
  *   • All visible text via tSafe with English fallbacks.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
+import HelpfulToolsCard from '../tools/HelpfulToolsCard.jsx';
+import { recommendTools } from '../../intelligence/tools/toolRecommendationEngine.js';
 
 const STATUS_TONE = {
   moist:        { bg: 'rgba(94,142,94,0.12)',   border: 'rgba(94,142,94,0.36)',   ink: '#3F6A3F' },
@@ -65,6 +67,22 @@ export default function SoilScanResultCard({
   onRetake = null,
   testId = 'soil-scan-result',
 }) {
+  // Contextual tools — engine call lives at the top of the
+  // component so the ≤3 list is memoised against the same
+  // status / confidence / mode the result card already
+  // consumes. No new fetches; pure local recompute.
+  const toolsResult = useMemo(() => {
+    if (!result || typeof result !== 'object') return null;
+    try {
+      return recommendTools({
+        mode:          result.mode === 'garden' ? 'garden' : 'farm',
+        soilCondition: result.status,
+        taskType:      'soil_check',
+      });
+    } catch { return null; }
+  }, [result]);
+  const helpfulTools = (toolsResult && toolsResult.tools) || [];
+
   if (!result || typeof result !== 'object') return null;
   const status = STATUS_TONE[result.status] ? result.status : 'review';
   const tone   = STATUS_TONE[status];
@@ -129,6 +147,19 @@ export default function SoilScanResultCard({
           {tSafe(result.suggestedActionKey, result.suggestedActionFb)}
         </p>
       </div>
+
+      {/* Helpful tools — contextual ≤3 suggestions (May 2026
+          contextual-tools spec §3). Self-suppresses when the
+          engine returns nothing. Reads soilCondition from the
+          existing result envelope so no new caller wiring is
+          needed. */}
+      {helpfulTools.length > 0 ? (
+        <HelpfulToolsCard
+          tools={helpfulTools}
+          mode={result.mode === 'garden' ? 'garden' : 'farm'}
+          testId="soil-scan-helpful-tools"
+        />
+      ) : null}
 
       <div style={S.actions}>
         {typeof onAddTask === 'function' ? (
