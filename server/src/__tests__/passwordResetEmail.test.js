@@ -21,7 +21,7 @@ import {
 } from '../../services/emailTemplates.js';
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(process.cwd(), '..', rel), 'utf8');
 }
 
 // ─── buildResetUrl ───────────────────────────────────────────────

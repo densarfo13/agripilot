@@ -40,7 +40,7 @@ import {
 import { generateTasksForFarm } from '../../lib/farmTaskEngine.js';
 
 function readFile(relativePath) {
-  return fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf-8');
+  return fs.readFileSync(path.resolve(process.cwd(), '..', relativePath), 'utf-8');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -618,7 +618,7 @@ describe('FarmTasksCard — input note', () => {
 // ═══════════════════════════════════════════════════════════
 describe('FarmInputTimingCard — exists as standalone component', () => {
   it('FarmInputTimingCard component file exists', () => {
-    const exists = fs.existsSync(path.resolve(process.cwd(), 'src/components/FarmInputTimingCard.jsx'));
+    const exists = fs.existsSync(path.resolve(process.cwd(), '..', 'src/components/FarmInputTimingCard.jsx'));
     expect(exists).toBe(true);
   });
 

@@ -308,12 +308,20 @@ export default function WeatherHeroActionCard({
   // Wrapper-level inline style sets the realistic background
   // image; the global `.weather-hero` CSS still applies its
   // animation pseudo-elements on top.
+  //
+  // May 2026 Garden Home refinement (spec §5 + §8) — the
+  // overlay was previously rgba(8,18,12, 0.55→0.92), which
+  // produced the muddy dark-green wash the spec flags as
+  // "fake glow / cartoon weather". Lowered to
+  // rgba(15,28,22, 0.32→0.62→0.78) so the underlying sky /
+  // landscape imagery reads cleanly while text stays legible.
+  // The slightly warmer base tone (15,28,22 vs 8,18,12) shifts
+  // the wash toward a natural field tone instead of muddy
+  // green-black.
   const wrapperStyle = {
     ...S.section,
     backgroundImage: [
-      // Dark vertical overlay so text stays legible regardless of
-      // the underlying image. Sits ABOVE the image in the stack.
-      'linear-gradient(180deg, rgba(8,18,12,0.55) 0%, rgba(8,18,12,0.78) 65%, rgba(8,18,12,0.92) 100%)',
+      'linear-gradient(180deg, rgba(15,28,22,0.32) 0%, rgba(15,28,22,0.62) 60%, rgba(15,28,22,0.78) 100%)',
       `url(${bgImage})`,
     ].join(', '),
     backgroundSize:     'cover',
@@ -409,18 +417,13 @@ export default function WeatherHeroActionCard({
                 <span>{minutesLine}</span>
               </div>
             )}
-            {typeof onCta === 'function' && (
-              <button
-                type="button"
-                onClick={handleCta}
-                style={S.cta}
-                className="ff-tap"
-                data-testid="weather-hero-action-cta"
-              >
-                <span>{ctaLabel}</span>
-                <span aria-hidden="true" style={S.ctaArrow}>{'›'}</span>
-              </button>
-            )}
+            {/* May 2026 Garden Home refinement (spec §3) — the
+                inline CTA that used to live here was a second
+                copy of the same `Start check` button rendered
+                full-width below. Two CTAs with identical
+                handler + label = exactly the duplication the
+                spec calls out. The bottom CTA stays as the
+                canonical primary action. */}
           </div>
         </div>
 
@@ -451,12 +454,17 @@ export default function WeatherHeroActionCard({
 }
 
 const S = {
+  // May 2026 Garden Home refinement (spec §2) — minHeight
+  // dropped from 24rem to 19rem (~21% reduction). The card
+  // was carrying ~5rem of empty atmosphere padding the spec
+  // explicitly flagged. Bottom padding also tightened from
+  // 1.25 to 1rem so the CTA sits closer to the action content.
   section: {
-    minHeight: '24rem',
-    padding:    '1.15rem 1.2rem 1.25rem',
+    minHeight: '19rem',
+    padding:    '1.15rem 1.2rem 1rem',
     display:    'flex',
     flexDirection: 'column',
-    gap:        '0.85rem',
+    gap:        '0.7rem',
     color:      'rgba(255,255,255,0.96)',
     overflow:   'hidden',
     // Ensures the global .weather-hero CSS picks up the right

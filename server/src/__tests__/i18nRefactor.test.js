@@ -20,7 +20,7 @@ import fs from 'fs';
 import path from 'path';
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(process.cwd(), '..', rel), 'utf8');
 }
 function readJson(rel) { return JSON.parse(readFile(rel)); }
 
@@ -62,7 +62,10 @@ describe('locale files', () => {
 
   it('all six locale files exist', () => {
     for (const l of LOCALES) {
-      expect(fs.existsSync(path.join(process.cwd(), `src/i18n/locales/${l}.json`)))
+      // May 2026 path-resolution fix — vitest cwd is `server/`,
+      // so the canonical frontend locale path needs the `..`
+      // hop (matches the readJson helper above).
+      expect(fs.existsSync(path.join(process.cwd(), '..', `src/i18n/locales/${l}.json`)))
         .toBe(true);
     }
   });

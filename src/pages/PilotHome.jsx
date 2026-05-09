@@ -504,19 +504,16 @@ export default function PilotHome() {
           />
         </FeatureShell>
 
-        {/* Inline location hint — one calm line, no container,
-            no warning. Links to My Farm where location is edited.
-            Wire-up audit (May 2026 §3) — copy aligned to "Add
-            location for weather tips". */}
-        {showLocationHint && (
-          <p style={S.locationHint} data-testid="pilot-home-location-hint">
-            <Link to="/my-farm" style={S.locationHintLink}>
-              {tSafe('home.locationHint.cta', 'Add location')}
-            </Link>
-            {' '}
-            {tSafe('home.locationHint.body', 'for weather tips')}
-          </p>
-        )}
+        {/* May 2026 Garden Home refinement (spec §1) — the
+            standalone "Add location for weather tips" hint
+            paragraph that used to live here is REMOVED. The
+            weather card itself shows the location label in
+            its header, so this surface duplicated the same
+            message + tap target one element below. The
+            location-missing state is still discoverable: the
+            weather card reads "Your area" when no coords are
+            set, and tapping the weather card routes to the
+            tasks/setup flow where the user can add location. */}
 
         {/* ── 3. Today's task / Done state ─────────────────────
              When the task is open: shows the action surface where

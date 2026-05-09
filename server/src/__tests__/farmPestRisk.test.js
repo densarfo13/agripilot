@@ -41,7 +41,7 @@ import {
 import { generateTasksForFarm } from '../../lib/farmTaskEngine.js';
 
 function readFile(relativePath) {
-  return fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf-8');
+  return fs.readFileSync(path.resolve(process.cwd(), '..', relativePath), 'utf-8');
 }
 
 // ═══════════════════════════════════════════════════════════

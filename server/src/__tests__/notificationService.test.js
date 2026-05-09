@@ -32,7 +32,7 @@ vi.mock('../../services/smsService.js', () => ({
 import { sendPasswordReset } from '../../services/notificationService.js';
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(process.cwd(), '..', rel), 'utf8');
 }
 
 const RESET = 'https://farroway.app/reset-password?token=' + 'a'.repeat(64);

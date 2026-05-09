@@ -21,7 +21,7 @@ import fs from 'fs';
 import path from 'path';
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(process.cwd(), '..', rel), 'utf8');
 }
 const SRC = readFile('src/pages/FarmerDashboardPage.jsx');
 
@@ -43,9 +43,12 @@ describe('runBootstrap — reusable async fn', () => {
 
 // ─── Retry button wiring ───────────────────────────────────────
 describe('retry button', () => {
-  it('handleBootstrapRetry logs + calls runBootstrap', () => {
+  it('handleBootstrapRetry calls runBootstrap', () => {
     expect(SRC).toMatch(/const handleBootstrapRetry = useCallback\(/);
-    expect(SRC).toMatch(/console\.log\('\[BOOT\] retry requested'\)/);
+    // Note (May 2026): the verbose `console.log('[BOOT] retry requested')`
+    // log was removed by the production-console-cleanup commit
+    // (see consoleFilter.js denylist for `[BOOT] `). The handler
+    // structure stays; only the noisy log is gone.
     expect(SRC).toMatch(/runBootstrap\(\)/);
   });
 
@@ -67,7 +70,11 @@ describe('timeout safety nets', () => {
   });
 
   it('hard 10 s deadline forces loading=false even if finally is skipped', () => {
-    expect(SRC).toMatch(/setTimeout\(\(\) => \{[\s\S]*?hard-deadline hit at 10s[\s\S]*?setLoading\(false\)[\s\S]*?\}, 10000\)/);
+    // Note (May 2026): the verbose `hard-deadline hit at 10s`
+    // log inside the timer body was removed by the production
+    // console-cleanup commit. The 10 s timer + setLoading(false)
+    // contract still applies — that's what we assert here.
+    expect(SRC).toMatch(/setTimeout\(\(\) => \{[\s\S]*?setLoading\(false\)[\s\S]*?\}, 10000\)/);
   });
 
   it('unmount cleanup aborts in-flight request + clears the deadline', () => {
@@ -75,26 +82,27 @@ describe('timeout safety nets', () => {
   });
 });
 
-// ─── [BOOT] logs at every step ─────────────────────────────────
-describe('[BOOT] step logs', () => {
-  const REQUIRED_LOGS = [
-    '[BOOT] starting dashboard bootstrap',
-    '[BOOT] session ok',
-    '[BOOT] no session',
-    '[BOOT] user ok',
-    '[BOOT] user missing',
-    '[BOOT] farmer loaded',
-    '[BOOT] farmer missing',
-    '[BOOT] farms loaded',
-    '[BOOT] dashboard ready',
-    '[BOOT] bootstrap failed',
-  ];
-
-  for (const line of REQUIRED_LOGS) {
-    it(`emits "${line}"`, () => {
-      expect(SRC).toContain(line);
-    });
-  }
+// ─── Verbose [BOOT] step logs — REMOVED in production cleanup ──
+// The dashboard bootstrap used to console.log `[BOOT] starting…`,
+// `[BOOT] session ok`, etc. at every step. The production console
+// cleanup commit (see consoleFilter.js denylist for `[BOOT] `)
+// removed those because they were polluting the QA console for
+// every page load. The bootstrap LOGIC the original logs were
+// observing is asserted by the other describe blocks above —
+// useCallback wiring, abort controller, hard 10 s deadline,
+// 401/403/404 routing, finally clears loading. That's what we
+// pin now. The verbose logs are not coming back.
+describe('[BOOT] step logs — production cleanup contract', () => {
+  it('FarmerDashboardPage no longer emits verbose [BOOT] step logs', () => {
+    // The denylist in consoleFilter.js suppresses any line
+    // starting with `[BOOT] ` in production. The matching
+    // change at the source is the removal of the console.log
+    // calls themselves; we pin that here so anyone tempted to
+    // reintroduce them sees the explicit decision.
+    expect(SRC).not.toMatch(/console\.log\(['"]?\[BOOT\] starting dashboard bootstrap/);
+    expect(SRC).not.toMatch(/console\.log\(['"]?\[BOOT\] session ok/);
+    expect(SRC).not.toMatch(/console\.log\(['"]?\[BOOT\] dashboard ready/);
+  });
 });
 
 // ─── Error routing ─────────────────────────────────────────────
@@ -107,7 +115,10 @@ describe('error routing', () => {
 
   it('404 → setShowOnboarding(true) (no hang, no error card)', () => {
     expect(SRC).toMatch(/status === 404/);
-    expect(SRC).toMatch(/\[BOOT\] farmer missing — routing to onboarding/);
+    // Note (May 2026): the verbose `[BOOT] farmer missing —
+    // routing to onboarding` log was removed by the production
+    // console-cleanup commit. The 404 → setShowOnboarding(true)
+    // routing is still in place — that's the LOGIC we lock here.
     expect(SRC).toMatch(/setShowOnboarding\(true\)/);
   });
 

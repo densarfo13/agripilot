@@ -43,7 +43,7 @@ globalThis.window.localStorage = mem;
 globalThis.localStorage = mem;
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(process.cwd(), '..', rel), 'utf8');
 }
 
 const { validateFarmProfilePayload } = await import('../../../server/lib/validation.js');

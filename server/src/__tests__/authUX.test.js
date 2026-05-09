@@ -27,7 +27,7 @@ import fs from 'fs';
 import path from 'path';
 
 function readFile(rel) {
-  return fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  return fs.readFileSync(path.join(process.cwd(), '..', rel), 'utf8');
 }
 
 // ─── Component source contracts ─────────────────────────────────

@@ -4,27 +4,38 @@
  *
  *   <Route path="/dashboard" element={<RoleAwareDashboard />} />
  *
- * Routing
- *   farmer / null / unknown role  → renders the farmer
- *                                   <V2Dashboard /> (default
- *                                   passed in via children)
+ * Routing (May 2026 unified-runtime fix)
+ *   farmer / null / unknown role  → <Navigate to="/home" />
+ *                                   (PilotHome on Soft Ochre)
  *   ngo / ngo_admin / ngo_officer
  *   / ngo_agent / admin           → renders <NgoDashboardV1 />
  *
- * Why a wrapper instead of separate routes
- *   The spec calls for /dashboard to BE the role-aware
- *   landing — same path, different page. This wrapper keeps
- *   the existing /dashboard route mount unchanged and
- *   delegates the page choice to a single audited helper.
+ * WHY THE FARMER PATH NOW REDIRECTS
+ *   `/home` mounts `<PilotHome />` — the canonical premium
+ *   farmer runtime (Soft Ochre tokens, locked design system,
+ *   verified-funding gate, orchestrator wiring). `/dashboard`
+ *   used to render the legacy `<V2Dashboard />` for farmers
+ *   too — a parallel runtime still carrying #86EFAC neon
+ *   green literals from the pre-Soft-Ochre era. Two runtimes
+ *   for the same farmer role = exactly the duplication the
+ *   May 2026 unified-runtime spec calls out. The fix: redirect
+ *   farmer /dashboard hits to /home so there's ONE canonical
+ *   farmer Home entry. NGO/admin path is unchanged.
+ *
+ *   The legacy V2Dashboard file stays in src/pages/Dashboard.jsx
+ *   but is now disconnected from the farmer route tree (spec §2:
+ *   "Do NOT delete yet. Just fully disconnect from production
+ *   runtime").
  *
  * Strict-rule audit
  *   • Pure presentational. Never throws.
  *   • useAuthOrNull keeps it safe outside the AuthProvider.
- *   • Lazy-loads NgoDashboardV1 so the farmer-default path
+ *   • Lazy-loads NgoDashboardV1 so the farmer redirect path
  *     doesn't pull the NGO chunk into the farmer bundle.
  */
 
 import React, { lazy, Suspense } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuthOrNull } from '../../context/AuthContext.jsx';
 
 const NgoDashboardV1 = lazy(() => import('../../pages/ngo/NgoDashboardV1.jsx'));
@@ -53,9 +64,15 @@ export default function RoleAwareDashboard({ children }) {
     );
   }
 
-  // Default — render whatever the parent passed in (the
-  // existing farmer V2Dashboard mount).
-  return children || null;
+  // Farmer / null / unknown role — redirect to the canonical
+  // premium runtime at /home. The `children` prop (legacy
+  // V2Dashboard mount from App.jsx) is intentionally ignored
+  // for these roles per the May 2026 unified-runtime fix.
+  // We keep the prop in the signature so a future migration
+  // away from the children-pattern doesn't change the
+  // call-site shape in App.jsx.
+  void children;
+  return <Navigate to="/home" replace />;
 }
 
 function DashboardLoader() {

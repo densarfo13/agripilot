@@ -487,9 +487,12 @@ export default function MyFarmPage() {
       {/* ── 1. Hero band (premium upgrade) ────────────────────
            Replaces the small icon + heading row with a realistic
            dark-glass hero that matches the Home design language.
-           The legacy `<Header>` local component is still defined
-           below for any consumer that reaches into it; this
-           surface is what the user actually sees. */}
+           May 2026 toggle-placement fix — the Farms / Gardens
+           toggle now sits INSIDE the hero (children slot) so it
+           reads as part of the page identity instead of floating
+           below as a disconnected block. The standalone
+           ExperienceTabs render that used to live below this
+           hero is gone — there's exactly ONE toggle now. */}
       <PremiumPageHero
         mode={isBackyardActive ? 'garden' : 'farm'}
         eyebrow={_heroEyebrow}
@@ -500,20 +503,21 @@ export default function MyFarmPage() {
           : '/images/page-hero/farm.svg'}
         accent="green"
         testId="my-farm-hero"
-      />
-
-      {/* Farms / Gardens toggle — always visible (forceShow).
-          current reads from isGardenMode (the explicit persisted
-          toggle) so the active tab reflects the user's last tap,
-          not just whether a garden entity exists. mode="switch"
-          keeps the user on this route; ExperienceTabs.go() writes
-          farroway_active_grow_mode before calling switchTo() so
-          the nav and page both update immediately. */}
-      <ExperienceTabs
-        current={isGardenMode ? 'garden' : 'farm'}
-        mode="switch"
-        forceShow
-      />
+      >
+        {/* Farms / Gardens toggle — always visible (forceShow).
+            current reads from isGardenMode (the explicit persisted
+            toggle) so the active tab reflects the user's last tap.
+            mode="switch" keeps the user on this route;
+            ExperienceTabs.go() writes farroway_active_grow_mode
+            before calling switchTo() so the nav + page update
+            immediately. Now nested inside the hero so it shares
+            the dark-glass surface as one identity card. */}
+        <ExperienceTabs
+          current={isGardenMode ? 'garden' : 'farm'}
+          mode="switch"
+          forceShow
+        />
+      </PremiumPageHero>
 
       {/* ── Plant Companion (Garden Mode only) ─────────────────
           Compact card with the active plant's nickname + an Edit
@@ -632,46 +636,16 @@ export default function MyFarmPage() {
           icon + green accent border. */}
       <FarmSwitcher />
 
-      {/* Remove Duplicate Navigation §3 — dynamic mode/context
-          label. Reads "Farm: {Name}" in farm mode or "From farm:
-          {Name}" in garden mode so the user always knows which
-          entity they're viewing AND which mode they're in.
-          Sits directly under the FarmSwitcher so the eye-scan
-          order reads top→bottom: tab strip (mode) → dropdown
-          (context) → label (current selection). */}
-      <div
-        style={S.modeLabel}
-        data-testid="my-farm-mode-label"
-        data-mode={isBackyardActive ? 'garden' : 'farm'}
-      >
-        <span style={S.modeLabelEyebrow}>
-          {isBackyardActive
-            ? tSafe('myFarm.modeLabel.fromFarm', 'From farm:')
-            : tSafe('myFarm.modeLabel.farm',     'Farm:')}
-        </span>
-        <span style={S.modeLabelName}>
-          {/* Backyard / Garden-Only Users §4 — in garden mode,
-              resolve the PARENT farm's name (via parentFarmId →
-              farms list lookup) instead of the garden's own
-              name. addGarden auto-creates a "My Backyard" parent
-              when none exists, so a garden-only user always
-              gets a sensible "From farm: My Backyard" label.
-              Falls back to the garden's name when the parent
-              can't be resolved (e.g. legacy rows without
-              parentFarmId), and to "My Farm" if both are
-              empty. */}
-          {(() => {
-            if (isBackyardActive && farm && farm.parentFarmId
-                && Array.isArray(farms)) {
-              const parent = farms.find((f) => f && f.id === farm.parentFarmId);
-              const parentName = parent && (parent.farmName || parent.name);
-              if (parentName) return parentName;
-            }
-            return farm.farmName || farm.name
-              || tSafe('myFarm.unnamedFarm', 'My Farm');
-          })()}
-        </span>
-      </div>
+      {/* May 2026 toggle-placement / header simplification —
+          REMOVED the "Farm: {Name}" / "From farm: {Name}" mode
+          label that used to sit between the FarmSwitcher dropdown
+          and the FarmIdentityCard. Both surfaces above + below
+          already render the active farm's name (FarmSwitcher
+          shows it as a tappable dropdown; FarmIdentityCard shows
+          it as the primary card title). The repeated label was
+          spec-flagged duplication and added zero new information.
+          Removing it tightens the header rhythm without losing
+          any context. */}
 
       {/* ── 3. Farm Identity Card (spec §3 redesign) ───────────
           Circular farm photo on the left + farm name + location
