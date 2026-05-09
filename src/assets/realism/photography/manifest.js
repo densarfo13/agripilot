@@ -29,6 +29,36 @@ export const PHOTO_SLOTS = Object.freeze({
   HERO_RAINY_FIELD:       'hero-rainy-field',
   HERO_SUNRISE_FIELD:     'hero-sunrise-field',
   HERO_DUSK_FIELD:        'hero-dusk-field',
+  HERO_SUNSET_FIELD:      'hero-sunset-field',
+  HERO_NIGHT_FIELD:       'hero-night-field',
+  HERO_CLOUDY_FIELD:      'hero-cloudy-field',
+  HERO_PARTLY_CLOUDY:     'hero-partly-cloudy',
+  HERO_STORM_FIELD:       'hero-storm-field',
+  HERO_FOG_FIELD:         'hero-fog-field',
+
+  // ─── Region-aware farm scenes (climate-cluster level) ───────
+  // Real photo shoot drops the production webp at:
+  //   /assets/realism/photography/<slot>.webp
+  // and the resolver picks them up automatically.
+  HERO_TROPICAL_DAYLIGHT: 'hero-tropical-daylight',
+  HERO_TROPICAL_RAIN:     'hero-tropical-rain',
+  HERO_MONSOON_RAIN:      'hero-monsoon-rain',
+  HERO_MONSOON_DAYLIGHT:  'hero-monsoon-daylight',
+  HERO_TEMPERATE_DAYLIGHT:'hero-temperate-daylight',
+  HERO_TEMPERATE_SUNRISE: 'hero-temperate-sunrise',
+  HERO_ARID_DAYLIGHT:     'hero-arid-daylight',
+  HERO_ARID_SUNSET:       'hero-arid-sunset',
+  HERO_HIGHLAND_DAYLIGHT: 'hero-highland-daylight',
+
+  // ─── Garden-mode scenes (small-scale + container) ───────────
+  HERO_GARDEN_DAYLIGHT:   'hero-garden-daylight',
+  HERO_GARDEN_RAINY:      'hero-garden-rainy',
+  HERO_GARDEN_SUNRISE:    'hero-garden-sunrise',
+  HERO_GARDEN_DUSK:       'hero-garden-dusk',
+  HERO_GARDEN_NIGHT:      'hero-garden-night',
+  HERO_GARDEN_BALCONY:    'hero-garden-balcony',
+  HERO_GARDEN_BACKYARD:   'hero-garden-backyard',
+  HERO_GARDEN_INDOOR:     'hero-garden-indoor',
 
   // ─── Crop close-ups (used by My Farm + Progress) ────────────
   CROP_MAIZE:             'crop-maize',

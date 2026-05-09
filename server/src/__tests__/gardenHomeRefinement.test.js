@@ -56,12 +56,19 @@ describe('Garden Home refinement (May 2026)', () => {
     expect(block).not.toMatch(/minHeight:\s*'24rem'/);
   });
 
-  it('dark overlay softened to warmer rgba(15,28,22,*) tones', () => {
+  it('legacy heavy dark-green wash is gone (handed off to phase-tuned lighting)', () => {
     const src = read('src/components/WeatherHeroActionCard.jsx');
-    // The new overlay uses rgba(15,28,22,*) at lower alphas.
-    expect(src).toMatch(/rgba\(15,28,22,0\.32\)/);
-    // The legacy heavy stops are gone.
+    // Dynamic Realistic Weather Environment (May 2026) — the overlay
+    // is no longer a single static rgba(15,28,22,*) wash. It's
+    // produced per-phase by lighting.js inside the DynamicWeatherBackdrop
+    // (sunrise warm, midday neutral, dusk cool, etc.). Both the
+    // legacy heavy stops AND the interim 15,28,22 wash are gone
+    // from this file.
     expect(src).not.toMatch(/rgba\(8,18,12,0\.92\)/);
     expect(src).not.toMatch(/rgba\(8,18,12,0\.78\)/);
+    expect(src).not.toMatch(/rgba\(15,28,22,0\.32\)/);
+    // The card now imports the dynamic backdrop instead.
+    expect(src).toMatch(/DynamicWeatherBackdrop/);
+    expect(src).toMatch(/resolveScene/);
   });
 });

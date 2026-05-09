@@ -48,6 +48,10 @@ import {
   getWeatherHero, formatAccurateAsOf,
 } from '../lib/weatherHeroIntelligence.js';
 import { PREMIUM_TOKENS as T } from './premium/tokens.js';
+import {
+  resolveScene,
+  DynamicWeatherBackdrop,
+} from '../features/weather/environment/index.js';
 
 const VALID_TYPES = new Set([
   'rain', 'heat', 'wind', 'dry',
@@ -296,7 +300,23 @@ export default function WeatherHeroActionCard({
           ? tSafe(hero.ctaKey, hero.ctaFallback)
           : tSafe('actions.startCheck', 'Start check'));
 
-  const bgImage = (hero && hero.bgImage) || '/images/weather/default-field.svg';
+  // Dynamic Realistic Weather Environment (May 2026 §1-§14) —
+  // the static SVG `bgImage` returned by getWeatherHero is now
+  // a fallback only. The canonical backdrop is the region/time/
+  // season/mode-aware scene resolved via resolveScene(), rendered
+  // by <DynamicWeatherBackdrop> with crossfade transition + calm
+  // fallback when the real photo isn't on disk yet.
+  const scene = useMemo(() => {
+    const now = (() => { try { return new Date(); } catch { return null; } })();
+    return resolveScene({
+      weather: w,
+      hour:    now ? now.getHours() : undefined,
+      month:   now ? (now.getMonth() + 1) : undefined,
+      country: w.country || w.countryCode || '',
+      region:  w.regionName || w.region || '',
+      mode,
+    });
+  }, [w, mode]);
 
   function handleCta() {
     if (typeof onCta === 'function') {
@@ -305,37 +325,21 @@ export default function WeatherHeroActionCard({
     }
   }
 
-  // Wrapper-level inline style sets the realistic background
-  // image; the global `.weather-hero` CSS still applies its
-  // animation pseudo-elements on top.
-  //
-  // May 2026 Garden Home refinement (spec §5 + §8) — the
-  // overlay was previously rgba(8,18,12, 0.55→0.92), which
-  // produced the muddy dark-green wash the spec flags as
-  // "fake glow / cartoon weather". Lowered to
-  // rgba(15,28,22, 0.32→0.62→0.78) so the underlying sky /
-  // landscape imagery reads cleanly while text stays legible.
-  // The slightly warmer base tone (15,28,22 vs 8,18,12) shifts
-  // the wash toward a natural field tone instead of muddy
-  // green-black.
-  const wrapperStyle = {
-    ...S.section,
-    backgroundImage: [
-      'linear-gradient(180deg, rgba(15,28,22,0.32) 0%, rgba(15,28,22,0.62) 60%, rgba(15,28,22,0.78) 100%)',
-      `url(${bgImage})`,
-    ].join(', '),
-    backgroundSize:     'cover',
-    backgroundPosition: 'center',
-  };
-
   return (
+    <DynamicWeatherBackdrop
+      scene={scene}
+      altText={`${type} scene`}
+      rounded={22}
+      testId={`${testId}-backdrop`}
+      style={{ minHeight: '19rem' }}
+    >
     <section
       className={`weather-hero weather-hero-action weather-${type}`}
       data-testid={testId}
       data-weather-type={type}
       data-mode={mode}
       data-done={taskDone ? 'true' : 'false'}
-      style={wrapperStyle}
+      style={S.section}
     >
       {/* Animation layer (rain drops, sun glow, wind streaks) on
           top of the background image. Pure CSS; reduced-motion
@@ -450,6 +454,7 @@ export default function WeatherHeroActionCard({
         )}
       </div>
     </section>
+    </DynamicWeatherBackdrop>
   );
 }
 
