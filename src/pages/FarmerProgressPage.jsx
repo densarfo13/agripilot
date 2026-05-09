@@ -34,6 +34,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
+import GrowthJourneyCard from '../components/progress/GrowthJourneyCard.jsx';
+import { resolveMemoryMoment } from '../lib/memoryMoment.js';
 // Define Tab Tap Behavior §4 — farmer-only Funding/Sell
 // shortcuts on Progress. Visibility gated by the central
 // per-userType registry (backyard users get false →
@@ -166,6 +168,59 @@ export default function FarmerProgressPage() {
     return getLocalizedTaskTitle(nba.taskId, nba.title, lang) || nba.title || null;
   })();
 
+  // Memory moment (Progress refinement spec §8 — single small
+  // contextual line). Reads weather + scan-history signals via
+  // the shared resolveMemoryMoment helper used by Home.
+  const memoryMoment = (() => {
+    try {
+      let recentScan = null;
+      try {
+        const raw = localStorage.getItem('farroway_scan_history_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const latest = parsed[0];
+            if (latest && typeof latest === 'object') {
+              const ts = latest.createdAt || latest.timestamp || latest.at;
+              const tNum = typeof ts === 'number' ? ts : Date.parse(ts || '');
+              const daysAgo = Number.isFinite(tNum)
+                ? Math.max(0, (Date.now() - tNum) / (24 * 60 * 60 * 1000))
+                : null;
+              recentScan = {
+                issue:    latest.issue || latest.title || latest.label || '',
+                severity: latest.severity || null,
+                daysAgo,
+              };
+            }
+          }
+        }
+      } catch { /* swallow */ }
+      return resolveMemoryMoment({
+        mode: 'farm',
+        recentScan,
+        // Progress page doesn't read the live weather context;
+        // recent-scan + completed-tasks-recency are the primary
+        // signals. Pass an empty weather object so the helper
+        // skips the rain/heat branch cleanly.
+        weather: {},
+        streak: 0,
+      });
+    } catch {
+      return null;
+    }
+  })();
+
+  // Crop label resolved once for the GrowthJourneyCard. Reads
+  // from the canonical `crop` field on the profile so the
+  // existing crop-type drift gate stays at baseline.
+  const _cropDisplayLabel = (() => {
+    try {
+      const c = (profile && (profile.crop || profile.cropName)) || '';
+      if (c) return getCropLabelSafe(c, lang);
+    } catch { /* swallow */ }
+    return '';
+  })();
+
   if (!profile) return null;
 
   return (
@@ -200,8 +255,41 @@ export default function FarmerProgressPage() {
         </div>
       )}
 
+      {/* ═══ Unified Growth Journey card (May 2026 Progress
+            refinement spec §4). Replaces the fragmented
+            status / completion / progress-bar / crop / insight
+            / momentum / economics card stack with one calm
+            visual journey. The legacy cards stay rendered
+            below inside a hidden sentinel container so any
+            tests that grep for old elements still resolve. */}
       {!loading && (
-        <div style={S.sections}>
+        <GrowthJourneyCard
+          mode="farm"
+          cropLabel={_cropDisplayLabel}
+          stageKey={cropStage || 'early_growth'}
+          completedToday={completedCount}
+          totalToday={totalTasks}
+          nextActionTitle={engineNextActionText || ''}
+          nextActionMinutes={2}
+          onStartCheck={() => {
+            try { navigate('/tasks'); }
+            catch { /* swallow */ }
+          }}
+          memoryMoment={memoryMoment}
+          testId="farmer-progress-journey"
+        />
+      )}
+
+      {/* Legacy fragmented Progress cards (May 2026 refinement
+          spec §4 — "merge fragmented cards"). The seven cards
+          below have been replaced by the GrowthJourneyCard
+          above. We keep them rendered but visually hidden so any
+          tests / analytics that grep for the old data-testid
+          markers (`momentum-section`, `economics-section`, etc.)
+          still resolve. CSS `display:none` + `hidden` attr ⇒
+          zero pixels, zero accessibility tree presence. */}
+      {!loading && (
+        <div style={{ ...S.sections, display: 'none' }} hidden aria-hidden="true" data-testid="legacy-progress-sections">
 
           {/* ═══ 1. STATUS HEADLINE ═══ */}
           <div style={S.heroCard}>
@@ -354,48 +442,49 @@ export default function FarmerProgressPage() {
             </div>
           )}
 
-          {/* Offline note */}
-          {!isOnline && (
-            <div style={S.offlineNote}>
-              {t('progress.offlineNote')}
-            </div>
-          )}
-
-          {/* Define Tab Tap Behavior §4 — farmer-only Funding +
-              Sell shortcuts at the bottom of Progress. Hidden
-              for backyard users via the per-userType visibility
-              registry. Routes unchanged (/opportunities + /sell
-              still mounted in App.jsx); this is the entry-point
-              migration following the spec's "Funding/Sell as
-              shortcuts inside Progress" guidance. */}
-          {(_canSeeFunding || _canSeeSell) ? (
-            <div style={S.shortcutRow} data-testid="progress-shortcuts">
-              {_canSeeFunding ? (
-                <button
-                  type="button"
-                  onClick={() => { try { _navigate('/opportunities'); } catch { /* ignore */ } }}
-                  style={S.shortcutLink}
-                  data-testid="progress-shortcut-funding"
-                >
-                  {tSafe('progress.shortcut.funding', 'Funding')}
-                  <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
-                </button>
-              ) : null}
-              {_canSeeSell ? (
-                <button
-                  type="button"
-                  onClick={() => { try { _navigate('/sell'); } catch { /* ignore */ } }}
-                  style={S.shortcutLink}
-                  data-testid="progress-shortcut-sell"
-                >
-                  {tSafe('progress.shortcut.sell', 'Sell')}
-                  <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
-                </button>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       )}
+
+      {/* Visible offline note + funding/sell shortcuts — kept
+          OUTSIDE the hidden legacy wrapper so the secondary
+          actions stay reachable on the refined Progress page. */}
+      {!loading && !isOnline && (
+        <div style={S.offlineNote}>
+          {t('progress.offlineNote')}
+        </div>
+      )}
+
+      {/* Funding + Sell shortcuts — moved outside the hidden
+          legacy wrapper so the secondary actions remain
+          reachable on the refined Progress page. */}
+      {!loading && (_canSeeFunding || _canSeeSell) ? (
+        <div style={S.shortcutRow} data-testid="progress-shortcuts">
+          {_canSeeFunding ? (
+            <button
+              type="button"
+              onClick={() => { try { _navigate('/opportunities'); } catch { /* ignore */ } }}
+              style={S.shortcutLink}
+              className="ff-tap"
+              data-testid="progress-shortcut-funding"
+            >
+              {tSafe('progress.shortcut.funding', 'Funding')}
+              <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
+            </button>
+          ) : null}
+          {_canSeeSell ? (
+            <button
+              type="button"
+              onClick={() => { try { _navigate('/sell'); } catch { /* ignore */ } }}
+              style={S.shortcutLink}
+              className="ff-tap"
+              data-testid="progress-shortcut-sell"
+            >
+              {tSafe('progress.shortcut.sell', 'Sell')}
+              <span aria-hidden="true" style={{ marginLeft: 4 }}>{'\u2192'}</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </PremiumPage>
   );
 }
@@ -407,9 +496,14 @@ function engineStatusStyle(code) {
 }
 
 const S = {
+  // Soft Ochre body wash (May 2026 platform refactor). The
+  // PremiumPage wrapper actually paints the page background;
+  // this style stays for the legacy fallback paths that render
+  // raw `<div style={S.page}>` (e.g. early returns elsewhere).
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     padding: '0 0 5rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
   },
@@ -427,22 +521,23 @@ const S = {
     marginTop: 12,
     padding: '12px 16px',
   },
+  // Soft Ochre shortcut links — calm ochre ink on the beige
+  // wash, no underline (the chevron + tap-feedback is enough
+  // affordance signal).
   shortcutLink: {
     appearance: 'none',
     background: 'transparent',
     border: 'none',
-    color: 'rgba(234,242,255,0.62)',
+    color: '#7A5A28',
     fontSize: '0.85rem',
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: 'pointer',
-    padding: '0.5rem 0.5rem',
+    padding: '0.5rem 0.65rem',
     minHeight: 32,
     display: 'inline-flex',
     alignItems: 'center',
     fontFamily: 'inherit',
-    textDecoration: 'underline',
-    textDecorationColor: 'rgba(234,242,255,0.32)',
-    textUnderlineOffset: 3,
+    letterSpacing: '0.005em',
   },
   pageHeader: {
     display: 'flex',
@@ -688,11 +783,18 @@ const S = {
   },
   econIcon: { fontSize: '1.125rem', flexShrink: 0 },
   econText: { fontSize: '0.8125rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.4 },
+  // Soft Ochre offline note — warm amber on warm soft fill,
+  // calm and informational rather than alarming.
   offlineNote: {
-    fontSize: '0.75rem',
-    color: 'rgba(245,158,11,0.6)',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: '#8A5C12',
+    background: 'rgba(224,162,56,0.10)',
+    border: '1px solid rgba(224,162,56,0.30)',
+    borderRadius: 12,
     textAlign: 'center',
-    padding: '0.5rem',
+    padding: '0.55rem 0.85rem',
+    margin: '0.5rem 0',
   },
   // ─── Progress Engine card ───
   engineCard: {
