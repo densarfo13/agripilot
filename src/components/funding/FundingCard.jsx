@@ -28,6 +28,14 @@ import {
 } from '../../funding/fundingBookmarks.js';
 import { FARM_TYPE_LABELS } from '../../config/fundingConfig.js';
 import { isFeatureEnabled } from '../../config/features.js';
+// Funding-link safety lockdown (May 2026 urgent fix). Every
+// external URL passes through `classifyFundingUrl` BEFORE
+// render — anything that isn't on the verified host whitelist
+// (or fails the URL-shape validator) renders as a non-link
+// "Verification pending" pill. Defence-in-depth against admin
+// upload poisoning, stale localStorage cache, or malicious
+// data injection at any layer between source and screen.
+import { classifyFundingUrl } from '../../security/validateFundingUrl.js';
 import ApplicationPreviewModal from './ApplicationPreviewModal.jsx';
 import MatchChips from './MatchChips.jsx';
 import CardFooterBadges from './CardFooterBadges.jsx';
@@ -314,18 +322,58 @@ export default function FundingCard({ card, context = {} }) {
         >
           {tStrict('funding.card.startApplication', 'Start Application')}
         </button>
-      ) : (
-        <a
-          href={card.externalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={handleClick}
-          style={STYLES.cta}
-          data-testid={`funding-cta-${card.id}`}
-        >
-          {tStrict('funding.card.exploreOption', 'Explore this option')}
-        </a>
-      )}
+      ) : (() => {
+        // Runtime guard (spec §14) — `card.externalUrl` is
+        // classified via the canonical security layer. Verified
+        // links render as anchors; everything else collapses to
+        // a non-link "Verification pending" pill so a poisoned
+        // upload / stale cache / malicious feed cannot ship a
+        // raw destination to the farmer.
+        const _safety = classifyFundingUrl(card.externalUrl);
+        if (!_safety.ok) {
+          // Fire-and-forget telemetry so security can grep
+          // production for blocked attempts without leaking
+          // the raw URL into plaintext analytics.
+          try {
+            trackFundingEvent('unsafe_funding_link_blocked', {
+              cardId: card.id,
+              reason: _safety.reason,
+              host:   _safety.host || null,
+            });
+          } catch { /* never propagate */ }
+          return (
+            <span
+              style={{
+                ...STYLES.cta,
+                background:    'transparent',
+                color:         'rgba(36,49,58,0.55)',
+                border:        '1px solid rgba(36,49,58,0.14)',
+                cursor:        'not-allowed',
+                textAlign:     'center',
+                fontWeight:    700,
+              }}
+              aria-disabled="true"
+              data-testid={`funding-cta-${card.id}`}
+              data-blocked-reason={_safety.reason}
+            >
+              {tStrict('funding.card.verificationPending',
+                'Verification pending')}
+            </span>
+          );
+        }
+        return (
+          <a
+            href={card.externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleClick}
+            style={STYLES.cta}
+            data-testid={`funding-cta-${card.id}`}
+          >
+            {tStrict('funding.card.exploreOption', 'Explore this option')}
+          </a>
+        );
+      })()}
 
       {/* Phase 7C: save for later — advisory, never blocks main CTA. */}
       <button

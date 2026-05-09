@@ -559,7 +559,12 @@ function FooterSection() {
             <div style={S.footerHead}>Company</div>
             <a href="#vision" style={S.footerLink}>Vision</a>
             <a href="#audience" style={S.footerLink}>Who it’s for</a>
-            <a href="mailto:hello@farroway.app" style={S.footerLink}>Contact</a>
+            {/* May 2026 support unification: was `mailto:hello@farroway.app` —
+                routes through the canonical /support hub now so the
+                landing footer matches every other "Contact" CTA in
+                the app. /support is mounted in the public route block
+                so logged-out visitors can reach it. */}
+            <a href="/support" style={S.footerLink}>Contact</a>
           </div>
           <div>
             <div style={S.footerHead}>Legal</div>

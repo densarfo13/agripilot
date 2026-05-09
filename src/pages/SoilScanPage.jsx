@@ -29,6 +29,10 @@ import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
 import { PREMIUM_TOKENS as T } from '../components/premium/tokens.js';
+// Premium line-icon system (May 2026 realism migration). Replaces
+// the legacy camera emoji that previously sat in the soil-photo
+// placeholder with the soil glyph from the canonical icon set.
+import RealisticIcon from '../assets/realism/icons/RealisticIcon.jsx';
 import {
   analyzeSoilScan, SOIL_SCAN_CUES,
 } from '../lib/soilScanEngine.js';
@@ -219,7 +223,7 @@ export default function SoilScanPage() {
             />
           ) : (
             <div style={S.placeholder} data-testid="soil-scan-placeholder">
-              <span aria-hidden="true" style={S.placeholderIcon}>{'📷'}</span>
+              <RealisticIcon name="soil" size={40} style={S.placeholderIcon} />
               <span style={S.placeholderText}>
                 {tSafe('soilScan.placeholder', 'Add a clear photo of the soil surface.')}
               </span>

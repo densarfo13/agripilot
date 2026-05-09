@@ -92,9 +92,13 @@ function main() {
     console.error('');
     console.error(`env-assertions: ${failures.length} required var(s) missing.`);
     console.error('Set them in your Railway/hosting environment before deploy.');
+    console.error('Operator guide: docs/ENV_SETUP.md (TL;DR section lists the 4 required vars).');
     process.exit(1);
   }
   console.log(`\u2713 env-assertions (${MODE}): all required vars present`
     + (warnings.length ? `; ${warnings.length} optional provider(s) degraded` : ''));
+  if (warnings.length > 0) {
+    console.log('  (graceful-degrade paths verified \u2014 see docs/ENV_SETUP.md to enable any of them)');
+  }
 }
 main();

@@ -1,8 +1,33 @@
+# ──────────────────────────────────────────────────────────────
+# Railway deployment configuration
+# ──────────────────────────────────────────────────────────────
+# May 2026 build-fail diagnosis: previous buildCommand was
+#   `npm ci && cd server && npm ci && npx prisma generate
+#    && cd .. && npx vite build`
+# which SKIPPED the TypeScript compile step for
+# server/intelligence/. server/src/app.js + server.js both
+# import from `../intelligence/dist/index.js`, so a fresh
+# Railway build that didn't ship pre-committed dist files
+# would crash on boot with `Cannot find module
+# '../intelligence/dist/index.js'`.
+#
+# Fix: delegate to the canonical `npm run build` script, which
+# already chains `vite build && cd server && npx prisma generate
+# && npx tsc -p intelligence/tsconfig.json` in the right order.
+# This way the buildCommand stays in sync with what every dev
+# runs locally — no drift possible.
+
 [build]
 builder = "nixpacks"
-buildCommand = "npm ci && cd server && npm ci && npx prisma generate && cd .. && npx vite build"
+buildCommand = "npm ci && cd server && npm ci && cd .. && npm run build"
 
 [deploy]
+# `npm start` resolves to:
+#   node scripts/prisma-deploy-with-baseline.mjs
+#     && cd server && node scripts/init-admin.mjs && node src/server.js
+# which is safe (prisma-deploy-with-baseline.mjs is non-destructive
+# and the server boots on $PORT).
+startCommand = "npm start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 

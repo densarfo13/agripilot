@@ -123,11 +123,22 @@ export function getListings() {
  * from the buyer-interest store so the listing row never falls
  * out of sync with interest activity.
  */
+// May 2026 Sell coordination upgrade — added RESERVED to fill
+// the gap between "buyer made contact" (CONTACTED) and "deal
+// closed" (SOLD). Maps to the spec §3 lifecycle:
+//   DRAFT → ACTIVE → INTERESTED → CONTACTED (negotiation) →
+//   RESERVED (held for a buyer) → SOLD.
+//
+// Existing call sites that branch on DRAFT/ACTIVE/SOLD/EXPIRED
+// keep working unchanged — RESERVED is a strict addition; no
+// migration needed because it's only emitted by the new
+// `sellCoordinator.markReserved()` helper.
 export const LISTING_STATUS = Object.freeze({
   DRAFT:      'DRAFT',
   ACTIVE:     'ACTIVE',
   INTERESTED: 'INTERESTED',
   CONTACTED:  'CONTACTED',
+  RESERVED:   'RESERVED',
   SOLD:       'SOLD',
   EXPIRED:    'EXPIRED',
 });
@@ -142,6 +153,9 @@ export function getActiveListings() {
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   return getListings().filter((l) => {
     const status = String(l.status || '').toUpperCase();
+    // RESERVED is intentionally STILL listed publicly — buyers
+    // can see "this farmer has activity" while the held buyer
+    // closes their deal. SOLD/EXPIRED/DRAFT remain hidden.
     if (status === 'DRAFT' || status === 'SOLD' || status === 'EXPIRED') return false;
     if (!l.readyDate) return true;
     const t = Date.parse(l.readyDate);

@@ -31,6 +31,16 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+// Single source of truth for the support email. Replaces the
+// previous hardcoded 'mailto:support@farroway.app' literals so
+// renaming the inbox is a one-file change.
+import { mailtoSupport } from '../config/support.js';
+// May 2026 My Farm premium realism alignment — replaces the legacy
+// dark-navy / neon-green styles in the identity card with the
+// locked Soft Ochre / Beige token forward + the canonical
+// RealisticIcon glyph in place of the 📷 emoji on the scan card.
+import { PREMIUM_TOKENS as T } from '../components/premium/tokens.js';
+import RealisticIcon from '../assets/realism/icons/RealisticIcon.jsx';
 import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
@@ -422,7 +432,7 @@ export default function MyFarmPage() {
     catch {
       try {
         if (typeof window !== 'undefined') {
-          window.location.href = 'mailto:support@farroway.app';
+          window.location.href = mailtoSupport();
         }
       } catch { /* never propagate */ }
       return;
@@ -432,7 +442,7 @@ export default function MyFarmPage() {
         const after = (typeof window !== 'undefined' && window.location)
           ? String(window.location.pathname || '') : '';
         if (after === before && typeof window !== 'undefined') {
-          window.location.href = 'mailto:support@farroway.app';
+          window.location.href = mailtoSupport();
         }
       } catch { /* never propagate */ }
     }, 120);
@@ -981,12 +991,18 @@ export default function MyFarmPage() {
           onClick={() => { try { navigate('/scan'); } catch { /* swallow */ } }}
           style={S.scanCard}
           data-testid="my-farm-scan-plant"
-          aria-label={tSafe('myFarm.scan.ariaLabel', 'Scan plant — check leaves or crop photo')}
+          aria-label={tSafe('myFarm.scan.ariaLabel',
+            'Scan crop health — check leaves or crop photo')}
         >
-          <span style={S.scanCardIcon} aria-hidden="true">📷</span>
+          {/* May 2026 realism alignment §10 — replaces the legacy
+              camera emoji with the canonical scan glyph from the
+              RealisticIcon catalogue. */}
+          <span style={S.scanCardIcon} aria-hidden="true">
+            <RealisticIcon name="scan" size={22} />
+          </span>
           <span style={S.scanCardBody}>
             <span style={S.scanCardLabel}>
-              {tSafe('myFarm.scan.label', 'Scan plant')}
+              {tSafe('myFarm.scan.label', 'Scan crop health')}
             </span>
             <span style={S.scanCardSub}>
               {tSafe('myFarm.scan.sub', 'Check leaves or crop photo')}
@@ -1277,12 +1293,16 @@ const S = {
     display: 'inline-flex',
     alignItems: 'center',
   },
+  // May 2026 realism alignment §2 — premium mobile agriculture
+  // app, not landing-page billboard. 1.4rem → 1.15rem. Color
+  // shifts from white-on-dark to ink-on-beige via the locked
+  // PREMIUM_TOKENS forward.
   headerTitle: {
     margin: 0,
-    fontSize: '1.4rem',
+    fontSize: '1.15rem',
     fontWeight: 800,
-    color: '#FFFFFF',
-    letterSpacing: '-0.01em',
+    color: T.ink,
+    letterSpacing: '-0.005em',
   },
 
   // ── Today's farm action card (action-first spec) ──────────
@@ -1329,32 +1349,40 @@ const S = {
     flex: '0 0 auto',
   },
 
-  // ── Farm Identity Card (spec §3 redesign) ──────────────────
+  // ── Farm Identity Card (May 2026 premium realism alignment) ─
+  // Migrated from the legacy dark navy + neon green palette to
+  // the locked Soft Ochre / Beige tokens. The identity card now
+  // matches every other premium primitive surface — white-on-
+  // beige tactile card, ochre-bordered photo frame, calm
+  // typography. The oversized 28px initials are gone.
   identityCard: {
     margin: '0.75rem 1rem 0',
-    background: '#102C47',
-    border: '1px solid #1F3B5C',
+    background: T.panelHi,
+    border: `1px solid ${T.border}`,
     borderRadius: 16,
     padding: '1rem',
+    boxShadow: T.shadowCard,
   },
   identityRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   identityLeft: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     flex: '0 0 auto',
   },
+  // Spec §3: smaller photo frame (was 88px → 64px). The ochre-
+  // tinted ring replaces the previous neon-green border.
   photoWrap: {
-    width: 88,
-    height: 88,
+    width: 64,
+    height: 64,
     borderRadius: '50%',
-    background: 'rgba(34,197,94,0.14)',
-    border: '2px solid rgba(34,197,94,0.45)',
+    background: T.ochreSoft,
+    border: `1.5px solid ${T.ochreBorder}`,
     overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
@@ -1367,23 +1395,26 @@ const S = {
     objectFit: 'cover',
     display: 'block',
   },
+  // Spec §3: initials drop from 28px to 18px. The legacy size
+  // dominated the page; the new size is a calm secondary
+  // affordance the eye reads after the farm name.
   photoFallback: {
-    fontSize: 28,
+    fontSize: 18,
     fontWeight: 800,
-    color: '#86EFAC',
+    color: T.ochreInk,
     letterSpacing: '0.02em',
   },
   uploadBtn: {
     appearance: 'none',
     background: 'transparent',
-    border: '1px solid rgba(34,197,94,0.45)',
-    color: '#86EFAC',
+    border: `1px solid ${T.border}`,
+    color: T.ochreInk,
     borderRadius: 999,
-    padding: '6px 14px',
-    fontSize: '0.8125rem',
+    padding: '5px 12px',
+    fontSize: '0.75rem',
     fontWeight: 700,
     cursor: 'pointer',
-    minHeight: 32,
+    minHeight: 30,
     whiteSpace: 'nowrap',
   },
   identityRight: {
@@ -1391,19 +1422,19 @@ const S = {
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
+    gap: 3,
   },
   identityName: {
-    fontSize: '1.05rem',
+    fontSize: '1rem',
     fontWeight: 800,
-    color: '#FFFFFF',
+    color: T.ink,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
   identityLocation: {
     fontSize: '0.8125rem',
-    color: 'rgba(255,255,255,0.65)',
+    color: T.inkDim,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',

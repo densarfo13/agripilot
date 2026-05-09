@@ -18,6 +18,17 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+// Per-file timeout hardening (May 2026 — pattern matches the
+// demoMode flake fix). Several tests in this file dynamically
+// import frontend modules via `import('../../../src/components/scan/…')`;
+// under heavy parallel load the cold-start exceeds the default
+// 5 s vitest budget on Windows + cold disk cache, surfacing as
+// a transient "Test timed out in 5000ms" failure on the
+// `ScanFallback module loads without throwing` assertion. A
+// 15 s ceiling absorbs the noise without hiding genuine failures
+// (a real crash still trips well under the new budget).
+vi.setConfig({ testTimeout: 15000 });
+
 // ─── In-memory localStorage / sessionStorage / window mocks ──
 function makeStorage() {
   const store = new Map();
@@ -1223,9 +1234,17 @@ describe('SafeCameraSurface internals', () => {
     expect(Object.isFrozen(_internal.SAFE_MOCK_RESULT)).toBe(true);
   });
 
-  it('camera timeout is set to 4 seconds per spec', async () => {
+  // May 2026 camera hardening pass: timeout was raised from 4 s
+  // to 9 s. The previous 4 s budget over-fired on slow Android
+  // camera negotiation, surfacing the upload fallback even when
+  // the camera was 200–300 ms from being ready. The new value is
+  // sourced from the lifecycle helper (`src/lib/cameraLifecycle`)
+  // so the assertion reads the canonical constant rather than a
+  // duplicate literal.
+  it('camera timeout is in the hardened 8–10 s range', async () => {
     const { _internal } = await import('../../../src/components/scan/SafeCameraSurface.jsx');
-    expect(_internal.CAMERA_TIMEOUT_MS).toBe(4000);
+    expect(_internal.CAMERA_TIMEOUT_MS).toBeGreaterThanOrEqual(8000);
+    expect(_internal.CAMERA_TIMEOUT_MS).toBeLessThanOrEqual(10000);
   });
 });
 

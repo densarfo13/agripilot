@@ -82,6 +82,10 @@ import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
 import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
 import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
+// Premium line-icon system (May 2026 realism migration). Used by
+// the soil-scan tile at the bottom of the Scan page; replaces the
+// legacy plant-pot emoji that previously sat there.
+import { default as RealisticIconLazy } from '../assets/realism/icons/RealisticIcon.jsx';
 
 const STYLES = {
   page: {
@@ -192,15 +196,20 @@ export default function ScanPage() {
     }
   } catch { /* defensive — coercion shouldn't throw, but guard anyway */ }
 
-  // Off-flag: bounce to the existing scan flow so deep links don't
-  // strand the user.
+  // Canonical scan system lock (May 2026 §12) — `/scan` IS the
+  // single canonical scan surface. The previous off-flag bounce
+  // to `/scan-crop` was a latent infinite-redirect trap: App.jsx
+  // already redirects `/scan-crop` → `/scan`, so flipping the
+  // flag would loop the browser between the two routes. The
+  // `scanDetection` flag has been permanent since the v2 rollout;
+  // we keep `flagOn` in the file so the existing render guards
+  // (early return `if (!flagOn) return null`) still respect a
+  // hard kill switch, but the bounce-to-legacy is gone.
   useEffect(() => {
-    if (!flagOn) {
-      try { navigate('/scan-crop', { replace: true }); } catch { /* ignore */ }
-    } else {
+    if (flagOn) {
       try { trackEvent('scan_opened', { experience }); } catch { /* ignore */ }
     }
-  }, [flagOn, experience, navigate]);
+  }, [flagOn, experience]);
 
   // May 2026 scan-crash hardening §7-§8 — Mark the page mounted
   // after a microtask so the loading state can render once,
@@ -818,8 +827,13 @@ export default function ScanPage() {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '1.4rem',
-        }}>{'🪴'}</span>
+          color: '#7A5A28',
+        }}>
+          {/* Premium line-icon (May 2026 realism migration) —
+              replaces the legacy plant-pot emoji with the soil
+              glyph from the RealisticIcon catalogue. */}
+          <RealisticIconLazy name="soil" size={24} />
+        </span>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
           <span style={{ fontSize: '1rem', fontWeight: 800, color: '#1F2933' }}>
             {tStrict('soilScan.entry.title', 'Soil scan')}

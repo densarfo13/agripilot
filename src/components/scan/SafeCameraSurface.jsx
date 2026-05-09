@@ -1,47 +1,66 @@
 /**
- * SafeCameraSurface — fully self-contained scan flow that
- * NEVER crashes, even when the camera, the AI model, or the
- * device's MediaDevices API is unavailable.
+ * SafeCameraSurface — production-hardened camera capture surface.
  *
  *   <SafeCameraSurface
  *     onResult={(result) => ...}
  *     onBackHome={() => navigate('/')}
  *   />
  *
- * Why this component exists
- *   The previous /scan flow couples capture, ML inference,
- *   permission detection, and i18n into one big page that has
- *   crashed users into the global recovery card. This surface
- *   replaces that coupling with a flat state machine that
- *   handles every failure path EXPLICITLY:
+ * MAY 2026 CAMERA HARDENING PASS
+ * ──────────────────────────────
+ *   The previous flow occasionally:
+ *     • timed out at 4 s on slow Android camera negotiation,
+ *     • showed a black preview because the <video> mounted before
+ *       the MediaStream finished its first frame,
+ *     • attached the stream BEFORE the track was actually `live`,
+ *     • failed silently on Safari (where srcObject is async).
  *
- *     idle      — initial; "Preparing camera…" + 4s timeout
- *     ready     — camera stream live in <video>
- *     denied    — permission denied; upload stays available
- *     unsup     — getUserMedia missing; upload stays available
- *     timeout   — camera didn't start in 4s; upload stays available
- *     preview   — photo captured / uploaded; result rendered
+ *   This rewrite delegates the lifecycle dance to
+ *   `src/lib/cameraLifecycle.js` — a typed state machine that
+ *   verifies `track.readyState === 'live'`, awaits
+ *   `loadedmetadata`, polls `video.readyState >= 2`, races a 9 s
+ *   hard fence, and tolerates Safari's quirks. The component
+ *   below only handles what's left: phase rendering, calm
+ *   placeholder, fallback CTAs, and stream cleanup on every
+ *   transition.
  *
- *   Upload is ALWAYS visible. The fallback message is friendly.
- *   The mock result envelope is the spec's exact shape so future
- *   ML wiring can swap in a real result without re-rendering.
+ *   Phases
+ *     idle        — initial; first paint, "Ready to scan" card.
+ *     starting    — "Preparing camera…" shimmer (preview NOT mounted).
+ *     ready       — live preview painting; capture button visible.
+ *     denied      — permission refused; calm fallback + upload.
+ *     unsup       — getUserMedia missing; calm fallback + upload.
+ *     timeout     — camera took too long; calm fallback + upload.
+ *     preview     — photo captured / uploaded; result rendered.
  *
- * Strict-rule audit
- *   • Pure presentational + 1 ref (videoRef). No third-party deps.
- *   • Every async path try/catched.
- *   • Stream cleanup on unmount AND on every state transition
- *     out of "ready" — getTracks().forEach(t => t.stop()).
- *   • Video element uses autoPlay + playsInline + muted (the
- *     iOS-Safari-required trio).
- *   • Spec analytics events fire through console.log + the
- *     existing analytics pipeline when available.
- *   • Never renders raw objects — getDisplayText is unused
- *     because EVERY rendered field is already a primitive.
+ *   Render contract
+ *     The <video> element ONLY mounts in `ready` phase. While
+ *     `starting`, the user sees the calm shimmer placeholder so
+ *     they're never staring at a black box.
+ *
+ * STRICT-RULE AUDIT
+ *   • Inline styles only, Soft Ochre tokens via PREMIUM_TOKENS.
+ *   • Stream cleanup runs on unmount AND every transition out of
+ *     ready (capture, retake, upload, fallback, retry).
+ *   • Visible text via tSafe with English fallbacks.
+ *   • Never throws. Every async path try/catched.
+ *   • <video> renders with playsInline + muted + autoPlay so iOS
+ *     Safari's autoplay policy never blocks the preview.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-
-const CAMERA_TIMEOUT_MS = 4000;
+import { tSafe } from '../../i18n/tSafe.js';
+import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
+// Premium line-icon system (May 2026 realism migration). Replaces
+// the legacy camera emoji glyphs on the idle + fallback cards with
+// a scalable single-stroke SVG that inherits currentColor — same
+// silhouette across every render size + zero rasterisation.
+import RealisticIcon from '../../assets/realism/icons/RealisticIcon.jsx';
+import {
+  startCamera as _startCamera,
+  stopStream as _stopStream,
+  CAMERA_TIMEOUT_MS,
+} from '../../lib/cameraLifecycle.js';
 
 const SAFE_MOCK_RESULT = Object.freeze({
   status:     'needs_review',
@@ -52,7 +71,6 @@ const SAFE_MOCK_RESULT = Object.freeze({
 
 function _logEvent(eventName, payload) {
   try {
-    // eslint-disable-next-line no-console
     console.log('[FARROWAY_SCAN]', eventName, payload || {});
   } catch { /* swallow */ }
   try {
@@ -69,105 +87,131 @@ function _logEvent(eventName, payload) {
 export default function SafeCameraSurface({
   onResult = null,
   onBackHome = null,
-  // When true, suppresses the "Back to Home" affordance — used
-  // when this surface is mounted INSIDE the live ScanPage flow
-  // (so the user can already tab-nav back).
   hideBackHome = false,
 }) {
-  // Phases: idle | ready | denied | unsup | timeout | preview
-  const [phase, setPhase]       = useState('idle');
-  const [error, setError]       = useState(null);
-  const [photo, setPhoto]       = useState(null);     // { dataUrl, file? }
-  const [result, setResult]     = useState(null);
-  const videoRef                = useRef(null);
-  const streamRef               = useRef(null);
-  const timeoutRef              = useRef(null);
-  const fileInputRef            = useRef(null);
-  // Track whether the user explicitly tried to start the camera
-  // so we don't fire camera_start_failed for an environment that
-  // never requested camera access in the first place.
-  const cameraRequestedRef      = useRef(false);
+  // Phases: idle | starting | ready | denied | unsup | timeout | preview
+  const [phase, setPhase]   = useState('idle');
+  const [error, setError]   = useState(null);
+  const [photo, setPhoto]   = useState(null);     // { dataUrl, file? }
+  const [result, setResult] = useState(null);
 
-  // Fire scan_page_opened on first mount.
+  const videoRef       = useRef(null);
+  const streamRef      = useRef(null);
+  const fileInputRef   = useRef(null);
+  // Cancellation token so a slow startCamera that resolves AFTER
+  // the user navigated away or retried can self-discard instead
+  // of stomping the new lifecycle.
+  const startTokenRef  = useRef(0);
+
+  // ─── Cleanup on unmount + page-visibility-hidden ──────────
+  // Capture refs at effect-run time so the cleanup never reads
+  // stale `.current` (the React-Hooks lint rule's exact concern).
+  // We also stop the stream when the tab becomes hidden so the
+  // camera light goes off the moment the user backgrounds the
+  // app — Android Chrome does NOT auto-suspend MediaStream
+  // tracks on visibility change, so without this the camera
+  // light stays on while the user is on a different tab.
   useEffect(() => {
     _logEvent('scan_page_opened', { surface: 'SafeCameraSurface' });
-    return () => {
-      // Cleanup any active stream on unmount.
-      _stopStream(streamRef.current);
-      streamRef.current = null;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
+    const tokenRefSnapshot  = startTokenRef;
+    const streamRefSnapshot = streamRef;
+    const videoRefSnapshot  = videoRef;
+    const onVisibility = () => {
+      try {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          // Bump token so any in-flight startCamera() bails out.
+          tokenRefSnapshot.current += 1;
+          _stopStream(streamRefSnapshot.current, videoRefSnapshot.current);
+          streamRefSnapshot.current = null;
+        }
+      } catch { /* never throw from a listener */ }
+    };
+    try {
+      if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+        document.addEventListener('visibilitychange', onVisibility);
       }
+    } catch { /* ignore */ }
+    return () => {
+      try {
+        if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
+          document.removeEventListener('visibilitychange', onVisibility);
+        }
+      } catch { /* ignore */ }
+      // Bump token so any in-flight startCamera() bails out.
+      tokenRefSnapshot.current += 1;
+      _stopStream(streamRefSnapshot.current, videoRefSnapshot.current);
+      streamRefSnapshot.current = null;
     };
   }, []);
 
-  // Helper: stop every track on a stream. Safe on null / no-op.
-  function _stopStream(stream) {
-    try {
-      if (!stream || typeof stream.getTracks !== 'function') return;
-      stream.getTracks().forEach((track) => {
-        try { track.stop(); } catch { /* tolerate per-track */ }
-      });
-    } catch { /* swallow */ }
-  }
-
   // ─── Start camera ──────────────────────────────────────────
+  // Uses the lifecycle helper so the preview is gated on
+  // metadata + live track + ≥9 s budget. Self-cancels via
+  // startTokenRef when a newer attempt supersedes it.
   const startCamera = useCallback(async () => {
-    cameraRequestedRef.current = true;
     setError(null);
-    setPhase('idle');
+    // Drop any stream we might still hold from a prior attempt.
+    _stopStream(streamRef.current, videoRef.current);
+    streamRef.current = null;
 
-    // 4-second hard ceiling — if getUserMedia hangs or takes too
-    // long, surface the upload fallback instead of a stuck
-    // "Preparing camera…" screen.
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      if (phase === 'idle' && !streamRef.current) {
-        setPhase('timeout');
-        _logEvent('camera_start_failed', { reason: 'timeout_4s' });
-      }
-    }, CAMERA_TIMEOUT_MS);
+    // Mount the "Preparing camera…" shimmer FIRST so the user
+    // never sees a black <video>. The <video> element itself
+    // doesn't render until `ready`.
+    setPhase('starting');
 
-    try {
-      if (typeof navigator === 'undefined'
-          || !navigator.mediaDevices
-          || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-        throw new Error('Camera not supported');
-      }
+    const myToken = ++startTokenRef.current;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      });
+    // The <video> ref isn't mounted while we're in `starting`
+    // (preview is gated on `ready`), but the lifecycle helper
+    // needs an element. We mount a hidden, off-screen <video>
+    // below in JSX so the ref always exists. After the helper
+    // resolves successfully we flip to `ready` and CSS unhides
+    // the same element (it stays in the DOM the whole time).
 
-      // Cancel the timeout — getUserMedia returned in time.
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+    const result = await _startCamera({
+      video:     videoRef.current,
+      timeoutMs: CAMERA_TIMEOUT_MS,
+      facing:    'environment',
+      onLog:     (event, detail) => _logEvent(event, detail),
+    });
 
-      streamRef.current = stream;
-      if (videoRef.current) {
-        try { videoRef.current.srcObject = stream; }
-        catch { /* tolerate — older Safari without srcObject */ }
-      }
-      setPhase('ready');
-      _logEvent('camera_started', {});
-    } catch (err) {
-      try {
-        // eslint-disable-next-line no-console
-        console.error('Camera start failed:', err && err.message ? err.message : err);
-      } catch { /* swallow */ }
-      const msg = (err && err.message) ? String(err.message) : 'Camera unavailable';
-      const lower = msg.toLowerCase();
-      const denied = lower.includes('denied') || lower.includes('permission');
-      const unsup  = lower.includes('not supported') || lower.includes('unsupported');
-      setError(msg);
-      setPhase(denied ? 'denied' : unsup ? 'unsup' : 'denied');
-      _logEvent('camera_start_failed', { reason: msg.slice(0, 200) });
+    // Stale start? The user retried, navigated, or unmounted.
+    if (myToken !== startTokenRef.current) {
+      try { _stopStream(result && result.ok ? result.stream : null, videoRef.current); } catch { /* ignore */ }
+      return;
     }
-  }, [phase]);
+
+    if (result.ok) {
+      streamRef.current = result.stream;
+      setPhase('ready');
+      return;
+    }
+
+    // Failure path — map typed reason to a user-facing phase.
+    // Each phase carries its own calm, non-technical copy below.
+    //   denied          — NotAllowedError   (permission off)
+    //   unsup           — getUserMedia missing entirely
+    //   not_found       — NotFoundError     (no camera device)
+    //   busy            — NotReadableError  (camera in use by another app)
+    //   overconstrained — Constraints rejected; lifecycle already
+    //                     retried with `video: true`, so reaching
+    //                     this branch means even generic failed
+    //   timeout         — getUserMedia / metadata exceeded budget
+    //   no_dimensions   — videoWidth=0 after ready (black-preview
+    //                     guard); treat as timeout to keep copy calm
+    //   anything else   — fall through to denied so the user always
+    //                     gets a working upload path
+    const reason = result.reason || 'unknown';
+    setError(result.message || reason);
+    if (reason === 'unsupported')         setPhase('unsup');
+    else if (reason === 'denied')         setPhase('denied');
+    else if (reason === 'not_found')      setPhase('not_found');
+    else if (reason === 'busy')           setPhase('busy');
+    else if (reason === 'overconstrained') setPhase('not_found'); // single-camera laptops, etc.
+    else if (reason === 'timeout')        setPhase('timeout');
+    else if (reason === 'no_dimensions')  setPhase('timeout');
+    else setPhase('denied'); // safest default — fallback offers retry + upload.
+  }, []);
 
   // ─── Capture photo from the live stream ───────────────────
   const capturePhoto = useCallback(() => {
@@ -186,13 +230,15 @@ export default function SafeCameraSurface({
       setResult({ ...SAFE_MOCK_RESULT });
       setPhase('preview');
       // Stop the stream now that we have the frame.
-      _stopStream(streamRef.current);
+      _stopStream(streamRef.current, videoRef.current);
       streamRef.current = null;
       _logEvent('scan_photo_uploaded', { source: 'camera' });
     } catch (err) {
       try { console.error('Capture failed:', err && err.message); }
       catch { /* swallow */ }
       // Don't crash — fall back to the upload path.
+      _stopStream(streamRef.current, videoRef.current);
+      streamRef.current = null;
       setPhase('denied');
     }
   }, []);
@@ -215,7 +261,7 @@ export default function SafeCameraSurface({
           setResult({ ...SAFE_MOCK_RESULT });
           setPhase('preview');
           // Stop any live stream we no longer need.
-          _stopStream(streamRef.current);
+          _stopStream(streamRef.current, videoRef.current);
           streamRef.current = null;
           _logEvent('scan_photo_uploaded', { source: 'upload' });
         } catch { /* swallow */ }
@@ -241,21 +287,29 @@ export default function SafeCameraSurface({
     setPhoto(null);
     setResult(null);
     setError(null);
-    // If we previously had a stream, start a fresh one.
-    if (cameraRequestedRef.current) {
-      startCamera();
-    } else {
-      setPhase('idle');
-    }
-  }, [startCamera]);
+    // Always release any prior stream before a fresh start.
+    _stopStream(streamRef.current, videoRef.current);
+    streamRef.current = null;
+    setPhase('idle');
+  }, []);
 
   // ─── Render ───────────────────────────────────────────────
+  // The <video> element is rendered for every phase so the ref
+  // is always present when startCamera() needs to attach. It is
+  // visually hidden outside the `ready` phase via display:none.
+  const videoVisible = phase === 'ready';
+
   return (
     <main style={S.page} data-testid="safe-camera-surface" data-phase={phase}>
       <header style={S.header}>
-        <h1 style={S.title}>Scan Plant or Crop</h1>
+        <h1 style={S.title}>
+          {tSafe('safeCamera.title', 'Scan plant or crop')}
+        </h1>
         <p style={S.subtitle}>
-          Take a clear photo of the leaf, fruit, or stem. Good light helps.
+          {tSafe(
+            'safeCamera.subtitle',
+            'Take a clear photo of the leaf, fruit, or stem. Good light helps.',
+          )}
         </p>
       </header>
 
@@ -263,7 +317,7 @@ export default function SafeCameraSurface({
       {phase === 'preview' && photo && result ? (
         <section style={S.previewCard}>
           {photo.dataUrl ? (
-            <img src={photo.dataUrl} alt="Scan preview" style={S.previewImg} />
+            <img src={photo.dataUrl} alt="" style={S.previewImg} />
           ) : null}
           <div style={S.resultBox}>
             <div style={S.resultLabel}>{String(result.label || 'Photo received')}</div>
@@ -271,98 +325,139 @@ export default function SafeCameraSurface({
           </div>
           <div style={S.btnRow}>
             <button type="button" onClick={handleSave} style={S.btnPrimary}
-                    data-testid="safe-scan-save">
-              Save scan
+                    className="ff-tap" data-testid="safe-scan-save">
+              {tSafe('safeCamera.save', 'Save scan')}
             </button>
             <button type="button" onClick={handleRetake} style={S.btnGhost}
-                    data-testid="safe-scan-retake">
-              Retake
+                    className="ff-tap" data-testid="safe-scan-retake">
+              {tSafe('safeCamera.retake', 'Retake')}
             </button>
           </div>
         </section>
       ) : null}
 
-      {/* Phase: ready — live camera feed */}
+      {/* Phase: starting — calm shimmer placeholder
+          The <video> ref is mounted but display:none so
+          loadedmetadata fires; the user only sees the shimmer. */}
+      {phase === 'starting' ? (
+        <section style={S.cameraCard} data-testid="safe-scan-starting">
+          <div style={S.shimmerWrap} aria-hidden="true">
+            <div style={S.shimmer} />
+            <div style={S.shimmerLabel}>
+              {tSafe('safeCamera.preparing', 'Preparing camera…')}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Phase: ready — live preview */}
       {phase === 'ready' ? (
         <section style={S.cameraCard}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={S.video}
-          />
+          {/* video rendered below — same element across phases */}
           <div style={S.btnRow}>
             <button type="button" onClick={capturePhoto} style={S.btnPrimary}
-                    data-testid="safe-scan-capture">
-              Take photo
+                    className="ff-tap" data-testid="safe-scan-capture">
+              {tSafe('safeCamera.takePhoto', 'Take photo')}
             </button>
             <button type="button" onClick={handleUploadClick} style={S.btnGhost}
-                    data-testid="safe-scan-upload-secondary">
-              Upload photo
+                    className="ff-tap" data-testid="safe-scan-upload-secondary">
+              {tSafe('safeCamera.uploadPhoto', 'Upload photo')}
             </button>
           </div>
         </section>
       ) : null}
 
-      {/* Phase: idle — camera-start screen */}
+      {/* The single <video> element. Mounted at all times so the
+          ref exists when startCamera() runs; visually shown only
+          when phase === 'ready'. */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{ ...S.video, display: videoVisible ? 'block' : 'none' }}
+        data-testid="safe-scan-video"
+      />
+
+      {/* Phase: idle — first-paint card */}
       {phase === 'idle' && !photo ? (
         <section style={S.idleCard}>
-          <span aria-hidden="true" style={S.bigIcon}>{'\uD83D\uDCF7'}</span>
-          <h2 style={S.idleTitle}>Ready to scan</h2>
+          <RealisticIcon name="camera" size={48} style={S.bigIcon} />
+          <h2 style={S.idleTitle}>
+            {tSafe('safeCamera.readyTitle', 'Ready to scan')}
+          </h2>
           <p style={S.idleBody}>
-            Take a photo with your camera, or upload one from your gallery.
+            {tSafe(
+              'safeCamera.readyBody',
+              'Take a photo with your camera, or upload one from your gallery.',
+            )}
           </p>
           <div style={S.btnRow}>
             <button type="button" onClick={startCamera} style={S.btnPrimary}
-                    data-testid="safe-scan-start">
-              Open camera
+                    className="ff-tap" data-testid="safe-scan-start">
+              {tSafe('safeCamera.openCamera', 'Open camera')}
             </button>
             <button type="button" onClick={handleUploadClick} style={S.btnGhost}
-                    data-testid="safe-scan-upload-primary">
-              Upload photo
+                    className="ff-tap" data-testid="safe-scan-upload-primary">
+              {tSafe('safeCamera.uploadPhoto', 'Upload photo')}
             </button>
           </div>
         </section>
       ) : null}
 
-      {/* Phase: denied / unsup / timeout — fallback message */}
-      {(phase === 'denied' || phase === 'unsup' || phase === 'timeout') && !photo ? (
-        <section style={S.fallbackCard}>
-          <span aria-hidden="true" style={S.bigIcon}>{'\uD83D\uDCF7'}</span>
+      {/* Phase: denied / unsup / timeout / not_found / busy
+          → calm, non-technical fallback. Each branch picks the
+          copy that matches its specific failure mode so the user
+          gets actionable guidance, not a generic "try again". */}
+      {(phase === 'denied'
+         || phase === 'unsup'
+         || phase === 'timeout'
+         || phase === 'not_found'
+         || phase === 'busy') && !photo ? (
+        <section style={S.fallbackCard} data-testid={`safe-scan-fallback-${phase}`}>
+          <RealisticIcon name="camera" size={48} style={S.bigIcon} />
           <h2 style={S.idleTitle}>
             {phase === 'denied'
-              ? 'Camera permission needed'
+              ? tSafe('safeCamera.deniedTitle', 'Camera permission needed')
               : phase === 'unsup'
-                ? 'Camera not available on this device'
-                : 'Camera is taking too long'}
+                ? tSafe('safeCamera.unsupTitle', 'Camera not available on this device')
+                : phase === 'not_found'
+                  ? tSafe('safeCamera.notFoundTitle', 'No camera found')
+                  : phase === 'busy'
+                    ? tSafe('safeCamera.busyTitle', 'Camera is in use')
+                    : tSafe('safeCamera.timeoutTitle', 'Camera is taking longer than expected')}
           </h2>
           <p style={S.idleBody}>
             {phase === 'denied'
-              ? 'You can still upload a crop photo to continue.'
-              : 'Upload a crop photo to continue.'}
+              ? tSafe('safeCamera.deniedBody', 'Camera access is off. You can upload a photo instead.')
+              : phase === 'not_found'
+                ? tSafe('safeCamera.notFoundBody', 'No camera found. Upload a photo to continue.')
+                : phase === 'busy'
+                  ? tSafe('safeCamera.busyBody', 'Camera may be used by another app. Try again or upload a photo.')
+                  : phase === 'timeout'
+                    ? tSafe('safeCamera.timeoutBody', 'You can still upload a photo, or try again.')
+                    : tSafe('safeCamera.unsupBody', 'You can still upload a photo to continue.')}
           </p>
-          {error ? <p style={S.errBody}>{String(error).slice(0, 200)}</p> : null}
           <div style={S.btnRow}>
             <button type="button" onClick={handleUploadClick} style={S.btnPrimary}
-                    data-testid="safe-scan-upload-fallback">
-              {'\uD83D\uDCC1 Upload photo'}
+                    className="ff-tap" data-testid="safe-scan-upload-fallback">
+              {tSafe('safeCamera.uploadPhoto', 'Upload photo')}
             </button>
             <button type="button" onClick={startCamera} style={S.btnGhost}
-                    data-testid="safe-scan-retry-camera">
-              Retry camera
+                    className="ff-tap" data-testid="safe-scan-retry-camera">
+              {tSafe('safeCamera.retryCamera', 'Retry camera')}
             </button>
             {!hideBackHome && typeof onBackHome === 'function' ? (
               <button type="button" onClick={onBackHome} style={S.btnGhost}
-                      data-testid="safe-scan-back-home">
-                Back to Home
+                      className="ff-tap" data-testid="safe-scan-back-home">
+                {tSafe('safeCamera.backHome', 'Back to Home')}
               </button>
             ) : null}
           </div>
         </section>
       ) : null}
 
-      {/* Hidden file picker — used by both upload paths. */}
+      {/* Hidden file picker — used by all upload paths. */}
       <input
         ref={fileInputRef}
         type="file"
@@ -376,7 +471,9 @@ export default function SafeCameraSurface({
   );
 }
 
-// Test hooks.
+// Test hooks (kept for the existing test surface — re-exports
+// from the lifecycle helper so the timeout constant has a single
+// source of truth).
 export const _internal = Object.freeze({
   CAMERA_TIMEOUT_MS,
   SAFE_MOCK_RESULT,
@@ -385,8 +482,8 @@ export const _internal = Object.freeze({
 const S = {
   page: {
     minHeight: '100vh',
-    background: '#0B1D34',
-    color: '#fff',
+    background: `linear-gradient(180deg, ${T.bgTop} 0%, ${T.bgBottom} 100%)`,
+    color: T.ink,
     padding: '24px 16px 96px',
     maxWidth: 720,
     margin: '0 auto',
@@ -396,64 +493,103 @@ const S = {
     gap: 16,
   },
   header: { padding: '4px 0' },
-  title:  { margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em' },
-  subtitle: { margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 },
+  title:  { margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', color: T.ink },
+  subtitle: { margin: '4px 0 0', fontSize: 14, color: T.inkDim, lineHeight: 1.5 },
   cameraCard: {
     display: 'flex', flexDirection: 'column', gap: 12,
-    padding: 12, borderRadius: 16, background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    padding: 12, borderRadius: T.radiusCard, background: T.panelHi,
+    border: `1px solid ${T.border}`,
+    boxShadow: T.shadowCard,
   },
   video: {
     width: '100%', maxHeight: '60vh', borderRadius: 12, background: '#000',
     objectFit: 'cover',
   },
+  shimmerWrap: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: '4 / 3',
+    borderRadius: 12,
+    overflow: 'hidden',
+    background: T.ochreSoft,
+    border: `1px solid ${T.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shimmer: {
+    position: 'absolute',
+    inset: 0,
+    background: `linear-gradient(90deg, ${T.ochreSoft} 0%, rgba(255,255,255,0.55) 50%, ${T.ochreSoft} 100%)`,
+    backgroundSize: '200% 100%',
+    animation: 'farroway-shimmer 1.4s ease-in-out infinite',
+  },
+  shimmerLabel: {
+    position: 'relative',
+    fontSize: 14,
+    fontWeight: 700,
+    color: T.ochreInk,
+    letterSpacing: '0.02em',
+    background: 'rgba(255,255,255,0.72)',
+    borderRadius: 999,
+    padding: '0.45rem 0.9rem',
+    border: `1px solid ${T.ochreBorder}`,
+  },
   idleCard: {
-    padding: '2rem 1.5rem', borderRadius: 20,
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '2rem 1.5rem', borderRadius: T.radiusCard,
+    background: T.panelHi,
+    border: `1px solid ${T.border}`,
+    boxShadow: T.shadowCard,
     textAlign: 'center', display: 'flex', flexDirection: 'column',
     alignItems: 'center', gap: 12,
   },
   fallbackCard: {
-    padding: '2rem 1.5rem', borderRadius: 20,
-    background: 'rgba(252,165,165,0.06)',
-    border: '1px solid rgba(252,165,165,0.18)',
+    padding: '2rem 1.5rem', borderRadius: T.radiusCard,
+    background: T.panelHi,
+    border: `1px solid ${T.amberBorder}`,
+    boxShadow: T.shadowCard,
     textAlign: 'center', display: 'flex', flexDirection: 'column',
     alignItems: 'center', gap: 10,
   },
   bigIcon: { fontSize: 48, lineHeight: 1 },
-  idleTitle: { margin: '0.25rem 0 0', fontSize: 20, fontWeight: 800 },
-  idleBody:  { margin: '0.25rem 0 0', fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 },
-  errBody:   { margin: '0.25rem 0 0', fontSize: 12, color: 'rgba(252,165,165,0.85)' },
+  idleTitle: { margin: '0.25rem 0 0', fontSize: 20, fontWeight: 800, color: T.ink },
+  idleBody:  { margin: '0.25rem 0 0', fontSize: 14, color: T.inkDim, lineHeight: 1.5 },
+  errBody:   { margin: '0.25rem 0 0', fontSize: 12, color: T.error },
   previewCard: {
     display: 'flex', flexDirection: 'column', gap: 12,
-    padding: 12, borderRadius: 16, background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    padding: 12, borderRadius: T.radiusCard, background: T.panelHi,
+    border: `1px solid ${T.border}`,
+    boxShadow: T.shadowCard,
   },
   previewImg: {
     width: '100%', maxHeight: '50vh', borderRadius: 12, background: '#000',
     objectFit: 'contain',
   },
   resultBox: {
-    padding: 12, borderRadius: 12, background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.20)',
+    padding: 12, borderRadius: 12, background: T.greenSoft,
+    border: `1px solid ${T.greenBorder}`,
   },
-  resultLabel: { fontSize: 16, fontWeight: 800, color: '#86EFAC' },
-  resultMsg:   { marginTop: 4, fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 },
+  resultLabel: { fontSize: 16, fontWeight: 800, color: T.greenInk },
+  resultMsg:   { marginTop: 4, fontSize: 14, color: T.ink, lineHeight: 1.5 },
   btnRow: {
     display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12,
     justifyContent: 'center',
   },
   btnPrimary: {
     flex: 1, minWidth: '10rem', minHeight: 48, padding: '0.85rem 1.25rem',
-    border: 'none', borderRadius: 12, background: '#22C55E', color: '#062714',
-    fontSize: 14, fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 8px 22px rgba(34,197,94,0.25)',
+    border: 'none', borderRadius: 999,
+    background: `linear-gradient(180deg, ${T.ochre} 0%, ${T.ochreActive} 100%)`,
+    color: '#FFFFFF',
+    fontSize: 14, fontWeight: 800, cursor: 'pointer',
+    boxShadow: '0 10px 24px rgba(185,133,63,0.32)',
+    letterSpacing: '0.005em',
+    fontFamily: 'inherit',
   },
   btnGhost: {
     flex: 1, minWidth: '10rem', minHeight: 48, padding: '0.85rem 1.25rem',
-    border: '1px solid rgba(255,255,255,0.18)', borderRadius: 12,
-    background: 'transparent', color: '#fff',
+    border: `1px solid ${T.border}`, borderRadius: 999,
+    background: 'transparent', color: T.ink,
     fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    fontFamily: 'inherit',
   },
 };

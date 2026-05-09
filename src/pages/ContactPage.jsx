@@ -13,8 +13,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { tStrict } from '../i18n/strictT.js';
+// Single source of truth for the support email — replaces the
+// previous local `const SUPPORT_EMAIL = 'support@farroway.app'`.
+import { SUPPORT_CONFIG } from '../config/support.js';
 
-const SUPPORT_EMAIL = 'support@farroway.app';
+const SUPPORT_EMAIL = SUPPORT_CONFIG.email;
 
 const STYLES = {
   page: {

@@ -1,3 +1,23 @@
+/**
+ * SeedScanFlow — pre-planting SEED authenticity verification.
+ *
+ *   ╔══════════════════════════════════════════════════════════╗
+ *   ║                NOT the disease/crop scan flow             ║
+ *   ║                                                           ║
+ *   ║  This component verifies the QUALITY + AUTHENTICITY of    ║
+ *   ║  seeds BEFORE planting (counterfeit detection, batch      ║
+ *   ║  validation). It posts to `saveSeedScan()` — a different  ║
+ *   ║  API endpoint from the disease scan engine.               ║
+ *   ║                                                           ║
+ *   ║  The canonical disease/crop scan lives at:                ║
+ *   ║    • /scan          → src/pages/ScanPage.jsx              ║
+ *   ║    • /scan/soil     → src/pages/SoilScanPage.jsx          ║
+ *   ║                                                           ║
+ *   ║  This file is rendered ONLY from the early-onboarding /   ║
+ *   ║  seed-input flow; it does NOT compete with /scan.         ║
+ *   ╚══════════════════════════════════════════════════════════╝
+ */
+
 import { useRef, useState } from 'react';
 import { t } from '../lib/i18n.js';
 import { saveSeedScan } from '../lib/api.js';

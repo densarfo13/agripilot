@@ -29,7 +29,13 @@ export const FARROWAY_BRAND = Object.freeze({
     'Simple daily guidance for farmers. Real-time visibility for organizations.',
   ctaPilot: 'Run a 90-day pilot',
   website: 'https://farroway.app',
-  supportEmail: 'support@farroways.com',
+  // Production support email (canonical). Was previously the
+  // misspelled `support@farroways.com` (note the trailing 's' on
+  // `farroways` and the .com TLD) — every other surface in the
+  // app reaches us at `support@farroway.app`. The May 2026
+  // support-system unification fixes that drift here so brand
+  // and pages match.
+  supportEmail: 'support@farroway.app',
   colors: Object.freeze({
     green:       '#22C55E', // primary brand green (leaf fill)
     darkGreen:   '#15803D', // leaf outline / depth accent

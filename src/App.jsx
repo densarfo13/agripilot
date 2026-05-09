@@ -302,6 +302,13 @@ const V2FarmerType = lazy(() => import('./pages/FarmerType.jsx'));
 const V2StarterGuide = lazy(() => import('./pages/StarterGuide.jsx'));
 const V2Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const HelpPage = lazy(() => import('./pages/HelpPage.jsx'));
+// May 2026 support-system unification: dedicated /support hub +
+// FAQ + contact form. Lazy loaded so the support bundle never
+// enters the main route chunk. /help + /contact stay mounted as
+// aliases so legacy deep links never break.
+const SupportCenterPage  = lazy(() => import('./pages/support/SupportCenterPage.jsx'));
+const SupportFAQPage     = lazy(() => import('./pages/support/SupportFAQPage.jsx'));
+const SupportContactPage = lazy(() => import('./pages/support/SupportContactPage.jsx'));
 const SimpleOnboarding = lazy(() => import('./onboarding/OnboardingFlow.jsx'));
 const FarmerWelcome = lazy(() => import('./pages/FarmerWelcome.jsx'));
 const FarmerEntry = lazy(() => import('./pages/FarmerEntry.jsx'));
@@ -1165,17 +1172,20 @@ export default function App() {
               Previously these were nested inside V2ProtectedLayout
               despite the comment claiming "Public" — moving them
               to the public block here. */}
+          {/* Legacy /help + /contact stay mounted so existing
+              deep links (App Store metadata, voice-assistant
+              "I need help" intent, share cards, etc.) still
+              resolve to a working surface. */}
           <Route path="/help"    element={<HelpPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          {/* Wire-up audit (May 2026 spec §11) — every "Need help?"
-              / "Contact our team" link in the app points at
-              /support/contact. The actual surfaces still live at
-              /help and /contact (long-standing routes); these
-              aliases mount the same components so no link is
-              dead. /support/faq mirrors /help (FAQ + how-to). */}
-          <Route path="/support"          element={<HelpPage />} />
-          <Route path="/support/contact"  element={<ContactPage />} />
-          <Route path="/support/faq"      element={<HelpPage />} />
+          {/* May 2026 support-system unification (spec §2):
+              /support is the canonical hub. FAQ + contact form
+              are dedicated pages instead of /help aliases so the
+              hub can showcase distinct affordances without the
+              old "FAQ === /help" overload. */}
+          <Route path="/support"          element={<SupportCenterPage />} />
+          <Route path="/support/faq"      element={<SupportFAQPage />} />
+          <Route path="/support/contact"  element={<SupportContactPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms"   element={<Terms />} />
           <Route element={<V2ProtectedLayout />}>

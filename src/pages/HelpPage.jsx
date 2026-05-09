@@ -18,16 +18,20 @@
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
-import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+// Single source of truth for the support email — was previously
+// `FARROWAY_BRAND.supportEmail` with a hardcoded fallback. The
+// May 2026 support-system unification routes everyone through
+// SUPPORT_CONFIG so brand-config drift can never recur.
+import { SUPPORT_CONFIG, mailtoSupport } from '../config/support.js';
 
-const SUPPORT_EMAIL = FARROWAY_BRAND.supportEmail || 'support@farroway.app';
+const SUPPORT_EMAIL = SUPPORT_CONFIG.email;
 
 export default function HelpPage() {
   const navigate = useNavigate();
 
   function handleContact() {
     try {
-      window.location.href = `mailto:${SUPPORT_EMAIL}`;
+      window.location.href = mailtoSupport();
     } catch { /* never propagate */ }
   }
 

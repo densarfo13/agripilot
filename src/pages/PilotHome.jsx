@@ -43,6 +43,15 @@ import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
 import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
+// Locked Soft Ochre / Beige design tokens (May 2026 visual restraint
+// pass + premium-beige-experience pass). Replaces the inline `C`
+// object below — the inline values predate the centralised token
+// system, so PilotHome was the last surface still rendering with
+// the OLD ochre `#D4A35F` instead of the spec-locked `#C8944D`.
+// Importing the canonical PREMIUM_TOKENS shape flips every value
+// automatically + keeps Home in sync with every other premium
+// surface (My Farm, Tasks, Progress, Funding, Sell, Scan).
+import { PREMIUM_TOKENS as T }   from '../components/premium/tokens.js';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
@@ -593,29 +602,37 @@ export default function PilotHome() {
 // shell. WeatherHeroCard uses its own global CSS classes from
 // src/index.css (loaded at app boot, not theme-dependent).
 
-// Soft Ochre / Beige design system (May 2026 platform refactor).
-// Token shape mirrors the previous dark-theme C{} so every key
-// below already had a usage; values are swapped to the warm
-// palette. Centralised in src/components/premium/tokens.js —
-// kept inline here only for the legacy Home page that predates
-// the premium-page primitives.
+// May 2026 premium-beige-experience wiring — the inline `C{}`
+// object that used to live here is gone. PilotHome now reads
+// every colour through the locked PREMIUM_TOKENS re-export
+// (`src/design/tokens/colors.js` → `src/components/premium/tokens.js`).
+//
+// `C` below is a small alias kept ONLY so the existing style-block
+// references (`C.ochre`, `C.greenInk`, etc.) stay readable without
+// a 400-line search-and-replace through the inline style table.
+// Functionally, every key now resolves to the locked spec value:
+//   ochre        : #D4A35F → #C8944D  (deeper, more grounded)
+//   ochreActive  : #B9853F (unchanged)
+//   green        : #5E8E5E → #6E8B61  (warmer olive earth)
+//   border       : rgba(31,41,51,0.08) → rgba(36,49,58,0.08)
+//   amber       (warning surfaces) shift via the same forward.
 const C = {
-  bgTop:    '#F6F1E7',
-  bgBottom: '#EFE7D5',
-  panel:    '#FFF9F0',
-  panelHi:  '#FFFFFF',
-  border:   'rgba(31,41,51,0.08)',
-  ink:      '#1F2933',
-  inkDim:   '#667085',
-  inkFaint: '#98A2B3',
-  ochre:        '#D4A35F',
-  ochreActive:  '#B9853F',
-  ochreSoft:    '#F2E3C3',
-  ochreInk:     '#7A5A28',
-  ochreBorder:  'rgba(212,163,95,0.42)',
-  green:    '#5E8E5E',
-  greenSh:  'rgba(94,142,94,0.22)',
-  greenInk: '#3F6A3F',
+  bgTop:        T.bgTop,
+  bgBottom:     T.bgBottom,
+  panel:        T.panel,
+  panelHi:      T.panelHi,
+  border:       T.border,
+  ink:          T.ink,
+  inkDim:       T.inkDim,
+  inkFaint:     T.inkFaint,
+  ochre:        T.ochre,        // locked #C8944D
+  ochreActive:  T.ochreActive,  // #B9853F
+  ochreSoft:    T.ochreSoft,
+  ochreInk:     T.ochreInk,
+  ochreBorder:  T.ochreBorder,
+  green:        T.green,        // locked #6E8B61 (olive earth)
+  greenSh:      T.greenSoft,
+  greenInk:     T.greenInk,
 };
 
 const S = {
@@ -651,12 +668,14 @@ const S = {
     alignItems:   'center',
     gap:          '0.2rem',
     padding:      '0.3rem 0.6rem',
-    background:   'rgba(224,162,56,0.16)',
-    border:       '1px solid rgba(224,162,56,0.40)',
+    // May 2026 token forward — was rgba(224,162,56,*) (old amber).
+    // Resolves through PREMIUM_TOKENS to the locked #D6A13D mustard.
+    background:   T.amberSoft,
+    border:       `1px solid ${T.amberBorder}`,
     borderRadius: '999px',
     fontSize:     '0.75rem',
     fontWeight:   700,
-    color:        '#8A5C12',
+    color:        T.amberInk,
     flexShrink:   0,
     cursor:       'default',
   },
@@ -677,20 +696,25 @@ const S = {
     alignItems:   'center',
     gap:          '0.4rem',
     padding:      '0.3rem 0.6rem',
-    background:   'rgba(94,142,94,0.12)',
-    border:       '1px solid rgba(94,142,94,0.36)',
+    // May 2026 token forward — was rgba(94,142,94,*) (old olive).
+    // Resolves to the locked #6E8B61 oliveSoft via greenSoft +
+    // greenBorder which both use rgba(110,139,97,*).
+    background:   T.greenSoft,
+    border:       `1px solid ${T.greenBorder}`,
     borderRadius: '999px',
     fontSize:     '0.75rem',
     fontWeight:   700,
-    color:        C.greenInk,
+    color:        T.greenInk,
     flexShrink:   0,
   },
   statusDot: {
     width:        8,
     height:       8,
     borderRadius: '50%',
-    background:   C.green,
-    boxShadow:    '0 0 0 4px rgba(94,142,94,0.18)',
+    background:   T.green,
+    // Halo opacity stays at 0.18 — the colour itself is now the
+    // locked #6E8B61, expressed via the same rgba template.
+    boxShadow:    '0 0 0 4px rgba(110,139,97,0.18)',
   },
   weatherLoading: {
     padding:       '0.5rem 0.75rem',
@@ -733,10 +757,13 @@ const S = {
       '0 6px 14px -6px rgba(80,60,30,0.14)',
     ].join(', '),
   },
-  // Done state — growth-green tinted surface (success signal).
+  // Done state — locked oliveSoft success surface (#6E8B61 family).
+  // Both the gradient stops + the border colour now flow from the
+  // PREMIUM_TOKENS forward so a future olive shift propagates here
+  // automatically.
   cardDone: {
-    background:    'linear-gradient(180deg, rgba(94,142,94,0.10) 0%, rgba(94,142,94,0.04) 100%)',
-    border:        '1px solid rgba(94,142,94,0.30)',
+    background:    'linear-gradient(180deg, rgba(110,139,97,0.10) 0%, rgba(110,139,97,0.04) 100%)',
+    border:        '1px solid rgba(110,139,97,0.30)',
     borderRadius:  '18px',
     padding:       '1.3rem 1.15rem',
     display:       'flex',
@@ -744,7 +771,7 @@ const S = {
     gap:           '0.55rem',
     boxShadow: [
       '0 1px 0 0 rgba(255,255,255,0.55) inset',
-      '0 14px 28px -12px rgba(60,90,60,0.22)',
+      '0 14px 28px -12px rgba(70,100,70,0.22)',
     ].join(', '),
   },
   cardLabel: {

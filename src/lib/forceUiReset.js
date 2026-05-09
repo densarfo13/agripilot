@@ -205,6 +205,25 @@ function _stampVersion() {
       FARROWAY_BUILD_VERSION,
       new Date().toISOString(),
     );
+    // Pilot readiness stamp (May 2026 lockdown pass §15) —
+    // single greppable line so the pilot ops team can confirm
+    // the deployed build is the locked-down one. Resolved
+    // lazily so the flag's import-time SSR guards stay clean.
+    try {
+      // eslint-disable-next-line no-console, global-require
+      // Dynamic import keeps the forceUiReset module's static
+      // import graph untouched — pilotReadiness can still ship
+      // with a fresh build if needed without forcing a rebuild
+      // of the version stamps.
+      import('../config/pilotReadiness.js').then((mod) => {
+        try {
+          if (mod && mod.PILOT_READINESS_MODE) {
+            // eslint-disable-next-line no-console
+            console.log('[Farroway] Pilot readiness build active');
+          }
+        } catch { /* swallow */ }
+      }).catch(() => { /* tolerate */ });
+    } catch { /* never throw from a stamp */ }
     // eslint-disable-next-line no-console
     console.log('Farroway Build:', FARROWAY_BUILD_VERSION);
     // eslint-disable-next-line no-console

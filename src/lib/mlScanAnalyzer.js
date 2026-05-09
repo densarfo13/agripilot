@@ -226,6 +226,14 @@ const RECOMMENDATIONS = Object.freeze({
     'Take another clear photo in good light or inspect the plant manually.',
 });
 
+/**
+ * Confidence-safe disclaimer. Always shown so the user is never
+ * misled by a single-photo verdict — matches the May 2026 final
+ * scan stabilization brief §11.
+ */
+export const SCAN_DISCLAIMER =
+  'Results are guidance only. Local agronomy advice may help confirm treatment options.';
+
 /** The spec-shape result for any category. */
 function _shape(category) {
   const safeCat = (category in CATEGORY_LABELS) ? category : 'needs_review';
@@ -235,9 +243,16 @@ function _shape(category) {
       ? 'low' : 'medium',
     noticed:         CATEGORY_MESSAGES[safeCat],
     checkNext:       CHECK_NEXT[safeCat]    || CHECK_NEXT.needs_review,
+    // `inspectItems` mirrors checkNext as a single-element array
+    // so the spec-shape result card can render a bulleted list
+    // without forcing every caller to pre-split.
+    inspectItems:    [CHECK_NEXT[safeCat]   || CHECK_NEXT.needs_review],
     recommendation:  RECOMMENDATIONS[safeCat] || RECOMMENDATIONS.needs_review,
+    suggestedAction: RECOMMENDATIONS[safeCat] || RECOMMENDATIONS.needs_review,
     taskTitle:       TASK_SUGGESTIONS[safeCat] || TASK_SUGGESTIONS.needs_review,
+    followUpTask:    TASK_SUGGESTIONS[safeCat] || TASK_SUGGESTIONS.needs_review,
     label:           CATEGORY_LABELS[safeCat],
+    disclaimer:      SCAN_DISCLAIMER,
     source:          'mlScanAnalyzer-v1',
   });
 }
@@ -245,12 +260,17 @@ function _shape(category) {
 /** Spec §9 fallback — exact wording from the task brief. */
 const NEEDS_REVIEW_RESULT = Object.freeze({
   category:        'needs_review',
+  status:          'Needs review',
   confidence:      'low',
   noticed:         'Photo received, but automatic review was unavailable.',
   checkNext:       'Check leaves for yellowing, holes, spots, or wilting.',
+  inspectItems:    ['Check leaves for yellowing, holes, spots, or wilting.'],
   recommendation:  'Take another clear photo or inspect manually.',
+  suggestedAction: 'Take another clear photo or inspect manually.',
   taskTitle:       'Inspect plant manually',
+  followUpTask:    'Inspect plant manually',
   label:           CATEGORY_LABELS.needs_review,
+  disclaimer:      'Results are guidance only.',
   source:          'mlScanAnalyzer-fallback',
 });
 

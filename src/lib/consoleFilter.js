@@ -50,7 +50,11 @@
 // the stringified first argument of the console call.
 const DENY_PATTERNS = [
   'chrome-extension://',                       // any Chrome extension log
-  'tabs:outgoing.message.ready',               // Chrome tab internal channel
+  'moz-extension://',                          // Firefox extension equivalent
+  'safari-extension://',                       // Safari extension equivalent
+  'tabs:outgoing.message.ready',               // Chrome tab internal channel (dotted)
+  'tabs:outgoing_message_ready',               // Chrome tab internal channel (underscore variant)
+  'message channel closed',                    // 'A listener indicated…message channel closed' (extension noise)
   'cornhusk/shared-service',                   // third-party SDK noise
   '[webpack]',                                 // webpack dev-server leak
   '[HMR]',                                     // Vite / webpack hot-module replacement
@@ -75,6 +79,15 @@ const DENY_PATTERNS = [
   'Onboarding complete:',
   'Migration ran:',
   'LocalStorage keys:',
+  // Pilot readiness lockdown (May 2026 §1): suppress the
+  // duplicate version-stamp lines so production console reads
+  // clean. The `[Farroway] Pilot readiness build active` line
+  // and `[Farroway] Active UI build:` line are kept (those are
+  // the two greppable signals QA + ops rely on).
+  '[Farroway] Soft Ochre platform build active',
+  '[Farroway] Runtime integration stable',
+  'Farroway Build:',
+  'Farroway UI version:',
 ];
 
 // ─── State ────────────────────────────────────────────────────────

@@ -17,6 +17,9 @@
 import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { safeTrackEvent } from '../lib/analytics.js';
+// Single source of truth for support email — replaces the
+// previous hardcoded 'mailto:support@farroway.app' fallbacks.
+import { mailtoSupport } from '../config/support.js';
 import { completeTask, getLandBoundaries, getSeedScans, getFarmTasks } from '../lib/api.js';
 import ModeIndicator from '../components/ModeIndicator.jsx';
 import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
@@ -684,7 +687,7 @@ export default function Dashboard() {
     catch {
       try {
         if (typeof window !== 'undefined') {
-          window.location.href = 'mailto:support@farroway.app';
+          window.location.href = mailtoSupport();
         }
       } catch { /* never propagate */ }
       return;
@@ -694,7 +697,7 @@ export default function Dashboard() {
         const after = (typeof window !== 'undefined' && window.location)
           ? String(window.location.pathname || '') : '';
         if (after === before && typeof window !== 'undefined') {
-          window.location.href = 'mailto:support@farroway.app';
+          window.location.href = mailtoSupport();
         }
       } catch { /* never propagate */ }
     }, 120);

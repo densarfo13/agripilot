@@ -8,6 +8,13 @@
  *   │ 📷  See something wrong? Scan your crop  ›   │
  *   └──────────────────────────────────────────────┘
  *
+ *   This is a CTA *button* that routes into the canonical scan
+ *   flow at `/scan`. It is NOT an alternative scan UI — it
+ *   simply provides a secondary entry point from the Today
+ *   stream so a farmer can act mid-day without waiting for
+ *   tomorrow's scheduled task. The `onScan` callback is
+ *   typically `() => navigate('/scan')`.
+ *
  * Strict-rule audit
  *   * One short line; never overflows on phone width
  *   * Tap target ≥ 56px tall

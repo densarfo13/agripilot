@@ -46,6 +46,11 @@ import {
   saveVerification, tryReadGeolocation, ACTION_TYPES,
 } from '../verification/verificationStore.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+// Funding-link safety lockdown (May 2026) — every external
+// `sourceUrl` passes through `classifyFundingUrl` BEFORE we
+// open it. Anything off the verified whitelist is blocked at
+// click time + logged as `unsafe_funding_link_blocked`.
+import { classifyFundingUrl } from '../security/validateFundingUrl.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { useTranslation } from '../i18n/index.js';
 import {
@@ -151,10 +156,27 @@ export default function FundingOpportunityDetail() {
 
   // ── Apply Now ────────────────────────────────────────
   function handleApplyNow() {
-    // Open source in a new tab. We do NOT iframe — most
-    // program sites refuse framing and we never want to be
-    // mistaken for the application surface itself.
+    // Funding-link safety lockdown (May 2026): classify the URL
+    // BEFORE opening. A blocked URL never reaches `window.open`;
+    // we surface a calm "Verification pending" toast instead and
+    // drop a security event so admins can audit the source.
     if (o.sourceUrl) {
+      const _safety = classifyFundingUrl(o.sourceUrl);
+      if (!_safety.ok) {
+        try {
+          safeTrackEvent('unsafe_funding_link_blocked', {
+            opportunityId: o.id,
+            reason:        _safety.reason,
+            host:          _safety.host || null,
+          });
+        } catch { /* never propagate */ }
+        showFlash(tSafe('funding.verificationPending',
+          'This opportunity is awaiting verification. Please check back later.'));
+        return;
+      }
+      // Open source in a new tab. We do NOT iframe — most
+      // program sites refuse framing and we never want to be
+      // mistaken for the application surface itself.
       try { window.open(o.sourceUrl, '_blank', 'noopener,noreferrer'); }
       catch { /* popup blocked → fall through to copy below */ }
     }

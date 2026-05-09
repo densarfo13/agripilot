@@ -34,7 +34,10 @@
  */
 
 export const SCAN_HISTORY_KEY = 'farroway_scan_history_v1';
-const MAX_KEPT = 50;
+// May 2026 final stabilization brief §14: cap the local history
+// at 30 entries (down from 50) so an overflowing localStorage
+// quota never disables saving on lower-end devices.
+const MAX_KEPT = 30;
 
 // ─── Private helpers ─────────────────────────────────────────────
 
