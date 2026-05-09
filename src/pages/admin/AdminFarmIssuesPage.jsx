@@ -433,12 +433,15 @@ function Td({ children }) {
   return <td style={S.td}>{children}</td>;
 }
 
+// Soft Ochre body wash (May 2026 production audit).
 const S = {
   page:    { maxWidth: 1000, margin: '0 auto', padding: '24px 20px 40px',
-             minHeight: '100vh', background: '#0B1D34', color: '#fff',
+             minHeight: '100vh',
+             background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+             color: '#1F2933',
              boxSizing: 'border-box' },
-  title:   { margin: '0 0 6px', fontSize: 22, fontWeight: 700 },
-  sub:     { margin: '0 0 18px', color: 'rgba(255,255,255,0.65)', fontSize: 14 },
+  title:   { margin: '0 0 6px', fontSize: 22, fontWeight: 800, color: '#1F2933' },
+  sub:     { margin: '0 0 18px', color: '#667085', fontSize: 14 },
   metricsRow: { display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                 gap: 10, marginBottom: 18 },

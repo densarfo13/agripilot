@@ -117,21 +117,22 @@ export default function FarmerScoring() {
   );
 }
 
+// Soft Ochre body wash (May 2026 production audit).
 const S = {
-  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
-  container: { maxWidth: '72rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF' },
-  title: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
-  subtitle: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 1rem' },
+  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)', color: '#1F2933', padding: '1rem 0 3rem' },
+  container: { maxWidth: '72rem', margin: '0 auto', padding: '0 1rem', color: '#1F2933' },
+  title: { fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem', color: '#1F2933' },
+  subtitle: { color: '#667085', fontSize: '0.9375rem', margin: '0 0 1rem' },
   filterRow: { display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap' },
-  filterLabel: { fontSize: '0.75rem', color: '#9FB3C8', textTransform: 'uppercase', letterSpacing: '0.04em' },
-  select: { padding: '0.5rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem' },
-  btn: { padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.8125rem', cursor: 'pointer' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' },
-  th: { textAlign: 'left', color: '#9FB3C8', fontWeight: 600, padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  thRight: { textAlign: 'right', color: '#9FB3C8', fontWeight: 600, padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  td: { padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.04)' },
-  tdRight: { padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.04)', textAlign: 'right' },
-  chip: { padding: '0.125rem 0.625rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 700, color: '#0B1D34', textTransform: 'uppercase' },
-  muted: { color: '#9FB3C8', fontSize: '0.875rem' },
-  err: { color: '#FCA5A5' },
+  filterLabel: { fontSize: '0.7rem', color: '#667085', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 },
+  select: { padding: '0.55rem 0.7rem', borderRadius: '10px', border: '1px solid rgba(31,41,51,0.14)', background: '#FFFFFF', color: '#1F2933', fontSize: '0.9375rem' },
+  btn: { padding: '0.55rem 0.9rem', borderRadius: '999px', border: '1px solid rgba(212,163,95,0.42)', background: 'rgba(212,163,95,0.12)', color: '#7A5A28', fontSize: '0.8125rem', fontWeight: 800, cursor: 'pointer' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', background: '#FFF9F0', borderRadius: 14, overflow: 'hidden' },
+  th: { textAlign: 'left', color: '#1F2933', fontWeight: 800, padding: '0.6rem 0.75rem', borderBottom: '1px solid rgba(31,41,51,0.10)' },
+  thRight: { textAlign: 'right', color: '#1F2933', fontWeight: 800, padding: '0.6rem 0.75rem', borderBottom: '1px solid rgba(31,41,51,0.10)' },
+  td: { padding: '0.55rem 0.75rem', borderBottom: '1px solid rgba(31,41,51,0.06)', color: '#1F2933' },
+  tdRight: { padding: '0.55rem 0.75rem', borderBottom: '1px solid rgba(31,41,51,0.06)', color: '#1F2933', textAlign: 'right' },
+  chip: { padding: '0.125rem 0.625rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase' },
+  muted: { color: '#667085', fontSize: '0.875rem' },
+  err: { color: '#9B2A2A' },
 };

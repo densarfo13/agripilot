@@ -89,22 +89,23 @@ export default function FundingReadiness() {
   );
 }
 
+// Soft Ochre body wash (May 2026 production audit).
 const S = {
-  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
-  container: { maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF' },
-  title: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
-  subtitle: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 1rem' },
+  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)', color: '#1F2933', padding: '1rem 0 3rem' },
+  container: { maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', color: '#1F2933' },
+  title: { fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem', color: '#1F2933' },
+  subtitle: { color: '#667085', fontSize: '0.9375rem', margin: '0 0 1rem' },
   filterRow: { display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' },
-  select: { padding: '0.5rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem' },
-  btn: { padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.8125rem', cursor: 'pointer' },
+  select: { padding: '0.55rem 0.7rem', borderRadius: '10px', border: '1px solid rgba(31,41,51,0.14)', background: '#FFFFFF', color: '#1F2933', fontSize: '0.9375rem' },
+  btn: { padding: '0.55rem 0.9rem', borderRadius: '999px', border: '1px solid rgba(212,163,95,0.42)', background: 'rgba(212,163,95,0.12)', color: '#7A5A28', fontSize: '0.8125rem', fontWeight: 800, cursor: 'pointer' },
   list: { margin: 0, paddingLeft: 0, listStyle: 'none' },
-  item: { padding: '0.875rem', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '0.5rem' },
+  item: { padding: '0.875rem', borderRadius: '14px', background: '#FFF9F0', border: '1px solid rgba(31,41,51,0.08)', marginBottom: '0.5rem' },
   itemHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.375rem', flexWrap: 'wrap' },
-  chip: { padding: '0.125rem 0.625rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 700, color: '#0B1D34', textTransform: 'uppercase' },
-  meta: { fontSize: '0.75rem', color: '#9FB3C8' },
-  itemReason: { fontSize: '0.875rem', marginBottom: '0.25rem' },
+  chip: { padding: '0.125rem 0.625rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase' },
+  meta: { fontSize: '0.75rem', color: '#98A2B3' },
+  itemReason: { fontSize: '0.875rem', marginBottom: '0.25rem', color: '#1F2933' },
   blockers: { display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.375rem' },
-  blockerTag: { padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.6875rem', background: 'rgba(239,68,68,0.14)', color: '#FCA5A5' },
-  muted: { color: '#9FB3C8', fontSize: '0.875rem' },
-  err: { color: '#FCA5A5' },
+  blockerTag: { padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.6875rem', background: 'rgba(209,77,77,0.10)', color: '#9B2A2A', border: '1px solid rgba(209,77,77,0.30)' },
+  muted: { color: '#667085', fontSize: '0.875rem' },
+  err: { color: '#9B2A2A' },
 };

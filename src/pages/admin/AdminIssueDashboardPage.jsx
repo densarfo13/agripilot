@@ -317,11 +317,12 @@ function pct(value) {
   return `${(Math.max(0, Math.min(1, value)) * 100).toFixed(1)}%`;
 }
 
+// Soft Ochre body wash (May 2026 production audit).
 const S = {
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
-    color: '#EAF2FF',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     padding: '1.25rem 0.875rem 5rem',
     maxWidth: 960,
     margin: '0 auto',

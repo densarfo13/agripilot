@@ -153,30 +153,34 @@ function Shell({ children }) {
   );
 }
 
+// Soft Ochre body wash (May 2026 production audit). High-
+// leverage page-level chrome flips to the warm palette so this
+// route inherits the same surface language as the rest of the
+// platform without touching its data + control logic.
 const S = {
-  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', padding: '1rem 0 3rem' },
-  container: { maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', color: '#EAF2FF' },
-  title: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' },
-  subtitle: { color: '#9FB3C8', fontSize: '0.9375rem', margin: '0 0 1rem' },
-  h2: { fontSize: '1.0625rem', fontWeight: 700, margin: 0 },
+  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)', color: '#1F2933', padding: '1rem 0 3rem' },
+  container: { maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', color: '#1F2933' },
+  title: { fontSize: '1.5rem', fontWeight: 800, margin: '0 0 0.25rem', color: '#1F2933' },
+  subtitle: { color: '#667085', fontSize: '0.9375rem', margin: '0 0 1rem' },
+  h2: { fontSize: '1.0625rem', fontWeight: 800, margin: 0, color: '#1F2933' },
   grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.625rem', marginBottom: '1rem' },
-  card: { padding: '0.875rem', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid' },
-  cardLabel: { fontSize: '0.75rem', color: '#9FB3C8', textTransform: 'uppercase', letterSpacing: '0.04em' },
-  cardValue: { fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem' },
+  card: { padding: '0.875rem', borderRadius: '14px', background: '#FFF9F0', border: '1px solid rgba(31,41,51,0.08)', boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 8px 18px -10px rgba(80,60,30,0.18)' },
+  cardLabel: { fontSize: '0.7rem', color: '#667085', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 },
+  cardValue: { fontSize: '1.75rem', fontWeight: 800, marginTop: '0.25rem', color: '#1F2933' },
   row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' },
-  recomputeBtn: { padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.8125rem', cursor: 'pointer' },
+  recomputeBtn: { padding: '0.55rem 0.85rem', borderRadius: '999px', border: '1px solid rgba(212,163,95,0.42)', background: 'rgba(212,163,95,0.12)', color: '#7A5A28', fontSize: '0.8125rem', fontWeight: 800, cursor: 'pointer' },
   list: { margin: 0, paddingLeft: 0, listStyle: 'none' },
-  item: { padding: '0.875rem', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '0.5rem' },
+  item: { padding: '0.875rem', borderRadius: '14px', background: '#FFF9F0', border: '1px solid rgba(31,41,51,0.08)', marginBottom: '0.5rem' },
   itemHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' },
-  chip: { padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 700, color: '#0B1D34', textTransform: 'uppercase' },
-  score: { fontSize: '1rem', fontWeight: 700 },
-  itemReason: { fontSize: '0.9375rem', fontWeight: 600, marginBottom: '0.25rem' },
-  itemAction: { fontSize: '0.875rem', color: '#9FB3C8', marginBottom: '0.375rem' },
-  itemDue: { fontSize: '0.75rem', color: '#6F8299', marginBottom: '0.5rem' },
+  chip: { padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase' },
+  score: { fontSize: '1rem', fontWeight: 800, color: '#1F2933' },
+  itemReason: { fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.25rem', color: '#1F2933' },
+  itemAction: { fontSize: '0.875rem', color: '#667085', marginBottom: '0.375rem' },
+  itemDue: { fontSize: '0.75rem', color: '#98A2B3', marginBottom: '0.5rem' },
   itemBtns: { display: 'flex', gap: '0.5rem' },
-  btn: { padding: '0.375rem 0.75rem', borderRadius: '10px', border: 'none', background: '#0EA5E9', color: '#0B1D34', fontWeight: 700, cursor: 'pointer', fontSize: '0.8125rem' },
-  btnOk: { padding: '0.375rem 0.75rem', borderRadius: '10px', border: 'none', background: '#22C55E', color: '#0B1D34', fontWeight: 700, cursor: 'pointer', fontSize: '0.8125rem' },
-  btnGhost: { padding: '0.375rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#9FB3C8', cursor: 'pointer', fontSize: '0.8125rem' },
+  btn: { padding: '0.45rem 0.95rem', borderRadius: '999px', border: 'none', background: 'linear-gradient(180deg, #D4A35F 0%, #B9853F 100%)', color: '#FFFFFF', fontWeight: 800, cursor: 'pointer', fontSize: '0.8125rem', boxShadow: '0 8px 18px rgba(185,133,63,0.28)' },
+  btnOk: { padding: '0.45rem 0.95rem', borderRadius: '999px', border: 'none', background: 'rgba(94,142,94,0.16)', color: '#3F6A3F', fontWeight: 800, cursor: 'pointer', fontSize: '0.8125rem', borderColor: 'rgba(94,142,94,0.36)' },
+  btnGhost: { padding: '0.45rem 0.95rem', borderRadius: '999px', border: '1px solid rgba(31,41,51,0.16)', background: 'transparent', color: '#667085', cursor: 'pointer', fontSize: '0.8125rem' },
   muted: { color: '#9FB3C8', fontSize: '0.875rem' },
   err: { color: '#FCA5A5' },
 };

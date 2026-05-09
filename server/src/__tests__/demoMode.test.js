@@ -13,6 +13,17 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+// Production audit (May 2026) — every test in this file calls
+// `fresh()` which runs `vi.resetModules()` and re-imports 8
+// internal modules. Under parallel test load (the default
+// `npm test` mode) the cold-start import chain can exceed the
+// vitest default 5s timeout, producing a flaky "false by
+// default" failure that passes 22/22 in isolation. Lifting the
+// per-test timeout to 15s removes the flake without hiding any
+// real failure — a genuinely-broken `fresh()` would still time
+// out at 15s. Documented in the production-readiness audit.
+vi.setConfig({ testTimeout: 15000 });
+
 function installWindow({ demoQuery = false, demoSticky = false } = {}) {
   const map = new Map();
   if (demoSticky) map.set('farroway.demoMode', '1');

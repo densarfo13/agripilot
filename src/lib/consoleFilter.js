@@ -63,6 +63,18 @@ const DENY_PATTERNS = [
   'PilotHome mounted',                         // PilotHome lifecycle spam
   'Live weather source:',                      // weather hook verbose trace
   'Live weather type:',                        // weather hook verbose trace
+  // Production audit (May 2026) — silence the calm app-version
+  // diagnostics that ship from main.jsx so the console reads
+  // clean for QA + investor-demo screen recordings. The
+  // structured `[Farroway]` stamps from forceUiReset.js still
+  // surface (those carry the build version + runtime-stable
+  // marker the field-support team greps for).
+  'Farroway restored stable pilot v1',
+  'Farmer profile fallback active',
+  'Auth exists:',
+  'Onboarding complete:',
+  'Migration ran:',
+  'LocalStorage keys:',
 ];
 
 // ─── State ────────────────────────────────────────────────────────
