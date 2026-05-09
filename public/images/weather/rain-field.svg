@@ -1,29 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Rain over wet field">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Rain over wet crop rows">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a2735"/>
-      <stop offset="55%" stop-color="#152232"/>
-      <stop offset="100%" stop-color="#0a1722"/>
-    </linearGradient>
-    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1f3d2a"/>
-      <stop offset="100%" stop-color="#0a1c12"/>
+      <stop offset="0%"  stop-color="#0c1a26"/>
+      <stop offset="55%" stop-color="#1b2a38"/>
+      <stop offset="85%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#3a4d5e"/>
     </linearGradient>
     <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(60,80,100,0.55)"/>
-      <stop offset="100%" stop-color="rgba(40,55,70,0)"/>
+      <stop offset="0%"   stop-color="rgba(28,42,60,0.85)"/>
+      <stop offset="100%" stop-color="rgba(28,42,60,0)"/>
     </linearGradient>
-    <pattern id="rainP" x="0" y="0" width="22" height="40" patternUnits="userSpaceOnUse">
-      <line x1="6" y1="0" x2="2" y2="22" stroke="rgba(180,210,235,0.32)" stroke-width="1.2"/>
+    <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#274a30"/>
+      <stop offset="55%" stop-color="#11281a"/>
+      <stop offset="100%" stop-color="#06170d"/>
+    </linearGradient>
+    <pattern id="rainP" x="0" y="0" width="22" height="48" patternUnits="userSpaceOnUse">
+      <line x1="6" y1="0" x2="2" y2="28" stroke="rgba(180,205,230,0.40)" stroke-width="1.2"/>
     </pattern>
+    <linearGradient id="furrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="rgba(0,0,0,0.0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
+    </linearGradient>
   </defs>
-  <rect width="800" height="480" fill="url(#sky)"/>
-  <ellipse cx="200" cy="80" rx="180" ry="44" fill="url(#cloud)"/>
-  <ellipse cx="540" cy="60" rx="220" ry="38" fill="url(#cloud)"/>
-  <rect width="800" height="280" fill="url(#rainP)" opacity="0.7"/>
-  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
-  <path d="M0,300 Q200,278 400,290 T800,287 L800,360 L0,360 Z" fill="rgba(50,100,70,0.35)"/>
-  <path d="M0,360 Q200,338 400,352 T800,348 L800,420 L0,420 Z" fill="rgba(35,75,50,0.6)"/>
-  <ellipse cx="200" cy="412" rx="80" ry="3" fill="rgba(150,200,225,0.18)"/>
-  <ellipse cx="500" cy="420" rx="120" ry="3.5" fill="rgba(150,200,225,0.18)"/>
+  <rect width="800" height="450" fill="url(#sky)"/>
+  <ellipse cx="180" cy="100" rx="220" ry="48" fill="url(#cloud)"/>
+  <ellipse cx="540" cy="80"  rx="260" ry="42" fill="url(#cloud)"/>
+  <ellipse cx="720" cy="160" rx="200" ry="38" fill="url(#cloud)" opacity="0.85"/>
+  <rect width="800" height="450" fill="url(#rainP)" opacity="0.7"/>
+  <path d="M 0,432 L 80,418 L 140,428 L 200,410 L 280,422 L 360,412 L 440,424
+           L 520,414 L 600,422 L 680,410 L 760,420 L 800,418 L 800,448 L 0,448 Z"
+        fill="#0a1c14"/>
+  <rect x="0" y="448" width="800" height="272" fill="url(#canopy)"/>
+  <g stroke="rgba(0,0,0,0.55)" stroke-linecap="round" fill="none">
+    <path d="M 400,448 L 400,720" stroke-width="6" stroke="rgba(30,22,14,0.95)"/>
+    <path d="M 408,448 L 520,720" stroke-width="3"/>
+    <path d="M 418,448 L 670,720" stroke-width="3.4"/>
+    <path d="M 428,448 L 800,710" stroke-width="3.6"/>
+    <path d="M 392,448 L 280,720" stroke-width="3"/>
+    <path d="M 382,448 L 130,720" stroke-width="3.4"/>
+    <path d="M 372,448 L  -10,710" stroke-width="3.6"/>
+  </g>
+  <ellipse cx="200" cy="660" rx="120" ry="3" fill="rgba(150,200,225,0.20)"/>
+  <ellipse cx="560" cy="664" rx="140" ry="3" fill="rgba(150,200,225,0.20)"/>
+  <rect x="0" y="540" width="800" height="180" fill="url(#furrow)"/>
 </svg>

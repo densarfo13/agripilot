@@ -1,24 +1,112 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sunlit field">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sunset over crop rows">
   <defs>
+    <!-- Sunset sky: deep blue → warm orange near horizon -->
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3d5a2a"/>
-      <stop offset="55%" stop-color="#243d1c"/>
-      <stop offset="100%" stop-color="#0f1f10"/>
+      <stop offset="0%"  stop-color="#0d2944"/>
+      <stop offset="38%" stop-color="#274b66"/>
+      <stop offset="62%" stop-color="#7d6a52"/>
+      <stop offset="78%" stop-color="#d68842"/>
+      <stop offset="92%" stop-color="#f7c97a"/>
+      <stop offset="100%" stop-color="#f0d18e"/>
     </linearGradient>
-    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#4a7a36"/>
-      <stop offset="100%" stop-color="#1c3a18"/>
-    </linearGradient>
-    <radialGradient id="sunGlow" cx="78%" cy="18%" r="40%">
-      <stop offset="0%" stop-color="rgba(255,220,140,0.55)"/>
-      <stop offset="55%" stop-color="rgba(255,200,100,0.18)"/>
-      <stop offset="100%" stop-color="rgba(255,200,100,0)"/>
+    <!-- Sun glow on right horizon -->
+    <radialGradient id="sun" cx="78%" cy="62%" r="32%">
+      <stop offset="0%"  stop-color="rgba(255,238,180,0.95)"/>
+      <stop offset="40%" stop-color="rgba(255,210,130,0.55)"/>
+      <stop offset="100%" stop-color="rgba(255,180,90,0)"/>
     </radialGradient>
+    <!-- Layered clouds -->
+    <linearGradient id="cloudA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(40,55,75,0.62)"/>
+      <stop offset="100%" stop-color="rgba(60,75,95,0)"/>
+    </linearGradient>
+    <linearGradient id="cloudB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(255,210,160,0.55)"/>
+      <stop offset="100%" stop-color="rgba(255,210,160,0)"/>
+    </linearGradient>
+    <!-- Distant tree line -->
+    <linearGradient id="treeline" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c3024"/>
+      <stop offset="100%" stop-color="#0c1a12"/>
+    </linearGradient>
+    <!-- Crop field — dark in shadow under canopy, lit at top -->
+    <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#395c34"/>
+      <stop offset="55%" stop-color="#1f3a22"/>
+      <stop offset="100%" stop-color="#0a1c10"/>
+    </linearGradient>
+    <linearGradient id="canopyLit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#7aa84a"/>
+      <stop offset="60%" stop-color="#3e6a30"/>
+      <stop offset="100%" stop-color="#1a3018"/>
+    </linearGradient>
+    <!-- Furrow shadow gradient -->
+    <linearGradient id="furrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="rgba(0,0,0,0.0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
+    </linearGradient>
   </defs>
-  <rect width="800" height="480" fill="url(#sky)"/>
-  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
-  <rect width="800" height="480" fill="url(#sunGlow)"/>
-  <circle cx="620" cy="90" r="55" fill="rgba(255,235,170,0.7)"/>
-  <path d="M0,300 Q200,275 400,295 T800,290 L800,360 L0,360 Z" fill="rgba(105,160,80,0.40)"/>
-  <path d="M0,360 Q200,338 400,352 T800,348 L800,420 L0,420 Z" fill="rgba(70,120,55,0.55)"/>
+
+  <!-- Sky -->
+  <rect width="800" height="430" fill="url(#sky)"/>
+  <!-- Sun glow disc -->
+  <rect width="800" height="430" fill="url(#sun)"/>
+  <circle cx="624" cy="372" r="22" fill="rgba(255,245,210,0.95)"/>
+
+  <!-- High thin clouds catching light -->
+  <ellipse cx="220" cy="160" rx="220" ry="14" fill="url(#cloudB)" opacity="0.7"/>
+  <ellipse cx="500" cy="190" rx="280" ry="16" fill="url(#cloudB)" opacity="0.6"/>
+
+  <!-- Mid layered clouds -->
+  <path d="M -20,260 Q 120,210 280,250 Q 420,300 600,255 Q 740,220 840,260 L 840,360 L -20,360 Z"
+        fill="url(#cloudA)" opacity="0.85"/>
+  <path d="M -20,300 Q 100,270 240,295 Q 380,330 540,300 Q 700,270 840,300 L 840,380 L -20,380 Z"
+        fill="rgba(45,55,72,0.55)"/>
+  <!-- Warm rim lighting on cloud underside -->
+  <path d="M -20,330 Q 140,308 320,328 Q 480,350 660,325 Q 760,310 840,325 L 840,346 L -20,346 Z"
+        fill="rgba(255,200,130,0.18)"/>
+
+  <!-- Distant tree silhouette -->
+  <path d="M 0,422 L 60,408 L 110,418 L 150,398 L 200,412 L 260,400 L 320,418 L 380,406 L
+           440,420 L 500,408 L 560,418 L 620,402 L 680,418 L 740,408 L 800,418 L 800,440 L 0,440 Z"
+        fill="url(#treeline)"/>
+
+  <!-- Lit upper canopy band -->
+  <rect x="0" y="430" width="800" height="60" fill="url(#canopyLit)"/>
+  <!-- Main field canopy -->
+  <rect x="0" y="478" width="800" height="242" fill="url(#canopy)"/>
+
+  <!-- Perspective crop rows — converging to center horizon -->
+  <g stroke="rgba(0,0,0,0.55)" stroke-linecap="round" fill="none">
+    <!-- Center furrow (path the eye follows) -->
+    <path d="M 400,478 L 400,720" stroke-width="6" stroke="rgba(40,28,16,0.95)"/>
+    <path d="M 400,478 L 400,720" stroke-width="2" stroke="rgba(80,55,32,0.85)"/>
+
+    <!-- Furrows fanning right -->
+    <path d="M 408,478 L 520,720" stroke-width="3"/>
+    <path d="M 416,478 L 660,720" stroke-width="3.4"/>
+    <path d="M 424,478 L 800,712" stroke-width="3.6"/>
+    <path d="M 432,478 L 870,640" stroke-width="3.6"/>
+
+    <!-- Furrows fanning left -->
+    <path d="M 392,478 L 280,720" stroke-width="3"/>
+    <path d="M 384,478 L 140,720" stroke-width="3.4"/>
+    <path d="M 376,478 L  -10,712" stroke-width="3.6"/>
+    <path d="M 368,478 L  -70,640" stroke-width="3.6"/>
+  </g>
+
+  <!-- Subtle texture: leaf clusters along rows -->
+  <g fill="rgba(120,170,90,0.30)">
+    <ellipse cx="120" cy="540" rx="80" ry="6"/>
+    <ellipse cx="240" cy="565" rx="70" ry="5"/>
+    <ellipse cx="560" cy="555" rx="80" ry="5"/>
+    <ellipse cx="680" cy="540" rx="70" ry="6"/>
+  </g>
+  <g fill="rgba(40,80,40,0.45)">
+    <ellipse cx="170" cy="640" rx="120" ry="9"/>
+    <ellipse cx="630" cy="640" rx="120" ry="9"/>
+  </g>
+
+  <!-- Foreground darkening for legibility -->
+  <rect x="0" y="540" width="800" height="180" fill="url(#furrow)"/>
 </svg>

@@ -1,24 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Field with wind streaks">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Wind moving over crop rows">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#243240"/>
-      <stop offset="55%" stop-color="#172832"/>
-      <stop offset="100%" stop-color="#0b1820"/>
+      <stop offset="0%"  stop-color="#13283a"/>
+      <stop offset="60%" stop-color="#27445a"/>
+      <stop offset="100%" stop-color="#4a657a"/>
     </linearGradient>
-    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2a4a32"/>
-      <stop offset="100%" stop-color="#0c2418"/>
+    <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#345a36"/>
+      <stop offset="55%" stop-color="#163419"/>
+      <stop offset="100%" stop-color="#06170d"/>
+    </linearGradient>
+    <linearGradient id="furrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="rgba(0,0,0,0.0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
     </linearGradient>
   </defs>
-  <rect width="800" height="480" fill="url(#sky)"/>
-  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
-  <g stroke="rgba(200,225,235,0.18)" stroke-linecap="round" fill="none">
-    <path d="M40,140 q 80,-12 160,0" stroke-width="2"/>
-    <path d="M260,180 q 90,-10 180,2" stroke-width="2"/>
-    <path d="M520,120 q 70,-8 140,4" stroke-width="2"/>
-    <path d="M120,220 q 100,-12 200,0" stroke-width="1.6"/>
-    <path d="M460,240 q 110,-10 220,2" stroke-width="1.6"/>
+  <rect width="800" height="450" fill="url(#sky)"/>
+  <g stroke="rgba(210,230,240,0.22)" stroke-linecap="round" fill="none">
+    <path d="M 40,160 q 110,-18 220,4" stroke-width="2"/>
+    <path d="M 280,200 q 130,-14 260,6" stroke-width="2"/>
+    <path d="M 540,140 q 100,-12 200,8" stroke-width="2"/>
+    <path d="M 100,260 q 130,-16 260,4" stroke-width="1.8"/>
+    <path d="M 460,300 q 140,-12 280,8" stroke-width="1.8"/>
   </g>
-  <path d="M0,300 Q200,272 400,294 T800,288 L800,360 L0,360 Z" fill="rgba(80,140,90,0.4)"/>
-  <path d="M0,360 Q200,330 400,352 T800,344 L800,420 L0,420 Z" fill="rgba(55,100,65,0.55)"/>
+  <path d="M 0,432 L 80,418 L 140,428 L 200,410 L 280,422 L 360,412 L 440,424
+           L 520,414 L 600,422 L 680,410 L 760,420 L 800,418 L 800,448 L 0,448 Z"
+        fill="#0d1f15"/>
+  <rect x="0" y="448" width="800" height="272" fill="url(#canopy)"/>
+  <g stroke="rgba(0,0,0,0.55)" stroke-linecap="round" fill="none" transform="rotate(2 400 580)">
+    <path d="M 400,448 L 400,720" stroke-width="6" stroke="rgba(40,28,16,0.95)"/>
+    <path d="M 408,448 L 520,720" stroke-width="3"/>
+    <path d="M 418,448 L 670,720" stroke-width="3.4"/>
+    <path d="M 428,448 L 800,710" stroke-width="3.6"/>
+    <path d="M 392,448 L 280,720" stroke-width="3"/>
+    <path d="M 382,448 L 130,720" stroke-width="3.4"/>
+    <path d="M 372,448 L  -10,710" stroke-width="3.6"/>
+  </g>
+  <rect x="0" y="540" width="800" height="180" fill="url(#furrow)"/>
 </svg>

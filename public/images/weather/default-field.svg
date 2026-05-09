@@ -1,22 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Calm green field">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Crop rows at golden hour">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a3a2c"/>
-      <stop offset="55%" stop-color="#0f2a20"/>
-      <stop offset="100%" stop-color="#091c14"/>
+      <stop offset="0%"  stop-color="#102a40"/>
+      <stop offset="40%" stop-color="#264a5c"/>
+      <stop offset="68%" stop-color="#7d6e54"/>
+      <stop offset="86%" stop-color="#c98a48"/>
+      <stop offset="100%" stop-color="#e9b76d"/>
     </linearGradient>
-    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#22512f"/>
-      <stop offset="100%" stop-color="#0e2a18"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="70%" cy="20%" r="55%">
-      <stop offset="0%" stop-color="rgba(180,230,150,0.18)"/>
-      <stop offset="100%" stop-color="rgba(180,230,150,0)"/>
+    <radialGradient id="sun" cx="76%" cy="64%" r="34%">
+      <stop offset="0%"  stop-color="rgba(255,235,170,0.85)"/>
+      <stop offset="100%" stop-color="rgba(255,180,90,0)"/>
     </radialGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(40,55,75,0.55)"/>
+      <stop offset="100%" stop-color="rgba(60,75,95,0)"/>
+    </linearGradient>
+    <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#3d6536"/>
+      <stop offset="55%" stop-color="#1d3a23"/>
+      <stop offset="100%" stop-color="#0a1c10"/>
+    </linearGradient>
+    <linearGradient id="furrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="rgba(0,0,0,0.0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
+    </linearGradient>
   </defs>
-  <rect width="800" height="480" fill="url(#sky)"/>
-  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
-  <rect width="800" height="480" fill="url(#glow)"/>
-  <path d="M0,310 Q200,290 400,305 T800,300 L800,360 L0,360 Z" fill="rgba(60,120,70,0.35)"/>
-  <path d="M0,360 Q200,340 400,355 T800,350 L800,420 L0,420 Z" fill="rgba(40,90,55,0.55)"/>
+  <rect width="800" height="450" fill="url(#sky)"/>
+  <rect width="800" height="450" fill="url(#sun)"/>
+  <circle cx="608" cy="378" r="20" fill="rgba(255,240,200,0.9)"/>
+  <ellipse cx="220" cy="170" rx="220" ry="12" fill="rgba(255,210,160,0.45)"/>
+  <path d="M -20,290 Q 140,250 320,280 Q 480,310 660,275 Q 740,255 840,280 L 840,365 L -20,365 Z"
+        fill="url(#cloud)"/>
+  <path d="M 0,432 L 80,418 L 140,428 L 200,410 L 280,422 L 360,412 L 440,424
+           L 520,414 L 600,422 L 680,410 L 760,420 L 800,418 L 800,448 L 0,448 Z"
+        fill="#10221a"/>
+  <rect x="0" y="448" width="800" height="272" fill="url(#canopy)"/>
+  <g stroke="rgba(0,0,0,0.55)" stroke-linecap="round" fill="none">
+    <path d="M 400,448 L 400,720" stroke-width="6" stroke="rgba(40,28,16,0.95)"/>
+    <path d="M 408,448 L 520,720" stroke-width="3"/>
+    <path d="M 418,448 L 670,720" stroke-width="3.4"/>
+    <path d="M 428,448 L 800,710" stroke-width="3.6"/>
+    <path d="M 392,448 L 280,720" stroke-width="3"/>
+    <path d="M 382,448 L 130,720" stroke-width="3.4"/>
+    <path d="M 372,448 L  -10,710" stroke-width="3.6"/>
+  </g>
+  <g fill="rgba(115,160,90,0.30)">
+    <ellipse cx="180" cy="540" rx="100" ry="7"/>
+    <ellipse cx="620" cy="540" rx="100" ry="7"/>
+  </g>
+  <rect x="0" y="540" width="800" height="180" fill="url(#furrow)"/>
 </svg>

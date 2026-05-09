@@ -43,8 +43,9 @@ import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
 import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
-import ScanSecondaryButton       from '../components/home/ScanSecondaryButton.jsx';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
+import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
+import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 import useExperience             from '../hooks/useExperience.js';
 
@@ -463,6 +464,11 @@ export default function PilotHome() {
              WeatherHeroActionCard above has already echoed the
              "on track" message + offered the same scan CTA, so
              this card stays calm and complementary. */}
+        {/* Mockup-aligned (May 2026) — when the task is OPEN we
+            still surface a compact "Today's task" card so the
+            user can mark done in-place; when DONE we collapse
+            to the OnTrackRowCard (compact tappable row that
+            opens /progress). */}
         {!taskDone && (
           <section
             style={S.card}
@@ -483,24 +489,18 @@ export default function PilotHome() {
         )}
 
         {taskDone && (
-          <section
-            style={S.cardDone}
-            data-testid="pilot-home-task"
-            data-state="done"
-          >
-            <h2 style={S.doneHeadline} data-testid="pilot-home-done-note">
-              {tSafe('home.allSetForNow', 'All set for now ✓')}
-            </h2>
-            <p style={S.cardBody}>
-              {tSafe('home.checkTomorrow', 'Check again tomorrow morning.')}
-            </p>
-            {/* ONE optional secondary action — keeps the surface
-                useful without re-introducing dashboard clutter. */}
-            <ScanSecondaryButton
-              mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'}
-            />
-          </section>
+          <FeatureShell name="on-track-row" silent>
+            <OnTrackRowCard testId="pilot-home-on-track" />
+          </FeatureShell>
         )}
+
+        {/* Single Scan secondary action — full-width row card
+            that mirrors the FarmGardenProfileCard / OnTrackRowCard
+            visual family. Mode-aware copy ("Scan crop" vs
+            "Scan plant"). Always visible on Home (mockup §10). */}
+        <FeatureShell name="scan-row" silent>
+          <ScanRowCard mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'} />
+        </FeatureShell>
 
         {/* ── 4. Sell / funding prompt ─────────────────────────
              Visible only at harvest stage (farm mode only).

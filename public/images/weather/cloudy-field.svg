@@ -1,24 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Soft cloudy field">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Soft cloudy field">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2a3640"/>
-      <stop offset="55%" stop-color="#1a2a2a"/>
-      <stop offset="100%" stop-color="#0d1a18"/>
+      <stop offset="0%"  stop-color="#1a2c3a"/>
+      <stop offset="60%" stop-color="#324656"/>
+      <stop offset="100%" stop-color="#5a6e7a"/>
     </linearGradient>
-    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2c4d36"/>
-      <stop offset="100%" stop-color="#0e2618"/>
-    </linearGradient>
-    <radialGradient id="cloud1" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="rgba(170,180,190,0.45)"/>
-      <stop offset="100%" stop-color="rgba(170,180,190,0)"/>
+    <radialGradient id="cloud" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="rgba(190,200,210,0.55)"/>
+      <stop offset="100%" stop-color="rgba(190,200,210,0)"/>
     </radialGradient>
+    <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#2f5230"/>
+      <stop offset="55%" stop-color="#143018"/>
+      <stop offset="100%" stop-color="#06170d"/>
+    </linearGradient>
+    <linearGradient id="furrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="rgba(0,0,0,0.0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
+    </linearGradient>
   </defs>
-  <rect width="800" height="480" fill="url(#sky)"/>
-  <ellipse cx="180" cy="100" rx="200" ry="55" fill="url(#cloud1)"/>
-  <ellipse cx="500" cy="80" rx="240" ry="48" fill="url(#cloud1)"/>
-  <ellipse cx="720" cy="140" rx="160" ry="40" fill="url(#cloud1)"/>
-  <rect x="0" y="280" width="800" height="200" fill="url(#field)"/>
-  <path d="M0,310 Q200,288 400,302 T800,298 L800,360 L0,360 Z" fill="rgba(70,130,90,0.35)"/>
-  <path d="M0,360 Q200,340 400,354 T800,350 L800,420 L0,420 Z" fill="rgba(50,100,70,0.55)"/>
+  <rect width="800" height="450" fill="url(#sky)"/>
+  <ellipse cx="180" cy="120" rx="240" ry="62" fill="url(#cloud)"/>
+  <ellipse cx="500" cy="100" rx="280" ry="58" fill="url(#cloud)"/>
+  <ellipse cx="720" cy="180" rx="200" ry="48" fill="url(#cloud)"/>
+  <ellipse cx="380" cy="240" rx="320" ry="36" fill="url(#cloud)" opacity="0.6"/>
+  <path d="M 0,432 L 80,418 L 140,428 L 200,410 L 280,422 L 360,412 L 440,424
+           L 520,414 L 600,422 L 680,410 L 760,420 L 800,418 L 800,448 L 0,448 Z"
+        fill="#0e201a"/>
+  <rect x="0" y="448" width="800" height="272" fill="url(#canopy)"/>
+  <g stroke="rgba(0,0,0,0.55)" stroke-linecap="round" fill="none">
+    <path d="M 400,448 L 400,720" stroke-width="6" stroke="rgba(40,28,16,0.95)"/>
+    <path d="M 408,448 L 520,720" stroke-width="3"/>
+    <path d="M 418,448 L 670,720" stroke-width="3.4"/>
+    <path d="M 428,448 L 800,710" stroke-width="3.6"/>
+    <path d="M 392,448 L 280,720" stroke-width="3"/>
+    <path d="M 382,448 L 130,720" stroke-width="3.4"/>
+    <path d="M 372,448 L  -10,710" stroke-width="3.6"/>
+  </g>
+  <rect x="0" y="540" width="800" height="180" fill="url(#furrow)"/>
 </svg>
