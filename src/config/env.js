@@ -61,11 +61,20 @@ function _resolveUrl(candidate, fallback) {
 
 // ─── Resolve ──────────────────────────────────────────────────────
 
+// URL hardening spec §3 (May 2026) — VITE_API_BASE_URL is the
+// canonical name used by api/, intelligence/, weather/ helpers
+// across the codebase; VITE_API_URL is the older alias still
+// referenced by main.jsx + a couple of legacy paths. We honour
+// both, preferring the canonical name. VITE_WEATHER_API_URL +
+// VITE_IMAGE_BASE_URL are added so callers can stop reading
+// `import.meta.env` directly (which historically passed unsafe
+// raw values into `new URL(...)`).
 const _ENV_RAW = {
-  apiUrl:    _read('VITE_API_URL'),
-  wsUrl:     _read('VITE_WS_URL'),
-  assetUrl:  _read('VITE_ASSET_URL'),
-  uploadUrl: _read('VITE_UPLOAD_URL'),
+  apiUrl:        _read('VITE_API_BASE_URL') || _read('VITE_API_URL'),
+  wsUrl:         _read('VITE_WS_URL'),
+  assetUrl:      _read('VITE_IMAGE_BASE_URL') || _read('VITE_ASSET_URL'),
+  uploadUrl:     _read('VITE_UPLOAD_URL'),
+  weatherApiUrl: _read('VITE_WEATHER_API_URL'),
 };
 
 const _origin = _safeOrigin();
@@ -93,6 +102,15 @@ const _resolved = Object.freeze({
   })(),
   ASSET_URL:  _resolveUrl(_ENV_RAW.assetUrl,  _origin || '/'),
   UPLOAD_URL: _resolveUrl(_ENV_RAW.uploadUrl, _resolveUrl(_ENV_RAW.apiUrl, _apiFallback) + '/upload'),
+  // Weather API base — empty string sentinel means "use the
+  // same-origin /api/weather proxy"; useLiveWeather already
+  // handles the empty case without reading import.meta.env.
+  WEATHER_URL: (() => {
+    const u = safeUrl(_ENV_RAW.weatherApiUrl);
+    return (u && (u.protocol === 'http:' || u.protocol === 'https:'))
+      ? u.href.replace(/\/+$/, '')
+      : '';
+  })(),
   MODE:       (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE)
                 ? String(import.meta.env.MODE) : 'development',
   IS_DEV:     !!(typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV),
@@ -115,11 +133,12 @@ export function dumpEnv() {
     if (!ENV.IS_DEV) return;
     // eslint-disable-next-line no-console
     console.log('[Farroway env]', {
-      API_URL:    ENV.API_URL,
-      WS_URL:     ENV.WS_URL    || '(disabled)',
-      ASSET_URL:  ENV.ASSET_URL,
-      UPLOAD_URL: ENV.UPLOAD_URL,
-      MODE:       ENV.MODE,
+      API_URL:     ENV.API_URL,
+      WS_URL:      ENV.WS_URL     || '(disabled)',
+      ASSET_URL:   ENV.ASSET_URL,
+      UPLOAD_URL:  ENV.UPLOAD_URL,
+      WEATHER_URL: ENV.WEATHER_URL || '(same-origin proxy)',
+      MODE:        ENV.MODE,
     });
   } catch { /* never throw from a diagnostic */ }
 }
