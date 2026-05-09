@@ -14,6 +14,7 @@ import { authenticate, requireApprovedFarmer } from './middleware/auth.js';
 import { extractOrganization } from './middleware/orgScope.js';
 import prisma from './config/database.js';
 import { checkUploadDirHealth, listDiskFiles } from './utils/uploadHealth.js';
+import { resolveBuildVersion } from './config/productionRuntime.js';
 
 // Route imports
 import authRoutes from './modules/auth/routes.js';
@@ -412,6 +413,14 @@ app.use('/uploads', authenticate, express.static(path.join(__dirname, '../upload
 // so a load-balancer can probe either path without coupling
 // to the API prefix.
 const _serverStartedAt = Date.now();
+// Resolved once at module load so /health responses are stable for
+// the lifetime of the process; the build version comes from the
+// deploy environment (Railway commit SHA / VITE_BUILD_ID / etc.)
+// via productionRuntime.resolveBuildVersion().
+const _resolvedBuildVersion = (() => {
+  try { return resolveBuildVersion(); }
+  catch { return '0.0.0-local'; }
+})();
 async function _healthHandler(_req, res) {
   let dbStatus = 'down';
   try {
@@ -424,7 +433,7 @@ async function _healthHandler(_req, res) {
     db:        dbStatus,
     uptime,
     timestamp: new Date().toISOString(),
-    version:   '1.0.0',
+    version:   _resolvedBuildVersion,
   };
   res.status(dbStatus === 'ok' ? 200 : 503).json(body);
 }

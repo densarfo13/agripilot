@@ -1,0 +1,210 @@
+/**
+ * productionRuntimeBanner.test.js — pins the May 2026 Railway
+ * production-ops hardening contract.
+ *
+ *   • resolveBuildVersion picks the right env-var precedence and
+ *     never returns empty / undefined.
+ *   • checkRequired returns the missing required vars.
+ *   • checkOptional returns missing optional providers with their
+ *     human-readable feature labels.
+ *   • logProductionStartupBanner emits the canonical
+ *     [Farroway] block in the documented order.
+ *   • Banner is silent under NODE_ENV=test (so vitest output
+ *     stays clean unless a test re-invokes it deliberately).
+ *   • Banner is idempotent — second call is a no-op.
+ *
+ * Failures here are regression-meaningful: anyone removing the
+ * canonical startup-banner lines fails CI.
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 15000 });
+
+const MODULE = '../config/productionRuntime.js';
+
+function snapshotEnv() {
+  const before = { ...process.env };
+  return () => {
+    for (const k of Object.keys(process.env)) {
+      if (!(k in before)) delete process.env[k];
+    }
+    for (const k of Object.keys(before)) {
+      process.env[k] = before[k];
+    }
+  };
+}
+
+describe('productionRuntime — Railway ops banner', () => {
+  let restoreEnv;
+
+  beforeEach(() => {
+    restoreEnv = snapshotEnv();
+  });
+
+  it('resolveBuildVersion honours Railway env precedence', async () => {
+    const mod = await import(MODULE);
+    mod._resetForTests();
+
+    delete process.env.RAILWAY_GIT_COMMIT_SHA;
+    delete process.env.VITE_BUILD_ID;
+    delete process.env.BUILD_ID;
+    delete process.env.APP_VERSION;
+    expect(mod.resolveBuildVersion()).toBe('0.0.0-local');
+
+    process.env.APP_VERSION = '1.2.3';
+    expect(mod.resolveBuildVersion()).toBe('1.2.3');
+
+    process.env.BUILD_ID = 'ci-build-42';
+    expect(mod.resolveBuildVersion()).toBe('ci-build-42');
+
+    process.env.VITE_BUILD_ID = 'vite-9-9-9';
+    expect(mod.resolveBuildVersion()).toBe('vite-9-9-9');
+
+    process.env.RAILWAY_GIT_COMMIT_SHA = 'abcdef1234567890';
+    expect(mod.resolveBuildVersion()).toBe('abcdef1234567890');
+
+    restoreEnv();
+  });
+
+  it('resolveBuildVersion truncates to 64 chars + never returns empty', async () => {
+    const mod = await import(MODULE);
+    process.env.RAILWAY_GIT_COMMIT_SHA = 'x'.repeat(200);
+    expect(mod.resolveBuildVersion().length).toBe(64);
+
+    delete process.env.RAILWAY_GIT_COMMIT_SHA;
+    delete process.env.VITE_BUILD_ID;
+    delete process.env.BUILD_ID;
+    delete process.env.APP_VERSION;
+    expect(mod.resolveBuildVersion()).toBe('0.0.0-local');
+
+    restoreEnv();
+  });
+
+  it('checkRequired returns exactly the missing required vars', async () => {
+    const mod = await import(MODULE);
+
+    delete process.env.DATABASE_URL;
+    delete process.env.AUTH_SECRET;
+    delete process.env.JWT_SECRET;
+    expect(mod.checkRequired().sort())
+      .toEqual(['AUTH_SECRET', 'DATABASE_URL'].sort());
+
+    process.env.DATABASE_URL = 'postgres://x';
+    expect(mod.checkRequired()).toEqual(['AUTH_SECRET']);
+
+    // Alias counts as present.
+    process.env.JWT_SECRET = 'a'.repeat(40);
+    expect(mod.checkRequired()).toEqual([]);
+
+    restoreEnv();
+  });
+
+  it('checkOptional surfaces missing providers with feature labels', async () => {
+    const mod = await import(MODULE);
+    delete process.env.WEATHER_API_KEY;
+    delete process.env.MAPS_API_KEY;
+    delete process.env.SENTRY_DSN;
+
+    const missing = mod.checkOptional();
+    const names = missing.map((m) => m.name);
+    expect(names).toContain('WEATHER_API_KEY');
+    expect(names).toContain('MAPS_API_KEY');
+    expect(names).toContain('SENTRY_DSN');
+
+    // Each entry has both a name and a human feature label.
+    for (const m of missing) {
+      expect(typeof m.name).toBe('string');
+      expect(typeof m.feature).toBe('string');
+      expect(m.feature.length).toBeGreaterThan(0);
+    }
+    restoreEnv();
+  });
+
+  it('logProductionStartupBanner is silent under NODE_ENV=test', async () => {
+    const mod = await import(MODULE);
+    mod._resetForTests();
+    process.env.NODE_ENV = 'test';
+    const lines = [];
+    const orig = console.log;
+    console.log = (...args) => lines.push(args.join(' '));
+    try { mod.logProductionStartupBanner(); }
+    finally { console.log = orig; }
+    expect(lines).toEqual([]); // never spam vitest output
+    restoreEnv();
+  });
+
+  it('logProductionStartupBanner emits the canonical block in production', async () => {
+    const mod = await import(MODULE);
+    mod._resetForTests();
+
+    process.env.NODE_ENV = 'production';
+    process.env.DATABASE_URL = 'postgres://x';
+    process.env.AUTH_SECRET  = 'a'.repeat(40);
+    delete process.env.WEATHER_API_KEY;
+
+    const lines = [];
+    const orig = console.log;
+    console.log = (...args) => lines.push(args.join(' '));
+    try { mod.logProductionStartupBanner(); }
+    finally { console.log = orig; }
+
+    // Canonical lines fire in order.
+    const joined = lines.join('\n');
+    expect(joined).toMatch(/\[Farroway\] Production runtime active/);
+    expect(joined).toMatch(/\[Farroway\] Environment validated/);
+    expect(joined).toMatch(/\[Farroway\] Upload service active/);
+    expect(joined).toMatch(/\[Farroway\] Funding verification active/);
+    expect(joined).toMatch(/\[Farroway\] Scan runtime active/);
+
+    // Operator-facing degradation pattern.
+    expect(joined).toMatch(/\[Farroway\] Missing WEATHER_API_KEY/);
+    expect(joined).toMatch(/disabled safely/);
+
+    restoreEnv();
+  });
+
+  it('logProductionStartupBanner is idempotent — second call no-ops', async () => {
+    const mod = await import(MODULE);
+    mod._resetForTests();
+    process.env.NODE_ENV = 'production';
+    process.env.DATABASE_URL = 'postgres://x';
+    process.env.AUTH_SECRET  = 'a'.repeat(40);
+
+    const lines = [];
+    const orig = console.log;
+    console.log = (...args) => lines.push(args.join(' '));
+    try {
+      mod.logProductionStartupBanner();
+      const after1 = lines.length;
+      mod.logProductionStartupBanner();
+      const after2 = lines.length;
+      expect(after2).toBe(after1); // idempotent
+    } finally { console.log = orig; }
+
+    restoreEnv();
+  });
+
+  it('reports failure when a required var is missing', async () => {
+    const mod = await import(MODULE);
+    mod._resetForTests();
+
+    process.env.NODE_ENV = 'production';
+    delete process.env.DATABASE_URL;
+    delete process.env.AUTH_SECRET;
+    delete process.env.JWT_SECRET;
+
+    const lines = [];
+    const orig = console.log;
+    console.log = (...args) => lines.push(args.join(' '));
+    try { mod.logProductionStartupBanner(); }
+    finally { console.log = orig; }
+
+    const joined = lines.join('\n');
+    expect(joined).toMatch(/Environment validation FAILED/);
+    expect(joined).toMatch(/DATABASE_URL/);
+    expect(joined).toMatch(/AUTH_SECRET/);
+
+    restoreEnv();
+  });
+});

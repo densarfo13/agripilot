@@ -23,6 +23,7 @@ import {
 } from '../intelligence/dist/index.js';
 import { validateEmailConfig } from '../services/emailService.js';
 import { validateSmsConfig }   from '../services/smsService.js';
+import { logProductionStartupBanner } from './config/productionRuntime.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,6 +121,10 @@ async function main() {
     if (config.isProduction && config.cors.origins.length > 0) {
       console.log(`[SERVER] CORS origins: ${config.cors.origins.join(', ')}`);
     }
+    // Railway production banner — single greppable block. Silent
+    // under NODE_ENV=test; idempotent on HMR / reconnect.
+    try { logProductionStartupBanner(); }
+    catch { /* never throw from a banner */ }
   });
 
   // Graceful shutdown handler
