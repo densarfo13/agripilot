@@ -30,13 +30,19 @@ import { useCallback, useState } from 'react';
 import { addScanTasks } from '../../core/scanToTask.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
+// May 2026 scan-system production rebuild — replaces the per-
+// guidance emoji glyphs (✅ 🌿 🐛 🍂 💧 🌱 📷) with the canonical
+// RealisticIcon line-glyphs. Same single-stroke calm visual
+// language as the rest of the scan flow; no cartoon disease
+// graphics.
+import RealisticIcon from '../../assets/realism/icons/RealisticIcon.jsx';
 
 // ─── Per-category guidance ────────────────────────────────────────
 // Spec-exact wording. Honest, action-framed, no certainty claims.
 
 const GUIDANCE = Object.freeze({
   healthy: Object.freeze({
-    emoji:        '✅',
+    iconName:     'leaf',
     label:        'Looks Healthy',
     confidence:   'low',
     noticed:      'Your crop appears healthy. No obvious issues detected.',
@@ -55,7 +61,7 @@ const GUIDANCE = Object.freeze({
   }),
 
   yellowing: Object.freeze({
-    emoji:        '🌿',
+    iconName:     'leaf',
     label:        'Possible Yellowing',
     confidence:   'medium',
     noticed:      'We noticed yellowing that may be caused by water stress, nutrient issues, or pests.',
@@ -74,7 +80,7 @@ const GUIDANCE = Object.freeze({
   }),
 
   holes_or_pest_damage: Object.freeze({
-    emoji:        '🐛',
+    iconName:     'leaf',
     label:        'Possible Pest Damage',
     confidence:   'medium',
     noticed:      'We noticed holes or irregular leaf edges that may indicate pest activity.',
@@ -93,7 +99,7 @@ const GUIDANCE = Object.freeze({
   }),
 
   spots_or_disease_concern: Object.freeze({
-    emoji:        '🍂',
+    iconName:     'leaf',
     label:        'Possible Leaf Disease Concern',
     confidence:   'medium',
     noticed:      'Small brown or yellow spots on leaves may indicate a fungal or bacterial concern.',
@@ -114,7 +120,7 @@ const GUIDANCE = Object.freeze({
 
   // Plantix-style upgrade — two new safe categories.
   wilting: Object.freeze({
-    emoji:        '💧',
+    iconName:     'soil',
     label:        'Possible Wilting',
     confidence:   'medium',
     noticed:      'Wilting may be caused by under-watering, root issues, or heat stress.',
@@ -133,7 +139,7 @@ const GUIDANCE = Object.freeze({
   }),
 
   nutrient_stress: Object.freeze({
-    emoji:        '🌱',
+    iconName:     'crop',
     label:        'Possible Nutrient Stress',
     confidence:   'medium',
     noticed:      'Pale, off-colour, or stunted growth may suggest nutrient stress.',
@@ -152,7 +158,7 @@ const GUIDANCE = Object.freeze({
   }),
 
   needs_review: Object.freeze({
-    emoji:        '📷',
+    iconName:     'scan',
     label:        'Needs Review',
     confidence:   'low',
     noticed:      'The photo didn\'t give us enough detail to identify a specific issue.',
@@ -487,7 +493,18 @@ export default function UsefulResultCard({
           style={S.chip}
           data-testid="useful-result-category"
         >
-          {guidance.emoji} {guidance.label}
+          {/* May 2026 scan rebuild — replaces the legacy per-
+              guidance emoji glyph with the canonical RealisticIcon
+              line-glyph. The chip stays compact (16 px icon +
+              label text); colour inherits from the parent so
+              the visual language matches the rest of the scan
+              flow. */}
+          <RealisticIcon
+            name={guidance.iconName || 'scan'}
+            size={16}
+            style={{ verticalAlign: '-3px', marginRight: 6 }}
+          />
+          {guidance.label}
         </span>
         {/* Confidence is read from result.confidence when present (the
             future ML backend will set it), else falls back to the
@@ -581,7 +598,7 @@ export default function UsefulResultCard({
           </span>
           {taskAdded ? (
             <span style={S.taskToast} data-testid="useful-result-task-toast">
-              {tSafe('scan.toast.taskAdded', '✅ Task added')}
+              {tSafe('scan.toast.taskAdded', 'Task added')}
             </span>
           ) : (
             <button
@@ -612,11 +629,20 @@ export default function UsefulResultCard({
             style={S.btn}
             data-testid="useful-result-retake"
           >
+            {/* May 2026 scan rebuild — replaces the legacy 📷
+                emoji prefix on the retake button with the
+                canonical scan glyph. Inline alignment matches
+                the chip pattern above. */}
+            <RealisticIcon
+              name="camera"
+              size={16}
+              style={{ verticalAlign: '-3px', marginRight: 6 }}
+            />
             {experience === 'backyard' || experience === 'garden'
-              ? tSafe('scan.button.retakePlant', '📷 Retake plant photo')
+              ? tSafe('scan.button.retakePlant', 'Retake plant photo')
               : (experience === 'farm' || experience === 'farmer'
-                  ? tSafe('scan.button.retakeCrop', '📷 Retake crop photo')
-                  : tSafe('scan.button.retake',     '📷 Retake photo'))}
+                  ? tSafe('scan.button.retakeCrop', 'Retake crop photo')
+                  : tSafe('scan.button.retake',     'Retake photo'))}
           </button>
         ) : null}
       </div>
@@ -632,7 +658,7 @@ export default function UsefulResultCard({
         >
           {tSafe(
             'scan.toast.agronomySent',
-            '✅ Request saved. We\'ll route this to a local agronomy contact when one is available.',
+            'Request saved. We\'ll route this to a local agronomy contact when one is available.',
           )}
         </p>
       ) : (
