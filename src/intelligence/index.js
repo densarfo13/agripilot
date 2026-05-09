@@ -66,6 +66,21 @@ export {
   priorityEngine,
 } from './aliases.js';
 
+// Invisible-intelligence layer (May 2026 spec):
+//   • toFarmerGuidance — single calm conduit; converts any internal
+//     intelligence output into the farmer-facing { title, message,
+//     actionLabel, actionRoute, timeEstimate, tone } envelope and
+//     strips raw scores / NDVI / fraud signals before they reach
+//     the UI.
+//   • feature flags — six opt-in switches; every engine falls back
+//     to safe rule-based behaviour when its flag is off.
+export { toFarmerGuidance } from './farmerAdapter.js';
+export {
+  isIntelligenceFlagEnabled,
+  intelligenceFlagsSnapshot,
+  INTELLIGENCE_FLAGS,
+} from './featureFlags.js';
+
 /**
  * Rank a set of candidate tasks for a farm using the intelligence
  * layer. Returns at most 1 primary + 2 secondary tasks plus the

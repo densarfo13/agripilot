@@ -38,4 +38,10 @@ export { validateBoundary, farmHasValidBoundary } from './services/boundary-vali
 // ── Infrastructure ──
 export { getStorage, storageKey } from './infra/storage.js';
 export { enqueue, startWorker, stopWorker, stopAllWorkers, pruneJobs } from './infra/jobs.js';
+// ── Invisible-intelligence AI adapter (May 2026 spec §4) ──
+//   Gated by OPENAI_API_KEY + ENABLE_AI_ADAPTER. Always returns
+//   rule-based guidance until a paired cost/abuse review wires
+//   the live LLM call — the adapter signature is stable so the
+//   future swap is internal.
+export { enrichGuidance, classifySupportNeed, isAIAdapterAvailable, } from './aiAdapter.js';
 //# sourceMappingURL=index.js.map

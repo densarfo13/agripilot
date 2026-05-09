@@ -26,4 +26,6 @@ export { validateBoundary, farmHasValidBoundary } from './services/boundary-vali
 export { getStorage, storageKey } from './infra/storage.js';
 export type { StorageProvider } from './infra/storage.js';
 export { enqueue, startWorker, stopWorker, stopAllWorkers, pruneJobs } from './infra/jobs.js';
+export { enrichGuidance, classifySupportNeed, isAIAdapterAvailable, } from './aiAdapter.js';
+export type { IntelligenceContext, FarmerGuidance, AdapterResult, } from './aiAdapter.js';
 //# sourceMappingURL=index.d.ts.map
