@@ -20,4 +20,7 @@ export { regionEnvironment,
          climateClusterFor,
          CLIMATE_CLUSTERS }                 from './region.js';
 export { resolveSeason, SEASON_LIST }       from './season.js';
+export { proceduralCanvas,
+         PROCEDURAL_PHASES,
+         PROCEDURAL_CLUSTERS }              from './procedural.js';
 export { default as DynamicWeatherBackdrop } from './DynamicWeatherBackdrop.jsx';

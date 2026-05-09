@@ -29,6 +29,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import RealisticPhoto from '../../../assets/realism/photography/RealisticPhoto.jsx';
+import { proceduralCanvas } from './procedural.js';
 
 function _prefersReducedMotion() {
   try {
@@ -54,6 +55,21 @@ export default function DynamicWeatherBackdrop({
     : 'linear-gradient(180deg, rgba(20,28,30,0.18) 0%, rgba(20,28,30,0.45) 60%, rgba(16,22,28,0.62) 100%)';
   const transitionMs = (safeScene && Number.isFinite(safeScene.transitionMs))
     ? safeScene.transitionMs : 600;
+
+  // Procedural sky/horizon canvas — base layer behind the photo.
+  // When the production .webp exists, the photo fully covers this.
+  // When the photo slot is empty (operator photography gap), the
+  // photo's translucent placeholder lets the canvas tones bleed
+  // through so every (phase × cluster × weather × mode) combo
+  // still feels visually distinct without faking documentary
+  // photography.
+  const procedural = proceduralCanvas({
+    phase:   safeScene && safeScene.lighting ? safeScene.lighting.phase : 'midday',
+    cluster: safeScene && safeScene.region   ? safeScene.region.cluster : 'temperate',
+    weather: safeScene && typeof safeScene.weatherType === 'string'
+             ? safeScene.weatherType : '',
+    mode:    safeScene && safeScene.mode === 'garden' ? 'garden' : 'farm',
+  });
 
   // Crossfade state — `current` is the live slot, `previous` is the
   // outgoing slot fading away. After `transitionMs` we drop the
@@ -111,8 +127,28 @@ export default function DynamicWeatherBackdrop({
       data-scene-slot={slot || 'fallback'}
       data-scene-phase={safeScene && safeScene.lighting ? safeScene.lighting.phase : 'midday'}
       data-scene-mode={safeScene ? safeScene.mode : 'farm'}
+      data-scene-cluster={safeScene && safeScene.region ? safeScene.region.cluster : 'temperate'}
       style={wrapperStyle}
     >
+      {/* Procedural sky/horizon canvas — base layer (z-index 0).
+          A two-band gradient: phase-tuned sky on top, cluster-tuned
+          ground on bottom, soft atmospheric horizon between, optional
+          weather wash. Honest fallback — never pretends to be a
+          photograph. */}
+      <div
+        aria-hidden="true"
+        data-testid={`${testId}-procedural`}
+        style={{
+          ...layerBase,
+          backgroundImage:    procedural.backgroundImage,
+          backgroundSize:     'cover',
+          backgroundPosition: 'center',
+          transitionDuration: `${Math.max(400, Math.min(800, transitionMs))}ms`,
+          opacity:            1,
+          zIndex:             0,
+        }}
+      />
+
       {/* Outgoing scene — fades to 0 once the new scene mounts. */}
       {previous ? (
         <div
