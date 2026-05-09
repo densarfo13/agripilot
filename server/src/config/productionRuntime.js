@@ -37,17 +37,49 @@ const REQUIRED_BACKEND = Object.freeze([
   { name: 'AUTH_SECRET',  aliases: ['JWT_SECRET'] },
 ]);
 
-const OPTIONAL_PROVIDERS = Object.freeze([
-  { name: 'WEATHER_API_KEY',     feature: 'Weather' },
-  { name: 'MAPS_API_KEY',        feature: 'Maps'    },
-  { name: 'TWILIO_ACCOUNT_SID',  feature: 'SMS'     },
-  { name: 'SENDGRID_API_KEY',    feature: 'Email'   },
-  { name: 'SCAN_API_KEY',        feature: 'External scan provider' },
-  { name: 'OPENAI_API_KEY',      feature: 'OpenAI'  },
-  { name: 'SENTRY_DSN',          feature: 'Sentry'  },
-  { name: 'REDIS_URL',           feature: 'Redis cache' },
-  { name: 'UPLOAD_BASE_URL',     feature: 'Upload base URL' },
+// Per-service detection table — each service is "active" when ANY
+// of its aliases is set. The May 2026 production-dependency wiring
+// pass added the alternate cloud-provider key surfaces (Cloudinary
+// / S3 / Mapbox / PlantNet / Plant.id) so an operator who configures
+// the provider on Railway sees the matching service report `active`
+// without further code changes.
+const SERVICES = Object.freeze([
+  { key: 'weather',  label: 'Weather',
+    aliases: ['WEATHER_API_KEY', 'VITE_WEATHER_API_KEY'] },
+  { key: 'maps',     label: 'Maps',
+    aliases: ['MAPS_API_KEY', 'VITE_MAPS_API_KEY',
+              'MAPBOX_TOKEN', 'VITE_MAPBOX_TOKEN'] },
+  { key: 'scan',     label: 'Scan',
+    aliases: ['SCAN_API_KEY', 'PLANT_ID_API_KEY', 'PLANTNET_API_KEY'] },
+  { key: 'uploads',  label: 'Uploads',
+    aliases: [
+      'UPLOAD_BASE_URL',
+      'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET',
+      'S3_BUCKET', 'S3_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
+    ] },
+  { key: 'redis',    label: 'Redis',
+    aliases: ['REDIS_URL'] },
+  { key: 'sentry',   label: 'Sentry',
+    aliases: ['SENTRY_DSN', 'VITE_SENTRY_DSN'] },
+  { key: 'sms',      label: 'SMS',
+    aliases: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER'] },
+  { key: 'email',    label: 'Email',
+    aliases: ['SENDGRID_API_KEY'] },
+  { key: 'openai',   label: 'AI orchestration',
+    aliases: ['OPENAI_API_KEY'] },
 ]);
+
+// Legacy OPTIONAL_PROVIDERS kept for back-compat with the
+// pre-wiring banner test format. Each entry corresponds to the
+// FIRST canonical alias of a service so old tests grepping
+// `Missing WEATHER_API_KEY` still match.
+const OPTIONAL_PROVIDERS = Object.freeze(
+  SERVICES.map((s) => ({
+    name:    s.aliases[0],
+    aliases: s.aliases.slice(1),
+    feature: s.label,
+  })),
+);
 
 function _present(name, aliases = []) {
   if (typeof process === 'undefined' || !process.env) return false;
@@ -120,6 +152,32 @@ export function checkOptional() {
 }
 
 /**
+ * serviceStatus — per-service active/disabled snapshot used by the
+ * banner + by /health-style introspection endpoints. The `present`
+ * field lists every alias that is currently set so an operator can
+ * tell which key wired the service.
+ *
+ *   [
+ *     { key: 'weather', label: 'Weather', active: true,
+ *       present: ['WEATHER_API_KEY'] },
+ *     { key: 'uploads', label: 'Uploads', active: false, present: [] },
+ *     ...
+ *   ]
+ */
+export function serviceStatus() {
+  return SERVICES.map((s) => {
+    const present = s.aliases.filter((n) =>
+      typeof process !== 'undefined' && process.env && process.env[n]);
+    return Object.freeze({
+      key:     s.key,
+      label:   s.label,
+      active:  present.length > 0,
+      present,
+    });
+  });
+}
+
+/**
  * logProductionStartupBanner — fire-and-forget banner emit.
  *
  *   • Silent in NODE_ENV=test (so vitest output stays clean).
@@ -153,7 +211,24 @@ export function logProductionStartupBanner() {
   log(`${tag} Funding verification active`);
   log(`${tag} Scan runtime active`);
 
-  // Per-provider degradation lines — single line each, names only.
+  // Per-service status block — single line per service so an
+  // operator can spot the disabled features at a glance. The
+  // banner is silent under NODE_ENV=test (handled at the top of
+  // this function) so vitest stays clean.
+  const status = serviceStatus();
+  for (const s of status) {
+    if (s.active) {
+      log(`${tag} ${s.label}: active`);
+    } else {
+      log(`${tag} ${s.label}: disabled (no key)`);
+    }
+  }
+
+  // AI orchestration narrows further: when OPENAI_API_KEY isn't
+  // set, the orchestrator falls back to the rule-based ladder
+  // shipped in src/orchestration/orchestrator.js — never blocks
+  // tasks/home/scan. The legacy "Missing X — disabled safely"
+  // line stays so existing log dashboards keep matching.
   const missingOptional = checkOptional();
   for (const m of missingOptional) {
     log(`${tag} Missing ${m.name} — ${m.feature} disabled safely`);

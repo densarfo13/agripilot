@@ -207,4 +207,86 @@ describe('productionRuntime — Railway ops banner', () => {
 
     restoreEnv();
   });
+
+  // ─── May 2026 production-dependency wiring pass ────────────
+  it('serviceStatus enumerates every wired service', async () => {
+    const mod = await import(MODULE);
+    const status = mod.serviceStatus();
+    const keys = status.map((s) => s.key);
+    // Every service expected by the spec is present.
+    for (const k of ['weather','maps','scan','uploads','redis',
+                     'sentry','sms','email','openai']) {
+      expect(keys).toContain(k);
+    }
+    // Each entry is a frozen { key, label, active, present } shape.
+    for (const s of status) {
+      expect(typeof s.key).toBe('string');
+      expect(typeof s.label).toBe('string');
+      expect(typeof s.active).toBe('boolean');
+      expect(Array.isArray(s.present)).toBe(true);
+      expect(Object.isFrozen(s)).toBe(true);
+    }
+  });
+
+  it('serviceStatus honours every documented alias', async () => {
+    const mod = await import(MODULE);
+
+    // Maps: canonical + 3 aliases — any one wires the service.
+    delete process.env.MAPS_API_KEY;
+    delete process.env.VITE_MAPS_API_KEY;
+    delete process.env.MAPBOX_TOKEN;
+    delete process.env.VITE_MAPBOX_TOKEN;
+    expect(mod.serviceStatus().find((s) => s.key === 'maps').active).toBe(false);
+    process.env.MAPBOX_TOKEN = 'mb-xyz';
+    expect(mod.serviceStatus().find((s) => s.key === 'maps').active).toBe(true);
+
+    // Scan: SCAN_API_KEY / PLANT_ID_API_KEY / PLANTNET_API_KEY
+    delete process.env.SCAN_API_KEY;
+    delete process.env.PLANT_ID_API_KEY;
+    delete process.env.PLANTNET_API_KEY;
+    expect(mod.serviceStatus().find((s) => s.key === 'scan').active).toBe(false);
+    process.env.PLANT_ID_API_KEY = 'pid-abc';
+    expect(mod.serviceStatus().find((s) => s.key === 'scan').active).toBe(true);
+
+    // Uploads: any of the cloud-provider keys flips on the slot.
+    delete process.env.UPLOAD_BASE_URL;
+    delete process.env.CLOUDINARY_CLOUD_NAME;
+    delete process.env.CLOUDINARY_API_KEY;
+    delete process.env.CLOUDINARY_API_SECRET;
+    delete process.env.S3_BUCKET;
+    delete process.env.S3_REGION;
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
+    expect(mod.serviceStatus().find((s) => s.key === 'uploads').active).toBe(false);
+    process.env.CLOUDINARY_API_KEY = 'cl-key';
+    expect(mod.serviceStatus().find((s) => s.key === 'uploads').active).toBe(true);
+
+    restoreEnv();
+  });
+
+  it('banner emits per-service active/disabled status lines', async () => {
+    const mod = await import(MODULE);
+    mod._resetForTests();
+
+    process.env.NODE_ENV = 'production';
+    process.env.DATABASE_URL = 'postgres://x';
+    process.env.AUTH_SECRET  = 'a'.repeat(40);
+    process.env.WEATHER_API_KEY = 'wkey';
+    delete process.env.MAPS_API_KEY;
+    delete process.env.MAPBOX_TOKEN;
+    delete process.env.VITE_MAPS_API_KEY;
+    delete process.env.VITE_MAPBOX_TOKEN;
+
+    const lines = [];
+    const orig = console.log;
+    console.log = (...args) => lines.push(args.join(' '));
+    try { mod.logProductionStartupBanner(); }
+    finally { console.log = orig; }
+
+    const joined = lines.join('\n');
+    expect(joined).toMatch(/\[Farroway\] Weather: active/);
+    expect(joined).toMatch(/\[Farroway\] Maps: disabled \(no key\)/);
+
+    restoreEnv();
+  });
 });
