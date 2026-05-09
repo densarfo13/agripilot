@@ -24,6 +24,10 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import useDetectedRegion from '../../hooks/useDetectedRegion.js';
 
+// Soft Ochre system + Sell refinement spec §9 (May 2026) —
+// white-on-beige pill, ochre "Set region" CTA, growth-green
+// "Detected" tag (genuine success signal). Region value stays
+// crisp dark ink for legibility on the warm surface.
 const S = {
   pill: {
     display: 'flex',
@@ -31,37 +35,41 @@ const S = {
     justifyContent: 'space-between',
     gap: 8,
     padding: '10px 12px',
-    borderRadius: 10,
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: 12,
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.08)',
     fontSize: 13,
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset',
   },
   label: {
     fontSize: 11,
     fontWeight: 700,
-    letterSpacing: '0.04em',
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.6)',
+    color: '#667085',
   },
-  value: { color: '#fff', fontWeight: 700 },
+  value: { color: '#1F2933', fontWeight: 700 },
   detectedTag: {
     fontSize: 10,
     fontWeight: 700,
-    color: '#86EFAC',
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    color: '#3F6A3F',
+    background: 'rgba(94,142,94,0.12)',
+    border: '1px solid rgba(94,142,94,0.36)',
     padding: '2px 6px',
     borderRadius: 999,
   },
+  // Soft-ochre "Set your location" CTA — replaces the legacy
+  // amber pill so the call-to-action lives on the same accent
+  // family as the rest of the page primary actions.
   setBtn: {
     appearance: 'none',
-    border: '1px solid rgba(252,211,77,0.40)',
-    background: 'rgba(252,211,77,0.10)',
-    color: '#FCD34D',
-    padding: '6px 10px',
+    border: '1px solid rgba(212,163,95,0.42)',
+    background: 'rgba(212,163,95,0.12)',
+    color: '#7A5A28',
+    padding: '6px 12px',
     borderRadius: 999,
     fontSize: 12,
-    fontWeight: 700,
+    fontWeight: 800,
     cursor: 'pointer',
     fontFamily: 'inherit',
   },
@@ -103,8 +111,21 @@ export default function RegionDetectChip({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, region, country]);
 
-  const showFallback = !region && (status === 'failed' || status === 'unsupported');
-  const showDetecting = !region && status === 'detecting';
+  // Sell refinement spec §9 (May 2026) — defensive value
+  // composition. The previous logic surfaced the literal "—"
+  // em-dash next to a country code (visible as "REGION —, US")
+  // when the detected region returned whitespace. We trim both
+  // halves AND filter out any single-em-dash sentinel before
+  // composing the display string. When both region and country
+  // are empty, the chip flips to the "Region not set" + [Set
+  // region] CTA path.
+  const cleanRegion  = (region  || '').replace(/^\s*[—–-]\s*$/, '').trim();
+  const cleanCountry = (country || '').replace(/^\s*[—–-]\s*$/, '').trim();
+  const placeText = [cleanRegion, cleanCountry].filter(Boolean).join(', ');
+
+  const showFallback = !placeText
+    && (status === 'failed' || status === 'unsupported' || status === 'idle' || status === 'detected');
+  const showDetecting = !placeText && status === 'detecting';
 
   return (
     <div style={{ ...S.pill, ...(style || null) }} data-testid="sell-region-detect">
@@ -113,24 +134,32 @@ export default function RegionDetectChip({
       </span>
 
       {showFallback ? (
-        <button
-          type="button"
-          onClick={onSetLocation}
-          style={S.setBtn}
-          data-testid="sell-region-set-cta"
-        >
-          {tStrict('sell.region.setLocation', 'Set your location')}
-        </button>
+        <span style={S.rightCol}>
+          <span
+            style={{ ...S.value, color: '#667085', fontWeight: 600 }}
+            data-testid="sell-region-not-set"
+          >
+            {tStrict('sell.regionNotSet', 'Region not set')}
+          </span>
+          <button
+            type="button"
+            onClick={onSetLocation}
+            style={S.setBtn}
+            data-testid="sell-region-set-cta"
+          >
+            {tStrict('sell.setRegion', 'Set region')}
+          </button>
+        </span>
       ) : showDetecting ? (
-        <span style={{ ...S.value, color: 'rgba(255,255,255,0.65)' }} data-testid="sell-region-detecting">
+        <span style={{ ...S.value, color: '#667085' }} data-testid="sell-region-detecting">
           {tStrict('sell.region.detecting', 'Detecting\u2026')}
         </span>
       ) : (
         <span style={S.rightCol}>
           <span style={S.value} data-testid="sell-region-value">
-            {region || country || '—'}
+            {placeText}
           </span>
-          {status === 'detected' && (region || country) && !initialRegion ? (
+          {status === 'detected' && placeText && !initialRegion ? (
             <span style={S.detectedTag} data-testid="sell-region-detected-tag">
               {tStrict('sell.region.detectedTag', 'Detected')}
             </span>

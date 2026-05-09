@@ -390,11 +390,14 @@ export default function Sell() {
            Marketplace-ready feel. Realistic produce illustration
            sets a trustworthy, ready-to-sell tone before the form
            below loads. */}
+      {/* Sell refinement spec §14 (May 2026) — short headline
+           + subtitle, realistic produce hero. The richer market
+           imagery lives at /images/page-hero/sell.svg already. */}
       <PremiumPageHero
         mode="farm"
-        eyebrow="Sell"
-        title="Reach buyers for your harvest"
-        subtitle="List your produce, see who's interested."
+        eyebrow={tSafe('premium.eyebrow.sell', 'Sell')}
+        title={tSafe('sell.title', 'Sell your produce')}
+        subtitle={tSafe('sell.subtitle', 'Let nearby buyers know when your crop is ready.')}
         bgImage="/images/page-hero/sell.svg"
         accent="green"
         testId="sell-hero"
@@ -542,6 +545,20 @@ export default function Sell() {
             />
           </div>
         ) : null}
+
+        {/* Sell refinement spec §10 — single lightweight market
+            insight. Calm ochre ribbon above the form so the
+            farmer sees one helpful signal before committing
+            to details. Static copy by default; the existing
+            MarketInsightCard above (v2On flag) still surfaces
+            crop-specific demand when available. */}
+        <p style={S.marketInsight} data-testid="sell-market-insight">
+          <span aria-hidden="true">💡</span>
+          <span>
+            {tSafe('sell.marketInsight',
+              'Listings with a recent photo and clear ready date attract more buyer interest.')}
+          </span>
+        </p>
 
         <form onSubmit={handleSubmit} style={S.form} noValidate>
           <label style={S.label} htmlFor="sell-crop">
@@ -769,14 +786,20 @@ export default function Sell() {
   );
 }
 
+// Soft Ochre / Beige system + Sell refinement spec (May 2026).
+// PremiumPage shell already paints the beige body wash, so
+// `S.page` here is the legacy fallback used only by the early-
+// return empty/success states (which still wrap in <main>).
+// Card surfaces below flip from dark-navy panels to white-on-
+// beige with warm shadows; primary CTAs live on the ochre
+// gradient; growth-green is reserved for the "Verified seller"
+// trust badge only.
 const S = {
   page: {
     minHeight: '100vh',
-    background: `linear-gradient(180deg, ${C.navy} 0%, ${C.darkPanel} 100%)`,
-    color: C.white,
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     display: 'flex',
-    // Switched from row to column so the status overlay can stack
-    // ABOVE the existing form card without being pushed sideways.
     flexDirection: 'column',
     alignItems: 'center',
     padding: '1.5rem 1rem 4rem',
@@ -792,33 +815,34 @@ const S = {
     marginBottom: '0.75rem',
   },
   statusCard: {
-    background: '#102C47',
-    border: '1px solid #1F3B5C',
-    borderRadius: 12,
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.08)',
+    borderRadius: 14,
     padding: '14px 16px',
-    color: C.white,
+    color: '#1F2933',
     display: 'flex',
     flexDirection: 'column',
     gap: 4,
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 8px 18px -10px rgba(80,60,30,0.18)',
   },
   statusEyebrow: {
     margin: 0,
     fontSize: '0.7rem',
-    fontWeight: 700,
-    color: '#86EFAC',
+    fontWeight: 800,
+    color: '#3F6A3F',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
   },
   statusTitle: {
     margin: 0,
     fontSize: '1.0625rem',
-    fontWeight: 700,
-    color: C.white,
+    fontWeight: 800,
+    color: '#1F2933',
   },
   statusMeta: {
     margin: 0,
     fontSize: '0.85rem',
-    color: 'rgba(255,255,255,0.65)',
+    color: '#667085',
   },
   // Body row carries the title block on the left and the buyer
   // chip on the right. `flexWrap: 'wrap'` keeps the chip from
@@ -843,15 +867,16 @@ const S = {
   // affordance without competing with the primary "Create
   // Listing" CTA below the form. `minHeight: 36` keeps the
   // tap target comfortable on mobile.
+  // Buyer-count chip — Soft Ochre primary affordance.
   statusChip: {
     appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.55)',
-    background: 'rgba(34,197,94,0.10)',
-    color: '#86EFAC',
+    border: '1px solid rgba(212,163,95,0.50)',
+    background: 'rgba(212,163,95,0.14)',
+    color: '#7A5A28',
     borderRadius: 999,
     padding: '6px 12px',
     fontSize: '0.8125rem',
-    fontWeight: 700,
+    fontWeight: 800,
     cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
@@ -864,44 +889,46 @@ const S = {
   // tighter title cadence per the visual reference. No layout
   // changes — the form stays in the same column with the same
   // spacing and the same fields.
+  // Soft Ochre form card — white-on-beige surface, warm shadow,
+  // dark ink for legibility.
   card: {
     width: '100%',
     maxWidth: '32rem',
-    background: '#102C47',
-    border: '1px solid #1F3B5C',
-    borderRadius: '14px',
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.08)',
+    borderRadius: '18px',
     padding: '1.25rem 1.25rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 18px 32px -16px rgba(80,60,30,0.22)',
   },
   title: {
     margin: '0.4rem 0 0',
     fontSize: '1.25rem',
-    fontWeight: 700,
-    color: C.white,
+    fontWeight: 800,
+    color: '#1F2933',
     letterSpacing: '-0.005em',
   },
-  lead:    { margin: 0, color: 'rgba(255,255,255,0.6)',
+  lead:    { margin: 0, color: '#667085',
              fontSize: '0.875rem', lineHeight: 1.5 },
   successIcon: { fontSize: '2.25rem' },
-  empty:   { margin: 0, color: 'rgba(255,255,255,0.78)',
+  empty:   { margin: 0, color: '#1F2933',
              fontSize: '0.9375rem', lineHeight: 1.55 },
   form:    { display: 'flex', flexDirection: 'column', gap: '0.85rem',
              marginTop: '0.5rem' },
   row:     { display: 'flex', gap: '0.65rem' },
   label:   { display: 'flex', flexDirection: 'column', gap: '0.35rem',
-             color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' },
-  // Inputs use the snippet's `#1A3B5D` filled surface so the
-  // focusable controls read as a single clear group inside the
-  // card. Native `<select>` and `<input type="date">` inherit
-  // the same styling.
+             color: '#667085', fontSize: '0.8125rem',
+             fontWeight: 700, letterSpacing: '0.005em' },
+  // Form inputs: white surface inside the warm card so each
+  // focusable control reads cleanly. Subtle ochre focus border.
   input:   {
-    background: '#1A3B5D',
-    border: '1px solid #1F3B5C',
-    borderRadius: '8px',
+    background: '#FFFFFF',
+    border: '1px solid rgba(31,41,51,0.14)',
+    borderRadius: '10px',
     padding: '0.7rem 0.85rem',
-    color: C.white,
+    color: '#1F2933',
     fontSize: '0.9375rem',
     outline: 'none',
     boxSizing: 'border-box',
@@ -909,51 +936,72 @@ const S = {
   },
   formError: {
     margin: 0,
-    background: 'rgba(239,68,68,0.10)',
-    border: '1px solid rgba(239,68,68,0.30)',
-    color: '#FCA5A5',
+    background: 'rgba(209,77,77,0.10)',
+    border: '1px solid rgba(209,77,77,0.30)',
+    color: '#9B2A2A',
     padding: '0.6rem 0.85rem',
-    borderRadius: '8px',
+    borderRadius: '10px',
     fontSize: '0.875rem',
+    fontWeight: 600,
   },
   regionPill: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
     padding: '0.5rem 0.75rem',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: '#F2E3C3',
+    border: '1px solid rgba(212,163,95,0.42)',
     borderRadius: '999px',
-    color: C.lightGreen,
+    color: '#7A5A28',
     fontSize: '0.8125rem',
     alignSelf: 'flex-start',
   },
   regionLabel: { textTransform: 'uppercase', letterSpacing: '0.06em',
                  fontWeight: 700, opacity: 0.85 },
-  regionVal:   { color: C.white, fontWeight: 700 },
+  regionVal:   { color: '#1F2933', fontWeight: 700 },
   btnRow:      { display: 'flex', flexWrap: 'wrap', gap: '0.5rem',
                  marginTop: '0.5rem' },
+  // Soft Ochre primary CTA — ochre gradient pill, replaces the
+  // legacy neon-green button.
   btnPrimary: {
     display: 'inline-flex', alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    padding: '0.875rem 1.25rem', borderRadius: '10px',
-    border: 'none', background: C.green, color: C.white,
-    fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    padding: '0.95rem 1.25rem', borderRadius: '999px',
+    border: 'none',
+    background: 'linear-gradient(180deg, #D4A35F 0%, #B9853F 100%)',
+    color: '#FFFFFF',
+    fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
+    boxShadow: '0 10px 24px rgba(185,133,63,0.32)',
     minHeight: '48px',
+    letterSpacing: '0.005em',
   },
   btnGhost: {
     display: 'inline-flex', alignItems: 'center',
     justifyContent: 'center',
-    padding: '0.85rem 1.25rem', borderRadius: '12px',
-    border: '1px solid rgba(255,255,255,0.18)',
-    background: 'transparent', color: C.white,
+    padding: '0.85rem 1.25rem', borderRadius: '999px',
+    border: '1px solid rgba(31,41,51,0.18)',
+    background: 'transparent', color: '#1F2933',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
     minHeight: '46px',
   },
   privacy: {
     margin: '0.75rem 0 0',
-    color: 'rgba(255,255,255,0.55)',
+    color: '#667085',
     fontSize: '0.8125rem',
     lineHeight: 1.5,
+  },
+  // Sell refinement spec §10 — single calm market insight ribbon
+  // shown ABOVE the form so the farmer sees one helpful signal
+  // before committing to details. Subtle ochre tint, warm earth
+  // ink. One line, no chart, no badge stack.
+  marketInsight: {
+    display: 'flex', alignItems: 'center', gap: '0.55rem',
+    padding: '0.6rem 0.85rem',
+    background: 'rgba(212,163,95,0.10)',
+    border: '1px solid rgba(212,163,95,0.32)',
+    borderRadius: 12,
+    color: '#7A5A28',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    lineHeight: 1.4,
   },
 };

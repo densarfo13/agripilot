@@ -26,41 +26,52 @@
  *   • Never throws.
  */
 
+// Sell refinement spec \u00A73 (May 2026) \u2014 replace "Low Trust" /
+// "Medium Trust" negative wording with calm progression copy.
+// Farmers should never feel the app is calling them untrusted.
+// All three live tones now read as positive milestones; the
+// numeric score is hidden so the bar is qualitative, not a
+// public score.
 const TONES = {
   high: {
-    bg:     'rgba(34,197,94,0.12)',
-    border: 'rgba(34,197,94,0.35)',
-    color:  '#86EFAC',
-    label:  'High Trust',
+    bg:     'rgba(94,142,94,0.14)',
+    border: 'rgba(94,142,94,0.36)',
+    color:  '#3F6A3F',
+    label:  'Verified seller',
   },
   medium: {
-    bg:     'rgba(245,158,11,0.12)',
-    border: 'rgba(245,158,11,0.35)',
-    color:  '#FDE68A',
-    label:  'Medium Trust',
+    bg:     'rgba(212,163,95,0.16)',
+    border: 'rgba(212,163,95,0.42)',
+    color:  '#7A5A28',
+    label:  'Verification in progress',
   },
   low: {
-    bg:     'rgba(239,68,68,0.10)',
-    border: 'rgba(239,68,68,0.35)',
-    color:  '#FCA5A5',
-    label:  'Low Trust',
+    bg:     'rgba(212,163,95,0.10)',
+    border: 'rgba(212,163,95,0.32)',
+    color:  '#7A5A28',
+    label:  'Buyer visibility improves with complete listings',
   },
   building: {
-    bg:     'rgba(255,255,255,0.05)',
-    border: 'rgba(255,255,255,0.16)',
-    color:  'rgba(255,255,255,0.42)',
-    label:  'Building trust score\u2026',
+    bg:     'rgba(31,41,51,0.05)',
+    border: 'rgba(31,41,51,0.14)',
+    color:  '#667085',
+    label:  'Verification in progress',
   },
 };
 
-const TOOLTIP = 'Based on activity, responsiveness, and recent transactions';
+const TOOLTIP = 'Buyer visibility grows as you complete listings and respond promptly.';
 
 export default function TrustScoreBadge({ score, level, building, size = 'sm' }) {
   const key  = building ? 'building' : (level in TONES ? level : 'building');
   const tone = TONES[key];
-  const text = building || key === 'building'
-    ? tone.label
-    : `${tone.label} \u00B7 ${Number.isFinite(Number(score)) ? Math.round(Number(score)) : '\u2014'}`;
+  // Positive label only \u2014 score number is no longer surfaced
+  // to the farmer (refinement spec \u00A73). Internal analytics +
+  // the underlying engine still receive `score` via props.
+  const text = tone.label;
+  // suppress lint: score is intentionally unused in the visible
+  // label per the refinement spec; kept on the prop signature
+  // so call sites + analytics dashboards stay unchanged.
+  void score;
 
   return (
     <span
