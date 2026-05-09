@@ -35,6 +35,8 @@ import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
 import FarmSnapshotCard from '../components/farm/FarmSnapshotCard.jsx';
+import FarmManageSheet from '../components/farm/FarmManageSheet.jsx';
+import FarmOpportunitiesCard from '../components/farm/FarmOpportunitiesCard.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -188,6 +190,10 @@ export default function MyFarmPage() {
   }, [photoStoreKey]);
   const [farmPhoto, setFarmPhoto] = useState(initialPhoto);
   const [photoBusy, setPhotoBusy] = useState(false);
+  // Manage-farm bottom sheet (My Farm refinement spec §5).
+  // Single state; the FarmSheet itself handles Escape +
+  // backdrop dismissal.
+  const [_manageSheetOpen, _setManageSheetOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   // ── Today's farm action + progress derivation ────────────────
@@ -699,7 +705,19 @@ export default function MyFarmPage() {
         }
         size={sizeValue && sizeValue !== tSafe('myFarm.notSet', 'Not set') ? sizeValue : ''}
         stageLabel={stageValue && stageValue !== tSafe('myFarm.notSet', 'Not set') ? stageValue : ''}
-        onManage={() => { try { navigate(editFarmUrl); } catch { /* swallow */ } }}
+        onManage={() => _setManageSheetOpen(true)}
+      />
+
+      {/* My Farm refinement spec §10 — single calm card that
+          consolidates Funding + Sell into a "Farm opportunities"
+          surface. Hidden for backyard users via the same
+          visibility registry the legacy shortcut row consults
+          (_canSeeFunding / _canSeeSell). */}
+      <FarmOpportunitiesCard
+        showFunding={_canSeeFunding}
+        showSell={_canSeeSell}
+        onOpenFunding={() => { try { navigate('/opportunities'); } catch { /* swallow */ } }}
+        onOpenSell={() => { try { navigate('/sell'); } catch { /* swallow */ } }}
       />
       {/* Hidden file input — clicked imperatively from the card. */}
       <input
@@ -872,7 +890,7 @@ export default function MyFarmPage() {
                                      row, doesn't edit this farm)
             • Switch Farm          — scrolls to FarmSwitcher
       */}
-      <div style={S.actionStack} data-testid="my-farm-actions">
+      <div style={{ ...S.actionStack, display: 'none' }} hidden aria-hidden="true" data-testid="my-farm-actions">
         <button
           type="button"
           onClick={() => navigate(editFarmUrl)}
@@ -995,7 +1013,7 @@ export default function MyFarmPage() {
         // alongside the existing import block.
         if (!_canSeeFunding && !_canSeeSell) return null;
         return (
-          <div style={S.shortcutRow} data-testid="my-farm-shortcuts">
+          <div style={{ ...S.shortcutRow, display: 'none' }} hidden aria-hidden="true" data-testid="my-farm-shortcuts">
             {_canSeeFunding ? (
               <button
                 type="button"
@@ -1055,6 +1073,37 @@ export default function MyFarmPage() {
       {/* Bottom spacer so the bottom-nav doesn't cover the help
           card on phones with translucent nav (spec §7 mobile rule). */}
       <div style={S.bottomSpacer} aria-hidden="true" />
+
+      {/* Manage-farm bottom sheet (refinement spec §5).
+          Renders only when open — closes on backdrop tap,
+          Escape, or any item selection. Each item routes to
+          the same destination the legacy buttons used (Edit
+          → editFarmUrl, Add → /onboarding/backyard or /farm/new,
+          Switch → emits the existing switcher event, Upload →
+          triggers the same hidden file input). */}
+      <FarmManageSheet
+        open={_manageSheetOpen}
+        mode={isBackyardActive ? 'garden' : 'farm'}
+        onClose={() => _setManageSheetOpen(false)}
+        onEdit={() => { try { navigate(editFarmUrl); } catch { /* swallow */ } }}
+        onUploadPhoto={() => {
+          try {
+            if (fileInputRef.current && typeof fileInputRef.current.click === 'function') {
+              fileInputRef.current.click();
+            }
+          } catch { /* swallow */ }
+        }}
+        onSwitchFarm={hasOtherFarm ? handleSwitchFarm : null}
+        onAdd={() => {
+          try {
+            if (isBackyardActive) {
+              navigate('/farm/new?intent=farm');
+            } else {
+              navigate('/onboarding/backyard');
+            }
+          } catch { /* swallow */ }
+        }}
+      />
 
       {/* Floating voice + camera launchers used to live here, but
           they cluttered the My Farm / My Grow profile. Scan / mic
