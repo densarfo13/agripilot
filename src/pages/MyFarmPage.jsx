@@ -458,6 +458,19 @@ export default function MyFarmPage() {
   const _heroEyebrow = isBackyardActive
     ? tSafe('premium.eyebrow.myGrow', 'My Grow')
     : tSafe('premium.eyebrow.myFarm', 'My Farm');
+
+  // May 2026 Garden Mode semantic cleanup — single source of truth
+  // for the "no name set yet" fallback label. In garden mode the
+  // user is naming a personal grow space (balcony, herb bed,
+  // backyard plot), not a commercial farm — defaulting to
+  // "My Farm" leaks farm vocabulary into the garden experience.
+  // The fallback now branches on mode + reads through tSafe so
+  // translators can ship locale-specific copy later. Both
+  // FarmIdentityCard + FarmSnapshotCard consume this same value
+  // so the two cards can never disagree.
+  const _unnamedLabel = isBackyardActive
+    ? tSafe('myGrow.unnamedGarden', 'My Garden')
+    : tSafe('myFarm.unnamedFarm', 'My Farm');
   const _heroTitle = (() => {
     if (isBackyardActive) {
       return tSafe('myGrow.hero.title', 'Your living garden');
@@ -660,7 +673,7 @@ export default function MyFarmPage() {
         photo={farmPhoto}
         busy={photoBusy}
         onPickClick={() => fileInputRef.current?.click()}
-        farmName={farm.farmName || farm.name || tSafe('myFarm.unnamedFarm', 'My Farm')}
+        farmName={farm.farmName || farm.name || _unnamedLabel}
         location={
           farm.location || farm.locationLabel
           || localizeCountry(farm.country || farm.countryCode, lang)
@@ -677,7 +690,7 @@ export default function MyFarmPage() {
           that grep for them; this card is the new primary
           reading surface. */}
       <FarmSnapshotCard
-        farmName={farm.farmName || farm.name || tSafe('myFarm.unnamedFarm', 'My Farm')}
+        farmName={farm.farmName || farm.name || _unnamedLabel}
         location={
           (farm.location || farm.locationLabel)
             ? `${farm.location || farm.locationLabel}${
