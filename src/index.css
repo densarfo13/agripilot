@@ -443,6 +443,39 @@ select option:checked {
 @keyframes farroway-shimmer-x  { 0% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
 @keyframes farroway-progress-fill { from { width: 0%; } to { width: var(--ff-progress, 0%); } }
 
+/* ── Tap feedback (May 2026 refinement spec §1) ─────────────────
+   Adds a 150ms active-state response to any interactive surface
+   that opts in via the .ff-tap class. Subtle scale + shadow shift
+   so the user gets instantaneous "the app heard me" feedback —
+   matches the spec's <150ms button-feedback target.
+
+   Why CSS not JS: the spec rules out JS animation loops, and CSS
+   :active is hardware-accelerated + zero-allocation. Disabled
+   under prefers-reduced-motion via the global guard below.
+
+   Apply to <button>, <a>, role="button" surfaces. The opacity +
+   transform pair stays within the layout box so adjacent elements
+   don't reflow. */
+.ff-tap {
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out, opacity 140ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ff-tap:active:not([disabled]):not([aria-disabled='true']) {
+  transform: scale(0.98);
+  opacity: 0.92;
+}
+.ff-tap[disabled],
+.ff-tap[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ff-tap { transition: opacity 140ms ease-out; }
+  .ff-tap:active:not([disabled]):not([aria-disabled='true']) { transform: none; }
+}
+
 /* Generic page fade-in. Wrap any route-level <main> with
    class "ff-page" and the content fades up on mount. */
 .ff-page             { animation: farroway-fade-in 200ms ease-out both; }

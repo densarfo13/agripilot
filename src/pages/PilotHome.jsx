@@ -46,6 +46,7 @@ import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
+import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 import useExperience             from '../hooks/useExperience.js';
 
@@ -306,6 +307,12 @@ export default function PilotHome() {
       try { sessionStorage.setItem('farroway_pilot_task_done', '1'); } catch { /* swallow */ }
       _setSessionTaskDone(true);
     }
+    // Refinement spec §4 — record the completion timestamp so the
+    // MemoryMomentLine on the NEXT visit can quietly reference
+    // "yesterday's task". Stored as a single millisecond integer;
+    // never read in a way that could crash if missing.
+    try { localStorage.setItem('farroway:lastTaskCompletedAt', String(Date.now())); }
+    catch { /* swallow */ }
     // Pilot analytics — fired in both modes.
     trackSafeEvent('task_completed', { taskTitle: ctxIntel.todayTask.title || null });
     // Garden Mode: notify the timeline bridge so a 'task_completed'
@@ -360,6 +367,52 @@ export default function PilotHome() {
   if (!experienceEntity && local.farm && experienceMode === 'farm') {
     experienceEntity = local.farm;
   }
+
+  // ─── Memory-moment context (refinement spec §4) ─────────────
+  // Reads the lightweight signals already scattered across
+  // localStorage — no new fetches. resolveMemoryMoment() returns
+  // at most ONE moment, and self-suppresses when nothing
+  // qualifies, so the page stays calm by default.
+  const _wxCondition = weather && weather.condition;
+  const _wxRainChance = weather && weather.rainChance;
+  const _wxTemp = weather && weather.temp;
+  const _habitStreak = habit && habit.streak;
+  const memoryCtx = useMemo(() => {
+    const out = {
+      mode: experienceMode,
+      weather,
+      streak: Number.isFinite(_habitStreak) ? _habitStreak : null,
+      recentScan: null,
+      lastTaskCompletedAt: null,
+    };
+    try {
+      // Most-recent scan history entry (premium scan-usefulness
+      // store). Each entry already carries `issue` + `createdAt`.
+      const raw = _safeJsonGet('farroway_scan_history_v1');
+      if (Array.isArray(raw) && raw.length > 0) {
+        const latest = raw[0];
+        if (latest && typeof latest === 'object') {
+          const ts = latest.createdAt || latest.timestamp || latest.at;
+          const t = typeof ts === 'number' ? ts : Date.parse(ts || '');
+          const daysAgo = Number.isFinite(t)
+            ? Math.max(0, (Date.now() - t) / (24 * 60 * 60 * 1000))
+            : null;
+          out.recentScan = {
+            issue:    latest.issue || latest.title || latest.label || '',
+            severity: latest.severity || null,
+            daysAgo,
+            fromMode: latest.experience || null,
+          };
+        }
+      }
+    } catch { /* swallow — memory line just stays hidden */ }
+    try {
+      const raw = _safeGet('farroway:lastTaskCompletedAt');
+      if (raw) out.lastTaskCompletedAt = Number(raw) || raw;
+    } catch { /* swallow */ }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experienceMode, _wxCondition, _wxRainChance, _wxTemp, _habitStreak]);
 
   return (
     <div
@@ -464,6 +517,15 @@ export default function PilotHome() {
              WeatherHeroActionCard above has already echoed the
              "on track" message + offered the same scan CTA, so
              this card stays calm and complementary. */}
+        {/* Memory moment (refinement spec §4 — emotional continuity).
+            Shows ONE small contextual line drawn from existing
+            signals (recent scan, recent weather, care streak,
+            last-task recency). Self-suppresses when no signal
+            qualifies, so the page stays calm by default. */}
+        <FeatureShell name="memory-moment" silent>
+          <MemoryMomentLine ctx={memoryCtx} />
+        </FeatureShell>
+
         {/* Mockup-aligned (May 2026) — when the task is OPEN we
             still surface a compact "Today's task" card so the
             user can mark done in-place; when DONE we collapse
@@ -481,6 +543,7 @@ export default function PilotHome() {
               type="button"
               onClick={handleMarkDone}
               style={S.btnPrimary}
+              className="ff-tap"
               data-testid="pilot-home-task-cta"
             >
               {ctxIntel.todayTask.cta}
@@ -513,6 +576,7 @@ export default function PilotHome() {
           <Link
             to="/sell"
             style={S.ctxSellTile}
+            className="ff-tap"
             data-testid="pilot-home-ctx-sell-prompt"
           >
             {ctxIntel.sellPrompt}

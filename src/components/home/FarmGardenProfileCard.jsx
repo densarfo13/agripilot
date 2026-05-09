@@ -131,6 +131,7 @@ export default function FarmGardenProfileCard({
     <Link
       to={to}
       style={S.card}
+      className="ff-tap"
       data-testid={testId}
       data-mode={isGarden ? 'garden' : 'farm'}
       aria-label={primary + ' — ' + subtitle}

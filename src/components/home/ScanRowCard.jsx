@@ -74,6 +74,7 @@ export default function ScanRowCard({
       type="button"
       onClick={handleTap}
       style={S.card}
+      className="ff-tap"
       data-testid={testId}
       data-mode={isGarden ? 'garden' : 'farm'}
       aria-label={title + ' — ' + subtitle}

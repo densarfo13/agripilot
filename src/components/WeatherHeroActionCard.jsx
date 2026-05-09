@@ -414,6 +414,7 @@ export default function WeatherHeroActionCard({
                 type="button"
                 onClick={handleCta}
                 style={S.cta}
+                className="ff-tap"
                 data-testid="weather-hero-action-cta"
               >
                 <span>{ctaLabel}</span>

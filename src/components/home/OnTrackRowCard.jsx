@@ -49,7 +49,13 @@ export default function OnTrackRowCard({
   const sub2 = tSafe('home.checkTomorrow',     'Check again tomorrow morning.');
 
   return (
-    <Link to={to} style={S.card} data-testid={testId} aria-label={headline}>
+    <Link
+      to={to}
+      style={S.card}
+      className="ff-tap"
+      data-testid={testId}
+      aria-label={headline}
+    >
       <span style={S.iconWrap} aria-hidden="true">{_leafIcon()}</span>
 
       <span style={S.textCol}>
