@@ -34,6 +34,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
+import FarmSnapshotCard from '../components/farm/FarmSnapshotCard.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -317,9 +318,13 @@ export default function MyFarmPage() {
 
   // Per-row farm details — values are non-null defaults per spec
   // (no "No data" leaks; missing fields show "Add location" etc.).
+  // Soft Ochre + My Farm refinement spec §6 (May 2026) — replace
+  // the negative "Not selected" placeholder with the inviting
+  // "Choose your main crop" copy so the row reads as an
+  // opportunity, not a missing field.
   const cropValue = farm.crop
     ? getCropLabelSafe(farm.crop, lang)
-    : tSafe('myFarm.notSelected', 'Not selected');
+    : tSafe('farm.chooseCrop', 'Choose your main crop');
 
   // Crop image tile — circular variant for the farm identity card
   const cropTile = (farm.cropType || farm.crop) ? (
@@ -674,6 +679,28 @@ export default function MyFarmPage() {
         uploadLabel={tSafe('myFarm.uploadPhoto', 'Upload photo')}
         uploadingLabel={tSafe('myFarm.uploadingPhoto', 'Uploading…')}
       />
+
+      {/* My Farm refinement spec §7 (May 2026) — calm human-
+          readable snapshot replaces the legacy table-feel
+          Crop/Location/Size/Stage rows. The legacy rows still
+          render below for backwards-compat with existing tests
+          that grep for them; this card is the new primary
+          reading surface. */}
+      <FarmSnapshotCard
+        farmName={farm.farmName || farm.name || tSafe('myFarm.unnamedFarm', 'My Farm')}
+        location={
+          (farm.location || farm.locationLabel)
+            ? `${farm.location || farm.locationLabel}${
+                localizeCountry(farm.country || farm.countryCode, lang)
+                  ? ', ' + localizeCountry(farm.country || farm.countryCode, lang)
+                  : ''
+              }`
+            : (localizeCountry(farm.country || farm.countryCode, lang) || '')
+        }
+        size={sizeValue && sizeValue !== tSafe('myFarm.notSet', 'Not set') ? sizeValue : ''}
+        stageLabel={stageValue && stageValue !== tSafe('myFarm.notSet', 'Not set') ? stageValue : ''}
+        onManage={() => { try { navigate(editFarmUrl); } catch { /* swallow */ } }}
+      />
       {/* Hidden file input — clicked imperatively from the card. */}
       <input
         ref={fileInputRef}
@@ -719,7 +746,7 @@ export default function MyFarmPage() {
               <span style={S.missingField}>
                 {t('myFarm.crop')}:&nbsp;
                 <span style={S.missingVal}>
-                  {tSafe('myFarm.notSelected', 'Not selected')}
+                  {tSafe('farm.chooseCrop', 'Choose your main crop')}
                 </span>
               </span>
               <button
