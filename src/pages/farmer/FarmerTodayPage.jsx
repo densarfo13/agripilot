@@ -684,14 +684,25 @@ export default function FarmerTodayPage() {
     };
   }, [liveWeather, state.today]);
 
-  const engineSnapshot = useMemo(() => generateTasks({
-    farm:     activeCycle || null,
-    crop:     activeCycle?.cropType || null,
-    stage:    activeCycle?.lifecycleStatus || null,
-    weather:  weatherSummary,
-    location: region || null,
-    completions: getTaskCompletions(),
-  }), [activeCycle, weatherSummary, region, progressTick]);
+  const engineSnapshot = useMemo(() => {
+    // `progressTick` is intentionally listed in the dep array
+    // so this memo recomputes after every task-completion mutation
+    // (the tick is bumped from a useEffect that watches the
+    // task-store). The acknowledgement via `void` below is what
+    // satisfies the exhaustive-deps lint rule — `getTaskCompletions()`
+    // reads its data from a mutable store that progressTick tracks,
+    // so the dep is real even though the variable isn't read directly
+    // in the body.
+    void progressTick;
+    return generateTasks({
+      farm:     activeCycle || null,
+      crop:     activeCycle?.cropType || null,
+      stage:    activeCycle?.lifecycleStatus || null,
+      weather:  weatherSummary,
+      location: region || null,
+      completions: getTaskCompletions(),
+    });
+  }, [activeCycle, weatherSummary, region, progressTick]);
 
   // ─── Journey state — derived once per render and persisted ──
   // Keeps the single source of truth (farroway.journeyState) in sync

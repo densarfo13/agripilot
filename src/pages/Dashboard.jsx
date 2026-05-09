@@ -20,6 +20,13 @@ import { safeTrackEvent } from '../lib/analytics.js';
 // Single source of truth for support email — replaces the
 // previous hardcoded 'mailto:support@farroway.app' fallbacks.
 import { mailtoSupport } from '../config/support.js';
+// May 2026 final-cleanup pass — Dashboard.jsx (V2Dashboard) is
+// disconnected from production farmer routing (RoleAwareDashboard
+// redirects /dashboard → /home for farmers), but we still migrate
+// its tokens off the legacy `#86EFAC` neon green so any direct
+// import / lazy reference / future re-wire never reintroduces
+// the legacy palette. Resolves to the locked olive-earth tone.
+import { PREMIUM_TOKENS as T } from '../components/premium/tokens.js';
 import { completeTask, getLandBoundaries, getSeedScans, getFarmTasks } from '../lib/api.js';
 import ModeIndicator from '../components/ModeIndicator.jsx';
 import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
@@ -1838,7 +1845,7 @@ const S = {
     fontWeight: 800,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    color: '#86EFAC',
+    color: T.green,
     background: 'rgba(34,197,94,0.10)',
     border: '1px solid rgba(34,197,94,0.32)',
     padding: '3px 10px',
@@ -1925,7 +1932,7 @@ const S = {
     whiteSpace: 'nowrap',
   },
   upNextChevron: {
-    color: '#86EFAC',
+    color: T.green,
     flex: '0 0 auto',
     display: 'inline-flex',
     alignItems: 'center',
@@ -2076,7 +2083,7 @@ const S = {
     borderRadius: '50%',
     background: 'rgba(34,197,94,0.16)',
     border: '1px solid rgba(34,197,94,0.45)',
-    color: '#86EFAC',
+    color: T.green,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '1.5rem', fontWeight: 800,
   },
@@ -2206,7 +2213,7 @@ const S = {
   triggerChipSell: {
     background: 'rgba(34,197,94,0.12)',
     borderColor: 'rgba(34,197,94,0.45)',
-    color: '#86EFAC',
+    color: T.green,
   },
   triggerChipFunding: {
     background: 'rgba(245,158,11,0.12)',
@@ -2241,7 +2248,7 @@ const S = {
     minHeight: 52,
   },
   helpRowIcon: {
-    color: '#86EFAC',
+    color: T.green,
     display: 'inline-flex',
     alignItems: 'center',
     flex: '0 0 auto',
@@ -2262,7 +2269,7 @@ const S = {
   helpRowAction: {
     fontSize: '0.8125rem',
     fontWeight: 700,
-    color: '#86EFAC',
+    color: T.green,
     display: 'inline-flex',
     alignItems: 'center',
     whiteSpace: 'nowrap',

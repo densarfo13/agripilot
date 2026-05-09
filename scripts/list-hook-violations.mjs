@@ -35,7 +35,7 @@ import { ESLint } from 'eslint';
 // Pre-existing exhaustive-deps violations at the time of the
 // Safe Runtime Layer commit (20f836c, May 2026). Reducing this
 // number is always good; raising it fails CI.
-const EXHAUSTIVE_DEPS_BASELINE = 100; // measured after Safe Runtime Layer + 3 targeted fixes
+const EXHAUSTIVE_DEPS_BASELINE = 99; // May 2026 — fixed FarmerTodayPage progressTick dep
 
 // ─────────────────────────────────────────────────────────────────
 
