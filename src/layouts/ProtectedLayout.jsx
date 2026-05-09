@@ -168,11 +168,17 @@ export default function ProtectedLayout() {
   );
 }
 
+// Soft Ochre / Beige design system (May 2026 platform refactor).
+// Topbar/page chrome flips from dark navy to warm beige body wash;
+// the header itself sits on transparent so the beige background
+// shows through. Online/offline pills tuned to read on the new
+// surface — growth-green for "online" (success signal) and warm
+// amber for "offline" (warning signal).
 const S = {
   page: {
     minHeight: '100vh',
-    background: '#0F172A',
-    color: '#FFFFFF',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     paddingBottom: '70px',
   },
   container: {
@@ -203,8 +209,8 @@ const S = {
     gap: '0.3rem',
     fontSize: '0.625rem',
     fontWeight: 700,
-    color: '#86EFAC',
-    background: 'rgba(34,197,94,0.08)',
+    color: '#3F6A3F',
+    background: 'rgba(94,142,94,0.12)',
     padding: '0.2rem 0.5rem',
     borderRadius: '6px',
     letterSpacing: '0.02em',
@@ -215,8 +221,8 @@ const S = {
     gap: '0.3rem',
     fontSize: '0.625rem',
     fontWeight: 700,
-    color: '#FDE68A',
-    background: 'rgba(120,53,15,0.35)',
+    color: '#8A5C12',
+    background: 'rgba(224,162,56,0.16)',
     padding: '0.2rem 0.5rem',
     borderRadius: '6px',
     letterSpacing: '0.02em',
@@ -226,7 +232,7 @@ const S = {
     width: '5px',
     height: '5px',
     borderRadius: '50%',
-    background: '#22C55E',
+    background: '#5E8E5E',
     flexShrink: 0,
   },
   offlineDot: {
@@ -234,15 +240,15 @@ const S = {
     width: '5px',
     height: '5px',
     borderRadius: '50%',
-    background: '#F59E0B',
+    background: '#E0A238',
     flexShrink: 0,
   },
   modeToggle: {
     fontSize: '0.625rem',
     fontWeight: 600,
-    color: 'rgba(255,255,255,0.5)',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#667085',
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.08)',
     borderRadius: '6px',
     padding: '0.25rem 0.5rem',
     cursor: 'pointer',
@@ -252,11 +258,11 @@ const S = {
   },
   logoutBtn: {
     borderRadius: '6px',
-    border: '1px solid rgba(255,255,255,0.08)',
+    border: '1px solid rgba(31,41,51,0.08)',
     padding: '0.25rem 0.5rem',
     fontSize: '0.625rem',
     fontWeight: 600,
-    color: 'rgba(255,255,255,0.4)',
+    color: '#667085',
     background: 'transparent',
     cursor: 'pointer',
     minHeight: '26px',
@@ -272,8 +278,8 @@ const S = {
   spinnerSmall: {
     width: '1.5rem',
     height: '1.5rem',
-    border: '3px solid rgba(255,255,255,0.08)',
-    borderTopColor: '#22C55E',
+    border: '3px solid rgba(31,41,51,0.10)',
+    borderTopColor: '#D4A35F',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },

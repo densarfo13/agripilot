@@ -1755,9 +1755,16 @@ const S = {
   // ─── Calm Home (new standard mode) ──────────────────────
   // Minimal wrapper — CalmHomeHero provides its own full-screen
   // background. This layer is just a positioning container.
+  // Soft Ochre system (May 2026 platform refactor) — Dashboard
+  // `calmPage` is the outer positioning container. The CalmHomeHero
+  // child still draws its own full-screen background, so this layer
+  // stays mostly transparent; we add a beige body wash as a fallback
+  // for any branch (loading / basic mode) that paints THROUGH this
+  // wrapper.
   calmPage: {
     minHeight: '100vh',
-    background: 'transparent',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color:      '#1F2933',
     position: 'relative',
     padding: 0,
   },
@@ -1778,17 +1785,18 @@ const S = {
     right: 0,
     textAlign: 'center',
     fontSize: '10px',
-    opacity: 0.6,
-    color: '#9fd3c7',
+    opacity: 0.55,
+    color: '#98A2B3',
     pointerEvents: 'none',
     zIndex: 1,
   },
 
   // ─── Legacy styles (used by loading + basic mode) ────────
+  // Soft Ochre body wash (May 2026 refactor).
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
-    color: '#EAF2FF',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     // Bottom padding sized to clear BottomTabNav (~64px tall)
     // plus a small breathing buffer so the last quick-action
     // tile is never visually pinned under the fixed nav.
@@ -1866,9 +1874,10 @@ const S = {
     background: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
+  // Progress fill — growth-green (health/success signal).
   progressFill: {
     height: '100%',
-    background: '#22C55E',
+    background: '#5E8E5E',
     borderRadius: 999,
     transition: 'width 240ms ease',
   },
@@ -2033,11 +2042,12 @@ const S = {
   },
   cameraHeroCta: {
     marginTop: '0.5rem',
-    padding: '1rem', borderRadius: '16px',
-    background: '#22C55E', color: '#fff', border: 'none',
+    padding: '1rem', borderRadius: '999px',
+    background: 'linear-gradient(180deg, #D4A35F 0%, #B9853F 100%)',
+    color: '#fff', border: 'none',
     fontSize: '1.0625rem', fontWeight: 800, cursor: 'pointer',
     minHeight: '56px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(185,133,63,0.32)',
     WebkitTapHighlightColor: 'transparent',
   },
   cameraHeroSecondary: {
@@ -2265,8 +2275,8 @@ const S = {
   spinner: {
     width: '2rem',
     height: '2rem',
-    border: '3px solid rgba(255,255,255,0.06)',
-    borderTopColor: '#22C55E',
+    border: '3px solid rgba(31,41,51,0.10)',
+    borderTopColor: '#D4A35F',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },
@@ -2293,10 +2303,10 @@ const S = {
   },
   emptyBtn: {
     marginTop: '0.5rem',
-    borderRadius: '14px',
-    background: '#22C55E',
+    borderRadius: '999px',
+    background: 'linear-gradient(180deg, #D4A35F 0%, #B9853F 100%)',
     padding: '0.875rem 1.75rem',
-    fontWeight: 700,
+    fontWeight: 800,
     color: '#fff',
     border: 'none',
     cursor: 'pointer',

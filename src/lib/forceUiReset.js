@@ -58,12 +58,16 @@
 // Soft Ochre / Beige design system (May 2026 platform refactor) —
 // bumps the version so every cached client picks up the new
 // palette on first load post-deploy.
-export const FARROWAY_BUILD_VERSION = 'soft-ochre-2026-05-08-v1';
+// Soft Ochre / Beige design system — second pass: Dashboard +
+// AdminDashboard + NgoDashboardV1 + ProtectedLayout flipped to
+// the warm beige palette and remaining neon-green hex codes
+// purged from the high-leverage files.
+export const FARROWAY_BUILD_VERSION = 'soft-ochre-platform-2026-05-08-v2';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = 'soft-ochre-2026-05-08-v1';
+export const FARROWAY_UI_VERSION = 'soft-ochre-platform-2026-05-08-v2';
 
 // Monotonically-increasing build sequence — drives the direction
 // guard. Lexicographic compare on the human-readable version
@@ -188,12 +192,19 @@ function _stampVersion() {
     // eslint-disable-next-line no-console
     console.log('[Farroway] Active UI build:', FARROWAY_BUILD_VERSION);
     // Runtime integration stamp (May 2026 §14) — emitted after
-    // the premium-primitives circular import fix landed. Future
-    // crashes from premium components will appear AFTER this
-    // line in the console, making "post-stable" regressions
-    // easy to spot.
+    // the premium-primitives circular import fix landed.
     // eslint-disable-next-line no-console
     console.log('[Farroway] Runtime integration stable');
+    // Soft Ochre platform stamp (May 2026 platform-refactor pass) —
+    // single line so QA can grep the deployed build to confirm the
+    // ochre system is actually serving. ISO timestamp resolves at
+    // module load so the same value travels with the bundle.
+    // eslint-disable-next-line no-console
+    console.log(
+      '[Farroway] Soft Ochre platform build active:',
+      FARROWAY_BUILD_VERSION,
+      new Date().toISOString(),
+    );
     // eslint-disable-next-line no-console
     console.log('Farroway Build:', FARROWAY_BUILD_VERSION);
     // eslint-disable-next-line no-console

@@ -403,29 +403,36 @@ function Card({ label, value }) {
 
 function riskStyleFor(level) {
   switch (level) {
-    case 'high':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
-    case 'medium': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
-    default:       return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    // Soft Ochre system — pills tuned for legibility on beige.
+    case 'high':   return { background: 'rgba(209,77,77,0.14)',  color: '#9B2A2A' };
+    case 'medium': return { background: 'rgba(224,162,56,0.16)', color: '#8A5C12' };
+    default:       return { background: 'rgba(94,142,94,0.14)',  color: '#3F6A3F' };
   }
 }
 
 function tierStyleFor(tier) {
   switch (tier) {
-    case 'A': return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
-    case 'B': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
-    default:  return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
+    case 'A': return { background: 'rgba(94,142,94,0.14)',  color: '#3F6A3F' };
+    case 'B': return { background: 'rgba(224,162,56,0.16)', color: '#8A5C12' };
+    default:  return { background: 'rgba(209,77,77,0.14)',  color: '#9B2A2A' };
   }
 }
 
+// Soft Ochre system (May 2026 platform refactor) — admin dashboard
+// flips from dark navy to warm beige body wash. Card surfaces use
+// elevated white-on-beige; status pills are restyled below for
+// readability on the new background.
 const S = {
   page: {
-    minHeight: '100vh', background: '#0B1D34', color: '#fff',
+    minHeight: '100vh',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     padding: '1.25rem 1rem 2rem', maxWidth: '64rem', margin: '0 auto',
     boxSizing: 'border-box',
   },
-  title: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 1rem' },
-  h3:    { fontSize: '1.1rem', fontWeight: 600, margin: '1.5rem 0 0.5rem' },
-  muted: { color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' },
+  title: { fontSize: '1.5rem', fontWeight: 700, margin: '0 0 1rem', color: '#1F2933' },
+  h3:    { fontSize: '1.1rem', fontWeight: 600, margin: '1.5rem 0 0.5rem', color: '#1F2933' },
+  muted: { color: '#667085', fontSize: '0.9rem' },
   errorLine: {
     padding: '0.75rem', borderRadius: 10,
     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
@@ -439,23 +446,24 @@ const S = {
   },
   card: {
     padding: '0.875rem 1rem', borderRadius: 12,
-    border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(31,41,51,0.08)',
+    background: '#FFF9F0',
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 12px 22px -16px rgba(80,60,30,0.18)',
   },
-  cardLabel: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 },
-  cardValue: { fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' },
+  cardLabel: { fontSize: '0.75rem', color: '#667085', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' },
+  cardValue: { fontSize: '1.5rem', fontWeight: 800, marginTop: '0.25rem', color: '#1F2933' },
 
   riskList: { listStyle: 'none', padding: 0, margin: 0 },
   riskRow:  {
     display: 'flex', alignItems: 'center', gap: '0.75rem',
-    padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)',
+    padding: '0.5rem 0', borderBottom: '1px solid rgba(31,41,51,0.06)',
   },
-  riskRegion: { flex: 1, fontWeight: 600 },
+  riskRegion: { flex: 1, fontWeight: 600, color: '#1F2933' },
   riskBadge:  {
     padding: '0.15rem 0.625rem', borderRadius: 999,
     fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
   },
-  riskCount: { width: '3.5rem', textAlign: 'right', color: 'rgba(255,255,255,0.7)' },
+  riskCount: { width: '3.5rem', textAlign: 'right', color: '#667085' },
 
   tableWrap: { overflowX: 'auto', marginTop: '0.5rem' },
   table: {
@@ -464,25 +472,28 @@ const S = {
   },
   th: {
     textAlign: 'left', padding: '0.5rem 0.75rem',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-    fontWeight: 600, color: 'rgba(255,255,255,0.8)',
+    borderBottom: '1px solid rgba(31,41,51,0.10)',
+    fontWeight: 700, color: '#1F2933',
   },
   td: {
     padding: '0.5rem 0.75rem',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    color: 'rgba(255,255,255,0.85)',
+    borderBottom: '1px solid rgba(31,41,51,0.06)',
+    color: '#1F2933',
   },
 
+  // Soft Ochre primary CTA — replaces the legacy neon-green button.
   exportBtn: {
     display: 'inline-block', marginTop: '1.5rem',
-    padding: '0.625rem 1rem', borderRadius: 10,
-    background: '#22C55E', color: '#fff', fontWeight: 700,
+    padding: '0.625rem 1rem', borderRadius: 999,
+    background: 'linear-gradient(180deg, #D4A35F 0%, #B9853F 100%)',
+    color: '#fff', fontWeight: 800,
     textDecoration: 'none', fontSize: '0.95rem',
+    boxShadow: '0 8px 22px rgba(185,133,63,0.32)',
   },
   interventionCard: {
     marginTop: '0.75rem', padding: '0.875rem 1rem',
     borderRadius: 12, borderWidth: 2, borderStyle: 'solid',
-    background: 'rgba(255,255,255,0.04)',
+    background: '#FFF9F0',
   },
   interventionHeader: {
     display: 'flex', alignItems: 'center', gap: '0.75rem',

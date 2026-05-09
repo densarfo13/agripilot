@@ -329,12 +329,14 @@ function FarmerRow({ farmer, risk }) {
 
 // ─── Styles ─────────────────────────────────────────────────
 const S = {
+  // Soft Ochre body wash (May 2026 platform refactor).
   page: {
     minHeight: '100vh',
     padding: '20px 16px 96px',
     maxWidth: 920,
     margin: '0 auto',
-    color: 'var(--text-primary, #EAF2FF)',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: 'var(--text-primary, #1F2933)',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
@@ -347,11 +349,11 @@ const S = {
   headerStrip: {
     position: 'absolute',
     top: 0, left: 0, right: 0, height: 4,
-    background: 'linear-gradient(90deg, var(--role-accent, #2aa7a1), transparent)',
+    background: 'linear-gradient(90deg, var(--role-accent, #D4A35F), transparent)',
     opacity: 0.85, borderRadius: 2,
   },
-  title: { margin: '14px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary, rgba(255,255,255,0.7))', lineHeight: 1.5 },
+  title: { margin: '14px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-primary, #1F2933)' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary, #667085)', lineHeight: 1.5 },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
@@ -360,7 +362,7 @@ const S = {
   card: {
     padding: '14px 14px',
     borderRadius: 14,
-    background: 'var(--card-bg, rgba(255,255,255,0.06))',
+    background: 'var(--card-bg, #FFF9F0)',
     border: '1px solid var(--card-border, rgba(255,255,255,0.12))',
     display: 'flex',
     flexDirection: 'column',
@@ -384,7 +386,7 @@ const S = {
   filterSelect: {
     minHeight: 36,
     padding: '6px 10px',
-    background: 'var(--card-bg-strong, rgba(255,255,255,0.10))',
+    background: 'var(--card-bg-strong, #FFFFFF)',
     color: 'var(--text-primary, #EAF2FF)',
     border: '1px solid var(--card-border, rgba(255,255,255,0.18))',
     borderRadius: 10,
@@ -411,7 +413,7 @@ const S = {
     justifyContent: 'space-between',
     gap: 10,
     padding: '12px 14px',
-    background: 'var(--card-bg, rgba(255,255,255,0.06))',
+    background: 'var(--card-bg, #FFF9F0)',
     border: '1px solid var(--card-border, rgba(255,255,255,0.12))',
     borderRadius: 12,
     alignItems: 'center',
@@ -424,7 +426,7 @@ const S = {
     fontSize: 11, fontWeight: 700,
     padding: '4px 10px',
     borderRadius: 999,
-    background: 'var(--card-bg-strong, rgba(255,255,255,0.10))',
+    background: 'var(--card-bg-strong, #FFFFFF)',
     border: '1px solid var(--card-border, rgba(255,255,255,0.12))',
   },
   loadingRow: {
@@ -436,7 +438,7 @@ const S = {
     padding: '20px 14px',
     color: 'var(--text-muted, rgba(255,255,255,0.55))',
     textAlign: 'center',
-    background: 'var(--card-bg, rgba(255,255,255,0.04))',
+    background: 'var(--card-bg, #FFF9F0)',
     border: '1px dashed var(--card-border, rgba(255,255,255,0.18))',
     borderRadius: 12,
     fontSize: 13,
@@ -444,7 +446,7 @@ const S = {
   emptyCard: {
     padding: '22px 18px',
     textAlign: 'center',
-    background: 'var(--card-bg, rgba(255,255,255,0.06))',
+    background: 'var(--card-bg, #FFF9F0)',
     border: '1px solid var(--card-border, rgba(255,255,255,0.12))',
     borderRadius: 16,
     display: 'flex',
