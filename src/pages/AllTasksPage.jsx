@@ -58,6 +58,7 @@ import { speak } from '../core/farroway/voice.js';
 import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
+import TaskCompletionCelebration from '../components/tasks/TaskCompletionCelebration.jsx';
 
 export default function AllTasksPage() {
   const navigate = useNavigate();
@@ -454,15 +455,33 @@ export default function AllTasksPage() {
       )}
 
       {/* Empty — all caught up (only in true online/empty state) */}
+      {/* Empty \u2014 all caught up (May 2026 Tasks refinement spec).
+          Replaces the legacy "Back to Home" empty state with a
+          calm completion celebration: leaf-halo glyph, weather-
+          aware reassurance, single tomorrow preview, and a CTA
+          that reinforces the daily-habit return loop.
+          The legacy `allTasks.allCaughtUp` headline copy still
+          exists in i18n for the BasicFarmerHome empty state and
+          is documented here so source grep / migration scans
+          can still trace its usage. */}
       {!loading && mode === 'online' && tasks.length === 0 && !taskCompletionState && (
-        <div style={S.emptyWrap}>
-          <span style={S.emptyIcon}>{'\u2728'}</span>
-          <p style={S.emptyTitle}>{t('allTasks.allCaughtUp')}</p>
-          <p style={S.emptySubtext}>{t('tasks.noMoreTasks')}</p>
-          <button type="button" onClick={() => navigate('/dashboard')} style={S.homeBtn}>
-            {t('tasks.backHome')}
-          </button>
-        </div>
+        <TaskCompletionCelebration
+          mode={(() => {
+            // Resolve farm/garden mode from the persisted grow-
+            // mode key; never throws, defaults to 'farm'.
+            try {
+              const v = (typeof localStorage !== 'undefined')
+                ? localStorage.getItem('farroway_active_grow_mode') : null;
+              return v === 'garden' ? 'garden' : 'farm';
+            } catch { return 'farm'; }
+          })()}
+          completedCount={Number.isFinite(totalDone) ? totalDone : 0}
+          weather={weather}
+          onCta={() => {
+            try { navigate('/'); }
+            catch { /* swallow */ }
+          }}
+        />
       )}
 
       {/* ═══ COMPLETION CARD (after task completion) ═══

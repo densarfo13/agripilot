@@ -461,6 +461,26 @@ select option:checked {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* ── Tasks completion halo (May 2026 Tasks refinement §8) ───
+   Subtle "the surface is alive" pulse for the leaf halo on the
+   TaskCompletionCelebration card. CSS-only; runs once at mount
+   then settles to a 4s breathing loop at very low amplitude so
+   the page never feels twitchy. Honoured by the global
+   prefers-reduced-motion guard below. */
+@keyframes ff-completion-halo {
+  0%   { box-shadow: 0 0 0 0 rgba(94,142,94,0.30); }
+  60%  { box-shadow: 0 0 0 14px rgba(94,142,94,0.00); }
+  100% { box-shadow: 0 0 0 0 rgba(94,142,94,0.00); }
+}
+.ff-completion-halo {
+  animation: ff-completion-halo 1800ms ease-out 1;
+  will-change: box-shadow;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ff-completion-halo { animation: none; }
+}
+
 .ff-tap:active:not([disabled]):not([aria-disabled='true']) {
   transform: scale(0.98);
   opacity: 0.92;
