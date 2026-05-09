@@ -66,15 +66,110 @@ const SECTION_ORDER = [
   { key: 'partnership', labelKey: 'funding.section.partnership', fallback: 'Partnership opportunities' },
 ];
 
+// Soft Ochre / Beige system + Funding refinement spec (May 2026).
+// FundingHub now lives inside a PremiumPage shell, so the page-
+// level body wash comes from the wrapper. Local styles below
+// drive the refined hero band, region bar, filter bar, and
+// section chrome.
 const STYLES = {
   page: {
     minHeight: '100vh',
-    background: '#0B1D34',
-    color: '#fff',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
+    color: '#1F2933',
     padding: '20px 16px 96px',
     maxWidth: 1180,
     margin: '0 auto',
     boxSizing: 'border-box',
+  },
+  // ─── Premium hero band (refinement spec §2) ─────────────────
+  heroBand: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 22,
+    minHeight: 220,
+    padding: '1.6rem 1.4rem 1.5rem',
+    color: '#FFFFFF',
+    background: [
+      'linear-gradient(180deg, rgba(11,30,20,0.62) 0%, rgba(13,28,20,0.86) 100%)',
+      'url(/images/funding/hero.svg)',
+    ].join(', '),
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    boxShadow: '0 18px 32px -16px rgba(80,60,30,0.30)',
+  },
+  heroEyebrow: {
+    display: 'inline-block',
+    padding: '0.3rem 0.65rem',
+    borderRadius: 999,
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    letterSpacing: '0.10em',
+    textTransform: 'uppercase',
+    color: '#F2E3C3',
+    background: 'rgba(212,163,95,0.18)',
+    border: '1px solid rgba(212,163,95,0.45)',
+  },
+  heroTitle: {
+    margin: '0.7rem 0 0',
+    fontSize: '1.7rem',
+    fontWeight: 800,
+    letterSpacing: '-0.018em',
+    lineHeight: 1.15,
+    textShadow: '0 2px 14px rgba(0,0,0,0.45)',
+  },
+  heroSubtitle: {
+    margin: '0.3rem 0 0',
+    fontSize: '0.95rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.86)',
+    lineHeight: 1.45,
+    maxWidth: 420,
+  },
+  heroTrustRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.45rem',
+    marginTop: '1rem',
+  },
+  heroTrustChip: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    color: 'rgba(255,255,255,0.92)',
+    padding: '0.32rem 0.7rem',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.10)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    letterSpacing: '0.005em',
+    whiteSpace: 'nowrap',
+  },
+  // ─── Region intelligence bar (refinement spec §3) ──────────
+  regionBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.5rem',
+    padding: '0.7rem 0.95rem',
+    marginTop: 12,
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.08)',
+    borderRadius: 14,
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 8px 18px -10px rgba(80,60,30,0.18)',
+  },
+  regionLabel: {
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    color: '#1F2933',
+  },
+  regionChange: {
+    fontSize: '0.78rem',
+    fontWeight: 800,
+    color: '#7A5A28',
+    background: 'rgba(212,163,95,0.12)',
+    border: '1px solid rgba(212,163,95,0.42)',
+    padding: '0.35rem 0.75rem',
+    borderRadius: 999,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
   },
   header: {
     display: 'flex',
@@ -84,8 +179,8 @@ const STYLES = {
     gap: 12,
     marginBottom: 12,
   },
-  title: { margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em' },
-  subtitle: { margin: '4px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 },
+  title: { margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', color: '#1F2933' },
+  subtitle: { margin: '4px 0 0', fontSize: 13, color: '#667085', lineHeight: 1.5 },
   topRow: {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)',
@@ -100,12 +195,19 @@ const STYLES = {
     marginBottom: 24,
   },
   sectionTitle: {
-    margin: '24px 0 12px',
-    fontSize: 16,
-    fontWeight: 700,
-    letterSpacing: '0.02em',
+    margin: '24px 0 4px',
+    fontSize: 12,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.85)',
+    color: '#667085',
+  },
+  sectionSubtitle: {
+    margin: '0 0 12px',
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#667085',
+    lineHeight: 1.45,
   },
   cardsGrid: {
     display: 'grid',
@@ -115,9 +217,9 @@ const STYLES = {
   empty: {
     padding: '20px 16px',
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.55)',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px dashed rgba(255,255,255,0.10)',
+    color: '#667085',
+    background: '#FFF9F0',
+    border: '1px dashed rgba(31,41,51,0.16)',
     borderRadius: 14,
   },
   filterBar: {
@@ -127,15 +229,15 @@ const STYLES = {
     gap: 8,
     marginBottom: 20,
     padding: '10px 12px',
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.08)',
     borderRadius: 12,
   },
   filterInput: {
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.12)',
+    background: '#FFFFFF',
+    border: '1px solid rgba(31,41,51,0.12)',
     borderRadius: 8,
-    color: '#EAF2FF',
+    color: '#1F2933',
     fontSize: 13,
     padding: '6px 10px',
     outline: 'none',
@@ -403,22 +505,62 @@ export default function FundingHub() {
 
   return (
     <PremiumPage mode="farm" testId="funding-hub" maxWidth="46rem" bottomPad="2rem">
-      {/* ── Hero (premium upgrade) ────────────────────────────
-           Funding feels supportive + opportunity-focused.
-           Realistic background with a leaf-and-coin glyph
-           replaces the plain heading row. */}
-      <PremiumPageHero
-        mode="farm"
-        eyebrow={tStrict('premium.eyebrow.funding', 'Funding')}
-        title={tStrict('funding.hub.title', 'Opportunities for you')}
-        subtitle={tStrict(
-          'funding.hub.subtitle',
-          'Find relevant funding, support programs, training, and partnerships based on your location and activity.',
-        )}
-        bgImage="/images/page-hero/funding.svg"
-        accent="green"
-        testId="funding-hub-hero"
-      />
+      {/* ── Premium hero (May 2026 funding-refinement spec) ──
+           Realistic farmer-in-field SVG with a dark-green
+           gradient overlay. Trust points sit in a small chip
+           strip below the headline (refinement spec §2). The
+           long disclaimer that used to live in the hero is
+           moved to a single calm trust note at the bottom of
+           the page (spec §12). */}
+      <section
+        style={STYLES.heroBand}
+        data-testid="funding-hub-hero"
+        aria-labelledby="funding-hub-title"
+      >
+        <span style={STYLES.heroEyebrow}>
+          {tStrict('premium.eyebrow.funding', 'Funding')}
+        </span>
+        <h1 id="funding-hub-title" style={STYLES.heroTitle}>
+          {tStrict('funding.title', 'Funding & Support')}
+        </h1>
+        <p style={STYLES.heroSubtitle}>
+          {tStrict('funding.subtitle', 'Opportunities that may help your farm grow.')}
+        </p>
+        <div style={STYLES.heroTrustRow}>
+          <span style={STYLES.heroTrustChip}>
+            {tStrict('funding.verifiedPrograms', 'Verified programs')}
+          </span>
+          <span style={STYLES.heroTrustChip}>
+            {tStrict('funding.relevantRegion', 'Relevant to your region')}
+          </span>
+          <span style={STYLES.heroTrustChip}>
+            {tStrict('funding.sustainableGrowth', 'Supports sustainable growth')}
+          </span>
+        </div>
+      </section>
+
+      {/* Region intelligence bar — refinement spec §3. Reads the
+          country resolved by the engine; offers a quiet "Set
+          region" link when nothing is known. Sits above the
+          filter bar so users see the active region context
+          before any filter chip. */}
+      <div style={STYLES.regionBar} data-testid="funding-region-bar">
+        <span style={STYLES.regionLabel}>
+          {country
+            ? `${tStrict('funding.programsActiveIn', 'Programs active in')} ${country}`
+            : tStrict('funding.regionUnknown', 'Programs matched to your region')}
+        </span>
+        <button
+          type="button"
+          onClick={() => { try { navigate('/profile/setup'); } catch { /* swallow */ } }}
+          style={STYLES.regionChange}
+          className="ff-tap"
+        >
+          {country
+            ? tStrict('funding.changeRegion', 'Change')
+            : tStrict('funding.setRegion',    'Set region')}
+        </button>
+      </div>
 
       {/* Phase 7C: filter bar — type toggle (All/Farmer/Backyard),
           keyword search (crop/title), and region text filter.
@@ -442,15 +584,18 @@ export default function FundingHub() {
                 style={{
                   padding: '5px 12px',
                   borderRadius: 20,
+                  // Soft Ochre — active state uses the warm
+                  // ochre accent; inactive sits on the white-on-
+                  // beige filter bar with muted ink text.
                   border: active
-                    ? '1px solid rgba(34,197,94,0.6)'
-                    : '1px solid rgba(255,255,255,0.15)',
+                    ? '1px solid rgba(212,163,95,0.55)'
+                    : '1px solid rgba(31,41,51,0.12)',
                   background: active
-                    ? 'rgba(34,197,94,0.14)'
-                    : 'transparent',
-                  color: active ? '#86EFAC' : 'rgba(255,255,255,0.65)',
+                    ? 'rgba(212,163,95,0.16)'
+                    : '#FFFFFF',
+                  color: active ? '#7A5A28' : '#667085',
                   fontSize: 12,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                   whiteSpace: 'nowrap',
@@ -496,8 +641,13 @@ export default function FundingHub() {
       <div style={wide ? STYLES.topRow : STYLES.topRowNarrow}>
         <section data-section="recommended">
           <h2 style={STYLES.sectionTitle}>
-            {tStrict('funding.section.recommended', 'Recommended for you')}
+            {tStrict('funding.recommendedForYou', 'Recommended for you')}
           </h2>
+          {/* Refinement spec §4 — short context line under the
+              section title, max one sentence. */}
+          <p style={STYLES.sectionSubtitle}>
+            {tStrict('funding.basedOnProfile', 'Based on your region, crops, and farm profile.')}
+          </p>
           {recommendedCards.length === 0 ? (
             (filterCrop || filterRegion || filterType !== 'all') ? (
               <div style={STYLES.empty}>

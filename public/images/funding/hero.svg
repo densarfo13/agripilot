@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Farmer in field at golden hour">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1a3a2c"/>
+      <stop offset="55%" stop-color="#2c4a30"/>
+      <stop offset="85%" stop-color="#7a5a2a"/>
+      <stop offset="100%" stop-color="#c98a48"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="80%" cy="65%" r="35%">
+      <stop offset="0%"  stop-color="rgba(255,220,150,0.85)"/>
+      <stop offset="100%" stop-color="rgba(255,180,90,0)"/>
+    </radialGradient>
+    <linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#3d6536"/>
+      <stop offset="55%" stop-color="#1d3a23"/>
+      <stop offset="100%" stop-color="#0a1c10"/>
+    </linearGradient>
+    <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="rgba(13,28,20,0.70)"/>
+      <stop offset="60%" stop-color="rgba(13,28,20,0.30)"/>
+      <stop offset="100%" stop-color="rgba(13,28,20,0.55)"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky + sun glow -->
+  <rect width="800" height="240" fill="url(#sky)"/>
+  <rect width="800" height="240" fill="url(#sun)"/>
+  <circle cx="624" cy="170" r="22" fill="rgba(255,235,170,0.8)"/>
+  <!-- Distant tree silhouette -->
+  <path d="M 0,235 L 60,222 L 110,232 L 150,212 L 200,224 L 260,218 L 320,232 L 380,222
+           L 440,232 L 500,222 L 560,232 L 620,216 L 680,232 L 740,222 L 800,232 L 800,250 L 0,250 Z"
+        fill="#10221a"/>
+  <!-- Canopy + perspective rows -->
+  <rect x="0" y="240" width="800" height="120" fill="url(#canopy)"/>
+  <g stroke="rgba(0,0,0,0.55)" stroke-linecap="round" fill="none">
+    <path d="M 400,240 L 400,360" stroke-width="5" stroke="rgba(40,28,16,0.95)"/>
+    <path d="M 412,240 L 540,360" stroke-width="3"/>
+    <path d="M 424,240 L 700,360" stroke-width="3.4"/>
+    <path d="M 388,240 L 260,360" stroke-width="3"/>
+    <path d="M 376,240 L 100,360" stroke-width="3.4"/>
+  </g>
+  <!-- Farmer silhouette mid-field, slightly off-centre -->
+  <g transform="translate(280,170)">
+    <ellipse cx="20" cy="120" rx="22" ry="3" fill="rgba(0,0,0,0.45)"/>
+    <!-- Wide hat brim -->
+    <ellipse cx="20" cy="22" rx="22" ry="5" fill="#2a2018"/>
+    <!-- Hat top -->
+    <ellipse cx="20" cy="18" rx="10" ry="6" fill="#3a2c1f"/>
+    <!-- Head + body -->
+    <circle cx="20" cy="32" r="8" fill="#3a2818"/>
+    <path d="M 8,42 L 32,42 L 36,80 L 4,80 Z" fill="#2c4a30"/>
+    <path d="M 4,80 L 12,118 M 36,80 L 28,118"
+          stroke="#1d2818" stroke-width="6" stroke-linecap="round"/>
+    <!-- Arm holding tool -->
+    <path d="M 12,52 L -8,72" stroke="#3a2818" stroke-width="5" stroke-linecap="round"/>
+    <path d="M -8,72 L -22,30" stroke="#7a5a2a" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <!-- Subtle leaf clusters along closer rows -->
+  <g fill="rgba(115,160,90,0.30)">
+    <ellipse cx="140" cy="290" rx="80" ry="5"/>
+    <ellipse cx="650" cy="295" rx="80" ry="5"/>
+  </g>
+  <!-- Vertical legibility overlay (top + bottom darker, middle lighter) -->
+  <rect width="800" height="360" fill="url(#overlay)"/>
+</svg>

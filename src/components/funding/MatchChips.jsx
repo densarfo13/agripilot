@@ -36,11 +36,11 @@ const TONES = {
 const S = {
   group: { display: 'flex', flexDirection: 'column', gap: 6 },
   label: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 700,
-    letterSpacing: '0.04em',
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.65)',
+    color: '#98A2B3',
   },
   row: { display: 'flex', flexWrap: 'wrap', gap: 6 },
   chip: {
@@ -109,11 +109,22 @@ export default function MatchChips({ card = {}, profile = {}, style }) {
     'Fits your farm type', 'All farm types welcome', 'Other farm types targeted', 'Farm type unknown',
   );
 
-  const chips = [
+  const allChips = [
     { id: 'crop',       status: matches.crop,       label: cropLabel   },
     { id: 'region',     status: matches.country,    label: regionLabel },
     { id: 'experience', status: matches.experience, label: expLabel    },
   ];
+
+  // Funding refinement spec §9 — DROP the negative / unknown
+  // chip variants ("Crop unknown", "Other regions targeted",
+  // "Other farm types targeted"). They feel negative and
+  // technical. Only positive / open / match chips ship in the
+  // visible UI; the rest stay in the underlying matches object
+  // for analytics and for the engine's recommendedBecause copy.
+  const chips = allChips.filter(
+    (c) => c.status === 'match' || c.status === 'open',
+  );
+  if (chips.length === 0) return null;
 
   return (
     <div style={{ ...S.group, ...(style || null) }} data-testid="funding-match-chips">
