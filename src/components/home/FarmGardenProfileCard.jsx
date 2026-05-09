@@ -28,6 +28,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
+import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
 
 /**
  * Resolve the title + subtitle pair shown in the card.
@@ -149,29 +150,30 @@ export default function FarmGardenProfileCard({
   );
 }
 
+// Soft Ochre system — white-on-beige surface, ochre icon halo.
 const S = {
   card: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
     padding: '0.85rem 0.95rem',
-    background:    'linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)',
-    border:        '1px solid rgba(255,255,255,0.07)',
+    background:    T.panelHi,
+    border:        `1px solid ${T.border}`,
     borderRadius:  '14px',
-    color:         'rgba(255,255,255,0.95)',
+    color:         T.ink,
     textDecoration:'none',
-    boxShadow:     '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 18px -8px rgba(0,0,0,0.35)',
+    boxShadow:     T.shadowCard,
   },
   iconWrap: {
     width: 38, height: 38,
     flexShrink: 0,
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: T.ochreSoft,
+    border: `1px solid ${T.ochreBorder}`,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#86EFAC',
+    color: T.ochreInk,
   },
   textCol: {
     display: 'flex',
@@ -183,6 +185,7 @@ const S = {
     fontSize: '0.95rem',
     fontWeight: 800,
     letterSpacing: '-0.005em',
+    color: T.ink,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -191,7 +194,7 @@ const S = {
     marginTop: 2,
     fontSize: '0.8rem',
     fontWeight: 600,
-    color: 'rgba(255,255,255,0.62)',
+    color: T.ochreInk,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -206,12 +209,12 @@ const S = {
   count: {
     fontSize: '0.78rem',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.72)',
+    color: T.inkDim,
   },
   chev: {
     fontSize: '1.1rem',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.55)',
+    color: T.inkFaint,
     lineHeight: 1,
   },
 };

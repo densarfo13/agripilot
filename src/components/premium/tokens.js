@@ -29,32 +29,77 @@
  *     across components.
  */
 
+// Soft Ochre / Beige design system (May 2026 platform refactor)
+// ──────────────────────────────────────────────────────────────
+// Replaces the previous dark-green / neon palette with a warm,
+// natural language: beige page backgrounds, white surfaces,
+// ochre primary actions, growth-green reserved for health
+// signals only, and a charcoal navy for navigation structure.
+//
+// IMPORTANT contract:
+//   • Ochre  = primary action / active state
+//   • Green  = health / growth / success ONLY (never primary)
+//   • Beige  = calm background and elevated surfaces
+//   • Navy   = bottom-nav / topbar / structural chrome
+//
+// Token naming kept BACKWARDS COMPATIBLE with the prior dark-
+// theme contract (bgTop / bgBottom / bgGardenTop / bgGardenBot
+// / panel / border / ink / greenSoft / amberSoft / shadowCard
+// etc.) so every existing premium-primitive consumer picks up
+// the new palette WITHOUT a code change. Light-on-dark surfaces
+// flip to dark-on-beige automatically.
+//
+// New ochre-specific keys (`ochre*`) are exposed for components
+// that need the explicit accent (CTA gradient, active-state
+// indicators, etc.).
 export const PREMIUM_TOKENS = Object.freeze({
-  bgTop:        '#0B1D34',
-  bgBottom:     '#081423',
-  bgGardenTop:  '#0B2421',
-  bgGardenBot:  '#08231C',
-  panel:        'rgba(255,255,255,0.04)',
-  panelHi:      'rgba(255,255,255,0.06)',
-  border:       'rgba(255,255,255,0.08)',
-  borderHi:     'rgba(255,255,255,0.14)',
-  ink:          '#FFFFFF',
-  inkDim:       'rgba(255,255,255,0.72)',
-  inkFaint:     'rgba(255,255,255,0.50)',
-  green:        '#22C55E',
-  greenSoft:    'rgba(34,197,94,0.10)',
-  greenBorder:  'rgba(34,197,94,0.32)',
-  greenInk:     '#86EFAC',
-  amber:        '#F59E0B',
-  amberSoft:    'rgba(245,158,11,0.12)',
-  amberBorder:  'rgba(245,158,11,0.32)',
-  amberInk:     '#FCD34D',
+  // Page backgrounds — warm beige rather than dark navy.
+  bgTop:        '#F6F1E7',  // softOchre body wash (top of page)
+  bgBottom:     '#EFE7D5',  // slightly deeper at the bottom
+  bgGardenTop:  '#F8F2E5',  // garden mode = warmer cream
+  bgGardenBot:  '#F1E6D0',
+  // Card / panel surfaces — white-on-beige with subtle warmth.
+  panel:        '#FFF9F0',  // soft surface
+  panelHi:      '#FFFFFF',  // elevated surface
+  // Borders pick up the muted-earth palette so cards never feel
+  // grey or institutional.
+  border:       'rgba(31,41,51,0.08)',
+  borderHi:     'rgba(31,41,51,0.14)',
+  // Text on light surfaces.
+  ink:          '#1F2933',
+  inkDim:       '#667085',
+  inkFaint:     '#98A2B3',
+  // ─── Ochre primary (NEW) ───────────────────────────────────
+  ochre:        '#D4A35F',
+  ochreActive:  '#B9853F',
+  ochreSoft:    '#F2E3C3',
+  ochreInk:     '#7A5A28',  // legible ochre text on beige
+  ochreBorder:  'rgba(212,163,95,0.42)',
+  ochreSurface: 'rgba(212,163,95,0.10)',
+  mutedEarth:   '#BFA98A',
+  // ─── Growth / success — reserved for health signals only ───
+  green:        '#5E8E5E',
+  greenSoft:    'rgba(94,142,94,0.12)',
+  greenBorder:  'rgba(94,142,94,0.32)',
+  greenInk:     '#3F6A3F',
+  // ─── Warning + error ───────────────────────────────────────
+  amber:        '#E0A238',
+  amberSoft:    'rgba(224,162,56,0.14)',
+  amberBorder:  'rgba(224,162,56,0.40)',
+  amberInk:     '#8A5C12',
+  error:        '#D14D4D',
+  errorSoft:    'rgba(209,77,77,0.10)',
+  errorBorder:  'rgba(209,77,77,0.30)',
+  // ─── Structural navy (nav / topbar) ────────────────────────
+  navy:         '#24313A',
+  navySoft:     'rgba(36,49,58,0.92)',
+  // ─── Geometry ──────────────────────────────────────────────
   radiusCard:   18,
   radiusChip:   999,
   shadowCard:  [
-    '0 1px 0 0 rgba(255,255,255,0.04) inset',
-    '0 12px 28px -8px rgba(0,0,0,0.30)',
-    '0 4px 8px -2px rgba(0,0,0,0.18)',
+    '0 1px 0 0 rgba(255,255,255,0.55) inset',
+    '0 18px 32px -16px rgba(80,60,30,0.22)',
+    '0 6px 14px -6px rgba(80,60,30,0.14)',
   ].join(', '),
 });
 

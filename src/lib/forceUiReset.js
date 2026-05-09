@@ -55,12 +55,15 @@
 // Forces every cached client to grab the post-fix bundle on first
 // load, since the old bundle would still crash on My Farm /
 // Progress / Funding / Sell.
-export const FARROWAY_BUILD_VERSION = 'runtime-stable-2026-05-08-v1';
+// Soft Ochre / Beige design system (May 2026 platform refactor) —
+// bumps the version so every cached client picks up the new
+// palette on first load post-deploy.
+export const FARROWAY_BUILD_VERSION = 'soft-ochre-2026-05-08-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = 'runtime-stable-2026-05-08-v1';
+export const FARROWAY_UI_VERSION = 'soft-ochre-2026-05-08-v1';
 
 // Monotonically-increasing build sequence — drives the direction
 // guard. Lexicographic compare on the human-readable version

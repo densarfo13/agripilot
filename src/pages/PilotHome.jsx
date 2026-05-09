@@ -529,16 +529,29 @@ export default function PilotHome() {
 // shell. WeatherHeroCard uses its own global CSS classes from
 // src/index.css (loaded at app boot, not theme-dependent).
 
+// Soft Ochre / Beige design system (May 2026 platform refactor).
+// Token shape mirrors the previous dark-theme C{} so every key
+// below already had a usage; values are swapped to the warm
+// palette. Centralised in src/components/premium/tokens.js —
+// kept inline here only for the legacy Home page that predates
+// the premium-page primitives.
 const C = {
-  bgTop:    '#0B1D34',
-  bgBottom: '#081423',
-  panel:    'rgba(255,255,255,0.04)',
-  border:   'rgba(255,255,255,0.08)',
-  ink:      '#FFFFFF',
-  inkDim:   'rgba(255,255,255,0.65)',
-  inkFaint: 'rgba(255,255,255,0.45)',
-  green:    '#22C55E',
-  greenSh:  'rgba(34,197,94,0.25)',
+  bgTop:    '#F6F1E7',
+  bgBottom: '#EFE7D5',
+  panel:    '#FFF9F0',
+  panelHi:  '#FFFFFF',
+  border:   'rgba(31,41,51,0.08)',
+  ink:      '#1F2933',
+  inkDim:   '#667085',
+  inkFaint: '#98A2B3',
+  ochre:        '#D4A35F',
+  ochreActive:  '#B9853F',
+  ochreSoft:    '#F2E3C3',
+  ochreInk:     '#7A5A28',
+  ochreBorder:  'rgba(212,163,95,0.42)',
+  green:    '#5E8E5E',
+  greenSh:  'rgba(94,142,94,0.22)',
+  greenInk: '#3F6A3F',
 };
 
 const S = {
@@ -574,12 +587,12 @@ const S = {
     alignItems:   'center',
     gap:          '0.2rem',
     padding:      '0.3rem 0.6rem',
-    background:   'rgba(251,191,36,0.14)',
-    border:       '1px solid rgba(251,191,36,0.35)',
+    background:   'rgba(224,162,56,0.16)',
+    border:       '1px solid rgba(224,162,56,0.40)',
     borderRadius: '999px',
     fontSize:     '0.75rem',
     fontWeight:   700,
-    color:        '#FCD34D',
+    color:        '#8A5C12',
     flexShrink:   0,
     cursor:       'default',
   },
@@ -600,12 +613,12 @@ const S = {
     alignItems:   'center',
     gap:          '0.4rem',
     padding:      '0.3rem 0.6rem',
-    background:   'rgba(34,197,94,0.12)',
-    border:       '1px solid rgba(34,197,94,0.32)',
+    background:   'rgba(94,142,94,0.12)',
+    border:       '1px solid rgba(94,142,94,0.36)',
     borderRadius: '999px',
     fontSize:     '0.75rem',
     fontWeight:   700,
-    color:        '#86EFAC',
+    color:        C.greenInk,
     flexShrink:   0,
   },
   statusDot: {
@@ -613,7 +626,7 @@ const S = {
     height:       8,
     borderRadius: '50%',
     background:   C.green,
-    boxShadow:    '0 0 0 4px rgba(34,197,94,0.18)',
+    boxShadow:    '0 0 0 4px rgba(94,142,94,0.18)',
   },
   weatherLoading: {
     padding:       '0.5rem 0.75rem',
@@ -633,39 +646,41 @@ const S = {
     lineHeight: 1.5,
   },
   locationHintLink: {
-    color:          '#86EFAC',
+    color:          C.ochreActive,
     textDecoration: 'none',
-    fontWeight:     600,
+    fontWeight:     700,
   },
   // Visual realism polish (May 2026): premium tactile card —
   // layered background gradient, soft inset highlight, two-tier
   // depth shadow. Matches MorningBriefingCard so the surface
   // language is consistent across Home.
+  // Soft Ochre system — white-on-beige tactile surface.
   card: {
-    background:    'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.025) 100%)',
-    border:        '1px solid rgba(255,255,255,0.07)',
+    background:    C.panelHi,
+    border:        `1px solid ${C.border}`,
     borderRadius:  '18px',
     padding:       '1.3rem 1.15rem',
     display:       'flex',
     flexDirection: 'column',
     gap:           '0.55rem',
     boxShadow: [
-      '0 1px 0 0 rgba(255,255,255,0.04) inset',
-      '0 12px 28px -8px rgba(0,0,0,0.30)',
-      '0 4px 8px -2px rgba(0,0,0,0.18)',
+      '0 1px 0 0 rgba(255,255,255,0.55) inset',
+      '0 18px 32px -16px rgba(80,60,30,0.22)',
+      '0 6px 14px -6px rgba(80,60,30,0.14)',
     ].join(', '),
   },
+  // Done state — growth-green tinted surface (success signal).
   cardDone: {
-    background:    'linear-gradient(180deg, rgba(34,197,94,0.085) 0%, rgba(34,197,94,0.04) 100%)',
-    border:        '1px solid rgba(34,197,94,0.28)',
+    background:    'linear-gradient(180deg, rgba(94,142,94,0.10) 0%, rgba(94,142,94,0.04) 100%)',
+    border:        '1px solid rgba(94,142,94,0.30)',
     borderRadius:  '18px',
     padding:       '1.3rem 1.15rem',
     display:       'flex',
     flexDirection: 'column',
     gap:           '0.55rem',
     boxShadow: [
-      '0 1px 0 0 rgba(255,255,255,0.04) inset',
-      '0 10px 24px -8px rgba(0,0,0,0.28)',
+      '0 1px 0 0 rgba(255,255,255,0.55) inset',
+      '0 14px 28px -12px rgba(60,90,60,0.22)',
     ].join(', '),
   },
   cardLabel: {
@@ -689,31 +704,33 @@ const S = {
     color:      C.inkDim,
     lineHeight: 1.55,
   },
+  // Primary action — Soft Ochre. Reserved green for health-only.
   btnPrimary: {
     alignSelf:    'flex-start',
     marginTop:    '0.5rem',
     padding:      '0.85rem 1.4rem',
     border:       'none',
-    borderRadius: '12px',
-    background:   C.green,
-    color:        C.ink,
+    borderRadius: '999px',
+    background:   `linear-gradient(180deg, ${C.ochre} 0%, ${C.ochreActive} 100%)`,
+    color:        '#FFFFFF',
     fontSize:     '0.9375rem',
-    fontWeight:   700,
+    fontWeight:   800,
     cursor:       'pointer',
     minHeight:    46,
-    boxShadow:    `0 8px 22px ${C.greenSh}`,
+    boxShadow:    '0 10px 24px rgba(185,133,63,0.32)',
+    letterSpacing: '0.005em',
   },
   doneNote: {
     margin:     '0.25rem 0 0',
     fontSize:   '0.875rem',
     fontWeight: 600,
-    color:      '#86EFAC',
+    color:      C.greenInk,
   },
   doneHeadline: {
     margin:     0,
     fontSize:   '1.15rem',
     fontWeight: 800,
-    color:      '#86EFAC',
+    color:      C.greenInk,
     letterSpacing: '-0.005em',
   },
   linksGrid: {
@@ -751,24 +768,25 @@ const S = {
     alignSelf:      'flex-start',
     fontSize:       '0.8125rem',
     fontWeight:     700,
-    color:          '#86EFAC',
+    color:          C.ochreActive,
     textDecoration: 'none',
     whiteSpace:     'nowrap',
     padding:        '0.45rem 0.75rem',
-    background:     'rgba(34,197,94,0.07)',
-    border:         '1px solid rgba(34,197,94,0.18)',
+    background:     C.ochreSoft,
+    border:         `1px solid ${C.ochreBorder}`,
     borderRadius:   '999px',
   },
 
   // Sell / harvest prompt — full-width link tile at harvest stage.
-  // Green-tinted to signal opportunity, not urgency.
+  // Ochre-tinted (primary action), not green (which is reserved
+  // for health-only signals in the Soft Ochre system).
   ctxSellTile: {
     display:        'block',
     padding:        '1rem 1.1rem',
-    background:     'rgba(34,197,94,0.10)',
-    border:         '1px solid rgba(34,197,94,0.32)',
+    background:     C.ochreSoft,
+    border:         `1px solid ${C.ochreBorder}`,
     borderRadius:   '14px',
-    color:          '#86EFAC',
+    color:          C.ochreInk,
     fontSize:       '0.9375rem',
     fontWeight:     700,
     textDecoration: 'none',

@@ -23,15 +23,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
+import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
 
 function _leafIcon() {
+  // Soft Ochre system — growth-green stroke since "on track" is
+  // a health/success signal. Keep the muted #5E8E5E (token green)
+  // rather than the prior neon-mint stroke.
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 21V11" stroke="rgba(134,239,172,0.85)" strokeWidth="1.6" strokeLinecap="round"/>
-      <path d="M12 13c-3-1-5-3-5-6 3 0 5 1.6 5.5 4" fill="rgba(34,197,94,0.18)"
-            stroke="#86EFAC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M12 11c3-1 5-3 5-6-3 0-5 1.6-5.5 4" fill="rgba(34,197,94,0.30)"
-            stroke="#86EFAC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 21V11" stroke="#3F6A3F" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M12 13c-3-1-5-3-5-6 3 0 5 1.6 5.5 4" fill="rgba(94,142,94,0.18)"
+            stroke="#5E8E5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 11c3-1 5-3 5-6-3 0-5 1.6-5.5 4" fill="rgba(94,142,94,0.30)"
+            stroke="#5E8E5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -63,25 +67,27 @@ export default function OnTrackRowCard({
 }
 
 const S = {
+  // Soft Ochre system: white-on-beige surface, growth-green only
+  // for the leaf halo since "on track" is a health/success signal.
   card: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.85rem',
     padding: '0.95rem 1rem',
-    background:    'linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)',
-    border:        '1px solid rgba(255,255,255,0.07)',
+    background:    T.panelHi,
+    border:        `1px solid ${T.border}`,
     borderRadius:  '16px',
-    color:         'rgba(255,255,255,0.95)',
+    color:         T.ink,
     textDecoration:'none',
-    boxShadow:     '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 18px -8px rgba(0,0,0,0.35)',
+    boxShadow:     T.shadowCard,
   },
   iconWrap: {
     width: 44, height: 44,
     flexShrink: 0,
     borderRadius: '50%',
-    background: 'radial-gradient(circle at 35% 35%, rgba(34,197,94,0.32) 0%, rgba(34,197,94,0.06) 70%)',
-    border: '1px solid rgba(34,197,94,0.45)',
-    boxShadow: '0 0 0 4px rgba(34,197,94,0.05)',
+    background: 'radial-gradient(circle at 35% 35%, rgba(94,142,94,0.30) 0%, rgba(94,142,94,0.08) 70%)',
+    border: `1px solid ${T.greenBorder}`,
+    boxShadow: '0 0 0 4px rgba(94,142,94,0.06)',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -97,18 +103,18 @@ const S = {
     fontSize: '1rem',
     fontWeight: 800,
     letterSpacing: '-0.005em',
-    color: '#FFFFFF',
+    color: T.ink,
   },
   body: {
     fontSize: '0.85rem',
     fontWeight: 500,
-    color: 'rgba(255,255,255,0.62)',
+    color: T.inkDim,
     lineHeight: 1.4,
   },
   chev: {
     fontSize: '1.4rem',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.55)',
+    color: T.inkFaint,
     lineHeight: 1,
     flexShrink: 0,
     paddingLeft: '0.4rem',

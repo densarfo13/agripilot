@@ -47,6 +47,7 @@ import { tSafe } from '../i18n/tSafe.js';
 import {
   getWeatherHero, formatAccurateAsOf,
 } from '../lib/weatherHeroIntelligence.js';
+import { PREMIUM_TOKENS as T } from './premium/tokens.js';
 
 const VALID_TYPES = new Set([
   'rain', 'heat', 'wind', 'dry',
@@ -616,7 +617,8 @@ const S = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.35rem',
-    color: '#FACC15',
+    // Soft-ochre estimate text — warm amber on the dark photo.
+    color: '#F5C97D',
     fontSize: '0.85rem',
     fontWeight: 700,
     letterSpacing: '0.01em',
@@ -629,6 +631,10 @@ const S = {
     color: 'rgba(255,255,255,0.62)',
     letterSpacing: '0.02em',
   },
+  // Ochre primary CTA (Soft Ochre design system, May 2026).
+  // Reads from PREMIUM_TOKENS so a future palette update flows
+  // here without a code change. Reserves green for health/growth
+  // signals only — primary actions live on the ochre gradient.
   cta: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -636,7 +642,7 @@ const S = {
     padding: '0.95rem 1.45rem',
     border: 'none',
     borderRadius: '999px',
-    background: 'linear-gradient(180deg, #34D27A 0%, #15A75D 100%)',
+    background: `linear-gradient(180deg, ${T.ochre} 0%, ${T.ochreActive} 100%)`,
     color: '#FFFFFF',
     fontSize: '1rem',
     fontWeight: 800,
@@ -644,7 +650,7 @@ const S = {
     minHeight: 50,
     minWidth: 168,
     justifyContent: 'center',
-    boxShadow: '0 10px 28px rgba(34,197,94,0.42)',
+    boxShadow: '0 10px 28px rgba(185,133,63,0.40)',
     letterSpacing: '0.005em',
   },
   ctaArrow: {
