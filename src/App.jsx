@@ -245,6 +245,10 @@ const USExperienceSelection = lazy(() => import('./pages/onboarding/USExperience
 // existing /scan-crop surface; the new pages bounce there when
 // the flag is off so deep links never strand the user.
 const ScanPage       = lazy(() => import('./pages/ScanPage.jsx'));
+// Soil Scan v1 (May 2026) — confidence-safe soil photo guidance.
+// Mounted at /scan/soil; the existing /scan ScanPage gets a
+// secondary tile linking to it.
+const SoilScanPage   = lazy(() => import('./pages/SoilScanPage.jsx'));
 const ScanResultPage = lazy(() => import('./pages/ScanResultPage.jsx'));
 // Scan-specific error boundary — eagerly imported (not lazy) so
 // it can catch a crash from ScanPage's own lazy-import / mount.
@@ -1458,6 +1462,19 @@ export default function App() {
                 <FeatureGated flag="FEATURE_SCAN" feature="scan">
                   <ScanErrorBoundary>
                     <ScanResultPage />
+                  </ScanErrorBoundary>
+                </FeatureGated>
+              </SafeRouteShell>
+            } />
+            {/* Soil Scan v1 (May 2026) — confidence-safe soil
+                photo guidance. Same FEATURE_SCAN gate + scan
+                error boundary so a crash here is isolated to
+                this surface. */}
+            <Route path="/scan/soil" element={
+              <SafeRouteShell routeName="scan-soil" loadingMs={5000}>
+                <FeatureGated flag="FEATURE_SCAN" feature="scan">
+                  <ScanErrorBoundary>
+                    <SoilScanPage />
                   </ScanErrorBoundary>
                 </FeatureGated>
               </SafeRouteShell>

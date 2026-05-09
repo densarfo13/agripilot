@@ -780,6 +780,60 @@ export default function ScanPage() {
         </div>
       ) : null}
 
+      {/* Soil Scan v1 entry tile (May 2026) — calm secondary
+          row card linking to /scan/soil. Mounted at the bottom
+          of the Scan flow so users discover the soil check
+          option without crowding the primary plant/crop scan
+          surface. */}
+      <button
+        type="button"
+        onClick={() => { try { navigate('/scan/soil'); } catch { /* swallow */ } }}
+        style={{
+          appearance: 'none',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.85rem',
+          padding: '0.95rem 1rem',
+          background: '#FFF9F0',
+          border: '1px solid rgba(31,41,51,0.08)',
+          borderRadius: 16,
+          color: '#1F2933',
+          textAlign: 'left',
+          marginTop: '0.75rem',
+          boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 8px 18px -10px rgba(80,60,30,0.18)',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+        className="ff-tap"
+        data-testid="scan-page-soil-tile"
+        aria-label={tStrict('soilScan.entry.aria', 'Open soil scan')}
+      >
+        <span aria-hidden="true" style={{
+          width: 44, height: 44, flexShrink: 0,
+          borderRadius: 12,
+          background: 'rgba(212,163,95,0.18)',
+          border: '1px solid rgba(212,163,95,0.45)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.4rem',
+        }}>{'🪴'}</span>
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
+          <span style={{ fontSize: '1rem', fontWeight: 800, color: '#1F2933' }}>
+            {tStrict('soilScan.entry.title', 'Soil scan')}
+          </span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#667085', lineHeight: 1.4 }}>
+            {tStrict('soilScan.entry.subtitle', 'Quick visual check of your soil.')}
+          </span>
+        </span>
+        <span aria-hidden="true" style={{
+          fontSize: '1.4rem', fontWeight: 700,
+          color: '#98A2B3', lineHeight: 1, flexShrink: 0, paddingLeft: '0.4rem',
+        }}>{'›'}</span>
+      </button>
+
       {/* FEATURE_SCAN_USEFULNESS: show the lightweight useful history
           (farroway_scan_history_v1); fall back to the original. */}
       {FEATURE_SCAN_USEFULNESS ? <UsefulScanHistory /> : <ScanHistory />}
