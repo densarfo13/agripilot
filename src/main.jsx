@@ -353,6 +353,11 @@ try { installTimelineBridge(); } catch { /* never throw from boot */ }
 // ErrorBoundary stays as the last-resort catch for truly fatal
 // startup errors (e.g. createRoot or AppSettingsProvider blow-up).
 import RecoveryErrorBoundary from './components/system/RecoveryErrorBoundary.jsx';
+// Sentry-aware inner boundary — captures render-path exceptions
+// via captureException + shows a calm fallback. Pure no-op for
+// reporting when VITE_SENTRY_DSN isn't set; the boundary still
+// works without Sentry, the error just doesn't get logged.
+import SystemErrorBoundary from './components/system/ErrorBoundary.jsx';
 import { AppSettingsProvider } from './context/AppSettingsContext.jsx';
 import LanguageRegionGate from './components/LanguageRegionGate.jsx';
 import { initSyncCoordinator } from './services/syncCoordinator.js';
@@ -440,13 +445,15 @@ if (_auditAutoloadEnabled()) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <AppSettingsProvider>
-        <LanguageRegionGate>
-          <RecoveryErrorBoundary>
-            <App />
-          </RecoveryErrorBoundary>
-        </LanguageRegionGate>
-      </AppSettingsProvider>
+      <SystemErrorBoundary>
+        <AppSettingsProvider>
+          <LanguageRegionGate>
+            <RecoveryErrorBoundary>
+              <App />
+            </RecoveryErrorBoundary>
+          </LanguageRegionGate>
+        </AppSettingsProvider>
+      </SystemErrorBoundary>
     </ErrorBoundary>
   </React.StrictMode>,
 );

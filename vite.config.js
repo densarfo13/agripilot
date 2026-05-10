@@ -16,7 +16,15 @@ export default defineConfig({
     // ~2s after 761 modules transformed"). The manualChunks
     // split below also reduces per-chunk minification pressure.
     target: 'es2019',
-    sourcemap: false,
+    // Hidden source maps — generated alongside the bundle but
+    // NOT referenced via a //# sourceMappingURL comment, so end
+    // users don't see them in DevTools but Sentry can fetch and
+    // symbolicate stack traces server-side. The .map files live
+    // next to their .js counterparts in dist/; either upload
+    // them via @sentry/vite-plugin during the deploy build, or
+    // serve them from the same origin so Sentry's debug-id
+    // resolver finds them automatically.
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         // Hand-pick vendor chunks for the heavy dependencies so
