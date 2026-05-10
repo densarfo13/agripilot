@@ -33,10 +33,13 @@ import { isFeatureEnabled } from '../../config/features.js';
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB
 
+// Soft Ochre / Beige unified system — replaces the legacy white-on-
+// dark inline tokens so the in-page capture surface visually
+// matches the rest of the beige theme.
 const STYLES = {
   wrap: {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.10)',
+    background: '#FFFFFF',
+    border: '1px solid rgba(36,49,58,0.08)',
     borderRadius: 14,
     padding: '16px 18px',
     display: 'flex',
@@ -47,13 +50,13 @@ const STYLES = {
     width: '100%',
     aspectRatio: '4 / 3',
     borderRadius: 12,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px dashed rgba(255,255,255,0.18)',
+    background: '#FFF9F0',
+    border: '1px dashed rgba(36,49,58,0.18)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    color: 'rgba(255,255,255,0.55)',
+    color: '#667085',
     fontSize: 13,
     textAlign: 'center',
     padding: 12,
@@ -71,9 +74,9 @@ const STYLES = {
   },
   btn: {
     appearance: 'none',
-    border: '1px solid rgba(255,255,255,0.16)',
-    background: 'rgba(255,255,255,0.04)',
-    color: '#fff',
+    border: '1px solid rgba(36,49,58,0.12)',
+    background: 'transparent',
+    color: '#1F2933',
     padding: '10px 14px',
     borderRadius: 10,
     fontSize: 14,
@@ -82,23 +85,23 @@ const STYLES = {
     fontFamily: 'inherit',
   },
   btnPrimary: {
-    background: '#22C55E',
-    color: '#0B1D34',
+    background: '#C8944D',
+    color: '#FFFFFF',
     border: 'none',
     fontWeight: 700,
   },
   btnDisabled: { opacity: 0.5, cursor: 'not-allowed' },
   helper: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.55)',
+    color: '#667085',
     lineHeight: 1.5,
   },
   error: {
     padding: '8px 12px',
     borderRadius: 8,
-    background: 'rgba(239,68,68,0.14)',
-    border: '1px solid rgba(239,68,68,0.35)',
-    color: '#FCA5A5',
+    background: 'rgba(198,90,75,0.10)',
+    border: '1px solid rgba(198,90,75,0.30)',
+    color: '#8A2E22',
     fontSize: 13,
   },
 };

@@ -24,11 +24,14 @@ import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 
+// Soft Ochre / Beige unified system. Replaces the legacy
+// dark-navy + neon-green inline tokens with the locked palette so
+// the result page matches every other surface.
 const STYLES = {
   page: {
     minHeight: '100vh',
-    background: '#0B1D34',
-    color: '#fff',
+    background: '#F6F1E7',
+    color: '#1F2933',
     padding: '24px 16px 96px',
     maxWidth: 720,
     margin: '0 auto',
@@ -41,7 +44,7 @@ const STYLES = {
     appearance: 'none',
     border: 'none',
     background: 'transparent',
-    color: '#22C55E',
+    color: '#C8944D',
     fontSize: 14,
     fontWeight: 600,
     textDecoration: 'underline',
@@ -53,17 +56,17 @@ const STYLES = {
   notFound: {
     padding: '20px 16px',
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.65)',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px dashed rgba(255,255,255,0.10)',
+    color: '#667085',
+    background: '#FFF9F0',
+    border: '1px dashed rgba(36,49,58,0.10)',
     borderRadius: 14,
   },
   cta: {
     marginTop: 12,
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
-    color: '#0B1D34',
+    background: '#C8944D',
+    color: '#FFFFFF',
     fontWeight: 700,
     padding: '10px 14px',
     borderRadius: 10,

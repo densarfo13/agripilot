@@ -14,26 +14,33 @@
  *   Red appears ONLY in block state.
  */
 
-// ─── Color tokens ────────────────────────────────────────────
+// ─── Color tokens (Soft Ochre / Beige unified system) ───────
+// Forwarded from `src/design/tokens/colors.js`. The legacy
+// `green/amber/red` keys keep their semantic meaning (success,
+// caution, block) but resolve to the locked olive-earth, warm
+// mustard, and terracotta values respectively. No neon greens.
 const COLORS = {
-  green:      '#22C55E',
-  greenDark:  '#16A34A',
-  greenMuted: 'rgba(34,197,94,0.15)',
-  greenFaint: 'rgba(34,197,94,0.08)',
-  greenText:  '#86EFAC',
+  green:      '#6E8B61',  // olive earth — success
+  greenDark:  '#3F6A3F',
+  greenMuted: 'rgba(110,139,97,0.18)',
+  greenFaint: 'rgba(110,139,97,0.10)',
+  greenText:  '#3F6A3F',
 
-  amber:      '#F59E0B',
-  amberMuted: 'rgba(250,204,21,0.12)',
-  amberFaint: 'rgba(250,204,21,0.06)',
-  amberText:  '#FCD34D',
+  amber:      '#D6A13D',  // warm mustard — warning
+  amberMuted: 'rgba(214,161,61,0.14)',
+  amberFaint: 'rgba(214,161,61,0.08)',
+  amberText:  '#8A5C12',
 
-  red:        '#EF4444',
-  redMuted:   'rgba(239,68,68,0.12)',
-  redFaint:   'rgba(239,68,68,0.08)',
-  redText:    '#FCA5A5',
+  red:        '#C65A4B',  // calm terracotta — block
+  redMuted:   'rgba(198,90,75,0.12)',
+  redFaint:   'rgba(198,90,75,0.08)',
+  redText:    '#8A2E22',
 
-  neutral:    'rgba(255,255,255,0.08)',
-  neutralBorder: 'rgba(255,255,255,0.10)',
+  ochre:      '#C8944D',  // primary action
+  ochreDark:  '#B9853F',
+
+  neutral:        'rgba(36,49,58,0.06)',
+  neutralBorder:  'rgba(36,49,58,0.10)',
 };
 
 /**
@@ -68,14 +75,14 @@ export function getStateStyles(state) {
       return {
         // Task card
         cardBorder: `1px solid ${COLORS.redMuted}`,
-        cardBg: '#1B2330',
+        cardBg: '#FFFFFF',
         // Weather bar
         weatherBg: COLORS.redFaint,
         weatherBorder: COLORS.redMuted,
         weatherText: COLORS.redText,
         // CTA
-        ctaBg: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)',
-        ctaShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        ctaBg: 'linear-gradient(180deg, #98A2B3 0%, #667085 100%)',
+        ctaShadow: '0 4px 12px rgba(15,23,42,0.06)',
         ctaDisabled: true,
         // Task list item accent
         taskAccentBorder: `3px solid ${COLORS.red}`,
@@ -85,14 +92,14 @@ export function getStateStyles(state) {
       return {
         // Task card — subtle amber, NOT red
         cardBorder: `1px solid ${COLORS.amberMuted}`,
-        cardBg: '#1B2330',
+        cardBg: '#FFFFFF',
         // Weather bar — amber but lighter than task card
         weatherBg: COLORS.amberFaint,
         weatherBorder: `rgba(250,204,21,0.15)`,
         weatherText: COLORS.amberText,
         // CTA — still green (action is allowed)
-        ctaBg: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-        ctaShadow: '0 4px 16px rgba(22,163,74,0.3)',
+        ctaBg: 'linear-gradient(180deg, #C8944D 0%, #B9853F 100%)',
+        ctaShadow: '0 10px 24px rgba(200,148,77,0.32)',
         ctaDisabled: false,
         // Task list item accent — amber not red
         taskAccentBorder: `3px solid ${COLORS.amber}`,
@@ -103,14 +110,14 @@ export function getStateStyles(state) {
       return {
         // Task card — subtle green or neutral
         cardBorder: `1px solid ${COLORS.greenFaint}`,
-        cardBg: '#1B2330',
+        cardBg: '#FFFFFF',
         // Weather bar — green/neutral
         weatherBg: COLORS.greenFaint,
         weatherBorder: `rgba(34,197,94,0.12)`,
         weatherText: COLORS.greenText,
         // CTA — green, dominant element
-        ctaBg: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-        ctaShadow: '0 4px 16px rgba(22,163,74,0.3)',
+        ctaBg: 'linear-gradient(180deg, #C8944D 0%, #B9853F 100%)',
+        ctaShadow: '0 10px 24px rgba(200,148,77,0.32)',
         ctaDisabled: false,
         // Task list item accent
         taskAccentBorder: `3px solid ${COLORS.green}`,

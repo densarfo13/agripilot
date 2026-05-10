@@ -638,7 +638,7 @@ export default function Sell() {
                 type="checkbox"
                 checked={qtyUnknown}
                 onChange={(e) => setQtyUnknown(e.target.checked)}
-                style={{ accentColor: '#22C55E' }}
+                style={{ accentColor: '#C8944D' }}
               />
               <span>
                 {tSafe('sell.qty.notSureYet', 'Not sure yet \u2014 I\u2019ll confirm with the buyer')}

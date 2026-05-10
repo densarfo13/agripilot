@@ -22,38 +22,42 @@ export const URGENCY = {
  * UI style mapping for each urgency level.
  * Components consume this — never compute urgency colors independently.
  */
+// Urgency styling now sources every value from the locked Soft
+// Ochre / Beige token table. Critical is terracotta, today is the
+// ochre primary (warm action tone), this_week is the warm mustard
+// warning, optional is the muted text shade.
 export const URGENCY_STYLES = {
   critical: {
-    bg: 'rgba(239,68,68,0.12)',
-    border: '1px solid rgba(239,68,68,0.35)',
-    text: '#FCA5A5',
-    accent: '#EF4444',
+    bg: 'rgba(198,90,75,0.10)',
+    border: '1px solid rgba(198,90,75,0.30)',
+    text: '#8A2E22',
+    accent: '#C65A4B',
     labelKey: 'urgency.critical',
-    dot: '#EF4444',
+    dot: '#C65A4B',
   },
   today: {
-    bg: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.25)',
-    text: '#86EFAC',
-    accent: '#22C55E',
+    bg: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.42)',
+    text: '#7A5A28',
+    accent: '#C8944D',
     labelKey: 'urgency.today',
-    dot: '#22C55E',
+    dot: '#C8944D',
   },
   this_week: {
-    bg: 'rgba(250,204,21,0.08)',
-    border: '1px solid rgba(250,204,21,0.2)',
-    text: '#FCD34D',
-    accent: '#F59E0B',
+    bg: 'rgba(214,161,61,0.14)',
+    border: '1px solid rgba(214,161,61,0.40)',
+    text: '#8A5C12',
+    accent: '#D6A13D',
     labelKey: 'urgency.thisWeek',
-    dot: '#F59E0B',
+    dot: '#D6A13D',
   },
   optional: {
-    bg: 'rgba(148,163,184,0.08)',
-    border: '1px solid rgba(148,163,184,0.15)',
-    text: '#94A3B8',
-    accent: '#64748B',
+    bg: 'rgba(36,49,58,0.06)',
+    border: '1px solid rgba(36,49,58,0.10)',
+    text: '#667085',
+    accent: '#98A2B3',
     labelKey: 'urgency.optional',
-    dot: '#64748B',
+    dot: '#98A2B3',
   },
 };
 

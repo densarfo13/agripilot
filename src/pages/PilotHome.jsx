@@ -58,6 +58,12 @@ import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 import useExperience             from '../hooks/useExperience.js';
+// Unified recommendation controller (Intelligence Expansion §1).
+// Walks the spec's safety → weather → crop → soil → harvest →
+// buyer/funding → progress ladder and returns ONE primary guidance
+// envelope. Memory cooldowns inside the orchestrator suppress
+// repeat surfacing across reloads, so Home never nags.
+import { getNextBestRecommendation } from '../orchestration/orchestrator.js';
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -237,6 +243,30 @@ export default function PilotHome() {
   // We pass the farm record from local so the engine has crop /
   // cropStage / indoor / containerSize without a second localStorage read.
   const ctxIntel = useContextIntelligence({ weather, farm: local.farm });
+
+  // ─── Unified primary guidance (Intelligence Expansion §1) ──
+  // Calls the orchestrator with the same context we already have.
+  // The orchestrator returns ONE envelope (or its fallback); we
+  // only render it as a small bottom tile and only when its
+  // actionRoute differs from the surfaces already visible above
+  // (weather hero CTA, today's task card, scan row). This keeps
+  // Home at "1 context / 1 insight / 1 action / 1 reassurance"
+  // without adding a competing card.
+  const primaryGuidance = useMemo(() => {
+    try {
+      return getNextBestRecommendation({
+        mode:    ctxIntel.mode === 'garden' ? 'garden' : 'farm',
+        weather,
+        crop:      local.farm?.crop || local.farm?.cropId || null,
+        cropStage: local.farm?.cropStage || null,
+        farmSize:  local.farm?.farmSize  || null,
+        country:   local.farm?.country   || null,
+        region:    local.farm?.region    || null,
+      }, { commit: false });
+    } catch { return null; }
+    // commit=false so re-renders don't keep stamping the memory.
+    // The eventual click on the tile will commit via the controller.
+  }, [ctxIntel.mode, weather, local.farm]);
 
   // Small inline hint — only when weather loaded AND no location
   // coords found. Never a large card; never a blocking warning.
@@ -447,7 +477,7 @@ export default function PilotHome() {
                 title={`${habit.streak}-day streak`}
                 data-testid="pilot-home-streak"
               >
-                🔥 {habit.streak}
+                {habit.streak}-day streak
               </span>
             )}
             <span style={S.statusPill}>
@@ -571,23 +601,45 @@ export default function PilotHome() {
           <ScanRowCard mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'} />
         </FeatureShell>
 
-        {/* ── 4. Sell / funding prompt ─────────────────────────
-             Visible only at harvest stage (farm mode only).
-             The Quick Actions grid + the Recommendation CTA strip
-             have been removed (Home Mockup spec §1: bottom nav
-             owns navigation, no dashboard overload on Home). The
-             sell/funding prompt is the single conditional CTA
-             allowed below the on-track surface, gated to harvest. */}
-        {ctxIntel.sellPrompt && (
-          <Link
-            to="/sell"
-            style={S.ctxSellTile}
-            className="ff-tap"
-            data-testid="pilot-home-ctx-sell-prompt"
-          >
-            {ctxIntel.sellPrompt}
-          </Link>
-        )}
+        {/* ── 4. Unified primary-guidance tile ─────────────────
+             Replaces the harvest-only sell prompt with whichever
+             tile the orchestrator picks (sell, funding, buyer,
+             scan follow-up, soil follow-up, …). Suppresses itself
+             when the chosen route duplicates a surface already
+             rendered above (weather hero CTA, today's task,
+             ScanRowCard) so Home never doubles up. */}
+        {(() => {
+          const above = new Set([
+            taskDone ? '/scan' : '/tasks', // weather hero CTA target
+            '/scan',                       // ScanRowCard target
+          ]);
+          const route = primaryGuidance && primaryGuidance.actionRoute;
+          const showSellLegacy = !!ctxIntel.sellPrompt && (!route || above.has(route));
+          if (showSellLegacy) {
+            return (
+              <Link
+                to="/sell"
+                style={S.ctxSellTile}
+                className="ff-tap"
+                data-testid="pilot-home-ctx-sell-prompt"
+              >
+                {ctxIntel.sellPrompt}
+              </Link>
+            );
+          }
+          if (!route || above.has(route)) return null;
+          return (
+            <Link
+              to={route}
+              style={S.ctxSellTile}
+              className="ff-tap"
+              data-testid="pilot-home-primary-guidance"
+              data-route={route}
+            >
+              {tSafe(primaryGuidance.titleKey, primaryGuidance.titleKey)}
+            </Link>
+          );
+        })()}
 
       </div>
     </div>

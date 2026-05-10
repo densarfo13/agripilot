@@ -503,11 +503,14 @@ import { ForecastProvider } from './context/ForecastContext.jsx';
 import { MarketProvider } from './context/MarketContext.jsx';
 import { SeasonProvider } from './context/SeasonContext.jsx';
 
+// Soft Ochre / Beige unified system — page loader uses the locked
+// background + ochre primary spinner so cold-start matches the rest
+// of the app instead of flashing the legacy dark-navy + neon-green.
 const PageLoader = () => (
-  <div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div style={{ minHeight: '100vh', background: '#F6F1E7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-      <div style={{ width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' }} />
-      <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#22C55E' }}>Farroway</span>
+      <div style={{ width: '2rem', height: '2rem', border: '3px solid rgba(36,49,58,0.10)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' }} />
+      <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F2933' }}>Farroway</span>
     </div>
   </div>
 );

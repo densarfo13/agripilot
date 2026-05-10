@@ -72,20 +72,21 @@ describe('getTaskSeverity', () => {
 describe('getTaskStateStyle', () => {
   it('normal severity never produces red accent', () => {
     const style = getTaskStateStyle('normal');
-    expect(style.accentColor).not.toBe('#EF4444');
-    expect(style.priorityColor).not.toBe('#EF4444');
+    // Soft Ochre / Beige unified system — normal is olive earth.
+    expect(style.accentColor).not.toBe('#C65A4B');
+    expect(style.priorityColor).not.toBe('#C65A4B');
   });
 
-  it('caution severity uses amber, not red', () => {
+  it('caution severity uses amber/warning, not red', () => {
     const style = getTaskStateStyle('caution');
-    expect(style.accentColor).toBe('#F59E0B');
-    expect(style.priorityColor).toBe('#F59E0B');
-    expect(style.accentColor).not.toBe('#EF4444');
+    expect(style.accentColor).toBe('#D6A13D');
+    expect(style.priorityColor).toBe('#D6A13D');
+    expect(style.accentColor).not.toBe('#C65A4B');
   });
 
-  it('urgent severity uses red', () => {
+  it('urgent severity uses red/block', () => {
     const style = getTaskStateStyle('urgent');
-    expect(style.accentColor).toBe('#EF4444');
+    expect(style.accentColor).toBe('#C65A4B');
   });
 
   it('caution CTA is not disabled', () => {
@@ -100,7 +101,8 @@ describe('getTaskStateStyle', () => {
 
   it('unknown severity falls back to normal', () => {
     const style = getTaskStateStyle('unknown');
-    expect(style.accentColor).toBe('#22C55E');
+    // Normal accent is olive earth in the unified token system.
+    expect(style.accentColor).toBe('#6E8B61');
   });
 });
 
@@ -156,7 +158,7 @@ describe('buildFarmerTaskViewModel', () => {
     });
     expect(vm.severity).toBe('urgent');
     expect(vm.stateStyle).toBeDefined();
-    expect(vm.stateStyle.accentColor).toBe('#EF4444');
+    expect(vm.stateStyle.accentColor).toBe('#C65A4B');
   });
 
   it('has localized title in non-English', () => {

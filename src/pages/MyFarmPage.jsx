@@ -540,7 +540,9 @@ export default function MyFarmPage() {
         <section style={S_PLANT.card} data-testid="plant-companion-card">
           <header style={S_PLANT.head}>
             <div style={S_PLANT.headLeft}>
-              <span style={S_PLANT.headEmoji} aria-hidden="true">🌿</span>
+              <span style={S_PLANT.headEmoji} aria-hidden="true">
+                <RealisticIcon name="leaf" size={20} />
+              </span>
               <div style={S_PLANT.headText}>
                 <p style={S_PLANT.headTitle}>
                   {_plantIdentity.plant?.nickname || tSafe('plant.fallback.nickname', 'My Plant')}
@@ -1165,12 +1167,15 @@ function FarmIdentityCard({
   farm, photo, busy, onPickClick,
   farmName, location, uploadLabel, uploadingLabel,
 }) {
+  // Realism cleanup (Intelligence Expansion §8): no emoji fallback.
+  // Empty initials render as a calm dash so the avatar circle stays
+  // structural rather than cartoon-y.
   const initials = String(farmName || '')
     .trim()
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w.charAt(0).toUpperCase())
-    .join('') || '🌱';
+    .join('') || '—';
 
   return (
     <section style={S.identityCard} data-testid="my-farm-identity">

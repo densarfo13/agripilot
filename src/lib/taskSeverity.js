@@ -36,27 +36,31 @@ export function getTaskSeverity(priority, weatherGuidance) {
 
 // ─── Style tokens per severity ──────────────────────────────
 
+// Soft Ochre / Beige unified system. Normal = olive earth (success
+// tone), caution = warm mustard, urgent = calm terracotta. No
+// neon greens, no #EF4444 reds — every value is from the locked
+// design token table.
 const SEVERITY_STYLES = {
   normal: {
-    accentColor: '#22C55E',
-    accentBorder: '3px solid #22C55E',
-    accentBg: 'rgba(34,197,94,0.08)',
-    labelColor: '#86EFAC',
-    priorityColor: '#6B7280',
+    accentColor: '#6E8B61',
+    accentBorder: '3px solid #6E8B61',
+    accentBg: 'rgba(110,139,97,0.10)',
+    labelColor: '#3F6A3F',
+    priorityColor: '#667085',
   },
   caution: {
-    accentColor: '#F59E0B',
-    accentBorder: '3px solid #F59E0B',
-    accentBg: 'rgba(250,204,21,0.06)',
-    labelColor: '#FCD34D',
-    priorityColor: '#F59E0B',
+    accentColor: '#D6A13D',
+    accentBorder: '3px solid #D6A13D',
+    accentBg: 'rgba(214,161,61,0.08)',
+    labelColor: '#8A5C12',
+    priorityColor: '#D6A13D',
   },
   urgent: {
-    accentColor: '#EF4444',
-    accentBorder: '3px solid #EF4444',
-    accentBg: 'rgba(239,68,68,0.06)',
-    labelColor: '#FCA5A5',
-    priorityColor: '#EF4444',
+    accentColor: '#C65A4B',
+    accentBorder: '3px solid #C65A4B',
+    accentBg: 'rgba(198,90,75,0.08)',
+    labelColor: '#8A2E22',
+    priorityColor: '#C65A4B',
   },
 };
 

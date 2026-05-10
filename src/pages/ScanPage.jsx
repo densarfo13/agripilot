@@ -87,11 +87,15 @@ import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 // legacy plant-pot emoji that previously sat there.
 import { default as RealisticIconLazy } from '../assets/realism/icons/RealisticIcon.jsx';
 
+// Unified Soft Ochre / Beige system. The mount-pending surface
+// (rendered before <PremiumPage> takes over) now uses the locked
+// page background + ink colors so cold-start does not flash the
+// legacy dark-navy + white-on-navy text.
 const STYLES = {
   page: {
     minHeight: '100vh',
-    background: '#0B1D34',
-    color: '#fff',
+    background: '#F6F1E7',
+    color: '#1F2933',
     padding: '24px 16px 96px',
     maxWidth: 720,
     margin: '0 auto',
@@ -101,7 +105,7 @@ const STYLES = {
     gap: 16,
   },
   title:    { margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em' },
-  subtitle: { margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 },
+  subtitle: { margin: '4px 0 0', fontSize: 14, color: '#667085', lineHeight: 1.5 },
 };
 
 function _readExperience(profile) {
@@ -625,12 +629,12 @@ export default function ScanPage() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 12,
-          color: 'rgba(255,255,255,0.7)',
+          color: '#667085',
         }}>
           <div style={{
             width: 28, height: 28, borderRadius: '50%',
-            border: '3px solid rgba(255,255,255,0.12)',
-            borderTopColor: '#22C55E',
+            border: '3px solid rgba(36,49,58,0.10)',
+            borderTopColor: '#C8944D',
             animation: 'farroway-spin 0.8s linear infinite',
           }} />
           <span>{tStrict('scan.page.loading', 'Preparing camera\u2026')}</span>
