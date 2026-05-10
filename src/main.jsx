@@ -334,6 +334,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+// Sentry init — pure no-op when VITE_SENTRY_DSN isn't set (matches
+// the server's "Missing SENTRY_DSN — Sentry disabled safely"
+// banner). Must run before ReactDOM.createRoot so the SDK is in
+// place when the first render-time exception fires.
+import { initSentry } from './lib/sentry.js';
+try { initSentry(); } catch { /* never throw from boot */ }
 // Plant timeline auto-fire bridge — listens for plant_added /
 // scan_added_to_tasks / task_completed_garden window events and
 // appends timeline entries. Idempotent install; safe to call once

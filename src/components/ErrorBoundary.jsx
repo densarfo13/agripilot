@@ -25,6 +25,9 @@ import BrandLogo from './BrandLogo.jsx';
 import { removeFarrowayState } from '../lib/storageSafe.js';
 import { LOOP_STATE_KEYS } from '../lib/pilotFlags.js';
 import { setOnboardingComplete } from '../utils/onboarding.js';
+// Sentry capture — no-op when VITE_SENTRY_DSN isn't set, so
+// importing here costs nothing on dev / unprod builds.
+import { captureException as _sentryCapture } from '../lib/sentry.js';
 
 const C = FARROWAY_BRAND.colors;
 
@@ -125,6 +128,22 @@ export default class ErrorBoundary extends React.Component {
         })
         .catch(() => { /* swallow */ });
     } catch { /* never propagate from a catch handler */ }
+
+    // Sentry capture — no-op when VITE_SENTRY_DSN is not set.
+    // Skips orphan-chart noise (those are benign post-unmount
+    // recharts callbacks) and tags the crash with the route
+    // path + a 500-char component stack.
+    if (!isOrphanChart) {
+      try {
+        _sentryCapture(error, {
+          tag:   'app.crash',
+          extra: {
+            componentStack: info?.componentStack?.slice(0, 500) || null,
+            page:           _currentPath(),
+          },
+        });
+      } catch { /* never propagate from a catch handler */ }
+    }
 
     // Operators grep for FARROWAY_CRASH in Railway / Sentry.
     // Dev console gets the full payload; production gets just
