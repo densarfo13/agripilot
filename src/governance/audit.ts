@@ -2,7 +2,7 @@
  * audit — runExperienceAudit() consolidates every governance rule
  * into one report.
  *
- *   import { runExperienceAudit } from 'src/governance/audit.js';
+ *   import { runExperienceAudit } from 'src/governance/audit';
  *
  *   const report = await runExperienceAudit({
  *     rootDir: process.cwd(),    // optional, defaults to cwd
@@ -17,17 +17,13 @@
  *                         a guarded file's user-facing strings.
  *   2. Visual drift     — any FORBIDDEN_GARDEN_COLORS literal in
  *                         a guarded file's inline styles.
- *   3. Visual patterns  — neon keyword / gradient with > 3 stops
- *                         / pure-green rgba (lime).
- *   4. CTA density      — > 4 buttons rendered inside one
- *                         component file flag a calm-screen risk.
- *
- * What it doesn't check
- * ─────────────────────
- *   • Runtime state (frequency caps, memory cooldowns) — those
- *     are stateful and live in the orchestrator + notification
- *     engines. Their CONTRACT is in this directory; the runtime
- *     state is covered by their own tests.
+ *   3. Visual patterns  — neon keyword / pure-green rgba (lime).
+ *   4. Gradient stops   — any linear-gradient(...) with > 3
+ *                         color stops (parens-aware so nested
+ *                         rgba(...) doesn't false-positive).
+ *   5. CTA density      — > 24 buttons in one file = hard fail;
+ *                         > 8 = soft warning surfaced separately
+ *                         on `report.warnings`.
  *
  * Strict-rule audit
  *   • Pure / file-read only. Never throws — bad files surface as
@@ -40,45 +36,60 @@ import {
   GARDEN_GUARDED_FILES as GUARDED_FILES,
   findGardenViolations,
 } from '../principles/gardenPrinciples.js';
-import { FORBIDDEN_COLORS, FORBIDDEN_VISUAL_PATTERNS } from './visualConsistencyRules.js';
+import {
+  FORBIDDEN_COLORS,
+  FORBIDDEN_VISUAL_PATTERNS,
+  findGradientStopViolations,
+  MAX_GRADIENT_STOPS,
+} from './visualConsistencyRules.js';
 
-const DEFAULT_FILES = GUARDED_FILES;
-// CTA-density check is intentionally a SOFT signal. The naive
-// static button count can't tell visible-at-once buttons from
-// phase-conditional ones (e.g. SafeCameraSurface renders 14
-// buttons across 10 distinct phases, only 2-3 visible at any
-// point). The audit reports density warnings via summary.byKind
-// counts so reviewers can spot drift; it does NOT fail the gate
-// unless the count exceeds a clearly egregious ceiling.
+const DEFAULT_FILES: ReadonlyArray<string> = GUARDED_FILES;
 const CTA_DENSITY_SOFT_THRESHOLD = 8;
 const CTA_DENSITY_HARD_CEILING   = 24;
 
-/**
- * @typedef {object} AuditViolation
- * @property {string} file
- * @property {number} line
- * @property {('tone'|'visual_color'|'visual_pattern'|'cta_density')} kind
- * @property {string} message
- * @property {string} [match]
- *
- * @typedef {object} AuditReport
- * @property {boolean}              ok
- * @property {AuditViolation[]}     violations
- * @property {{ scanned: number, byKind: Record<string, number> }} summary
- */
+export type AuditViolationKind =
+  | 'tone'
+  | 'visual_color'
+  | 'visual_pattern'
+  | 'gradient_stops'
+  | 'cta_density';
+
+export interface AuditViolation {
+  readonly file: string;
+  readonly line: number;
+  readonly kind: AuditViolationKind;
+  readonly message: string;
+  readonly match?: string;
+}
+
+export interface AuditWarning {
+  readonly file: string;
+  readonly kind: string;
+  readonly message: string;
+}
+
+export interface AuditReport {
+  readonly ok: boolean;
+  readonly violations: ReadonlyArray<AuditViolation>;
+  readonly warnings: ReadonlyArray<AuditWarning>;
+  readonly summary: {
+    readonly scanned: number;
+    readonly byKind: Readonly<Record<string, number>>;
+    readonly warningsByKind: Readonly<Record<string, number>>;
+  };
+}
+
+export interface AuditOptions {
+  readonly rootDir?: string;
+  readonly files?: ReadonlyArray<string>;
+  readonly readFile?: (relPath: string, rootDir: string) => Promise<string | null>;
+}
 
 /**
  * Run the audit. Returns the violation list + a small summary.
- *
- * @param {{
- *   rootDir?: string,
- *   files?: string[],
- *   readFile?: (relPath: string, rootDir: string) => Promise<string|null>,
- * }} [opts]
- * @returns {Promise<AuditReport>}
  */
-export async function runExperienceAudit(opts = {}) {
-  const safe = (opts && typeof opts === 'object') ? opts : {};
+export async function runExperienceAudit(opts: AuditOptions = {}): Promise<AuditReport> {
+  const safe: AuditOptions = (opts && typeof opts === 'object') ? opts : {};
   const rootDir = typeof safe.rootDir === 'string' && safe.rootDir
     ? safe.rootDir
     : (typeof process !== 'undefined' ? process.cwd() : '.');
@@ -89,14 +100,12 @@ export async function runExperienceAudit(opts = {}) {
     ? safe.readFile
     : _defaultReadFile;
 
-  /** @type {AuditViolation[]} */
-  const violations = [];
-  /** @type {Array<{ file: string, kind: string, message: string }>} */
-  const warnings = [];
+  const violations: AuditViolation[] = [];
+  const warnings:   AuditWarning[]   = [];
   let scanned = 0;
 
   for (const rel of files) {
-    let src;
+    let src: string | null;
     try { src = await reader(rel, rootDir); }
     catch { src = null; }
     if (typeof src !== 'string' || !src) continue;
@@ -104,7 +113,7 @@ export async function runExperienceAudit(opts = {}) {
 
     const lines = src.split(/\r?\n/);
 
-    // Per-line tone + visual-pattern checks.
+    // Per-line tone + visual-pattern + color checks.
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmed = line.trim();
@@ -117,7 +126,7 @@ export async function runExperienceAudit(opts = {}) {
       if (/from\s+['"][^'"]*gardenPrinciples/.test(line)) continue;
 
       // 1. Tone violations
-      const toneHits = findGardenViolations(line);
+      const toneHits = findGardenViolations(line) as ReadonlyArray<{ match: string; principle: string }>;
       for (const hit of toneHits) {
         violations.push({
           file:    rel,
@@ -158,10 +167,21 @@ export async function runExperienceAudit(opts = {}) {
       }
     }
 
-    // 4. CTA-density check — count `<button` occurrences. Only
-    //    the HARD ceiling fails the gate; SOFT-threshold hits
-    //    surface as warnings on `summary.warningsByKind` so
-    //    reviewers can see drift without breaking the build.
+    // 4. Gradient stops — parens-aware whole-file scan. Catches
+    //    real `linear-gradient(...)` calls with > MAX_GRADIENT_STOPS
+    //    color stops; nested rgba() commas are correctly ignored.
+    const gradientHits = findGradientStopViolations(src);
+    for (const g of gradientHits) {
+      violations.push({
+        file:    rel,
+        line:    _findFirstMatchLine(lines, g.excerpt.slice(0, 30)),
+        kind:    'gradient_stops',
+        message: `gradient with ${g.stops} stops exceeds limit of ${MAX_GRADIENT_STOPS}`,
+        match:   g.excerpt,
+      });
+    }
+
+    // 5. CTA-density check
     const buttonCount = (src.match(/<button\b/g) || []).length;
     if (buttonCount > CTA_DENSITY_HARD_CEILING) {
       violations.push({
@@ -179,11 +199,11 @@ export async function runExperienceAudit(opts = {}) {
     }
   }
 
-  const byKind = {};
+  const byKind: Record<string, number> = {};
   for (const v of violations) {
     byKind[v.kind] = (byKind[v.kind] || 0) + 1;
   }
-  const warningsByKind = {};
+  const warningsByKind: Record<string, number> = {};
   for (const w of warnings) {
     warningsByKind[w.kind] = (warningsByKind[w.kind] || 0) + 1;
   }
@@ -200,9 +220,17 @@ export async function runExperienceAudit(opts = {}) {
   });
 }
 
-// ─── Default reader (Node only) ──────────────────────────────────
+// ─── Internals ───────────────────────────────────────────────────
 
-async function _defaultReadFile(rel, rootDir) {
+function _findFirstMatchLine(lines: string[], needle: string): number {
+  if (!needle) return 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(needle)) return i + 1;
+  }
+  return 0;
+}
+
+async function _defaultReadFile(rel: string, rootDir: string): Promise<string | null> {
   try {
     const fs   = await import('node:fs');
     const path = await import('node:path');

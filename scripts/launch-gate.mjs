@@ -44,11 +44,14 @@ const steps = [
     cmd: 'node', args: ['scripts/ci/check-garden-principles.mjs'] },
   // Experience Governance audit — broader rule set living in
   // src/governance/. Re-uses the garden principles for tone +
-  // color, adds visual-pattern checks (neon, lime), and emits
-  // soft warnings for CTA-density drift without blocking the
-  // build until the count reaches the hard ceiling.
+  // color, adds parens-aware gradient-stops + visual-pattern
+  // checks (neon, lime), and emits soft warnings for CTA-density
+  // drift without blocking the build until the count reaches the
+  // hard ceiling. Audit module is TypeScript; `npx tsx` is the
+  // canonical TS-aware Node loader (added as a devDependency in
+  // the same family as the existing tsx + typescript entries).
   { name: 'CI guard — experience governance',
-    cmd: 'node', args: ['scripts/ci/run-experience-audit.mjs'] },
+    cmd: 'npx', args: ['tsx', 'scripts/ci/run-experience-audit.ts'] },
   { name: 'i18n usage check (warning-only)',
     cmd: 'node', args: ['scripts/check-i18n.js'],
     tolerate: true,  // soft signal — warns but never fails the gate

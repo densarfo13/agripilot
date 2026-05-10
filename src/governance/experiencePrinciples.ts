@@ -16,19 +16,29 @@
  *     back-compat with the CI guard (scripts/ci/check-garden-
  *     principles.mjs) until that path is migrated to read from
  *     this directory directly.
- *
- * @typedef {object} ExperiencePrinciple
- * @property {string} id        kebab-case identifier
- * @property {number} n         1..10
- * @property {string} title
- * @property {string} rule      one-line plain-English summary
  */
 
 import {
   GARDEN_PRINCIPLES as _GARDEN_PRINCIPLES,
 } from '../principles/gardenPrinciples.js';
 
-export const FINAL_PRINCIPLE = Object.freeze({
+export interface ExperiencePrinciple {
+  /** kebab-case identifier */
+  readonly id: string;
+  /** 1..10 */
+  readonly n: number;
+  readonly title: string;
+  /** one-line plain-English summary */
+  readonly rule: string;
+}
+
+export interface FinalPrinciple {
+  readonly id: string;
+  readonly title: string;
+  readonly rule: string;
+}
+
+export const FINAL_PRINCIPLE: Readonly<FinalPrinciple> = Object.freeze({
   id:    'intelligence-internal-simplicity-external',
   title: 'Intelligence inside, simplicity outside',
   rule:  'The app should become more intelligent internally while '
@@ -40,16 +50,15 @@ export const FINAL_PRINCIPLE = Object.freeze({
  * gardenPrinciples module so there is exactly ONE definition of
  * the spec; this file presents it under a governance-shaped name
  * + adds the FINAL_PRINCIPLE that the spec mandates.
- *
- * @type {ReadonlyArray<ExperiencePrinciple>}
  */
-export const EXPERIENCE_PRINCIPLES = _GARDEN_PRINCIPLES;
+export const EXPERIENCE_PRINCIPLES: ReadonlyArray<ExperiencePrinciple> =
+  _GARDEN_PRINCIPLES as ReadonlyArray<ExperiencePrinciple>;
 
 /**
  * Lookup helper. Returns the principle object for a given id,
  * or null when the id is unknown. Pure / never throws.
  */
-export function getPrinciple(id) {
+export function getPrinciple(id: string | null | undefined): ExperiencePrinciple | null {
   if (!id) return null;
   for (const p of EXPERIENCE_PRINCIPLES) {
     if (p.id === id) return p;

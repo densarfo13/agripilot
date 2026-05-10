@@ -14,15 +14,24 @@
  *     use to check engine output.
  */
 
+const HOUR = 60 * 60 * 1000;
+
+export type RecommendationKind =
+  | 'weather'
+  | 'scan_followup'
+  | 'care'
+  | 'buyer'
+  | 'funding'
+  | 'progress'
+  | 'seasonal';
+
 // Cooldown table — minimum time before the same recommendation
 // kind is allowed to surface again. Mirror of the contract in
 // `src/orchestration/memory.js`; kept here so any new caller can
 // reach the spec without coupling to memory.js's storage shape.
 //
 // Values in milliseconds.
-const HOUR = 60 * 60 * 1000;
-
-export const RECOMMENDATION_COOLDOWNS = Object.freeze({
+export const RECOMMENDATION_COOLDOWNS: Readonly<Record<RecommendationKind, number>> = Object.freeze({
   weather:       4  * HOUR,
   scan_followup: 12 * HOUR,
   care:          6  * HOUR,
@@ -32,26 +41,23 @@ export const RECOMMENDATION_COOLDOWNS = Object.freeze({
   seasonal:      24 * HOUR,
 });
 
-/**
- * @typedef {object} OrchestratedItem
- * @property {string}  kind          one of RECOMMENDATION_COOLDOWNS keys
- * @property {string}  [key]         optional dedup key within kind
- * @property {string}  [actionRoute] '/scan', '/tasks', etc.
- */
+export interface OrchestratedItem {
+  readonly kind: string;
+  readonly key?: string;
+  readonly actionRoute?: string;
+}
 
 /**
  * Deduplicate a candidate set by (kind+key) and (actionRoute).
  * Returns the trimmed list — first occurrence wins. The orchestrator
  * already produces a single primary tile, so this is a defence-in-
  * depth check used by the audit to verify engine output.
- *
- * @param {Array<OrchestratedItem>} items
  */
-export function dedupeOrchestratedSet(items) {
+export function dedupeOrchestratedSet(items: ReadonlyArray<OrchestratedItem> | null | undefined): OrchestratedItem[] {
   if (!Array.isArray(items)) return [];
-  const seenKindKey = new Set();
-  const seenRoute   = new Set();
-  const out = [];
+  const seenKindKey = new Set<string>();
+  const seenRoute   = new Set<string>();
+  const out: OrchestratedItem[] = [];
   for (const it of items) {
     if (!it || typeof it !== 'object') continue;
     const kindKey = `${it.kind || ''}::${it.key || ''}`;
@@ -71,8 +77,12 @@ export function dedupeOrchestratedSet(items) {
  * memory module is the canonical store; this is the rule the
  * memory store must match.
  */
-export function withinCooldown(kind, lastShownAtIso, now = Date.now()) {
-  const ms = RECOMMENDATION_COOLDOWNS[String(kind)];
+export function withinCooldown(
+  kind: string,
+  lastShownAtIso: string | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  const ms = (RECOMMENDATION_COOLDOWNS as Record<string, number>)[String(kind)];
   if (!Number.isFinite(ms)) return false;
   const t = Date.parse(String(lastShownAtIso || ''));
   if (!Number.isFinite(t)) return false;

@@ -22,19 +22,22 @@
  *     LADDER constants without duplicating logic — engines stay
  *     authoritative; this file is the *contract* the audit runs
  *     against.
- *
- * @typedef {object} RecommendationRule
- * @property {string} id
- * @property {number} rank
- * @property {string} label
- * @property {('garden'|'farm'|'both')} appliesTo
- * @property {string} principleId   id from EXPERIENCE_PRINCIPLES
  */
+
+export type ExperienceMode = 'garden' | 'farm' | 'both';
+
+export interface RecommendationRule {
+  readonly id: string;
+  readonly rank: number;
+  readonly label: string;
+  readonly appliesTo: ExperienceMode;
+  /** id from EXPERIENCE_PRINCIPLES */
+  readonly principleId: string;
+}
 
 export const MAX_PRIMARY_RECOMMENDATIONS_PER_SCREEN = 1;
 
-/** @type {ReadonlyArray<RecommendationRule>} */
-export const RECOMMENDATION_PRIORITY = Object.freeze([
+export const RECOMMENDATION_PRIORITY: ReadonlyArray<RecommendationRule> = Object.freeze([
   Object.freeze({ id: 'safety',       rank: 1, label: 'Safety / weather risk',
     appliesTo: 'both',   principleId: 'reassurance-over-alarm' }),
   Object.freeze({ id: 'plant-health', rank: 2, label: 'Plant health',
@@ -49,13 +52,13 @@ export const RECOMMENDATION_PRIORITY = Object.freeze([
     appliesTo: 'both',   principleId: 'continuity-over-novelty' }),
   Object.freeze({ id: 'buyer-funding', rank: 7, label: 'Buyer / funding',
     appliesTo: 'farm',   principleId: 'calm-over-complexity' }),
-]);
+] as ReadonlyArray<RecommendationRule>);
 
 /**
  * Filter the priority list for a given mode. Garden hides the
  * buyer/funding rank entirely; Farm sees all 7.
  */
-export function priorityForMode(mode) {
+export function priorityForMode(mode: string | null | undefined): ReadonlyArray<RecommendationRule> {
   const m = String(mode || '').toLowerCase();
   if (m === 'garden') {
     return RECOMMENDATION_PRIORITY.filter((r) => r.appliesTo !== 'farm');
@@ -63,19 +66,20 @@ export function priorityForMode(mode) {
   return RECOMMENDATION_PRIORITY;
 }
 
+export interface RecommendationSetValidation {
+  readonly ok: boolean;
+  readonly reason: string | null;
+}
+
 /**
  * Validate that a candidate render-set obeys the per-screen cap.
- *
- * @param {Array<{ rank?: number }>} candidates
- * @returns {{ ok: boolean, reason: string|null }}
  */
-export function validateRecommendationSet(candidates) {
+export function validateRecommendationSet(
+  candidates: ReadonlyArray<{ rank?: number }> | null | undefined,
+): RecommendationSetValidation {
   const arr = Array.isArray(candidates) ? candidates : [];
   if (arr.length > MAX_PRIMARY_RECOMMENDATIONS_PER_SCREEN) {
-    return {
-      ok:     false,
-      reason: 'too_many_primary',
-    };
+    return { ok: false, reason: 'too_many_primary' };
   }
   return { ok: true, reason: null };
 }

@@ -2,7 +2,7 @@
  * featureGate — runtime helper that validates a feature against
  * the 8 governance questions before it surfaces.
  *
- *   import { gateFeature } from 'src/governance/featureGate.js';
+ *   import { gateFeature } from 'src/governance/featureGate';
  *
  *   const decision = gateFeature({
  *     id:           'plant-streak-badges',
@@ -25,25 +25,29 @@
  *   • Decision is deterministic — same input → same output.
  *   • Conservative: a missing answer is treated as `false`. The
  *     caller must explicitly assert each property to opt in.
- *
- * @typedef {object} FeatureGateInput
- * @property {string}  [id]
- * @property {boolean} [reducesUncertainty]
- * @property {boolean} [deepensContinuity]
- * @property {boolean} [improvesTiming]
- * @property {boolean} [preservesCalmness]
- * @property {boolean} [strengthensRealism]
- * @property {boolean} [fitsEmotionalTone]
- * @property {boolean} [avoidsClutter]
- * @property {boolean} [avoidsDashboardDensity]
- *
- * @typedef {object} FeatureGateDecision
- * @property {boolean}        allowed
- * @property {string[]}       failedQuestions
- * @property {number}         passed         0..8
- * @property {number}         minRequired    threshold for allow
- * @property {string|null}    id
  */
+
+export interface FeatureGateInput {
+  readonly id?: string;
+  readonly reducesUncertainty?: boolean;
+  readonly deepensContinuity?: boolean;
+  readonly improvesTiming?: boolean;
+  readonly preservesCalmness?: boolean;
+  readonly strengthensRealism?: boolean;
+  readonly fitsEmotionalTone?: boolean;
+  readonly avoidsClutter?: boolean;
+  readonly avoidsDashboardDensity?: boolean;
+}
+
+export interface FeatureGateDecision {
+  readonly allowed: boolean;
+  readonly failedQuestions: ReadonlyArray<string>;
+  /** 0..8 */
+  readonly passed: number;
+  /** Threshold for `allowed === true`. */
+  readonly minRequired: number;
+  readonly id: string | null;
+}
 
 // All 8 questions are mandatory — every one must answer true.
 // Less than 8 == surface stays hidden / delayed / removed.
@@ -56,22 +60,21 @@ export const GATE_QUESTIONS = Object.freeze([
   'fitsEmotionalTone',
   'avoidsClutter',
   'avoidsDashboardDensity',
-]);
+] as const);
+
+export type GateQuestion = typeof GATE_QUESTIONS[number];
 
 const MIN_REQUIRED = GATE_QUESTIONS.length; // all 8
 
 /**
  * Validate a candidate feature against the gate.
- *
- * @param {FeatureGateInput} input
- * @returns {FeatureGateDecision}
  */
-export function gateFeature(input) {
-  const safe = (input && typeof input === 'object') ? input : {};
-  const failed = [];
+export function gateFeature(input: FeatureGateInput | null | undefined): FeatureGateDecision {
+  const safe: FeatureGateInput = (input && typeof input === 'object') ? input : {};
+  const failed: string[] = [];
   let passed = 0;
   for (const q of GATE_QUESTIONS) {
-    if (safe[q] === true) passed += 1;
+    if ((safe as Record<string, unknown>)[q] === true) passed += 1;
     else failed.push(q);
   }
   return Object.freeze({
@@ -88,7 +91,7 @@ export function gateFeature(input) {
  * gate denies the feature. Useful in tests + during code review
  * when the dev wants a hard fail rather than a boolean to branch on.
  */
-export function assertFeatureGate(input) {
+export function assertFeatureGate(input: FeatureGateInput): FeatureGateDecision {
   const d = gateFeature(input);
   if (!d.allowed) {
     const why = d.failedQuestions.join(', ');

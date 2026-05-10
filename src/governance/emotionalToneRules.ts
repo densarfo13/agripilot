@@ -26,31 +26,41 @@ import {
 } from '../principles/gardenPrinciples.js';
 import { softenForGarden as _soften } from '../core/scanResultPolicy.js';
 
+export interface ForbiddenTonePattern {
+  readonly pattern: string;
+  readonly principle: string;
+  readonly tone: string;
+}
+
+export interface ToneViolation {
+  readonly pattern: string;
+  readonly principle: string;
+  readonly tone: string;
+  readonly match: string;
+}
+
 // Re-export under the governance-shaped names.
-export const FORBIDDEN_TONE_PATTERNS = _FORBIDDEN_WORDS;
+export const FORBIDDEN_TONE_PATTERNS: ReadonlyArray<ForbiddenTonePattern> =
+  _FORBIDDEN_WORDS as ReadonlyArray<ForbiddenTonePattern>;
 
 /**
  * Pure tone softener. Returns the rewritten string with farm-style
  * operational copy adapted to the gardener register. Falls through
  * to the original text when nothing matches.
- *
- * @param {string} text
- * @returns {string}
  */
-export const softenForGarden = _soften;
+export const softenForGarden: (text: string) => string = _soften;
 
 /**
  * Find every forbidden tone pattern that matches the supplied
  * text. Returns an array of { pattern, principle, tone, match }.
- *
- * @param {string} text
  */
-export const findToneViolations = _findViolations;
+export const findToneViolations: (text: string) => ToneViolation[] =
+  _findViolations as (text: string) => ToneViolation[];
 
 /**
  * Boolean convenience for inline assertions.
  */
-export function isToneViolation(text) {
+export function isToneViolation(text: string): boolean {
   return findToneViolations(text).length > 0;
 }
 

@@ -1,41 +1,29 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
- * run-experience-audit.mjs
+ * run-experience-audit — CI guard. Wraps the canonical pure
+ * audit at `src/governance/audit.ts` for command-line use.
  *
- * CI guard — runs `runExperienceAudit()` against the active
- * runtime files declared in `src/principles/gardenPrinciples.js`
- * `GARDEN_GUARDED_FILES`.
- *
- *   node scripts/ci/run-experience-audit.mjs
- *     → exit 0 when no violations
+ *   npx tsx scripts/ci/run-experience-audit.ts
+ *     → exit 0 when no hard violations
  *     → exit 1 with file:line readout when any rule fires
- *
- * Wraps the canonical pure audit at `src/governance/audit.js`.
- * The audit checks:
- *   • forbidden alarm / AI-jargon / commercial wording
- *   • forbidden legacy color literals (#22C55E, #0B1D34, etc.)
- *   • forbidden visual patterns (neon, gradient > 3 stops, lime)
- *   • CTA-density risk (> 4 `<button>` in one file)
+ *     → soft warnings printed to stderr regardless of pass/fail
  *
  * Wired into `scripts/launch-gate.mjs` so every deploy enforces
  * the experience principles end-to-end.
+ *
+ * The audit checks:
+ *   • forbidden alarm / AI-jargon / commercial wording
+ *   • forbidden legacy color literals (#22C55E, #0B1D34, etc.)
+ *   • forbidden visual patterns (lime rgba / #39FF14 / neon*)
+ *   • gradient stops > 3 (parens-aware so nested rgba()
+ *     doesn't false-positive)
+ *   • CTA density > 24 = hard fail; > 8 = soft warning
  */
 
 import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { runExperienceAudit } from '../../src/governance/audit.ts';
 
 const REPO_ROOT = resolve(process.cwd());
-const auditUrl = pathToFileURL(
-  resolve(REPO_ROOT, 'src/governance/audit.js')
-).href;
-
-let runExperienceAudit;
-try {
-  ({ runExperienceAudit } = await import(auditUrl));
-} catch (err) {
-  console.error('run-experience-audit: failed to import audit module —', err.message);
-  process.exit(1);
-}
 
 const report = await runExperienceAudit({ rootDir: REPO_ROOT });
 
@@ -68,6 +56,6 @@ for (const v of report.violations) {
 }
 console.error('');
 console.error('See src/governance/ for the locked rule set.');
-console.error('Use softenForGarden() (src/governance/emotionalToneRules.js)');
+console.error('Use softenForGarden() (src/governance/emotionalToneRules.ts)');
 console.error('and the unified design tokens (src/design/tokens/colors.js).');
 process.exit(1);

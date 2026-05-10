@@ -17,12 +17,14 @@ export {
   FINAL_PRINCIPLE,
   getPrinciple,
 } from './experiencePrinciples.js';
+export type { ExperiencePrinciple, FinalPrinciple } from './experiencePrinciples.js';
 
 export {
   GATE_QUESTIONS,
   gateFeature,
   assertFeatureGate,
 } from './featureGate.js';
+export type { FeatureGateInput, FeatureGateDecision, GateQuestion } from './featureGate.js';
 
 export {
   MAX_PRIMARY_RECOMMENDATIONS_PER_SCREEN,
@@ -30,19 +32,34 @@ export {
   priorityForMode,
   validateRecommendationSet,
 } from './recommendationRules.js';
+export type {
+  RecommendationRule,
+  ExperienceMode,
+  RecommendationSetValidation,
+} from './recommendationRules.js';
 
 export {
   FREQUENCY_LIMITS,
   FORBIDDEN_NOTIFICATION_PATTERNS,
   validateNotification,
 } from './notificationRules.js';
+export type {
+  NotificationCandidate,
+  NotificationDecision,
+  NotificationChannel,
+  ChannelLimit,
+} from './notificationRules.js';
 
 export {
   FORBIDDEN_COLORS,
   FORBIDDEN_VISUAL_PATTERNS,
   ANIMATION_BUDGET_MS,
+  MAX_GRADIENT_STOPS,
   findForbiddenColors,
+  countGradientStops,
+  findGradientStopViolations,
 } from './visualConsistencyRules.js';
+export type { ForbiddenColor, ForbiddenVisualPattern } from './visualConsistencyRules.js';
 
 export {
   MAX_ATMOSPHERE_LAYERS,
@@ -50,6 +67,7 @@ export {
   TINT_TRANSITION_MS,
   validateAtmosphereChange,
 } from './atmosphereRules.js';
+export type { AtmosphereChange, AtmosphereValidation } from './atmosphereRules.js';
 
 export {
   FORBIDDEN_TONE_PATTERNS,
@@ -57,11 +75,20 @@ export {
   findToneViolations,
   isToneViolation,
 } from './emotionalToneRules.js';
+export type { ForbiddenTonePattern, ToneViolation } from './emotionalToneRules.js';
 
 export {
   RECOMMENDATION_COOLDOWNS,
   dedupeOrchestratedSet,
   withinCooldown,
 } from './orchestrationRules.js';
+export type { RecommendationKind, OrchestratedItem } from './orchestrationRules.js';
 
 export { runExperienceAudit } from './audit.js';
+export type {
+  AuditReport,
+  AuditViolation,
+  AuditWarning,
+  AuditViolationKind,
+  AuditOptions,
+} from './audit.js';

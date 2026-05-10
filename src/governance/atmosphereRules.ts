@@ -32,22 +32,32 @@ export const TINT_TRANSITION_MS = Object.freeze({
   max:        600,
 });
 
+export interface AtmosphereChange {
+  readonly layers?: number;
+  readonly transitionMs?: number;
+  readonly dramaticShift?: boolean;
+}
+
+export interface AtmosphereValidation {
+  readonly ok: boolean;
+  readonly reasons: ReadonlyArray<string>;
+}
+
 /**
  * Validate a candidate atmosphere change. Returns
  * { ok, reasons } so callers can self-check before applying.
- *
- * @param {{ layers?: number, transitionMs?: number, dramaticShift?: boolean }} input
  */
-export function validateAtmosphereChange(input) {
-  const safe = (input && typeof input === 'object') ? input : {};
-  const reasons = [];
+export function validateAtmosphereChange(input: AtmosphereChange | null | undefined): AtmosphereValidation {
+  const safe = (input && typeof input === 'object') ? input : ({} as AtmosphereChange);
+  const reasons: string[] = [];
 
-  if (Number.isFinite(safe.layers) && safe.layers > MAX_ATMOSPHERE_LAYERS) {
+  if (Number.isFinite(safe.layers) && (safe.layers as number) > MAX_ATMOSPHERE_LAYERS) {
     reasons.push('too_many_layers');
   }
   if (Number.isFinite(safe.transitionMs)) {
-    if (safe.transitionMs < TINT_TRANSITION_MS.min) reasons.push('transition_too_fast');
-    if (safe.transitionMs > TINT_TRANSITION_MS.max) reasons.push('transition_too_slow');
+    const t = safe.transitionMs as number;
+    if (t < TINT_TRANSITION_MS.min) reasons.push('transition_too_fast');
+    if (t > TINT_TRANSITION_MS.max) reasons.push('transition_too_slow');
   }
   if (safe.dramaticShift === true) {
     reasons.push('dramatic_shift_disallowed');
