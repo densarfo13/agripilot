@@ -127,7 +127,7 @@ export default function FarmEconomicsForecast({
 }
 
 function confChipColor(level) {
-  if (level === 'high')   return { color: '#86EFAC', borderColor: 'rgba(34,197,94,0.35)' };
+  if (level === 'high')   return { color: '#86EFAC', borderColor: 'rgba(200,148,77,0.35)' };
   if (level === 'medium') return { color: '#FCD34D', borderColor: 'rgba(251,191,36,0.35)' };
   return { color: '#FCA5A5', borderColor: 'rgba(248,113,113,0.35)' };
 }

@@ -216,7 +216,7 @@ const S = {
   whyLabel: { color: 'rgba(255,255,255,0.75)', fontWeight: 600 },
   actions: { display: 'flex', gap: '0.5rem', marginTop: '0.25rem', flexWrap: 'wrap' },
   completeBtn: {
-    background: '#22C55E', color: '#000', border: 'none',
+    background: '#C8944D', color: '#000', border: 'none',
     borderRadius: 10, padding: '0.5rem 0.875rem',
     fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
   },

@@ -25,7 +25,7 @@ import { computeProgressScore, getScoreLabel } from '../../lib/farmer/progressSc
 const COLOR_STYLES = Object.freeze({
   red:    { bg: 'rgba(239,68,68,0.15)',  fg: '#FCA5A5', border: 'rgba(239,68,68,0.35)' },
   yellow: { bg: 'rgba(245,158,11,0.15)', fg: '#FDE68A', border: 'rgba(245,158,11,0.35)' },
-  green:  { bg: 'rgba(34,197,94,0.15)',  fg: '#86EFAC', border: 'rgba(34,197,94,0.35)' },
+  green:  { bg: 'rgba(200,148,77,0.15)',  fg: '#86EFAC', border: 'rgba(200,148,77,0.35)' },
   purple: { bg: 'rgba(168,85,247,0.20)', fg: '#D8B4FE', border: 'rgba(168,85,247,0.45)' },
 });
 

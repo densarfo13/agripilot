@@ -188,7 +188,7 @@ const S = {
   journeyPct: { color: '#86EFAC', fontWeight: 700 },
   barWrap: { width: '100%', height: '8px', background: 'rgba(255,255,255,0.08)',
              borderRadius: '999px', overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: '999px', background: '#22C55E',
+  barFill: { height: '100%', borderRadius: '999px', background: '#C8944D',
              transition: 'width 280ms ease-out' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(8rem, 1fr))',
           gap: '0.5rem' },

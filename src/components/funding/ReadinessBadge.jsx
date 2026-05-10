@@ -16,7 +16,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import { readinessBand } from '../../funding/applicationReadiness.js';
 
 const TONES = {
-  high:   { color: '#86EFAC', bg: 'rgba(34,197,94,0.14)',  border: 'rgba(34,197,94,0.45)' },
+  high:   { color: '#86EFAC', bg: 'rgba(200,148,77,0.14)',  border: 'rgba(200,148,77,0.45)' },
   medium: { color: '#FCD34D', bg: 'rgba(252,211,77,0.10)', border: 'rgba(252,211,77,0.35)' },
   low:    { color: '#FCA5A5', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)' },
 };

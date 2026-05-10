@@ -689,7 +689,7 @@ const S = {
   brandName: {
     fontSize: 16,
     fontWeight: 800,
-    color: '#22C55E',
+    color: '#C8944D',
     letterSpacing: '0.01em',
   },
   brandTagline: {
@@ -769,10 +769,10 @@ const S = {
     minHeight: 64,
   },
   choicePrimary: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
-    boxShadow: '0 8px 22px rgba(34,197,94,0.25)',
+    boxShadow: '0 8px 22px rgba(200,148,77,0.25)',
   },
   choiceSecondary: {
     background: 'rgba(255,255,255,0.05)',
@@ -838,8 +838,8 @@ const S = {
   detectBtn: {
     flex: '0 0 auto',
     appearance: 'none',
-    background: 'rgba(34,197,94,0.18)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.18)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: 12,
     color: '#86EFAC',
     fontSize: 13,
@@ -868,8 +868,8 @@ const S = {
     minHeight: 70,
   },
   sizeChipActive: {
-    background: 'rgba(34,197,94,0.18)',
-    border: '1px solid rgba(34,197,94,0.55)',
+    background: 'rgba(200,148,77,0.18)',
+    border: '1px solid rgba(200,148,77,0.55)',
     color: '#86EFAC',
   },
   sizeEmoji: { fontSize: 22, lineHeight: 1 },
@@ -878,8 +878,8 @@ const S = {
   cropRow: { display: 'flex', flexDirection: 'column', gap: 8 },
   cropChip: {
     appearance: 'none',
-    background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.40)',
+    background: 'rgba(200,148,77,0.12)',
+    border: '1px solid rgba(200,148,77,0.40)',
     borderRadius: 12,
     color: '#86EFAC',
     fontSize: 14,
@@ -890,8 +890,8 @@ const S = {
     textAlign: 'left',
   },
   cropChipActive: {
-    background: 'rgba(34,197,94,0.28)',
-    border: '1px solid rgba(34,197,94,0.65)',
+    background: 'rgba(200,148,77,0.28)',
+    border: '1px solid rgba(200,148,77,0.65)',
     color: '#FFFFFF',
   },
   select: {
@@ -907,7 +907,7 @@ const S = {
 
   recCard: {
     background: '#102C47',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: 16,
     padding: 18,
     display: 'flex',
@@ -921,8 +921,8 @@ const S = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     color: '#86EFAC',
-    background: 'rgba(34,197,94,0.14)',
-    border: '1px solid rgba(34,197,94,0.4)',
+    background: 'rgba(200,148,77,0.14)',
+    border: '1px solid rgba(200,148,77,0.4)',
     padding: '3px 10px',
     borderRadius: 999,
   },
@@ -972,7 +972,7 @@ const S = {
     width: '100%',
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 800,
@@ -980,7 +980,7 @@ const S = {
     borderRadius: 16,
     cursor: 'pointer',
     minHeight: 52,
-    boxShadow: '0 10px 24px rgba(34,197,94,0.25)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.25)',
   },
   ctaDisabled: {
     opacity: 0.5,

@@ -393,7 +393,7 @@ export default function FarmerDashboardPage() {
   };
 
   const bandColor = (band) => {
-    if (band === 'Strong') return '#22C55E';
+    if (band === 'Strong') return '#C8944D';
     if (band === 'Good') return '#0EA5E9';
     if (band === 'Fair') return '#F59E0B';
     return '#EF4444';
@@ -575,7 +575,7 @@ export default function FarmerDashboardPage() {
               <button
                 key={l.code}
                 onClick={() => switchLang(l.code)}
-                style={{ ...styles.langBtn, fontWeight: lang === l.code ? 700 : 400, color: lang === l.code ? '#22C55E' : '#A1A1AA' }}
+                style={{ ...styles.langBtn, fontWeight: lang === l.code ? 700 : 400, color: lang === l.code ? '#C8944D' : '#A1A1AA' }}
               >{l.short}</button>
             ))}
           </div>
@@ -749,7 +749,7 @@ export default function FarmerDashboardPage() {
                     {profileScore.score > 0 && (
                       <div style={{ marginBottom: '0.75rem' }}>
                         <div style={{ height: '6px', borderRadius: '3px', background: '#1E293B', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #22C55E, #16A34A)', width: `${profileScore.score}%`, transition: 'width 0.4s ease' }} />
+                          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #C8944D, #B9853F)', width: `${profileScore.score}%`, transition: 'width 0.4s ease' }} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
                           <span style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{profileScore.score}% complete</span>
@@ -833,7 +833,7 @@ export default function FarmerDashboardPage() {
                   {/* Context lines — WHY / TIMING / RISK (spec §8) */}
                   {taskViewModel?.whyText && (
                     <div style={S.contextLine} data-testid="why-line">
-                      <span style={S.contextDot(taskViewModel.urgencyStyle?.accent || '#22C55E')} />
+                      <span style={S.contextDot(taskViewModel.urgencyStyle?.accent || '#C8944D')} />
                       <span>{taskViewModel.whyText}</span>
                     </div>
                   )}
@@ -872,7 +872,7 @@ export default function FarmerDashboardPage() {
                   <div style={S.progressRow}>
                     <svg width="56" height="56" viewBox="0 0 56 56" style={{ flexShrink: 0 }} data-testid="progress-ring">
                       <circle cx="28" cy="28" r="24" fill="none" stroke="#1E293B" strokeWidth="5" />
-                      <circle cx="28" cy="28" r="24" fill="none" stroke="#22C55E" strokeWidth="5"
+                      <circle cx="28" cy="28" r="24" fill="none" stroke="#C8944D" strokeWidth="5"
                         strokeDasharray={`${(progressPct / 100) * 150.8} 150.8`}
                         strokeLinecap="round" transform="rotate(-90 28 28)" />
                       <text x="28" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="13" fontWeight="700">{progressPct}%</text>
@@ -1054,7 +1054,7 @@ export default function FarmerDashboardPage() {
             <ExpandableSection title={t('home.farmDetails')} icon="🏡" testId="details-section">
               {farmProfile && (
                 <div style={{ marginBottom: '0.75rem' }}>
-                  {farmProfile.farmerUuid && <div style={styles.detailRow}><span>{t('home.farmerId')}</span> <span style={{ fontFamily: 'monospace', color: '#22C55E' }}>{farmProfile.farmerUuid}</span></div>}
+                  {farmProfile.farmerUuid && <div style={styles.detailRow}><span>{t('home.farmerId')}</span> <span style={{ fontFamily: 'monospace', color: '#C8944D' }}>{farmProfile.farmerUuid}</span></div>}
                   <div style={styles.detailRow}><span>{t('home.farm')}</span> <span>{farmProfile.farmName || farmProfile.farmerName}</span></div>
                   {farmProfile.locationName && <div style={styles.detailRow}><span>{t('home.location')}</span> <span>{farmProfile.locationName}</span></div>}
                   {(farmProfile.landSizeValue || farmProfile.farmSizeAcres) && <div style={styles.detailRow}><span>{t('home.size')}</span> <span>{formatLandSize(farmProfile.landSizeValue || farmProfile.farmSizeAcres, farmProfile.landSizeUnit)}</span></div>}
@@ -1065,7 +1065,7 @@ export default function FarmerDashboardPage() {
                 <div key={s.id} style={{ padding: '0.4rem 0', borderBottom: '1px solid #243041', fontSize: '0.85rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontWeight: 600 }}>{getCropLabelSafe(s.cropType, lang)}</span>
-                    <span style={{ color: '#22C55E' }}>{s.status}</span>
+                    <span style={{ color: '#C8944D' }}>{s.status}</span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>
                     {formatLandSize(s.landSizeValue || s.farmSizeAcres, s.landSizeUnit)} · Planted {new Date(s.plantingDate).toLocaleDateString()}
@@ -1085,8 +1085,8 @@ export default function FarmerDashboardPage() {
                       </div>
                       <span style={{
                         fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '12px',
-                        background: rec.status === 'completed' ? 'rgba(34,197,94,0.15)' : rec.status === 'skipped' ? 'rgba(245,158,11,0.15)' : 'rgba(14,165,233,0.15)',
-                        color: rec.status === 'completed' ? '#22C55E' : rec.status === 'skipped' ? '#F59E0B' : '#0EA5E9',
+                        background: rec.status === 'completed' ? 'rgba(200,148,77,0.15)' : rec.status === 'skipped' ? 'rgba(245,158,11,0.15)' : 'rgba(14,165,233,0.15)',
+                        color: rec.status === 'completed' ? '#C8944D' : rec.status === 'skipped' ? '#F59E0B' : '#0EA5E9',
                         textTransform: 'capitalize', whiteSpace: 'nowrap', marginLeft: '0.5rem',
                       }}>{rec.status}</span>
                     </div>
@@ -1250,7 +1250,7 @@ const S = {
   heroBadge: {
     display: 'inline-block', marginTop: '0.25rem', padding: '0.2rem 0.7rem',
     borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600,
-    background: 'rgba(34,197,94,0.15)', color: '#22C55E', textTransform: 'capitalize',
+    background: 'rgba(200,148,77,0.15)', color: '#C8944D', textTransform: 'capitalize',
   },
   heroWeather: {
     display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0,
@@ -1269,7 +1269,7 @@ const S = {
     background: color, flexShrink: 0,
   }),
   momentumText: {
-    fontSize: '0.8rem', color: '#22C55E', fontWeight: 600,
+    fontSize: '0.8rem', color: '#C8944D', fontWeight: 600,
     marginTop: '0.35rem',
   },
 
@@ -1278,9 +1278,9 @@ const S = {
   primaryActionBtn: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     gap: '0.6rem', width: '100%', padding: '1rem 1.5rem',
-    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#FFFFFF',
+    background: 'linear-gradient(135deg, #C8944D 0%, #B9853F 100%)', color: '#FFFFFF',
     borderRadius: '14px', fontWeight: 800, fontSize: '1.15rem', textDecoration: 'none',
-    boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+    boxShadow: '0 4px 14px rgba(185,133,63,0.3)',
     minHeight: '56px', WebkitTapHighlightColor: 'transparent',
     transition: 'transform 0.1s', cursor: 'pointer',
   },
@@ -1332,7 +1332,7 @@ const S = {
     width: '44px', height: '44px', borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: '#1E293B', flexShrink: 0,
-    border: `3px solid ${band === 'Strong' ? '#22C55E' : band === 'Good' ? '#0EA5E9' : band === 'Fair' ? '#F59E0B' : '#EF4444'}`,
+    border: `3px solid ${band === 'Strong' ? '#C8944D' : band === 'Good' ? '#0EA5E9' : band === 'Fair' ? '#F59E0B' : '#EF4444'}`,
   }),
 
   // Expandable sections
@@ -1367,7 +1367,7 @@ const styles = {
     padding: '0.75rem 1rem', background: '#162033', borderBottom: '1px solid #243041',
     position: 'sticky', top: 0, zIndex: 100,
   },
-  brand: { fontSize: '1.25rem', fontWeight: 700, color: '#22C55E', margin: 0 },
+  brand: { fontSize: '1.25rem', fontWeight: 700, color: '#C8944D', margin: 0 },
   logoutBtn: {
     padding: '0.5rem 0.75rem', background: 'transparent', border: '1px solid #243041',
     borderRadius: '6px', cursor: 'pointer', color: '#A1A1AA', fontSize: '0.8rem',
@@ -1398,8 +1398,8 @@ const styles = {
     borderBottom: '1px solid #243041', fontSize: '0.9rem',
   },
   recBtnDone: {
-    padding: '0.4rem 0.8rem', background: 'rgba(34,197,94,0.15)', color: '#22C55E',
-    border: '1px solid rgba(34,197,94,0.3)', borderRadius: '6px', cursor: 'pointer',
+    padding: '0.4rem 0.8rem', background: 'rgba(200,148,77,0.15)', color: '#C8944D',
+    border: '1px solid rgba(200,148,77,0.3)', borderRadius: '6px', cursor: 'pointer',
     fontSize: '0.75rem', fontWeight: 600, minHeight: '36px',
   },
   recBtnSkip: {
@@ -1420,7 +1420,7 @@ const styles = {
     width: '64px', height: '64px', borderRadius: '50%',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     background: '#1E293B',
-    border: `3px solid ${band === 'Strong' ? '#22C55E' : band === 'Good' ? '#0EA5E9' : band === 'Fair' ? '#F59E0B' : '#EF4444'}`,
+    border: `3px solid ${band === 'Strong' ? '#C8944D' : band === 'Good' ? '#0EA5E9' : band === 'Fair' ? '#F59E0B' : '#EF4444'}`,
   }),
   weatherStat: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',

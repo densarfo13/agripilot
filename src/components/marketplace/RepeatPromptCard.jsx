@@ -26,8 +26,8 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const S = {
   card: {
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(14,165,233,0.10))',
-    border: '1px solid rgba(34,197,94,0.35)',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.18), rgba(14,165,233,0.10))',
+    border: '1px solid rgba(200,148,77,0.35)',
     borderRadius: 14,
     padding: '14px 16px',
     color: '#fff',
@@ -46,7 +46,7 @@ const S = {
     border: 'none',
     padding: '10px 14px',
     borderRadius: 10,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 14,
     fontWeight: 800,

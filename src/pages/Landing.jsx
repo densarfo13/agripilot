@@ -12,7 +12,7 @@
  *
  * Design notes
  *   • Dark gradient background matching the Farroway app theme
- *     (#0B1D34 → #081423). Green CTA + accents at #22C55E.
+ *     (#0B1D34 → #081423). Green CTA + accents at #C8944D.
  *   • Mobile-first — every section stacks to a single column
  *     below 860 px. Hero + grids reflow at 860 px and 1140 px.
  *   • Smooth scroll via scroll-behavior + in-view fade-in via
@@ -40,9 +40,9 @@ const TOKENS = Object.freeze({
   text:        '#EAF2FF',
   textMuted:   '#9FB3C8',
   textDim:     '#6F8299',
-  green:       '#22C55E',
+  green:       '#C8944D',
   greenSoft:   '#86EFAC',
-  greenGlow:   'rgba(34,197,94,0.22)',
+  greenGlow:   'rgba(200,148,77,0.22)',
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -768,7 +768,7 @@ const S = {
   page: {
     minHeight: '100vh',
     color: TOKENS.text,
-    background: `radial-gradient(1200px 600px at 20% -10%, rgba(34,197,94,0.14), transparent 60%),
+    background: `radial-gradient(1200px 600px at 20% -10%, rgba(200,148,77,0.14), transparent 60%),
                  radial-gradient(900px 500px at 100% 10%, rgba(37,99,235,0.08), transparent 55%),
                  linear-gradient(180deg, ${TOKENS.bgTop} 0%, ${TOKENS.bgBottom} 100%)`,
     fontFamily:
@@ -869,8 +869,8 @@ const S = {
     display: 'inline-flex', alignItems: 'center', gap: 8,
     padding: '0.4rem 0.75rem',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.3)',
+    background: 'rgba(200,148,77,0.1)',
+    border: '1px solid rgba(200,148,77,0.3)',
     color: TOKENS.greenSoft,
     fontSize: '0.8125rem', fontWeight: 700,
     letterSpacing: '0.01em',
@@ -1057,8 +1057,8 @@ const S = {
   },
   featureIcon: {
     width: 42, height: 42, borderRadius: 12,
-    background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.3)',
+    background: 'rgba(200,148,77,0.1)',
+    border: '1px solid rgba(200,148,77,0.3)',
     color: TOKENS.greenSoft,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '1.25rem',
@@ -1114,11 +1114,11 @@ const S = {
   visionTick: {
     flexShrink: 0,
     width: 28, height: 28, borderRadius: 8,
-    background: 'rgba(34,197,94,0.16)',
+    background: 'rgba(200,148,77,0.16)',
     color: TOKENS.greenSoft,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '0.875rem', fontWeight: 900,
-    border: '1px solid rgba(34,197,94,0.4)',
+    border: '1px solid rgba(200,148,77,0.4)',
   },
 
   // ── Audience ────
@@ -1136,8 +1136,8 @@ const S = {
     fontSize: '0.6875rem', fontWeight: 800,
     color: TOKENS.greenSoft,
     padding: '0.25rem 0.5rem', borderRadius: 999,
-    background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.3)',
+    background: 'rgba(200,148,77,0.1)',
+    border: '1px solid rgba(200,148,77,0.3)',
     letterSpacing: '0.06em', textTransform: 'uppercase',
   },
 
@@ -1169,8 +1169,8 @@ const S = {
   ctaSection: { padding: '3rem 1rem' },
   ctaCard: {
     maxWidth: '44rem', margin: '0 auto',
-    background: `linear-gradient(180deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))`,
-    border: '1px solid rgba(34,197,94,0.3)',
+    background: `linear-gradient(180deg, rgba(200,148,77,0.08), rgba(200,148,77,0.02))`,
+    border: '1px solid rgba(200,148,77,0.3)',
     borderRadius: 22, padding: '1.5rem',
     textAlign: 'center',
   },

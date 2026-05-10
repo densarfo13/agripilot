@@ -138,11 +138,11 @@ const styles = {
   sub: { fontSize: '0.9rem', color: '#A1A1AA', maxWidth: '300px', lineHeight: 1.5 },
   spinner: {
     width: '36px', height: '36px', border: '3px solid #243041',
-    borderTopColor: '#22C55E', borderRadius: '50%',
+    borderTopColor: '#C8944D', borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
   primaryBtn: {
-    marginTop: '0.75rem', padding: '0.75rem 2rem', background: '#22C55E',
+    marginTop: '0.75rem', padding: '0.75rem 2rem', background: '#C8944D',
     color: '#000', border: 'none', borderRadius: '12px', fontSize: '1rem',
     fontWeight: 700, cursor: 'pointer', minHeight: '48px', minWidth: '160px',
     WebkitTapHighlightColor: 'transparent',

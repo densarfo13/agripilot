@@ -150,8 +150,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   opt_success: {
-    background: 'rgba(34,197,94,0.16)',
-    borderColor: 'rgba(34,197,94,0.55)',
+    background: 'rgba(200,148,77,0.16)',
+    borderColor: 'rgba(200,148,77,0.55)',
     color: '#DCFCE7',
   },
   opt_danger: {

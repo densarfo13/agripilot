@@ -171,7 +171,7 @@ export default function ReportsPage() {
                       <XAxis dataKey="cropType" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="_count" fill="#22C55E" radius={[4, 4, 0, 0]} name="Count" />
+                      <Bar dataKey="_count" fill="#C8944D" radius={[4, 4, 0, 0]} name="Count" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartErrorBoundary>
@@ -221,7 +221,7 @@ export default function ReportsPage() {
                       <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" fill="#C8944D" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartErrorBoundary>

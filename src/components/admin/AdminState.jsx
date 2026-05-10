@@ -104,7 +104,7 @@ const TONES = {
   empty:   { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)' },
   error:   { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.30)'  },
   auth:    { bg: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.30)' },
-  mfa:     { bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.30)'  },
+  mfa:     { bg: 'rgba(200,148,77,0.10)',   border: 'rgba(200,148,77,0.30)'  },
   network: { bg: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.30)' },
 };
 

@@ -24,7 +24,7 @@ import api from '../api/client.js';
 const PHASE = { ENTRY: 'entry', VALIDATING: 'validating', PREVIEW: 'preview', CONFIRMING: 'confirming', RESULT: 'result' };
 
 const STATUS_COLORS = {
-  NEW: '#22C55E',
+  NEW: '#C8944D',
   UPDATE_EXISTING: '#3B82F6',
   DUPLICATE_IN_FILE: '#F59E0B',
   INVALID: '#EF4444',
@@ -364,10 +364,10 @@ const S = {
   radioRow: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#EAF2FF', cursor: 'pointer' },
   uploadRow: { display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' },
   templateBtn: { padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' },
-  uploadBtn: { padding: '0.75rem 1rem', borderRadius: '12px', border: 'none', background: '#22C55E', color: '#fff', fontSize: '0.875rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
+  uploadBtn: { padding: '0.75rem 1rem', borderRadius: '12px', border: 'none', background: '#C8944D', color: '#fff', fontSize: '0.875rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 10px 24px rgba(200,148,77,0.22)' },
   errorBox: { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem' },
   loadingWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '2rem' },
-  spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
+  spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
   loadingLabel: { fontSize: '0.9375rem', color: '#9FB3C8', fontWeight: 600 },
   countsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem' },
   countTile: { padding: '0.75rem', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' },
@@ -378,7 +378,7 @@ const S = {
   th: { textAlign: 'left', padding: '0.625rem 0.875rem', fontWeight: 800, color: '#6F8299', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.6875rem', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.18)', position: 'sticky', top: 0 },
   td: { padding: '0.5rem 0.875rem', color: '#EAF2FF', borderBottom: '1px solid rgba(255,255,255,0.04)' },
   actionRow: { display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', flexWrap: 'wrap' },
-  primaryBtn: { padding: '0.875rem 1.25rem', borderRadius: '14px', background: '#22C55E', color: '#fff', border: 'none', fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer', minHeight: '48px', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
+  primaryBtn: { padding: '0.875rem 1.25rem', borderRadius: '14px', background: '#C8944D', color: '#fff', border: 'none', fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer', minHeight: '48px', boxShadow: '0 10px 24px rgba(200,148,77,0.22)' },
   secondaryBtn: { padding: '0.875rem 1.25rem', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', border: '1px solid rgba(255,255,255,0.08)', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px' },
   disabled: { opacity: 0.4, cursor: 'not-allowed' },
   errorList: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.375rem' },

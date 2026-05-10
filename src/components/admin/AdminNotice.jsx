@@ -35,10 +35,10 @@ const C = FARROWAY_BRAND.colors;
 const TONES = {
   error:   { bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.30)',  fg: '#FCA5A5', icon: '⚠️' },
   warning: { bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.30)', fg: '#FCD34D', icon: '⚠️' },
-  info:    { bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.30)',  fg: '#86EFAC', icon: 'ℹ️' },
-  success: { bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.40)',  fg: '#86EFAC', icon: '✅' },
+  info:    { bg: 'rgba(200,148,77,0.08)',  border: 'rgba(200,148,77,0.30)',  fg: '#86EFAC', icon: 'ℹ️' },
+  success: { bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.40)',  fg: '#86EFAC', icon: '✅' },
   auth:    { bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.30)', fg: '#FCD34D', icon: '🔒' },
-  mfa:     { bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.30)',  fg: '#86EFAC', icon: '🔐' },
+  mfa:     { bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.30)',  fg: '#86EFAC', icon: '🔐' },
 };
 
 function _signInHref() {

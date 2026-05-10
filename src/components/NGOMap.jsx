@@ -43,7 +43,7 @@ import { tSafe } from '../i18n/tSafe.js';
 const RISK_COLORS = Object.freeze({
   HIGH:   '#EF4444',
   MEDIUM: '#F59E0B',
-  LOW:    '#22C55E',
+  LOW:    '#C8944D',
 });
 
 function getRiskColor(risk) {

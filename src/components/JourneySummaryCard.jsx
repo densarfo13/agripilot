@@ -37,7 +37,7 @@ const STATE_LABEL_FALLBACK = Object.freeze({
 // Map the Progress Engine's status codes to a farmer-friendly quick
 // label + subtle colour cue.
 function quickStatusStyle(code) {
-  if (code === 'on_track')      return { fg: '#1b5e20', bg: 'rgba(34,197,94,0.14)' };
+  if (code === 'on_track')      return { fg: '#1b5e20', bg: 'rgba(200,148,77,0.14)' };
   if (code === 'slight_delay')  return { fg: '#8d6e63', bg: 'rgba(245,158,11,0.14)' };
   return                              { fg: '#b71c1c', bg: 'rgba(239,68,68,0.14)' };
 }
@@ -172,13 +172,13 @@ const S = {
   },
   progressFill: {
     height: '100%', borderRadius: '2px',
-    background: '#22C55E', transition: 'width 0.3s ease',
+    background: '#C8944D', transition: 'width 0.3s ease',
   },
   nextWrap: {
     display: 'flex', flexDirection: 'column', gap: '0.125rem',
     padding: '0.5rem 0.625rem', borderRadius: '10px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.16)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.16)',
   },
   nextLabel: {
     fontSize: '0.625rem', fontWeight: 700, color: '#86EFAC',
@@ -189,7 +189,7 @@ const S = {
   },
   ctaBtn: {
     padding: '0.625rem', borderRadius: '12px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer',
   },
 };

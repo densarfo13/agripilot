@@ -70,12 +70,12 @@ const S = {
     fontWeight: 600,
   },
   rowFirst: {
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.20), rgba(34,197,94,0.10))',
-    border: '1px solid #22C55E',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.20), rgba(200,148,77,0.10))',
+    border: '1px solid #C8944D',
     color: '#fff',
     fontSize: 15,
     fontWeight: 700,
-    boxShadow: '0 4px 18px rgba(34,197,94,0.18)',
+    boxShadow: '0 4px 18px rgba(200,148,77,0.18)',
   },
   rowDone: { opacity: 0.55 },
   badge: {
@@ -91,7 +91,7 @@ const S = {
     fontSize: 13,
     fontWeight: 800,
   },
-  badgeFirst: { background: '#22C55E', color: '#0B1D34' },
+  badgeFirst: { background: '#C8944D', color: '#0B1D34' },
   body: { display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 },
   why:  { fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.65)', lineHeight: 1.45 },
   primaryBtn: {
@@ -99,7 +99,7 @@ const S = {
     border: 'none',
     padding: '8px 12px',
     borderRadius: 10,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 13,
     fontWeight: 800,

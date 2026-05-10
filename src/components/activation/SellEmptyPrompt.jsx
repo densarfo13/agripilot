@@ -47,7 +47,7 @@ const S = {
     marginTop: 4,
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontWeight: 700,
     fontSize: 14,

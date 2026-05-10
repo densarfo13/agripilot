@@ -36,8 +36,8 @@ const STYLES = {
     transition: 'background 120ms ease',
   },
   btnActive: {
-    background: 'rgba(34,197,94,0.22)',
-    borderColor: 'rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.22)',
+    borderColor: 'rgba(200,148,77,0.45)',
   },
 };
 

@@ -48,7 +48,7 @@ const STYLES = {
     color: 'rgba(255,255,255,0.55)',
   },
   email: {
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 700,
     fontSize: 16,
     textDecoration: 'underline',
@@ -57,7 +57,7 @@ const STYLES = {
   helper: { fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 },
   back: {
     marginTop: 24,
-    color: '#22C55E',
+    color: '#C8944D',
     textDecoration: 'underline',
     cursor: 'pointer',
     fontSize: 14,

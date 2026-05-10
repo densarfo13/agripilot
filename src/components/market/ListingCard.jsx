@@ -11,7 +11,7 @@ import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 
 const STATUS_COLOR = {
   draft:    '#9FB3C8',
-  active:   '#22C55E',
+  active:   '#C8944D',
   reserved: '#F59E0B',
   sold:     '#0EA5E9',
   closed:   '#6F8299',
@@ -131,7 +131,7 @@ const S = {
   },
   badge: {
     padding: '0.125rem 0.5rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.10)', color: '#22C55E',
+    background: 'rgba(200,148,77,0.10)', color: '#C8944D',
     fontSize: '0.625rem', fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '0.04em',
   },

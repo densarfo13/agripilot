@@ -70,7 +70,7 @@ const S = {
     cursor: 'pointer', textAlign: 'left',
     color: '#EAF2FF', minHeight: '64px',
   },
-  pillActive: { borderColor: '#22C55E', background: 'rgba(34,197,94,0.10)' },
+  pillActive: { borderColor: '#C8944D', background: 'rgba(200,148,77,0.10)' },
   pillTitle: { fontSize: '0.9375rem', fontWeight: 700 },
   pillBody: { fontSize: '0.8125rem', color: '#9FB3C8', marginTop: '0.125rem' },
   field: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
@@ -88,7 +88,7 @@ const S = {
   },
   next: {
     flex: 1, padding: '0.75rem', borderRadius: '12px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
   },
 };

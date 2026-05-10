@@ -158,7 +158,7 @@ function Row({ icon, label, text, testId, tone }) {
 const S = {
   card: {
     background: 'linear-gradient(135deg, #166534 0%, #14532D 100%)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: '20px',
     padding: '1.25rem 1.25rem 1.5rem',
     color: '#FFFFFF',
@@ -265,8 +265,8 @@ const S = {
   },
   urgencyChipDefault: {
     color: '#86EFAC',
-    background: 'rgba(34,197,94,0.16)',
-    borderColor: 'rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.16)',
+    borderColor: 'rgba(200,148,77,0.45)',
   },
   urgencyChipMild: {
     color: 'rgba(255,255,255,0.85)',

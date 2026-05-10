@@ -35,7 +35,7 @@ import { generateDailyPlan } from '../core/dailyIntelligenceEngine.js';
 
 const URGENCY_TONE = {
   high:   { background: 'rgba(239,68,68,0.10)', borderColor: 'rgba(239,68,68,0.32)' },
-  medium: { background: 'rgba(34,197,94,0.10)',  borderColor: 'rgba(34,197,94,0.32)' },
+  medium: { background: 'rgba(200,148,77,0.10)',  borderColor: 'rgba(200,148,77,0.32)' },
   low:    { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.10)' },
 };
 
@@ -318,8 +318,8 @@ const S = {
     margin: 0,
     padding: '0.5rem 0.75rem',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.28)',
     color: '#86EFAC',
     fontSize: '0.8125rem',
   },
@@ -356,6 +356,6 @@ const S = {
     cursor: 'pointer',
     minHeight: 52,
   },
-  btnPrimary: { background: '#22C55E', color: '#062714' },
+  btnPrimary: { background: '#C8944D', color: '#FFFFFF' },
   shortcuts: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' },
 };

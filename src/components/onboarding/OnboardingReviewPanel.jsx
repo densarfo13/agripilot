@@ -45,7 +45,7 @@ import { tSafe } from '../../i18n/tSafe.js';
 
 const URGENCY_TONE = {
   high:   { background: 'rgba(239,68,68,0.10)',  borderColor: 'rgba(239,68,68,0.32)' },
-  medium: { background: 'rgba(34,197,94,0.10)',  borderColor: 'rgba(34,197,94,0.32)' },
+  medium: { background: 'rgba(200,148,77,0.10)',  borderColor: 'rgba(200,148,77,0.32)' },
   low:    { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.10)' },
 };
 
@@ -358,8 +358,8 @@ const S = {
     margin: '6px 0 4px',
     padding: '8px 12px',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.28)',
     color: '#86EFAC',
     fontSize: 13,
     lineHeight: 1.45,
@@ -417,8 +417,8 @@ const S = {
     appearance: 'none',
     fontFamily: 'inherit',
     cursor: 'pointer',
-    border: '1px solid rgba(34,197,94,0.32)',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.32)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#86EFAC',
     padding: '6px 12px',
     borderRadius: 999,
@@ -453,8 +453,8 @@ const S = {
     appearance: 'none',
     fontFamily: 'inherit',
     cursor: 'pointer',
-    border: '1px solid rgba(34,197,94,0.32)',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.32)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#86EFAC',
     padding: '6px 10px',
     borderRadius: 999,

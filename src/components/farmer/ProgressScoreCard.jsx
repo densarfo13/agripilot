@@ -22,8 +22,8 @@ import { tSafe } from '../../i18n/tSafe.js';
 const LABEL_COLORS = Object.freeze({
   'High Risk': { bg: 'rgba(239,68,68,0.15)',  fg: '#FCA5A5' },
   Medium:      { bg: 'rgba(245,158,11,0.15)', fg: '#FDE68A' },
-  Good:        { bg: 'rgba(34,197,94,0.15)',  fg: '#86EFAC' },
-  Excellent:   { bg: 'rgba(34,197,94,0.25)',  fg: '#22C55E' },
+  Good:        { bg: 'rgba(200,148,77,0.15)',  fg: '#86EFAC' },
+  Excellent:   { bg: 'rgba(200,148,77,0.25)',  fg: '#C8944D' },
 });
 
 const REASON_LABEL_FALLBACK = {

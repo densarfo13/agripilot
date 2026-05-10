@@ -49,15 +49,15 @@ function _readActiveFarm() {
 
 const S = {
   card: {
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(14,165,233,0.10))',
-    border: '1px solid #22C55E',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.18), rgba(14,165,233,0.10))',
+    border: '1px solid #C8944D',
     borderRadius: 14,
     padding: '14px 16px',
     color: '#fff',
     display: 'flex',
     alignItems: 'flex-start',
     gap: 12,
-    boxShadow: '0 4px 18px rgba(34,197,94,0.18)',
+    boxShadow: '0 4px 18px rgba(200,148,77,0.18)',
     margin: '0 0 12px',
   },
   icon: { fontSize: 26, lineHeight: 1, flex: '0 0 auto' },
@@ -76,7 +76,7 @@ const S = {
   primary: {
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     padding: '8px 14px',
     borderRadius: 10,

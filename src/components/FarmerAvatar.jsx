@@ -14,7 +14,7 @@ import React, { useState } from 'react';
 
 // Deterministic color from name string — consistent across renders
 const AVATAR_COLORS = [
-  '#22C55E', '#0891B2', '#8B5CF6', '#F59E0B', '#EF4444',
+  '#C8944D', '#0891B2', '#8B5CF6', '#F59E0B', '#EF4444',
   '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16',
 ];
 

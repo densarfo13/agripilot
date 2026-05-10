@@ -116,13 +116,13 @@ const S = {
     fontFamily: 'inherit',
   },
   primaryBtn: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
   },
   acceptBtn: {
-    background: 'rgba(34,197,94,0.18)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.18)',
+    border: '1px solid rgba(200,148,77,0.45)',
     color: '#86EFAC',
   },
 };

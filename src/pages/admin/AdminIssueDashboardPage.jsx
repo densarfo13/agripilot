@@ -231,7 +231,7 @@ function StatusBadge({ status }) {
     ? '#EF4444'
     : status === 'yellow'
       ? '#FCD34D'
-      : '#22C55E';
+      : '#C8944D';
   const label = status === 'red'
     ? tSafe('admin.issues.statusRed',    'RED')
     : status === 'yellow'
@@ -241,7 +241,7 @@ function StatusBadge({ status }) {
     <div style={{
       ...S.badge,
       backgroundColor: colour,
-      color: status === 'yellow' ? '#3B2F00' : '#062714',
+      color: status === 'yellow' ? '#3B2F00' : '#FFFFFF',
     }} data-testid="status-badge" data-value={status}>
       <span style={S.badgeDot} aria-hidden="true">●</span>
       <span>{label}</span>
@@ -269,7 +269,7 @@ function AlertCard({ alert }) {
     ? '#EF4444'
     : alert.severity === 'yellow'
       ? '#FCD34D'
-      : '#22C55E';
+      : '#C8944D';
   const tag = alert.severity === 'red'
     ? tSafe('admin.issues.tagRed',    'CRITICAL')
     : alert.severity === 'yellow'
@@ -281,7 +281,7 @@ function AlertCard({ alert }) {
       borderLeftColor: colour,
     }} data-testid={`alert-${alert.id}`} data-severity={alert.severity}>
       <div style={S.alertHead}>
-        <span style={{ ...S.alertTag, backgroundColor: colour, color: alert.severity === 'yellow' ? '#3B2F00' : '#062714' }}>
+        <span style={{ ...S.alertTag, backgroundColor: colour, color: alert.severity === 'yellow' ? '#3B2F00' : '#FFFFFF' }}>
           {tag}
         </span>
         <span style={S.alertTitle}>{alert.title}</span>
@@ -337,8 +337,8 @@ const S = {
   },
   title: { margin: 0, fontSize: '1.375rem', fontWeight: 800 },
   refresh: {
-    background: '#22C55E',
-    color: '#062714',
+    background: '#C8944D',
+    color: '#FFFFFF',
     border: 'none',
     borderRadius: 10,
     padding: '8px 14px',
@@ -427,14 +427,14 @@ const S = {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '14px 12px',
     color: '#86EFAC', fontSize: 13,
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.20)',
     borderRadius: 10,
   },
   emptyIcon: { fontSize: 18 },
   alert: {
     background: 'rgba(255,255,255,0.04)',
-    borderLeft: '4px solid #22C55E',
+    borderLeft: '4px solid #C8944D',
     borderRadius: 10,
     padding: 12,
     display: 'flex',
@@ -461,7 +461,7 @@ const S = {
     fontSize: 11,
   },
   alertAction: { fontSize: 12, color: '#9FB3C8', lineHeight: 1.4 },
-  alertActionLabel: { color: '#22C55E', fontWeight: 700 },
+  alertActionLabel: { color: '#C8944D', fontWeight: 700 },
   confusionRow: {
     display: 'flex',
     justifyContent: 'space-between',

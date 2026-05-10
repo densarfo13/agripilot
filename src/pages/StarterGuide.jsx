@@ -147,7 +147,7 @@ const S = {
   findCropBtn: {
     width: '100%',
     borderRadius: '12px',
-    background: '#22C55E',
+    background: '#C8944D',
     padding: '1rem',
     fontWeight: 600,
     color: '#fff',
@@ -156,7 +156,7 @@ const S = {
     fontSize: '0.95rem',
     minHeight: '48px',
     marginBottom: '0.5rem',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   continueBtn: {
     width: '100%',

@@ -305,7 +305,7 @@ const S = {
     cursor: 'pointer',
     minHeight: 48,
   },
-  btnPrimary: { background: '#22C55E', color: '#062714' },
+  btnPrimary: { background: '#C8944D', color: '#FFFFFF' },
   btnGhost: {
     background: 'transparent',
     border: '1px solid rgba(255,255,255,0.16)',

@@ -115,12 +115,12 @@ const S = {
   err: { color: '#FCA5A5', fontSize: '0.8125rem', margin: 0 },
   btnPrimary: {
     padding: '0.875rem', borderRadius: '12px', border: 'none',
-    background: '#22C55E', color: '#fff',
+    background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
   },
   success: {
     padding: '1rem', borderRadius: '14px',
-    background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)', border: '1px solid rgba(200,148,77,0.28)',
     display: 'flex', flexDirection: 'column', gap: '0.5rem',
   },
   successBody: { margin: 0, fontSize: '0.875rem', color: '#EAF2FF' },

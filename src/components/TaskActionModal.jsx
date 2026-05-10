@@ -15,7 +15,7 @@ import { getPromptText } from '../services/voicePrompts.js';
 function getPriorityColors(priority) {
   if (priority === 'high')   return { bg: '#FEF2F2', text: '#EF4444' };
   if (priority === 'medium') return { bg: '#FFFBEB', text: '#F59E0B' };
-  return { bg: '#F0FDF4', text: '#22C55E' };
+  return { bg: '#F0FDF4', text: '#C8944D' };
 }
 
 function getActionLabel(actionType, t) {
@@ -118,11 +118,11 @@ const S = {
   },
   doneBtn: {
     width: '100%', padding: '1rem',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff', border: 'none', borderRadius: '14px',
     fontSize: '1.0625rem', fontWeight: 800, cursor: 'pointer',
     minHeight: '56px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     WebkitTapHighlightColor: 'transparent',
     marginTop: '0.25rem',
   },

@@ -31,7 +31,7 @@ const C = {
   ink:     '#EAF2FF',
   inkSoft: 'rgba(255,255,255,0.65)',
   border:  'rgba(255,255,255,0.10)',
-  green:   '#22C55E',
+  green:   '#C8944D',
   amber:   '#F59E0B',
 };
 

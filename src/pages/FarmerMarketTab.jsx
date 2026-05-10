@@ -182,7 +182,7 @@ export default function FarmerMarketTab() {
                 <div key={i} style={{ padding: '0.75rem 1rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 8, minWidth: 180 }}>
                   <strong>{bt.type || bt.name}</strong>
                   {bt.description && <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#A1A1AA' }}>{bt.description}</p>}
-                  {bt.suitableFor && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#22C55E' }}>Best for: {Array.isArray(bt.suitableFor) ? bt.suitableFor.join(', ') : bt.suitableFor}</p>}
+                  {bt.suitableFor && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#C8944D' }}>Best for: {Array.isArray(bt.suitableFor) ? bt.suitableFor.join(', ') : bt.suitableFor}</p>}
                 </div>
               ))}
             </div>
@@ -262,9 +262,9 @@ export default function FarmerMarketTab() {
                       <td>
                         <span style={{
                           padding: '0.15rem 0.5rem', borderRadius: 4, fontSize: '0.85rem', fontWeight: 500,
-                          color: interest.status === 'expressed' ? '#22C55E' : interest.status === 'matched' ? '#16a34a' : '#9ca3af',
-                          background: interest.status === 'expressed' ? 'rgba(34,197,94,0.1)' : interest.status === 'matched' ? 'rgba(22,163,106,0.1)' : '#1E293B',
-                          border: `1px solid ${interest.status === 'expressed' ? 'rgba(34,197,94,0.3)' : interest.status === 'matched' ? 'rgba(34,197,94,0.3)' : '#243041'}`,
+                          color: interest.status === 'expressed' ? '#C8944D' : interest.status === 'matched' ? '#B9853F' : '#9ca3af',
+                          background: interest.status === 'expressed' ? 'rgba(200,148,77,0.1)' : interest.status === 'matched' ? 'rgba(22,163,106,0.1)' : '#1E293B',
+                          border: `1px solid ${interest.status === 'expressed' ? 'rgba(200,148,77,0.3)' : interest.status === 'matched' ? 'rgba(200,148,77,0.3)' : '#243041'}`,
                         }}>
                           {interest.status}
                         </span>

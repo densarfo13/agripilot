@@ -58,7 +58,7 @@ const S = {
     textTransform: 'uppercase',
   },
   pillActive: {
-    background: 'rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.18)',
     color: '#86EFAC',
   },
 };

@@ -135,7 +135,7 @@ export default function FarmerIntelligenceSummary({
 function toneStyle(tone) {
   switch (tone) {
     case 'danger':  return { borderColor: 'rgba(239,68,68,0.35)' };
-    case 'success': return { borderColor: 'rgba(34,197,94,0.35)' };
+    case 'success': return { borderColor: 'rgba(200,148,77,0.35)' };
     default:        return null;
   }
 }

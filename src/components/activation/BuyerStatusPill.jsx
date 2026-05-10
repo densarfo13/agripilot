@@ -27,9 +27,9 @@ const STATUS_MAP = Object.freeze({
   contacted:   { label: 'Needs response', color: '#7DD3FC', bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.35)', dot: '🔵' },
   negotiating: { label: 'Needs response', color: '#7DD3FC', bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.35)', dot: '🔵' },
   // Deal agreed / listing marked sold.
-  sold:     { label: 'Approved', color: '#86EFAC', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)', dot: '🟢' },
-  accepted: { label: 'Approved', color: '#86EFAC', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)', dot: '🟢' },
-  approved: { label: 'Approved', color: '#86EFAC', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)', dot: '🟢' },
+  sold:     { label: 'Approved', color: '#86EFAC', bg: 'rgba(200,148,77,0.12)',  border: 'rgba(200,148,77,0.35)', dot: '🟢' },
+  accepted: { label: 'Approved', color: '#86EFAC', bg: 'rgba(200,148,77,0.12)',  border: 'rgba(200,148,77,0.35)', dot: '🟢' },
+  approved: { label: 'Approved', color: '#86EFAC', bg: 'rgba(200,148,77,0.12)',  border: 'rgba(200,148,77,0.35)', dot: '🟢' },
   // Farmer declined this buyer interest.
   declined: { label: 'Declined', color: '#FCA5A5', bg: 'rgba(239,68,68,0.10)', border: 'rgba(239,68,68,0.30)', dot: '🔴' },
 });

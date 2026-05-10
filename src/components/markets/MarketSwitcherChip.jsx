@@ -77,8 +77,8 @@ const S = {
     fontSize: 9,
     fontWeight: 800,
     color: '#86EFAC',
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.30)',
     padding: '1px 6px',
     borderRadius: 999,
     letterSpacing: '0.06em',
@@ -112,8 +112,8 @@ const S = {
     gap: 8,
   },
   pickerRowActive: {
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
   },
   pickerRowAuto: {
     color: '#86EFAC',

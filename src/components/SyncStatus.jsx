@@ -94,7 +94,7 @@ export default function SyncStatus() {
       )}
       {syncState && !syncState.syncing && syncState.synced > 0 && syncState.failed === 0 && syncState.remaining === 0 && (
         <div style={styles.successBanner}>
-          <span style={styles.dot('#22C55E')} />
+          <span style={styles.dot('#C8944D')} />
           <span>{syncState.synced === 1 ? t('sync.syncedOne', { count: syncState.synced }) : t('sync.syncedMany', { count: syncState.synced })}</span>
         </div>
       )}
@@ -129,7 +129,7 @@ const styles = {
   },
   successBanner: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
-    background: 'rgba(34,197,94,0.9)', color: '#fff', padding: '0.5rem 1rem',
+    background: 'rgba(200,148,77,0.9)', color: '#fff', padding: '0.5rem 1rem',
     borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600,
     backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
   },

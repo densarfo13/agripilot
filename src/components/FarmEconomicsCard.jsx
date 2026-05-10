@@ -532,9 +532,9 @@ const S = {
     width: '100%',
     padding: '0.75rem',
     marginTop: '0.75rem',
-    background: 'rgba(34,197,94,0.12)',
+    background: 'rgba(200,148,77,0.12)',
     color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.3)',
+    border: '1px solid rgba(200,148,77,0.3)',
     borderRadius: '12px',
     fontSize: '0.9375rem',
     fontWeight: 600,
@@ -609,8 +609,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   catChipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#86EFAC',
   },
   catLabel: {
@@ -636,8 +636,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   tapChipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#86EFAC',
   },
   formActions: {
@@ -659,7 +659,7 @@ const S = {
     padding: '0.5rem 1.25rem',
     borderRadius: '8px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '0.8125rem',
     fontWeight: 600,

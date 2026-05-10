@@ -430,7 +430,7 @@ const S = {
     height: '10px',
     borderRadius: '50%',
     border: '2px solid rgba(255,255,255,0.2)',
-    borderTopColor: '#22C55E',
+    borderTopColor: '#C8944D',
     animation: 'farroway-spin 0.6s linear infinite',
   },
   taskTitle: {
@@ -574,8 +574,8 @@ const S = {
     marginTop: '1rem',
     padding: '0.75rem',
     borderRadius: '12px',
-    background: 'rgba(34,197,94,0.05)',
-    border: '1px solid rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.05)',
+    border: '1px solid rgba(200,148,77,0.15)',
   },
   doneSectionHeader: {
     display: 'flex',
@@ -606,7 +606,7 @@ const S = {
     height: '24px',
     borderRadius: '50%',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     cursor: 'pointer',
     flexShrink: 0,
     padding: 0,

@@ -318,7 +318,7 @@ function buildStyles(compact) {
     pickupLabel: { color: 'rgba(230,244,234,0.55)' },
     primaryBtn: {
       padding: '8px 14px', borderRadius: 10, border: 'none',
-      background: '#22C55E', color: '#0B1D34', fontWeight: 600,
+      background: '#C8944D', color: '#0B1D34', fontWeight: 600,
       fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
     },
   };

@@ -28,7 +28,7 @@ import { getCropLabelSafe } from '../../utils/crops.js';
 const SEVERITY_STYLE = Object.freeze({
   high:   { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  fg: '#FCA5A5', icon: '\u26A0\uFE0F' },
   medium: { bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.35)', fg: '#FDE68A', icon: '\uD83D\uDCC8' },
-  low:    { bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.35)',  fg: '#86EFAC', icon: '\u2705' },
+  low:    { bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.35)',  fg: '#86EFAC', icon: '\u2705' },
   info:   { bg: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.35)', fg: '#93C5FD', icon: '\uD83D\uDCA1' },
 });
 

@@ -152,14 +152,14 @@ export function getPriorityColors(priority) {
 // ─── Task action type colors (for icon backgrounds) ───────
 export const actionTypeColors = {
   watering:    'rgba(59,130,246,0.15)',
-  planting:    'rgba(34,197,94,0.15)',
+  planting:    'rgba(200,148,77,0.15)',
   spraying:    'rgba(168,85,247,0.15)',
   fertilizing: 'rgba(245,158,11,0.15)',
   weeding:     'rgba(16,185,129,0.15)',
   harvest:     'rgba(251,191,36,0.15)',
   pruning:     'rgba(239,68,68,0.15)',
   scouting:    'rgba(99,102,241,0.15)',
-  default:     'rgba(34,197,94,0.12)',
+  default:     'rgba(200,148,77,0.12)',
 };
 
 /**

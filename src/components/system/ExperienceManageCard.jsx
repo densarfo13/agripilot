@@ -31,9 +31,9 @@ import useExperience from '../../hooks/useExperience.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const C = {
-  green: '#22C55E',
-  greenSoft: 'rgba(34,197,94,0.18)',
-  greenBorder: 'rgba(34,197,94,0.32)',
+  green: '#C8944D',
+  greenSoft: 'rgba(200,148,77,0.18)',
+  greenBorder: 'rgba(200,148,77,0.32)',
   ink: '#EAF2FF',
   inkSoft: 'rgba(255,255,255,0.65)',
   border: 'rgba(255,255,255,0.10)',
@@ -89,7 +89,7 @@ const S = {
     fontFamily: 'inherit',
     cursor: 'pointer',
     background: C.green,
-    color: '#062714',
+    color: '#FFFFFF',
     border: 'none',
     padding: '12px 16px',
     borderRadius: 12,

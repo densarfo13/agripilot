@@ -3,11 +3,11 @@ import { useTranslation } from '../../i18n/index.js';
 import RiskLevelBadge from './RiskLevelBadge.jsx';
 
 const BORDER_COLORS = {
-  low: '#22C55E',
+  low: '#C8944D',
   moderate: '#FBBF24',
   high: '#FB923C',
   urgent: '#EF4444',
-  watch: '#22C55E',
+  watch: '#C8944D',
   elevated: '#FBBF24',
   'high-risk': '#FB923C',
 };
@@ -135,15 +135,15 @@ const S = {
     lineHeight: 1.5,
   },
   actionBox: {
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.2)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.2)',
     borderRadius: '8px',
     padding: '0.75rem',
   },
   actionLabel: {
     fontSize: '0.75rem',
     fontWeight: 700,
-    color: '#22C55E',
+    color: '#C8944D',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -159,7 +159,7 @@ const S = {
     fontSize: '0.85rem',
     fontWeight: 600,
     color: '#FFFFFF',
-    background: '#22C55E',
+    background: '#C8944D',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',

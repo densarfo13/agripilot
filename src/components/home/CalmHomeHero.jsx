@@ -201,8 +201,8 @@ export default function CalmHomeHero({
           <span
             style={{
               ...S.onlineDot,
-              background: isOnline ? '#22C55E' : '#EF4444',
-              boxShadow: isOnline ? '0 0 5px rgba(34,197,94,0.7)' : 'none',
+              background: isOnline ? '#C8944D' : '#EF4444',
+              boxShadow: isOnline ? '0 0 5px rgba(200,148,77,0.7)' : 'none',
             }}
             aria-hidden="true"
           />
@@ -434,8 +434,8 @@ const S = {
   },
   modePillGarden: {
     color: '#86EFAC',
-    background: 'rgba(34,197,94,0.10)',
-    borderColor: 'rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    borderColor: 'rgba(200,148,77,0.28)',
   },
 
   // ── Hero area ─────────────────────────────────────────────────
@@ -535,14 +535,14 @@ const S = {
     padding: '1rem 1.5rem',
     borderRadius: 999,
     border: 'none',
-    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+    background: 'linear-gradient(135deg, #C8944D 0%, #B9853F 100%)',
     color: '#FFFFFF',
     fontSize: '1rem',
     fontWeight: 800,
     cursor: 'pointer',
     minHeight: 56,
     letterSpacing: '0.01em',
-    boxShadow: '0 8px 28px rgba(34,197,94,0.38)',
+    boxShadow: '0 8px 28px rgba(200,148,77,0.38)',
     fontFamily: 'inherit',
     WebkitTapHighlightColor: 'transparent',
     marginBottom: '0.875rem',
@@ -551,11 +551,11 @@ const S = {
   },
   // Done state: muted green ghost button — action is complete, no pressure
   primaryBtnDone: {
-    background: 'rgba(34,197,94,0.12)',
+    background: 'rgba(200,148,77,0.12)',
     boxShadow: 'none',
     cursor: 'default',
     color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.28)',
+    border: '1px solid rgba(200,148,77,0.28)',
   },
 
   // ── Secondary scan link ───────────────────────────────────────

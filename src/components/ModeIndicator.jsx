@@ -105,7 +105,7 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   switchBtnActive: {
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: '#86EFAC',
   },
 };

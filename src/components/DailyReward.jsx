@@ -101,7 +101,7 @@ export default function DailyReward({
 const S = {
   card: {
     background: 'linear-gradient(135deg, #166534 0%, #14532D 100%)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: '20px',
     padding: '1rem 1.125rem',
     color: '#EAF2FF',
@@ -159,7 +159,7 @@ const S = {
   },
   barFill: {
     height: '100%',
-    background: '#22C55E',
+    background: '#C8944D',
     borderRadius: '999px',
     transition: 'width 0.25s ease',
   },

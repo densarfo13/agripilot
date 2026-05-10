@@ -54,8 +54,8 @@ function _readStage(profile) {
 
 const S = {
   banner: {
-    background: 'rgba(34,197,94,0.07)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.07)',
+    border: '1px solid rgba(200,148,77,0.28)',
     borderRadius: 12,
     padding: '14px 16px',
     display: 'flex',
@@ -79,7 +79,7 @@ const S = {
   btn: {
     marginTop: 6,
     appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     background: 'transparent',
     color: '#86EFAC',
     fontWeight: 700,

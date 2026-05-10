@@ -19,7 +19,7 @@ const CHANNEL_LABELS = {
 
 const STATUS_STYLE = {
   pending: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
-  sent:    { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  sent:    { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
   failed:  { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   skipped: { bg: '#1E293B', color: '#71717A' },
 };
@@ -45,8 +45,8 @@ function formatLocalFromUtc(utcHour, utcMinute = 0) {
 
 const CHANNEL_STYLE = {
   sms:    { bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
-  email:  { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
-  in_app: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  email:  { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
+  in_app: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
 };
 
 function Badge({ label, style }) {
@@ -68,8 +68,8 @@ function Badge({ label, style }) {
 function StatsBar({ stats }) {
   if (!stats) return null;
   const cards = [
-    { label: 'Sent today',    value: stats.todaySent,   color: '#22C55E' },
-    { label: 'Total sent',    value: stats.totalSent,   color: '#22C55E' },
+    { label: 'Sent today',    value: stats.todaySent,   color: '#C8944D' },
+    { label: 'Total sent',    value: stats.totalSent,   color: '#C8944D' },
     { label: 'Total failed',  value: stats.totalFailed, color: '#EF4444' },
   ];
   return (

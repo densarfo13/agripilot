@@ -208,8 +208,8 @@ const S = {
     transition: 'background 0.15s ease',
   },
   toggleTrackOn: {
-    background: 'rgba(34,197,94,0.42)',
-    borderColor: 'rgba(34,197,94,0.6)',
+    background: 'rgba(200,148,77,0.42)',
+    borderColor: 'rgba(200,148,77,0.6)',
   },
   toggleThumb: {
     position: 'absolute', top: '2px', left: '2px',

@@ -349,7 +349,7 @@ const C_NAVY        = '#0B1D34';
 const C_NAVY_2      = '#081423';
 const C_PANEL       = '#102C47';
 const C_BORDER      = '#1F3B5C';
-const C_GREEN       = '#22C55E';
+const C_GREEN       = '#C8944D';
 const C_GREEN_FG    = '#86EFAC';
 const C_TEXT        = '#FFFFFF';
 const C_TEXT_DIM    = 'rgba(255,255,255,0.65)';
@@ -376,8 +376,8 @@ const S = {
   // current selection is unmistakable.
   activeCard: {
     margin: '0 1rem 1rem',
-    background: 'rgba(34,197,94,0.06)',
-    border: `1px solid rgba(34,197,94,0.40)`,
+    background: 'rgba(200,148,77,0.06)',
+    border: `1px solid rgba(200,148,77,0.40)`,
     borderRadius: 14,
     padding: '1rem 1.1rem',
     display: 'flex',
@@ -390,13 +390,13 @@ const S = {
     alignItems: 'center',
     padding: '3px 10px',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.20)',
     color: C_GREEN_FG,
     fontSize: '0.7rem',
     fontWeight: 800,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    border: '1px solid rgba(34,197,94,0.55)',
+    border: '1px solid rgba(200,148,77,0.55)',
   },
   activeName: {
     margin: 0,
@@ -425,7 +425,7 @@ const S = {
     fontWeight: 700,
     cursor: 'pointer',
     minHeight: 44,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
     marginTop: 4,
   },
 
@@ -467,13 +467,13 @@ const S = {
     display: 'inline-flex',
     padding: '2px 8px',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: C_GREEN_FG,
     fontSize: '0.65rem',
     fontWeight: 800,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
   },
   farmCardMeta: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 2 },
   farmCardMetaRow: {
@@ -505,9 +505,9 @@ const S = {
     minHeight: 44,
   },
   cardBtnDisabled: {
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: C_GREEN_FG,
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     cursor: 'default',
   },
   cardBtn: {
@@ -555,7 +555,7 @@ const S = {
     fontWeight: 700,
     cursor: 'pointer',
     minHeight: 48,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
   },
 
   // Toast
@@ -564,7 +564,7 @@ const S = {
     left: '50%',
     bottom: '5rem',
     transform: 'translateX(-50%)',
-    background: 'rgba(34,197,94,0.95)',
+    background: 'rgba(200,148,77,0.95)',
     color: C_TEXT,
     fontSize: '0.875rem',
     fontWeight: 700,

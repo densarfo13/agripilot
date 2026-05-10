@@ -190,7 +190,7 @@ const S = {
     cursor: 'pointer',
     alignItems: 'flex-start',
   },
-  rowUnread: { background: 'rgba(34,197,94,0.08)' },
+  rowUnread: { background: 'rgba(200,148,77,0.08)' },
   rowRead:   { background: 'rgba(255,255,255,0.04)' },
   rowIcon:   { fontSize: '1.25rem', lineHeight: 1, flexShrink: 0 },
   rowBody:   { flex: 1, minWidth: 0 },

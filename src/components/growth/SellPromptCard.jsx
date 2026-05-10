@@ -64,8 +64,8 @@ function _hasOwnedListings(farmerId) {
 
 const S = {
   card: {
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.32)',
     borderRadius: 14,
     padding: '14px 16px',
     color: '#fff',
@@ -84,7 +84,7 @@ const S = {
     border: 'none',
     padding: '8px 12px',
     borderRadius: 8,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 12,
     fontWeight: 800,

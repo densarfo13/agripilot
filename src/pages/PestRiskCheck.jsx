@@ -397,7 +397,7 @@ export default function PestRiskCheck() {
                         {q && !q.uploading && !q.uploadFailed && (
                           <div style={{
                             ...S.qualityBadge,
-                            background: q.qualityPassed ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)',
+                            background: q.qualityPassed ? 'rgba(200,148,77,0.9)' : 'rgba(239,68,68,0.9)',
                           }}>
                             {q.qualityPassed ? '\u2713' : '\u2717'} {q.qualityScore ? `${Math.round(q.qualityScore)}%` : ''}
                           </div>

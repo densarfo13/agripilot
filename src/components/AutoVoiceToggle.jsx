@@ -36,7 +36,7 @@ const S = {
     lineHeight: 1,
   },
   btnActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.15)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.15)',
   },
 };

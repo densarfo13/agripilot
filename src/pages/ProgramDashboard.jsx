@@ -161,8 +161,8 @@ const S = {
   },
   card: {
     padding: '14px 16px', borderRadius: 12,
-    border: '2px solid #22C55E',
-    background: 'rgba(34,197,94,0.08)',
+    border: '2px solid #C8944D',
+    background: 'rgba(200,148,77,0.08)',
   },
   cardHeader: { margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#86EFAC' },
   taskTitle:  { margin: '0 0 10px', fontSize: 18, fontWeight: 700 },

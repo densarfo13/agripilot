@@ -299,7 +299,7 @@ const S = {
   },
   toggleBtnActive: {
     background: 'rgba(76,175,80,0.25)',
-    color: '#22C55E', borderColor: '#22C55E',
+    color: '#C8944D', borderColor: '#C8944D',
   },
 
   overlay: {
@@ -319,7 +319,7 @@ const S = {
   },
   stepBadge: {
     fontSize: '0.6875rem', fontWeight: 700,
-    color: '#16a34a',
+    color: '#B9853F',
     background: 'rgba(76,175,80,0.10)',
     border: '1px solid rgba(76,175,80,0.35)',
     padding: '0.125rem 0.5rem', borderRadius: 999,
@@ -351,8 +351,8 @@ const S = {
     cursor: 'pointer',
   },
   btnPrimary: {
-    background: '#22C55E', color: '#FFFFFF',
-    border: '1px solid #22C55E',
+    background: '#C8944D', color: '#FFFFFF',
+    border: '1px solid #C8944D',
   },
   btnDisabled: {
     opacity: 0.5, cursor: 'not-allowed',
@@ -369,7 +369,7 @@ const S = {
     padding: 0,
   },
   dotActive: {
-    background: '#22C55E',
+    background: '#C8944D',
     boxShadow: '0 0 0 3px rgba(76,175,80,0.18)',
   },
 };

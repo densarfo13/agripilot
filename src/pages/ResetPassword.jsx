@@ -23,7 +23,7 @@
  * one signal). The page mirrors that: every failure mode lands
  * on the same recovery CTA without leaking detail.
  *
- * Farroway styling: dark #0F172A background, #1B2330 card, #22C55E
+ * Farroway styling: dark #0F172A background, #1B2330 card, #C8944D
  * primary CTA, #EAF2FF body text, mobile-first (centered card,
  * responsive padding, 44px+ tap targets).
  */
@@ -410,7 +410,7 @@ function Spinner() {
         width: '1.5rem',
         height: '1.5rem',
         border: '3px solid rgba(255,255,255,0.16)',
-        borderTopColor: '#22C55E',
+        borderTopColor: '#C8944D',
         borderRadius: '50%',
         animation: 'farroway-spin 0.8s linear infinite',
       }}
@@ -421,7 +421,7 @@ function Spinner() {
 function CheckIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#22C55E" strokeWidth="2.5"
+      <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#C8944D" strokeWidth="2.5"
             strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -511,7 +511,7 @@ const S = {
     marginBottom: '0.75rem',
   },
   primaryBtn: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#07210E',
     border: 'none',
     borderRadius: '12px',
@@ -522,7 +522,7 @@ const S = {
     width: '100%',
     minHeight: 48,
     marginTop: '0.5rem',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   primaryBtnDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   link: { color: '#86EFAC', textDecoration: 'none', fontSize: '0.875rem' },
@@ -534,7 +534,7 @@ const S = {
   },
   iconWrap: {
     width: '3rem', height: '3rem', borderRadius: '50%',
-    background: 'rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.14)',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     marginBottom: '0.75rem',
   },

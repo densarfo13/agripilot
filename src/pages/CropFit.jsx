@@ -195,7 +195,7 @@ function riskStyleFor(level) {
   switch (String(level).toLowerCase()) {
     case 'high':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
     case 'medium': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
-    default:       return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    default:       return { background: 'rgba(200,148,77,0.15)',  color: '#86EFAC' };
   }
 }
 
@@ -210,8 +210,8 @@ const S = {
   loadingLine: { color: 'rgba(255,255,255,0.7)' },
   primaryCard: {
     padding: '18px 16px 16px', borderRadius: 14,
-    border: '2px solid #22C55E',
-    background: 'rgba(34,197,94,0.08)',
+    border: '2px solid #C8944D',
+    background: 'rgba(200,148,77,0.08)',
   },
   cropName: { margin: 0, fontSize: 22, fontWeight: 700 },
   statsRow: { display: 'flex', gap: 10, margin: '10px 0' },

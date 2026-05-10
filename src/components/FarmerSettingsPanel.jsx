@@ -117,7 +117,7 @@ const S = {
     transition: 'all 0.15s',
   },
   toggleActive: {
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: '#86EFAC',
   },
   voiceBtn: {
@@ -137,8 +137,8 @@ const S = {
     transition: 'all 0.15s',
   },
   voiceBtnOn: {
-    borderColor: 'rgba(34,197,94,0.3)',
-    background: 'rgba(34,197,94,0.1)',
+    borderColor: 'rgba(200,148,77,0.3)',
+    background: 'rgba(200,148,77,0.1)',
     color: '#86EFAC',
   },
 };

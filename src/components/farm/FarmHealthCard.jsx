@@ -233,9 +233,9 @@ const S = {
     borderRadius: 999,
     fontSize: '0.7rem',
     fontWeight: 700,
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.35)',
+    border: '1px solid rgba(200,148,77,0.35)',
   },
   // Neutral / info tone for "Setup incomplete" — per spec §9
   // "missing setup items should be neutral, not red".

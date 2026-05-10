@@ -764,7 +764,7 @@ const S = {
   },
   stepChip: {
     padding: '0.25rem 0.625rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.14)', color: '#86EFAC',
+    background: 'rgba(200,148,77,0.14)', color: '#86EFAC',
     fontSize: '0.75rem', fontWeight: 700, letterSpacing: 0.3,
   },
   progressRow: {
@@ -774,7 +774,7 @@ const S = {
     flex: 1, height: 4, borderRadius: 999,
     background: 'rgba(255,255,255,0.08)',
   },
-  progressDotActive: { background: '#22C55E' },
+  progressDotActive: { background: '#C8944D' },
   title: {
     fontSize: '1.5rem', fontWeight: 700, margin: 0,
     color: '#FFFFFF', lineHeight: 1.25,
@@ -821,8 +821,8 @@ const S = {
   conversionNotice: {
     marginTop: '0.5rem', marginBottom: 0,
     padding: '0.5rem 0.75rem', borderRadius: 10,
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.28)',
     color: '#86EFAC', fontSize: '0.8125rem', lineHeight: 1.4,
   },
   fieldError: { color: '#FCA5A5', fontSize: '0.8125rem' },
@@ -835,8 +835,8 @@ const S = {
     cursor: 'pointer', minHeight: 40, boxSizing: 'border-box',
   },
   chipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
     color: '#86EFAC',
   },
   ctaRow: {
@@ -848,10 +848,10 @@ const S = {
   },
   primaryBtn: {
     width: '100%', padding: '0.875rem 1rem', borderRadius: 12,
-    border: 'none', background: '#22C55E', color: '#07210E',
+    border: 'none', background: '#C8944D', color: '#07210E',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
     minHeight: 48,
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   primaryBtnDisabled: { opacity: 0.55, cursor: 'not-allowed' },
   saveError: {

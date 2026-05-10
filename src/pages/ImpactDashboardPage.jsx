@@ -191,7 +191,7 @@ export default function ImpactDashboardPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {refreshing && <span style={{ fontSize: '0.78rem', color: '#A1A1AA' }}>Updating...</span>}
-          {exportDone && <span style={{ fontSize: '0.78rem', color: '#22C55E' }}>Exported!</span>}
+          {exportDone && <span style={{ fontSize: '0.78rem', color: '#C8944D' }}>Exported!</span>}
           <button className="btn btn-outline btn-sm" onClick={exportCSV} disabled={exporting || isEmpty}>
             {exporting ? 'Exporting...' : 'Export Report'}
           </button>
@@ -272,12 +272,12 @@ export default function ImpactDashboardPage() {
 
       {/* ── Part 1: KPI Summary Cards ────────────────────── */}
       <div className="stats-grid" style={{ marginBottom: '1.5rem' }}>
-        <KPI label="Total Farmers" value={s.totalFarmers} color="#22C55E" />
+        <KPI label="Total Farmers" value={s.totalFarmers} color="#C8944D" />
         <KPI label="Women Farmers" value={s.womenFarmers} pct={s.totalFarmers ? rate(s.womenFarmers, s.totalFarmers) : null} color="#EC4899" />
         <KPI label="Youth (15-35)" value={s.youthFarmers} pct={s.totalFarmers ? rate(s.youthFarmers, s.totalFarmers) : null} color="#8B5CF6" />
         <KPI label="Active (30d)" value={s.activeFarmers} pct={s.totalFarmers ? rate(s.activeFarmers, s.totalFarmers) : null} color="#3B82F6" />
-        <KPI label="Validated" value={s.validatedRecords} pct={s.totalFarmers ? rate(s.validatedRecords, s.totalFarmers) : null} color="#22C55E" />
-        <KPI label="Needs Attention" value={s.needsAttention} color={s.needsAttention > 0 ? '#EF4444' : '#22C55E'} />
+        <KPI label="Validated" value={s.validatedRecords} pct={s.totalFarmers ? rate(s.validatedRecords, s.totalFarmers) : null} color="#C8944D" />
+        <KPI label="Needs Attention" value={s.needsAttention} color={s.needsAttention > 0 ? '#EF4444' : '#C8944D'} />
       </div>
 
       {/* ── Empty state with action guidance ─────────────── */}
@@ -410,7 +410,7 @@ export default function ImpactDashboardPage() {
                   <Tooltip {...CHART_TOOLTIP} />
                   <Legend />
                   <Line type="monotone" dataKey="activeFarmers" stroke="#3B82F6" name="Active Farmers" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="validatedFarmers" stroke="#22C55E" name="Validated" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="validatedFarmers" stroke="#C8944D" name="Validated" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </ChartErrorBoundary>
@@ -470,7 +470,7 @@ function RateTable({ rows, label }) {
 }
 
 function RateBar({ v }) {
-  const clr = v >= 70 ? '#22C55E' : v >= 40 ? '#F59E0B' : '#EF4444';
+  const clr = v >= 70 ? '#C8944D' : v >= 40 ? '#F59E0B' : '#EF4444';
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
       <span style={{ display: 'inline-block', width: 52, height: 6, background: '#1E293B', borderRadius: 3, overflow: 'hidden' }}>

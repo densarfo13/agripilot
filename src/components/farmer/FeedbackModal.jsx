@@ -353,7 +353,7 @@ const S = {
   },
   btnPrimary: {
     flex: 1, padding: '0.875rem', borderRadius: '14px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
   },
   btnBusy: { opacity: 0.7, cursor: 'wait' },
@@ -371,8 +371,8 @@ const S = {
     minHeight: '40px',
   },
   chipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
-    color: '#22C55E',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
+    color: '#C8944D',
   },
 };

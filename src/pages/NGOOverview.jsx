@@ -108,7 +108,7 @@ export default function NGOOverview() {
         {/* ─── Overview cards ───────────────────────────── */}
         <div style={S.cardGrid}>
           <Card label={t('ngo.card.total')}        value={overview.totalFarmers}    accent="#0EA5E9" />
-          <Card label={t('ngo.card.active')}       value={overview.activeFarmers}   accent="#22C55E" />
+          <Card label={t('ngo.card.active')}       value={overview.activeFarmers}   accent="#C8944D" />
           <Card label={t('ngo.card.highRisk')}     value={overview.highRiskFarmers} accent="#EF4444" />
           <Card label={t('ngo.card.cropsInProgress')} value={overview.cropsInProgress} accent="#A78BFA" />
         </div>
@@ -169,7 +169,7 @@ export default function NGOOverview() {
         </Section>
 
         {/* ─── Harvest analytics ────────────────────────── */}
-        <Section title={t('ngo.harvest.title')} accent="#22C55E">
+        <Section title={t('ngo.harvest.title')} accent="#C8944D">
           <div style={S.harvestStrip}>
             <Stat label={t('ngo.harvest.reports')} value={totals.count} />
             <Stat label={t('ngo.harvest.totalKg')} value={Math.round(totals.totalQuantityKg)} />
@@ -218,7 +218,7 @@ function Stat({ label, value }) {
 }
 
 function sevColor(s) {
-  return s === 'high' ? '#EF4444' : s === 'medium' ? '#F59E0B' : '#22C55E';
+  return s === 'high' ? '#EF4444' : s === 'medium' ? '#F59E0B' : '#C8944D';
 }
 
 const S = {

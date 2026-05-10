@@ -113,7 +113,7 @@ export function getStateStyles(state) {
         cardBg: '#FFFFFF',
         // Weather bar — green/neutral
         weatherBg: COLORS.greenFaint,
-        weatherBorder: `rgba(34,197,94,0.12)`,
+        weatherBorder: `rgba(200,148,77,0.12)`,
         weatherText: COLORS.greenText,
         // CTA — green, dominant element
         ctaBg: 'linear-gradient(180deg, #C8944D 0%, #B9853F 100%)',

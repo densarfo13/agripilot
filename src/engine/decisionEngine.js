@@ -90,7 +90,7 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
       ? t('guided.stageReasonCrop', { crop }) || t('guided.stageReason')
       : t('guided.stageReason');
     return {
-      ...makeAction('stage_missing', '🌱', 'rgba(34,197,94,0.15)',
+      ...makeAction('stage_missing', '🌱', 'rgba(200,148,77,0.15)',
         t('guided.stageTitle'), reason, t('guided.stageCta'),
         t('guided.stageNext'), 'high', false),
       stageInfo: makeStageInfo(stage, null, t),
@@ -176,7 +176,7 @@ function resolvePrimaryAction(input, t, weatherGuidance) {
   }
 
   // 10. All done
-  return makeAction('all_done', '✅', 'rgba(34,197,94,0.12)',
+  return makeAction('all_done', '✅', 'rgba(200,148,77,0.12)',
     t('guided.doneTitle'), t('guided.doneReason'),
     t('guided.doneCta'), null, 'info', false);
 }

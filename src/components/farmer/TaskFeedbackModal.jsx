@@ -111,7 +111,7 @@ const S = {
   ctaRow: { display: 'flex', gap: '0.5rem', marginTop: '0.5rem' },
   btnPrimary: {
     flex: 1, padding: '0.875rem', borderRadius: '14px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
   },
   btnGhost: {

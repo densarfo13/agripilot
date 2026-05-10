@@ -42,7 +42,7 @@ export default function TapSelector({
       <div style={{ ...S.grid, ...gridStyle }}>
         {options.map((opt) => {
           const isSelected = value === opt.value;
-          const accentColor = opt.color || '#22C55E';
+          const accentColor = opt.color || '#C8944D';
           return (
             <button
               key={opt.value}

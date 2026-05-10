@@ -8,8 +8,8 @@ import { useTranslation } from '../i18n/index.js';
 const ORG_TYPES = ['NGO', 'LENDER', 'COOPERATIVE', 'INVESTOR', 'DEVELOPMENT_PARTNER', 'INTERNAL'];
 
 const TYPE_COLORS = {
-  NGO: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
-  LENDER: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  NGO: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
+  LENDER: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
   COOPERATIVE: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   INVESTOR: { bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
   DEVELOPMENT_PARTNER: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
@@ -76,7 +76,7 @@ export default function AdminOrganizationsPage() {
                       style={{
                         display: 'inline-block', marginBottom: '0.75rem',
                         padding: '4px 10px', borderRadius: 6,
-                        background: 'rgba(34,197,94,0.14)',
+                        background: 'rgba(200,148,77,0.14)',
                         color: '#86EFAC', fontSize: '0.8rem',
                         fontWeight: 600, textDecoration: 'none',
                       }}

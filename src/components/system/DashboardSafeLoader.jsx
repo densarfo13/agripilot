@@ -175,8 +175,8 @@ const S = {
   spinner: {
     width: 36, height: 36,
     borderRadius: '50%',
-    border: '3px solid rgba(34,197,94,0.18)',
-    borderTopColor: '#22C55E',
+    border: '3px solid rgba(200,148,77,0.18)',
+    borderTopColor: '#C8944D',
     animation: 'farroway-safe-spin 0.9s linear infinite',
   },
   splashText: { margin: 0, fontSize: '0.9375rem', color: '#9FB3C8' },

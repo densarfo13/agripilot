@@ -32,7 +32,7 @@ import {
 
 const S = {
   card: {
-    background: 'linear-gradient(135deg, rgba(168,85,247,0.16), rgba(34,197,94,0.08))',
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.16), rgba(200,148,77,0.08))',
     border: '1px solid rgba(168,85,247,0.42)',
     borderRadius: 14,
     padding: '12px 14px',

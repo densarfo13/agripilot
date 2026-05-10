@@ -61,7 +61,7 @@ const S = {
     gap: '0.5rem',
     padding: '0.625rem 1rem',
     borderRadius: '12px',
-    background: 'rgba(34,197,94,0.95)',
+    background: 'rgba(200,148,77,0.95)',
     color: '#fff',
     fontSize: '0.8rem',
     fontWeight: 600,

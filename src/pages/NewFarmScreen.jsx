@@ -626,8 +626,8 @@ export default function NewFarmScreen() {
           <p
             style={{
               marginTop: '0.5rem', padding: '0.5rem 0.75rem',
-              borderRadius: 10, background: 'rgba(34,197,94,0.08)',
-              border: '1px solid rgba(34,197,94,0.28)',
+              borderRadius: 10, background: 'rgba(200,148,77,0.08)',
+              border: '1px solid rgba(200,148,77,0.28)',
               color: '#86EFAC', fontSize: '0.8125rem', lineHeight: 1.4,
             }}
             data-testid="new-farm-size-conversion-notice"
@@ -712,7 +712,7 @@ const S = {
   helper: { margin: '0 0 1rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' },
   success: {
     margin: '0 0 0.75rem', padding: '0.625rem 0.75rem', borderRadius: 10,
-    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.28)',
     color: '#86EFAC', fontSize: '0.9rem',
   },
   form:   { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
@@ -787,8 +787,8 @@ const S = {
     cursor: 'pointer',
   },
   chipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
     color: '#86EFAC',
   },
   detectBtn: {
@@ -816,7 +816,7 @@ const S = {
   },
   saveBtn: {
     flex: 1, padding: '0.75rem', borderRadius: 12, border: 'none',
-    background: '#22C55E', color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
+    background: '#C8944D', color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
   },
 };
 

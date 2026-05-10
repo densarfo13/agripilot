@@ -52,7 +52,7 @@ export default function OfflineSyncBanner() {
     color: '#fff',
     background:
       tone === 'warn' ? 'rgba(245,158,11,0.92)'
-      : tone === 'ok' ? 'rgba(34,197,94,0.92)'
+      : tone === 'ok' ? 'rgba(200,148,77,0.92)'
       : 'rgba(11,29,52,0.92)',
     boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
     pointerEvents: 'none',

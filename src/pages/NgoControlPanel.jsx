@@ -302,8 +302,8 @@ const S = {
     justifyContent: 'center',
   },
   tileAccent: {
-    border: '1px solid rgba(34,197,94,0.35)',
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.10) 0%, rgba(15,32,52,0.9) 100%)',
+    border: '1px solid rgba(200,148,77,0.35)',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.10) 0%, rgba(15,32,52,0.9) 100%)',
   },
   tileLabel: {
     fontSize: '0.75rem',
@@ -369,10 +369,10 @@ const S = {
     display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
     fontSize: '0.875rem',
     color: 'rgba(255,255,255,0.85)',
-    background: 'rgba(34,197,94,0.08)',
+    background: 'rgba(200,148,77,0.08)',
     padding: '0.5rem 0.625rem',
     borderRadius: '10px',
-    border: '1px solid rgba(34,197,94,0.25)',
+    border: '1px solid rgba(200,148,77,0.25)',
   },
   rowActionIcon: { color: '#86EFAC', flexShrink: 0 },
 

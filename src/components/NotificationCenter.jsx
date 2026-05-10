@@ -189,8 +189,8 @@ const S = {
   markBtn: {
     alignSelf: 'flex-start',
     padding: '0.25rem 0.625rem', borderRadius: 8,
-    border: '1px solid rgba(34,197,94,0.35)',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.35)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#86EFAC', fontSize: 12, fontWeight: 700, cursor: 'pointer',
   },
 };

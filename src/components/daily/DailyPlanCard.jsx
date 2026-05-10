@@ -95,7 +95,7 @@ import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
 
 const URGENCY_TONE = {
   high:   { background: 'rgba(239,68,68,0.10)', borderColor: 'rgba(239,68,68,0.32)',  pill: '#FCA5A5' },
-  medium: { background: 'rgba(34,197,94,0.10)',  borderColor: 'rgba(34,197,94,0.32)',  pill: '#86EFAC' },
+  medium: { background: 'rgba(200,148,77,0.10)',  borderColor: 'rgba(200,148,77,0.32)',  pill: '#86EFAC' },
   low:    { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.10)', pill: '#9FB3C8' },
 };
 
@@ -109,7 +109,7 @@ const SEVERITY_TONE = {
 // Calm by default (low). Medium reads amber; high reads red.
 // Kept small per spec ("not scary").
 const RISK_TONE = {
-  low:    { background: 'rgba(34,197,94,0.10)',  borderColor: 'rgba(34,197,94,0.30)' },
+  low:    { background: 'rgba(200,148,77,0.10)',  borderColor: 'rgba(200,148,77,0.30)' },
   medium: { background: 'rgba(245,158,11,0.10)', borderColor: 'rgba(245,158,11,0.32)' },
   high:   { background: 'rgba(239,68,68,0.10)',  borderColor: 'rgba(239,68,68,0.32)' },
 };
@@ -755,7 +755,7 @@ export default function DailyPlanCard({
           style={{
             ...S.confidencePill,
             ...(plan.confidence === 'high'
-              ? { borderColor: 'rgba(34,197,94,0.32)', color: '#86EFAC' }
+              ? { borderColor: 'rgba(200,148,77,0.32)', color: '#86EFAC' }
               : plan.confidence === 'medium'
                 ? { borderColor: 'rgba(59,130,246,0.32)', color: '#93C5FD' }
                 : { borderColor: 'rgba(245,158,11,0.32)', color: '#FCD34D' }),
@@ -1065,8 +1065,8 @@ export default function DailyPlanCard({
             marginTop: 12,
             padding: '8px 12px',
             borderRadius: 10,
-            background: 'rgba(34,197,94,0.08)',
-            border: '1px solid rgba(34,197,94,0.28)',
+            background: 'rgba(200,148,77,0.08)',
+            border: '1px solid rgba(200,148,77,0.28)',
             color: '#86EFAC',
             fontSize: 13,
             lineHeight: 1.45,
@@ -1197,8 +1197,8 @@ const S = {
     margin: '0.75rem 0',
     padding: '1rem',
     borderRadius: 16,
-    background: 'linear-gradient(180deg, rgba(34,197,94,0.10) 0%, rgba(34,197,94,0.04) 100%)',
-    border: '1px solid rgba(34,197,94,0.22)',
+    background: 'linear-gradient(180deg, rgba(200,148,77,0.10) 0%, rgba(200,148,77,0.04) 100%)',
+    border: '1px solid rgba(200,148,77,0.22)',
     color: '#EAF2FF',
     display: 'flex', flexDirection: 'column', gap: '0.75rem',
   },
@@ -1211,8 +1211,8 @@ const S = {
     display: 'inline-block',
     padding: '0.125rem 0.5rem',
     borderRadius: 999,
-    border: '1px solid rgba(34,197,94,0.32)',
-    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
+    background: 'rgba(200,148,77,0.10)',
     color: '#86EFAC',
     fontSize: '0.6875rem',
     fontWeight: 700,
@@ -1376,7 +1376,7 @@ const S = {
     cursor: 'pointer',
     minHeight: 32,
   },
-  btnPrimary: { background: '#22C55E', color: '#062714', borderColor: '#22C55E' },
+  btnPrimary: { background: '#C8944D', color: '#FFFFFF', borderColor: '#C8944D' },
   btnGhost: { background: 'transparent', color: '#EAF2FF' },
   empty: { margin: 0, color: '#9FB3C8', fontSize: '0.875rem' },
 
@@ -1416,7 +1416,7 @@ const S = {
   },
   progressFill: {
     height: '100%',
-    background: 'linear-gradient(90deg, #22C55E 0%, #4ADE80 100%)',
+    background: 'linear-gradient(90deg, #C8944D 0%, #4ADE80 100%)',
     borderRadius: 999,
     transition: 'width 0.4s ease-out',
   },
@@ -1441,8 +1441,8 @@ const S = {
   // see what they did today).
   actionRowDone: {
     opacity: 0.55,
-    background: 'rgba(34,197,94,0.06)',
-    borderColor: 'rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.06)',
+    borderColor: 'rgba(200,148,77,0.20)',
   },
   actionTitleDone: {
     textDecoration: 'line-through',
@@ -1453,8 +1453,8 @@ const S = {
     alignItems: 'center',
     padding: '0.25rem 0.625rem',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.18)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.18)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#86EFAC',
     fontSize: '0.75rem',
     fontWeight: 700,
@@ -1467,8 +1467,8 @@ const S = {
     margin: '0.5rem 0 0',
     padding: '0.625rem 0.875rem',
     borderRadius: 12,
-    background: 'rgba(34,197,94,0.18)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.18)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#86EFAC',
     fontSize: '0.875rem',
     fontWeight: 600,
@@ -1520,8 +1520,8 @@ const S = {
     marginTop: 8,
     padding: '0.625rem 0.875rem',
     borderRadius: 12,
-    background: 'rgba(34,197,94,0.16)',
-    border: '1px solid rgba(34,197,94,0.36)',
+    background: 'rgba(200,148,77,0.16)',
+    border: '1px solid rgba(200,148,77,0.36)',
     color: '#BBF7D0',
     fontSize: '0.875rem',
     fontWeight: 600,
@@ -1575,8 +1575,8 @@ const S = {
     gap: 12,
     padding: '0.75rem 0.875rem',
     borderRadius: 12,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#EAF2FF',
     textAlign: 'left',
     width: '100%',

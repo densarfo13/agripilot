@@ -24,8 +24,8 @@ import { useToast, ToastContainer } from '../intelligence/Toast.jsx';
 const S = {
   cta: {
     appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.45)',
-    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(200,148,77,0.45)',
+    background: 'rgba(200,148,77,0.10)',
     color: '#86EFAC',
     padding: '8px 14px',
     borderRadius: 10,

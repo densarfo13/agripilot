@@ -148,7 +148,7 @@ const S = {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.14)',
   },
   rowBody: {
     flex: 1,

@@ -189,12 +189,12 @@ const S = {
     width: 10,
     height: 10,
     borderRadius: '50%',
-    background: '#22C55E',
+    background: '#C8944D',
   },
   brand: {
     fontSize: '1rem',
     fontWeight: 700,
-    color: '#22C55E',
+    color: '#C8944D',
     letterSpacing: '0.02em',
   },
   title: {
@@ -245,7 +245,7 @@ const S = {
   cardLink: {
     fontSize: '0.8125rem',
     fontWeight: 700,
-    color: '#22C55E',
+    color: '#C8944D',
     textDecoration: 'none',
   },
   btnRow: {
@@ -258,7 +258,7 @@ const S = {
     padding: '0.875rem 1.25rem',
     borderRadius: '12px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: '0.9375rem',
     fontWeight: 700,

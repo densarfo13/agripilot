@@ -6,18 +6,18 @@ import SeverityBar from '../../components/intelligence/SeverityBar.jsx';
 
 function trendDisplay(direction) {
   if (direction === 'increasing') return { symbol: '\u2191', color: '#EF4444', label: 'Increasing' };
-  if (direction === 'decreasing') return { symbol: '\u2193', color: '#22C55E', label: 'Decreasing' };
+  if (direction === 'decreasing') return { symbol: '\u2193', color: '#C8944D', label: 'Decreasing' };
   return { symbol: '\u2192', color: '#FBBF24', label: 'Stable' };
 }
 
 function clusterStatusColor(status) {
   if (status === 'active') return { bg: 'rgba(239,68,68,0.15)', color: '#FCA5A5' };
   if (status === 'monitoring') return { bg: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
-  return { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' };
+  return { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' };
 }
 
 function confidenceLevelDisplay(level) {
-  if (level === 'confirmed') return { label: 'Confirmed', bg: 'rgba(34,197,94,0.15)', color: '#22C55E' };
+  if (level === 'confirmed') return { label: 'Confirmed', bg: 'rgba(200,148,77,0.15)', color: '#C8944D' };
   if (level === 'probable') return { label: 'Probable', bg: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
   return { label: 'Low Confidence', bg: 'rgba(239,68,68,0.15)', color: '#FCA5A5' };
 }
@@ -109,7 +109,7 @@ export default function RegionalRiskMap() {
               { label: 'Total Regions', value: totalRegions },
               { label: 'High Risk', value: highRiskCount, color: '#EF4444' },
               { label: 'Active Clusters', value: activeClusters, color: '#FBBF24' },
-              { label: 'Avg Risk Score', value: avgRisk, color: avgRisk >= 65 ? '#EF4444' : avgRisk >= 40 ? '#FBBF24' : '#22C55E' },
+              { label: 'Avg Risk Score', value: avgRisk, color: avgRisk >= 65 ? '#EF4444' : avgRisk >= 40 ? '#FBBF24' : '#C8944D' },
             ].map((s, i) => (
               <div key={i} style={S.statCard}>
                 <div style={S.statLabel}>{s.label}</div>
@@ -299,12 +299,12 @@ const S = {
   th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   td: { padding: '10px 12px', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
   btn: { padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', minHeight: '32px' },
-  btnGreen: { background: '#22C55E', color: '#fff' },
+  btnGreen: { background: '#C8944D', color: '#fff' },
   btnRed: { background: '#EF4444', color: '#fff' },
   btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
   badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
   expandedRow: { background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem' },
-  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
+  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
   emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
   errorBanner: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '0.75rem 1rem', color: '#FCA5A5', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 };

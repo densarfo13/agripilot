@@ -111,7 +111,7 @@ export default function VerificationStatusCard({ farm }) {
             key={n}
             style={{
               ...S.dot,
-              background: n <= level ? '#22C55E' : 'rgba(255,255,255,0.12)',
+              background: n <= level ? '#C8944D' : 'rgba(255,255,255,0.12)',
             }}
           />
         ))}
@@ -203,9 +203,9 @@ const S = {
   levelChip: {
     display: 'inline-flex', alignItems: 'center',
     padding: '4px 10px', borderRadius: 999,
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.4)',
+    border: '1px solid rgba(200,148,77,0.4)',
     fontSize: '0.75rem', fontWeight: 700,
   },
   dotsWrap: { display: 'flex', gap: 6, marginBottom: 10 },
@@ -259,7 +259,7 @@ const S = {
     width: '100%',
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     borderRadius: 10,
     padding: '0.75rem 1rem',
@@ -267,6 +267,6 @@ const S = {
     fontWeight: 700,
     cursor: 'pointer',
     minHeight: 44,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
   },
 };

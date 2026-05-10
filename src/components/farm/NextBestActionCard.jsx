@@ -64,7 +64,7 @@ function _slugCta(text) {
 }
 
 const TONE_STYLES = Object.freeze({
-  ok:   { background: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.45)',  fg: '#86EFAC', icon: CheckCircle },
+  ok:   { background: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.45)',  fg: '#86EFAC', icon: CheckCircle },
   warn: { background: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.45)', fg: '#FDE68A', icon: AlertTriangle },
   info: { background: 'rgba(255,255,255,0.04)',border: '#1F3B5C',                fg: 'rgba(255,255,255,0.85)', icon: Sprout },
 });
@@ -370,13 +370,13 @@ const S = {
     padding: '0.75rem 1rem',
     borderRadius: 10,
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '0.95rem',
     fontWeight: 700,
     cursor: 'pointer',
     minHeight: 48,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
   },
   // Blocked-CTA tone — amber, calmer shadow. Reads as "wait, not
   // proceed" without disabling the button (the farmer can still

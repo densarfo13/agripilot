@@ -163,7 +163,7 @@ const S = {
   brandName: {
     fontSize: '1.125rem',
     fontWeight: 700,
-    color: '#22C55E',
+    color: '#C8944D',
     letterSpacing: '0.02em',
   },
   h1: {
@@ -188,12 +188,12 @@ const S = {
     minHeight: '64px',
     borderRadius: '20px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '1.125rem',
     fontWeight: 800,
     cursor: 'pointer',
-    boxShadow: '0 10px 28px rgba(34,197,94,0.25)',
+    boxShadow: '0 10px 28px rgba(200,148,77,0.25)',
     WebkitTapHighlightColor: 'transparent',
     transition: 'transform 0.08s ease, opacity 0.15s ease',
   },

@@ -235,7 +235,7 @@ const S = {
     border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
     color: '#EAF2FF', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', minHeight: '40px',
   },
-  chipActive: { borderColor: '#22C55E', background: 'rgba(34,197,94,0.14)', color: '#22C55E' },
+  chipActive: { borderColor: '#C8944D', background: 'rgba(200,148,77,0.14)', color: '#C8944D' },
   err: { color: '#FCA5A5', fontSize: '0.8125rem', margin: 0 },
   ctaRow: { display: 'flex', gap: '0.5rem', marginTop: '0.25rem' },
   btnGhost: {
@@ -245,7 +245,7 @@ const S = {
   },
   btnPrimary: {
     flex: 1, padding: '0.875rem', borderRadius: '14px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
   },
 };

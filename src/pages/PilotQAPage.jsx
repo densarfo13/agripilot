@@ -8,7 +8,7 @@ import { useOrgStore } from '../store/orgStore.js';
 
 const STATUS_CONFIG = {
   not_started: { label: 'Not Started', bg: '#1E293B', color: '#A1A1AA' },
-  pass:         { label: 'Pass',        bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  pass:         { label: 'Pass',        bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
   fail:         { label: 'Fail',        bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   blocked:      { label: 'Blocked',     bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   not_applicable:{ label: 'N/A',        bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
@@ -17,7 +17,7 @@ const STATUS_CONFIG = {
 const STATUS_OPTIONS = ['not_started', 'pass', 'fail', 'blocked', 'not_applicable'];
 
 const CATEGORY_META = {
-  org_setup:          { label: 'A. Organization Setup',   color: '#16A34A' },
+  org_setup:          { label: 'A. Organization Setup',   color: '#B9853F' },
   user_onboarding:    { label: 'B. User Onboarding',      color: '#059669' },
   invite_delivery:    { label: 'C. Invite Delivery',      color: '#0891b2' },
   farmer_first_use:   { label: 'D. Farmer First Use',     color: '#7c3aed' },
@@ -25,8 +25,8 @@ const CATEGORY_META = {
   reviewer_workflow:  { label: 'F. Reviewer Workflow',    color: '#be185d' },
   admin_visibility:   { label: 'G. Admin Visibility',     color: '#FFFFFF' },
   security_access:    { label: 'H. Security & Access',    color: '#EF4444' },
-  country_phone:      { label: 'I. Country & Phone',      color: '#22C55E' },
-  season_lifecycle:   { label: 'J. Season Lifecycle',     color: '#22C55E' },
+  country_phone:      { label: 'I. Country & Phone',      color: '#C8944D' },
+  season_lifecycle:   { label: 'J. Season Lifecycle',     color: '#C8944D' },
   image_evidence:     { label: 'K. Image & Evidence',     color: '#ea580c' },
   monitoring_failure: { label: 'L. Monitoring & Failures',color: '#6366f1' },
 };
@@ -225,8 +225,8 @@ export default function PilotQAPage() {
                 {report.passRate !== null && (
                   <span style={{
                     padding: '0.2rem 0.6rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700,
-                    background: report.passRate >= 80 ? 'rgba(34,197,94,0.15)' : report.passRate >= 50 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
-                    color:      report.passRate >= 80 ? '#22C55E' : report.passRate >= 50 ? '#F59E0B'  : '#EF4444',
+                    background: report.passRate >= 80 ? 'rgba(200,148,77,0.15)' : report.passRate >= 50 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                    color:      report.passRate >= 80 ? '#C8944D' : report.passRate >= 50 ? '#F59E0B'  : '#EF4444',
                   }}>
                     {report.passRate}% pass rate
                   </span>
@@ -240,7 +240,7 @@ export default function PilotQAPage() {
                 <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   {[
                     ['Total', report.total, '#FFFFFF'],
-                    ['Pass', report.pass, '#22C55E'],
+                    ['Pass', report.pass, '#C8944D'],
                     ['Fail', report.fail, '#EF4444'],
                     ['Blocked', report.blocked, '#F59E0B'],
                     ['Not Started', report.not_started, '#A1A1AA'],
@@ -315,14 +315,14 @@ export default function PilotQAPage() {
                   {link && (
                     <span
                       onClick={e => { e.stopPropagation(); navigate(link.to); }}
-                      style={{ fontSize: '0.7rem', color: '#22C55E', cursor: 'pointer', textDecoration: 'underline' }}
+                      style={{ fontSize: '0.7rem', color: '#C8944D', cursor: 'pointer', textDecoration: 'underline' }}
                     >
                       {link.label} →
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#22C55E', fontWeight: 600 }}>{stats.pass}/{stats.total} pass</span>
+                  <span style={{ fontSize: '0.75rem', color: '#C8944D', fontWeight: 600 }}>{stats.pass}/{stats.total} pass</span>
                   {stats.fail > 0 && <span style={{ fontSize: '0.75rem', color: '#EF4444', fontWeight: 600 }}>{stats.fail} fail</span>}
                   {stats.blocked > 0 && <span style={{ fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600 }}>{stats.blocked} blocked</span>}
                   <span style={{ fontSize: '0.8rem', color: '#71717A' }}>{isOpen ? '▲' : '▼'}</span>
@@ -353,8 +353,8 @@ export default function PilotQAPage() {
                                   <div style={{ marginTop: '0.25rem' }}>
                                     <span style={{
                                       fontSize: '0.68rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: 10,
-                                      background: item.suggestedStatus === 'pass' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                                      color: item.suggestedStatus === 'pass' ? '#22C55E' : '#EF4444',
+                                      background: item.suggestedStatus === 'pass' ? 'rgba(200,148,77,0.15)' : 'rgba(239,68,68,0.15)',
+                                      color: item.suggestedStatus === 'pass' ? '#C8944D' : '#EF4444',
                                     }}>
                                       auto: {item.suggestedStatus}
                                     </span>

@@ -93,7 +93,7 @@ export default function SellIntroBanner() {
 const S = {
   card: {
     background: '#102C47',
-    border: '1px solid rgba(34,197,94,0.35)',
+    border: '1px solid rgba(200,148,77,0.35)',
     borderRadius: 12,
     padding: '12px 14px',
     margin: '0 0 12px 0',
@@ -131,7 +131,7 @@ const S = {
   cta: {
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     borderRadius: 999,
     padding: '6px 12px',
@@ -142,7 +142,7 @@ const S = {
     alignItems: 'center',
     gap: 6,
     minHeight: 36,
-    boxShadow: '0 4px 12px rgba(34,197,94,0.20)',
+    boxShadow: '0 4px 12px rgba(200,148,77,0.20)',
   },
   dismiss: {
     appearance: 'none',

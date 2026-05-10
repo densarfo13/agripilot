@@ -28,7 +28,7 @@ import { getDemandForCrop } from '../../market/marketDemand.js';
 import useAutoPriceSuggestion from '../../hooks/useAutoPriceSuggestion.js';
 
 const TONES = {
-  high:   { color: '#86EFAC', bg: 'rgba(34,197,94,0.14)',  border: 'rgba(34,197,94,0.45)' },
+  high:   { color: '#86EFAC', bg: 'rgba(200,148,77,0.14)',  border: 'rgba(200,148,77,0.45)' },
   medium: { color: '#FCD34D', bg: 'rgba(252,211,77,0.10)', border: 'rgba(252,211,77,0.35)' },
   low:    { color: 'rgba(255,255,255,0.85)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.18)' },
 };

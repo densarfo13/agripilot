@@ -104,7 +104,7 @@ const C = {
   ink:      '#FFFFFF',
   inkDim:   'rgba(255,255,255,0.65)',
   inkFaint: 'rgba(255,255,255,0.45)',
-  green:    '#22C55E',
+  green:    '#C8944D',
   amber:    '#F59E0B',
 };
 
@@ -190,7 +190,7 @@ const S = {
     fontWeight: 700,
     cursor: 'pointer',
     minHeight: 46,
-    boxShadow: '0 8px 22px rgba(34,197,94,0.25)',
+    boxShadow: '0 8px 22px rgba(200,148,77,0.25)',
   },
   setupCard: {
     background: 'rgba(245,158,11,0.06)',

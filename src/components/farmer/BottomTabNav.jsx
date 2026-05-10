@@ -313,7 +313,7 @@ const S = {
     right: '20%',
     height: '2.5px',
     borderRadius: '0 0 2px 2px',
-    background: '#22C55E',
+    background: '#C8944D',
   },
   icon: {
     fontSize: '1.375rem',
@@ -333,7 +333,7 @@ const S = {
     transition: 'color 0.2s ease',
   },
   labelActive: {
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 700,
   },
 };

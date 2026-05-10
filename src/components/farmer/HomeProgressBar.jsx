@@ -99,7 +99,7 @@ export default function HomeProgressBar({
           style={{
             ...S.fill,
             width: pct + '%',
-            background: '#22C55E',
+            background: '#C8944D',
           }}
         />
       </div>
@@ -123,8 +123,8 @@ const S = {
     gap: 6,
     padding: '8px 12px',
     borderRadius: 12,
-    border: '1px solid rgba(34,197,94,0.18)',
-    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(200,148,77,0.18)',
+    background: 'rgba(200,148,77,0.06)',
     margin: '6px 0 12px',
     fontSize: 13,
     color: 'rgba(255,255,255,0.92)',

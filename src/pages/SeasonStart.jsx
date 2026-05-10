@@ -136,7 +136,7 @@ const S = {
     width: '2rem',
     height: '2rem',
     border: '3px solid rgba(255,255,255,0.1)',
-    borderTopColor: '#22C55E',
+    borderTopColor: '#C8944D',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },

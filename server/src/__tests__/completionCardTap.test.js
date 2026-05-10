@@ -98,8 +98,10 @@ describe('CompletionCard — mobile tap-safe styles', () => {
     expect(SRC).toMatch(/padding:\s*'14px 18px'/);
   });
 
-  it('selected state has a green background + stronger border + inset glow', () => {
-    expect(SRC).toMatch(/followUpBtnSelected:\s*\{[\s\S]*background:\s*'rgba\(34,197,94,0\.20\)'[\s\S]*border:\s*'1px solid #22C55E'[\s\S]*boxShadow:/);
+  it('selected state has a primary-tinted background + stronger border + inset glow', () => {
+    // Soft Ochre / Beige unified system — selected state uses the
+    // ochre primary tint + ochre primary border.
+    expect(SRC).toMatch(/followUpBtnSelected:\s*\{[\s\S]*background:\s*'rgba\(200,148,77,0\.20\)'[\s\S]*border:\s*'1px solid #C8944D'[\s\S]*boxShadow:/);
   });
 
   it('question wrapper sits at zIndex 20 with pointer-events auto', () => {

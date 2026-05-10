@@ -285,7 +285,7 @@ function ConfidencePill({ level, t }) {
               : level === 'high' ? 'High confidence'
               : level === 'medium' ? 'Medium confidence'
               : 'Low confidence';
-  const bg = level === 'high'   ? 'rgba(34,197,94,0.16)'
+  const bg = level === 'high'   ? 'rgba(200,148,77,0.16)'
            : level === 'medium' ? 'rgba(252,211,77,0.16)'
                                 : 'rgba(148,163,184,0.16)';
   const fg = level === 'high'   ? '#86EFAC'
@@ -309,8 +309,8 @@ const rowStyles = {
     cursor: 'pointer',
   },
   rowDone: {
-    background: 'rgba(34,197,94,0.06)',
-    borderColor: 'rgba(34,197,94,0.22)',
+    background: 'rgba(200,148,77,0.06)',
+    borderColor: 'rgba(200,148,77,0.22)',
   },
   rowTitleDone: {
     textDecoration: 'line-through',
@@ -326,15 +326,15 @@ const rowStyles = {
   },
   checkDone: {
     width: 24, height: 24, borderRadius: 6,
-    border: '2px solid #22C55E',
-    background: '#22C55E', cursor: 'pointer',
+    border: '2px solid #C8944D',
+    background: '#C8944D', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0, marginTop: 2,
     padding: 0, color: '#0B1D34', fontWeight: 700, fontSize: 14,
   },
   doneChip: {
     padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 600,
-    background: 'rgba(34,197,94,0.18)', color: '#86EFAC',
+    background: 'rgba(200,148,77,0.18)', color: '#86EFAC',
     letterSpacing: 0.3, textTransform: 'uppercase',
   },
   rowMain: { flex: 1, minWidth: 0 },
@@ -378,7 +378,7 @@ function buildStyles(compact) {
       padding: 12, borderRadius: 12,
       border: '1px solid rgba(255,255,255,0.06)',
     },
-    tone_action: { background: 'rgba(34,197,94,0.08)',  borderColor: 'rgba(34,197,94,0.22)' },
+    tone_action: { background: 'rgba(200,148,77,0.08)',  borderColor: 'rgba(200,148,77,0.22)' },
     tone_plan:   { background: 'rgba(56,189,248,0.06)', borderColor: 'rgba(56,189,248,0.18)' },
     tone_future: { background: 'rgba(168,85,247,0.06)', borderColor: 'rgba(168,85,247,0.18)' },
     tone_risk:   { background: 'rgba(239,68,68,0.06)',  borderColor: 'rgba(239,68,68,0.18)' },

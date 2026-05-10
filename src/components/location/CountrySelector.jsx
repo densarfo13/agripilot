@@ -13,7 +13,7 @@ import {
 } from '../../utils/countrySupport.js';
 
 const TIER_COLOR = {
-  FULL_SUPPORT:    '#22C55E',
+  FULL_SUPPORT:    '#C8944D',
   BASIC_SUPPORT:   '#0EA5E9',
   LIMITED_SUPPORT: '#F59E0B',
   COMING_SOON:     '#9FB3C8',
@@ -135,7 +135,7 @@ const S = {
     fontSize: '0.9375rem', cursor: 'pointer', textAlign: 'left',
     borderBottom: '1px solid rgba(255,255,255,0.04)',
   },
-  active: { background: 'rgba(34,197,94,0.12)', color: '#22C55E', fontWeight: 700 },
+  active: { background: 'rgba(200,148,77,0.12)', color: '#C8944D', fontWeight: 700 },
   disabled: { cursor: 'not-allowed', opacity: 0.55 },
   name: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   tagRow: { display: 'flex', gap: '0.375rem', alignItems: 'center' },

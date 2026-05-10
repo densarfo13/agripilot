@@ -119,7 +119,7 @@ const S = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: '#22C55E',
+    background: '#C8944D',
     display: 'inline-block',
   },
   chevron: {

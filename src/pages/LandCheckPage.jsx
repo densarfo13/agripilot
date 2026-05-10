@@ -464,7 +464,7 @@ const S = {
   question: { fontSize: '1.125rem', fontWeight: 800, margin: '0.25rem 0 0.75rem', color: '#EAF2FF', textAlign: 'center' },
   options: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
   optionBtn: { padding: '0.875rem 1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left', minHeight: '48px' },
-  optionSelected: { background: 'rgba(34,197,94,0.1)', borderColor: '#22C55E', color: '#22C55E' },
+  optionSelected: { background: 'rgba(200,148,77,0.1)', borderColor: '#C8944D', color: '#C8944D' },
   extras: { marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px dashed rgba(255,255,255,0.06)' },
   extrasLabel: { fontSize: '0.6875rem', fontWeight: 800, color: '#6F8299', letterSpacing: '0.06em', textTransform: 'uppercase' },
   extraBtn: { padding: '0.625rem 0.875rem', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.08)', background: 'transparent', color: '#9FB3C8', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', textAlign: 'left' },
@@ -486,8 +486,8 @@ const S = {
   tipIcon: { fontSize: '0.875rem', flexShrink: 0, lineHeight: 1.4 },
   tipText: { fontSize: '0.8125rem', color: '#FCD34D', lineHeight: 1.4, fontWeight: 500 },
 
-  primaryBtn: { padding: '1rem', borderRadius: '16px', background: '#22C55E', color: '#fff', border: 'none', fontSize: '1.0625rem', fontWeight: 800, cursor: 'pointer', minHeight: '56px', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
+  primaryBtn: { padding: '1rem', borderRadius: '16px', background: '#C8944D', color: '#fff', border: 'none', fontSize: '1.0625rem', fontWeight: 800, cursor: 'pointer', minHeight: '56px', boxShadow: '0 10px 24px rgba(200,148,77,0.22)' },
   secondaryBtn: { padding: '0.875rem 1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#EAF2FF', fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px' },
   ghostBtn: { padding: '0.625rem', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.08)', background: 'transparent', color: '#9FB3C8', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' },
-  addedBadge: { alignSelf: 'center', padding: '0.375rem 0.75rem', borderRadius: '999px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.28)', color: '#86EFAC', fontSize: '0.75rem', fontWeight: 700 },
+  addedBadge: { alignSelf: 'center', padding: '0.375rem 0.75rem', borderRadius: '999px', background: 'rgba(200,148,77,0.12)', border: '1px solid rgba(200,148,77,0.28)', color: '#86EFAC', fontSize: '0.75rem', fontWeight: 700 },
 };

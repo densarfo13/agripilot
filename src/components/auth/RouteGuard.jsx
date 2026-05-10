@@ -193,7 +193,7 @@ const S = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
     borderRadius: 12,

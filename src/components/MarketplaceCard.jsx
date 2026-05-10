@@ -314,8 +314,8 @@ function PriceSuggestionHint({ insight, tr }) {
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 2,
       marginTop: 4, padding: '6px 8px', borderRadius: 8,
-      background: 'rgba(34,197,94,0.08)',
-      border: '1px solid rgba(34,197,94,0.22)',
+      background: 'rgba(200,148,77,0.08)',
+      border: '1px solid rgba(200,148,77,0.22)',
       fontSize: 12, color: '#E6F4EA',
     }} data-testid="list-price-suggestion">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -372,7 +372,7 @@ function buildStyles(compact) {
     },
     success: {
       padding: 10, borderRadius: 8, fontSize: 13, color: '#86EFAC',
-      background: 'rgba(34,197,94,0.14)', border: '1px solid rgba(34,197,94,0.32)',
+      background: 'rgba(200,148,77,0.14)', border: '1px solid rgba(200,148,77,0.32)',
     },
     empty: {
       padding: 12, borderRadius: 8, fontSize: 13,
@@ -394,7 +394,7 @@ function buildStyles(compact) {
     rowMeta:   { fontSize: 12, color: 'rgba(230,244,234,0.65)', marginTop: 2 },
     primaryBtn:{
       padding: '8px 14px', borderRadius: 10, border: 'none',
-      background: '#22C55E', color: '#0B1D34', fontWeight: 600,
+      background: '#C8944D', color: '#0B1D34', fontWeight: 600,
       fontSize: 13, cursor: 'pointer',
     },
     form:  { display: 'flex', flexDirection: 'column', gap: 8 },

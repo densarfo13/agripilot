@@ -9,7 +9,7 @@ function pct(val) {
 }
 
 const OUTCOME_COLORS = {
-  improved: '#22C55E',
+  improved: '#C8944D',
   resolved: '#3B82F6',
   same: '#F59E0B',
   worse: '#EF4444',
@@ -83,7 +83,7 @@ export default function InterventionEffectiveness() {
           <div style={S.statsRow}>
             {[
               { label: 'Total Treatments', value: total },
-              { label: 'Resolution Rate', value: `${resolutionRate}%`, color: '#22C55E' },
+              { label: 'Resolution Rate', value: `${resolutionRate}%`, color: '#C8944D' },
               { label: 'Most Effective Type', value: mostEffective, color: '#3B82F6' },
               { label: 'Repeat Outbreak Rate', value: `${repeatRate}%`, color: repeatRate > 20 ? '#EF4444' : '#FBBF24' },
             ].map((s, i) => (
@@ -176,9 +176,9 @@ export default function InterventionEffectiveness() {
                           <td style={S.td}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                               <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                                <div style={{ width: `${rate}%`, height: '100%', borderRadius: 4, background: rate >= 60 ? '#22C55E' : rate >= 40 ? '#FBBF24' : '#EF4444', transition: 'width 0.4s ease' }} />
+                                <div style={{ width: `${rate}%`, height: '100%', borderRadius: 4, background: rate >= 60 ? '#C8944D' : rate >= 40 ? '#FBBF24' : '#EF4444', transition: 'width 0.4s ease' }} />
                               </div>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: rate >= 60 ? '#22C55E' : rate >= 40 ? '#FBBF24' : '#EF4444', minWidth: 36 }}>{rate}%</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: rate >= 60 ? '#C8944D' : rate >= 40 ? '#FBBF24' : '#EF4444', minWidth: 36 }}>{rate}%</span>
                             </div>
                           </td>
                           <td style={S.td}>{typeof avgDays === 'number' ? `${avgDays} days` : avgDays}</td>
@@ -218,9 +218,9 @@ export default function InterventionEffectiveness() {
                           <td style={S.td}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                               <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                                <div style={{ width: `${rate}%`, height: '100%', borderRadius: 4, background: rate >= 60 ? '#22C55E' : rate >= 40 ? '#FBBF24' : '#EF4444', transition: 'width 0.4s ease' }} />
+                                <div style={{ width: `${rate}%`, height: '100%', borderRadius: 4, background: rate >= 60 ? '#C8944D' : rate >= 40 ? '#FBBF24' : '#EF4444', transition: 'width 0.4s ease' }} />
                               </div>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: rate >= 60 ? '#22C55E' : rate >= 40 ? '#FBBF24' : '#EF4444', minWidth: 36 }}>{rate}%</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: rate >= 60 ? '#C8944D' : rate >= 40 ? '#FBBF24' : '#EF4444', minWidth: 36 }}>{rate}%</span>
                             </div>
                           </td>
                           <td style={S.td}>{mostUsed}</td>
@@ -261,12 +261,12 @@ const S = {
   th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   td: { padding: '10px 12px', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
   btn: { padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', minHeight: '32px' },
-  btnGreen: { background: '#22C55E', color: '#fff' },
+  btnGreen: { background: '#C8944D', color: '#fff' },
   btnRed: { background: '#EF4444', color: '#fff' },
   btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
   badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
   expandedRow: { background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem' },
-  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
+  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
   emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
   errorBanner: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '0.75rem 1rem', color: '#FCA5A5', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 };

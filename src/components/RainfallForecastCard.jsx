@@ -39,7 +39,7 @@ function shortDayLabel(dateStr, lang) {
 function severityColor(severity) {
   if (severity === 'warning') return '#F59E0B';
   if (severity === 'caution') return '#FB923C';
-  if (severity === 'success') return '#22C55E';
+  if (severity === 'success') return '#C8944D';
   return '#60A5FA'; // info
 }
 

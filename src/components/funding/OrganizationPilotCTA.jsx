@@ -37,7 +37,7 @@ const STYLES = {
   card: {
     padding: '16px 18px',
     borderRadius: 16,
-    background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(34,197,94,0.12))',
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(200,148,77,0.12))',
     border: '1px solid rgba(168,85,247,0.45)',
     display: 'flex',
     flexDirection: 'column',
@@ -140,7 +140,7 @@ const STYLES = {
   submit: {
     padding: '10px 16px',
     borderRadius: 10,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 14,
     fontWeight: 700,
@@ -158,8 +158,8 @@ const STYLES = {
   successBlock: {
     padding: '12px 14px',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.14)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.14)',
+    border: '1px solid rgba(200,148,77,0.45)',
     color: '#86EFAC',
     fontSize: 14,
     lineHeight: 1.5,

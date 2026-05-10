@@ -656,8 +656,8 @@ export default function EditFarmScreen() {
           <p
             style={{
               marginTop: '0.5rem', padding: '0.5rem 0.75rem',
-              borderRadius: 10, background: 'rgba(34,197,94,0.08)',
-              border: '1px solid rgba(34,197,94,0.28)',
+              borderRadius: 10, background: 'rgba(200,148,77,0.08)',
+              border: '1px solid rgba(200,148,77,0.28)',
               color: '#86EFAC', fontSize: '0.8125rem', lineHeight: 1.4,
             }}
             data-testid="edit-farm-size-conversion-notice"
@@ -789,8 +789,8 @@ const S = {
     cursor: 'pointer',
   },
   chipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
     color: '#86EFAC',
   },
   fieldError: { color: '#FCA5A5', fontSize: '0.75rem' },
@@ -801,7 +801,7 @@ const S = {
   },
   success: {
     padding: '0.625rem 0.75rem', borderRadius: 10,
-    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)',
+    background: 'rgba(200,148,77,0.12)', border: '1px solid rgba(200,148,77,0.35)',
     color: '#86EFAC', fontSize: '0.875rem', margin: '0.25rem 0 0',
   },
   backBtn: {
@@ -823,6 +823,6 @@ const S = {
   },
   saveBtn: {
     flex: 1, padding: '0.75rem', borderRadius: 12, border: 'none',
-    background: '#22C55E', color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
+    background: '#C8944D', color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
   },
 };

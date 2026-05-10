@@ -594,7 +594,7 @@ const QS = {
   },
   spinner: {
     width: '32px', height: '32px', border: '3px solid #243041',
-    borderTopColor: '#22C55E', borderRadius: '50%',
+    borderTopColor: '#C8944D', borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },
 
@@ -654,13 +654,13 @@ const QS = {
     transition: 'border-color 0.15s, background 0.15s',
   },
   activityBtnActive: {
-    border: '2px solid #22C55E', background: 'rgba(34,197,94,0.12)',
+    border: '2px solid #C8944D', background: 'rgba(200,148,77,0.12)',
   },
   activityIcon: { fontSize: '1.1rem' },
   activityLabel: { fontSize: '0.9rem' },
   suggestedTag: {
-    fontSize: '0.65rem', fontWeight: 700, color: '#22C55E',
-    background: 'rgba(34,197,94,0.15)', padding: '0.1rem 0.35rem',
+    fontSize: '0.65rem', fontWeight: 700, color: '#C8944D',
+    background: 'rgba(200,148,77,0.15)', padding: '0.1rem 0.35rem',
     borderRadius: '4px', marginLeft: '0.15rem',
   },
 
@@ -683,11 +683,11 @@ const QS = {
   // Submit
   submitBtn: {
     width: '100%', padding: '1rem', marginTop: 'auto',
-    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+    background: 'linear-gradient(135deg, #C8944D 0%, #B9853F 100%)',
     color: '#FFFFFF', border: 'none', borderRadius: '14px',
     fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer',
     minHeight: '56px', WebkitTapHighlightColor: 'transparent',
-    boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+    boxShadow: '0 4px 14px rgba(185,133,63,0.3)',
   },
   submitBtnDisabled: {
     opacity: 0.4, cursor: 'not-allowed',
@@ -723,7 +723,7 @@ const QS = {
   // Done button (success/offline)
   doneBtn: {
     marginTop: '0.5rem', padding: '0.85rem 2.5rem',
-    background: '#22C55E', color: '#FFFFFF', border: 'none',
+    background: '#C8944D', color: '#FFFFFF', border: 'none',
     borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
     cursor: 'pointer', minHeight: '52px',
     WebkitTapHighlightColor: 'transparent',
@@ -733,11 +733,11 @@ const QS = {
   uploadIndicator: {
     display: 'flex', alignItems: 'center', gap: '0.5rem',
     padding: '0.5rem 0.75rem', borderRadius: '8px',
-    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.2)',
   },
   uploadSpinner: {
     width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.15)',
-    borderTopColor: '#22C55E', borderRadius: '50%',
+    borderTopColor: '#C8944D', borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite', flexShrink: 0,
   },
   uploadText: {

@@ -53,9 +53,9 @@ const C = {
   border:  '#1F3B5C',
   ink:     '#FFFFFF',
   inkDim:  'rgba(255,255,255,0.65)',
-  green:   '#22C55E',
-  greenBg: 'rgba(34,197,94,0.12)',
-  greenBd: 'rgba(34,197,94,0.32)',
+  green:   '#C8944D',
+  greenBg: 'rgba(200,148,77,0.12)',
+  greenBd: 'rgba(200,148,77,0.32)',
   greenFg: '#86EFAC',
   amber:   '#F59E0B',
 };
@@ -177,7 +177,7 @@ const S = {
   experienceToggle: {
     appearance: 'none',
     background: 'transparent',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: 999,
     color: '#86EFAC',
     fontSize: 12,
@@ -247,7 +247,7 @@ const S = {
     borderRadius: 12, padding: '0.85rem 1rem',
     fontSize: '0.95rem', fontWeight: 800,
     cursor: 'pointer', minHeight: 48, fontFamily: 'inherit',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.28)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.28)',
   },
   primaryBtnDisabled: { opacity: 0.55, cursor: 'default', boxShadow: 'none' },
   ghostBtn: {
@@ -323,8 +323,8 @@ const S = {
     textAlign: 'left',
   },
   locationCardGranted: {
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.40)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.40)',
     color: C.greenFg,
     cursor: 'default',
   },

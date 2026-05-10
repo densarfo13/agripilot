@@ -41,7 +41,7 @@ const CONFIDENCE_FALLBACK = {
 const CONFIDENCE_TONE = {
   low:    { background: 'rgba(245,158,11,0.14)', borderColor: 'rgba(245,158,11,0.32)', color: '#FCD34D' },
   medium: { background: 'rgba(59,130,246,0.14)', borderColor: 'rgba(59,130,246,0.32)', color: '#93C5FD' },
-  high:   { background: 'rgba(34,197,94,0.14)',  borderColor: 'rgba(34,197,94,0.32)',  color: '#86EFAC' },
+  high:   { background: 'rgba(200,148,77,0.14)',  borderColor: 'rgba(200,148,77,0.32)',  color: '#86EFAC' },
 };
 
 export default function ScanResultCard({
@@ -185,8 +185,8 @@ const S = {
   card: {
     padding: '0.875rem',
     borderRadius: 14,
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.18)',
     color: '#EAF2FF',
     display: 'flex',
     flexDirection: 'column',
@@ -242,7 +242,7 @@ const S = {
     cursor: 'pointer',
     minHeight: 36,
   },
-  btnPrimary: { background: '#22C55E', color: '#062714', borderColor: '#22C55E' },
+  btnPrimary: { background: '#C8944D', color: '#FFFFFF', borderColor: '#C8944D' },
   btnGhost:   { background: 'transparent', color: '#EAF2FF' },
   btnDisabled: {
     background: 'transparent', color: '#9FB3C8',

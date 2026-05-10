@@ -21,13 +21,13 @@ import { useAppSettings } from '../context/AppSettingsContext.jsx';
 import { getCropDisplayName } from '../utils/getCropDisplayName.js';
 
 const RISK_COLOR = {
-  low:    '#22C55E',
+  low:    '#C8944D',
   medium: '#F59E0B',
   high:   '#EF4444',
 };
 
 const TIMING_COLOR = {
-  plant_now:  '#22C55E',
+  plant_now:  '#C8944D',
   plant_soon: '#F59E0B',
   wait:       '#9FB3C8',
   too_late:   '#EF4444',
@@ -100,7 +100,7 @@ export default function CropPlan() {
 
         {/* ─── Why this crop ───────────────────────────── */}
         {crop.reasons?.length > 0 && (
-          <Section title={t('usRec.whyThisCrop')} accent="#22C55E">
+          <Section title={t('usRec.whyThisCrop')} accent="#C8944D">
             <ul style={S.list}>
               {crop.reasons.slice(0, 5).map((r, i) => <li key={i}>{r}</li>)}
             </ul>
@@ -159,7 +159,7 @@ export default function CropPlan() {
 
         {/* ─── Action steps ───────────────────────────── */}
         {crop.actionSteps?.length > 0 && (
-          <Section title={t('usRec.actionSteps')} accent="#22C55E">
+          <Section title={t('usRec.actionSteps')} accent="#C8944D">
             <ol style={S.actionList}>
               {crop.actionSteps.map((step, i) => (
                 <li key={i} style={S.actionItem}>
@@ -219,17 +219,17 @@ const S = {
   scoreChip: {
     padding: '0.375rem 0.75rem', borderRadius: '999px',
     fontSize: '0.8125rem', fontWeight: 700,
-    color: '#22C55E', background: 'rgba(34,197,94,0.10)',
+    color: '#C8944D', background: 'rgba(200,148,77,0.10)',
   },
   doNow: {
     padding: '1rem',
     borderRadius: '16px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.2)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.2)',
     marginBottom: '1rem',
   },
   doNowLabel: {
-    fontSize: '0.6875rem', fontWeight: 700, color: '#22C55E',
+    fontSize: '0.6875rem', fontWeight: 700, color: '#C8944D',
     textTransform: 'uppercase', letterSpacing: '0.08em',
     marginBottom: '0.25rem',
   },
@@ -279,7 +279,7 @@ const S = {
     padding: '0.875rem',
     borderRadius: '14px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '1rem',
     fontWeight: 700,

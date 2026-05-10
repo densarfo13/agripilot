@@ -21,7 +21,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import { computeSellerReputation } from '../../market/sellerReputation.js';
 
 const TONES = {
-  active:        { color: '#86EFAC', bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.32)' },
+  active:        { color: '#86EFAC', bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.32)' },
   fast_response: { color: '#7DD3FC', bg: 'rgba(14,165,233,0.10)', border: 'rgba(14,165,233,0.32)' },
 };
 

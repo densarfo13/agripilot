@@ -115,7 +115,7 @@ const styles = {
   },
   verifyBtn: {
     flex: 2, padding: '0.7rem', border: 'none', borderRadius: '6px',
-    background: '#22C55E', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+    background: '#C8944D', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
   },
   error: {
     background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '0.625rem 0.75rem',

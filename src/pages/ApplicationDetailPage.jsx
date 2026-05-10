@@ -165,8 +165,8 @@ export default function ApplicationDetailPage() {
         const needsScoring = app.status === 'submitted' && !hasVerification;
         if (needsScoring) return (
           <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
-            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.6rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#22C55E' }}>
+            <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.6rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '0.875rem', color: '#C8944D' }}>
                 <strong>Start here:</strong> Run scoring to get a recommendation, then make your decision.
               </span>
               <button className="btn btn-primary btn-sm" disabled={!!actionLoading} onClick={async () => {
@@ -179,7 +179,7 @@ export default function ApplicationDetailPage() {
         );
         if (decisionReady) return (
           <div style={{ padding: '0 1.5rem', marginBottom: '0.5rem' }}>
-            <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#22C55E' }}>
+            <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#C8944D' }}>
               <strong>Decision ready</strong> — use Approve or Reject in the buttons above.
             </div>
           </div>
@@ -282,8 +282,8 @@ export default function ApplicationDetailPage() {
 function DecisionBanner({ decision, app, currency }) {
   const d = decision;
   const BANNER_MAP = {
-    approve: { bg: 'rgba(34,197,94,0.15)', border: '#243041', color: '#22C55E', icon: 'Recommended for Approval' },
-    conditional_approve: { bg: 'rgba(34,197,94,0.15)', border: '#243041', color: '#22C55E', icon: 'Conditionally Recommended' },
+    approve: { bg: 'rgba(200,148,77,0.15)', border: '#243041', color: '#C8944D', icon: 'Recommended for Approval' },
+    conditional_approve: { bg: 'rgba(200,148,77,0.15)', border: '#243041', color: '#C8944D', icon: 'Conditionally Recommended' },
     reject: { bg: 'rgba(239,68,68,0.15)', border: '#243041', color: '#EF4444', icon: 'Rejected' },
     escalate: { bg: 'rgba(245,158,11,0.15)', border: '#243041', color: '#F59E0B', icon: 'Escalated for Senior Review' },
     needs_more_evidence: { bg: 'rgba(245,158,11,0.15)', border: '#243041', color: '#F59E0B', icon: 'More Evidence Needed' },
@@ -364,7 +364,7 @@ function OverviewTab({ app, currency }) {
           <div className="detail-row"><span className="detail-label">Crop Type</span><span className="detail-value">{getCropLabelSafe(app.cropType, lang)}</span></div>
           <div className="detail-row"><span className="detail-label">Farm Size</span><span className="detail-value">{app.landSizeValue ? formatLandSize(app.landSizeValue, app.landSizeUnit) : `${app.farmSizeAcres} ${app.farmer?.countryCode === 'TZ' ? 'hectares' : 'acres'}`}</span></div>
           <div className="detail-row"><span className="detail-label">Requested Amount</span><span className="detail-value">{currency} {app.requestedAmount?.toLocaleString()}</span></div>
-          {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#22C55E' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
+          {app.recommendedAmount && <div className="detail-row"><span className="detail-label">Approved Amount</span><span className="detail-value" style={{ fontWeight: 700, color: '#C8944D' }}>{currency} {app.recommendedAmount.toLocaleString()}</span></div>}
           <div className="detail-row"><span className="detail-label">Purpose</span><span className="detail-value">{app.purpose || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value">{app.season || '-'}</span></div>
           <div className="detail-row"><span className="detail-label">Created</span><span className="detail-value">{new Date(app.createdAt).toLocaleString()} by {app.createdBy?.fullName}</span></div>

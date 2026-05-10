@@ -7,7 +7,7 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
-const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
+const COLORS = ['#C8944D', '#C8944D', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
 export default function PortfolioPage() {
   const { lang } = useTranslation();
@@ -71,7 +71,7 @@ export default function PortfolioPage() {
               Demographics
             </span>
             {[
-              ['Total Farmers', data.demographics.totalFarmers, '#22C55E'],
+              ['Total Farmers', data.demographics.totalFarmers, '#C8944D'],
               ['Women', `${data.demographics.womenFarmers} (${data.demographics.womenPercent}%)`, '#7c3aed'],
               ['Youth (<35)', `${data.demographics.youthFarmers} (${data.demographics.youthPercent}%)`, '#0891b2'],
             ].map(([label, val, color]) => (
@@ -95,7 +95,7 @@ export default function PortfolioPage() {
                       <XAxis dataKey="status" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={70} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" fill="#C8944D" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartErrorBoundary>

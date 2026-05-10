@@ -48,7 +48,7 @@ const STYLES = {
     fontSize: 13,
     fontWeight: 700,
   },
-  yes: { background: '#22C55E', color: '#0B1D34' },
+  yes: { background: '#C8944D', color: '#0B1D34' },
   no:  { background: 'rgba(239,68,68,0.85)', color: '#fff' },
   input: {
     marginTop: 8,

@@ -21,7 +21,7 @@ import { getCropDisplayName } from '../../utils/getCropDisplayName.js';
 import { tSafe } from '../../i18n/tSafe.js';
 
 const TYPE_ACCENT = {
-  repeat_improved:  '#22C55E',
+  repeat_improved:  '#C8944D',
   switch_crop:      '#0EA5E9',
   delay_same_crop:  '#F59E0B',
   auto_pick:        '#EAF2FF',

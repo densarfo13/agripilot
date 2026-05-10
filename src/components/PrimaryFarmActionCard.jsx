@@ -107,7 +107,7 @@ const S = {
     padding: '1rem 1.5rem',
     fontSize: '1rem',
     fontWeight: 700,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#000',
     border: 'none',
     borderRadius: '12px',

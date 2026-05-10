@@ -684,7 +684,7 @@ if (typeof document !== 'undefined') {
 /* ─── STYLES ─────────────────────────────────────── */
 /* ────────────────────────────────────────────────── */
 
-const GREEN       = C.green;       // #22C55E
+const GREEN       = C.green;       // #C8944D
 const GREEN_LIME  = C.lightGreen;  // #A3E635
 const NAVY        = C.navy;        // #0B1220
 const NAVY_PANEL  = C.darkPanel;   // #111A2E
@@ -824,8 +824,8 @@ const S = {
     textTransform: 'uppercase', letterSpacing: '0.06em',
   },
   mockupTaskCard: {
-    background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.12)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: '0.85rem', padding: '0.75rem',
     display: 'flex', flexDirection: 'column', gap: '0.4rem',
   },
@@ -850,7 +850,7 @@ const S = {
     padding: '0.85rem 1.4rem', borderRadius: '12px',
     fontWeight: 700, fontSize: '1rem',
     textDecoration: 'none', border: 'none',
-    boxShadow: '0 8px 24px rgba(34,197,94,0.25)',
+    boxShadow: '0 8px 24px rgba(200,148,77,0.25)',
   },
   btnPrimaryLg: {
     display: 'inline-flex', alignItems: 'center',
@@ -859,7 +859,7 @@ const S = {
     padding: '1rem 1.75rem', borderRadius: '14px',
     fontWeight: 800, fontSize: '1.0625rem',
     textDecoration: 'none', marginTop: '1.75rem',
-    boxShadow: '0 10px 28px rgba(34,197,94,0.32)',
+    boxShadow: '0 10px 28px rgba(200,148,77,0.32)',
   },
   btnOutline: {
     display: 'inline-flex', alignItems: 'center',

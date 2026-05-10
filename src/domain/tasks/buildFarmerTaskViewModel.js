@@ -65,7 +65,7 @@ export function buildFarmerTaskViewModel({ task, action, weatherGuidance, langua
       ctaLabel: fallback.ctaLabel || '',
       voiceText: '',
       icon: '\uD83D\uDCDD',
-      iconBg: 'rgba(34,197,94,0.12)',
+      iconBg: 'rgba(200,148,77,0.12)',
       severity: 'normal',
       stateStyle: getTaskStateStyle('normal'),
       isWeatherOverridden: false,

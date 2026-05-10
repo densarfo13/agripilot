@@ -158,9 +158,9 @@ export default function FarmersPage() {
               style={{
                 padding: '0.45rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
                 minHeight: '44px',
-                border: statusFilter === f.value ? '1.5px solid #22C55E' : '1.5px solid #243041',
-                background: statusFilter === f.value ? 'rgba(34,197,94,0.15)' : '#162033',
-                color: statusFilter === f.value ? '#22C55E' : '#A1A1AA',
+                border: statusFilter === f.value ? '1.5px solid #C8944D' : '1.5px solid #243041',
+                background: statusFilter === f.value ? 'rgba(200,148,77,0.15)' : '#162033',
+                color: statusFilter === f.value ? '#C8944D' : '#A1A1AA',
                 fontWeight: statusFilter === f.value ? 600 : 400,
               }}
             >{f.label}</button>
@@ -176,9 +176,9 @@ export default function FarmersPage() {
                 onClick={() => handleQuickFilter('my_farmers')}
                 style={{
                   padding: '0.25rem 0.7rem', borderRadius: 16, fontSize: '0.78rem', cursor: 'pointer',
-                  border: quickFilter === 'my_farmers' ? '1.5px solid #22C55E' : '1.5px solid #243041',
-                  background: quickFilter === 'my_farmers' ? 'rgba(34,197,94,0.15)' : '#162033',
-                  color: quickFilter === 'my_farmers' ? '#22C55E' : '#A1A1AA',
+                  border: quickFilter === 'my_farmers' ? '1.5px solid #C8944D' : '1.5px solid #243041',
+                  background: quickFilter === 'my_farmers' ? 'rgba(200,148,77,0.15)' : '#162033',
+                  color: quickFilter === 'my_farmers' ? '#C8944D' : '#A1A1AA',
                   fontWeight: quickFilter === 'my_farmers' ? 600 : 400,
                 }}
               >My Farmers ({quickCounts.myFarmers})</button>
@@ -263,7 +263,7 @@ export default function FarmersPage() {
               {displayFarmers.length} farmer{displayFarmers.length !== 1 ? 's' : ''} with pending invites
             </span>
             {batchResult && (
-              <span style={{ fontSize: '0.78rem', color: '#22C55E' }}>
+              <span style={{ fontSize: '0.78rem', color: '#C8944D' }}>
                 {batchResult.refreshed} refreshed{batchResult.skipped > 0 ? `, ${batchResult.skipped} rate-limited` : ''}
               </span>
             )}
@@ -432,8 +432,8 @@ function InviteLinkBox({ url, label, expiresAt }) {
     navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(() => {});
   };
   return (
-    <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem' }}>
-      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#22C55E', marginBottom: '0.4rem' }}>{label}</div>
+    <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem' }}>
+      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#C8944D', marginBottom: '0.4rem' }}>{label}</div>
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: expiresAt ? '0.35rem' : 0 }}>
         <input
           readOnly
@@ -445,7 +445,7 @@ function InviteLinkBox({ url, label, expiresAt }) {
           type="button"
           onClick={copy}
           className="btn btn-outline btn-sm"
-          style={{ whiteSpace: 'nowrap', color: copied ? '#22C55E' : undefined, borderColor: copied ? '#22C55E' : undefined }}
+          style={{ whiteSpace: 'nowrap', color: copied ? '#C8944D' : undefined, borderColor: copied ? '#C8944D' : undefined }}
         >
           {copied ? '✓ Copied' : 'Copy Link'}
         </button>
@@ -484,7 +484,7 @@ function RowCopyLinkButton({ farmerId }) {
       className="btn btn-outline btn-sm"
       onClick={handle}
       disabled={state === 'loading'}
-      style={{ fontSize: '0.75rem', color: state === 'copied' ? '#22C55E' : state === 'error' ? '#EF4444' : '#22C55E', borderColor: state === 'copied' ? '#22C55E' : state === 'error' ? '#EF4444' : undefined }}
+      style={{ fontSize: '0.75rem', color: state === 'copied' ? '#C8944D' : state === 'error' ? '#EF4444' : '#C8944D', borderColor: state === 'copied' ? '#C8944D' : state === 'error' ? '#EF4444' : undefined }}
     >
       {state === 'loading' ? '…' : state === 'copied' ? '✓ Copied' : state === 'error' ? 'Failed' : 'Copy Link'}
     </button>
@@ -508,13 +508,13 @@ function StepIndicator({ step }) {
               <div style={{
                 width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '0.8rem', fontWeight: 700,
-                background: done ? '#22C55E' : active ? '#22C55E' : '#243041',
+                background: done ? '#C8944D' : active ? '#C8944D' : '#243041',
                 color: (done || active) ? '#fff' : '#A1A1AA',
               }}>{done ? '✓' : num}</div>
-              <div style={{ fontSize: '0.7rem', marginTop: '0.2rem', color: active ? '#22C55E' : done ? '#22C55E' : '#A1A1AA', fontWeight: active ? 600 : 400 }}>{label}</div>
+              <div style={{ fontSize: '0.7rem', marginTop: '0.2rem', color: active ? '#C8944D' : done ? '#C8944D' : '#A1A1AA', fontWeight: active ? 600 : 400 }}>{label}</div>
             </div>
             {i < STEP_LABELS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: done ? '#22C55E' : '#243041', marginBottom: '1rem' }} />
+              <div style={{ flex: 1, height: 2, background: done ? '#C8944D' : '#243041', marginBottom: '1rem' }} />
             )}
           </React.Fragment>
         );
@@ -632,8 +632,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
               <strong>{success.farmerName}</strong> has been added to Farroway.
             </div>
             <div style={{
-              background: success.credentialsCreated ? 'rgba(34,197,94,0.15)' : delivered ? 'rgba(34,197,94,0.15)' : '#1E293B',
-              color: success.credentialsCreated ? '#22C55E' : delivered ? '#22C55E' : '#F59E0B',
+              background: success.credentialsCreated ? 'rgba(200,148,77,0.15)' : delivered ? 'rgba(200,148,77,0.15)' : '#1E293B',
+              color: success.credentialsCreated ? '#C8944D' : delivered ? '#C8944D' : '#F59E0B',
               padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem', marginBottom: inviteUrl ? '0.75rem' : 0,
             }}>
               <strong>
@@ -770,9 +770,9 @@ function CreateFarmerModal({ onClose, onCreated }) {
               <div
                 onClick={() => setVal('accessMode', 'record_only')}
                 style={{
-                  border: `2px solid ${form.accessMode === 'record_only' ? '#22C55E' : '#243041'}`,
+                  border: `2px solid ${form.accessMode === 'record_only' ? '#C8944D' : '#243041'}`,
                   borderRadius: 8, padding: '0.875rem', marginBottom: '0.75rem', cursor: 'pointer',
-                  background: form.accessMode === 'record_only' ? 'rgba(34,197,94,0.15)' : '#162033',
+                  background: form.accessMode === 'record_only' ? 'rgba(200,148,77,0.15)' : '#162033',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -786,9 +786,9 @@ function CreateFarmerModal({ onClose, onCreated }) {
               <div
                 onClick={() => setVal('accessMode', 'invite_link')}
                 style={{
-                  border: `2px solid ${form.accessMode === 'invite_link' ? '#22C55E' : '#243041'}`,
+                  border: `2px solid ${form.accessMode === 'invite_link' ? '#C8944D' : '#243041'}`,
                   borderRadius: 8, padding: '0.875rem', marginBottom: '0.75rem', cursor: 'pointer',
-                  background: form.accessMode === 'invite_link' ? 'rgba(34,197,94,0.15)' : '#162033',
+                  background: form.accessMode === 'invite_link' ? 'rgba(200,148,77,0.15)' : '#162033',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -815,8 +815,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
                           style={{
                             padding: '0.45rem 0.75rem', borderRadius: 6, fontSize: '0.82rem', cursor: 'pointer',
                             minHeight: '44px',
-                            border: `1.5px solid ${form.channel === opt.value ? '#22C55E' : '#243041'}`,
-                            background: form.channel === opt.value ? '#22C55E' : '#162033',
+                            border: `1.5px solid ${form.channel === opt.value ? '#C8944D' : '#243041'}`,
+                            background: form.channel === opt.value ? '#C8944D' : '#162033',
                             color: form.channel === opt.value ? '#fff' : '#FFFFFF',
                             fontWeight: form.channel === opt.value ? 600 : 400,
                           }}
@@ -853,9 +853,9 @@ function CreateFarmerModal({ onClose, onCreated }) {
               <div
                 onClick={() => setVal('accessMode', 'create_now')}
                 style={{
-                  border: `2px solid ${form.accessMode === 'create_now' ? '#22C55E' : '#243041'}`,
+                  border: `2px solid ${form.accessMode === 'create_now' ? '#C8944D' : '#243041'}`,
                   borderRadius: 8, padding: '0.875rem', cursor: 'pointer',
-                  background: form.accessMode === 'create_now' ? 'rgba(34,197,94,0.15)' : '#162033',
+                  background: form.accessMode === 'create_now' ? 'rgba(200,148,77,0.15)' : '#162033',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -900,8 +900,8 @@ function CreateFarmerModal({ onClose, onCreated }) {
                   ))}
                 </div>
               </div>
-              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.875rem', fontSize: '0.875rem' }}>
-                <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: '#22C55E' }}>
+              <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.875rem', fontSize: '0.875rem' }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: '#C8944D' }}>
                   {form.accessMode === 'record_only' ? 'Record Only — No Login'
                     : form.accessMode === 'invite_link' ? 'Invite Link will be generated'
                     : 'Login Account will be created'}
@@ -1026,8 +1026,8 @@ function InviteFarmerModal({ onClose, onCreated }) {
               <strong>{success.farmerName}</strong> has been successfully invited to Farroway.
             </div>
             <div style={{
-              background: success.credentialsCreated ? 'rgba(34,197,94,0.15)' : delivered ? 'rgba(34,197,94,0.15)' : '#1E293B',
-              color: success.credentialsCreated ? '#22C55E' : delivered ? '#22C55E' : '#F59E0B',
+              background: success.credentialsCreated ? 'rgba(200,148,77,0.15)' : delivered ? 'rgba(200,148,77,0.15)' : '#1E293B',
+              color: success.credentialsCreated ? '#C8944D' : delivered ? '#C8944D' : '#F59E0B',
               padding: '0.75rem', borderRadius: 6, fontSize: '0.85rem', marginBottom: inviteUrl ? '0.75rem' : 0,
             }}>
               <strong>
@@ -1169,8 +1169,8 @@ function InviteFarmerModal({ onClose, onCreated }) {
                       style={{
                         padding: '0.45rem 0.75rem', borderRadius: 6, fontSize: '0.82rem', cursor: 'pointer',
                         minHeight: '44px',
-                        border: `1.5px solid ${form.channel === opt.value ? '#22C55E' : '#243041'}`,
-                        background: form.channel === opt.value ? '#22C55E' : '#162033',
+                        border: `1.5px solid ${form.channel === opt.value ? '#C8944D' : '#243041'}`,
+                        background: form.channel === opt.value ? '#C8944D' : '#162033',
                         color: form.channel === opt.value ? '#fff' : '#FFFFFF',
                         fontWeight: form.channel === opt.value ? 600 : 400,
                       }}

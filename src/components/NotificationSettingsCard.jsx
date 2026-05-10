@@ -165,8 +165,8 @@ const S = {
     flexShrink: 0,
   },
   switchOn: {
-    background: 'rgba(34,197,94,0.6)',
-    borderColor: 'rgba(34,197,94,0.8)',
+    background: 'rgba(200,148,77,0.6)',
+    borderColor: 'rgba(200,148,77,0.8)',
   },
   switchDot: {
     position: 'absolute',
@@ -198,12 +198,12 @@ const S = {
     padding: '0.75rem',
     borderRadius: '12px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '0.875rem',
     fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.18)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.18)',
   },
   permissionDenied: {
     padding: '0.625rem 0.75rem',

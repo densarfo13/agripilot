@@ -253,8 +253,8 @@ const S = {
   cta: {
     display: 'inline-flex', alignItems: 'center',
     padding: '0.45rem 0.85rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.12)',
+    border: '1px solid rgba(200,148,77,0.30)',
     color: C.lightGreen,
     fontSize: '0.8125rem', fontWeight: 700,
     textDecoration: 'none', flexShrink: 0,
@@ -308,7 +308,7 @@ const S = {
     padding: '0.6rem 1rem', borderRadius: '10px',
     border: 'none', background: C.green, color: C.white,
     fontSize: '0.875rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.20)',
   },
   btnGhost: {
     padding: '0.6rem 1rem', borderRadius: '10px',

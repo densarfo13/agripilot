@@ -168,7 +168,7 @@ const S = {
   },
   card: {
     background: '#0F1A2C',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: 18,
     padding: '24px 22px 20px',
     boxShadow: '0 16px 48px rgba(0,0,0,0.40)',
@@ -218,7 +218,7 @@ const S = {
   cta: {
     appearance: 'none',
     width: '100%',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
     borderRadius: 12,

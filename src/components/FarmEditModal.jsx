@@ -274,7 +274,7 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   segBtnActive: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
   },
   stageGrid: {
@@ -300,8 +300,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   stageChipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#fff',
   },
   stageLabel: {
@@ -346,7 +346,7 @@ const S = {
     padding: '0.75rem',
     borderRadius: '12px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '0.9375rem',
     fontWeight: 700,

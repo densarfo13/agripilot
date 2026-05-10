@@ -69,7 +69,7 @@ export default function LocationDetect({ onDetected, label, compact, disabled, s
         {detecting ? (
           <span style={labelStyle}>Finding your location...</span>
         ) : done ? (
-          <span style={{ ...labelStyle, color: '#22C55E' }}>Location found</span>
+          <span style={{ ...labelStyle, color: '#C8944D' }}>Location found</span>
         ) : (
           <span style={labelStyle}>{label || 'Get My Location'}</span>
         )}

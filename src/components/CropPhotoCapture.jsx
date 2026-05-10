@@ -253,14 +253,14 @@ function buildStyles(compact) {
     },
     iconCircle: {
       width: 72, height: 72, borderRadius: '50%',
-      background: 'rgba(34,197,94,0.12)', display: 'flex',
+      background: 'rgba(200,148,77,0.12)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', fontSize: 32,
     },
     title:      { margin: 0, fontSize: 18, fontWeight: 600 },
     sub:        { margin: 0, fontSize: 14, color: 'rgba(230,244,234,0.75)' },
     primaryBtn: {
       width: '100%', padding: '12px 16px', borderRadius: 12, border: 'none',
-      background: '#22C55E', color: '#0B1D34', fontWeight: 600, fontSize: 16,
+      background: '#C8944D', color: '#0B1D34', fontWeight: 600, fontSize: 16,
       cursor: 'pointer',
     },
     ghostBtn: {

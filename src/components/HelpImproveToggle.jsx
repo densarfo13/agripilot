@@ -113,8 +113,8 @@ const S = {
     transition: 'background 160ms ease, border-color 160ms ease',
   },
   toggleOn: {
-    background: 'rgba(34,197,94,0.20)',
-    borderColor: 'rgba(34,197,94,0.55)',
+    background: 'rgba(200,148,77,0.20)',
+    borderColor: 'rgba(200,148,77,0.55)',
   },
   toggleOff: {
     background: 'rgba(255,255,255,0.04)',
@@ -127,7 +127,7 @@ const S = {
     borderRadius: 999,
     transition: 'background 160ms ease, transform 160ms ease',
   },
-  knobOn:  { background: '#22C55E', transform: 'translateX(0)' },
+  knobOn:  { background: '#C8944D', transform: 'translateX(0)' },
   knobOff: { background: '#6F8299', transform: 'translateX(0)' },
   stateLabel: { letterSpacing: '0.04em', textTransform: 'uppercase' },
 };

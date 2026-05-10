@@ -32,8 +32,8 @@ const S = {
     gap: 10,
   },
   cardActive: {
-    border: '1px solid #22C55E',
-    boxShadow: '0 4px 18px rgba(34,197,94,0.18)',
+    border: '1px solid #C8944D',
+    boxShadow: '0 4px 18px rgba(200,148,77,0.18)',
   },
   headRow: {
     display: 'flex',

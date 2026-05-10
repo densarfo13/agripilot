@@ -157,7 +157,7 @@ export default function AdminSyncQueuePage() {
 
       {/* Last report (shown after drain / retry) */}
       {lastReport && (
-        <section style={{ ...styles.card, borderColor: 'rgba(34,197,94,0.3)' }}
+        <section style={{ ...styles.card, borderColor: 'rgba(200,148,77,0.3)' }}
                  data-testid="sync-queue-last-report">
           <h3 style={styles.cardTitle}>
             {tr('admin.syncQueue.lastReport', 'Last run result')}
@@ -289,7 +289,7 @@ function buildStyles() {
     headerActions: { display: 'flex', gap: 8, flexWrap: 'wrap' },
     primaryBtn: {
       padding: '8px 12px', borderRadius: 8, border: 'none',
-      background: '#22C55E', color: '#0B1D34',
+      background: '#C8944D', color: '#0B1D34',
       fontWeight: 700, fontSize: 13, cursor: 'pointer',
     },
     ghostBtn: {
@@ -337,7 +337,7 @@ function buildStyles() {
     },
     filterBtnActive: {
       padding: '4px 10px', borderRadius: 6,
-      border: '1px solid #22C55E66', background: 'rgba(34,197,94,0.2)',
+      border: '1px solid #C8944D66', background: 'rgba(200,148,77,0.2)',
       color: '#86EFAC', fontSize: 12, cursor: 'pointer', fontWeight: 600,
       textTransform: 'capitalize',
     },
@@ -360,7 +360,7 @@ function buildStyles() {
     },
     smallBtn: {
       padding: '4px 8px', borderRadius: 6, border: 'none',
-      background: '#22C55E', color: '#0B1D34',
+      background: '#C8944D', color: '#0B1D34',
       fontSize: 11, fontWeight: 600, cursor: 'pointer',
     },
     smallGhost: {

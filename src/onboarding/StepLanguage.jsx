@@ -104,12 +104,12 @@ const S = {
     textAlign: 'left',
   },
   choiceActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.10)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.10)',
     color: '#86EFAC',
     fontWeight: 700,
   },
   choiceText: { flex: 0 },
   choiceSub: { flex: 1, color: '#9FB3C8', fontSize: '0.75rem' },
-  check: { color: '#22C55E', fontWeight: 700 },
+  check: { color: '#C8944D', fontWeight: 700 },
 };

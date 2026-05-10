@@ -269,7 +269,7 @@ export default function CropRecommendations() {
     : null;
 
   const difficultyColors = {
-    beginner: '#22C55E',
+    beginner: '#C8944D',
     moderate: '#F59E0B',
     advanced: '#EF4444',
   };
@@ -489,8 +489,8 @@ const S = {
   featuredCard: {
     width: '100%', textAlign: 'left',
     borderRadius: '22px', padding: '1.5rem 1.25rem',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.28)',
     boxShadow: '0 14px 36px rgba(0,0,0,0.35)',
     display: 'flex', flexDirection: 'column', gap: '0.75rem',
     animation: 'farroway-fade-in 0.3s ease-out',
@@ -513,14 +513,14 @@ const S = {
     marginTop: '0.5rem',
     padding: '0.9375rem',
     borderRadius: '14px',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     border: 'none',
     fontSize: '1rem',
     fontWeight: 800,
     cursor: 'pointer',
     minHeight: '52px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     WebkitTapHighlightColor: 'transparent',
   },
 
@@ -598,11 +598,11 @@ const S = {
   topBadge: {
     position: 'absolute', top: 0, left: '1rem',
     padding: '0.25rem 0.75rem', borderRadius: '999px',
-    background: '#22C55E', color: '#fff',
+    background: '#C8944D', color: '#fff',
     fontSize: '0.625rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
     zIndex: 1,
-    boxShadow: '0 6px 14px rgba(34,197,94,0.35)',
+    boxShadow: '0 6px 14px rgba(200,148,77,0.35)',
   },
   diffBadge: {
     fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase',
@@ -620,9 +620,9 @@ const S = {
   statIcon: { fontSize: '0.75rem' },
   statText: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 600 },
   timing: {
-    fontSize: '0.75rem', fontWeight: 700, color: '#22C55E',
+    fontSize: '0.75rem', fontWeight: 700, color: '#C8944D',
     padding: '0.25rem 0.625rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.08)', alignSelf: 'flex-start',
+    background: 'rgba(200,148,77,0.08)', alignSelf: 'flex-start',
   },
   // When the seasonal engine reports 'low' fit, the pill switches to
   // a warmer amber so the farmer reads it as advisory, not urgent.
@@ -654,8 +654,8 @@ const S = {
   emptyText: { fontSize: '0.9375rem', color: '#6F8299', marginBottom: '1rem' },
   retryBtn: {
     padding: '0.875rem 1.5rem', borderRadius: '14px', border: 'none',
-    background: '#22C55E', color: '#fff', fontSize: '0.9375rem',
+    background: '#C8944D', color: '#fff', fontSize: '0.9375rem',
     fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
 };

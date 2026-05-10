@@ -196,7 +196,7 @@ const S = {
   toggleBtn: (active) => ({
     flex: 1, padding: '14px', borderRadius: '10px', fontSize: '16px', fontWeight: 600,
     minHeight: '48px', cursor: 'pointer', border: '2px solid',
-    borderColor: active ? '#16a34a' : '#d1d5db',
+    borderColor: active ? '#B9853F' : '#d1d5db',
     background: active ? '#dcfce7' : '#f9fafb',
     color: active ? '#166534' : '#374151',
   }),
@@ -217,11 +217,11 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   tapChipActive: {
-    borderColor: '#16a34a', background: '#dcfce7', color: '#166534',
+    borderColor: '#B9853F', background: '#dcfce7', color: '#166534',
   },
   saveBtn: (disabled) => ({
     padding: '12px 20px', borderRadius: '8px', border: 'none',
-    background: disabled ? '#9ca3af' : '#16a34a', color: '#fff', fontSize: '16px',
+    background: disabled ? '#9ca3af' : '#B9853F', color: '#fff', fontSize: '16px',
     fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
     width: '100%', minHeight: '48px', marginTop: '8px',
   }),
@@ -232,7 +232,7 @@ const S = {
     textDecoration: 'underline',
   },
   status: { fontSize: '13px', marginTop: '8px', textAlign: 'center' },
-  success: { color: '#16a34a' },
+  success: { color: '#B9853F' },
   error: { color: '#dc2626' },
   offlineHint: {
     fontSize: '13px', color: '#f59e0b', background: '#fefce8', borderRadius: '8px',

@@ -208,8 +208,8 @@ export default function PriceSuggestionWidget({
 const S = {
   wrap: {
     padding: '10px 12px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.22)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.22)',
     borderRadius: 10,
     display: 'flex',
     flexDirection: 'column',
@@ -257,8 +257,8 @@ const S = {
   useBtn: {
     alignSelf: 'flex-start',
     padding: '5px 13px',
-    background: 'rgba(34,197,94,0.15)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.15)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: 8,
     color: '#86EFAC',
     fontSize: 12,

@@ -754,9 +754,9 @@ const tabStyles = {
     cursor: 'pointer',
   },
   tabActive: {
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: C.lightGreen,
-    borderColor: 'rgba(34,197,94,0.40)',
+    borderColor: 'rgba(200,148,77,0.40)',
   },
 };
 
@@ -872,7 +872,7 @@ const S = {
     padding: '0.65rem 1.1rem', borderRadius: '10px',
     border: 'none', background: C.green, color: C.white,
     fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.20)',
   },
   flash: {
     color: C.lightGreen, fontWeight: 700, fontSize: '0.875rem',
@@ -902,8 +902,8 @@ const rowStyles = {
     padding: '0.15rem 0.55rem', borderRadius: '999px',
     border: '1px solid rgba(255,255,255,0.10)',
   },
-  pillGood:   { background: 'rgba(34,197,94,0.15)',  color: C.lightGreen,
-                borderColor: 'rgba(34,197,94,0.40)' },
+  pillGood:   { background: 'rgba(200,148,77,0.15)',  color: C.lightGreen,
+                borderColor: 'rgba(200,148,77,0.40)' },
   pillSample: { background: 'rgba(245,158,11,0.18)', color: '#FCD34D',
                 borderColor: 'rgba(245,158,11,0.45)' },
   pillMuted:  { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)' },
@@ -984,7 +984,7 @@ const modal = {
     padding: '0.7rem 1.2rem', borderRadius: '10px',
     border: 'none', background: C.green, color: C.white,
     fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.20)',
   },
   btnGhost: {
     padding: '0.7rem 1.2rem', borderRadius: '10px',

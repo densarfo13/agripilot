@@ -195,7 +195,7 @@ function _humanize(slug) {
 }
 
 const C = {
-  green:   '#22C55E',
+  green:   '#C8944D',
   greenFg: '#86EFAC',
   ink:     '#EAF2FF',
   inkSoft: 'rgba(255,255,255,0.72)',

@@ -35,7 +35,7 @@ import {
 import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const C = {
-  green: '#22C55E',
+  green: '#C8944D',
   ink:   '#EAF2FF',
   inkSoft: 'rgba(255,255,255,0.65)',
   border: 'rgba(255,255,255,0.10)',
@@ -122,7 +122,7 @@ const S = {
     fontFamily: 'inherit',
     cursor: 'pointer',
     background: C.green,
-    color: '#062714',
+    color: '#FFFFFF',
     border: 'none',
     padding: '8px 14px',
     borderRadius: 10,

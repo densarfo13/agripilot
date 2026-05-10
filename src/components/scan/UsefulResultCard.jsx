@@ -239,8 +239,8 @@ const S = {
   recBlock: {
     padding: '10px 13px',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.04)',
-    border: '1px solid rgba(34,197,94,0.16)',
+    background: 'rgba(200,148,77,0.04)',
+    border: '1px solid rgba(200,148,77,0.16)',
   },
   recText: {
     margin: 0,
@@ -320,8 +320,8 @@ const S = {
   taskBlock: {
     padding: '10px 13px',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.22)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.22)',
     display: 'flex',
     flexDirection: 'column',
     gap: 9,
@@ -343,7 +343,7 @@ const S = {
   addBtn: {
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     borderRadius: 8,
     padding: '7px 13px',

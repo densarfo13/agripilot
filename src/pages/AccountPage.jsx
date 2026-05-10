@@ -388,7 +388,7 @@ export default function AccountPage() {
                 <div style={{ fontSize: '0.9rem', color: '#FFFFFF' }}>
                   {mfa.enabled ? (
                     <>
-                      <span style={{ color: '#22C55E', fontWeight: 600 }}>Active</span>
+                      <span style={{ color: '#C8944D', fontWeight: 600 }}>Active</span>
                       {mfa.enrolledAt && <span style={{ color: '#71717A', marginLeft: 8 }}>since {new Date(mfa.enrolledAt).toLocaleDateString()}</span>}
                       <span style={{ color: '#A1A1AA', marginLeft: 12 }}>{mfa.backupCodesRemaining} backup code{mfa.backupCodesRemaining !== 1 ? 's' : ''} remaining</span>
                     </>

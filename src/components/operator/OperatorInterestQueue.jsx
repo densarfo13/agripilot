@@ -86,7 +86,7 @@ const S = {
     fontFamily: 'inherit',
   },
   primaryBtn: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
   },

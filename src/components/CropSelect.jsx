@@ -216,7 +216,7 @@ export default function CropSelect({
       ) : (
         /* ── Normal: closed or searching ── */
         <div
-          style={{ ...S.inputWrap, borderColor: open ? '#22C55E' : '#243041', opacity: disabled ? 0.6 : 1 }}
+          style={{ ...S.inputWrap, borderColor: open ? '#C8944D' : '#243041', opacity: disabled ? 0.6 : 1 }}
           onClick={() => { if (!disabled) { setOpen(true); inputRef.current?.focus(); } }}
         >
           {!open && displayIcon && <span style={{ fontSize: '1rem', lineHeight: 1 }}>{displayIcon}</span>}
@@ -268,7 +268,7 @@ export default function CropSelect({
                 return (
                   <div
                     key={`rec-${r.code}`}
-                    style={{ ...S.option, background: isSelected ? 'rgba(34,197,94,0.15)' : undefined }}
+                    style={{ ...S.option, background: isSelected ? 'rgba(200,148,77,0.15)' : undefined }}
                     onClick={() => selectCrop(r.code)}
                     onMouseEnter={() => setHighlightIdx(-1)}
                     title={r.reason}
@@ -292,7 +292,7 @@ export default function CropSelect({
                 return (
                   <div
                     key={`local-${c.code}`}
-                    style={{ ...S.option, background: isSelected ? 'rgba(34,197,94,0.15)' : undefined }}
+                    style={{ ...S.option, background: isSelected ? 'rgba(200,148,77,0.15)' : undefined }}
                     onClick={() => selectCrop(c.code)}
                     onMouseEnter={() => setHighlightIdx(-1)}
                   >
@@ -318,7 +318,7 @@ export default function CropSelect({
             {displayList.length === 0 ? (
               <div style={S.noResults}>
                 No crops match "{search}" — select <strong>Other</strong> below
-                <div style={{ ...S.option, marginTop: '0.5rem', background: 'rgba(34,197,94,0.1)' }} onClick={() => selectCrop('OTHER')}>
+                <div style={{ ...S.option, marginTop: '0.5rem', background: 'rgba(200,148,77,0.1)' }} onClick={() => selectCrop('OTHER')}>
                   <span style={S.optionIcon}>🌱</span>
                   <span style={S.optionName}>Other (type your crop)</span>
                 </div>
@@ -331,7 +331,7 @@ export default function CropSelect({
                     key={c.code}
                     style={{
                       ...S.option,
-                      background: i === highlightIdx ? '#243041' : isSelected ? 'rgba(34,197,94,0.15)' : undefined,
+                      background: i === highlightIdx ? '#243041' : isSelected ? 'rgba(200,148,77,0.15)' : undefined,
                     }}
                     onClick={() => selectCrop(c.code)}
                     onMouseEnter={() => setHighlightIdx(i)}
@@ -385,7 +385,7 @@ const S = {
   listScroll: { overflowY: 'auto', maxHeight: '280px' },
   sectionHeader: {
     padding: '0.5rem 0.75rem 0.25rem', fontSize: '0.72rem', fontWeight: 700,
-    color: '#22C55E', textTransform: 'uppercase', letterSpacing: '0.04em',
+    color: '#C8944D', textTransform: 'uppercase', letterSpacing: '0.04em',
   },
   divider: { height: '1px', background: '#243041', margin: '0.25rem 0' },
   option: {
@@ -397,13 +397,13 @@ const S = {
   optionName: { flex: 1, color: '#FFFFFF' },
   optionCategory: { fontSize: '0.7rem', color: '#71717A' },
   optionReason: { fontSize: '0.68rem', color: '#A1A1AA', fontStyle: 'italic', maxWidth: '45%', textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  check: { color: '#22C55E', fontWeight: 700, fontSize: '0.9rem' },
+  check: { color: '#C8944D', fontWeight: 700, fontSize: '0.9rem' },
   learnedBadge: {
     fontSize: '0.65rem', color: '#3B82F6', background: 'rgba(59,130,246,0.1)',
     borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 600, whiteSpace: 'nowrap',
   },
   localBadge: {
-    fontSize: '0.65rem', color: '#22C55E', background: 'rgba(34,197,94,0.1)',
+    fontSize: '0.65rem', color: '#C8944D', background: 'rgba(200,148,77,0.1)',
     borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 600, whiteSpace: 'nowrap',
   },
   noResults: { padding: '0.75rem', color: '#A1A1AA', fontSize: '0.85rem', textAlign: 'center' },
@@ -413,9 +413,9 @@ const S = {
   },
   otherTag: {
     display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-    background: 'rgba(34,197,94,0.15)', color: '#22C55E', borderRadius: '4px',
+    background: 'rgba(200,148,77,0.15)', color: '#C8944D', borderRadius: '4px',
     padding: '0.2rem 0.5rem', fontSize: '0.78rem', fontWeight: 600,
-    cursor: 'pointer', whiteSpace: 'nowrap', border: '1px solid rgba(34,197,94,0.3)',
+    cursor: 'pointer', whiteSpace: 'nowrap', border: '1px solid rgba(200,148,77,0.3)',
   },
   otherInput: { flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '16px', padding: '0.2rem 0', minHeight: '44px' },
 };

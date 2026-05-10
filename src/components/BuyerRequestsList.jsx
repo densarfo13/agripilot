@@ -165,7 +165,7 @@ export default function BuyerRequestsList({
 
 function StatusBadge({ status, tr }) {
   const tone =
-    status === REQUEST_STATUS.ACCEPTED ? { bg: 'rgba(34,197,94,0.18)',   fg: '#86EFAC' }
+    status === REQUEST_STATUS.ACCEPTED ? { bg: 'rgba(200,148,77,0.18)',   fg: '#86EFAC' }
   : status === REQUEST_STATUS.DECLINED ? { bg: 'rgba(239,68,68,0.16)',   fg: '#FCA5A5' }
                                         : { bg: 'rgba(252,211,77,0.18)', fg: '#FCD34D' };
   const label =

@@ -78,7 +78,7 @@ const STYLES = {
   pct: {
     fontSize: 24,
     fontWeight: 800,
-    color: '#22C55E',
+    color: '#C8944D',
     fontVariantNumeric: 'tabular-nums',
   },
   bar: {
@@ -88,7 +88,7 @@ const STYLES = {
     background: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
-  fill: { height: '100%', background: '#22C55E', borderRadius: 999 },
+  fill: { height: '100%', background: '#C8944D', borderRadius: 999 },
   list: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 },
   row: {
     display: 'flex',
@@ -98,7 +98,7 @@ const STYLES = {
   },
   rowDone:    { color: 'rgba(255,255,255,0.55)', textDecoration: 'line-through' },
   rowPending: { color: 'rgba(255,255,255,0.85)' },
-  iconDone:    { color: '#22C55E', fontWeight: 700 },
+  iconDone:    { color: '#C8944D', fontWeight: 700 },
   iconPending: { color: 'rgba(255,255,255,0.4)', fontWeight: 700 },
 };
 

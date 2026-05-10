@@ -56,7 +56,7 @@ const C_NAVY     = '#0B1D34';
 const C_NAVY_2   = '#081423';
 const C_PANEL    = '#102C47';
 const C_BORDER   = '#1F3B5C';
-const C_GREEN    = '#22C55E';
+const C_GREEN    = '#C8944D';
 const C_GREEN_FG = '#86EFAC';
 const C_TEXT     = '#FFFFFF';
 const C_TEXT_DIM = 'rgba(255,255,255,0.65)';
@@ -76,8 +76,8 @@ const S = {
 
   activeCard: {
     margin: '0 1rem 1rem',
-    background: 'rgba(34,197,94,0.06)',
-    border: `1px solid rgba(34,197,94,0.40)`,
+    background: 'rgba(200,148,77,0.06)',
+    border: `1px solid rgba(200,148,77,0.40)`,
     borderRadius: 14,
     padding: '1rem 1.1rem',
     display: 'flex', flexDirection: 'column', gap: 8,
@@ -86,11 +86,11 @@ const S = {
   activeBadge: {
     display: 'inline-flex', alignItems: 'center',
     padding: '3px 10px', borderRadius: 999,
-    background: 'rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.20)',
     color: C_GREEN_FG,
     fontSize: '0.7rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
-    border: '1px solid rgba(34,197,94,0.55)',
+    border: '1px solid rgba(200,148,77,0.55)',
   },
   activeName: { margin: 0, fontSize: '1.125rem', fontWeight: 800, color: C_TEXT },
   meta: {
@@ -112,7 +112,7 @@ const S = {
     borderRadius: 10, padding: '0.65rem 1rem',
     fontSize: '0.9rem', fontWeight: 700,
     cursor: 'pointer', minHeight: 44,
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
     marginTop: 4, fontFamily: 'inherit',
   },
 
@@ -136,8 +136,8 @@ const S = {
   cardActions: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   cardBtnPrimary: {
     appearance: 'none', flex: '1 1 auto',
-    border: `1px solid rgba(34,197,94,0.32)`,
-    background: 'rgba(34,197,94,0.18)',
+    border: `1px solid rgba(200,148,77,0.32)`,
+    background: 'rgba(200,148,77,0.18)',
     color: C_GREEN_FG,
     borderRadius: 10, padding: '0.55rem 0.8rem',
     fontSize: '0.85rem', fontWeight: 700,
@@ -163,11 +163,11 @@ const S = {
   badgeSmall: {
     display: 'inline-flex', alignItems: 'center',
     padding: '2px 8px', borderRadius: 999,
-    background: 'rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.18)',
     color: C_GREEN_FG,
     fontSize: '0.65rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
-    border: '1px solid rgba(34,197,94,0.40)',
+    border: '1px solid rgba(200,148,77,0.40)',
   },
 
   addRow: { padding: '1rem' },

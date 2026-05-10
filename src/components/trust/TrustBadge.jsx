@@ -23,7 +23,7 @@
 import { useTranslation } from '../../i18n/index.js';
 
 const TONE = Object.freeze({
-  high:   { bg: 'rgba(34,197,94,0.15)',  border: 'rgba(34,197,94,0.4)',  color: '#86EFAC' },
+  high:   { bg: 'rgba(200,148,77,0.15)',  border: 'rgba(200,148,77,0.4)',  color: '#86EFAC' },
   medium: { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)', color: '#FDE68A' },
   low:    { bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.4)',  color: '#FCA5A5' },
 });

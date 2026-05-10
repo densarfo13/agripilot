@@ -47,7 +47,7 @@ const ACTION_WINDOW_MS = 60_000;
 const EMPTY_DISMISS_KEY = 'farroway_insight_empty_dismissed';
 
 const TONES = {
-  positive:  { color: '#86EFAC', bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.32)' },
+  positive:  { color: '#86EFAC', bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.32)' },
   neutral:   { color: '#7DD3FC', bg: 'rgba(14,165,233,0.10)', border: 'rgba(14,165,233,0.32)' },
   attention: { color: '#FCD34D', bg: 'rgba(252,211,77,0.10)', border: 'rgba(252,211,77,0.32)' },
 };
@@ -130,7 +130,7 @@ const S = {
     flex: '0 0 auto',
   },
   ctaBtnFocus: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
   },
   urgencyChip: {

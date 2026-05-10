@@ -119,8 +119,8 @@ const C = {
   border:    'rgba(255,255,255,0.10)',
   ink:       '#EAF2FF',
   inkSoft:   'rgba(255,255,255,0.65)',
-  green:     '#22C55E',
-  greenInk:  '#062714',
+  green:     '#C8944D',
+  greenInk:  '#FFFFFF',
   amber:     '#F59E0B',
   red:       '#EF4444',
 };
@@ -161,7 +161,7 @@ const S = {
     color: C.ink, padding: '8px 14px', borderRadius: 999,
     fontSize: 13, fontWeight: 700, minHeight: 40,
   },
-  pillActive: { background: 'rgba(34,197,94,0.18)', borderColor: 'rgba(34,197,94,0.32)', color: '#86EFAC' },
+  pillActive: { background: 'rgba(200,148,77,0.18)', borderColor: 'rgba(200,148,77,0.32)', color: '#86EFAC' },
   saveBtn: {
     appearance: 'none', fontFamily: 'inherit', cursor: 'pointer',
     background: C.green, color: C.greenInk, border: 'none',
@@ -530,8 +530,8 @@ export default function QuickGardenSetup() {
           disabled={geoStatus === 'requesting'}
           style={{
             appearance: 'none', fontFamily: 'inherit', cursor: 'pointer',
-            background: 'rgba(34,197,94,0.18)',
-            border: `1px solid rgba(34,197,94,0.32)`,
+            background: 'rgba(200,148,77,0.18)',
+            border: `1px solid rgba(200,148,77,0.32)`,
             color: '#86EFAC',
             padding: '12px 16px', borderRadius: 10,
             fontSize: 14, fontWeight: 700, minHeight: 44,

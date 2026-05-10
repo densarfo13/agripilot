@@ -153,7 +153,7 @@ const S = {
     transition: 'border-color 0.15s',
   },
   btn: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     border: 'none',
     borderRadius: '14px',
@@ -161,15 +161,15 @@ const S = {
     fontWeight: 700,
     fontSize: '0.875rem',
     cursor: 'pointer',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   btnDisabled: {
     opacity: 0.6,
     cursor: 'not-allowed',
   },
   successBox: {
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.12)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.12)',
     borderRadius: '14px',
     padding: '0.75rem 1rem',
     color: '#9FB3C8',

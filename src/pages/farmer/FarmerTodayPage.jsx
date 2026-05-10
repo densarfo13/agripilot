@@ -413,7 +413,7 @@ export default function FarmerTodayPage() {
           color:
             wr.overallWeatherRisk === 'high' ? '#EF4444' :
             wr.overallWeatherRisk === 'medium' ? '#F59E0B' :
-            '#22C55E',
+            '#C8944D',
         }
       : null;
     return {
@@ -1804,7 +1804,7 @@ function reminderFallback(kind) {
 }
 
 function microStatusStyleFor(code) {
-  if (code === 'on_track')     return { color: '#86EFAC', background: 'rgba(34,197,94,0.14)' };
+  if (code === 'on_track')     return { color: '#86EFAC', background: 'rgba(200,148,77,0.14)' };
   if (code === 'slight_delay') return { color: '#FDE68A', background: 'rgba(245,158,11,0.14)' };
   return                              { color: '#FCA5A5', background: 'rgba(239,68,68,0.14)' };
 }
@@ -1850,8 +1850,8 @@ const S = {
     gap: 8,
     padding: '10px 14px',
     borderRadius: 12,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#86EFAC',
     fontSize: 13,
     fontWeight: 700,
@@ -1941,8 +1941,8 @@ const S = {
   progressChip: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '0.5rem 0.875rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.18)',
     fontSize: '0.8125rem',
   },
   progressChipLabel: { color: '#86EFAC', fontWeight: 700 },
@@ -2019,7 +2019,7 @@ const S = {
   permissionRow: { display: 'flex', gap: '0.5rem' },
   permissionAccept: {
     flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
   },
   permissionDismiss: {

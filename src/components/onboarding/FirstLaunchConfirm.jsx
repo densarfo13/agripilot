@@ -454,9 +454,9 @@ const S = {
     color: '#EAF2FF', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
   },
   chipActive: {
-    background: 'rgba(34,197,94,0.14)',
-    borderColor: '#22C55E',
-    color: '#22C55E',
+    background: 'rgba(200,148,77,0.14)',
+    borderColor: '#C8944D',
+    color: '#C8944D',
   },
   select: {
     width: '100%', padding: '0.625rem',
@@ -473,7 +473,7 @@ const S = {
   },
   confirm: {
     flex: 1, padding: '0.75rem', borderRadius: '12px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
   },
   detectBtn: {
@@ -484,8 +484,8 @@ const S = {
   },
   detectOk: {
     marginTop: '0.5rem', padding: '0.625rem 0.75rem', borderRadius: '10px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.25)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.25)',
     color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.25rem',
   },
   detectFail: {
@@ -508,7 +508,7 @@ const S = {
   },
   detectAccept: {
     padding: '0.375rem 0.75rem', borderRadius: '8px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
   },
   offlineHint: {

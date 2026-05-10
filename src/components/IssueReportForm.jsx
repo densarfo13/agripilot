@@ -122,7 +122,7 @@ export default function IssueReportForm({ cropCycleId = null, onSubmitted }) {
 }
 
 function severityColor(s) {
-  return s === 'high' ? '#EF4444' : s === 'medium' ? '#F59E0B' : '#22C55E';
+  return s === 'high' ? '#EF4444' : s === 'medium' ? '#F59E0B' : '#C8944D';
 }
 
 const S = {
@@ -158,15 +158,15 @@ const S = {
   },
   submit: {
     padding: '0.875rem', borderRadius: '14px', border: 'none',
-    background: '#22C55E', color: '#fff',
+    background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
   },
   error: { color: '#FCA5A5', fontSize: '0.8125rem' },
   successBox: {
     display: 'flex', alignItems: 'center', gap: '0.625rem',
     padding: '0.875rem', borderRadius: '12px',
-    background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.25)',
+    background: 'rgba(200,148,77,0.12)',
+    border: '1px solid rgba(200,148,77,0.25)',
   },
   successIcon: { fontSize: '1.25rem' },
   successText: { fontSize: '0.9375rem', color: '#EAF2FF', fontWeight: 600 },

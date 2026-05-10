@@ -44,11 +44,11 @@ import {
 } from '../../lib/retention/reminderEngine.js';
 
 const TONE_STYLE = {
-  default:    { bg: 'rgba(34,197,94,0.10)',  fg: '#86EFAC', border: 'rgba(34,197,94,0.30)' },
+  default:    { bg: 'rgba(200,148,77,0.10)',  fg: '#86EFAC', border: 'rgba(200,148,77,0.30)' },
   weather:    { bg: 'rgba(14,165,233,0.10)', fg: '#7DD3FC', border: 'rgba(14,165,233,0.30)' },
   missed:     { bg: 'rgba(245,158,11,0.10)', fg: '#FCD34D', border: 'rgba(245,158,11,0.30)' },
   new_streak: { bg: 'rgba(168,85,247,0.10)', fg: '#D8B4FE', border: 'rgba(168,85,247,0.30)' },
-  all_done:   { bg: 'rgba(34,197,94,0.10)',  fg: '#86EFAC', border: 'rgba(34,197,94,0.30)' },
+  all_done:   { bg: 'rgba(200,148,77,0.10)',  fg: '#86EFAC', border: 'rgba(200,148,77,0.30)' },
   return:     { bg: 'rgba(245,158,11,0.10)', fg: '#FDE68A', border: 'rgba(245,158,11,0.30)' },
 };
 

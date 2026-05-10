@@ -174,7 +174,7 @@ export default function AcceptInvitePage() {
             </div>
           )}
           <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', marginBottom: 0 }}>
-            {t('invite.alreadyAccount')} <Link to="/login" style={{ color: '#22C55E' }}>{t('invite.signIn')}</Link>
+            {t('invite.alreadyAccount')} <Link to="/login" style={{ color: '#C8944D' }}>{t('invite.signIn')}</Link>
           </p>
         </div>
       </div>
@@ -205,8 +205,8 @@ export default function AcceptInvitePage() {
         <div style={styles.card}>
           <div style={styles.logo}>Farroway</div>
           <div style={{ textAlign: 'center', margin: '1.5rem 0' }}>
-            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', color: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 700, margin: '0 auto 1rem' }}>✓</div>
-            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700, color: '#22C55E' }}>{t('invite.accountActivated')}</h2>
+            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(200,148,77,0.2)', color: '#C8944D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 700, margin: '0 auto 1rem' }}>✓</div>
+            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700, color: '#C8944D' }}>{t('invite.accountActivated')}</h2>
             <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.5 }}>
               {t('invite.welcomeTo')} <strong>{inviteData?.fullName}</strong>. Your account is ready. You can now sign in with your email and password.
             </p>
@@ -232,7 +232,7 @@ export default function AcceptInvitePage() {
             <strong>{t('invite.welcome')} {inviteData.fullName}!</strong><br />
             {t('invite.profileSetUp')}
             {inviteData.expiresAt && (
-              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#22C55E' }}>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#C8944D' }}>
                 This link expires on {new Date(inviteData.expiresAt).toLocaleDateString()}.
               </div>
             )}
@@ -320,7 +320,7 @@ export default function AcceptInvitePage() {
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
-            {t('invite.alreadyAccount')} <Link to="/login" style={{ color: '#22C55E' }}>{t('invite.signIn')}</Link>
+            {t('invite.alreadyAccount')} <Link to="/login" style={{ color: '#C8944D' }}>{t('invite.signIn')}</Link>
           </p>
         </form>
       </div>
@@ -359,7 +359,7 @@ const styles = {
     letterSpacing: '0.05em', marginTop: '0.25rem',
   },
   button: {
-    padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none',
+    padding: '0.75rem', background: '#C8944D', color: '#fff', border: 'none',
     borderRadius: 6, fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer',
     marginTop: '0.25rem',
   },

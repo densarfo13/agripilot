@@ -648,7 +648,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 placeholder={t('wizard.egSunriseFarm')}
                 style={{
                   ...S.input,
-                  borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim() ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
+                  borderColor: fieldErrors.farmName ? '#EF4444' : form.farmName.trim() ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
                   fontSize: '1.1rem',
                   textAlign: 'center',
                 }}
@@ -680,7 +680,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               {form.countryCode ? t('wizard.confirmOrChange') : t('wizard.searchCountry')}
             </p>
             {/* Selection indicator — green when country chosen, hint when none */}
-            <p style={{ textAlign: 'center', color: form.countryCode ? '#22C55E' : '#A1A1AA', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+            <p style={{ textAlign: 'center', color: form.countryCode ? '#C8944D' : '#A1A1AA', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
               {form.countryCode ? t('wizard.countrySelected') : t('wizard.typeToSearch')}
             </p>
 
@@ -689,7 +689,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               <div style={S.locationConfirmCard} data-testid="country-confirm-card">
                 <div style={S.locationConfirmIcon}>{'\uD83D\uDCCD'}</div>
                 <div style={S.locationConfirmText}>
-                  <span style={{ fontWeight: 600, color: '#22C55E' }}>
+                  <span style={{ fontWeight: 600, color: '#C8944D' }}>
                     {(() => { const c = COUNTRIES_REF.find(c => c.iso2 === form.countryCode); return c ? c.name : form.countryCode; })()}
                   </span>
                   {form.detectedRegion && (
@@ -803,7 +803,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                     ...S.input,
                     fontSize: '1rem',
                     fontWeight: form.countryCode ? 600 : 400,
-                    color: form.countryCode ? '#22C55E' : '#A1A1AA',
+                    color: form.countryCode ? '#C8944D' : '#A1A1AA',
                   }}
                   inputStyle={{ ...S.input, marginBottom: '0.5rem', fontSize: '1rem' }}
                   wrapperStyle={{ width: '100%' }}
@@ -952,8 +952,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 }}
                 style={{
                   ...S.experienceBtn,
-                  borderColor: form.experienceLevel === 'new' ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                  background: form.experienceLevel === 'new' ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                  borderColor: form.experienceLevel === 'new' ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                  background: form.experienceLevel === 'new' ? 'rgba(200,148,77,0.10)' : '#1E293B',
                 }}
               >
                 <span style={S.experienceBtnIcon}>{'\uD83C\uDF31'}</span>
@@ -974,8 +974,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                 }}
                 style={{
                   ...S.experienceBtn,
-                  borderColor: form.experienceLevel === 'experienced' ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                  background: form.experienceLevel === 'experienced' ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                  borderColor: form.experienceLevel === 'experienced' ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                  background: form.experienceLevel === 'experienced' ? 'rgba(200,148,77,0.10)' : '#1E293B',
                 }}
               >
                 <span style={S.experienceBtnIcon}>{'\uD83D\uDCAA'}</span>
@@ -1039,8 +1039,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                             onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
                             style={{
                               ...S.topCropBtn,
-                              borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                              background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                              borderColor: isSelected ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                              background: isSelected ? 'rgba(200,148,77,0.10)' : '#1E293B',
                             }}
                             aria-pressed={isSelected}
                           >
@@ -1070,8 +1070,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                             onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
                             style={{
                               ...S.topCropBtn,
-                              borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                              background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                              borderColor: isSelected ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                              background: isSelected ? 'rgba(200,148,77,0.10)' : '#1E293B',
                             }}
                             aria-pressed={isSelected}
                           >
@@ -1099,8 +1099,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                           onClick={() => { setForm(f => ({ ...f, crop: c.code })); setShowCropSearch(false); }}
                           style={{
                             ...S.topCropBtn,
-                            borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                            background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                            borderColor: isSelected ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                            background: isSelected ? 'rgba(200,148,77,0.10)' : '#1E293B',
                           }}
                           aria-pressed={isSelected}
                         >
@@ -1279,8 +1279,8 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
                       onClick={() => setForm(f => ({ ...f, farmSizeCategory: key }))}
                       style={{
                         ...S.farmSizeCard,
-                        borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                        background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                        borderColor: isSelected ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                        background: isSelected ? 'rgba(200,148,77,0.10)' : '#1E293B',
                       }}
                       aria-pressed={isSelected}
                     >
@@ -1458,7 +1458,7 @@ export default function OnboardingWizard({ userName, countryCode, onComplete }) 
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                style={{ ...S.primaryBtn, opacity: submitting ? 0.6 : 1, background: '#22C55E' }}
+                style={{ ...S.primaryBtn, opacity: submitting ? 0.6 : 1, background: '#C8944D' }}
               >
                 {submitting ? t('common.creating') : networkError ? t('common.retry') : photoFile ? t('wizard.createMyFarm') : t('wizard.skipCreateFarm')}
               </button>
@@ -1591,7 +1591,7 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
               display: 'flex', alignItems: 'center', gap: '0.6rem',
               padding: '0.5rem 0.75rem', marginBottom: '0.25rem',
               borderRadius: '6px',
-              background: i <= activeStep ? 'rgba(34,197,94,0.1)' : 'transparent',
+              background: i <= activeStep ? 'rgba(200,148,77,0.1)' : 'transparent',
               transition: 'all 0.3s ease',
             }}
           >
@@ -1599,7 +1599,7 @@ function ProcessingStep({ submitting, error, networkError, onRetry, onBack }) {
               width: 24, height: 24, borderRadius: '50%', display: 'flex',
               alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem',
               fontWeight: 700, flexShrink: 0,
-              background: i < activeStep ? '#22C55E' : i === activeStep ? '#22C55E' : '#243041',
+              background: i < activeStep ? '#C8944D' : i === activeStep ? '#C8944D' : '#243041',
               color: i <= activeStep ? '#fff' : '#71717A',
               transition: 'all 0.3s ease',
             }}>
@@ -1641,7 +1641,7 @@ const S = {
     width: '100%', height: 4, background: '#243041', borderRadius: 2, overflow: 'hidden',
   },
   progressFill: {
-    height: '100%', background: '#22C55E', borderRadius: 2,
+    height: '100%', background: '#C8944D', borderRadius: 2,
     transition: 'width 0.4s ease',
   },
   progressLabel: {
@@ -1665,13 +1665,13 @@ const S = {
   timeEstimate: {
     display: 'flex', alignItems: 'center', gap: '0.3rem',
     padding: '0.4rem 1rem', borderRadius: 20, marginBottom: '1.5rem',
-    background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
-    fontSize: '0.8rem', color: '#22C55E', fontWeight: 500,
+    background: 'rgba(200,148,77,0.1)', border: '1px solid rgba(200,148,77,0.2)',
+    fontSize: '0.8rem', color: '#C8944D', fontWeight: 500,
   },
   timeIcon: { fontSize: '0.9rem' },
   completionTime: {
-    fontSize: '0.78rem', color: '#22C55E', marginBottom: '1rem',
-    background: 'rgba(34,197,94,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
+    fontSize: '0.78rem', color: '#C8944D', marginBottom: '1rem',
+    background: 'rgba(200,148,77,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
   },
   // Fields
   fieldWide: { width: '100%', marginBottom: '0.75rem' },
@@ -1690,13 +1690,13 @@ const S = {
     textAlign: 'center', lineHeight: 1.4,
   },
   autoDetectBadge: {
-    fontSize: '0.78rem', color: '#22C55E', marginBottom: '0.75rem',
-    background: 'rgba(34,197,94,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
+    fontSize: '0.78rem', color: '#C8944D', marginBottom: '0.75rem',
+    background: 'rgba(200,148,77,0.1)', padding: '0.3rem 0.75rem', borderRadius: 12,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   // Location confirmation card
   locationConfirmCard: {
-    width: '100%', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+    width: '100%', background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.25)',
     borderRadius: 12, padding: '1rem', marginBottom: '0.75rem',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
   },
@@ -1706,7 +1706,7 @@ const S = {
     display: 'flex', gap: '0.5rem', marginTop: '0.25rem', width: '100%',
   },
   confirmBtn: {
-    flex: 1, padding: '0.55rem 0.75rem', background: '#22C55E', color: '#fff',
+    flex: 1, padding: '0.55rem 0.75rem', background: '#C8944D', color: '#fff',
     border: 'none', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem',
     cursor: 'pointer', minHeight: 44,
   },
@@ -1718,7 +1718,7 @@ const S = {
   // Buttons
   btnRow: { display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.5rem' },
   primaryBtn: {
-    flex: 1, padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none',
+    flex: 1, padding: '0.75rem', background: '#C8944D', color: '#fff', border: 'none',
     borderRadius: '10px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
     minHeight: '52px', WebkitTapHighlightColor: 'transparent',
   },
@@ -1752,7 +1752,7 @@ const S = {
   experienceBtnDesc: { fontSize: '0.82rem', color: '#A1A1AA', lineHeight: 1.4 },
   // Crop group labels
   cropGroupLabel: {
-    fontSize: '0.72rem', fontWeight: 700, color: '#22C55E', textTransform: 'uppercase',
+    fontSize: '0.72rem', fontWeight: 700, color: '#C8944D', textTransform: 'uppercase',
     letterSpacing: '0.04em', marginBottom: '0.35rem', paddingLeft: '0.15rem',
   },
   // Top crops
@@ -1770,7 +1770,7 @@ const S = {
   topCropIcon: { fontSize: '1.4rem', lineHeight: 1 },
   topCropCheck: {
     position: 'absolute', top: 4, right: 6,
-    fontSize: '0.7rem', color: '#22C55E', fontWeight: 700,
+    fontSize: '0.7rem', color: '#C8944D', fontWeight: 700,
   },
   showMoreBtn: {
     width: '100%', padding: '0.5rem', background: 'transparent',
@@ -1779,8 +1779,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   searchAllBtn: {
-    width: '100%', padding: '0.65rem', background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px', color: '#22C55E',
+    width: '100%', padding: '0.65rem', background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.25)', borderRadius: '8px', color: '#C8944D',
     fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', minHeight: '48px',
     WebkitTapHighlightColor: 'transparent', marginTop: '0.25rem',
   },
@@ -1800,14 +1800,14 @@ const S = {
   exactSizeLabel: { fontSize: '0.78rem', color: '#A1A1AA', display: 'block', marginBottom: '0.4rem' },
   // Location
   gpsConfirm: {
-    padding: '0.5rem 0.75rem', background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px',
-    fontSize: '0.82rem', color: '#22C55E', textAlign: 'center',
+    padding: '0.5rem 0.75rem', background: 'rgba(200,148,77,0.1)',
+    border: '1px solid rgba(200,148,77,0.25)', borderRadius: '8px',
+    fontSize: '0.82rem', color: '#C8944D', textAlign: 'center',
   },
   // Photo
   photoPreview: {
     width: 110, height: 110, borderRadius: '50%', overflow: 'hidden',
-    border: '3px solid #22C55E', margin: '0 auto',
+    border: '3px solid #C8944D', margin: '0 auto',
   },
   photoPlaceholder: {
     width: 110, height: 110, borderRadius: '50%', margin: '0 auto',
@@ -1817,18 +1817,18 @@ const S = {
   },
   // Status
   draftBanner: {
-    background: 'rgba(34,197,94,0.12)', color: '#22C55E',
-    border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px',
+    background: 'rgba(200,148,77,0.12)', color: '#C8944D',
+    border: '1px solid rgba(200,148,77,0.25)', borderRadius: '8px',
     padding: '0.5rem 0.75rem', fontSize: '0.8rem', textAlign: 'center',
     marginBottom: '1rem', lineHeight: 1.4,
   },
   dismissBtn: {
-    background: 'none', border: 'none', color: '#22C55E', cursor: 'pointer',
+    background: 'none', border: 'none', color: '#C8944D', cursor: 'pointer',
     fontSize: '0.75rem', marginLeft: '0.5rem', textDecoration: 'underline',
     padding: '0.5rem', minHeight: '44px', minWidth: '44px',
   },
   savedIndicator: {
-    textAlign: 'center', fontSize: '0.7rem', color: '#22C55E',
+    textAlign: 'center', fontSize: '0.7rem', color: '#C8944D',
     marginBottom: '0.5rem', opacity: 0.7,
   },
   resetLink: {
@@ -1842,12 +1842,12 @@ const S = {
     border: '1px solid rgba(245,158,11,0.2)',
   },
   successIcon: {
-    width: 64, height: 64, borderRadius: '50%', background: 'rgba(34,197,94,0.15)',
-    border: '3px solid #22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '2rem', color: '#22C55E', margin: '0 auto 0.75rem', fontWeight: 700,
+    width: 64, height: 64, borderRadius: '50%', background: 'rgba(200,148,77,0.15)',
+    border: '3px solid #C8944D', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '2rem', color: '#C8944D', margin: '0 auto 0.75rem', fontWeight: 700,
   },
   spinner: {
-    width: '32px', height: '32px', border: '3px solid #243041', borderTop: '3px solid #22C55E',
+    width: '32px', height: '32px', border: '3px solid #243041', borderTop: '3px solid #C8944D',
     borderRadius: '50%', animation: 'spin 1s linear infinite', marginTop: '1rem',
   },
   // Voice guide

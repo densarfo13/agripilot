@@ -490,7 +490,7 @@ export default function FarmerProgressPage() {
 }
 
 function engineStatusStyle(code) {
-  if (code === 'on_track')      return { background: 'rgba(34,197,94,0.14)',  color: '#86EFAC' };
+  if (code === 'on_track')      return { background: 'rgba(200,148,77,0.14)',  color: '#86EFAC' };
   if (code === 'slight_delay')  return { background: 'rgba(245,158,11,0.14)', color: '#FDE68A' };
   return                                { background: 'rgba(239,68,68,0.14)',  color: '#FCA5A5' };
 }
@@ -764,8 +764,8 @@ const S = {
     gap: '0.75rem',
     padding: '1rem 1.25rem',
     borderRadius: '16px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.14)',
   },
   momentumIcon: { fontSize: '1.5rem', flexShrink: 0 },
   momentumContent: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
@@ -840,8 +840,8 @@ const S = {
     marginTop: '0.25rem',
     padding: '0.75rem',
     borderRadius: '12px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.14)',
     display: 'flex', flexDirection: 'column', gap: '0.125rem',
   },
   engineNextLabel: {

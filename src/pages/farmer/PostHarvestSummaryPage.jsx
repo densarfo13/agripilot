@@ -28,7 +28,7 @@ import { shouldShowSellCta } from '../../utils/featureGates.js';
 import { tSafe } from '../../i18n/tSafe.js';
 
 const OUTCOME_COLOR = {
-  successful: '#22C55E',
+  successful: '#C8944D',
   delayed:    '#F59E0B',
   high_risk:  '#F59E0B',
   failed:     '#EF4444',
@@ -207,9 +207,9 @@ const S = {
   },
   btnPrimary: {
     width: '100%', padding: '1rem', borderRadius: '14px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '56px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   btnSell: {
     width: '100%', padding: '0.875rem', borderRadius: '14px',

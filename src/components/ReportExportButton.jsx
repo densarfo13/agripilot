@@ -73,8 +73,8 @@ const S = {
   wrap: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
   btn: {
     padding: '0.5rem 0.875rem', borderRadius: 10,
-    border: '1px solid rgba(34,197,94,0.28)',
-    background: 'rgba(34,197,94,0.08)', color: '#22C55E',
+    border: '1px solid rgba(200,148,77,0.28)',
+    background: 'rgba(200,148,77,0.08)', color: '#C8944D',
     fontSize: 13, fontWeight: 700, cursor: 'pointer',
   },
   btnBusy: { opacity: 0.6, cursor: 'wait' },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const TYPE_CONFIG = {
-  success: { color: '#22C55E', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)', icon: '\u2713' },
+  success: { color: '#C8944D', bg: 'rgba(200,148,77,0.15)', border: 'rgba(200,148,77,0.3)', icon: '\u2713' },
   error: { color: '#EF4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)', icon: '\u2717' },
   info: { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)', icon: '\u2139' },
   warning: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)', border: 'rgba(251,191,36,0.3)', icon: '\u26A0' },

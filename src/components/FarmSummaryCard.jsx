@@ -80,7 +80,7 @@ export default function FarmSummaryCard({ profile, onUpdateStage, onEditSeason, 
         </h3>
         {statusBadge === 'active' && (
           <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#4ADE80',
-                         background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
+                         background: 'rgba(200,148,77,0.1)', border: '1px solid rgba(200,148,77,0.25)',
                          borderRadius: 999, padding: '2px 8px' }}>
             {t('farm.statusActive')}
           </span>

@@ -171,8 +171,8 @@ const S = {
     margin: '1rem 0',
     padding: '0.875rem 1rem',
     borderRadius: 14,
-    border: '1px solid rgba(34,197,94,0.28)',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.28)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#EAF2FF',
     display: 'flex',
     flexDirection: 'column',
@@ -206,9 +206,9 @@ const S = {
     minHeight: 36,
   },
   btnPrimary: {
-    background: '#22C55E',
-    color: '#062714',
-    borderColor: '#22C55E',
+    background: '#C8944D',
+    color: '#FFFFFF',
+    borderColor: '#C8944D',
   },
   btnGhost: {
     background: 'transparent',

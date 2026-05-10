@@ -347,7 +347,7 @@ const S = {
   input:      { background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#fff', outline: 'none', width: '100%', fontSize: '0.875rem', boxSizing: 'border-box' },
   errorBox:   { background: 'rgba(252,165,165,0.1)', border: '1px solid rgba(252,165,165,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
   successBox: { background: 'rgba(134,239,172,0.1)', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '12px', padding: '0.75rem 1rem', color: '#86EFAC', fontSize: '0.875rem', marginBottom: '0.5rem' },
-  button:     { background: '#22C55E', color: '#000', border: 'none', borderRadius: '12px', padding: '0.75rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%', textDecoration: 'none' },
+  button:     { background: '#C8944D', color: '#000', border: 'none', borderRadius: '12px', padding: '0.75rem 1rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%', textDecoration: 'none' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   secondaryBtn: { background: 'transparent', color: '#86EFAC', border: '1px solid rgba(134,239,172,0.3)', borderRadius: '10px', padding: '0.5rem 0.75rem', fontSize: '0.875rem', cursor: 'pointer' },
   secondaryBtnDisabled: { opacity: 0.5, cursor: 'not-allowed' },

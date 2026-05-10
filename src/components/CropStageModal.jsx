@@ -216,7 +216,7 @@ const S = {
     gap: '0.5rem',
     padding: '0.75rem 1rem',
     borderRadius: 12,
-    background: 'rgba(34,197,94,0.08)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#4ADE80',
     fontSize: '0.875rem',
     marginBottom: '0.75rem',
@@ -254,8 +254,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   stageBtnActive: {
-    background: 'rgba(34,197,94,0.12)',
-    border: '1.5px solid rgba(34,197,94,0.4)',
+    background: 'rgba(200,148,77,0.12)',
+    border: '1.5px solid rgba(200,148,77,0.4)',
     color: '#4ADE80',
   },
   stageIcon: {
@@ -295,7 +295,7 @@ const S = {
     padding: '0.875rem',
     minHeight: '52px',
     borderRadius: 12,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontWeight: 700,
     fontSize: '0.9375rem',

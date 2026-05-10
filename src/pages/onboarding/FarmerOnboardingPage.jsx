@@ -201,7 +201,7 @@ const S = {
     width: '100%', height: '6px', borderRadius: '999px',
     background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
   },
-  progressFill: { height: '100%', background: '#22C55E', transition: 'width 0.25s' },
+  progressFill: { height: '100%', background: '#C8944D', transition: 'width 0.25s' },
   progressLabel: { fontSize: '0.75rem', color: '#9FB3C8', margin: 0 },
   errBox: {
     padding: '0.75rem 1rem', borderRadius: '12px',

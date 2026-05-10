@@ -35,10 +35,10 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 import { getLabel } from '../../core/terminology.js';
 
 const C = {
-  bg:        'rgba(34,197,94,0.10)',
-  border:    'rgba(34,197,94,0.32)',
-  green:     '#22C55E',
-  greenDark: '#062714',
+  bg:        'rgba(200,148,77,0.10)',
+  border:    'rgba(200,148,77,0.32)',
+  green:     '#C8944D',
+  greenDark: '#FFFFFF',
   ink:       '#EAF2FF',
   inkSoft:   'rgba(255,255,255,0.7)',
 };
@@ -73,7 +73,7 @@ const S = {
     fontWeight: 800,
     minHeight: 48,
     minWidth: 180,
-    boxShadow: '0 6px 22px rgba(34,197,94,0.30)',
+    boxShadow: '0 6px 22px rgba(200,148,77,0.30)',
     marginTop: 4,
   },
 };

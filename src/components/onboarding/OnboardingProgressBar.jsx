@@ -50,7 +50,7 @@ export default function OnboardingProgressBar({ value, total }) {
         style={{
           width: `${pct}%`,
           height: '100%',
-          background: '#22C55E',
+          background: '#C8944D',
           transition: 'width 240ms ease',
         }}
       />

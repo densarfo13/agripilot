@@ -11,7 +11,7 @@ const TABS = ['Analytics', 'Export', 'Bulk Import', 'Activity'];
 const S = {
   tabBar: { display: 'flex', gap: '0', borderBottom: '2px solid #E4E4E7', marginBottom: '1.5rem' },
   tab: { padding: '0.625rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, color: '#71717A', borderBottom: '2px solid transparent', marginBottom: '-2px', transition: 'color 0.15s, border-color 0.15s' },
-  tabActive: { color: '#16A34A', borderBottomColor: '#16A34A' },
+  tabActive: { color: '#B9853F', borderBottomColor: '#B9853F' },
   exportRow: { display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' },
   exportCard: { display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' },
   textarea: { width: '100%', minHeight: '180px', fontFamily: 'monospace', fontSize: '0.8125rem', padding: '0.75rem', border: '1px solid #D4D4D8', borderRadius: '6px', resize: 'vertical', boxSizing: 'border-box' },
@@ -19,7 +19,7 @@ const S = {
   resultSuccess: { background: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534' },
   resultError: { background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B' },
   pctCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  pctValue: { fontSize: '1.75rem', fontWeight: 700, color: '#16A34A' },
+  pctValue: { fontSize: '1.75rem', fontWeight: 700, color: '#B9853F' },
   pctLabel: { fontSize: '0.75rem', color: '#71717A', marginTop: '0.25rem' },
 };
 
@@ -100,7 +100,7 @@ function AnalyticsTab() {
       {/* ─── Farmer counts ─── */}
       <div className="stats-grid">
         <div className="stat-card"><div className="stat-label">Total Farmers</div><div className="stat-value">{data.totalFarmers ?? 0}</div></div>
-        <div className="stat-card"><div className="stat-label">Active <span style={AS.period}>({tw.label})</span></div><div className="stat-value" style={{ color: '#16A34A' }}>{data.activeFarmers ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Active <span style={AS.period}>({tw.label})</span></div><div className="stat-value" style={{ color: '#B9853F' }}>{data.activeFarmers ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Inactive <span style={AS.period}>({tw.label})</span></div><div className="stat-value" style={{ color: '#F59E0B' }}>{data.inactiveFarmers ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Setup Incomplete</div><div className="stat-value">{data.setupIncomplete ?? 0}</div></div>
       </div>
@@ -142,7 +142,7 @@ function AnalyticsTab() {
           <div style={S.pctLabel}>Complete profiles</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Complete</div><div className="stat-value" style={{ color: '#16A34A' }}>{comp.complete ?? 0}</div>
+          <div className="stat-label">Complete</div><div className="stat-value" style={{ color: '#B9853F' }}>{comp.complete ?? 0}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Incomplete</div><div className="stat-value" style={{ color: '#F59E0B' }}>{comp.incomplete ?? 0}</div>
@@ -157,7 +157,7 @@ function AnalyticsTab() {
       {/* ─── Pesticide compliance ─── */}
       <div style={{ marginTop: '1.5rem', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Pesticide Compliance</div>
       <div className="stats-grid">
-        <div className="stat-card"><div className="stat-label">Compliant</div><div className="stat-value" style={{ color: '#16A34A' }}>{pc.compliant ?? 0}</div></div>
+        <div className="stat-card"><div className="stat-label">Compliant</div><div className="stat-value" style={{ color: '#B9853F' }}>{pc.compliant ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Needs Review</div><div className="stat-value" style={{ color: '#F59E0B' }}>{pc.needsReview ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Non-compliant</div><div className="stat-value" style={{ color: '#DC2626' }}>{pc.nonCompliant ?? 0}</div></div>
         <div className="stat-card"><div className="stat-label">Evaluated</div><div className="stat-value">{pc.totalEvaluated ?? 0}</div></div>
@@ -219,21 +219,21 @@ function ExportTab() {
             <button className="btn btn-primary" disabled={status['Export Farmers'] === 'downloading'} onClick={() => download('Export Farmers', '/v2/exports/farmers/csv', 'farmers.csv')}>
               {btnLabel('Export Farmers')}
             </button>
-            {status['Export Farmers'] === 'done' && <span className="text-sm" style={{ color: '#16A34A' }}>Saved farmers.csv</span>}
+            {status['Export Farmers'] === 'done' && <span className="text-sm" style={{ color: '#B9853F' }}>Saved farmers.csv</span>}
             {status['Export Farmers'] === 'error' && <span className="text-sm" style={{ color: '#DC2626' }}>Download failed</span>}
           </div>
           <div style={S.exportCard}>
             <button className="btn btn-primary" disabled={status['Export Updates'] === 'downloading'} onClick={() => download('Export Updates', '/v2/exports/updates/csv', 'updates.csv')}>
               {btnLabel('Export Updates')}
             </button>
-            {status['Export Updates'] === 'done' && <span className="text-sm" style={{ color: '#16A34A' }}>Saved updates.csv</span>}
+            {status['Export Updates'] === 'done' && <span className="text-sm" style={{ color: '#B9853F' }}>Saved updates.csv</span>}
             {status['Export Updates'] === 'error' && <span className="text-sm" style={{ color: '#DC2626' }}>Download failed</span>}
           </div>
           <div style={S.exportCard}>
             <button className="btn btn-primary" disabled={status['Export Validations'] === 'downloading'} onClick={() => download('Export Validations', '/v2/exports/validations/csv', 'validations.csv')}>
               {btnLabel('Export Validations')}
             </button>
-            {status['Export Validations'] === 'done' && <span className="text-sm" style={{ color: '#16A34A' }}>Saved validations.csv</span>}
+            {status['Export Validations'] === 'done' && <span className="text-sm" style={{ color: '#B9853F' }}>Saved validations.csv</span>}
             {status['Export Validations'] === 'error' && <span className="text-sm" style={{ color: '#DC2626' }}>Download failed</span>}
           </div>
         </div>

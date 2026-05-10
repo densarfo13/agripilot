@@ -401,9 +401,9 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   toggleOn: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
-    borderColor: 'rgba(34,197,94,0.6)',
+    borderColor: 'rgba(200,148,77,0.6)',
   },
   toggleOff: {
     background: 'transparent',

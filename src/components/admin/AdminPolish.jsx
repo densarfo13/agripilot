@@ -26,7 +26,7 @@ import React from 'react';
 const TONES = Object.freeze({
   neutral: { border: 'rgba(255,255,255,0.08)', bg: 'rgba(255,255,255,0.04)', num: '#EAF2FF' },
   info:    { border: 'rgba(59,130,246,0.35)',  bg: 'rgba(59,130,246,0.08)', num: '#93C5FD' },
-  good:    { border: 'rgba(34,197,94,0.35)',   bg: 'rgba(34,197,94,0.08)',  num: '#86EFAC' },
+  good:    { border: 'rgba(200,148,77,0.35)',   bg: 'rgba(200,148,77,0.08)',  num: '#86EFAC' },
   warn:    { border: 'rgba(245,158,11,0.35)',  bg: 'rgba(245,158,11,0.08)', num: '#FDE68A' },
   danger:  { border: 'rgba(239,68,68,0.35)',   bg: 'rgba(239,68,68,0.08)',  num: '#FCA5A5' },
 });
@@ -100,7 +100,7 @@ export function MetricGrid({ children, testId = 'metric-grid' }) {
 // ─── Soft banner ─────────────────────────────────────────────────
 const BANNER_TONES = Object.freeze({
   info:    { border: 'rgba(59,130,246,0.30)', bg: 'rgba(59,130,246,0.08)', fg: '#BFDBFE' },
-  success: { border: 'rgba(34,197,94,0.30)',  bg: 'rgba(34,197,94,0.06)',  fg: '#86EFAC' },
+  success: { border: 'rgba(200,148,77,0.30)',  bg: 'rgba(200,148,77,0.06)',  fg: '#86EFAC' },
   warn:    { border: 'rgba(245,158,11,0.30)', bg: 'rgba(245,158,11,0.08)', fg: '#FDE68A' },
   // `critical` is the ONLY tone that uses loud red. Reserved for true
   // blocking errors — not for generic API failures.
@@ -144,7 +144,7 @@ export function AdminEmptyState({
   title, body, icon, tone = 'neutral', action, testId,
 }) {
   const t = tone === 'positive'
-    ? { border: 'rgba(34,197,94,0.25)',  bg: 'rgba(34,197,94,0.04)',  fg: '#86EFAC' }
+    ? { border: 'rgba(200,148,77,0.25)',  bg: 'rgba(200,148,77,0.04)',  fg: '#86EFAC' }
     : { border: 'rgba(255,255,255,0.08)', bg: 'rgba(255,255,255,0.03)', fg: 'rgba(255,255,255,0.75)' };
   return (
     <div

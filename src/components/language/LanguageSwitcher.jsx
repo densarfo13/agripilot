@@ -211,12 +211,12 @@ const S = {
     minHeight: 36,
   },
   rowActive: {
-    background: 'rgba(34,197,94,0.10)',
-    borderColor: 'rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    borderColor: 'rgba(200,148,77,0.28)',
     color: '#86EFAC',
     fontWeight: 700,
   },
   rowLabel: { flex: 0 },
   rowSub: { flex: 1, color: '#9FB3C8', fontSize: '0.75rem' },
-  rowCheck: { color: '#22C55E', fontWeight: 700 },
+  rowCheck: { color: '#C8944D', fontWeight: 700 },
 };

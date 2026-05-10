@@ -6,7 +6,7 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
 const CLASSIFICATION_COLORS = {
-  on_track: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E', label: 'On Track' },
+  on_track: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D', label: 'On Track' },
   slight_delay: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Slight Delay' },
   at_risk: { bg: 'rgba(245,158,11,0.2)', color: '#F59E0B', label: 'At Risk' },
   critical: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Critical' },
@@ -85,7 +85,7 @@ export default function InvestorIntelligencePage() {
               <MetricCard
                 label="Trend"
                 value={summary.productivityTrend === 'improving' ? 'Improving' : summary.productivityTrend === 'declining' ? 'Declining' : summary.productivityTrend === 'stable' ? 'Stable' : 'Insufficient'}
-                color={summary.productivityTrend === 'improving' ? '#16a34a' : summary.productivityTrend === 'declining' ? '#dc2626' : '#A1A1AA'}
+                color={summary.productivityTrend === 'improving' ? '#B9853F' : summary.productivityTrend === 'declining' ? '#dc2626' : '#A1A1AA'}
               />
             </div>
           </div>
@@ -101,8 +101,8 @@ export default function InvestorIntelligencePage() {
                   <span key={i} style={{
                     display: 'inline-block', padding: '0.3rem 0.75rem', borderRadius: 16,
                     fontSize: '0.8rem', fontWeight: 500,
-                    background: s.positive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                    color: s.positive ? '#22C55E' : '#EF4444',
+                    background: s.positive ? 'rgba(200,148,77,0.15)' : 'rgba(239,68,68,0.15)',
+                    color: s.positive ? '#C8944D' : '#EF4444',
                   }}>
                     {s.positive ? '+' : '-'} {s.label}
                   </span>
@@ -121,7 +121,7 @@ export default function InvestorIntelligencePage() {
                 <MetricCard
                   label="Credibility Score"
                   value={credSummary.overallCredibility.avgScore !== null ? `${credSummary.overallCredibility.avgScore}/100` : 'N/A'}
-                  color={credSummary.overallCredibility.level === 'high_confidence' ? '#16a34a' : credSummary.overallCredibility.level === 'medium_confidence' ? '#d97706' : '#dc2626'}
+                  color={credSummary.overallCredibility.level === 'high_confidence' ? '#B9853F' : credSummary.overallCredibility.level === 'medium_confidence' ? '#d97706' : '#dc2626'}
                 />
                 <MetricCard
                   label="Confidence Level"
@@ -130,7 +130,7 @@ export default function InvestorIntelligencePage() {
                 <MetricCard
                   label="Credibility Trend"
                   value={(credSummary.overallCredibility.trend || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                  color={credSummary.overallCredibility.trend === 'improving' ? '#16a34a' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#A1A1AA'}
+                  color={credSummary.overallCredibility.trend === 'improving' ? '#B9853F' : credSummary.overallCredibility.trend === 'declining' ? '#dc2626' : '#A1A1AA'}
                 />
                 <MetricCard label="Assessed" value={`${credSummary.overallCredibility.seasonsAssessed}/${credSummary.overallCredibility.totalSeasons} seasons`} />
               </div>
@@ -150,7 +150,7 @@ export default function InvestorIntelligencePage() {
                 </div>
               )}
               {Object.keys(credSummary.recurringFlags || {}).length === 0 && credSummary.overallCredibility.avgScore >= 70 && (
-                <div style={{ fontSize: '0.85rem', color: '#22C55E' }}>No recurring data quality issues detected.</div>
+                <div style={{ fontSize: '0.85rem', color: '#C8944D' }}>No recurring data quality issues detected.</div>
               )}
             </div>
           </div>
@@ -202,8 +202,8 @@ export default function InvestorIntelligencePage() {
                         <td>
                           <span style={{
                             padding: '0.2rem 0.5rem', borderRadius: 10, fontSize: '0.75rem', fontWeight: 600,
-                            background: s.status === 'completed' ? 'rgba(34,197,94,0.15)' : s.status === 'active' ? 'rgba(14,165,233,0.15)' : '#1E293B',
-                            color: s.status === 'completed' ? '#22C55E' : s.status === 'active' ? '#0EA5E9' : '#A1A1AA',
+                            background: s.status === 'completed' ? 'rgba(200,148,77,0.15)' : s.status === 'active' ? 'rgba(14,165,233,0.15)' : '#1E293B',
+                            color: s.status === 'completed' ? '#C8944D' : s.status === 'active' ? '#0EA5E9' : '#A1A1AA',
                           }}>{s.status}</span>
                         </td>
                         <td style={{ fontWeight: 600 }}>{s.progressScore?.score ?? '-'}</td>

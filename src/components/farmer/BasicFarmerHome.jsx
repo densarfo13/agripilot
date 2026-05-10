@@ -274,7 +274,7 @@ export default function BasicFarmerHome({
 
       {/* ═══ CONNECTIVITY BADGE ═══ */}
       <div style={S.connectivity}>
-        <span style={{ ...S.connDot, background: isOnline ? '#22C55E' : '#F59E0B' }} />
+        <span style={{ ...S.connDot, background: isOnline ? '#C8944D' : '#F59E0B' }} />
         <span style={S.connText}>
           {isOnline ? t('farmer.online') : t('farmer.offline')}
         </span>
@@ -334,13 +334,13 @@ const S = {
     width: '100%',
     minHeight: '56px',
     borderRadius: '18px',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '1.0625rem',
     fontWeight: 700,
     border: 'none',
     cursor: 'pointer',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     WebkitTapHighlightColor: 'transparent',
   },
   addUpdateLink: {
@@ -362,8 +362,8 @@ const S = {
     gap: '0.5rem',
     padding: '2rem 1rem',
     borderRadius: '22px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.12)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.12)',
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     width: '100%',
     animation: 'farroway-fade-in 0.3s ease-out',
@@ -381,7 +381,7 @@ const S = {
   },
   doneNext: {
     fontSize: '0.875rem',
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 600,
     textAlign: 'center',
   },
@@ -428,7 +428,7 @@ const S = {
   progressFill: {
     height: '100%',
     borderRadius: '3px',
-    background: '#22C55E',
+    background: '#C8944D',
     transition: 'width 0.4s ease',
     minWidth: '2px',
   },
@@ -479,7 +479,7 @@ const S = {
     width: '2rem',
     height: '2rem',
     border: '3px solid rgba(255,255,255,0.06)',
-    borderTopColor: '#22C55E',
+    borderTopColor: '#C8944D',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },

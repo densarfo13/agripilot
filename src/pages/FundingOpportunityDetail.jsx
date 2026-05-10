@@ -414,7 +414,7 @@ function Fact({ label, value, highlight }) {
 
 function StatusPill({ status }) {
   const map = {
-    INTERESTED:           { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.40)',  fg: '#86EFAC', label: 'Interested' },
+    INTERESTED:           { bg: 'rgba(200,148,77,0.12)',  border: 'rgba(200,148,77,0.40)',  fg: '#86EFAC', label: 'Interested' },
     ASSISTANCE_REQUESTED: { bg: 'rgba(245,158,11,0.18)', border: 'rgba(245,158,11,0.45)', fg: '#FCD34D', label: 'Help requested' },
     APPLIED:              { bg: 'rgba(59,130,246,0.18)', border: 'rgba(59,130,246,0.45)', fg: '#93C5FD', label: 'Applied' },
     CONTACTED:            { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.10)', fg: 'rgba(255,255,255,0.78)', label: 'Contacted' },
@@ -622,9 +622,9 @@ const S = {
     fontSize: '0.6875rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
     padding: '0.2rem 0.6rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: C.lightGreen,
-    border: '1px solid rgba(34,197,94,0.40)',
+    border: '1px solid rgba(200,148,77,0.40)',
   },
   samplePill: {
     fontSize: '0.6875rem', fontWeight: 800,
@@ -687,8 +687,8 @@ const S = {
     fontSize: '0.8125rem',
   },
   actionsSection: {
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.30)',
     borderRadius: '16px',
     padding: '1.25rem',
     display: 'flex', flexDirection: 'column', gap: '0.75rem',
@@ -700,7 +700,7 @@ const S = {
     padding: '0.85rem 1.25rem', borderRadius: '12px',
     border: 'none', background: C.green, color: C.white,
     fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 8px 22px rgba(34,197,94,0.25)',
+    boxShadow: '0 8px 22px rgba(200,148,77,0.25)',
     textDecoration: 'none',
   },
   btnSecondary: {
@@ -742,8 +742,8 @@ const S = {
   flash: {
     margin: '0.5rem 0 0', color: C.lightGreen,
     fontSize: '0.875rem', fontWeight: 700,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.30)',
     borderRadius: '10px',
     padding: '0.5rem 0.75rem',
   },
@@ -760,8 +760,8 @@ const factStyles = {
     display: 'flex', flexDirection: 'column', gap: '0.15rem',
   },
   factHighlight: {
-    background: 'rgba(34,197,94,0.08)',
-    borderColor: 'rgba(34,197,94,0.35)',
+    background: 'rgba(200,148,77,0.08)',
+    borderColor: 'rgba(200,148,77,0.35)',
   },
   factLabel: {
     color: C.lightGreen,
@@ -815,7 +815,7 @@ const modalStyles = {
     padding: '0.85rem 1.25rem', borderRadius: '12px',
     border: 'none', background: C.green, color: C.white,
     fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 8px 20px rgba(34,197,94,0.25)',
+    boxShadow: '0 8px 20px rgba(200,148,77,0.25)',
   },
   privacy: { margin: 0, color: 'rgba(255,255,255,0.55)',
              fontSize: '0.8125rem', lineHeight: 1.45 },

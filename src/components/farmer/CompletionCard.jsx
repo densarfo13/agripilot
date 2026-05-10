@@ -146,7 +146,7 @@ export default function CompletionCard({
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={S.checkSvg}>
               <path
                 d="M9 16.5L14 21.5L23 11.5"
-                stroke="#22C55E"
+                stroke="#C8944D"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -290,7 +290,7 @@ export default function CompletionCard({
           <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
             <path
               d="M9 16.5L14 21.5L23 11.5"
-              stroke="#22C55E"
+              stroke="#C8944D"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -459,8 +459,8 @@ const S = {
     gap: '0.75rem',
     padding: '2rem 1.5rem',
     borderRadius: '22px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.14)',
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     textAlign: 'center',
     animation: 'farroway-scale-in 0.35s ease-out',
@@ -477,8 +477,8 @@ const S = {
     width: '72px',
     height: '72px',
     borderRadius: '50%',
-    background: 'rgba(34,197,94,0.1)',
-    border: '2px solid rgba(34,197,94,0.25)',
+    background: 'rgba(200,148,77,0.1)',
+    border: '2px solid rgba(200,148,77,0.25)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -525,7 +525,7 @@ const S = {
   },
   progressChip: {
     fontSize: '0.8125rem',
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 700,
   },
   nextPreview: {
@@ -562,14 +562,14 @@ const S = {
     width: '100%',
     padding: '0.9375rem 1rem',
     borderRadius: '16px',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     border: 'none',
     fontSize: '1.0625rem',
     fontWeight: 800,
     cursor: 'pointer',
     minHeight: '52px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     marginTop: '0.375rem',
     WebkitTapHighlightColor: 'transparent',
     touchAction: 'manipulation',
@@ -652,10 +652,10 @@ const S = {
     transition: 'all 0.18s ease',
   },
   followUpBtnSelected: {
-    background: 'rgba(34,197,94,0.20)',
-    border: '1px solid #22C55E',
+    background: 'rgba(200,148,77,0.20)',
+    border: '1px solid #C8944D',
     color: '#ffffff',
-    boxShadow: 'inset 0 0 0 1px rgba(34,197,94,0.45), 0 0 0 2px rgba(34,197,94,0.15)',
+    boxShadow: 'inset 0 0 0 1px rgba(200,148,77,0.45), 0 0 0 2px rgba(200,148,77,0.15)',
   },
   primaryBtnDisabled: {
     opacity: 0.45,
@@ -666,8 +666,8 @@ const S = {
   // ═══ Standard variant ═══
   standardCard: {
     borderRadius: '20px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.14)',
     padding: '1.25rem',
     boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
     animation: 'farroway-scale-in 0.35s ease-out',
@@ -687,8 +687,8 @@ const S = {
     width: '48px',
     height: '48px',
     borderRadius: '50%',
-    background: 'rgba(34,197,94,0.1)',
-    border: '2px solid rgba(34,197,94,0.25)',
+    background: 'rgba(200,148,77,0.1)',
+    border: '2px solid rgba(200,148,77,0.25)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -726,7 +726,7 @@ const S = {
   },
   progressChipCompact: {
     fontSize: '0.75rem',
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 700,
   },
   nextPreviewCompact: {
@@ -765,14 +765,14 @@ const S = {
     flex: 1,
     padding: '0.875rem 1rem',
     borderRadius: '14px',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     border: 'none',
     fontSize: '0.9375rem',
     fontWeight: 800,
     cursor: 'pointer',
     minHeight: '48px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     WebkitTapHighlightColor: 'transparent',
     touchAction: 'manipulation',
     position: 'relative',

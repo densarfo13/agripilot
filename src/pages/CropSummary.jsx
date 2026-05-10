@@ -51,10 +51,10 @@ const RISK_ICONS = {
 };
 
 const LEVEL_COLORS = {
-  low: '#22C55E', moderate: '#F59E0B', high: '#EF4444',
+  low: '#C8944D', moderate: '#F59E0B', high: '#EF4444',
 };
 const DIFF_COLORS = {
-  beginner: '#22C55E', moderate: '#F59E0B', advanced: '#EF4444',
+  beginner: '#C8944D', moderate: '#F59E0B', advanced: '#EF4444',
 };
 
 export default function CropSummary() {
@@ -422,10 +422,10 @@ const S = {
     marginTop: '0.125rem',
   },
   timingFit: {
-    fontSize: '0.75rem', fontWeight: 700, color: '#22C55E',
+    fontSize: '0.75rem', fontWeight: 700, color: '#C8944D',
     padding: '0.375rem 0.75rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.18)',
     marginTop: '0.5rem',
   },
   overviewStats: {
@@ -460,7 +460,7 @@ const S = {
   stageRow: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
   stageNum: {
     width: '20px', height: '20px', borderRadius: '50%',
-    background: 'rgba(34,197,94,0.12)', color: '#22C55E',
+    background: 'rgba(200,148,77,0.12)', color: '#C8944D',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '0.625rem', fontWeight: 800, flexShrink: 0,
   },
@@ -495,7 +495,7 @@ const S = {
   fitList: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
   fitRow: { display: 'flex', alignItems: 'center', gap: '0.375rem' },
   fitCheck: { fontSize: '0.75rem', flexShrink: 0 },
-  fitText: { fontSize: '0.8125rem', fontWeight: 600, color: '#22C55E' },
+  fitText: { fontSize: '0.8125rem', fontWeight: 600, color: '#C8944D' },
 
   // ─── Start CTA ──────────────
   errorBox: {
@@ -506,11 +506,11 @@ const S = {
   },
   startBtn: {
     width: '100%', padding: '1rem',
-    borderRadius: '16px', background: '#22C55E',
+    borderRadius: '16px', background: '#C8944D',
     color: '#fff', border: 'none',
     fontSize: '1.0625rem', fontWeight: 800,
     cursor: 'pointer', minHeight: '56px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     marginTop: '0.5rem',
     WebkitTapHighlightColor: 'transparent',
   },

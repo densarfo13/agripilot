@@ -205,7 +205,7 @@ const S = {
     fontSize: '0.9375rem',
   },
   primaryBtn: {
-    background: '#22C55E', color: '#fff',
+    background: '#C8944D', color: '#fff',
     border: 'none', borderRadius: '12px',
     padding: '0.5rem 0.875rem',
     fontSize: '0.875rem', fontWeight: 800,

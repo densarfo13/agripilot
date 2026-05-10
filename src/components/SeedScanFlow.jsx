@@ -71,11 +71,11 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   seedChipActive: {
-    borderColor: '#16a34a', background: '#dcfce7', color: '#166534',
+    borderColor: '#B9853F', background: '#dcfce7', color: '#166534',
   },
   saveBtn: (disabled) => ({
     padding: '12px 20px', borderRadius: '8px', border: 'none',
-    background: disabled ? '#9ca3af' : '#16a34a', color: '#fff', fontSize: '16px',
+    background: disabled ? '#9ca3af' : '#B9853F', color: '#fff', fontSize: '16px',
     fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
     width: '100%', minHeight: '48px', marginTop: '8px',
   }),
@@ -86,7 +86,7 @@ const S = {
     textDecoration: 'underline',
   },
   status: { fontSize: '13px', marginTop: '8px', textAlign: 'center' },
-  success: { color: '#16a34a' },
+  success: { color: '#B9853F' },
   error: { color: '#dc2626' },
   scanList: { listStyle: 'none', padding: 0, margin: '8px 0' },
   scanItem: {
@@ -199,7 +199,7 @@ export default function SeedScanFlow({ existingScans, onSaved, onSkip }) {
         <div style={S.title}>{t('seedScan.title')}</div>
         {scansList}
         {status && <div style={{ ...S.status, ...S.success }}>{status.msg}</div>}
-        <button style={{ ...S.scanBtn, borderColor: '#16a34a', color: '#16a34a' }} onClick={resetFlow}>
+        <button style={{ ...S.scanBtn, borderColor: '#B9853F', color: '#B9853F' }} onClick={resetFlow}>
           {t('seedScan.scanAnother')}
         </button>
         <button style={S.skipBtn} onClick={handleSkip}>

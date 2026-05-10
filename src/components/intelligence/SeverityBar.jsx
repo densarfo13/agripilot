@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../i18n/index.js';
 
 function barColor(score) {
-  if (score <= 25) return '#22C55E';
+  if (score <= 25) return '#C8944D';
   if (score <= 50) return '#FBBF24';
   if (score <= 75) return '#FB923C';
   return '#EF4444';

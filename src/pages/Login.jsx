@@ -584,7 +584,7 @@ export default function Login() {
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', color: '#EAF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
   loadingInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' },
-  spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
+  spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
   brand: { fontSize: '1.25rem', fontWeight: 700, color: '#EAF2FF', letterSpacing: '0.02em' },
   splashTagline: {
     margin: 0, color: 'rgba(255,255,255,0.72)',
@@ -609,7 +609,7 @@ const S = {
   errorBox: { background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.14)', borderRadius: '14px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
   forgotRow: { textAlign: 'right' },
   link: { color: '#9FB3C8', textDecoration: 'none', fontSize: '0.875rem' },
-  button: { background: '#22C55E', color: '#fff', border: 'none', borderRadius: '14px', padding: '0.875rem 1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', width: '100%', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
+  button: { background: '#C8944D', color: '#fff', border: 'none', borderRadius: '14px', padding: '0.875rem 1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', width: '100%', boxShadow: '0 10px 24px rgba(200,148,77,0.22)' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   footerText: { textAlign: 'center', color: '#6F8299', fontSize: '0.875rem', marginTop: '1.5rem' },
   // Email / Phone method toggle
@@ -628,7 +628,7 @@ const S = {
     transition: 'background-color 120ms ease, color 120ms ease',
   },
   methodBtnActive: {
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: '#86EFAC',
   },
   // MFA-specific styles

@@ -12,7 +12,7 @@ const S = {
   desc: { fontSize: '14px', color: '#6b7280', marginBottom: '12px', lineHeight: 1.4 },
   methodRow: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' },
   methodBtn: (active) => ({
-    padding: '10px 14px', borderRadius: '8px', border: active ? '2px solid #16a34a' : '1px solid #d1d5db',
+    padding: '10px 14px', borderRadius: '8px', border: active ? '2px solid #B9853F' : '1px solid #d1d5db',
     background: active ? '#f0fdf4' : '#fff', fontSize: '14px', cursor: 'pointer',
     fontWeight: active ? 600 : 400, minHeight: '44px', flex: '1 1 45%',
   }),
@@ -27,7 +27,7 @@ const S = {
   },
   saveBtn: (disabled) => ({
     padding: '12px 20px', borderRadius: '8px', border: 'none',
-    background: disabled ? '#9ca3af' : '#16a34a', color: '#fff', fontSize: '16px',
+    background: disabled ? '#9ca3af' : '#B9853F', color: '#fff', fontSize: '16px',
     fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
     width: '100%', minHeight: '48px',
   }),
@@ -38,7 +38,7 @@ const S = {
     textDecoration: 'underline',
   },
   status: { fontSize: '13px', marginTop: '8px', textAlign: 'center' },
-  success: { color: '#16a34a' },
+  success: { color: '#B9853F' },
   error: { color: '#dc2626' },
   savedArea: {
     background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px',

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../i18n/index.js';
 
 const LEVEL_COLORS = {
-  low: '#22C55E',
+  low: '#C8944D',
   moderate: '#FBBF24',
   high: '#FB923C',
   urgent: '#EF4444',

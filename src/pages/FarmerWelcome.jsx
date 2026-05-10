@@ -252,7 +252,7 @@ const S = {
     width: '2rem',
     height: '2rem',
     border: '3px solid rgba(255,255,255,0.06)',
-    borderTopColor: '#22C55E',
+    borderTopColor: '#C8944D',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },
@@ -281,7 +281,7 @@ const S = {
   brandName: {
     fontSize: '1.5rem',
     fontWeight: 800,
-    color: '#22C55E',
+    color: '#C8944D',
     letterSpacing: '0.01em',
   },
   title: {
@@ -350,7 +350,7 @@ const S = {
     letterSpacing: '0.02em',
   },
   primaryBtn: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     border: 'none',
     borderRadius: '14px',
@@ -360,7 +360,7 @@ const S = {
     cursor: 'pointer',
     width: '100%',
     minHeight: '52px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     marginTop: '0.375rem',
     WebkitTapHighlightColor: 'transparent',
   },

@@ -204,7 +204,7 @@ export default function FarmerRegisterPage() {
             style={{ marginBottom: '0.25rem' }}
           />
           {form.latitude && (
-            <div style={{ fontSize: '0.78rem', color: '#22C55E', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '0.78rem', color: '#C8944D', marginBottom: '0.5rem' }}>
               Location found — fields updated below.
             </div>
           )}
@@ -253,7 +253,7 @@ export default function FarmerRegisterPage() {
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
-            Already have an account? <Link to="/login" style={{ color: '#22C55E' }}>Sign In</Link>
+            Already have an account? <Link to="/login" style={{ color: '#C8944D' }}>Sign In</Link>
           </p>
         </form>
       </div>
@@ -284,7 +284,7 @@ const styles = {
     letterSpacing: '0.05em', marginTop: '0.25rem',
   },
   button: {
-    padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none', borderRadius: '6px',
+    padding: '0.75rem', background: '#C8944D', color: '#fff', border: 'none', borderRadius: '6px',
     fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', marginTop: '0.5rem',
   },
   error: {
@@ -292,7 +292,7 @@ const styles = {
     fontSize: '0.875rem', textAlign: 'center',
   },
   successIcon: {
-    width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(34,197,94,0.2)', color: '#22C55E',
+    width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(200,148,77,0.2)', color: '#C8944D',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem',
     fontWeight: 700, margin: '0 auto 1rem',
   },

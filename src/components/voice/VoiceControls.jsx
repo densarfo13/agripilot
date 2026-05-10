@@ -56,8 +56,8 @@ const STYLES = {
     lineHeight: 1,
   },
   btnActive: {
-    background: 'rgba(34,197,94,0.22)',
-    borderColor: 'rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.22)',
+    borderColor: 'rgba(200,148,77,0.45)',
   },
   fallback: {
     fontSize: 11,

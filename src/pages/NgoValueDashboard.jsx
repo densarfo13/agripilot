@@ -169,8 +169,8 @@ const S = {
     justifyContent: 'center',
   },
   tileAccent: {
-    border: '1px solid rgba(34,197,94,0.35)',
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.10) 0%, rgba(15,32,52,0.9) 100%)',
+    border: '1px solid rgba(200,148,77,0.35)',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.10) 0%, rgba(15,32,52,0.9) 100%)',
   },
   tileLabel: {
     fontSize: '0.75rem',
@@ -197,7 +197,7 @@ const S = {
     letterSpacing: '0.05em',
     fontWeight: 600,
   },
-  billingValue: { fontSize: '1.875rem', fontWeight: 800, color: '#22C55E' },
+  billingValue: { fontSize: '1.875rem', fontWeight: 800, color: '#C8944D' },
   billingPeriod: {
     fontSize: '0.9375rem',
     color: 'rgba(255,255,255,0.55)',

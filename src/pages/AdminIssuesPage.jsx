@@ -25,8 +25,8 @@ const STATUSES = [
 const STATUS_STYLE = {
   OPEN: { background: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   IN_PROGRESS: { background: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
-  FIXED: { background: 'rgba(34,197,94,0.15)', color: '#22C55E' },
-  VERIFIED: { background: 'rgba(34,197,94,0.25)', color: '#059669' },
+  FIXED: { background: 'rgba(200,148,77,0.15)', color: '#C8944D' },
+  VERIFIED: { background: 'rgba(200,148,77,0.25)', color: '#059669' },
 };
 const STATUS_LABEL = { OPEN: 'Open', IN_PROGRESS: 'In Progress', FIXED: 'Fixed', VERIFIED: 'Verified' };
 const PRIORITY_DOT = { HIGH: '#EF4444', MEDIUM: '#F59E0B', LOW: '#71717A' };
@@ -390,7 +390,7 @@ export default function AdminIssuesPage() {
                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.3rem 0', borderBottom: '1px solid #1E293B' }}>
                   <span style={{ flex: 1, fontSize: '0.82rem', color: '#E5E7EB' }}>{key.replace(/_/g, ' ')}</span>
                   <label style={{ fontSize: '0.75rem', color: '#A1A1AA', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    <input type="checkbox" checked={val.inApp !== false} onChange={(e) => savePrefs(key, 'inApp', e.target.checked)} style={{ accentColor: '#22C55E' }} /> In-app
+                    <input type="checkbox" checked={val.inApp !== false} onChange={(e) => savePrefs(key, 'inApp', e.target.checked)} style={{ accentColor: '#C8944D' }} /> In-app
                   </label>
                   <label style={{ fontSize: '0.75rem', color: '#A1A1AA', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                     <input type="checkbox" checked={val.email === true} onChange={(e) => savePrefs(key, 'email', e.target.checked)} style={{ accentColor: '#38BDF8' }} /> Email
@@ -484,7 +484,7 @@ export default function AdminIssuesPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: '0.72rem', color: '#A1A1AA', fontWeight: 600, textTransform: 'uppercase' }}>Avg Resolution Time</div>
-                    <div style={{ fontSize: '1.1rem', color: '#22C55E', fontWeight: 700 }}>
+                    <div style={{ fontSize: '1.1rem', color: '#C8944D', fontWeight: 700 }}>
                       {insights.sla.avgResolveHrs !== null ? `${insights.sla.avgResolveHrs}h` : '—'}
                     </div>
                     <div style={{ fontSize: '0.68rem', color: '#71717A' }}>{insights.sla.sampledResolved} issues</div>
@@ -614,7 +614,7 @@ export default function AdminIssuesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 0.25rem' }}>
               <input type="checkbox" checked={selectedIds.length === issues.length && issues.length > 0}
-                onChange={toggleSelectAll} title="Select all" style={{ accentColor: '#22C55E' }} />
+                onChange={toggleSelectAll} title="Select all" style={{ accentColor: '#C8944D' }} />
               <span style={{ fontSize: '0.75rem', color: '#71717A' }}>Select all on page</span>
             </div>
             {issues.map((issue) => {
@@ -628,7 +628,7 @@ export default function AdminIssuesPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
                       <div onClick={(e) => e.stopPropagation()} style={{ paddingTop: '0.15rem' }}>
                         <input type="checkbox" checked={selectedIds.includes(issue.id)}
-                          onChange={() => toggleSelect(issue.id)} style={{ accentColor: '#22C55E' }} />
+                          onChange={() => toggleSelect(issue.id)} style={{ accentColor: '#C8944D' }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
@@ -829,7 +829,7 @@ export default function AdminIssuesPage() {
                           </button>
                         )}
                         {issue.status === 'IN_PROGRESS' && (
-                          <button className="btn btn-outline btn-sm" style={{ color: '#22C55E', borderColor: '#22C55E', fontSize: '0.72rem' }}
+                          <button className="btn btn-outline btn-sm" style={{ color: '#C8944D', borderColor: '#C8944D', fontSize: '0.72rem' }}
                             disabled={actionLoading[issue.id]} onClick={() => updateIssue(issue.id, { status: 'FIXED' })}>
                             {actionLoading[issue.id] ? '...' : 'Fixed'}
                           </button>

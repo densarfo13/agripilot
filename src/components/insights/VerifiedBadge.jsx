@@ -24,8 +24,8 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 
 const TONES = {
-  high:  { color: '#86EFAC', bg: 'rgba(34,197,94,0.14)',  border: 'rgba(34,197,94,0.45)' },
-  mid:   { color: '#86EFAC', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.28)' },
+  high:  { color: '#86EFAC', bg: 'rgba(200,148,77,0.14)',  border: 'rgba(200,148,77,0.45)' },
+  mid:   { color: '#86EFAC', bg: 'rgba(200,148,77,0.08)',  border: 'rgba(200,148,77,0.28)' },
   low:   { color: 'rgba(255,255,255,0.78)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.18)' },
 };
 

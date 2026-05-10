@@ -317,11 +317,11 @@ export default function VoiceAssistant() {
     width: simpleMode ? 76 : 64,
     height: simpleMode ? 76 : 64,
     borderRadius: '50%',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     background:
       state === STATE.LISTENING ? 'rgba(239,68,68,0.22)'
       : state === STATE.PROMPTING ? 'rgba(245,158,11,0.22)'
-      : 'rgba(34,197,94,0.22)',
+      : 'rgba(200,148,77,0.22)',
     color: '#fff',
     fontSize: simpleMode ? 36 : 30,
     cursor: 'pointer',

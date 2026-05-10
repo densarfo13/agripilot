@@ -34,14 +34,14 @@ function _defaultLeafIcon() {
     <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden="true">
       <path
         d="M24 6c-8 8-8 18 0 30 8-12 8-22 0-30z"
-        fill="rgba(34,197,94,0.18)"
+        fill="rgba(200,148,77,0.18)"
         stroke="rgba(134,239,172,0.85)"
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
       <path
         d="M24 8v28"
-        stroke="rgba(34,197,94,0.55)"
+        stroke="rgba(200,148,77,0.55)"
         strokeWidth="1.4"
         strokeLinecap="round"
       />

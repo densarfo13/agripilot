@@ -29,8 +29,8 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 
 const C = {
-  green:  '#22C55E',
-  ink:    '#062714',
+  green:  '#C8944D',
+  ink:    '#FFFFFF',
   inkAlt: 'rgba(6,39,20,0.75)',
 };
 
@@ -57,7 +57,7 @@ const S = {
     display:       'flex',
     flexDirection: 'column',
     gap:           4,
-    boxShadow:     '0 12px 32px rgba(34,197,94,0.40)',
+    boxShadow:     '0 12px 32px rgba(200,148,77,0.40)',
     animation:     'farroway-toast-up 220ms ease-out',
     cursor:        'pointer',
   },

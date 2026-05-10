@@ -263,7 +263,7 @@ const S = {
                  fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' },
   resendBtnDisabled: { opacity: 0.5, cursor: 'not-allowed' },
   link:        { color: '#86EFAC', textDecoration: 'none', fontSize: '0.875rem' },
-  button:      { background: '#22C55E', color: '#000', border: 'none',
+  button:      { background: '#C8944D', color: '#000', border: 'none',
                  borderRadius: '12px', padding: '0.75rem 1rem',
                  fontWeight: 600, fontSize: '1rem', cursor: 'pointer', width: '100%' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },

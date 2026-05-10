@@ -129,7 +129,7 @@ function Spinner() {
       <circle cx="20" cy="20" r="16" fill="none"
               stroke="rgba(255,255,255,0.12)" strokeWidth="3" />
       <path d="M20 4 A16 16 0 0 1 36 20"
-            fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round">
+            fill="none" stroke="#C8944D" strokeWidth="3" strokeLinecap="round">
         <animateTransform
           attributeName="transform"
           type="rotate"
@@ -191,7 +191,7 @@ const S = {
                     justifyContent: 'center', marginTop: '0.25rem' },
 
   primaryBtn: { padding: '0.625rem 1rem', borderRadius: 10, border: 'none',
-                background: '#22C55E', color: '#07210E', fontWeight: 700,
+                background: '#C8944D', color: '#07210E', fontWeight: 700,
                 fontSize: '0.875rem', cursor: 'pointer', textDecoration: 'none',
                 display: 'inline-block' },
   secondaryBtn:{ padding: '0.625rem 1rem', borderRadius: 10,

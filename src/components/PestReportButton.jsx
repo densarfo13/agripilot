@@ -96,8 +96,8 @@ const S = {
   },
   btnBusy: { opacity: 0.7, cursor: 'wait' },
   btnDone: {
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,32,52,0.9) 100%)',
-    border: '1px solid rgba(34,197,94,0.55)',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.18) 0%, rgba(15,32,52,0.9) 100%)',
+    border: '1px solid rgba(200,148,77,0.55)',
     color: '#86EFAC',
   },
   icon: { fontSize: '1.25rem', lineHeight: 1 },

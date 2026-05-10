@@ -335,7 +335,7 @@ const S = {
   },
   progressFill: {
     height: '100%',
-    background: '#22C55E',
+    background: '#C8944D',
     borderRadius: '2px',
     transition: 'width 0.3s ease',
   },
@@ -411,9 +411,9 @@ const S = {
     transition: 'background 0.15s ease, border-color 0.15s ease',
   },
   optionSelected: {
-    background: 'rgba(34,197,94,0.1)',
-    borderColor: '#22C55E',
-    color: '#22C55E',
+    background: 'rgba(200,148,77,0.1)',
+    borderColor: '#C8944D',
+    color: '#C8944D',
   },
   skipBtn: {
     width: '100%',

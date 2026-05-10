@@ -32,7 +32,7 @@ const ISSUES = [
 ];
 
 const SEVERITIES = [
-  { id: 'low',    color: '#22C55E', key: 'outbreak.severityLow'    },
+  { id: 'low',    color: '#C8944D', key: 'outbreak.severityLow'    },
   { id: 'medium', color: '#F59E0B', key: 'outbreak.severityMedium' },
   { id: 'high',   color: '#EF4444', key: 'outbreak.severityHigh'   },
 ];
@@ -314,7 +314,7 @@ const S = {
   crop: {
     fontSize: '0.75rem', fontWeight: 700, color: '#86EFAC',
     padding: '0.25rem 0.5rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)',
+    background: 'rgba(200,148,77,0.12)', border: '1px solid rgba(200,148,77,0.35)',
   },
   close: {
     width: '36px', height: '36px', borderRadius: '10px',
@@ -340,8 +340,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   tileActive: {
-    background: 'rgba(34,197,94,0.14)',
-    borderColor: 'rgba(34,197,94,0.55)',
+    background: 'rgba(200,148,77,0.14)',
+    borderColor: 'rgba(200,148,77,0.55)',
     color: '#DCFCE7',
   },
   tileIcon: { fontSize: '1.75rem', lineHeight: 1 },
@@ -357,8 +357,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   chipActive: {
-    background: 'rgba(34,197,94,0.18)',
-    borderColor: 'rgba(34,197,94,0.55)',
+    background: 'rgba(200,148,77,0.18)',
+    borderColor: 'rgba(200,148,77,0.55)',
     color: '#DCFCE7',
   },
   label: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
@@ -390,7 +390,7 @@ const S = {
     padding: '0.625rem 1rem',
     borderRadius: '14px',
     border: 'none',
-    background: '#22C55E', color: '#fff',
+    background: '#C8944D', color: '#fff',
     fontSize: '1.125rem', fontWeight: 800, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
   },
@@ -410,9 +410,9 @@ const S = {
   savedIcon: {
     width: '52px', height: '52px',
     borderRadius: '50%',
-    background: 'rgba(34,197,94,0.18)',
-    border: '1px solid rgba(34,197,94,0.55)',
-    color: '#22C55E', fontSize: '1.5rem', fontWeight: 800,
+    background: 'rgba(200,148,77,0.18)',
+    border: '1px solid rgba(200,148,77,0.55)',
+    color: '#C8944D', fontSize: '1.5rem', fontWeight: 800,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   savedMsg: {

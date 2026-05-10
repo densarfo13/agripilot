@@ -593,8 +593,8 @@ const S = {
   title:  { margin: 0, fontSize: '1.375rem', fontWeight: 800 },
   sub:    { margin: '0 0 14px', color: '#9FB3C8', fontSize: 12 },
   refresh: {
-    background: '#22C55E',
-    color: '#062714',
+    background: '#C8944D',
+    color: '#FFFFFF',
     border: 'none',
     borderRadius: 10,
     padding: '8px 14px',
@@ -700,7 +700,7 @@ const S = {
     borderBottom: '1px solid rgba(255,255,255,0.04)',
   },
   listLabel: { color: '#EAF2FF' },
-  listCount: { color: '#22C55E', fontWeight: 700 },
+  listCount: { color: '#C8944D', fontWeight: 700 },
   footer: {
     marginTop: 12,
     fontSize: 10,

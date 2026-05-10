@@ -556,8 +556,8 @@ function buildStyles() {
     },
     exportBtn: {
       padding: '8px 12px', borderRadius: 8,
-      border: '1px solid rgba(34,197,94,0.3)',
-      background: 'rgba(34,197,94,0.12)', color: '#86EFAC',
+      border: '1px solid rgba(200,148,77,0.3)',
+      background: 'rgba(200,148,77,0.12)', color: '#86EFAC',
       fontSize: 13, fontWeight: 600, cursor: 'pointer',
     },
     info:  { padding: 16, fontSize: 14, color: 'rgba(230,244,234,0.7)' },
@@ -601,7 +601,7 @@ function buildStyles() {
     distTrack: { height: 8, borderRadius: 4,
                   background: 'rgba(255,255,255,0.06)', overflow: 'hidden' },
     distFill:  { height: '100%',
-                  background: 'linear-gradient(90deg, #22C55Eaa, #22C55E)',
+                  background: 'linear-gradient(90deg, #C8944Daa, #C8944D)',
                   borderRadius: 4 },
     distShare: { fontSize: 12, color: 'rgba(230,244,234,0.7)', textAlign: 'right' },
     filterRow: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 },
@@ -650,7 +650,7 @@ function buildStyles() {
     },
     trendBar: {
       width: 18, borderRadius: 3,
-      background: 'linear-gradient(180deg, #22C55E, #22C55Eaa)',
+      background: 'linear-gradient(180deg, #C8944D, #C8944Daa)',
       minHeight: 4,
     },
     trendLabel: { fontSize: 10, color: 'rgba(230,244,234,0.7)' },

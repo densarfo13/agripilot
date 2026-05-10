@@ -71,17 +71,17 @@ const S = {
   },
   cardActive: {
     padding: '0.875rem 1rem', borderRadius: '14px',
-    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.22)',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.22)',
     color: '#EAF2FF', display: 'flex', flexDirection: 'column', gap: '0.5rem',
   },
   title: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
-  titleActive: { fontSize: '0.75rem', color: '#22C55E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
+  titleActive: { fontSize: '0.75rem', color: '#C8944D', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' },
   value: { fontSize: '1rem', fontWeight: 700 },
   body: { fontSize: '0.8125rem', color: '#9FB3C8', margin: '0.25rem 0 0', lineHeight: 1.4 },
   ctaRow: { display: 'flex', gap: '0.5rem' },
   useBtn: {
     flex: 1, padding: '0.625rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
   },
   changeBtn: {

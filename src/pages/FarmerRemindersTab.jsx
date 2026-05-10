@@ -224,7 +224,7 @@ export default function FarmerRemindersTab() {
                         <td><span className={`badge badge-${r.reminderType}`}>{r.reminderType?.replace(/_/g, ' ')}</span></td>
                         <td style={{ fontWeight: 500 }}>{r.title}</td>
                         <td className="text-sm text-muted">{r.message}</td>
-                        <td>{r.completed ? <span style={{ color: '#16a34a', fontWeight: 500 }}>Done</span> : <span style={{ color: '#d97706' }}>Pending</span>}</td>
+                        <td>{r.completed ? <span style={{ color: '#B9853F', fontWeight: 500 }}>Done</span> : <span style={{ color: '#d97706' }}>Pending</span>}</td>
                         <td>
                           {!r.completed && (
                             <div className="flex gap-1">

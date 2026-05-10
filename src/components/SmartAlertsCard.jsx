@@ -199,7 +199,7 @@ function PriorityDot({ priority }) {
 function toneForPriority(priority) {
   if (priority === 'high')   return { borderColor: 'rgba(239,68,68,0.32)' };
   if (priority === 'medium') return { borderColor: 'rgba(252,211,77,0.32)' };
-  return { borderColor: 'rgba(34,197,94,0.32)' };
+  return { borderColor: 'rgba(200,148,77,0.32)' };
 }
 
 // ─── Dismiss state ───────────────────────────────────────────────

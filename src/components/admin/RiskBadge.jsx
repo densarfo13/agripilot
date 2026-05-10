@@ -31,7 +31,7 @@ import {
 const TONE = Object.freeze({
   high:    { bg: 'rgba(239,68,68,0.18)',  fg: '#FCA5A5', border: 'rgba(239,68,68,0.45)'  },
   medium:  { bg: 'rgba(245,158,11,0.18)', fg: '#FDE68A', border: 'rgba(245,158,11,0.45)' },
-  low:     { bg: 'rgba(34,197,94,0.18)',  fg: '#86EFAC', border: 'rgba(34,197,94,0.45)'  },
+  low:     { bg: 'rgba(200,148,77,0.18)',  fg: '#86EFAC', border: 'rgba(200,148,77,0.45)'  },
 });
 
 export default function RiskBadge({

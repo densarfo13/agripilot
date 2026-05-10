@@ -329,8 +329,8 @@ const S = {
   questionBtn: {
     padding: '0.625rem 0.75rem',
     borderRadius: 12,
-    border: '1px solid rgba(34,197,94,0.28)',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.28)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#EAF2FF',
     fontSize: '0.8125rem',
     fontWeight: 600,

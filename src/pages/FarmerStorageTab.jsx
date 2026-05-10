@@ -12,7 +12,7 @@ const STORAGE_METHODS = ['sealed_bags', 'hermetic_bag', 'open_air', 'warehouse',
 const STORAGE_CONDITIONS = ['good', 'fair', 'poor', 'deteriorating', 'unknown'];
 
 const CONDITION_COLORS = {
-  good: '#16a34a',
+  good: '#B9853F',
   fair: '#d97706',
   poor: '#dc2626',
   deteriorating: '#dc2626',
@@ -103,11 +103,11 @@ export default function FarmerStorageTab() {
           </div>
           <div className="stat-card">
             <div className="stat-label">{tStrict('farmerActions.readyToSell', 'Ready to Sell')}</div>
-            <div className="stat-value" style={{ color: '#16a34a' }}>{dashboard.readyToSell}</div>
+            <div className="stat-value" style={{ color: '#B9853F' }}>{dashboard.readyToSell}</div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Condition Issues</div>
-            <div className="stat-value" style={{ color: (dashboard.conditionBreakdown?.poor || 0) + (dashboard.conditionBreakdown?.deteriorating || 0) > 0 ? '#dc2626' : '#16a34a' }}>
+            <div className="stat-value" style={{ color: (dashboard.conditionBreakdown?.poor || 0) + (dashboard.conditionBreakdown?.deteriorating || 0) > 0 ? '#dc2626' : '#B9853F' }}>
               {(dashboard.conditionBreakdown?.poor || 0) + (dashboard.conditionBreakdown?.deteriorating || 0)}
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function FarmerStorageTab() {
                             {tStorageCondition(item.storageCondition)}
                           </span>
                           {item.readyToSell && (
-                            <span style={{ color: '#16a34a', fontSize: '0.85rem', fontWeight: 500 }}>{tStrict('farmerActions.readyToSell', 'Ready to sell')}</span>
+                            <span style={{ color: '#B9853F', fontSize: '0.85rem', fontWeight: 500 }}>{tStrict('farmerActions.readyToSell', 'Ready to sell')}</span>
                           )}
                           {item.isOverStorageLimit && (
                             <span style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 600 }}>Over storage limit!</span>

@@ -20,7 +20,7 @@ function levelColor(level) {
 function statusStyle(status) {
   switch (status) {
     case 'pending':    return { bg: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
-    case 'sent':       return { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' };
+    case 'sent':       return { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' };
     case 'suppressed': return { bg: 'rgba(255,255,255,0.08)', color: '#64748B' };
     case 'expired':    return { bg: 'rgba(255,255,255,0.05)', color: '#475569' };
     default:           return { bg: 'rgba(255,255,255,0.08)', color: '#94A3B8' };
@@ -137,7 +137,7 @@ export default function AlertControlCenter() {
           {/* Stats bar */}
           <div style={S.statsRow}>
             {[
-              { label: 'Active Alerts', value: activeAlerts, color: '#22C55E' },
+              { label: 'Active Alerts', value: activeAlerts, color: '#C8944D' },
               { label: 'Pending', value: pendingCount, color: '#FBBF24' },
               { label: 'Suppressed', value: suppressedCount, color: '#64748B' },
               { label: 'Total', value: totalAlerts },
@@ -347,12 +347,12 @@ const S = {
   th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   td: { padding: '10px 12px', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
   btn: { padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', minHeight: '32px' },
-  btnGreen: { background: '#22C55E', color: '#fff' },
+  btnGreen: { background: '#C8944D', color: '#fff' },
   btnRed: { background: '#EF4444', color: '#fff' },
   btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
   badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
   expandedRow: { background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem' },
-  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#22C55E', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
+  spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
   emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
   errorBanner: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '0.75rem 1rem', color: '#FCA5A5', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 };

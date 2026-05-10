@@ -38,7 +38,7 @@ const C = {
   inkSoft: 'rgba(255,255,255,0.65)',
   border: 'rgba(255,255,255,0.10)',
   panel: 'rgba(255,255,255,0.04)',
-  green: '#22C55E',
+  green: '#C8944D',
   amber: '#F59E0B',
   red:   '#EF4444',
 };
@@ -98,8 +98,8 @@ const S = {
   cardValue: { fontSize: 28, fontWeight: 800, color: C.ink, marginTop: 4 },
   cardCopy:  { fontSize: 13, color: C.inkSoft, marginTop: 6, lineHeight: 1.4 },
   topFix: {
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
     borderRadius: 12,
     padding: 14,
     marginBottom: 18,

@@ -265,8 +265,8 @@ const S = {
     minHeight: 36,
   },
   confirmBtnYes: {
-    background: '#22C55E',
-    color: '#062714',
+    background: '#C8944D',
+    color: '#FFFFFF',
   },
   confirmBtnChange: {
     background: 'transparent',

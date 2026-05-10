@@ -811,8 +811,8 @@ const S = {
   // visibility, padding, and shadow so the card is unambiguously
   // the largest, highest-contrast surface above the fold.
   card: {
-    background: 'rgba(34,197,94,0.10)',
-    border: '1.5px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1.5px solid rgba(200,148,77,0.45)',
     borderRadius: 18,
     padding: '22px 20px 24px',
     boxShadow: '0 10px 32px rgba(0,0,0,0.28)',
@@ -871,9 +871,9 @@ const S = {
     border: '1px solid rgba(245,158,11,0.35)',
   },
   urgencyWeek: {
-    background: 'rgba(34,197,94,0.14)',
+    background: 'rgba(200,148,77,0.14)',
     color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.30)',
+    border: '1px solid rgba(200,148,77,0.30)',
   },
   detail: {
     fontSize: 14,
@@ -922,7 +922,7 @@ const S = {
   },
   cta: {
     appearance: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
     borderRadius: 12,
@@ -938,7 +938,7 @@ const S = {
   // Conversion §6 — pressed-state scale-down on tap.
   ctaPressed: {
     transform: 'scale(0.96)',
-    background: '#16A34A',
+    background: '#B9853F',
   },
   skip: {
     appearance: 'none',
@@ -954,8 +954,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   toast: {
-    background: 'rgba(34,197,94,0.16)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.16)',
+    border: '1px solid rgba(200,148,77,0.45)',
     color: '#86EFAC',
     borderRadius: 10,
     padding: '10px 12px',
@@ -967,7 +967,7 @@ const S = {
   },
   toastCheck: {
     fontSize: 16,
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 900,
   },
   // Data Moat §2 — health-feedback prompt block. Sits under the
@@ -1008,8 +1008,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   healthOptionHealthy: {
-    background: 'rgba(34,197,94,0.18)',
-    borderColor: 'rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.18)',
+    borderColor: 'rgba(200,148,77,0.45)',
     color: '#86EFAC',
   },
   healthOptionWorse: {

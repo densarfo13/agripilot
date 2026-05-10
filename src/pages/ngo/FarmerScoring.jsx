@@ -19,7 +19,7 @@ async function getJSON(p) {
   return r.json();
 }
 
-const BAND_COLOR = { excellent: '#22C55E', good: '#0EA5E9', fair: '#F59E0B', weak: '#EF4444' };
+const BAND_COLOR = { excellent: '#C8944D', good: '#0EA5E9', fair: '#F59E0B', weak: '#EF4444' };
 
 export default function FarmerScoring() {
   const { t } = useTranslation();

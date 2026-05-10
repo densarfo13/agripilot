@@ -210,11 +210,11 @@ export default function DashboardPage() {
   // Status breakdown for farmer overview
   const farmerStatuses = [];
   if (adoption) {
-    if (adoption.farmers?.approved) farmerStatuses.push({ label: 'Approved Farmers', count: adoption.farmers.approved, color: '#22C55E' });
+    if (adoption.farmers?.approved) farmerStatuses.push({ label: 'Approved Farmers', count: adoption.farmers.approved, color: '#C8944D' });
     if (adoption.farmers?.pendingApproval) farmerStatuses.push({ label: 'Pending', count: adoption.farmers.pendingApproval, color: '#F59E0B' });
     if (adoption.farmers?.invitedNotActivated) farmerStatuses.push({ label: 'Invited', count: adoption.farmers.invitedNotActivated, color: '#0EA5E9' });
-    if (adoption.adoption?.withSeason) farmerStatuses.push({ label: 'With Season', count: adoption.adoption.withSeason, color: '#16A34A' });
-    if (adoption.adoption?.withFirstUpdate) farmerStatuses.push({ label: 'Updating', count: adoption.adoption.withFirstUpdate, color: '#22C55E' });
+    if (adoption.adoption?.withSeason) farmerStatuses.push({ label: 'With Season', count: adoption.adoption.withSeason, color: '#B9853F' });
+    if (adoption.adoption?.withFirstUpdate) farmerStatuses.push({ label: 'Updating', count: adoption.adoption.withFirstUpdate, color: '#C8944D' });
     if (adoption.adoption?.withHarvest) farmerStatuses.push({ label: 'Harvested', count: adoption.adoption.withHarvest, color: '#7C3AED' });
   }
 
@@ -261,7 +261,7 @@ export default function DashboardPage() {
         {/* First-run welcome */}
         {isAdmin && adoption && totalFarmers === 0 && portfolio.totalApplications === 0 && (
           <div style={DS.welcomeCard} data-testid="welcome-card">
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#22C55E', marginBottom: '0.5rem' }}>Welcome — Get started in 3 steps</div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#C8944D', marginBottom: '0.5rem' }}>Welcome — Get started in 3 steps</div>
             <div style={DS.welcomeStep} onClick={() => navigate('/farmers')}>
               <span style={DS.welcomeNum}>1</span>
               <span>Add your first farmers</span>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
             <div style={DS.metricLabel}>Total Farmers</div>
           </div>
           <div style={DS.metricCard} onClick={() => navigate('/farmers')} data-testid="metric-active">
-            <div style={{ ...DS.metricValue, color: '#22C55E' }}>{activeFarmers}</div>
+            <div style={{ ...DS.metricValue, color: '#C8944D' }}>{activeFarmers}</div>
             <div style={DS.metricLabel}>Active</div>
           </div>
           <div style={DS.metricCard} onClick={() => navigate('/officer-validation')} data-testid="metric-validated">
@@ -341,7 +341,7 @@ export default function DashboardPage() {
           <div style={DS.allCaughtUp} data-testid="all-caught-up">
             <span style={{ fontSize: '1.1rem' }}>✅</span>
             <div>
-              <div style={{ fontWeight: 600, color: '#22C55E', fontSize: '0.9rem' }}>All caught up</div>
+              <div style={{ fontWeight: 600, color: '#C8944D', fontSize: '0.9rem' }}>All caught up</div>
               <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>No pending tasks right now.</div>
             </div>
           </div>
@@ -474,11 +474,11 @@ export default function DashboardPage() {
               <div style={DS.detailsGrid}>
                 <div style={DS.detailPill}>
                   <div style={DS.detailPillLabel}>Season Adoption</div>
-                  <div style={{ ...DS.detailPillValue, color: adoptionRate >= 50 ? '#22C55E' : '#F59E0B' }}>{adoptionRate ?? '—'}%</div>
+                  <div style={{ ...DS.detailPillValue, color: adoptionRate >= 50 ? '#C8944D' : '#F59E0B' }}>{adoptionRate ?? '—'}%</div>
                 </div>
                 <div style={DS.detailPill}>
                   <div style={DS.detailPillLabel}>Engagement</div>
-                  <div style={{ ...DS.detailPillValue, color: engagementRate >= 50 ? '#22C55E' : '#F59E0B' }}>{engagementRate ?? '—'}%</div>
+                  <div style={{ ...DS.detailPillValue, color: engagementRate >= 50 ? '#C8944D' : '#F59E0B' }}>{engagementRate ?? '—'}%</div>
                 </div>
                 <div style={DS.detailPill}>
                   <div style={DS.detailPillLabel}>Validation</div>
@@ -513,7 +513,7 @@ export default function DashboardPage() {
                   </div>
                   <div style={DS.detailPill}>
                     <div style={DS.detailPillLabel}>Activation Rate</div>
-                    <div style={{ ...DS.detailPillValue, color: deliveryStats.summary.activationRate >= 50 ? '#22C55E' : '#F59E0B' }}>
+                    <div style={{ ...DS.detailPillValue, color: deliveryStats.summary.activationRate >= 50 ? '#C8944D' : '#F59E0B' }}>
                       {deliveryStats.summary.activationRate}%
                     </div>
                   </div>
@@ -559,7 +559,7 @@ export default function DashboardPage() {
                   <div key={app.id} onClick={() => navigate(`/applications/${app.id}`)} style={DS.recentRow}>
                     <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{app.farmer.fullName}</span>
                     <span style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>{getCropLabelSafe(app.cropType, lang)}</span>
-                    <span style={{ fontSize: '0.8rem', color: '#22C55E' }}>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#C8944D' }}>{app.currencyCode || 'KES'} {app.requestedAmount.toLocaleString()}</span>
                   </div>
                 ))}
                 <button onClick={() => navigate('/applications')} style={DS.viewAllBtn}>All applications →</button>
@@ -610,7 +610,7 @@ const DS = {
 
   // Welcome
   welcomeCard: {
-    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.2)',
     borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1rem',
   },
   welcomeStep: {
@@ -618,7 +618,7 @@ const DS = {
     fontSize: '0.9rem', cursor: 'pointer',
   },
   welcomeNum: {
-    width: '24px', height: '24px', borderRadius: '50%', background: '#22C55E',
+    width: '24px', height: '24px', borderRadius: '50%', background: '#C8944D',
     color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
   },
@@ -665,7 +665,7 @@ const DS = {
   },
   allCaughtUp: {
     display: 'flex', alignItems: 'center', gap: '0.75rem',
-    background: 'rgba(34,197,94,0.08)', border: '1px solid #243041',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid #243041',
     borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1rem',
   },
 
@@ -756,7 +756,7 @@ const DS = {
     padding: '0.4rem 0', borderBottom: '1px solid #243041', cursor: 'pointer',
   },
   viewAllBtn: {
-    background: 'none', border: 'none', color: '#22C55E', fontSize: '0.8rem',
+    background: 'none', border: 'none', color: '#C8944D', fontSize: '0.8rem',
     fontWeight: 600, cursor: 'pointer', padding: '0.25rem 0',
   },
 };

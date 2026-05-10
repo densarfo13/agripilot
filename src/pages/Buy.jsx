@@ -88,8 +88,8 @@ const S = {
     gap: 6,
     padding: '4px 10px',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#86EFAC',
     fontSize: 12,
     fontWeight: 700,
@@ -118,7 +118,7 @@ const S = {
     border: 'none',
     padding: '12px 16px',
     borderRadius: 12,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 14,
     fontWeight: 800,
@@ -318,8 +318,8 @@ export default function Buy() {
       {scaleOn && unreadAlerts.length > 0 ? (
         <div
           style={{
-            background: 'rgba(34,197,94,0.12)',
-            border: '1px solid rgba(34,197,94,0.40)',
+            background: 'rgba(200,148,77,0.12)',
+            border: '1px solid rgba(200,148,77,0.40)',
             borderRadius: 12,
             padding: '10px 12px',
             color: '#BBF7D0',

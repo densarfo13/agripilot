@@ -136,7 +136,7 @@ const S = {
   labelCol: { display: 'flex', flexDirection: 'column', gap: '0.125rem', flex: 1 },
   label:  { fontSize: '0.875rem', color: '#F8FAFC', fontWeight: 600 },
   helper: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 },
-  checkbox: { width: '20px', height: '20px', accentColor: '#22C55E', cursor: 'pointer' },
+  checkbox: { width: '20px', height: '20px', accentColor: '#C8944D', cursor: 'pointer' },
   timeInput: {
     background: '#0B1525', border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: 8, padding: '0.375rem 0.5rem', color: '#fff',

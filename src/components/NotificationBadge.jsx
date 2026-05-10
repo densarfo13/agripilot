@@ -91,7 +91,7 @@ const S = {
   ctas: { display: 'flex', gap: '0.5rem' },
   btnPrimary: {
     padding: '0.25rem 0.625rem', borderRadius: 8,
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: 12, fontWeight: 700, cursor: 'pointer',
   },
   btnGhost: {

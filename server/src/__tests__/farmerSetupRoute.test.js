@@ -1420,7 +1420,9 @@ describe('Phase 3 — delivery stats wired to admin dashboard', () => {
 
   it('3. shows activation rate with color coding', () => {
     expect(dashboard).toContain('activationRate');
-    expect(dashboard).toContain("activationRate >= 50 ? '#22C55E' : '#F59E0B'");
+    // Soft Ochre / Beige unified system — primary token for healthy
+    // activation rate, warm mustard warning otherwise.
+    expect(dashboard).toContain("activationRate >= 50 ? '#C8944D' : '#F59E0B'");
   });
 
   it('4. shows stalled/failed count with red highlight', () => {

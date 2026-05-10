@@ -43,11 +43,11 @@ const TYPE_EXPIRY = {
 
 const STATUS_STYLE = {
   pending:  { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
-  approved: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  approved: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
   rejected: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   expired:  { bg: '#1E293B', color: '#71717A' },
   revoked:  { bg: '#1E293B', color: '#71717A' },
-  executed: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  executed: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
 };
 
 function timeLeft(expiresAt) {
@@ -157,7 +157,7 @@ export default function SecurityRequestsPage() {
         )}
 
         {/* Info banner */}
-        <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#22C55E' }}>
+        <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#C8944D' }}>
           <strong>How it works:</strong> Sensitive actions require a second admin to approve before they can be executed.
           Pending requests below need review. Approved requests have a limited execution window after which they expire.
           If you requested an action and it has been approved, copy the Request ID and use it in the original page to execute.
@@ -264,7 +264,7 @@ export default function SecurityRequestsPage() {
                           </td>
                           <td style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                             {tl ? (
-                              <span style={{ color: expired ? '#EF4444' : '#22C55E', fontWeight: 600 }}>
+                              <span style={{ color: expired ? '#EF4444' : '#C8944D', fontWeight: 600 }}>
                                 {tl}
                               </span>
                             ) : r.status === 'approved' && r.expiresAt ? (
@@ -295,7 +295,7 @@ export default function SecurityRequestsPage() {
                               {r.status === 'approved' && isSelf && !expired && (
                                 <button
                                   className="btn btn-sm btn-outline"
-                                  style={{ color: '#22C55E', borderColor: '#22C55E', fontSize: '0.78rem' }}
+                                  style={{ color: '#C8944D', borderColor: '#C8944D', fontSize: '0.78rem' }}
                                   onClick={() => copyId(r.id)}
                                   title={`Request ID: ${r.id}`}
                                 >
@@ -369,7 +369,7 @@ export default function SecurityRequestsPage() {
               </div>
 
               {modal.action === 'approve' && (
-                <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#22C55E' }}>
+                <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.85rem', color: '#C8944D' }}>
                   Approving creates a timed execution window ({TYPE_EXPIRY[modal.req.requestType] ?? 'limited time'}).
                   The requester must execute the action within that window or it will expire.
                 </div>

@@ -137,7 +137,7 @@ function latestVisibleNote(issue) {
 
 function statusStyle(status) {
   switch (status) {
-    case 'resolved':    return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    case 'resolved':    return { background: 'rgba(200,148,77,0.15)',  color: '#86EFAC' };
     case 'in_progress': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
     case 'assigned':    return { background: 'rgba(59,130,246,0.15)', color: '#93C5FD' };
     case 'escalated':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
@@ -152,7 +152,7 @@ const S = {
   title:   { fontSize: '1.375rem', fontWeight: 700, margin: '0 0 0.25rem' },
   sub:     { margin: '0 0 1rem', color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' },
   cta:     { display: 'inline-block', padding: '0.5rem 0.875rem', borderRadius: 10,
-             background: '#22C55E', color: '#000', fontWeight: 700,
+             background: '#C8944D', color: '#000', fontWeight: 700,
              textDecoration: 'none', fontSize: '0.875rem', marginBottom: '1rem' },
   empty:   { padding: '1rem', borderRadius: 12,
              background: 'rgba(255,255,255,0.04)',

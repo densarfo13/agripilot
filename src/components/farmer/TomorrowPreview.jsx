@@ -129,8 +129,8 @@ const S = {
   cta: {
     marginTop: 8, alignSelf: 'flex-start',
     padding: '6px 12px', borderRadius: 999,
-    background: 'rgba(34,197,94,0.12)', color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.4)',
+    background: 'rgba(200,148,77,0.12)', color: '#86EFAC',
+    border: '1px solid rgba(200,148,77,0.4)',
     fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer',
     minHeight: 36,  // touch target
   },

@@ -188,7 +188,7 @@ const S = {
     cursor: 'pointer',
     minHeight: 52,
   },
-  btnPrimary: { background: '#22C55E', color: '#062714' },
+  btnPrimary: { background: '#C8944D', color: '#FFFFFF' },
   errorNote: {
     margin: 0,
     padding: '0.5rem 0.75rem',

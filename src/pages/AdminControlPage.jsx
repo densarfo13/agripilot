@@ -10,7 +10,7 @@ import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,
 } from '../components/admin/AdminState.jsx';
 
-const COLORS = ['#22C55E', '#22C55E', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
+const COLORS = ['#C8944D', '#C8944D', '#F59E0B', '#EF4444', '#0891b2', '#7c3aed', '#be185d', '#059669'];
 
 export default function AdminControlPage() {
   const { t, lang } = useTranslation();
@@ -35,8 +35,8 @@ export default function AdminControlPage() {
             onClick={() => setTab(t.key)}
             style={{
               padding: '0.75rem 1.25rem', background: 'none', border: 'none', cursor: 'pointer',
-              color: tab === t.key ? '#22C55E' : '#A1A1AA',
-              borderBottom: tab === t.key ? '2px solid #22C55E' : '2px solid transparent',
+              color: tab === t.key ? '#C8944D' : '#A1A1AA',
+              borderBottom: tab === t.key ? '2px solid #C8944D' : '2px solid transparent',
               fontWeight: tab === t.key ? 600 : 400, marginBottom: '-2px', fontSize: '0.9rem',
             }}
           >
@@ -108,13 +108,13 @@ function SystemOverview({ navigate }) {
   // Pipeline stages
   const pipeline = [
     { label: 'Draft', count: statusMap.draft || 0, color: '#71717A' },
-    { label: 'Submitted', count: statusMap.submitted || 0, color: '#22C55E' },
+    { label: 'Submitted', count: statusMap.submitted || 0, color: '#C8944D' },
     { label: 'Under Review', count: statusMap.under_review || 0, color: '#0891b2' },
     { label: 'Needs Evidence', count: statusMap.needs_more_evidence || 0, color: '#F59E0B' },
     { label: 'Field Review', count: statusMap.field_review_required || 0, color: '#0891b2' },
     { label: 'Fraud Hold', count: statusMap.fraud_hold || 0, color: '#EF4444' },
     { label: 'Escalated', count: statusMap.escalated || 0, color: '#ea580c' },
-    { label: 'Approved', count: statusMap.approved || 0, color: '#22C55E' },
+    { label: 'Approved', count: statusMap.approved || 0, color: '#C8944D' },
     { label: 'Conditional', count: statusMap.conditional_approved || 0, color: '#059669' },
     { label: 'Disbursed', count: statusMap.disbursed || 0, color: '#047857' },
     { label: 'Rejected', count: statusMap.rejected || 0, color: '#be185d' },
@@ -173,7 +173,7 @@ function SystemOverview({ navigate }) {
               >
                 <span style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, display: 'inline-block', background: item.urgent ? '#EF4444' : '#F59E0B' }} />
                 <span style={{ fontSize: '0.875rem', color: '#FFFFFF', flex: 1 }}>{item.label}</span>
-                <span style={{ fontSize: '0.8rem', color: '#22C55E', fontWeight: 600, flexShrink: 0 }}>View →</span>
+                <span style={{ fontSize: '0.8rem', color: '#C8944D', fontWeight: 600, flexShrink: 0 }}>View →</span>
               </div>
             ))}
           </div>
@@ -182,8 +182,8 @@ function SystemOverview({ navigate }) {
 
       {/* Quick action banners */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#22C55E' }}>{activeQueue}</div>
+        <div onClick={() => navigate('/verification-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#C8944D' }}>{activeQueue}</div>
           <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Awaiting Verification</div>
         </div>
         <div onClick={() => navigate('/fraud-queue')} style={{ cursor: 'pointer', flex: 1, minWidth: 200, background: 'rgba(239,68,68,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
@@ -194,8 +194,8 @@ function SystemOverview({ navigate }) {
           <div style={{ fontSize: '2rem', fontWeight: 700, color: '#F59E0B' }}>{escalatedQueue}</div>
           <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Escalated</div>
         </div>
-        <div style={{ flex: 1, minWidth: 200, background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#22C55E' }}>{approvalRate}%</div>
+        <div style={{ flex: 1, minWidth: 200, background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 8, padding: '1rem 1.25rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#C8944D' }}>{approvalRate}%</div>
           <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>Approval Rate</div>
         </div>
       </div>
@@ -346,7 +346,7 @@ function RegionConfig() {
           <div className="card-body">
             {season ? (
               <>
-                <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value" style={{ fontWeight: 600, color: '#22C55E' }}>{season.name || season.season}</span></div>
+                <div className="detail-row"><span className="detail-label">Season</span><span className="detail-value" style={{ fontWeight: 600, color: '#C8944D' }}>{season.name || season.season}</span></div>
                 <div className="detail-row"><span className="detail-label">Period</span><span className="detail-value">{season.months || season.period || '-'}</span></div>
                 {season.description && <div className="detail-row"><span className="detail-label">Description</span><span className="detail-value">{season.description}</span></div>}
               </>
@@ -378,7 +378,7 @@ function RegionConfig() {
             {Array.isArray(crops) && crops.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {crops.map((c, i) => (
-                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 20, fontSize: '0.85rem', color: '#22C55E', fontWeight: 500 }}>
+                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 20, fontSize: '0.85rem', color: '#C8944D', fontWeight: 500 }}>
                     {typeof c === 'string' ? c : c.name || c.crop}
                   </span>
                 ))}
@@ -394,7 +394,7 @@ function RegionConfig() {
             {Array.isArray(regions) && regions.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {regions.map((r, i) => (
-                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 20, fontSize: '0.85rem', color: '#22C55E' }}>
+                  <span key={i} style={{ padding: '0.35rem 0.75rem', background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 20, fontSize: '0.85rem', color: '#C8944D' }}>
                     {typeof r === 'string' ? r : r.name || r.region}
                   </span>
                 ))}
@@ -637,14 +637,14 @@ function LanguagePanel() {
                 onClick={() => loadTranslations(lang.code)}
                 style={{
                   cursor: 'pointer', padding: '1rem 1.5rem', borderRadius: 8,
-                  border: selectedLang === lang.code ? '2px solid #22C55E' : '1px solid #243041',
-                  background: selectedLang === lang.code ? 'rgba(34,197,94,0.15)' : '#162033',
+                  border: selectedLang === lang.code ? '2px solid #C8944D' : '1px solid #243041',
+                  background: selectedLang === lang.code ? 'rgba(200,148,77,0.15)' : '#162033',
                   minWidth: 150, textAlign: 'center',
                 }}
               >
                 <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{lang.name}</div>
                 <div style={{ fontSize: '0.85rem', color: '#A1A1AA' }}>{lang.code}</div>
-                <div style={{ fontSize: '0.85rem', color: '#22C55E', marginTop: '0.25rem' }}>{lang.keyCount} keys</div>
+                <div style={{ fontSize: '0.85rem', color: '#C8944D', marginTop: '0.25rem' }}>{lang.keyCount} keys</div>
               </div>
             ))}
           </div>
@@ -741,7 +741,7 @@ function OperationsHealth() {
   const errSummary = errorsData?.summary || {};
   const recentEvents = errorsData?.events || [];
 
-  const statusColor = h.status === 'ok' ? '#22C55E' : '#F59E0B';
+  const statusColor = h.status === 'ok' ? '#C8944D' : '#F59E0B';
 
   return (
     <>
@@ -764,25 +764,25 @@ function OperationsHealth() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="card" style={{ padding: '0.85rem' }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>Database</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: db.connected ? '#22C55E' : '#EF4444' }}>{db.connected ? 'Connected' : 'Down'}</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: db.connected ? '#C8944D' : '#EF4444' }}>{db.connected ? 'Connected' : 'Down'}</div>
           {db.latencyMs != null && <div style={{ fontSize: '0.8rem', color: '#71717A' }}>{db.latencyMs}ms latency</div>}
           {db.error && <div style={{ fontSize: '0.8rem', color: '#EF4444' }}>{db.error}</div>}
         </div>
         <div className="card" style={{ padding: '0.85rem' }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>Email</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: prov.email === 'configured' ? '#22C55E' : '#F59E0B' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: prov.email === 'configured' ? '#C8944D' : '#F59E0B' }}>
             {prov.email === 'configured' ? 'Ready' : 'Not Configured'}
           </div>
         </div>
         <div className="card" style={{ padding: '0.85rem' }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>SMS</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: prov.sms === 'configured' ? '#22C55E' : '#F59E0B' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: prov.sms === 'configured' ? '#C8944D' : '#F59E0B' }}>
             {prov.sms === 'configured' ? 'Ready' : 'Not Configured'}
           </div>
         </div>
         <div className="card" style={{ padding: '0.85rem' }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', textTransform: 'uppercase', fontWeight: 600 }}>Uploads</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: up.writable ? '#22C55E' : '#EF4444' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: up.writable ? '#C8944D' : '#EF4444' }}>
             {up.writable ? 'Writable' : 'Error'}
           </div>
           {up.diskFreeBytes != null && <div style={{ fontSize: '0.8rem', color: '#71717A' }}>{Math.round(up.diskFreeBytes / 1e9)}GB free</div>}
@@ -791,13 +791,13 @@ function OperationsHealth() {
 
       {/* Error/Warning summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
-        <div className="card" style={{ padding: '0.85rem', borderLeft: `3px solid ${(errSummary.errorsLastHour || 0) > 0 ? '#EF4444' : '#22C55E'}` }}>
+        <div className="card" style={{ padding: '0.85rem', borderLeft: `3px solid ${(errSummary.errorsLastHour || 0) > 0 ? '#EF4444' : '#C8944D'}` }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Errors (1h)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (errSummary.errorsLastHour || 0) > 0 ? '#EF4444' : '#22C55E' }}>{errSummary.errorsLastHour || 0}</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (errSummary.errorsLastHour || 0) > 0 ? '#EF4444' : '#C8944D' }}>{errSummary.errorsLastHour || 0}</div>
         </div>
-        <div className="card" style={{ padding: '0.85rem', borderLeft: `3px solid ${(errSummary.warningsLastHour || 0) > 0 ? '#F59E0B' : '#22C55E'}` }}>
+        <div className="card" style={{ padding: '0.85rem', borderLeft: `3px solid ${(errSummary.warningsLastHour || 0) > 0 ? '#F59E0B' : '#C8944D'}` }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Warnings (1h)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (errSummary.warningsLastHour || 0) > 0 ? '#F59E0B' : '#22C55E' }}>{errSummary.warningsLastHour || 0}</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (errSummary.warningsLastHour || 0) > 0 ? '#F59E0B' : '#C8944D' }}>{errSummary.warningsLastHour || 0}</div>
         </div>
         <div className="card" style={{ padding: '0.85rem', borderLeft: '3px solid #71717A' }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Errors (24h)</div>
@@ -805,7 +805,7 @@ function OperationsHealth() {
         </div>
         <div className="card" style={{ padding: '0.85rem', borderLeft: '3px solid #71717A' }}>
           <div style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Failed Notifications</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (notif.totalFailed || 0) > 0 ? '#F59E0B' : '#22C55E' }}>{notif.totalFailed || 0}</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: (notif.totalFailed || 0) > 0 ? '#F59E0B' : '#C8944D' }}>{notif.totalFailed || 0}</div>
           {(notif.failedByType || []).map(f => (
             <div key={f.type} style={{ fontSize: '0.75rem', color: '#A1A1AA' }}>{f.type}: {f.count}</div>
           ))}
@@ -852,7 +852,7 @@ function OperationsHealth() {
         </div>
         <div className="card-body" style={{ maxHeight: 400, overflowY: 'auto', padding: 0 }}>
           {recentEvents.length === 0 && (
-            <div style={{ padding: '1.5rem', color: '#22C55E', textAlign: 'center' }}>No recent warnings or errors</div>
+            <div style={{ padding: '1.5rem', color: '#C8944D', textAlign: 'center' }}>No recent warnings or errors</div>
           )}
           {recentEvents.map((ev, i) => {
             const sevColor = ev.severity === 'critical' ? '#be185d' : ev.severity === 'error' ? '#EF4444' : '#F59E0B';

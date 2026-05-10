@@ -199,7 +199,7 @@ const S = {
     background: C.green, color: C.white,
     fontSize: '0.875rem', fontWeight: 800,
     border: 'none', cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.25)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.25)',
     flexShrink: 0,
   },
   metricsGrid: {

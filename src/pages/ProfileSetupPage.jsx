@@ -339,7 +339,7 @@ export default function ProfileSetupPage() {
             {form.latitude != null && form.longitude != null ? (
               <div style={S.gpsDisplay}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: '#22C55E', fontWeight: 600, fontSize: '0.9rem' }}>
+                  <div style={{ color: '#C8944D', fontWeight: 600, fontSize: '0.9rem' }}>
                     {form.locationLabel || t('location.captured')}
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginTop: '0.2rem' }}>
@@ -438,7 +438,7 @@ const S = {
   progressBarFill: {
     height: '100%',
     borderRadius: '4px',
-    background: 'linear-gradient(90deg, #22C55E, #16A34A)',
+    background: 'linear-gradient(90deg, #C8944D, #B9853F)',
     transition: 'width 0.4s ease',
   },
   progressRow: {
@@ -538,8 +538,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   cropChipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
   },
   // GPS
   gpsDisplay: {
@@ -590,13 +590,13 @@ const S = {
     display: 'block',
     width: '100%',
     padding: '1rem',
-    background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+    background: 'linear-gradient(135deg, #C8944D 0%, #B9853F 100%)',
     color: '#FFFFFF',
     border: 'none',
     borderRadius: '14px',
     fontWeight: 800,
     fontSize: '1.15rem',
-    boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+    boxShadow: '0 4px 14px rgba(185,133,63,0.3)',
     minHeight: '56px',
     WebkitTapHighlightColor: 'transparent',
   },

@@ -27,7 +27,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import { calculateApplicationReadiness } from '../../funding/applicationReadiness.js';
 
 const TONES = {
-  match:    { bg: 'rgba(34,197,94,0.14)',  border: 'rgba(34,197,94,0.45)',  color: '#86EFAC' },
+  match:    { bg: 'rgba(200,148,77,0.14)',  border: 'rgba(200,148,77,0.45)',  color: '#86EFAC' },
   open:     { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.78)' },
   mismatch: { bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.32)', color: '#FDE68A' },
   unknown:  { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.7)' },

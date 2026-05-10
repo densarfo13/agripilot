@@ -35,7 +35,7 @@ const TONES = {
     border: T.border,
   },
   success: {
-    bg: 'linear-gradient(180deg, rgba(34,197,94,0.085) 0%, rgba(34,197,94,0.04) 100%)',
+    bg: 'linear-gradient(180deg, rgba(200,148,77,0.085) 0%, rgba(200,148,77,0.04) 100%)',
     border: T.greenBorder,
   },
   warning: {

@@ -174,8 +174,8 @@ const S = {
     minHeight: 36,
   },
   chipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
     color: '#86EFAC',
     fontWeight: 700,
   },

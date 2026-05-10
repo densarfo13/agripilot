@@ -70,8 +70,8 @@ const S = {
     gap: 6,
     padding: '4px 10px',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#86EFAC',
     fontSize: 12,
     fontWeight: 700,
@@ -79,9 +79,9 @@ const S = {
     fontFamily: 'inherit',
   },
   chipActive: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
-    border: '1px solid #22C55E',
+    border: '1px solid #C8944D',
   },
   remove: {
     appearance: 'none',

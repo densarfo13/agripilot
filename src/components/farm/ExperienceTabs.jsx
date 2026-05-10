@@ -56,8 +56,8 @@ const C = {
   border:   'rgba(255,255,255,0.10)',
   ink:      '#FFFFFF',
   inkDim:   'rgba(255,255,255,0.65)',
-  green:    'rgba(34,197,94,0.18)',
-  greenBd:  'rgba(34,197,94,0.40)',
+  green:    'rgba(200,148,77,0.18)',
+  greenBd:  'rgba(200,148,77,0.40)',
   greenInk: '#86EFAC',
 };
 

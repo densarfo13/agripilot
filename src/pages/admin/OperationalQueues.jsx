@@ -255,7 +255,7 @@ const S = {
     cursor: 'pointer', minHeight: '40px',
   },
   tabActive: {
-    background: 'rgba(34,197,94,0.15)', color: '#22C55E', borderColor: '#22C55E',
+    background: 'rgba(200,148,77,0.15)', color: '#C8944D', borderColor: '#C8944D',
   },
   summaryGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem',
@@ -278,7 +278,7 @@ const S = {
     padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600,
     cursor: 'pointer', minHeight: '32px',
   },
-  btnGreen: { background: '#22C55E', color: '#fff' },
+  btnGreen: { background: '#C8944D', color: '#fff' },
   btnRed: { background: '#EF4444', color: '#fff' },
   btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
   badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
@@ -294,6 +294,6 @@ const S = {
   emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
   spinner: {
     display: 'inline-block', width: 24, height: 24, border: '3px solid rgba(255,255,255,0.15)',
-    borderTopColor: '#22C55E', borderRadius: '50%', animation: 'spin 0.6s linear infinite',
+    borderTopColor: '#C8944D', borderRadius: '50%', animation: 'spin 0.6s linear infinite',
   },
 };

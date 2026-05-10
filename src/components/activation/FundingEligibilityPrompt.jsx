@@ -22,8 +22,8 @@ import { useCallback } from 'react';
 
 const S = {
   wrap: {
-    background: 'rgba(34,197,94,0.05)',
-    border: '1px solid rgba(34,197,94,0.22)',
+    background: 'rgba(200,148,77,0.05)',
+    border: '1px solid rgba(200,148,77,0.22)',
     borderRadius: 12,
     padding: '16px 18px',
     display: 'flex',
@@ -45,7 +45,7 @@ const S = {
   btn: {
     marginTop: 4,
     appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.40)',
+    border: '1px solid rgba(200,148,77,0.40)',
     background: 'transparent',
     color: '#86EFAC',
     fontWeight: 700,

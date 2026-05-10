@@ -477,8 +477,8 @@ const S = {
   suggestedBtn: {
     padding: '0.625rem 0.75rem',
     borderRadius: 12,
-    border: '1px solid rgba(34,197,94,0.28)',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.28)',
+    background: 'rgba(200,148,77,0.08)',
     color: '#EAF2FF',
     fontSize: '0.8125rem',
     fontWeight: 600,
@@ -493,7 +493,7 @@ const S = {
   },
   mic: {
     width: 64, height: 64, borderRadius: 999,
-    border: 'none', background: '#22C55E', color: '#062714',
+    border: 'none', background: '#C8944D', color: '#FFFFFF',
     fontSize: '1.5rem', cursor: 'pointer',
     transition: 'transform 0.15s ease, box-shadow 0.15s ease',
   },
@@ -523,8 +523,8 @@ const S = {
   answerCard: {
     padding: '0.875rem 1rem',
     borderRadius: 14,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.28)',
     display: 'flex', flexDirection: 'column', gap: '0.625rem',
   },
   answerText: {
@@ -534,7 +534,7 @@ const S = {
   answerActions: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' },
   actionBtn: {
     padding: '0.5rem 0.875rem', borderRadius: 999,
-    border: 'none', background: '#22C55E', color: '#062714',
+    border: 'none', background: '#C8944D', color: '#FFFFFF',
     fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', minHeight: 36,
   },
   actionBtnGhost: {

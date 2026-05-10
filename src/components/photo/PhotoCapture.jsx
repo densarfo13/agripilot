@@ -226,7 +226,7 @@ const S = {
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
     minHeight: 44,
   },
-  btnPrimary: { background: '#22C55E', color: '#062714' },
+  btnPrimary: { background: '#C8944D', color: '#FFFFFF' },
   btnGhost: {
     background: 'transparent',
     border: '1px solid rgba(255,255,255,0.18)',

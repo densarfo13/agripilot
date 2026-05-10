@@ -176,8 +176,8 @@ function buildStyles(compact) {
       border: '1px solid rgba(255,255,255,0.08)',
     },
     rowPrimary: {
-      background: 'rgba(34,197,94,0.08)',
-      borderColor: 'rgba(34,197,94,0.22)',
+      background: 'rgba(200,148,77,0.08)',
+      borderColor: 'rgba(200,148,77,0.22)',
     },
     thumb: { width: 44, height: 44, borderRadius: 10, objectFit: 'cover' },
     main:  { flex: 1, minWidth: 0 },
@@ -188,7 +188,7 @@ function buildStyles(compact) {
     cropLabel: { fontSize: 14, fontWeight: 600 },
     primaryPill: {
       padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 600,
-      background: 'rgba(34,197,94,0.18)', color: '#86EFAC',
+      background: 'rgba(200,148,77,0.18)', color: '#86EFAC',
       textTransform: 'uppercase', letterSpacing: 0.3,
     },
     price: { fontSize: 15, fontWeight: 700, marginTop: 2 },

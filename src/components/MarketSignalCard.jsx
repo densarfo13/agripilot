@@ -32,7 +32,7 @@ function trendIcon(trend) {
 }
 
 function trendColor(trend) {
-  if (trend === 'rising') return '#22C55E';
+  if (trend === 'rising') return '#C8944D';
   if (trend === 'falling') return '#F87171';
   return 'rgba(255,255,255,0.5)';
 }

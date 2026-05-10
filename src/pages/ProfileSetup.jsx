@@ -506,7 +506,7 @@ export default function ProfileSetup() {
           {/* Step-based progress */}
           <div style={S.stepRow}>
             {Object.entries(fieldChecks).map(([key, done], i) => (
-              <div key={key} style={{ ...S.stepDot, background: done ? '#22C55E' : 'rgba(255,255,255,0.15)' }} />
+              <div key={key} style={{ ...S.stepDot, background: done ? '#C8944D' : 'rgba(255,255,255,0.15)' }} />
             ))}
           </div>
           <p style={S.progressText}>{completedSteps} / {totalSteps} {t('setup.completed')}</p>
@@ -529,7 +529,7 @@ export default function ProfileSetup() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>{'\u2705'}</span>
                 <div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#22C55E' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#C8944D' }}>
                     {t('location.captured')}
                   </div>
                   {form.locationLabel && (
@@ -963,8 +963,8 @@ const S = {
     transition: 'border-color 0.15s, background 0.15s',
   },
   cropChipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#EAF2FF',
   },
   cropLabel: {
@@ -1018,8 +1018,8 @@ const S = {
     transition: 'border-color 0.15s, background 0.15s',
   },
   sizeChipActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#EAF2FF',
   },
   sizeChipLabel: {
@@ -1055,8 +1055,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   unitToggleBtnActive: {
-    background: 'rgba(34,197,94,0.12)',
-    color: '#22C55E',
+    background: 'rgba(200,148,77,0.12)',
+    color: '#C8944D',
   },
   conversionHint: {
     fontSize: '0.75rem',
@@ -1087,8 +1087,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   experienceBtnActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#EAF2FF',
   },
   // GPS
@@ -1113,8 +1113,8 @@ const S = {
   gpsSuccess: {
     padding: '0.75rem',
     borderRadius: '14px',
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.12)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.12)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1198,7 +1198,7 @@ const S = {
   saveBtn: {
     flex: 2,
     borderRadius: '14px',
-    background: '#22C55E',
+    background: '#C8944D',
     padding: '1rem',
     fontWeight: 700,
     color: '#fff',
@@ -1206,7 +1206,7 @@ const S = {
     cursor: 'pointer',
     fontSize: '1rem',
     minHeight: '52px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     WebkitTapHighlightColor: 'transparent',
   },
 };

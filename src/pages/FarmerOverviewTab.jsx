@@ -33,7 +33,7 @@ import { isFeatureEnabled } from '../config/features.js';
 
 const STAGE_META = {
   pre_planting: { label: 'Pre-Planting', color: '#6b7280', emoji: '\u{1F331}' },
-  planting: { label: 'Planting', color: '#16a34a', emoji: '\u{1F33E}' },
+  planting: { label: 'Planting', color: '#B9853F', emoji: '\u{1F33E}' },
   vegetative: { label: 'Vegetative', color: '#059669', emoji: '\u{1F33F}' },
   flowering: { label: 'Flowering', color: '#d97706', emoji: '\u{1F33B}' },
   harvest: { label: 'Harvest', color: '#ea580c', emoji: '\u{1F33D}' },
@@ -162,7 +162,7 @@ export default function FarmerOverviewTab() {
             </button>
             <button
               className="btn btn-sm"
-              style={{ background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.45)', color: '#86EFAC', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', padding: '0.35rem 0.75rem', borderRadius: '8px' }}
+              style={{ background: 'rgba(200,148,77,0.10)', border: '1px solid rgba(200,148,77,0.45)', color: '#86EFAC', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', padding: '0.35rem 0.75rem', borderRadius: '8px' }}
               onClick={handleRecompute}
               disabled={recomputing || lcLoading}
               title="Confirm you've completed your current stage activities so we update your progress"
@@ -279,7 +279,7 @@ export default function FarmerOverviewTab() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {lifecycle.recommendations.slice(0, 3).map((rec, i) => (
                         <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem' }}>
-                          <span style={{ color: '#16a34a', fontWeight: 600, flexShrink: 0 }}>-</span>
+                          <span style={{ color: '#B9853F', fontWeight: 600, flexShrink: 0 }}>-</span>
                           <div>
                             <span style={{ fontWeight: 500 }}>{rec.title}</span>
                             <span style={{ color: '#A1A1AA', marginLeft: '0.5rem' }}>{rec.message}</span>

@@ -217,7 +217,7 @@ function urgencyStyleFor(code) {
   return {
     card:  {},
     label: {},
-    badge: { background: 'rgba(34,197,94,0.16)', color: '#86EFAC' },
+    badge: { background: 'rgba(200,148,77,0.16)', color: '#86EFAC' },
   };
 }
 
@@ -250,7 +250,7 @@ const S = {
     display: 'inline-block',
     padding: '0.25rem 0.75rem',
     borderRadius: '999px',
-    background: 'rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.18)',
     color: '#86EFAC',
     fontSize: '0.8125rem',
     fontWeight: 600,
@@ -278,13 +278,13 @@ const S = {
     padding: '0.9375rem',
     borderRadius: '14px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontSize: '1.0625rem',
     fontWeight: 800,
     cursor: 'pointer',
     minHeight: '56px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   secondaryRow: {
     display: 'flex',

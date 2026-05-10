@@ -179,12 +179,12 @@ const S = {
     fontWeight: 600, cursor: 'pointer',
   },
   choiceActive: {
-    background: '#1b5e20', borderColor: '#22C55E', color: '#fff',
+    background: '#1b5e20', borderColor: '#C8944D', color: '#fff',
   },
   cta: {
     marginTop: 18, padding: '14px 16px', borderRadius: 12,
-    border: '1px solid #22C55E',
-    background: 'rgba(34,197,94,0.08)',
+    border: '1px solid #C8944D',
+    background: 'rgba(200,148,77,0.08)',
   },
   ctaHeader: { margin: '0 0 4px', fontSize: 15, fontWeight: 700 },
   ctaBody:   { margin: '0 0 10px', color: 'rgba(255,255,255,0.85)' },

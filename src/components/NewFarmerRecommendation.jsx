@@ -159,8 +159,8 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
               onClick={() => setSelectedCrop(primary.code)}
               style={{
                 ...RS.cropCard,
-                borderColor: activeCrop === primary.code ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                background: activeCrop === primary.code ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                borderColor: activeCrop === primary.code ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                background: activeCrop === primary.code ? 'rgba(200,148,77,0.10)' : '#1E293B',
               }}
             >
               <div style={RS.cropTop}>
@@ -198,8 +198,8 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
                     onClick={() => setSelectedCrop(crop.code)}
                     style={{
                       ...RS.cropCard,
-                      borderColor: isActive ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                      background: isActive ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                      borderColor: isActive ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                      background: isActive ? 'rgba(200,148,77,0.10)' : '#1E293B',
                     }}
                   >
                     <div style={RS.cropTop}>
@@ -249,9 +249,9 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
             landSize: answers.landSize,
           });
           const fitIcon = season.seasonFit === 'good' ? '\u2705' : season.seasonFit === 'okay' ? '\uD83D\uDFE1' : '\uD83D\uDFE0';
-          const fitAccent = season.seasonFit === 'good' ? '#22C55E' : season.seasonFit === 'okay' ? '#EAB308' : '#F97316';
-          const fitBg = season.seasonFit === 'good' ? 'rgba(34,197,94,0.06)' : season.seasonFit === 'okay' ? 'rgba(234,179,8,0.06)' : 'rgba(249,115,22,0.06)';
-          const fitBorder = season.seasonFit === 'good' ? 'rgba(34,197,94,0.15)' : season.seasonFit === 'okay' ? 'rgba(234,179,8,0.15)' : 'rgba(249,115,22,0.15)';
+          const fitAccent = season.seasonFit === 'good' ? '#C8944D' : season.seasonFit === 'okay' ? '#EAB308' : '#F97316';
+          const fitBg = season.seasonFit === 'good' ? 'rgba(200,148,77,0.06)' : season.seasonFit === 'okay' ? 'rgba(234,179,8,0.06)' : 'rgba(249,115,22,0.06)';
+          const fitBorder = season.seasonFit === 'good' ? 'rgba(200,148,77,0.15)' : season.seasonFit === 'okay' ? 'rgba(234,179,8,0.15)' : 'rgba(249,115,22,0.15)';
 
           return (
             <div style={{ ...RS.seasonCard, background: fitBg, borderColor: fitBorder }}>
@@ -348,8 +348,8 @@ export default function NewFarmerRecommendation({ t, countryCode, onResult, onSk
               onClick={() => handleSelect(opt.value)}
               style={{
                 ...RS.optionBtn,
-                borderColor: isSelected ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)',
-                background: isSelected ? 'rgba(34,197,94,0.10)' : '#1E293B',
+                borderColor: isSelected ? 'rgba(200,148,77,0.5)' : 'rgba(255,255,255,0.06)',
+                background: isSelected ? 'rgba(200,148,77,0.10)' : '#1E293B',
               }}
             >
               <span style={RS.optionIcon}>{opt.icon}</span>
@@ -385,7 +385,7 @@ const RS = {
     width: '100%', height: 4, background: '#243041', borderRadius: 2, overflow: 'hidden',
   },
   progressFill: {
-    height: '100%', background: '#22C55E', borderRadius: 2, transition: 'width 0.3s ease',
+    height: '100%', background: '#C8944D', borderRadius: 2, transition: 'width 0.3s ease',
   },
   header: {
     textAlign: 'center', marginBottom: '1rem',
@@ -431,14 +431,14 @@ const RS = {
     WebkitTapHighlightColor: 'transparent',
   },
   primaryBtn: {
-    flex: 1, padding: '0.75rem', background: '#22C55E', color: '#fff', border: 'none',
+    flex: 1, padding: '0.75rem', background: '#C8944D', color: '#fff', border: 'none',
     borderRadius: '10px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
     minHeight: '52px', WebkitTapHighlightColor: 'transparent',
   },
   // ─── Results ───
   section: { width: '100%', marginBottom: '0.75rem' },
   sectionLabel: {
-    fontSize: '0.72rem', fontWeight: 700, color: '#22C55E', textTransform: 'uppercase',
+    fontSize: '0.72rem', fontWeight: 700, color: '#C8944D', textTransform: 'uppercase',
     letterSpacing: '0.04em', marginBottom: '0.35rem', paddingLeft: '0.1rem',
   },
   altList: {
@@ -455,7 +455,7 @@ const RS = {
   },
   cropIcon: { fontSize: '1.5rem' },
   cropName: { fontSize: '1rem', fontWeight: 700, color: '#FFFFFF', flex: 1 },
-  checkMark: { color: '#22C55E', fontSize: '1rem', fontWeight: 700 },
+  checkMark: { color: '#C8944D', fontSize: '1rem', fontWeight: 700 },
   cropWhy: {
     fontSize: '0.8rem', color: '#9FB3C8', lineHeight: 1.4, marginTop: '0.15rem',
   },
@@ -464,12 +464,12 @@ const RS = {
   },
   reasonTag: {
     fontSize: '0.65rem', fontWeight: 600, color: '#86EFAC',
-    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.15)',
     borderRadius: '6px', padding: '0.15rem 0.45rem',
   },
   bestBadge: {
-    fontSize: '0.6rem', fontWeight: 700, color: '#22C55E', textTransform: 'uppercase',
-    letterSpacing: '0.04em', background: 'rgba(34,197,94,0.12)',
+    fontSize: '0.6rem', fontWeight: 700, color: '#C8944D', textTransform: 'uppercase',
+    letterSpacing: '0.04em', background: 'rgba(200,148,77,0.12)',
     padding: '0.15rem 0.5rem', borderRadius: '6px',
   },
   // ─── Size card ───

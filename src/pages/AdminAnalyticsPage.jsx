@@ -163,7 +163,7 @@ export default function AdminAnalyticsPage() {
 
   // ─── A. Summary stat cards ──────────────────────────────
   const statCards = [
-    { label: t('admin.totalFarmers'),  value: metrics.totalFarmers,       color: '#22C55E', icon: '\uD83D\uDC65' },
+    { label: t('admin.totalFarmers'),  value: metrics.totalFarmers,       color: '#C8944D', icon: '\uD83D\uDC65' },
     { label: t('admin.newToday'),      value: metrics.newFarmersToday,    color: '#0891b2', icon: '\uD83C\uDD95' },
     { label: t('admin.activeToday'),   value: metrics.activeFarmersToday, color: '#7c3aed', icon: '\u26A1' },
     { label: t('admin.activeWeek'),    value: metrics.activeFarmersWeek,  color: '#F59E0B', icon: '\uD83D\uDCC5' },
@@ -175,7 +175,7 @@ export default function AdminAnalyticsPage() {
   const activityItems = [
     { label: t('admin.evtStageUpdate'), count: activityToday.stageUpdates, color: '#0891b2', icon: '\uD83D\uDCCA' },
     { label: t('admin.evtPestReport'),  count: activityToday.pestReports,  color: '#EF4444', icon: '\uD83D\uDC1B' },
-    { label: t('admin.evtFarmCreated'), count: activityToday.farmsCreated, color: '#22C55E', icon: '\uD83C\uDF31' },
+    { label: t('admin.evtFarmCreated'), count: activityToday.farmsCreated, color: '#C8944D', icon: '\uD83C\uDF31' },
     { label: t('admin.evtActionDone'),  count: activityToday.actionsCompleted, color: '#7c3aed', icon: '\u2714\uFE0F' },
     { label: t('admin.evtLogin'),       count: activityToday.logins,       color: '#F59E0B', icon: '\uD83D\uDD11' },
   ];
@@ -296,10 +296,10 @@ export default function AdminAnalyticsPage() {
                       <Tooltip
                         contentStyle={S.tooltipStyle}
                         labelStyle={{ color: '#94A3B8' }}
-                        itemStyle={{ color: '#22C55E' }}
+                        itemStyle={{ color: '#C8944D' }}
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       />
-                      <Bar dataKey="count" fill="#22C55E" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                      <Bar dataKey="count" fill="#C8944D" radius={[3, 3, 0, 0]} maxBarSize={20} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartErrorBoundary>
@@ -683,8 +683,8 @@ const S = {
     cursor: 'pointer',
   },
   chipActive: {
-    background: '#22C55E',
-    border: '1px solid #22C55E',
+    background: '#C8944D',
+    border: '1px solid #C8944D',
     borderRadius: '6px',
     padding: '2px 8px',
     fontSize: '0.6875rem',
@@ -750,7 +750,7 @@ const S = {
   },
   funnelBar: {
     height: '100%',
-    background: 'linear-gradient(90deg, #22C55E, #10B981)',
+    background: 'linear-gradient(90deg, #C8944D, #10B981)',
     borderRadius: '4px',
     transition: 'width 0.4s ease',
     minWidth: '2px',

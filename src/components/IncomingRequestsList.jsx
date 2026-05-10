@@ -206,7 +206,7 @@ export default function IncomingRequestsList({
 
 function StatusBadge({ status, tr }) {
   const tone =
-    status === REQUEST_STATUS.ACCEPTED ? { bg: 'rgba(34,197,94,0.18)',  fg: '#86EFAC' }
+    status === REQUEST_STATUS.ACCEPTED ? { bg: 'rgba(200,148,77,0.18)',  fg: '#86EFAC' }
   : status === REQUEST_STATUS.DECLINED ? { bg: 'rgba(148,163,184,0.18)', fg: '#CBD5E1' }
                                         : { bg: 'rgba(252,211,77,0.18)', fg: '#FCD34D' };
   const label =
@@ -237,7 +237,7 @@ function buildStyles(compact) {
                  display: 'flex', alignItems: 'center', gap: 8 },
     countPill: {
       padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600,
-      background: 'rgba(34,197,94,0.18)', color: '#86EFAC',
+      background: 'rgba(200,148,77,0.18)', color: '#86EFAC',
     },
     refreshBtn: {
       padding: '4px 10px', borderRadius: 8,
@@ -270,7 +270,7 @@ function buildStyles(compact) {
     actions: { display: 'flex', gap: 6 },
     acceptBtn: {
       padding: '6px 12px', borderRadius: 8, border: 'none',
-      background: '#22C55E', color: '#0B1D34', fontWeight: 600,
+      background: '#C8944D', color: '#0B1D34', fontWeight: 600,
       fontSize: 12, cursor: 'pointer',
     },
     declineBtn: {

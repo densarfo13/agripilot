@@ -277,8 +277,8 @@ const S = {
   primary: {
     padding: '1.25rem',
     borderRadius: '20px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.22)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.22)',
     boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
   },
   primaryEmpty: {
@@ -292,7 +292,7 @@ const S = {
   primaryEmptyTitle: { fontSize: '1.125rem', fontWeight: 700, margin: '0 0 0.25rem' },
   primaryEmptyBody: { fontSize: '0.9375rem', color: '#9FB3C8', margin: 0 },
   primaryLabel: {
-    fontSize: '0.6875rem', fontWeight: 700, color: '#22C55E',
+    fontSize: '0.6875rem', fontWeight: 700, color: '#C8944D',
     textTransform: 'uppercase', letterSpacing: '0.08em',
     marginBottom: '0.375rem',
   },
@@ -318,9 +318,9 @@ const S = {
   ctaRow: { display: 'flex', gap: '0.5rem' },
   cta: {
     flex: 1, padding: '0.875rem', borderRadius: '14px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '52px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   ctaGhost: {
     padding: '0.875rem 1rem', borderRadius: '14px',

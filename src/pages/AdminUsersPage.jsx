@@ -49,7 +49,7 @@ const ONBOARDING_FILTERS = [
 const ONBOARDING_BADGE_STYLES = {
   not_started: { background: 'rgba(161,161,170,0.15)', color: '#A1A1AA', border: '1px solid #374151' },
   in_progress: { background: 'rgba(59,130,246,0.15)', color: '#60A5FA', border: '1px solid #1E3A5F' },
-  completed:   { background: 'rgba(34,197,94,0.15)', color: '#22C55E', border: '1px solid #14532D' },
+  completed:   { background: 'rgba(200,148,77,0.15)', color: '#C8944D', border: '1px solid #14532D' },
   abandoned:   { background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid #7F1D1D' },
 };
 
@@ -177,9 +177,9 @@ export default function AdminUsersPage() {
               onClick={() => handleFilterChange(f.value)}
               style={{
                 padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem', cursor: 'pointer',
-                border: statusFilter === f.value ? '1.5px solid #22C55E' : '1.5px solid #243041',
-                background: statusFilter === f.value ? 'rgba(34,197,94,0.15)' : '#162033',
-                color: statusFilter === f.value ? '#22C55E' : '#A1A1AA',
+                border: statusFilter === f.value ? '1.5px solid #C8944D' : '1.5px solid #243041',
+                background: statusFilter === f.value ? 'rgba(200,148,77,0.15)' : '#162033',
+                color: statusFilter === f.value ? '#C8944D' : '#A1A1AA',
                 fontWeight: statusFilter === f.value ? 600 : 400,
               }}
             >{f.label}</button>
@@ -206,7 +206,7 @@ export default function AdminUsersPage() {
         {/* Onboarding analytics summary cards */}
         {onboardingStats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-            <OnboardingCard label="Completion Rate" value={`${onboardingStats.completionRate}%`} sub={`${onboardingStats.statusBreakdown?.completed || 0} of ${onboardingStats.totalFarmers}`} color="#22C55E" />
+            <OnboardingCard label="Completion Rate" value={`${onboardingStats.completionRate}%`} sub={`${onboardingStats.statusBreakdown?.completed || 0} of ${onboardingStats.totalFarmers}`} color="#C8944D" />
             <OnboardingCard label="Avg. Time" value={onboardingStats.avgOnboardingMinutes > 60 ? `${Math.round(onboardingStats.avgOnboardingMinutes / 60)}h` : `${onboardingStats.avgOnboardingMinutes}m`} sub="to complete" color="#60A5FA" />
             <OnboardingCard label="In Progress" value={onboardingStats.statusBreakdown?.in_progress || 0} color="#F59E0B" />
             <OnboardingCard label="Abandoned" value={onboardingStats.statusBreakdown?.abandoned || 0} sub={`${onboardingStats.abandonmentRate}% rate`} color="#EF4444" />
@@ -349,7 +349,7 @@ export default function AdminUsersPage() {
             title="Re-enable User"
             body={<>Restore login access for <strong>{confirmModal.user.fullName}</strong>?<br /><br /><span style={{ color: '#FFFFFF', fontSize: '0.875rem' }}>They will be able to sign in again immediately.</span></>}
             confirmLabel="Re-enable User"
-            confirmStyle={{ background: '#22C55E', color: '#fff' }}
+            confirmStyle={{ background: '#C8944D', color: '#fff' }}
             onConfirm={() => doEnable(confirmModal.user)}
             onCancel={() => setConfirmModal(null)}
           />
@@ -775,7 +775,7 @@ function AccessOffboardingSection({ user, onDone }) {
           title="Unarchive User"
           body={<>Unarchive <strong>{user.fullName}</strong>? Their account will become visible again but login access remains disabled until you explicitly re-enable them.</>}
           confirmLabel={t('adminUser.unarchiveUser')}
-          confirmStyle={{ background: '#22C55E', color: '#fff' }}
+          confirmStyle={{ background: '#C8944D', color: '#fff' }}
           onConfirm={doUnarchive}
           onCancel={() => setConfirm(null)}
         />
@@ -1031,7 +1031,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
           <InlineFormError message={error}
             style={{ marginBottom: '0.75rem' }} />
           {execSuccess && (
-            <div style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+            <div style={{ background: 'rgba(200,148,77,0.15)', color: '#C8944D', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '0.75rem', fontSize: '0.85rem' }}>
               {execSuccess}
             </div>
           )}
@@ -1040,14 +1040,14 @@ function SodActionModal({ title, description, requestType, targetField, targetId
           <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #243041', borderRadius: 6, overflow: 'hidden' }}>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#C8944D' : '#162033', color: mode === 'request' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
               1. Create Request
             </button>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#C8944D' : '#162033', color: mode === 'execute' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
               2. Execute (have ID)
@@ -1080,7 +1080,7 @@ function SodActionModal({ title, description, requestType, targetField, targetId
           {/* Request submitted — show ID */}
           {mode === 'request' && created && (
             <div>
-              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#C8944D', marginBottom: '0.75rem' }}>
                 <strong>Request submitted.</strong> Another admin must approve it before you can execute.
               </div>
               <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>

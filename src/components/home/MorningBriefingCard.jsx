@@ -71,7 +71,7 @@ const ACCENT_GRADIENTS = Object.freeze({
   warm:    'linear-gradient(90deg, #FBBF24 0%, #F59E0B 100%)',
   cool:    'linear-gradient(90deg, #38BDF8 0%, #6366F1 100%)',
   slate:   'linear-gradient(90deg, #64748B 0%, #475569 100%)',
-  neutral: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)',
+  neutral: 'linear-gradient(90deg, #C8944D 0%, #B9853F 100%)',
 });
 
 // ─── Helpers ───────────────────────────────────────────────────

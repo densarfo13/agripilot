@@ -213,7 +213,7 @@ const S = {
     fontWeight: 700,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
-    color: '#22C55E',
+    color: '#C8944D',
   },
   tierEnterprise: {
     fontSize: '0.75rem',
@@ -264,8 +264,8 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   tierBtnActive: {
-    background: 'rgba(34,197,94,0.18)',
-    borderColor: 'rgba(34,197,94,0.55)',
+    background: 'rgba(200,148,77,0.18)',
+    borderColor: 'rgba(200,148,77,0.55)',
     color: '#DCFCE7',
   },
   tierBtnSub: {
@@ -302,7 +302,7 @@ const S = {
   },
   summaryLabel: { fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)' },
   summaryVal:    { fontSize: '0.9375rem', fontWeight: 700, color: '#EAF2FF' },
-  summaryValBig: { fontSize: '1.25rem',   fontWeight: 800, color: '#22C55E' },
+  summaryValBig: { fontSize: '1.25rem',   fontWeight: 800, color: '#C8944D' },
   flooredNote: {
     margin: '0.25rem 0 0',
     fontSize: '0.75rem',

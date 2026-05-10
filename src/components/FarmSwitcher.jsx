@@ -289,7 +289,7 @@ const S = {
     alignItems: 'center',
     gap: '0.75rem',
     background: '#1B2330',
-    border: '2px solid rgba(34,197,94,0.25)',
+    border: '2px solid rgba(200,148,77,0.25)',
     borderRadius: '14px',
     padding: '0.75rem 1rem',
     color: '#fff',
@@ -332,7 +332,7 @@ const S = {
   },
   defaultBadge: {
     fontSize: '0.6875rem',
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 600,
   },
   farmCount: {

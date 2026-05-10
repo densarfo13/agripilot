@@ -629,10 +629,10 @@ const priorityStyles = {
     minHeight: 44,
   },
   btnPrimary: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: C.white,
-    border: '1px solid #16A34A',
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    border: '1px solid #B9853F',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
   },
   btnSecondary: {
     background: '#1A3B5D',
@@ -691,8 +691,8 @@ const priorityStyles = {
     minHeight: 38,
   },
   saveBtnSaved: {
-    background: 'rgba(34,197,94,0.10)',
-    borderColor: 'rgba(34,197,94,0.40)',
+    background: 'rgba(200,148,77,0.10)',
+    borderColor: 'rgba(200,148,77,0.40)',
     color: '#86EFAC',
     cursor: 'default',
   },
@@ -700,8 +700,8 @@ const priorityStyles = {
     margin: '0.4rem 0 0',
     padding: '0.4rem 0.65rem',
     borderRadius: 8,
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.30)',
     color: '#86EFAC',
     fontSize: '0.75rem',
     fontWeight: 600,
@@ -796,9 +796,9 @@ const cardStyles = {
     fontSize: '0.6875rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
     padding: '0.2rem 0.6rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: C.lightGreen,
-    border: '1px solid rgba(34,197,94,0.40)',
+    border: '1px solid rgba(200,148,77,0.40)',
   },
   samplePill: {
     fontSize: '0.6875rem', fontWeight: 800,
@@ -827,8 +827,8 @@ const cardStyles = {
     fontSize: '0.9375rem', lineHeight: 1.55,
   },
   benefit: {
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.20)',
     borderRadius: '10px',
     padding: '0.5rem 0.75rem',
     display: 'flex', flexDirection: 'column', gap: '0.15rem',
@@ -876,7 +876,7 @@ const cardStyles = {
     color: C.white,
     fontSize: '0.9375rem', fontWeight: 800,
     cursor: 'pointer', textDecoration: 'none',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.20)',
   },
 };
 

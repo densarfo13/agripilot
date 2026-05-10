@@ -24,8 +24,8 @@ const PRIORITY_COLOR = { HIGH: '#EF4444', MEDIUM: '#F59E0B', LOW: '#71717A' };
 const STATUS_STYLE = {
   OPEN: { background: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   IN_PROGRESS: { background: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
-  FIXED: { background: 'rgba(34,197,94,0.15)', color: '#22C55E' },
-  VERIFIED: { background: 'rgba(34,197,94,0.25)', color: '#22C55E' },
+  FIXED: { background: 'rgba(200,148,77,0.15)', color: '#C8944D' },
+  VERIFIED: { background: 'rgba(200,148,77,0.25)', color: '#C8944D' },
 };
 const STATUS_LABEL = { OPEN: 'Open', IN_PROGRESS: 'In Progress', FIXED: 'Fixed', VERIFIED: 'Verified' };
 const TYPE_LABEL = { BUG: 'Bug', DATA_ISSUE: 'Data', ACCESS_ISSUE: 'Access', FEATURE_REQUEST: 'Feature' };
@@ -248,7 +248,7 @@ export default function ReportIssueButton() {
                             {isExp ? issue.description : (issue.description.length > 100 ? issue.description.slice(0, 100) + '...' : issue.description)}
                           </div>
                           {issue.adminNote && (
-                            <div style={{ fontSize: '0.75rem', color: '#22C55E', marginTop: '0.3rem', fontStyle: 'italic' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#C8944D', marginTop: '0.3rem', fontStyle: 'italic' }}>
                               Note: {issue.adminNote}
                             </div>
                           )}
@@ -345,7 +345,7 @@ const styles = {
   modal: { background: '#162033', borderRadius: '10px', width: '100%', maxWidth: '460px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', overflow: 'hidden' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1.25rem', borderBottom: '1px solid #243041', color: '#FFFFFF' },
   tab: { background: 'none', border: 'none', color: '#71717A', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '0.25rem 0', borderBottom: '2px solid transparent' },
-  tabActive: { color: '#FFFFFF', borderBottomColor: '#22C55E' },
+  tabActive: { color: '#FFFFFF', borderBottomColor: '#C8944D' },
   closeBtn: { background: 'none', border: 'none', color: '#A1A1AA', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, padding: 0 },
   body: { padding: '1rem 1.25rem' },
   footer: { display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', padding: '0.75rem 1.25rem', borderTop: '1px solid #243041' },

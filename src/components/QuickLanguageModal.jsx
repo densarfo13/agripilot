@@ -132,10 +132,10 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
   },
   btnActive: {
-    background: 'rgba(34,197,94,0.15)',
-    borderColor: 'rgba(34,197,94,0.5)',
+    background: 'rgba(200,148,77,0.15)',
+    borderColor: 'rgba(200,148,77,0.5)',
     color: '#DCFCE7',
   },
   btnLabel: { textAlign: 'left' },
-  tick: { fontSize: '1.125rem', color: '#22C55E', fontWeight: 800 },
+  tick: { fontSize: '1.125rem', color: '#C8944D', fontWeight: 800 },
 };

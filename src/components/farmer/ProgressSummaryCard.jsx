@@ -26,10 +26,10 @@ const STATUS_KEY = {
   all_done:        'actionHome.progress.status.allDone',
 };
 const STATUS_COLOR = {
-  on_track:        '#22C55E',
+  on_track:        '#C8944D',
   slight_delay:    '#F59E0B',
   needs_attention: '#EF4444',
-  all_done:        '#22C55E',
+  all_done:        '#C8944D',
 };
 
 /**

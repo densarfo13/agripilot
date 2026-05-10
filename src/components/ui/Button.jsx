@@ -111,7 +111,7 @@ const VARIANT_STYLES = Object.freeze({
     background: COLORS.good,
     color: COLORS.navy,
     border: 'none',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.28)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.28)',
     width: '100%',
   },
   secondary: {

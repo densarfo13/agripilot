@@ -404,7 +404,7 @@ const S = {
     fontSize:     '0.9375rem', fontWeight: 700,
     cursor:       'pointer',
     minHeight:    '46px',
-    boxShadow:    '0 8px 22px rgba(34,197,94,0.25)',
+    boxShadow:    '0 8px 22px rgba(200,148,77,0.25)',
   },
   btnGhost: {
     padding:      '0.85rem 1.4rem',

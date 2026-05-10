@@ -55,9 +55,9 @@ const C = {
   border:  'rgba(255,255,255,0.10)',
   ink:     '#FFFFFF',
   inkDim:  'rgba(255,255,255,0.65)',
-  green:   '#22C55E',
-  greenBg: 'rgba(34,197,94,0.12)',
-  greenBd: 'rgba(34,197,94,0.32)',
+  green:   '#C8944D',
+  greenBg: 'rgba(200,148,77,0.12)',
+  greenBd: 'rgba(200,148,77,0.32)',
   greenFg: '#86EFAC',
   navy:    '#0B1D34',
 };
@@ -134,7 +134,7 @@ const S = {
     color: C.inkDim,
   },
   rowChipActive: {
-    background: 'rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.20)',
     border: `1px solid ${C.greenBd}`,
     color: C.greenFg,
   },

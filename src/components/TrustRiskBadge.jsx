@@ -15,7 +15,7 @@ import React from 'react';
 // ─── Trust Badge ───────────────────────────────────────────
 
 const TRUST_STYLES = {
-  'High Trust':     { background: 'rgba(34,197,94,0.15)', color: '#22C55E', border: 'rgba(34,197,94,0.3)' },
+  'High Trust':     { background: 'rgba(200,148,77,0.15)', color: '#C8944D', border: 'rgba(200,148,77,0.3)' },
   'Moderate Trust': { background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: 'rgba(245,158,11,0.3)' },
   'Low Trust':      { background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: 'rgba(239,68,68,0.3)' },
   'Needs Review':   { background: 'rgba(139,92,246,0.15)', color: '#A78BFA', border: 'rgba(139,92,246,0.3)' },
@@ -63,7 +63,7 @@ const RISK_STYLES = {
   Critical: { background: 'rgba(139,92,246,0.15)', color: '#A78BFA', border: 'rgba(139,92,246,0.3)', dot: '#7c3aed' },
   High:     { background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: 'rgba(239,68,68,0.3)', dot: '#dc2626' },
   Medium:   { background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: 'rgba(245,158,11,0.3)', dot: '#d97706' },
-  Low:      { background: 'rgba(34,197,94,0.15)', color: '#22C55E', border: 'rgba(34,197,94,0.3)', dot: '#16a34a' },
+  Low:      { background: 'rgba(200,148,77,0.15)', color: '#C8944D', border: 'rgba(200,148,77,0.3)', dot: '#B9853F' },
 };
 
 /**

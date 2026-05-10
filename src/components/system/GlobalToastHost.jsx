@@ -32,8 +32,8 @@ import { useGlobalToasts, dismissToast } from '../../lib/globalToast.js';
 
 const TYPE_STYLES = Object.freeze({
   success: {
-    background: 'rgba(34,197,94,0.18)',
-    border:     '1px solid rgba(34,197,94,0.35)',
+    background: 'rgba(200,148,77,0.18)',
+    border:     '1px solid rgba(200,148,77,0.35)',
     color:      '#86EFAC',
     icon:       '\u2713',
   },

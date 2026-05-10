@@ -208,7 +208,7 @@ const S = {
   hintText: { color: '#6F8299', fontSize: '0.75rem', marginTop: '0.35rem', marginBottom: 0, lineHeight: 1.45 },
   errorBox: { background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.14)', borderRadius: '14px', padding: '0.75rem 1rem', color: '#FCA5A5', fontSize: '0.875rem', marginBottom: '0.5rem' },
   link: { color: '#9FB3C8', textDecoration: 'none', fontSize: '0.875rem' },
-  button: { background: '#22C55E', color: '#fff', border: 'none', borderRadius: '14px', padding: '0.875rem 1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', width: '100%', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
+  button: { background: '#C8944D', color: '#fff', border: 'none', borderRadius: '14px', padding: '0.875rem 1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', width: '100%', boxShadow: '0 10px 24px rgba(200,148,77,0.22)' },
   buttonDisabled: { opacity: 0.6, cursor: 'not-allowed' },
   footerText: { textAlign: 'center', color: '#6F8299', fontSize: '0.875rem', marginTop: '1.5rem' },
 };

@@ -7,9 +7,9 @@ import { ADMIN_ROLES } from '../utils/roles.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 
-const PRIORITY_COLOR = { high: 'rgba(239,68,68,0.15)', medium: 'rgba(245,158,11,0.15)', low: 'rgba(34,197,94,0.15)' };
+const PRIORITY_COLOR = { high: 'rgba(239,68,68,0.15)', medium: 'rgba(245,158,11,0.15)', low: 'rgba(200,148,77,0.15)' };
 const PRIORITY_BORDER = { high: '#243041', medium: '#243041', low: '#243041' };
-const PRIORITY_DOT = { high: '#EF4444', medium: '#F59E0B', low: '#22C55E' };
+const PRIORITY_DOT = { high: '#EF4444', medium: '#F59E0B', low: '#C8944D' };
 
 function StatCard({ label, value, sub }) {
   return (
@@ -34,7 +34,7 @@ function FunnelBar({ step, label, count, pct, maxCount }) {
           <span style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>{count} ({pct}%)</span>
         </div>
         <div style={{ background: '#243041', borderRadius: 4, height: 8 }}>
-          <div style={{ width: `${barWidth}%`, background: '#22C55E', height: 8, borderRadius: 4, transition: 'width 0.4s ease' }} />
+          <div style={{ width: `${barWidth}%`, background: '#C8944D', height: 8, borderRadius: 4, transition: 'width 0.4s ease' }} />
         </div>
       </div>
     </div>
@@ -134,10 +134,10 @@ function VoiceAnalyticsCard({ voiceData }) {
         {/* Overview stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.25rem' }}>
           {[
-            ['Played', played, '#22C55E'],
+            ['Played', played, '#C8944D'],
             ['Replayed', replayed, '#60A5FA'],
             ['Muted', muted, '#F59E0B'],
-            ['Completed', completed, '#22C55E'],
+            ['Completed', completed, '#C8944D'],
             ['Abandoned', abandoned, '#EF4444'],
           ].map(([label, count, color]) => (
             <div key={label} style={{ background: '#1E293B', borderRadius: 8, padding: '0.6rem 0.5rem', textAlign: 'center' }}>
@@ -214,7 +214,7 @@ function VoiceAnalyticsCard({ voiceData }) {
                     <span style={{ color: '#A1A1AA' }}>{count}</span>
                   </div>
                   <div style={{ background: '#243041', borderRadius: 3, height: 6 }}>
-                    <div style={{ width: `${(count / maxCount) * 100}%`, background: '#22C55E', height: 6, borderRadius: 3 }} />
+                    <div style={{ width: `${(count / maxCount) * 100}%`, background: '#C8944D', height: 6, borderRadius: 3 }} />
                   </div>
                 </div>
               );
@@ -400,7 +400,7 @@ export default function PilotMetricsPage() {
                   </div>
                 ))}
                 {reviewerEff.queue.active === 0 && (
-                  <div style={{ color: '#22C55E', fontSize: '0.8rem', textAlign: 'center', padding: '0.5rem' }}>Queue is clear</div>
+                  <div style={{ color: '#C8944D', fontSize: '0.8rem', textAlign: 'center', padding: '0.5rem' }}>Queue is clear</div>
                 )}
               </div>
             </div>
@@ -420,7 +420,7 @@ export default function PilotMetricsPage() {
             </div>
             <div className="card-body">
               {attention.categories.length === 0 ? (
-                <div style={{ color: '#22C55E', textAlign: 'center', padding: '1rem', fontSize: '0.875rem' }}>
+                <div style={{ color: '#C8944D', textAlign: 'center', padding: '1rem', fontSize: '0.875rem' }}>
                   No items needing attention right now.
                 </div>
               ) : (
@@ -442,10 +442,10 @@ export default function PilotMetricsPage() {
             <div className="card-body">
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 {[
-                  ['Total', metrics.applications.total, '#22C55E'],
+                  ['Total', metrics.applications.total, '#C8944D'],
                   ['Submitted', metrics.applications.submitted, '#F59E0B'],
                   ['Under Review', metrics.applications.underReview, '#0891b2'],
-                  ['Approved', metrics.applications.approved, '#22C55E'],
+                  ['Approved', metrics.applications.approved, '#C8944D'],
                 ].map(([label, count, color]) => (
                   <div key={label} style={{ background: '#1E293B', borderRadius: 8, padding: '0.75rem 1.25rem', minWidth: 100, textAlign: 'center' }}>
                     <div style={{ fontSize: '1.5rem', fontWeight: 700, color }}>{count}</div>

@@ -23,9 +23,9 @@ import { getCountrySupportTier, TIER_I18N_KEY, SUPPORT_TIER } from '../../utils/
 import { getCropSupportDepth, DEPTH_I18N_KEY, CROP_SUPPORT_DEPTH } from '../../utils/cropSupport.js';
 import { getRecommendationConfidence, CONFIDENCE_I18N_KEY } from '../../utils/getRecommendationConfidence.js';
 
-const CONFIDENCE_COLOR = { high: '#22C55E', medium: '#F59E0B', low: '#9FB3C8' };
+const CONFIDENCE_COLOR = { high: '#C8944D', medium: '#F59E0B', low: '#9FB3C8' };
 const DEPTH_COLOR = {
-  FULLY_GUIDED:     '#22C55E',
+  FULLY_GUIDED:     '#C8944D',
   PARTIAL_GUIDANCE: '#0EA5E9',
   BROWSE_ONLY:      '#9FB3C8',
 };
@@ -36,7 +36,7 @@ const BEGINNER_FRIENDLY = new Set([
   'green_onion', 'collards', 'swiss_chard',
 ]);
 
-const BADGE_COLOR = { high: '#22C55E', medium: '#F59E0B', low: '#9FB3C8' };
+const BADGE_COLOR = { high: '#C8944D', medium: '#F59E0B', low: '#9FB3C8' };
 // Shared-namespace keys so the same "High fit" label resolves on
 // the crop-plan page, NGO dashboard, and Today-screen chips without
 // needing per-screen duplicates.
@@ -359,7 +359,7 @@ const S = {
   locationChip: {
     display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
     padding: '0.25rem 0.625rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.10)', color: '#22C55E',
+    background: 'rgba(200,148,77,0.10)', color: '#C8944D',
     fontSize: '0.75rem', fontWeight: 700, alignSelf: 'flex-start',
   },
   locationIcon: { fontSize: '0.875rem' },

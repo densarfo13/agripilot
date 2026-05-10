@@ -349,7 +349,7 @@ function statusStyle(status) {
   const map = {
     [AGENT_QUEUE_STATUS.PENDING]: { bg: 'rgba(245,158,11,0.18)', fg: '#FCD34D' },
     [AGENT_QUEUE_STATUS.SYNCING]: { bg: 'rgba(59,130,246,0.18)', fg: '#93C5FD' },
-    [AGENT_QUEUE_STATUS.SYNCED]:  { bg: 'rgba(34,197,94,0.15)',  fg: C.lightGreen },
+    [AGENT_QUEUE_STATUS.SYNCED]:  { bg: 'rgba(200,148,77,0.15)',  fg: C.lightGreen },
     [AGENT_QUEUE_STATUS.FAILED]:  { bg: 'rgba(239,68,68,0.15)',  fg: '#FCA5A5' },
   };
   const s = map[status] || map[AGENT_QUEUE_STATUS.PENDING];
@@ -402,8 +402,8 @@ const S = {
     border: '1px solid rgba(255,255,255,0.10)',
   },
   bannerOnline:  {
-    background: 'rgba(34,197,94,0.10)',
-    borderColor: 'rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.10)',
+    borderColor: 'rgba(200,148,77,0.30)',
   },
   bannerOffline: {
     background: 'rgba(245,158,11,0.10)',
@@ -448,9 +448,9 @@ const S = {
     cursor: 'pointer',
   },
   tabActive: {
-    background: 'rgba(34,197,94,0.15)',
+    background: 'rgba(200,148,77,0.15)',
     color: C.lightGreen,
-    borderColor: 'rgba(34,197,94,0.40)',
+    borderColor: 'rgba(200,148,77,0.40)',
   },
 
   section: {
@@ -482,7 +482,7 @@ const S = {
     fontSize: '0.6875rem', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.06em',
     padding: '0.15rem 0.5rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.15)', color: C.lightGreen,
+    background: 'rgba(200,148,77,0.15)', color: C.lightGreen,
   },
   pendingPill: {
     fontSize: '0.6875rem', fontWeight: 800,
@@ -521,7 +521,7 @@ const S = {
     padding: '0.6rem 1.1rem', borderRadius: '10px',
     border: 'none', background: C.green, color: C.white,
     fontSize: '0.875rem', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.20)',
     flexShrink: 0,
   },
   btnGhost: {

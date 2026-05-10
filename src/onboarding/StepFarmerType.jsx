@@ -84,8 +84,8 @@ const S = {
     textAlign: 'left',
   },
   choiceActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.10)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.10)',
     color: '#86EFAC',
   },
   choiceIcon: { fontSize: '1.6rem', lineHeight: 1 },

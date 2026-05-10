@@ -148,7 +148,7 @@ const S = {
   },
   cohortFill: {
     height: '100%',
-    background: '#22C55E',
+    background: '#C8944D',
     borderRadius: 999,
     transition: 'width 220ms ease-out',
   },

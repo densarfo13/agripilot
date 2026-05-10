@@ -173,8 +173,8 @@ const S = {
   cta: {
     display: 'inline-flex', alignItems: 'center',
     padding: '0.45rem 0.85rem', borderRadius: '999px',
-    background: 'rgba(34,197,94,0.12)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.12)',
+    border: '1px solid rgba(200,148,77,0.30)',
     color: C.lightGreen,
     fontSize: '0.8125rem', fontWeight: 700,
     textDecoration: 'none',
@@ -208,8 +208,8 @@ const S = {
   chip: {
     display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
     padding: '0.3rem 0.75rem',
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.30)',
     borderRadius: '999px',
     color: C.lightGreen,
     fontSize: '0.8125rem', fontWeight: 700,

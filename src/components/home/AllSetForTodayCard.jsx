@@ -27,8 +27,8 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 
 const S = {
   card: {
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.28)',
     borderRadius: 14,
     padding: '18px 16px',
     margin: '12px 0',
@@ -43,8 +43,8 @@ const S = {
     appearance: 'none',
     fontFamily: 'inherit',
     cursor: 'pointer',
-    background: '#22C55E',
-    color: '#062714',
+    background: '#C8944D',
+    color: '#FFFFFF',
     border: 'none',
     borderRadius: 12,
     padding: '12px 18px',

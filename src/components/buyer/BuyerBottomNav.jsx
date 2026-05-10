@@ -53,7 +53,7 @@ const C = {
   bg: '#0B1D34',
   border: 'rgba(255,255,255,0.08)',
   ink: 'rgba(255,255,255,0.65)',
-  inkActive: '#22C55E',
+  inkActive: '#C8944D',
 };
 
 const S = {

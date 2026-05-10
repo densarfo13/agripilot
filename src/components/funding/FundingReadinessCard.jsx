@@ -39,7 +39,7 @@ const STYLES = {
   pct: {
     fontSize: 26,
     fontWeight: 800,
-    color: '#22C55E',
+    color: '#C8944D',
     fontVariantNumeric: 'tabular-nums',
   },
   bar: {
@@ -49,7 +49,7 @@ const STYLES = {
     background: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
-  fill: { height: '100%', background: '#22C55E', borderRadius: 999, transition: 'width 220ms ease' },
+  fill: { height: '100%', background: '#C8944D', borderRadius: 999, transition: 'width 220ms ease' },
   message: { margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 },
   tipsTitle: {
     fontSize: 11,

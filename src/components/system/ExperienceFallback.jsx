@@ -67,7 +67,7 @@ const C = {
   border: 'rgba(255,255,255,0.10)',
   ink:   '#EAF2FF',
   inkSoft: 'rgba(255,255,255,0.65)',
-  green: '#22C55E',
+  green: '#C8944D',
 };
 
 const S = {
@@ -114,7 +114,7 @@ const S = {
     fontWeight: 800,
     minHeight: 44,
   },
-  btnPrimary: { background: C.green, color: '#062714' },
+  btnPrimary: { background: C.green, color: '#FFFFFF' },
   btnGhost: {
     background: 'transparent',
     border: `1px solid ${C.border}`,

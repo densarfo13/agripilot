@@ -82,7 +82,7 @@ const S = {
   },
   progressFill: {
     height: '100%',
-    background: '#22C55E',
+    background: '#C8944D',
     borderRadius: 999,
     transition: 'width 220ms ease-out',
   },
@@ -120,8 +120,8 @@ const S = {
     gap: 6,
   },
   cardActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
   },
   cardIcon: { fontSize: 26 },
 
@@ -140,8 +140,8 @@ const S = {
   doublePane: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
 
   feedback: {
-    background: 'rgba(34,197,94,0.16)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.16)',
+    border: '1px solid rgba(200,148,77,0.45)',
     color: '#86EFAC',
     padding: '8px 12px',
     borderRadius: 10,
@@ -159,7 +159,7 @@ const S = {
     border: 'none',
     padding: '14px 18px',
     borderRadius: 12,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 15,
     fontWeight: 800,

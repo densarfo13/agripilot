@@ -60,7 +60,7 @@ const S = {
   progressFill: {
     height: '100%',
     borderRadius: '3px',
-    background: '#22C55E',
+    background: '#C8944D',
     transition: 'width 0.3s ease',
     minWidth: '4px',
   },

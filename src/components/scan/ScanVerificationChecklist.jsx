@@ -34,7 +34,7 @@ const C = {
   ink:     '#EAF2FF',
   inkSoft: 'rgba(255,255,255,0.65)',
   border:  'rgba(255,255,255,0.10)',
-  green:   '#22C55E',
+  green:   '#C8944D',
   amber:   '#F59E0B',
   red:     '#EF4444',
 };
@@ -70,7 +70,7 @@ const S = {
     fontWeight: 700,
     minHeight: 32,
   },
-  pillYes:  { background: 'rgba(34,197,94,0.18)',  color: '#86EFAC', borderColor: 'rgba(34,197,94,0.32)' },
+  pillYes:  { background: 'rgba(200,148,77,0.18)',  color: '#86EFAC', borderColor: 'rgba(200,148,77,0.32)' },
   pillNo:   { background: 'rgba(239,68,68,0.16)', color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.32)' },
   summary:  { marginTop: 12, fontSize: 12, color: C.inkSoft, lineHeight: 1.45 },
   skipBtn:  {

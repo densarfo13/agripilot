@@ -124,7 +124,7 @@ export default function ProfilePhotoUpload({ farmerId, fullName, currentImageUrl
           {/* Preview */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
             {preview ? (
-              <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', border: '3px solid #22C55E' }}>
+              <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', border: '3px solid #C8944D' }}>
                 <img src={preview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             ) : (

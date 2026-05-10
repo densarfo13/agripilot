@@ -31,8 +31,8 @@ import {
 
 const S = {
   panel: {
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.32)',
     borderRadius: 12,
     padding: '10px 12px',
     display: 'flex',
@@ -46,7 +46,7 @@ const S = {
   cta: {
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     padding: '8px 12px',
     borderRadius: 8,
@@ -62,8 +62,8 @@ const S = {
     gap: 6,
     padding: '4px 10px',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.16)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.16)',
+    border: '1px solid rgba(200,148,77,0.45)',
     color: '#86EFAC',
     fontSize: 12,
     fontWeight: 800,

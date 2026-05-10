@@ -80,7 +80,7 @@ const S = {
     padding: '0.4rem 0.8rem',
     fontSize: '0.8rem',
     fontWeight: 600,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#000',
     border: 'none',
     borderRadius: '8px',

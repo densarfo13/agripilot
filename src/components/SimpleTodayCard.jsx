@@ -129,7 +129,7 @@ export default function SimpleTodayCard({
 const S = {
   card: {
     background: 'linear-gradient(135deg, #166534 0%, #14532D 100%)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     borderRadius: '20px',
     padding: '1.75rem 1.25rem 1.5rem',
     color: '#FFFFFF',
@@ -220,12 +220,12 @@ const S = {
     padding: '0.875rem 1rem',
     borderRadius: '14px',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: '1.125rem',
     fontWeight: 800,
     cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.18)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.18)',
     WebkitTapHighlightColor: 'transparent',
   },
   btnBusy: { opacity: 0.7, cursor: 'wait' },

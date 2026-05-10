@@ -113,7 +113,7 @@ const S = {
     appearance: 'none',
     flex: '2 1 0',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     padding: '12px 16px',
     borderRadius: 10,

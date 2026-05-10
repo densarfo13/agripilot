@@ -147,7 +147,7 @@ export default function NextActionCard({
             <button
               data-testid="next-action-cta"
               onClick={handleCta}
-              style={{ ...S.ctaBtn, background: isUrgent ? '#EF4444' : '#22C55E' }}
+              style={{ ...S.ctaBtn, background: isUrgent ? '#EF4444' : '#C8944D' }}
             >
               {t('feedback.continue') || 'Do This Now'}
             </button>
@@ -258,7 +258,7 @@ const S = {
   },
   spinner: {
     width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.06)',
-    borderTopColor: '#22C55E', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite',
+    borderTopColor: '#C8944D', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite',
   },
   // ─── Loop state cards ──────
   stateCard: {
@@ -288,14 +288,14 @@ const S = {
   },
   stateNext: {
     fontSize: '0.8125rem',
-    color: '#22C55E',
+    color: '#C8944D',
     fontWeight: 600,
     marginTop: '0.25rem',
   },
   ctaBtn: {
     marginTop: '0.625rem',
     padding: '0.625rem 1.25rem',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#000',
     border: 'none',
     borderRadius: '10px',
@@ -321,7 +321,7 @@ const S = {
   progressFill: {
     height: '100%',
     borderRadius: '2px',
-    background: '#22C55E',
+    background: '#C8944D',
     transition: 'width 0.4s ease',
     minWidth: '2px',
   },
@@ -338,7 +338,7 @@ const S = {
   progressBadge: {
     fontSize: '0.625rem',
     fontWeight: 700,
-    color: '#22C55E',
+    color: '#C8944D',
     textTransform: 'uppercase',
     letterSpacing: '0.03em',
   },

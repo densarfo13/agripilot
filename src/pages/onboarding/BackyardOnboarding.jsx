@@ -104,7 +104,7 @@ const STYLES = {
     overflow: 'hidden',
     marginBottom: 24,
   },
-  progressFill: { height: '100%', background: '#22C55E', transition: 'width 220ms ease' },
+  progressFill: { height: '100%', background: '#C8944D', transition: 'width 220ms ease' },
   h1: { margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em' },
   h2: { margin: '0 0 16px', fontSize: 20, fontWeight: 800 },
   subtitle: { margin: '6px 0 24px', fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 },
@@ -130,8 +130,8 @@ const STYLES = {
     gap: 6,
   },
   cardActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
   },
   cardIcon: { fontSize: 28 },
   optionRow: {
@@ -153,8 +153,8 @@ const STYLES = {
     cursor: 'pointer',
   },
   optionBtnActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.14)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.14)',
   },
   field: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 },
   label: {
@@ -178,7 +178,7 @@ const STYLES = {
   primary: {
     padding: '12px 18px',
     borderRadius: 12,
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: 15,
     fontWeight: 700,

@@ -60,8 +60,8 @@ const BANNER_CONFIG = {
   success: {
     icon: '✅',
     labelKey: 'feedback.saved',
-    bg: 'rgba(34,197,94,0.06)',
-    border: 'rgba(34,197,94,0.12)',
+    bg: 'rgba(200,148,77,0.06)',
+    border: 'rgba(200,148,77,0.12)',
     textColor: '#9FB3C8',
   },
   offline: {
@@ -81,8 +81,8 @@ const BANNER_CONFIG = {
   synced: {
     icon: '✅',
     labelKey: 'feedback.synced',
-    bg: 'rgba(34,197,94,0.06)',
-    border: 'rgba(34,197,94,0.12)',
+    bg: 'rgba(200,148,77,0.06)',
+    border: 'rgba(200,148,77,0.12)',
     textColor: '#9FB3C8',
   },
   failed: {

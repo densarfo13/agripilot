@@ -41,8 +41,8 @@ function getStageLabelsOfficer(t) {
   };
 }
 
-const CONDITION_COLORS = { good: '#22C55E', average: '#F59E0B', poor: '#EF4444' };
-const PRIORITY_COLORS = { high: '#EF4444', medium: '#F59E0B', normal: '#22C55E' };
+const CONDITION_COLORS = { good: '#C8944D', average: '#F59E0B', poor: '#EF4444' };
+const PRIORITY_COLORS = { high: '#EF4444', medium: '#F59E0B', normal: '#C8944D' };
 
 export default function OfficerValidationPage() {
   const [queue, setQueue] = useState([]);
@@ -358,7 +358,7 @@ export default function OfficerValidationPage() {
           {actionFeedback && (
             <div style={{
               ...VS.feedbackOverlay,
-              background: actionFeedback.type === 'approve' ? 'rgba(34,197,94,0.9)'
+              background: actionFeedback.type === 'approve' ? 'rgba(200,148,77,0.9)'
                 : actionFeedback.type === 'error' ? 'rgba(239,68,68,0.9)'
                 : 'rgba(245,158,11,0.9)',
             }} data-testid="action-feedback">
@@ -463,7 +463,7 @@ const VS = {
   },
   spinner: {
     width: '40px', height: '40px', border: '4px solid #243041',
-    borderTopColor: '#22C55E', borderRadius: '50%',
+    borderTopColor: '#C8944D', borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
   emptyCenter: {
@@ -471,7 +471,7 @@ const VS = {
     justifyContent: 'center', textAlign: 'center', padding: '2rem',
   },
   refreshBtn: {
-    marginTop: '1rem', padding: '0.7rem 2rem', background: '#22C55E', color: '#fff',
+    marginTop: '1rem', padding: '0.7rem 2rem', background: '#C8944D', color: '#fff',
     border: 'none', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 700,
     cursor: 'pointer', minHeight: '48px', WebkitTapHighlightColor: 'transparent',
   },
@@ -496,7 +496,7 @@ const VS = {
     height: '3px', background: '#243041',
   },
   progressFill: {
-    height: '100%', background: '#22C55E', transition: 'width 0.3s ease',
+    height: '100%', background: '#C8944D', transition: 'width 0.3s ease',
   },
 
   // Card
@@ -614,9 +614,9 @@ const VS = {
   approveBtn: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: '0.2rem',
-    padding: '0.75rem', background: 'rgba(34,197,94,0.12)',
-    border: '2px solid rgba(34,197,94,0.3)', borderRadius: '12px',
-    color: '#22C55E', cursor: 'pointer', minHeight: '64px',
+    padding: '0.75rem', background: 'rgba(200,148,77,0.12)',
+    border: '2px solid rgba(200,148,77,0.3)', borderRadius: '12px',
+    color: '#C8944D', cursor: 'pointer', minHeight: '64px',
     WebkitTapHighlightColor: 'transparent',
   },
   actionBtnIcon: { fontSize: '1.5rem', fontWeight: 800 },

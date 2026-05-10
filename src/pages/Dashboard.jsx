@@ -1846,8 +1846,8 @@ const S = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     color: T.green,
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.32)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
     padding: '3px 10px',
     borderRadius: 999,
   },
@@ -1968,8 +1968,8 @@ const S = {
   // Gentle accent — no aggressive yellow, just a green tint
   // so it pops without competing with the primary CTA.
   quickTileAccent: {
-    background: 'rgba(34,197,94,0.08)',
-    borderColor: 'rgba(34,197,94,0.35)',
+    background: 'rgba(200,148,77,0.08)',
+    borderColor: 'rgba(200,148,77,0.35)',
   },
   quickTileIcon: {
     color: 'rgba(255,255,255,0.85)',
@@ -2081,8 +2081,8 @@ const S = {
   cameraHeroDoneCheck: {
     width: '48px', height: '48px',
     borderRadius: '50%',
-    background: 'rgba(34,197,94,0.16)',
-    border: '1px solid rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.16)',
+    border: '1px solid rgba(200,148,77,0.45)',
     color: T.green,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '1.5rem', fontWeight: 800,
@@ -2211,8 +2211,8 @@ const S = {
     minHeight: 36,
   },
   triggerChipSell: {
-    background: 'rgba(34,197,94,0.12)',
-    borderColor: 'rgba(34,197,94,0.45)',
+    background: 'rgba(200,148,77,0.12)',
+    borderColor: 'rgba(200,148,77,0.45)',
     color: T.green,
   },
   triggerChipFunding: {
@@ -2322,7 +2322,7 @@ const S = {
     cursor: 'pointer',
     fontSize: '0.9375rem',
     minHeight: '48px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
     WebkitTapHighlightColor: 'transparent',
   },
   modalOverlay: {

@@ -20,14 +20,14 @@ const TITLE_KEY = 'dashboard.todayOnFarm';
 
 // Lighter backgrounds — weather bar should NOT dominate
 const STATUS_COLORS = {
-  safe:    'rgba(34,197,94,0.05)',
+  safe:    'rgba(200,148,77,0.05)',
   caution: 'rgba(250,204,21,0.05)',
   warning: 'rgba(250,204,21,0.06)',   // amber, not red — only danger uses red
   danger:  'rgba(239,68,68,0.08)',
 };
 
 const STATUS_BORDERS = {
-  safe:    'rgba(34,197,94,0.10)',
+  safe:    'rgba(200,148,77,0.10)',
   caution: 'rgba(250,204,21,0.12)',
   warning: 'rgba(250,204,21,0.15)',   // amber, not red
   danger:  'rgba(239,68,68,0.20)',

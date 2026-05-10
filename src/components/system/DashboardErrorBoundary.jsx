@@ -38,7 +38,7 @@ const S = {
   heading: { fontSize: '22px', fontWeight: '600', marginBottom: '10px', color: '#e8f5e9' },
   sub: { fontSize: '15px', color: 'rgba(232,245,233,0.60)', marginBottom: '28px', maxWidth: '320px' },
   primary: {
-    background: 'linear-gradient(135deg,#22c55e,#16a34a)',
+    background: 'linear-gradient(135deg,#C8944D,#B9853F)',
     border: 'none',
     borderRadius: '30px',
     padding: '13px 28px',

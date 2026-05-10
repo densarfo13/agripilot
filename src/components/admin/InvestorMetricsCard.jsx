@@ -274,8 +274,8 @@ const S = {
     borderRadius: 999, cursor: 'pointer',
   },
   chipActive: {
-    border: '1px solid rgba(34,197,94,0.55)',
-    background: 'rgba(34,197,94,0.15)', color: '#86EFAC',
+    border: '1px solid rgba(200,148,77,0.55)',
+    background: 'rgba(200,148,77,0.15)', color: '#86EFAC',
   },
   grid: {
     display: 'grid',

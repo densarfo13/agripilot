@@ -169,8 +169,8 @@ const S = {
     minHeight: 92,
   },
   tileActive: {
-    borderColor: '#22C55E',
-    background: 'rgba(34,197,94,0.12)',
+    borderColor: '#C8944D',
+    background: 'rgba(200,148,77,0.12)',
     color: '#86EFAC',
   },
   tileEmoji: { fontSize: '1.75rem', lineHeight: 1 },

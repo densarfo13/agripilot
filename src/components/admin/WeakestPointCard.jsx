@@ -141,7 +141,7 @@ function _humanize(slug) {
 }
 
 const C = {
-  green:   '#22C55E',
+  green:   '#C8944D',
   greenFg: '#86EFAC',
   amber:   '#F59E0B',
   amberFg: '#FCD34D',
@@ -164,7 +164,7 @@ const S = {
     border: '1px solid rgba(255,255,255,0.10)',
   },
   cardOk: {
-    background: 'rgba(34,197,94,0.10)',
+    background: 'rgba(200,148,77,0.10)',
     border: `1px solid ${C.green}40`,
   },
   cardWarn: {

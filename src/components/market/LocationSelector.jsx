@@ -292,8 +292,8 @@ const S = {
   actions: { display: 'flex', flexWrap: 'wrap', gap: '0.375rem' },
   actionBtn: {
     padding: '0.375rem 0.625rem', borderRadius: '8px',
-    border: '1px solid rgba(34,197,94,0.28)', background: 'rgba(34,197,94,0.12)',
-    color: '#22C55E', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+    border: '1px solid rgba(200,148,77,0.28)', background: 'rgba(200,148,77,0.12)',
+    color: '#C8944D', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
   },
   actionBtnGhost: {
     padding: '0.375rem 0.625rem', borderRadius: '8px',
@@ -313,13 +313,13 @@ const S = {
     color: '#EAF2FF', fontSize: '0.875rem', textAlign: 'left', cursor: 'pointer', minHeight: '40px',
   },
   rowSelected: {
-    background: 'rgba(34,197,94,0.10)', borderColor: 'rgba(34,197,94,0.28)',
-    color: '#22C55E', fontWeight: 700,
+    background: 'rgba(200,148,77,0.10)', borderColor: 'rgba(200,148,77,0.28)',
+    color: '#C8944D', fontWeight: 700,
   },
   pillPreferred: {
-    fontSize: '0.625rem', fontWeight: 700, color: '#22C55E',
+    fontSize: '0.625rem', fontWeight: 700, color: '#C8944D',
     padding: '0.125rem 0.375rem', borderRadius: '999px',
-    border: '1px solid rgba(34,197,94,0.28)', background: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(200,148,77,0.28)', background: 'rgba(200,148,77,0.08)',
   },
   empty: { padding: '0.5rem', color: '#9FB3C8', fontSize: '0.8125rem' },
 };

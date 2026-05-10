@@ -37,7 +37,7 @@ import {
 } from '../../engine/engagementHistory.js';
 
 const BAND_TONES = {
-  healthy: { color: '#86EFAC', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.32)' },
+  healthy: { color: '#86EFAC', bg: 'rgba(200,148,77,0.12)',  border: 'rgba(200,148,77,0.32)' },
   watch:   { color: '#FCD34D', bg: 'rgba(252,211,77,0.10)', border: 'rgba(252,211,77,0.30)' },
   warning: { color: '#FCA5A5', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.32)' },
 };

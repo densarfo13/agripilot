@@ -4,9 +4,9 @@ import api from '../api/client.js';
 import EmptyState from '../components/EmptyState.jsx';
 
 const TYPE_COLORS = {
-  application_update: '#22C55E',
+  application_update: '#C8944D',
   reminder: '#d97706',
-  post_harvest: '#16a34a',
+  post_harvest: '#B9853F',
   market: '#7c3aed',
   weather: '#0891b2',
   system: '#A1A1AA',
@@ -101,7 +101,7 @@ export default function FarmerNotificationsTab() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', display: 'inline-block', flexShrink: 0 }} />}
+                      {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#C8944D', display: 'inline-block', flexShrink: 0 }} />}
                       <span style={{ fontWeight: n.read ? 400 : 600, fontSize: '0.95rem' }}>{n.title}</span>
                       <span style={{
                         fontSize: '0.75rem',

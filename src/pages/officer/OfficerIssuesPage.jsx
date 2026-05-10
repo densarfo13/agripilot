@@ -221,7 +221,7 @@ function formatDate(ts) {
 }
 function statusStyle(status) {
   switch (status) {
-    case 'resolved':    return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    case 'resolved':    return { background: 'rgba(200,148,77,0.15)',  color: '#86EFAC' };
     case 'in_progress': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
     case 'assigned':    return { background: 'rgba(59,130,246,0.15)', color: '#93C5FD' };
     case 'escalated':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
@@ -282,15 +282,15 @@ const S = {
               background: 'rgba(255,255,255,0.05)', color: '#fff',
               fontSize: 13 },
   smallPrimary: { padding: '6px 10px', borderRadius: 8, border: 'none',
-                  background: '#22C55E', color: '#000',
+                  background: '#C8944D', color: '#000',
                   fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   smallGhost:   { padding: '6px 10px', borderRadius: 8,
                   border: '1px solid rgba(255,255,255,0.15)',
                   background: 'transparent', color: 'rgba(255,255,255,0.85)',
                   fontSize: 12, cursor: 'pointer' },
   smallGood:    { padding: '6px 10px', borderRadius: 8,
-                  border: '1px solid rgba(34,197,94,0.35)',
-                  background: 'rgba(34,197,94,0.1)', color: '#86EFAC',
+                  border: '1px solid rgba(200,148,77,0.35)',
+                  background: 'rgba(200,148,77,0.1)', color: '#86EFAC',
                   fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   smallDanger:  { padding: '6px 10px', borderRadius: 8,
                   border: '1px solid rgba(239,68,68,0.35)',

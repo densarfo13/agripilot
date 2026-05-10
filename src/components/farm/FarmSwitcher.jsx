@@ -331,7 +331,7 @@ const S = {
     // Green-accent border (My Farm polish, Apr 2026): subtle
     // emerald edge that ties the selector to the farm-control
     // theme without shouting. Same green as the primary CTA.
-    border: '1px solid rgba(34,197,94,0.32)',
+    border: '1px solid rgba(200,148,77,0.32)',
     color: '#FFFFFF',
     borderRadius: 12,
     padding: '0.7rem 0.9rem',
@@ -343,7 +343,7 @@ const S = {
     alignItems: 'center',
     gap: 10,
     textAlign: 'left',
-    boxShadow: '0 4px 12px rgba(34,197,94,0.06)',
+    boxShadow: '0 4px 12px rgba(200,148,77,0.06)',
   },
   btnDisabled: {
     cursor: 'default',
@@ -351,7 +351,7 @@ const S = {
   },
   // Leading sprout icon — small green accent on the left.
   btnIcon: {
-    color: '#22C55E',
+    color: '#C8944D',
     display: 'inline-flex',
     alignItems: 'center',
     flex: '0 0 auto',
@@ -406,7 +406,7 @@ const S = {
     textAlign: 'left',
   },
   rowActive: {
-    background: 'rgba(34,197,94,0.10)',
+    background: 'rgba(200,148,77,0.10)',
     color: '#86EFAC',
   },
   rowCheck: {
@@ -432,9 +432,9 @@ const S = {
     letterSpacing: '0.06em',
     padding: '2px 6px',
     borderRadius: 999,
-    background: 'rgba(34,197,94,0.20)',
+    background: 'rgba(200,148,77,0.20)',
     color: '#86EFAC',
-    border: '1px solid rgba(34,197,94,0.45)',
+    border: '1px solid rgba(200,148,77,0.45)',
     marginLeft: 8,
   },
   // Multi-Farm Switcher §3 — search input row. Sits at the very

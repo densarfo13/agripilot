@@ -22,15 +22,15 @@ function getNextAction(app) {
     return { label: 'Senior review needed', color: '#F59E0B', urgent: true };
   }
   if (!app.verificationResult) {
-    return { label: 'Score first', color: '#22C55E', urgent: days > 3 };
+    return { label: 'Score first', color: '#C8944D', urgent: days > 3 };
   }
   if (app.status === 'under_review') {
-    if (score >= 70) return { label: 'Approve or reject', color: '#22C55E', urgent: true };
+    if (score >= 70) return { label: 'Approve or reject', color: '#C8944D', urgent: true };
     if (score >= 40) return { label: 'Review carefully', color: '#F59E0B', urgent: days > 5 };
     return { label: 'Consider rejecting', color: '#EF4444', urgent: false };
   }
   if (app.status === 'submitted') {
-    if (score >= 70) return { label: 'Move to review', color: '#22C55E', urgent: true };
+    if (score >= 70) return { label: 'Move to review', color: '#C8944D', urgent: true };
     if (score >= 40) return { label: 'Move to review', color: '#F59E0B', urgent: false };
     return { label: 'Score low — review', color: '#EF4444', urgent: false };
   }
@@ -182,7 +182,7 @@ export default function VerificationQueuePage() {
         {error && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
         {bulkProgress && (
           <div style={{
-            background: bulkProgress.done < bulkProgress.total ? 'rgba(34,197,94,0.15)' : bulkProgress.failed > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
+            background: bulkProgress.done < bulkProgress.total ? 'rgba(200,148,77,0.15)' : bulkProgress.failed > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(200,148,77,0.15)',
             border: `1px solid #243041`,
             borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.875rem',
             display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -193,7 +193,7 @@ export default function VerificationQueuePage() {
                 <span>{bulkProgress.done} / {bulkProgress.total} done</span>
                 {/* Progress bar */}
                 <div style={{ flex: 1, height: 6, background: '#243041', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: '#22C55E', borderRadius: 3, width: `${Math.round(bulkProgress.done / bulkProgress.total * 100)}%`, transition: 'width 0.2s' }} />
+                  <div style={{ height: '100%', background: '#C8944D', borderRadius: 3, width: `${Math.round(bulkProgress.done / bulkProgress.total * 100)}%`, transition: 'width 0.2s' }} />
                 </div>
               </>
             ) : (
@@ -286,7 +286,7 @@ export default function VerificationQueuePage() {
                           <td><StatusBadge value={a.status} /></td>
                           <td>
                             {score != null
-                              ? <span style={{ fontWeight: 600, color: score >= 70 ? '#22C55E' : score >= 40 ? '#F59E0B' : '#EF4444' }}>
+                              ? <span style={{ fontWeight: 600, color: score >= 70 ? '#C8944D' : score >= 40 ? '#F59E0B' : '#EF4444' }}>
                                   {score}/100
                                 </span>
                               : <span className="text-muted" style={{ fontSize: '0.8rem' }}>Unscored</span>
@@ -315,7 +315,7 @@ export default function VerificationQueuePage() {
                             {score != null && score >= 70 && ['submitted', 'under_review'].includes(a.status) && (
                               <button
                                 className="btn btn-sm"
-                                style={{ background: '#22C55E', color: '#fff', marginLeft: '0.35rem', fontWeight: 600 }}
+                                style={{ background: '#C8944D', color: '#fff', marginLeft: '0.35rem', fontWeight: 600 }}
                                 disabled={approving[a.id]}
                                 onClick={(e) => quickApprove(a.id, e)}
                               >

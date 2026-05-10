@@ -262,7 +262,7 @@ const S = {
     width: '100%',
     aspectRatio: '1 / 1',
     borderRadius: '12px',
-    background: 'linear-gradient(180deg, rgba(34,197,94,0.06) 0%, rgba(53,93,73,0.16) 100%)',
+    background: 'linear-gradient(180deg, rgba(200,148,77,0.06) 0%, rgba(53,93,73,0.16) 100%)',
     border: '1px solid rgba(255,255,255,0.06)',
     display: 'flex',
     alignItems: 'center',

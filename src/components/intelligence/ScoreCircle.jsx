@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 const LEVEL_COLORS = {
-  low: '#22C55E',
+  low: '#C8944D',
   moderate: '#FBBF24',
   high: '#FB923C',
   urgent: '#EF4444',
@@ -24,7 +24,7 @@ function injectStyle() {
 }
 
 function colorFromScore(score) {
-  if (score <= 25) return '#22C55E';
+  if (score <= 25) return '#C8944D';
   if (score <= 50) return '#FBBF24';
   if (score <= 75) return '#FB923C';
   return '#EF4444';

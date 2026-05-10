@@ -103,11 +103,11 @@ const S = {
     color: '#EAF2FF',
     display: 'flex', flexDirection: 'column', gap: '0.75rem',
   },
-  hGood: { fontSize: '0.9375rem', fontWeight: 700, margin: '0 0 0.375rem', color: '#22C55E' },
+  hGood: { fontSize: '0.9375rem', fontWeight: 700, margin: '0 0 0.375rem', color: '#C8944D' },
   hImprove: { fontSize: '0.9375rem', fontWeight: 700, margin: '0 0 0.375rem', color: '#F59E0B' },
   list: { margin: 0, paddingLeft: 0, listStyle: 'none' },
   item: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', padding: '0.25rem 0', lineHeight: 1.4 },
-  dotGood: { width: '7px', height: '7px', borderRadius: '50%', background: '#22C55E', flexShrink: 0 },
+  dotGood: { width: '7px', height: '7px', borderRadius: '50%', background: '#C8944D', flexShrink: 0 },
   dotImprove: { width: '7px', height: '7px', borderRadius: '50%', background: '#F59E0B', flexShrink: 0 },
   metricsGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '0.5rem',

@@ -25,8 +25,8 @@ const LEVELS = Object.freeze({
 });
 
 const TONE_STYLES = Object.freeze({
-  green:  { bg: 'rgba(34,197,94,0.15)',  fg: '#86EFAC',
-            border: 'rgba(34,197,94,0.40)' },
+  green:  { bg: 'rgba(200,148,77,0.15)',  fg: '#86EFAC',
+            border: 'rgba(200,148,77,0.40)' },
   yellow: { bg: 'rgba(245,158,11,0.18)', fg: '#FCD34D',
             border: 'rgba(245,158,11,0.45)' },
   gray:   { bg: 'rgba(255,255,255,0.05)', fg: 'rgba(255,255,255,0.7)',

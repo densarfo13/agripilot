@@ -19,7 +19,7 @@ import { tSafe } from '../../i18n/tSafe.js';
 
 const STATUS_COLOR = {
   pending:  '#F59E0B',
-  accepted: '#22C55E',
+  accepted: '#C8944D',
   declined: '#EF4444',
   expired:  '#9FB3C8',
 };
@@ -209,7 +209,7 @@ const S = {
   emptyBody: { fontSize: '0.875rem', color: '#9FB3C8', margin: 0 },
   primaryBtn: {
     padding: '0.625rem 0.875rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
   },
 
@@ -244,18 +244,18 @@ const S = {
 
   approved: {
     padding: '0.75rem 0.875rem', borderRadius: '12px',
-    background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.28)',
     display: 'flex', flexDirection: 'column', gap: '0.375rem',
   },
-  approvedTitle: { color: '#22C55E', fontSize: '0.875rem' },
+  approvedTitle: { color: '#C8944D', fontSize: '0.875rem' },
   approvedList: { margin: 0, paddingLeft: '1.125rem', fontSize: '0.8125rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' },
   approvedLine: { color: '#EAF2FF' },
   approvedHint: { margin: 0, fontSize: '0.75rem', color: '#9FB3C8' },
   awaitingContact: {
     padding: '0.5rem 0.625rem', borderRadius: '10px',
-    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)',
-    color: '#22C55E', fontSize: '0.8125rem',
+    background: 'rgba(200,148,77,0.08)', border: '1px solid rgba(200,148,77,0.18)',
+    color: '#C8944D', fontSize: '0.8125rem',
   },
 
   cardActions: { display: 'flex', gap: '0.375rem', marginTop: '0.125rem' },

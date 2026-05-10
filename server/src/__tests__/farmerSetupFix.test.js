@@ -145,10 +145,11 @@ describe('Crop selector — full dataset, not hardcoded', () => {
     expect(wizard).toContain('searchAllBtn');
   });
 
-  it('searchAllBtn style is prominent (green, not dashed grey)', () => {
+  it('searchAllBtn style is prominent (ochre primary, not dashed grey)', () => {
     const idx = wizard.indexOf('searchAllBtn:');
     const chunk = wizard.slice(idx, idx + 300);
-    expect(chunk).toContain('#22C55E');
+    // Soft Ochre / Beige unified system — primary action token.
+    expect(chunk).toContain('#C8944D');
     expect(chunk).toContain("minHeight: '48px'");
   });
 
@@ -268,10 +269,11 @@ describe('Country selection — full dropdown', () => {
     expect(wizard).toContain("'NG'");
   });
 
-  it('selected country highlights in green', () => {
+  it('selected country highlights with primary token', () => {
     const countryStep = wizard.indexOf("currentStep === 'country'");
     const chunk = wizard.slice(countryStep, countryStep + 1200);
-    expect(chunk).toContain("color: form.countryCode ? '#22C55E' : '#A1A1AA'");
+    // Soft Ochre / Beige unified system — primary action token.
+    expect(chunk).toContain("color: form.countryCode ? '#C8944D' : '#A1A1AA'");
   });
 
   it('country step shows search hint when no selection', () => {

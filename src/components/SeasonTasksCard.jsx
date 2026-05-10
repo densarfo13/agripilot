@@ -247,7 +247,7 @@ const S = {
   },
   doneBtn: {
     borderRadius: '12px',
-    background: '#22C55E',
+    background: '#C8944D',
     padding: '0.5rem 1rem',
     fontSize: '0.875rem',
     fontWeight: 600,

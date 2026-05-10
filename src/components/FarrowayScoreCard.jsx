@@ -108,7 +108,7 @@ export default function FarrowayScoreCard({
   : score.band === 'improving'  ? '#FCD34D'
                                  : '#FCA5A5';
   const ringBg  =
-    score.band === 'excellent'  ? 'rgba(34,197,94,0.22)'
+    score.band === 'excellent'  ? 'rgba(200,148,77,0.22)'
   : score.band === 'strong'     ? 'rgba(56,189,248,0.22)'
   : score.band === 'improving'  ? 'rgba(252,211,77,0.22)'
                                  : 'rgba(239,68,68,0.22)';

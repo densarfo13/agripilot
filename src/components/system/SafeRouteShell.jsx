@@ -236,7 +236,7 @@ const S = {
   btnRow:        { display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' },
   primary: {
     padding: '12px 24px', borderRadius: '30px', border: 'none',
-    background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#042c1a',
+    background: 'linear-gradient(135deg,#C8944D,#B9853F)', color: '#042c1a',
     fontSize: '15px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none',
     display: 'inline-flex', alignItems: 'center', minHeight: 44,
   },

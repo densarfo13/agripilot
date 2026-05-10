@@ -37,7 +37,7 @@ function timingChipVariant(kind) {
     case 'today':
       return { background: 'rgba(248,113,113,0.12)', borderColor: 'rgba(248,113,113,0.35)', color: '#FCA5A5' };
     case 'this_week':
-      return { background: 'rgba(34,197,94,0.10)', borderColor: 'rgba(34,197,94,0.30)', color: '#86EFAC' };
+      return { background: 'rgba(200,148,77,0.10)', borderColor: 'rgba(200,148,77,0.30)', color: '#86EFAC' };
     default:
       return { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)', color: '#B8C6D6' };
   }
@@ -317,7 +317,7 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
     marginTop: '0.5rem',
     transition: 'transform 0.1s ease, box-shadow 0.15s ease',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   ctaBlocked: {
     width: '100%',
@@ -439,7 +439,7 @@ const S = {
     minHeight: '56px',
     WebkitTapHighlightColor: 'transparent',
     transition: 'transform 0.1s ease, box-shadow 0.15s ease',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.22)',
   },
   ctaSecondary: {
     display: 'flex',

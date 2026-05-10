@@ -46,7 +46,7 @@ export default function FarmerValueCard({ farmId = null }) {
 const S = {
   card: {
     background: 'linear-gradient(135deg, #166534 0%, #14532D 100%)',
-    border: '1px solid rgba(34,197,94,0.35)',
+    border: '1px solid rgba(200,148,77,0.35)',
     borderRadius: '20px',
     padding: '1rem 1.125rem',
     color: '#EAF2FF',

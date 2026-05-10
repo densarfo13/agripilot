@@ -45,7 +45,7 @@ const S = {
   uuid: {
     fontSize: '0.85rem',
     fontWeight: 700,
-    color: '#22C55E',
+    color: '#C8944D',
     fontFamily: 'monospace',
   },
   uuidLoading: {

@@ -284,7 +284,7 @@ const S = {
     colorScheme: 'dark',
   },
   cta: {
-    background: '#22C55E', color: '#000', border: 'none',
+    background: '#C8944D', color: '#000', border: 'none',
     borderRadius: '12px', padding: '0.75rem 1rem',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
     minHeight: '2.75rem',

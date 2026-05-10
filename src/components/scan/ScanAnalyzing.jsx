@@ -170,11 +170,11 @@ const S = {
     aspectRatio: '1 / 1',
     borderRadius: '20px',
     overflow: 'hidden',
-    background: 'linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(53,93,73,0.18) 100%)',
+    background: 'linear-gradient(180deg, rgba(200,148,77,0.08) 0%, rgba(53,93,73,0.18) 100%)',
     boxShadow: [
       '0 1px 0 0 rgba(255,255,255,0.06) inset',
       '0 18px 40px -12px rgba(0,0,0,0.42)',
-      '0 0 0 1px rgba(34,197,94,0.18)',
+      '0 0 0 1px rgba(200,148,77,0.18)',
     ].join(', '),
   },
   image: {
@@ -211,7 +211,7 @@ const S = {
     position: 'absolute',
     inset: 0,
     borderRadius: '20px',
-    boxShadow: '0 0 0 0 rgba(34,197,94,0.40)',
+    boxShadow: '0 0 0 0 rgba(200,148,77,0.40)',
     pointerEvents: 'none',
   },
   body: {

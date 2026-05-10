@@ -66,7 +66,7 @@ const S = {
     color: '#EAF2FF', minHeight: '72px',
   },
   optionActive: {
-    borderColor: '#22C55E', background: 'rgba(34,197,94,0.10)',
+    borderColor: '#C8944D', background: 'rgba(200,148,77,0.10)',
   },
   icon: { fontSize: '1.5rem' },
   optionText: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },

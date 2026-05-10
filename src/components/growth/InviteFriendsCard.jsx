@@ -65,7 +65,7 @@ function _readProfile() {
 
 const S = {
   card: {
-    background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(34,197,94,0.10))',
+    background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(200,148,77,0.10))',
     border: '1px solid rgba(168,85,247,0.42)',
     borderRadius: 14,
     padding: '14px 16px',

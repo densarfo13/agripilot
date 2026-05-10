@@ -232,7 +232,7 @@ export default function KeyInsightsSection({
 function toneStyle(tone) {
   switch (tone) {
     case 'danger':  return { borderColor: 'rgba(239,68,68,0.45)',  background: 'rgba(239,68,68,0.10)' };
-    case 'success': return { borderColor: 'rgba(34,197,94,0.45)',  background: 'rgba(34,197,94,0.10)' };
+    case 'success': return { borderColor: 'rgba(200,148,77,0.45)',  background: 'rgba(200,148,77,0.10)' };
     case 'info':
     default:        return { borderColor: 'rgba(14,165,233,0.40)', background: 'rgba(14,165,233,0.08)' };
   }

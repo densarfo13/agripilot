@@ -32,7 +32,7 @@ function tonePill(count) {
 }
 
 const TONES = Object.freeze({
-  ok:     { fg: '#86EFAC', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.25)' },
+  ok:     { fg: '#86EFAC', bg: 'rgba(200,148,77,0.08)',  border: 'rgba(200,148,77,0.25)' },
   info:   { fg: '#93C5FD', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)' },
   warn:   { fg: '#FDE68A', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.30)' },
   danger: { fg: '#FCA5A5', bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.35)' },
@@ -172,8 +172,8 @@ const S = {
   },
   allClear: {
     padding: '10px 12px', borderRadius: 10,
-    border: '1px solid rgba(34,197,94,0.25)',
-    background: 'rgba(34,197,94,0.06)',
+    border: '1px solid rgba(200,148,77,0.25)',
+    background: 'rgba(200,148,77,0.06)',
     color: '#86EFAC', fontSize: 13,
   },
   row: {

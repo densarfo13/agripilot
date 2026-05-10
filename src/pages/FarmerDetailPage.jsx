@@ -23,7 +23,7 @@ import ProgressScoreCard from '../components/farmer/ProgressScoreCard.jsx';
 
 const STATUS_COLORS = {
   pending_approval: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Pending Approval' },
-  approved: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E', label: 'Active' },
+  approved: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D', label: 'Active' },
   rejected: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444', label: 'Rejected' },
   disabled: { bg: '#1E293B', color: '#A1A1AA', label: 'Disabled' },
 };
@@ -201,13 +201,13 @@ export default function FarmerDetailPage() {
 // ─── Pesticide Compliance Card ────────────────────────
 
 const COMPLIANCE_STYLES = {
-  compliant:      { bg: 'rgba(34,197,94,0.12)',  color: '#22C55E', icon: '✅', label: 'Compliant' },
+  compliant:      { bg: 'rgba(200,148,77,0.12)',  color: '#C8944D', icon: '✅', label: 'Compliant' },
   needs_review:   { bg: 'rgba(245,158,11,0.12)', color: '#F59E0B', icon: '⚠️', label: 'Needs Review' },
   non_compliant:  { bg: 'rgba(239,68,68,0.12)',  color: '#EF4444', icon: '🚫', label: 'Non-Compliant' },
 };
 
 const CONFIDENCE_LABELS = {
-  verified: { label: 'Verified', color: '#22C55E' },
+  verified: { label: 'Verified', color: '#C8944D' },
   self_reported: { label: 'Self-reported', color: '#A1A1AA' },
 };
 
@@ -404,7 +404,7 @@ function NextActionCard({ farmer, navigate, isAdmin }) {
   if (!headline) return null;
 
   const SEVERITY_STYLES = {
-    success: { bg: 'rgba(34,197,94,0.10)', border: '#22C55E', color: '#22C55E' },
+    success: { bg: 'rgba(200,148,77,0.10)', border: '#C8944D', color: '#C8944D' },
     warning: { bg: 'rgba(245,158,11,0.10)', border: '#F59E0B', color: '#F59E0B' },
     danger:  { bg: 'rgba(239,68,68,0.10)', border: '#EF4444', color: '#EF4444' },
     info:    { bg: 'rgba(8,145,178,0.10)', border: '#0891B2', color: '#0891B2' },
@@ -638,7 +638,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
           {inviteStatus?.inviteAcceptedAt && (
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #243041', padding: '0.35rem 0' }}>
               <span style={{ color: '#A1A1AA' }}>Invite Accepted</span>
-              <span style={{ color: '#22C55E' }}>{new Date(inviteStatus.inviteAcceptedAt).toLocaleDateString()}</span>
+              <span style={{ color: '#C8944D' }}>{new Date(inviteStatus.inviteAcceptedAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>
@@ -686,7 +686,7 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
             )}
             {!farmer.userAccount && (
               <button className="btn btn-sm btn-outline" onClick={() => setShowCreateLoginModal(true)} disabled={processing}
-                style={{ color: '#22C55E', borderColor: '#22C55E' }}>Create Login</button>
+                style={{ color: '#C8944D', borderColor: '#C8944D' }}>Create Login</button>
             )}
           </div>
         )}
@@ -709,8 +709,8 @@ function AccessAssignmentSection({ farmer, isAdmin, isCreator, onUpdate }) {
                 style={{
                   padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: '0.82rem', cursor: 'pointer',
                   minHeight: '44px',
-                  border: `1.5px solid ${resendChannel === opt.value ? '#22C55E' : '#243041'}`,
-                  background: resendChannel === opt.value ? '#22C55E' : '#162033',
+                  border: `1.5px solid ${resendChannel === opt.value ? '#C8944D' : '#243041'}`,
+                  background: resendChannel === opt.value ? '#C8944D' : '#162033',
                   color: resendChannel === opt.value ? '#fff' : '#FFFFFF',
                   fontWeight: resendChannel === opt.value ? 600 : 400,
                 }}
@@ -895,14 +895,14 @@ function DisableFarmerModal({ farmer, onClose, onDisabled }) {
           <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #243041', borderRadius: 6, overflow: 'hidden' }}>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#C8944D' : '#162033', color: mode === 'request' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
               1. Create Request
             </button>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '0.4rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#C8944D' : '#162033', color: mode === 'execute' ? '#fff' : '#FFFFFF', border: 'none', cursor: 'pointer' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
               2. Execute (have ID)
@@ -1141,7 +1141,7 @@ function PerformanceProfileSection({ farmerId }) {
   const { summary, yieldHistory, reliabilitySignals, seasons } = profile;
 
   const CLASSIFICATION_COLORS = {
-    on_track: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+    on_track: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
     slight_delay: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
     at_risk: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
     critical: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
@@ -1172,7 +1172,7 @@ function PerformanceProfileSection({ farmerId }) {
           </div>
           <div style={metricBox}>
             <div style={metricLabel}>Trend</div>
-            <div style={{ ...metricValue, color: summary.productivityTrend === 'improving' ? '#22C55E' : summary.productivityTrend === 'declining' ? '#EF4444' : '#A1A1AA' }}>
+            <div style={{ ...metricValue, color: summary.productivityTrend === 'improving' ? '#C8944D' : summary.productivityTrend === 'declining' ? '#EF4444' : '#A1A1AA' }}>
               {summary.productivityTrend === 'improving' ? 'Improving' : summary.productivityTrend === 'declining' ? 'Declining' : summary.productivityTrend === 'stable' ? 'Stable' : 'Insufficient data'}
             </div>
           </div>
@@ -1195,8 +1195,8 @@ function PerformanceProfileSection({ farmerId }) {
                 <span key={i} style={{
                   display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: 12,
                   fontSize: '0.75rem', fontWeight: 500,
-                  background: s.positive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                  color: s.positive ? '#22C55E' : '#EF4444',
+                  background: s.positive ? 'rgba(200,148,77,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: s.positive ? '#C8944D' : '#EF4444',
                 }}>{s.label}</span>
               ))}
             </div>
@@ -1210,7 +1210,7 @@ function PerformanceProfileSection({ farmerId }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem' }}>
               <div style={metricBox}>
                 <div style={metricLabel}>Credibility</div>
-                <div style={{ ...metricValue, color: credSummary.overallCredibility.level === 'high_confidence' ? '#22C55E' : credSummary.overallCredibility.level === 'medium_confidence' ? '#F59E0B' : '#EF4444' }}>
+                <div style={{ ...metricValue, color: credSummary.overallCredibility.level === 'high_confidence' ? '#C8944D' : credSummary.overallCredibility.level === 'medium_confidence' ? '#F59E0B' : '#EF4444' }}>
                   {credSummary.overallCredibility.avgScore ?? 'N/A'}{credSummary.overallCredibility.avgScore ? '/100' : ''}
                 </div>
               </div>
@@ -1220,7 +1220,7 @@ function PerformanceProfileSection({ farmerId }) {
               </div>
               <div style={metricBox}>
                 <div style={metricLabel}>Trend</div>
-                <div style={{ ...metricValue, color: credSummary.overallCredibility.trend === 'improving' ? '#22C55E' : credSummary.overallCredibility.trend === 'declining' ? '#EF4444' : '#A1A1AA' }}>
+                <div style={{ ...metricValue, color: credSummary.overallCredibility.trend === 'improving' ? '#C8944D' : credSummary.overallCredibility.trend === 'declining' ? '#EF4444' : '#A1A1AA' }}>
                   {(credSummary.overallCredibility.trend || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                 </div>
               </div>
@@ -1231,7 +1231,7 @@ function PerformanceProfileSection({ farmerId }) {
                   <span style={{ fontSize: '0.75rem', color: '#A1A1AA', fontWeight: 600 }}>Recurring Flags</span>
                   <a
                     href={`/farmer-home/${farmerId}/progress`}
-                    style={{ fontSize: '0.72rem', color: '#22C55E', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: '0.72rem', color: '#C8944D', textDecoration: 'none', fontWeight: 500 }}
                   >
                     View in Progress Tab →
                   </a>
@@ -1424,7 +1424,7 @@ function CopyInviteLinkButton({ token }) {
       type="button"
       onClick={copy}
       className="btn btn-sm btn-outline"
-      style={{ color: copied ? '#22C55E' : '#22C55E', borderColor: copied ? '#22C55E' : '#22C55E' }}
+      style={{ color: copied ? '#C8944D' : '#C8944D', borderColor: copied ? '#C8944D' : '#C8944D' }}
     >
       {copied ? '✓ Link Copied' : 'Copy Invite Link'}
     </button>
@@ -1438,8 +1438,8 @@ function ResendInviteLinkBox({ url, expiresAt }) {
     navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(() => {});
   };
   return (
-    <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem' }}>
-      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#22C55E', marginBottom: '0.35rem' }}>
+    <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem' }}>
+      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#C8944D', marginBottom: '0.35rem' }}>
         Share this invite link with the farmer (email, WhatsApp, SMS):
       </div>
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: expiresAt ? '0.3rem' : 0 }}>
@@ -1453,7 +1453,7 @@ function ResendInviteLinkBox({ url, expiresAt }) {
           type="button"
           onClick={copy}
           className="btn btn-outline btn-sm"
-          style={{ whiteSpace: 'nowrap', color: copied ? '#22C55E' : undefined, borderColor: copied ? '#22C55E' : undefined }}
+          style={{ whiteSpace: 'nowrap', color: copied ? '#C8944D' : undefined, borderColor: copied ? '#C8944D' : undefined }}
         >
           {copied ? '✓ Copied' : 'Copy'}
         </button>
@@ -1470,31 +1470,31 @@ function ResendInviteLinkBox({ url, expiresAt }) {
 // ─── Historical Performance + Benchmarks ───────────────────
 
 const DIRECTION_STYLE = {
-  above_average: { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
+  above_average: { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
   below_average: { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   around_average: { bg: '#1E293B', color: '#FFFFFF' },
-  improving: { bg: 'rgba(34,197,94,0.15)', color: '#16A34A' },
+  improving: { bg: 'rgba(200,148,77,0.15)', color: '#B9853F' },
   declining: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   stable: { bg: '#1E293B', color: '#A1A1AA' },
 };
 
 const CLASSIFICATION_COLOR = {
-  on_track:    { color: '#22C55E' },
+  on_track:    { color: '#C8944D' },
   slight_delay: { color: '#F59E0B' },
   at_risk:     { color: '#ea580c' },
   critical:    { color: '#EF4444' },
 };
 
 const STATUS_COLOR = {
-  active:    { bg: 'rgba(34,197,94,0.15)', color: '#22C55E' },
-  completed: { bg: 'rgba(34,197,94,0.15)', color: '#16A34A' },
+  active:    { bg: 'rgba(200,148,77,0.15)', color: '#C8944D' },
+  completed: { bg: 'rgba(200,148,77,0.15)', color: '#B9853F' },
   harvested: { bg: 'rgba(139,92,246,0.15)', color: '#A78BFA' },
   abandoned: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   failed:    { bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
 };
 
 const TREND_LABEL = {
-  improving: { text: 'Improving', color: '#22C55E' },
+  improving: { text: 'Improving', color: '#C8944D' },
   declining: { text: 'Declining', color: '#EF4444' },
   stable:    { text: 'Stable',   color: '#A1A1AA' },
   insufficient_data: { text: 'Insufficient data', color: '#71717A' },

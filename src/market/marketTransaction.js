@@ -49,7 +49,7 @@ const TRANSITIONS = Object.freeze({
 });
 
 const TONES = Object.freeze({
-  interested:  { color: '#86EFAC', bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.32)' },
+  interested:  { color: '#86EFAC', bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.32)' },
   contacted:   { color: '#7DD3FC', bg: 'rgba(14,165,233,0.10)', border: 'rgba(14,165,233,0.32)' },
   negotiating: { color: '#FCD34D', bg: 'rgba(252,211,77,0.10)', border: 'rgba(252,211,77,0.32)' },
   sold:        { color: 'rgba(255,255,255,0.78)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.22)' },

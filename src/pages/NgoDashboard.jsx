@@ -671,7 +671,7 @@ function toneStyle(level) {
   switch (level) {
     case 'high':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
     case 'medium': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
-    default:       return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    default:       return { background: 'rgba(200,148,77,0.15)',  color: '#86EFAC' };
   }
 }
 
@@ -747,7 +747,7 @@ const S = {
   exportBtn: {
     display: 'inline-block', marginTop: 16,
     padding: '8px 14px', borderRadius: 10,
-    background: '#22C55E', color: '#fff', fontWeight: 700,
+    background: '#C8944D', color: '#fff', fontWeight: 700,
     textDecoration: 'none', fontSize: 14,
   },
 };

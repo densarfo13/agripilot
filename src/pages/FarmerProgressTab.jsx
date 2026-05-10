@@ -23,11 +23,11 @@ function getStageLabels(t) {
   };
 }
 const STAGE_COLORS = {
-  pre_planting: '#6b7280', planting: '#16a34a', vegetative: '#059669',
+  pre_planting: '#6b7280', planting: '#B9853F', vegetative: '#059669',
   flowering: '#d97706', harvest: '#ea580c', post_harvest: '#7c3aed',
 };
-const CONDITION_COLORS = { good: '#16a34a', average: '#d97706', poor: '#dc2626' };
-const CLASS_COLORS = { on_track: '#16a34a', slight_delay: '#d97706', at_risk: '#dc2626', critical: '#7f1d1d' };
+const CONDITION_COLORS = { good: '#B9853F', average: '#d97706', poor: '#dc2626' };
+const CLASS_COLORS = { on_track: '#B9853F', slight_delay: '#d97706', at_risk: '#dc2626', critical: '#7f1d1d' };
 function getClassLabels(t) {
   return { on_track: t('classLabel.onTrack'), slight_delay: t('classLabel.slightDelay'), at_risk: t('classLabel.atRisk'), critical: t('classLabel.critical') };
 }
@@ -57,7 +57,7 @@ function getImageStageOptions(t) {
 function getAdviceOptions(t) {
   return [
     { value: '', label: t('advice.na') },
-    { value: 'yes', label: t('advice.yes'), color: '#22C55E' },
+    { value: 'yes', label: t('advice.yes'), color: '#C8944D' },
     { value: 'partial', label: t('advice.partial'), color: '#F59E0B' },
     { value: 'no', label: t('advice.no'), color: '#EF4444' },
   ];
@@ -497,7 +497,7 @@ export default function FarmerProgressTab() {
                   <span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.progressEntries')}</span>
                   <div style={{ fontWeight: 600 }}>{activeSeason._count?.progressEntries || entries.length}</div>
                   {entries.length > 0 && (
-                    <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
+                    <span style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.15rem 0.5rem', borderRadius: 12, fontSize: '0.7rem', fontWeight: 600, background: 'rgba(200,148,77,0.15)', color: '#C8944D' }}>
                       {t('progress.submitted')}
                     </span>
                   )}
@@ -547,9 +547,9 @@ export default function FarmerProgressTab() {
                 const lvl = credibility.credibilityLevel;
                 const isHigh = lvl === 'high_confidence';
                 const isMed = lvl === 'medium_confidence';
-                const borderColor = isHigh ? 'rgba(34,197,94,0.3)' : isMed ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)';
-                const bg = isHigh ? 'rgba(34,197,94,0.15)' : isMed ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)';
-                const labelColor = isHigh ? '#16a34a' : isMed ? '#d97706' : '#dc2626';
+                const borderColor = isHigh ? 'rgba(200,148,77,0.3)' : isMed ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)';
+                const bg = isHigh ? 'rgba(200,148,77,0.15)' : isMed ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)';
+                const labelColor = isHigh ? '#B9853F' : isMed ? '#d97706' : '#dc2626';
                 const label = isHigh ? t('progress.strong') : isMed ? t('progress.moderate') : t('progress.needsAttention');
                 const FLAG_LABELS = {
                   burst_submissions: t('flag.burstSubmissions'),
@@ -635,11 +635,11 @@ export default function FarmerProgressTab() {
                 onClick={() => setShowQuickUpdate(true)}
                 style={{
                   width: '100%', padding: '1rem', marginBottom: '0.75rem',
-                  background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                  background: 'linear-gradient(135deg, #C8944D 0%, #B9853F 100%)',
                   color: '#FFFFFF', border: 'none', borderRadius: '14px',
                   fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer',
                   minHeight: '56px', WebkitTapHighlightColor: 'transparent',
-                  boxShadow: '0 4px 14px rgba(22,163,74,0.3)',
+                  boxShadow: '0 4px 14px rgba(185,133,63,0.3)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                 }}
                 data-testid="quick-update-cta"
@@ -651,7 +651,7 @@ export default function FarmerProgressTab() {
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowProgressForm)}>{t('progress.logActivity')}</button>
                 <button className="btn btn-sm btn-outline" onClick={() => openForm(setShowConditionForm)}>{t('progress.updateCondition')}</button>
-                <button className="btn btn-sm btn-outline" style={{ borderColor: '#22C55E', color: '#22C55E' }} onClick={() => openForm(setShowImageForm)}>{t('progress.addPhoto')}</button>
+                <button className="btn btn-sm btn-outline" style={{ borderColor: '#C8944D', color: '#C8944D' }} onClick={() => openForm(setShowImageForm)}>{t('progress.addPhoto')}</button>
                 <button className="btn btn-sm btn-outline" style={{ borderColor: '#ea580c', color: '#ea580c' }} onClick={() => openForm(setShowHarvestForm)}>{t('progress.submitHarvestReport')}</button>
               </div>
 
@@ -899,7 +899,7 @@ export default function FarmerProgressTab() {
                         onDetected={(loc) => setImageForm(f => ({ ...f, latitude: loc.latitude, longitude: loc.longitude }))}
                       />
                       {imageForm.latitude && (
-                        <div style={{ fontSize: '0.72rem', color: '#22C55E', marginTop: '0.25rem' }}>
+                        <div style={{ fontSize: '0.72rem', color: '#C8944D', marginTop: '0.25rem' }}>
                           {t('location.capturedCheck')}
                           <span onClick={() => setImageForm(f => ({ ...f, latitude: null, longitude: null }))} style={{ color: '#71717A', cursor: 'pointer', marginLeft: '0.5rem' }}>{t('common.clear')}</span>
                         </div>
@@ -929,8 +929,8 @@ export default function FarmerProgressTab() {
                           <td style={{ fontWeight: 500 }}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</td>
                           <td>
                             <span style={{ padding: '0.2rem 0.5rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
-                              background: dim.status === 'on_track' ? 'rgba(34,197,94,0.15)' : dim.status === 'slight_delay' ? 'rgba(245,158,11,0.15)' : dim.status === 'at_risk' ? 'rgba(239,68,68,0.15)' : '#1E293B',
-                              color: dim.status === 'on_track' ? '#22C55E' : dim.status === 'slight_delay' ? '#F59E0B' : dim.status === 'at_risk' ? '#EF4444' : '#6b7280',
+                              background: dim.status === 'on_track' ? 'rgba(200,148,77,0.15)' : dim.status === 'slight_delay' ? 'rgba(245,158,11,0.15)' : dim.status === 'at_risk' ? 'rgba(239,68,68,0.15)' : '#1E293B',
+                              color: dim.status === 'on_track' ? '#C8944D' : dim.status === 'slight_delay' ? '#F59E0B' : dim.status === 'at_risk' ? '#EF4444' : '#6b7280',
                             }}>{dim.status?.replace(/_/g, ' ')}</span>
                           </td>
                           <td className="text-muted" style={{ fontSize: '0.85rem' }}>{dim.label}</td>
@@ -999,7 +999,7 @@ export default function FarmerProgressTab() {
                         <td>
                           <button
                             className="btn btn-sm btn-outline"
-                            style={{ fontSize: '0.75rem', color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)' }}
+                            style={{ fontSize: '0.75rem', color: '#C8944D', borderColor: 'rgba(200,148,77,0.3)' }}
                             onClick={() => setReopenTarget(s)}
                           >
                             {t('progress.reopen')}
@@ -1113,14 +1113,14 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
           <div style={{ display: 'flex', gap: 0, marginBottom: '1rem', border: '1px solid #243041', borderRadius: 6, overflow: 'hidden' }}>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#22C55E' : '#162033', color: mode === 'request' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer', minHeight: '36px' }}
+              style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem', fontWeight: mode === 'request' ? 700 : 400, background: mode === 'request' ? '#C8944D' : '#162033', color: mode === 'request' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer', minHeight: '36px' }}
               onClick={() => { setMode('request'); setError(''); }}
             >
               1. {t('reopen.createRequest')}
             </button>
             <button
               type="button"
-              style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#22C55E' : '#162033', color: mode === 'execute' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer', minHeight: '36px' }}
+              style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem', fontWeight: mode === 'execute' ? 700 : 400, background: mode === 'execute' ? '#C8944D' : '#162033', color: mode === 'execute' ? '#FFFFFF' : '#FFFFFF', border: 'none', cursor: 'pointer', minHeight: '36px' }}
               onClick={() => { setMode('execute'); setError(''); }}
             >
               2. {t('reopen.executeHaveId')}
@@ -1151,7 +1151,7 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
 
           {mode === 'request' && created && (
             <div>
-              <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#22C55E', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(200,148,77,0.15)', border: '1px solid rgba(200,148,77,0.3)', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', color: '#C8944D', marginBottom: '0.75rem' }}>
                 <strong>Request submitted.</strong> Another admin must approve it. Approved requests expire in 4 hours.
               </div>
               <div style={{ background: '#1E293B', border: '1px solid #243041', borderRadius: 6, padding: '0.6rem 0.75rem', fontSize: '0.83rem', marginBottom: '0.75rem' }}>

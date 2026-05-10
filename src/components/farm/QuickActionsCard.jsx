@@ -143,9 +143,9 @@ const S = {
     transition: 'background 120ms ease',
   },
   btnPrimary: {
-    background: '#22C55E',
-    border: '1px solid #16A34A',
-    boxShadow: '0 6px 16px rgba(34,197,94,0.22)',
+    background: '#C8944D',
+    border: '1px solid #B9853F',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.22)',
   },
   btnSecondary: {
     background: '#1A3B5D',

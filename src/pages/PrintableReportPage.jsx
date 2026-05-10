@@ -243,7 +243,7 @@ const S = {
   },
   primaryBtn: {
     padding: '0.5rem 0.875rem', borderRadius: 10, border: 'none',
-    background: '#22C55E', color: '#fff', fontSize: 13, fontWeight: 700,
+    background: '#C8944D', color: '#fff', fontSize: 13, fontWeight: 700,
     cursor: 'pointer',
   },
   header:  { marginBottom: '1rem' },

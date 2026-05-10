@@ -82,8 +82,8 @@ export default function FarmerHomePage() {
             style={({ isActive }) => ({
               padding: '0.75rem 1.25rem',
               textDecoration: 'none',
-              color: isActive ? '#22C55E' : '#A1A1AA',
-              borderBottom: isActive ? '2px solid #22C55E' : '2px solid transparent',
+              color: isActive ? '#C8944D' : '#A1A1AA',
+              borderBottom: isActive ? '2px solid #C8944D' : '2px solid transparent',
               fontWeight: isActive ? 600 : 400,
               marginBottom: '-2px',
               fontSize: '0.9rem',

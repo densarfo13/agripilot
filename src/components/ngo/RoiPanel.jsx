@@ -101,8 +101,8 @@ export default function RoiPanel({ windowDays = 7 }) {
 
 const S = {
   card: {
-    background: 'linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(15,32,52,0.92) 100%)',
-    border: '1px solid rgba(34,197,94,0.30)',
+    background: 'linear-gradient(135deg, rgba(200,148,77,0.12) 0%, rgba(15,32,52,0.92) 100%)',
+    border: '1px solid rgba(200,148,77,0.30)',
     borderRadius: '20px',
     padding: '1rem 1.125rem',
     display: 'flex',
@@ -161,8 +161,8 @@ const S = {
     padding: '0.625rem 0.875rem',
     minHeight: '44px',
     borderRadius: '12px',
-    border: '1px solid rgba(34,197,94,0.55)',
-    background: '#22C55E',
+    border: '1px solid rgba(200,148,77,0.55)',
+    background: '#C8944D',
     color: '#0B1D34',
     fontSize: '0.875rem',
     fontWeight: 800,

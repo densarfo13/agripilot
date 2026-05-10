@@ -147,7 +147,7 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
           key={i}
           style={{
             ...S.dot,
-            background: i + 1 === step ? '#22C55E' : 'rgba(255,255,255,0.2)',
+            background: i + 1 === step ? '#C8944D' : 'rgba(255,255,255,0.2)',
           }}
         />
       ))}
@@ -162,7 +162,7 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
         <button
           style={{
             ...S.bigBtn,
-            borderColor: formData.experienceLevel === 'new' ? '#22C55E' : 'rgba(255,255,255,0.1)',
+            borderColor: formData.experienceLevel === 'new' ? '#C8944D' : 'rgba(255,255,255,0.1)',
           }}
           onClick={() => { update({ experienceLevel: 'new' }); next(); }}
         >
@@ -172,7 +172,7 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
         <button
           style={{
             ...S.bigBtn,
-            borderColor: formData.experienceLevel === 'experienced' ? '#22C55E' : 'rgba(255,255,255,0.1)',
+            borderColor: formData.experienceLevel === 'experienced' ? '#C8944D' : 'rgba(255,255,255,0.1)',
           }}
           onClick={() => { update({ experienceLevel: 'experienced' }); next(); }}
         >
@@ -190,7 +190,7 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
 
       {!formData.gpsLat && !gpsFailed && (
         <button
-          style={{ ...S.bigBtn, borderColor: '#22C55E' }}
+          style={{ ...S.bigBtn, borderColor: '#C8944D' }}
           onClick={detectLocation}
           disabled={gpsLoading}
         >
@@ -243,8 +243,8 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
             key={c.code}
             style={{
               ...S.cropTile,
-              borderColor: formData.crop === c.code ? '#22C55E' : 'rgba(255,255,255,0.08)',
-              background: formData.crop === c.code ? 'rgba(34,197,94,0.12)' : '#1B2330',
+              borderColor: formData.crop === c.code ? '#C8944D' : 'rgba(255,255,255,0.08)',
+              background: formData.crop === c.code ? 'rgba(200,148,77,0.12)' : '#1B2330',
             }}
             onClick={() => update({ crop: c.code })}
           >
@@ -256,8 +256,8 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
         <button
           style={{
             ...S.cropTile,
-            borderColor: formData.crop === 'OTHER' ? '#22C55E' : 'rgba(255,255,255,0.08)',
-            background: formData.crop === 'OTHER' ? 'rgba(34,197,94,0.12)' : '#1B2330',
+            borderColor: formData.crop === 'OTHER' ? '#C8944D' : 'rgba(255,255,255,0.08)',
+            background: formData.crop === 'OTHER' ? 'rgba(200,148,77,0.12)' : '#1B2330',
           }}
           onClick={() => update({ crop: 'OTHER' })}
         >
@@ -296,8 +296,8 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
             key={fs.key}
             style={{
               ...S.sizeCard,
-              borderColor: formData.farmSizeCategory === fs.key ? '#22C55E' : 'rgba(255,255,255,0.08)',
-              background: formData.farmSizeCategory === fs.key ? 'rgba(34,197,94,0.12)' : '#1B2330',
+              borderColor: formData.farmSizeCategory === fs.key ? '#C8944D' : 'rgba(255,255,255,0.08)',
+              background: formData.farmSizeCategory === fs.key ? 'rgba(200,148,77,0.12)' : '#1B2330',
             }}
             onClick={() => update({ farmSizeCategory: fs.key, farmSizeAcres: fs.acres })}
           >
@@ -353,8 +353,8 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
               key={g.value}
               style={{
                 ...S.demoChip,
-                borderColor: formData.gender === g.value ? '#22C55E' : 'rgba(255,255,255,0.1)',
-                background: formData.gender === g.value ? 'rgba(34,197,94,0.12)' : '#1B2330',
+                borderColor: formData.gender === g.value ? '#C8944D' : 'rgba(255,255,255,0.1)',
+                background: formData.gender === g.value ? 'rgba(200,148,77,0.12)' : '#1B2330',
               }}
               onClick={() => update({ gender: formData.gender === g.value ? '' : g.value })}
             >
@@ -374,8 +374,8 @@ export default function OnboardingSteps({ onComplete, onCancel }) {
               key={a.value}
               style={{
                 ...S.ageChip,
-                borderColor: formData.ageGroup === a.value ? '#22C55E' : 'rgba(255,255,255,0.1)',
-                background: formData.ageGroup === a.value ? 'rgba(34,197,94,0.12)' : '#1B2330',
+                borderColor: formData.ageGroup === a.value ? '#C8944D' : 'rgba(255,255,255,0.1)',
+                background: formData.ageGroup === a.value ? 'rgba(200,148,77,0.12)' : '#1B2330',
               }}
               onClick={() => update({ ageGroup: formData.ageGroup === a.value ? '' : a.value })}
             >
@@ -543,8 +543,8 @@ const S = {
     gap: '0.5rem',
     padding: '0.75rem 1rem',
     borderRadius: '10px',
-    background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.3)',
+    background: 'rgba(200,148,77,0.1)',
+    border: '1px solid rgba(200,148,77,0.3)',
     width: '100%',
     maxWidth: 360,
     marginTop: '0.75rem',
@@ -580,7 +580,7 @@ const S = {
     maxWidth: 360,
     padding: '0.95rem 1rem',
     borderRadius: '12px',
-    background: '#22C55E',
+    background: '#C8944D',
     border: 'none',
     color: '#fff',
     fontSize: '1.05rem',

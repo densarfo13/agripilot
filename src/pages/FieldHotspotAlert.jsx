@@ -343,7 +343,7 @@ const S = {
   emptyCard: {
     borderRadius: '16px',
     background: COLORS.card,
-    border: '1px solid rgba(34,197,94,0.2)',
+    border: '1px solid rgba(200,148,77,0.2)',
     padding: '2.5rem 1.5rem',
     textAlign: 'center',
   },

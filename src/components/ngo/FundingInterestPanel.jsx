@@ -352,7 +352,7 @@ const S = {
     border: 'none', background: C.green, color: C.white,
     fontSize: '0.875rem', fontWeight: 800,
     cursor: 'pointer', flexShrink: 0,
-    boxShadow: '0 6px 18px rgba(34,197,94,0.20)',
+    boxShadow: '0 6px 18px rgba(200,148,77,0.20)',
   },
   metricsGrid: {
     display: 'grid', gap: '0.75rem',

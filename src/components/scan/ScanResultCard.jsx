@@ -77,7 +77,7 @@ const STYLES = {
   },
   pillLow:    { background: 'rgba(245,158,11,0.18)', color: '#FDE68A', border: '1px solid rgba(245,158,11,0.45)' },
   pillMedium: { background: 'rgba(14,165,233,0.18)', color: '#7DD3FC', border: '1px solid rgba(14,165,233,0.45)' },
-  pillHigh:   { background: 'rgba(34,197,94,0.18)',  color: '#86EFAC', border: '1px solid rgba(34,197,94,0.45)' },
+  pillHigh:   { background: 'rgba(200,148,77,0.18)',  color: '#86EFAC', border: '1px solid rgba(200,148,77,0.45)' },
   metaLabel: {
     fontSize: 10,
     fontWeight: 700,
@@ -140,14 +140,14 @@ const STYLES = {
     gap: 8,
     padding: '8px 12px',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.28)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.28)',
     color: '#86EFAC',
     fontSize: 13,
     lineHeight: 1.5,
   },
   followUpDot: {
-    width: 6, height: 6, borderRadius: 999, background: '#22C55E',
+    width: 6, height: 6, borderRadius: 999, background: '#C8944D',
     flex: '0 0 6px',
   },
   // "Check to confirm:" verification block (spec \u00a76) \u2014 only
@@ -180,7 +180,7 @@ const STYLES = {
     fontFamily: 'inherit',
   },
   btnPrimary: {
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     border: 'none',
     fontWeight: 700,
@@ -221,8 +221,8 @@ const STYLES = {
     gap: 8,
     padding: '10px 12px',
     borderRadius: 10,
-    background: 'rgba(34,197,94,0.06)',
-    border: '1px solid rgba(34,197,94,0.24)',
+    background: 'rgba(200,148,77,0.06)',
+    border: '1px solid rgba(200,148,77,0.24)',
   },
   suggestionRow: {
     display: 'flex',
@@ -241,7 +241,7 @@ const STYLES = {
   suggestionBtn: {
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#0B1D34',
     borderRadius: 8,
     padding: '7px 12px',

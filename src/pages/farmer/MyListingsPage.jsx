@@ -190,7 +190,7 @@ const S = {
   title: { fontSize: '1.25rem', fontWeight: 700, margin: 0 },
   createBtn: {
     padding: '0.5rem 0.875rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
   },
   muted: { color: '#9FB3C8' },
@@ -226,10 +226,10 @@ const S = {
   accept: {
     flex: 1,
     padding: '0.625rem 0.75rem', borderRadius: '10px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
     minHeight: '44px',
-    boxShadow: '0 6px 16px rgba(34,197,94,0.18)',
+    boxShadow: '0 6px 16px rgba(200,148,77,0.18)',
   },
   decline: {
     flex: 1,

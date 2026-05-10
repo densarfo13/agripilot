@@ -19,7 +19,7 @@ import { useUSRecommendations } from '../hooks/useUSRecommendations.js';
 import USStateSelector from '../components/onboarding/USStateSelector.jsx';
 
 const BADGE_META = {
-  beginner_friendly:    { labelKey: 'usRec.badge.beginner',   color: '#22C55E' },
+  beginner_friendly:    { labelKey: 'usRec.badge.beginner',   color: '#C8944D' },
   container_friendly:   { labelKey: 'usRec.badge.container',  color: '#0EA5E9' },
   strong_local_market:  { labelKey: 'usRec.badge.market',     color: '#F59E0B' },
   heat_tolerant:        { labelKey: 'usRec.badge.heat',       color: '#EF4444' },
@@ -135,7 +135,7 @@ export default function USCropRecommendations() {
             <Bucket
               title={t('usRec.bucket.best')}
               crops={data.bestMatch}
-              accent="#22C55E"
+              accent="#C8944D"
               t={t}
               onOpenPlan={(c) => navigate('/crop-plan', { state: { crop: c, location: data.location } })}
             />
@@ -190,13 +190,13 @@ function Bucket({ title, crops, accent, muted, t, onOpenPlan }) {
 }
 
 const RISK_STYLE = {
-  low:    { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+  low:    { color: '#C8944D', bg: 'rgba(200,148,77,0.12)' },
   medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
   high:   { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
 };
 
 const TIMING_STYLE = {
-  plant_now:  { color: '#22C55E', bg: 'rgba(34,197,94,0.14)' },
+  plant_now:  { color: '#C8944D', bg: 'rgba(200,148,77,0.14)' },
   plant_soon: { color: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
   wait:       { color: '#9FB3C8', bg: 'rgba(255,255,255,0.05)' },
   too_late:   { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
@@ -336,7 +336,7 @@ const S = {
   hint: { color: '#9FB3C8', fontSize: '0.875rem' },
   error: { color: '#FCA5A5', fontSize: '0.875rem' },
   resultHeader: { fontSize: '1.25rem', fontWeight: 700, marginTop: '1.5rem', marginBottom: '0.25rem' },
-  regionPill: { display: 'inline-block', padding: '0.25rem 0.625rem', fontSize: '0.75rem', background: 'rgba(34,197,94,0.12)', color: '#22C55E', borderRadius: '999px', marginBottom: '1rem' },
+  regionPill: { display: 'inline-block', padding: '0.25rem 0.625rem', fontSize: '0.75rem', background: 'rgba(200,148,77,0.12)', color: '#C8944D', borderRadius: '999px', marginBottom: '1rem' },
   bucket: { marginTop: '1.25rem' },
   bucketTitle: { fontSize: '1rem', fontWeight: 700, margin: '0 0 0.5rem' },
   cardGrid: { display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' },
@@ -344,12 +344,12 @@ const S = {
   cardMuted: { opacity: 0.55 },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' },
   cardTitle: { fontSize: '1.0625rem', fontWeight: 700, margin: 0 },
-  score: { fontSize: '1.25rem', fontWeight: 700, color: '#22C55E' },
+  score: { fontSize: '1.25rem', fontWeight: 700, color: '#C8944D' },
   metaRow: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.8125rem', color: '#9FB3C8', marginBottom: '0.5rem' },
   badges: { display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginBottom: '0.5rem' },
   badge: { padding: '0.125rem 0.5rem', borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 600, color: '#0B1D34' },
   reasons: { marginTop: '0.5rem' },
-  reasonsLabel: { fontSize: '0.75rem', color: '#22C55E', fontWeight: 600, marginBottom: '0.25rem' },
+  reasonsLabel: { fontSize: '0.75rem', color: '#C8944D', fontWeight: 600, marginBottom: '0.25rem' },
   risks: { marginTop: '0.5rem' },
   risksLabel: { fontSize: '0.75rem', color: '#F59E0B', fontWeight: 600, marginBottom: '0.25rem' },
   list: { margin: 0, paddingLeft: '1.125rem', fontSize: '0.8125rem', color: '#EAF2FF', lineHeight: 1.45 },
@@ -362,12 +362,12 @@ const S = {
   doNow: {
     display: 'flex', flexDirection: 'column', gap: '0.125rem',
     padding: '0.625rem 0.75rem', borderRadius: '10px',
-    background: 'rgba(34,197,94,0.08)',
-    border: '1px solid rgba(34,197,94,0.18)',
+    background: 'rgba(200,148,77,0.08)',
+    border: '1px solid rgba(200,148,77,0.18)',
     marginBottom: '0.5rem',
   },
   doNowLabel: {
-    fontSize: '0.6875rem', fontWeight: 700, color: '#22C55E',
+    fontSize: '0.6875rem', fontWeight: 700, color: '#C8944D',
     textTransform: 'uppercase', letterSpacing: '0.05em',
   },
   doNowText: { fontSize: '0.875rem', color: '#EAF2FF', fontWeight: 600, lineHeight: 1.4 },
@@ -406,9 +406,9 @@ const S = {
     width: '100%',
     padding: '0.75rem',
     borderRadius: '12px',
-    border: '1px solid rgba(34,197,94,0.25)',
-    background: 'rgba(34,197,94,0.08)',
-    color: '#22C55E',
+    border: '1px solid rgba(200,148,77,0.25)',
+    background: 'rgba(200,148,77,0.08)',
+    color: '#C8944D',
     fontWeight: 700,
     fontSize: '0.9375rem',
     cursor: 'pointer',

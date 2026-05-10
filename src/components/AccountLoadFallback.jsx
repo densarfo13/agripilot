@@ -160,7 +160,7 @@ const S = {
     minHeight: 44,
     borderRadius: 12,
     border: 'none',
-    background: '#22C55E',
+    background: '#C8944D',
     color: '#fff',
     fontWeight: 700,
     fontSize: '0.9375rem',

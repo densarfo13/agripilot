@@ -13,7 +13,7 @@ import { estimateYield } from '../../lib/farmer/yieldEstimate.js';
 const CONF_STYLES = Object.freeze({
   low:    { bg: 'rgba(239,68,68,0.12)',  fg: '#FCA5A5' },
   medium: { bg: 'rgba(245,158,11,0.12)', fg: '#FDE68A' },
-  high:   { bg: 'rgba(34,197,94,0.12)',  fg: '#86EFAC' },
+  high:   { bg: 'rgba(200,148,77,0.12)',  fg: '#86EFAC' },
 });
 
 export default function YieldBadge({

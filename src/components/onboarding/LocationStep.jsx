@@ -182,7 +182,7 @@ const S = {
   err: { color: '#FCA5A5', fontSize: '0.8125rem', margin: '0.25rem 0 0' },
   next: {
     marginTop: '0.5rem', padding: '0.75rem', borderRadius: '12px',
-    border: 'none', background: '#22C55E', color: '#fff',
+    border: 'none', background: '#C8944D', color: '#fff',
     fontSize: '1rem', fontWeight: 700, cursor: 'pointer', minHeight: '48px',
   },
   nextDisabled: { opacity: 0.5, cursor: 'not-allowed' },

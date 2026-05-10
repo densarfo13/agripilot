@@ -62,7 +62,7 @@ const S = {
     fontSize: '0.875rem',
     fontWeight: 600,
     color: '#FFFFFF',
-    background: '#22C55E',
+    background: '#C8944D',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',

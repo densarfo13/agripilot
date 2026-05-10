@@ -150,7 +150,7 @@ const S = {
     padding: '0.75rem',
     minHeight: '52px',
     borderRadius: 10,
-    background: '#16A34A',
+    background: '#B9853F',
     color: '#fff',
     fontWeight: 600,
     fontSize: '0.95rem',

@@ -59,8 +59,8 @@ const S = {
   },
   banInfo: {
     color: '#86EFAC',
-    background: 'rgba(34,197,94,0.10)',
-    borderColor: 'rgba(34,197,94,0.30)',
+    background: 'rgba(200,148,77,0.10)',
+    borderColor: 'rgba(200,148,77,0.30)',
   },
   banWarn: {
     color: '#FCD34D',

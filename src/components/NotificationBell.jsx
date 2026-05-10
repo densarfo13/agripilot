@@ -261,7 +261,7 @@ const S = {
     cursor: 'pointer',
     alignItems: 'flex-start',
   },
-  rowUnread: { background: 'rgba(34,197,94,0.06)' },
+  rowUnread: { background: 'rgba(200,148,77,0.06)' },
   rowRead:   { background: 'transparent' },
   rowIcon:   { fontSize: '1.125rem', lineHeight: 1, flexShrink: 0 },
   rowBody:   { flex: 1, minWidth: 0 },

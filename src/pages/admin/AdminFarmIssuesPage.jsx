@@ -378,12 +378,12 @@ function severityStyle(sev) {
   switch (sev) {
     case 'high':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
     case 'medium': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
-    default:       return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    default:       return { background: 'rgba(200,148,77,0.15)',  color: '#86EFAC' };
   }
 }
 function statusStyle(status) {
   switch (status) {
-    case 'resolved':    return { background: 'rgba(34,197,94,0.15)',  color: '#86EFAC' };
+    case 'resolved':    return { background: 'rgba(200,148,77,0.15)',  color: '#86EFAC' };
     case 'in_progress': return { background: 'rgba(245,158,11,0.15)', color: '#FDE68A' };
     case 'assigned':    return { background: 'rgba(59,130,246,0.15)', color: '#93C5FD' };
     case 'escalated':   return { background: 'rgba(239,68,68,0.15)',  color: '#FCA5A5' };
@@ -395,7 +395,7 @@ function Metric({ label, value, tone }) {
   const toneExtra =
     tone === 'warn'   ? { borderColor: 'rgba(245,158,11,0.4)',  background: 'rgba(245,158,11,0.08)' }
   : tone === 'info'   ? { borderColor: 'rgba(59,130,246,0.4)',  background: 'rgba(59,130,246,0.08)' }
-  : tone === 'good'   ? { borderColor: 'rgba(34,197,94,0.4)',   background: 'rgba(34,197,94,0.08)'  }
+  : tone === 'good'   ? { borderColor: 'rgba(200,148,77,0.4)',   background: 'rgba(200,148,77,0.08)'  }
   : tone === 'danger' ? { borderColor: 'rgba(239,68,68,0.4)',   background: 'rgba(239,68,68,0.08)'  }
   : null;
   return (
@@ -468,7 +468,7 @@ const S = {
                  background: 'rgba(255,255,255,0.05)', color: '#fff',
                  fontSize: 13, maxWidth: 140 },
   smallPrimary: { padding: '6px 10px', borderRadius: 8, border: 'none',
-                  background: '#22C55E', color: '#000', fontSize: 12,
+                  background: '#C8944D', color: '#000', fontSize: 12,
                   fontWeight: 700, cursor: 'pointer' },
   smallGhost:   { padding: '6px 10px', borderRadius: 8,
                   border: '1px solid rgba(255,255,255,0.15)',

@@ -67,8 +67,8 @@ const S = {
   rowBtns: { display: 'flex', gap: 8, marginTop: 6 },
   primary: {
     appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.40)',
-    background: 'rgba(34,197,94,0.10)',
+    border: '1px solid rgba(200,148,77,0.40)',
+    background: 'rgba(200,148,77,0.10)',
     color: '#86EFAC',
     padding: '8px 12px',
     borderRadius: 8,
@@ -208,7 +208,7 @@ export default function ProfileCompletionPrompt({ style }) {
               style={{
                 height: '100%',
                 width: `${Math.max(0, Math.min(100, progressPct))}%`,
-                background: '#22C55E',
+                background: '#C8944D',
                 transition: 'width 200ms ease-out',
               }}
             />

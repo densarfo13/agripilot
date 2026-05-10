@@ -51,10 +51,10 @@
  */
 export const COLORS = Object.freeze({
   // §8 semantic palette
-  good:    '#22C55E',     // green — primary success / Done CTA
+  good:    '#C8944D',     // green — primary success / Done CTA
   goodFg:  '#86EFAC',     // green-foreground (text on green-tint backgrounds)
-  goodBg:  'rgba(34,197,94,0.10)',
-  goodBd:  'rgba(34,197,94,0.40)',
+  goodBg:  'rgba(200,148,77,0.10)',
+  goodBd:  'rgba(200,148,77,0.40)',
   caution:    '#F59E0B',  // amber — caution tier ("Do today" urgency)
   cautionFg:  '#FCD34D',
   cautionBg:  'rgba(245,158,11,0.10)',

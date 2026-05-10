@@ -11,7 +11,7 @@ async function getJSON(p) {
 }
 
 const DECISION_COLOR = {
-  eligible: '#22C55E',
+  eligible: '#C8944D',
   monitor: '#F59E0B',
   needs_review: '#0EA5E9',
   not_yet_eligible: '#EF4444',

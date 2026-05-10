@@ -42,7 +42,7 @@ const S = {
     fontWeight: 600,
     whiteSpace: 'nowrap',
   },
-  difficultyEasy:   { color: '#86EFAC', borderColor: 'rgba(34,197,94,0.45)',  background: 'rgba(34,197,94,0.10)' },
+  difficultyEasy:   { color: '#86EFAC', borderColor: 'rgba(200,148,77,0.45)',  background: 'rgba(200,148,77,0.10)' },
   difficultyMedium: { color: '#FCD34D', borderColor: 'rgba(252,211,77,0.40)', background: 'rgba(252,211,77,0.10)' },
   difficultyHard:   { color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.40)',  background: 'rgba(239,68,68,0.10)' },
   icon: { fontSize: 12, lineHeight: 1 },
