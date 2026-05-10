@@ -192,7 +192,7 @@ const S = {
   cta: {
     appearance: 'none',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: 'none',
     padding: '10px 14px',
     borderRadius: 12,

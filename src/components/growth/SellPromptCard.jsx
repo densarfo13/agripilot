@@ -85,7 +85,7 @@ const S = {
     padding: '8px 12px',
     borderRadius: 8,
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 800,
     cursor: 'pointer',

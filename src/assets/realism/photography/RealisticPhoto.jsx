@@ -23,6 +23,7 @@
 
 import React, { useState } from 'react';
 import { slotPath } from './manifest.js';
+import RealisticPhotoFallback from './RealisticPhotoFallback.jsx';
 
 export default function RealisticPhoto({
   slot,
@@ -36,29 +37,18 @@ export default function RealisticPhoto({
   const path = slotPath(slot);
   const [failed, setFailed] = useState(!path);
 
-  const baseStyle = {
-    display: 'block',
-    width: '100%',
-    aspectRatio: ratio,
-    borderRadius: rounded,
-    overflow: 'hidden',
-    background: 'linear-gradient(135deg, rgba(200,148,77,0.10) 0%, rgba(110,139,97,0.06) 100%)',
-    border: '1px solid rgba(36,49,58,0.08)',
-    position: 'relative',
-    ...style,
-  };
-
   if (failed) {
-    // Calm placeholder — soft ochre wash. The label stays empty
-    // unless the caller passed an alt; we never invent text.
+    // Calm placeholder — delegated to the shared standalone
+    // component so other surfaces can reuse the same shape
+    // without depending on RealisticPhoto's loading state.
     return (
-      <div
-        style={baseStyle}
+      <RealisticPhotoFallback
+        ratio={ratio}
+        rounded={rounded}
+        alt={alt}
+        style={style}
         className={className}
-        role={alt ? 'img' : 'presentation'}
-        aria-label={alt || undefined}
-        data-testid={`${testId}-placeholder`}
-        data-slot={slot || ''}
+        testId={`${testId}-placeholder`}
       />
     );
   }
@@ -70,7 +60,17 @@ export default function RealisticPhoto({
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}
-      style={{ ...baseStyle, objectFit: 'cover' }}
+      style={{
+        display: 'block',
+        width: '100%',
+        aspectRatio: ratio,
+        borderRadius: rounded,
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(200,148,77,0.10) 0%, rgba(110,139,97,0.06) 100%)',
+        border: '1px solid rgba(36,49,58,0.08)',
+        objectFit: 'cover',
+        ...style,
+      }}
       className={className}
       data-testid={testId}
       data-slot={slot}

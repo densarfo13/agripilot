@@ -270,7 +270,7 @@ function buildStyles(compact) {
     actions: { display: 'flex', gap: 6 },
     acceptBtn: {
       padding: '6px 12px', borderRadius: 8, border: 'none',
-      background: '#C8944D', color: '#0B1D34', fontWeight: 600,
+      background: '#C8944D', color: '#FFFFFF', fontWeight: 600,
       fontSize: 12, cursor: 'pointer',
     },
     declineBtn: {

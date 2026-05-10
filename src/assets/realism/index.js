@@ -15,6 +15,12 @@ export { default as RealisticIcon, REALISTIC_ICON_NAMES }
   from './icons/RealisticIcon.jsx';
 export { default as RealisticPhoto }
   from './photography/RealisticPhoto.jsx';
+// Standalone calm fallback — usable anywhere a calling surface
+// needs the image-missing placeholder shape directly (avatars,
+// empty listing thumbnails, draft cards) without depending on
+// RealisticPhoto's <img> loading state.
+export { default as RealisticPhotoFallback }
+  from './photography/RealisticPhotoFallback.jsx';
 export {
   PHOTO_SLOTS,
   PHOTO_SLOT_LIST,

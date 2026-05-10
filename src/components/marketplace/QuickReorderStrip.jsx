@@ -80,7 +80,7 @@ const S = {
   },
   chipActive: {
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: '1px solid #C8944D',
   },
   remove: {

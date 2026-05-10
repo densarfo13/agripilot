@@ -394,7 +394,7 @@ function buildStyles(compact) {
     rowMeta:   { fontSize: 12, color: 'rgba(230,244,234,0.65)', marginTop: 2 },
     primaryBtn:{
       padding: '8px 14px', borderRadius: 10, border: 'none',
-      background: '#C8944D', color: '#0B1D34', fontWeight: 600,
+      background: '#C8944D', color: '#FFFFFF', fontWeight: 600,
       fontSize: 13, cursor: 'pointer',
     },
     form:  { display: 'flex', flexDirection: 'column', gap: 8 },

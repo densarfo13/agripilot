@@ -95,7 +95,7 @@ const S = {
     padding: '8px 12px',
     fontSize: 13,
     fontWeight: 700,
-    color: '#0B1D34',
+    color: '#FFFFFF',
     background: '#C8944D',
     borderRadius: 10,
     display: 'flex',
@@ -168,7 +168,7 @@ const S = {
     appearance: 'none',
     border: 'none',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     padding: '10px 16px',
     borderRadius: 10,
     fontSize: 14,
@@ -217,7 +217,7 @@ const S = {
   },
   listenBtnActive: {
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
   },
 
   optionalHeading: {
@@ -257,7 +257,7 @@ const S = {
   },
   optActionBtnPrimary: {
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: 'none',
   },
 };

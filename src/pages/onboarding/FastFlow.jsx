@@ -770,7 +770,7 @@ const S = {
   },
   choicePrimary: {
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: 'none',
     boxShadow: '0 8px 22px rgba(200,148,77,0.25)',
   },

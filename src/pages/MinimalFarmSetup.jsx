@@ -160,7 +160,7 @@ const S = {
     padding: '14px 18px',
     borderRadius: 12,
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: 800,
     cursor: 'pointer',

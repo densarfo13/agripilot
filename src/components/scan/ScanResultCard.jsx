@@ -181,7 +181,7 @@ const STYLES = {
   },
   btnPrimary: {
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: 'none',
     fontWeight: 700,
   },
@@ -242,7 +242,7 @@ const STYLES = {
     appearance: 'none',
     border: 'none',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     borderRadius: 8,
     padding: '7px 12px',
     fontSize: 13,

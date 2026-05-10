@@ -221,7 +221,7 @@ const S = {
     borderRadius: '14px',
     border: 'none',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     fontSize: '1.125rem',
     fontWeight: 800,
     cursor: 'pointer',

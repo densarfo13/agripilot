@@ -196,7 +196,7 @@ const STYLES = {
     fontSize: 13,
     fontWeight: 800,
   },
-  taskBadgeFirst: { background: '#C8944D', color: '#0B1D34' },
+  taskBadgeFirst: { background: '#C8944D', color: '#FFFFFF' },
   navRow: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -209,7 +209,7 @@ const STYLES = {
     padding: '14px 18px',
     borderRadius: 14,
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 800,
     cursor: 'pointer',

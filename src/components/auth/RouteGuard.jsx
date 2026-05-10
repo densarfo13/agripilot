@@ -194,7 +194,7 @@ const S = {
     alignItems: 'center',
     justifyContent: 'center',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: 'none',
     borderRadius: 12,
     padding: '12px 20px',

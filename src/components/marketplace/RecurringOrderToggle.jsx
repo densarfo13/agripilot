@@ -47,7 +47,7 @@ const S = {
     appearance: 'none',
     border: 'none',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     padding: '8px 12px',
     borderRadius: 8,
     fontSize: 12,

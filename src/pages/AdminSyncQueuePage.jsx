@@ -289,7 +289,7 @@ function buildStyles() {
     headerActions: { display: 'flex', gap: 8, flexWrap: 'wrap' },
     primaryBtn: {
       padding: '8px 12px', borderRadius: 8, border: 'none',
-      background: '#C8944D', color: '#0B1D34',
+      background: '#C8944D', color: '#FFFFFF',
       fontWeight: 700, fontSize: 13, cursor: 'pointer',
     },
     ghostBtn: {
@@ -360,7 +360,7 @@ function buildStyles() {
     },
     smallBtn: {
       padding: '4px 8px', borderRadius: 6, border: 'none',
-      background: '#C8944D', color: '#0B1D34',
+      background: '#C8944D', color: '#FFFFFF',
       fontSize: 11, fontWeight: 600, cursor: 'pointer',
     },
     smallGhost: {

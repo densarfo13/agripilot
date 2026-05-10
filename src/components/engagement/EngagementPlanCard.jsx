@@ -91,7 +91,7 @@ const S = {
     fontSize: 13,
     fontWeight: 800,
   },
-  badgeFirst: { background: '#C8944D', color: '#0B1D34' },
+  badgeFirst: { background: '#C8944D', color: '#FFFFFF' },
   body: { display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 },
   why:  { fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.65)', lineHeight: 1.45 },
   primaryBtn: {
@@ -100,7 +100,7 @@ const S = {
     padding: '8px 12px',
     borderRadius: 10,
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: 800,
     cursor: 'pointer',

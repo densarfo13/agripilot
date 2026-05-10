@@ -375,7 +375,7 @@ const S = {
     appearance: 'none',
     width: '100%',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     border: 'none',
     borderRadius: 12,
     padding: '14px 20px',

@@ -131,7 +131,7 @@ const S = {
   },
   ctaBtnFocus: {
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
   },
   urgencyChip: {
     display: 'inline-flex',

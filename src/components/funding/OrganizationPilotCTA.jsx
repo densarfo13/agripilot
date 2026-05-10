@@ -141,7 +141,7 @@ const STYLES = {
     padding: '10px 16px',
     borderRadius: 10,
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: 700,
     border: 'none',

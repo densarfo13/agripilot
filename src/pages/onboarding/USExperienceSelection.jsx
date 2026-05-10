@@ -97,7 +97,7 @@ const STYLES = {
     padding: '3px 8px',
     borderRadius: 999,
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     whiteSpace: 'nowrap',
   },
   cardTitle:    { margin: 0, fontSize: 17, fontWeight: 800 },

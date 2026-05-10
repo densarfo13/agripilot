@@ -114,7 +114,7 @@ const S = {
     flex: '2 1 0',
     border: 'none',
     background: '#C8944D',
-    color: '#0B1D34',
+    color: '#FFFFFF',
     padding: '12px 16px',
     borderRadius: 10,
     fontSize: 14,
