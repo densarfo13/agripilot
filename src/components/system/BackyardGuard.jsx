@@ -47,23 +47,26 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import useExperience from '../../hooks/useExperience.js';
 
-const C = {
-  navy:    '#0B1D34',
-  navy2:   '#081423',
-  panel:   '#102C47',
-  border:  '#1F3B5C',
-  ink:     '#FFFFFF',
-  inkDim:  'rgba(255,255,255,0.65)',
-  green:   '#22C55E',
-  greenBd: 'rgba(34,197,94,0.32)',
-  greenBg: 'rgba(34,197,94,0.12)',
-  greenFg: '#86EFAC',
-};
+// Soft Ochre / Beige unified system. Replaces the legacy
+// dark-navy + neon-green inline tokens — this empty-state card
+// now ships on 8+ commercial routes in garden mode (per the Garden
+// Mode Refactor §3 leakage cleanup), so it must render in the same
+// palette as every other garden surface or it looks broken.
+const C = Object.freeze({
+  bgTop:   '#F6F1E7',
+  bgBot:   '#EFE7D5',
+  panel:   '#FFFFFF',
+  border:  'rgba(36,49,58,0.08)',
+  ink:     '#1F2933',
+  inkDim:  '#667085',
+  ochre:        '#C8944D',
+  ochreActive:  '#B9853F',
+});
 
 const S = {
   page: {
     minHeight: '100vh',
-    background: `linear-gradient(180deg, ${C.navy} 0%, ${C.navy2} 100%)`,
+    background: `linear-gradient(180deg, ${C.bgTop} 0%, ${C.bgBot} 100%)`,
     color: C.ink,
     padding: '1.25rem 1rem 6rem',
     display: 'flex', justifyContent: 'center',
@@ -74,6 +77,7 @@ const S = {
     borderRadius: 16, padding: '1.5rem 1.25rem',
     display: 'flex', flexDirection: 'column', gap: 12,
     textAlign: 'center', alignSelf: 'flex-start',
+    boxShadow: '0 1px 0 0 rgba(255,255,255,0.55) inset, 0 8px 24px rgba(15,23,42,0.06)',
   },
   emoji: { fontSize: '2rem', lineHeight: 1, marginBottom: 4 },
   title: { margin: 0, fontSize: '1.15rem', fontWeight: 800, color: C.ink },
@@ -81,11 +85,12 @@ const S = {
   primaryBtn: {
     appearance: 'none', display: 'block', width: '100%',
     border: 'none',
-    background: C.green, color: C.ink,
+    background: `linear-gradient(180deg, ${C.ochre} 0%, ${C.ochreActive} 100%)`,
+    color: '#FFFFFF',
     borderRadius: 12, padding: '0.85rem 1rem',
     fontSize: '0.95rem', fontWeight: 800,
     cursor: 'pointer', minHeight: 48, fontFamily: 'inherit',
-    boxShadow: '0 6px 18px rgba(34,197,94,0.28)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.32)',
     marginTop: 6,
   },
   ghostBtn: {

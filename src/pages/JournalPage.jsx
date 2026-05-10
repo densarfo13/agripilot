@@ -36,8 +36,18 @@ import usePlantIdentity from '../hooks/usePlantIdentity.js';
 // timeline. Pure module; never throws; returns null when the
 // plant is brand-new and the caller falls through to the empty
 // state.
-import { selectPrimaryObservation } from '../lib/garden/gardenObservations.js';
+import {
+  selectPrimaryObservation, gardenSeason, gardenTimeOfDay,
+} from '../lib/garden/gardenObservations.js';
 import { useLiveWeather } from '../hooks/useLiveWeather.js';
+// Polish §8 — photo evolution timeline. Pulls thumbnails from the
+// scan history slot; merged with the active plant photo as the
+// most recent frame. Pure read; never throws.
+import { getScanHistory } from '../data/scanHistory.js';
+// Gardener-tone substitution. Pure / never throws. Applied to the
+// observation line so any farm-style wording that slips in via
+// future engine changes still reads in the calm garden register.
+import { softenForGarden } from '../core/scanResultPolicy.js';
 
 function _formatDate(iso) {
   try {
@@ -87,6 +97,57 @@ export default function JournalPage() {
     } catch { return null; }
   }, [plant, entries, weather]);
 
+  // Polish §8 — photo evolution strip. Gathers the plant photo +
+  // up to 5 scan thumbnails, sorts newest-first, deduplicates.
+  // Empty array when no photos exist yet so the strip self-
+  // suppresses below.
+  const photoStrip = useMemo(() => {
+    const out = [];
+    try {
+      if (plant && plant.photo) {
+        out.push({
+          src: plant.photo,
+          dateLabel: tSafe('journal.photo.now', 'Now'),
+          key: 'plant-current',
+        });
+      }
+    } catch { /* swallow */ }
+    try {
+      const scans = getScanHistory() || [];
+      // Newest first; cap at 5.
+      const recent = scans
+        .filter((s) => s && s.thumbnail)
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+        .slice(0, 5);
+      for (const s of recent) {
+        out.push({
+          src: s.thumbnail,
+          dateLabel: _formatDate(s.createdAt),
+          key: 'scan-' + (s.id || s.createdAt || Math.random().toString(36).slice(2, 8)),
+        });
+      }
+    } catch { /* swallow */ }
+    return out;
+  }, [plant, entries]);
+
+  // Polish §2 + §3 — subtle seasonal/time-of-day accent on the
+  // hero. We don't change the page background (that would feel
+  // dramatic); we just shift the hero's accent token between
+  // green (spring/summer growth feel) and amber (autumn / winter /
+  // evening warm-earth tone) so the surface feels alive without
+  // animation. PremiumPageHero supports 'green' | 'amber' |
+  // 'neutral'; we never pass anything outside that set. Pure
+  // synchronous read; recomputes once on mount.
+  const heroAccent = useMemo(() => {
+    try {
+      const season = gardenSeason();
+      const tod    = gardenTimeOfDay();
+      if (tod === 'evening') return 'amber';
+      if (season === 'autumn' || season === 'winter') return 'amber';
+      return 'green';
+    } catch { return 'green'; }
+  }, []);
+
   return (
     <PremiumPage mode="garden" testId="journal-page" maxWidth="36rem" bottomPad="2rem">
       <PremiumPageHero
@@ -97,7 +158,7 @@ export default function JournalPage() {
           'journal.subtitle',
           'Care moments, photos, and milestones — in the order they happened.',
         )}
-        accent="green"
+        accent={heroAccent}
         testId="journal-hero"
       />
 
@@ -143,10 +204,36 @@ export default function JournalPage() {
             {tSafe('journal.observation.label', 'Today')}
           </span>
           <span style={S.observationText}>
-            {tSafe('journal.observation.' + observation, observation)}
+            {(() => {
+              const resolved = tSafe(
+                'journal.observation.' + observation,
+                observation,
+              );
+              return softenForGarden(resolved) || resolved;
+            })()}
           </span>
         </section>
       ) : null}
+
+      {/* Photo evolution strip — Polish §8. Calm horizontal scroll
+          of plant + scan thumbnails over time. Self-suppresses when
+          there are no photos yet so a brand-new journal stays
+          minimal. */}
+      {photoStrip.length > 0 && (
+        <section style={S.photoStripCard} data-testid="journal-photos">
+          <p style={S.cardLabel}>
+            {tSafe('journal.photos.label', 'Photo timeline')}
+          </p>
+          <div style={S.photoStripScroll} data-testid="journal-photos-scroll">
+            {photoStrip.map((p) => (
+              <figure key={p.key} style={S.photoFrame}>
+                <img src={p.src} alt="" style={S.photoImg} draggable="false" />
+                <figcaption style={S.photoCaption}>{p.dateLabel}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Milestone summary — three calm stat chips. Hidden when zero
           milestones so an empty journal stays peaceful. */}
@@ -297,6 +384,50 @@ const S = {
     fontSize: '0.85rem',
     fontWeight: 500,
     color: '#667085',
+  },
+
+  photoStripCard: {
+    padding: '0.85rem 1rem',
+    borderRadius: 16,
+    background: '#FFFFFF',
+    border: '1px solid rgba(36,49,58,0.08)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.55rem',
+  },
+  photoStripScroll: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '0.55rem',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    paddingBottom: 4,
+    WebkitOverflowScrolling: 'touch',
+  },
+  photoFrame: {
+    margin: 0,
+    flex: '0 0 auto',
+    width: 84,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+  },
+  photoImg: {
+    width: 84,
+    height: 84,
+    borderRadius: 12,
+    objectFit: 'cover',
+    background: '#FFF9F0',
+    border: '1px solid rgba(36,49,58,0.10)',
+    display: 'block',
+  },
+  photoCaption: {
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    color: '#667085',
+    lineHeight: 1.3,
+    textAlign: 'center',
   },
 
   observationCard: {

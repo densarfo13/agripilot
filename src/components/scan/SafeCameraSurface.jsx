@@ -77,7 +77,9 @@ import {
 import { analyzeScan } from '../../core/scanDetectionEngine.js';
 import { saveScanEntry } from '../../data/scanHistory.js';
 import { addScanTasks } from '../../core/scanToTask.js';
-import { followUpTaskFor, sanitizeScanText } from '../../core/scanResultPolicy.js';
+import {
+  followUpTaskFor, sanitizeScanText, softenForGarden,
+} from '../../core/scanResultPolicy.js';
 
 // 8-second hard ceiling on analyze before we fall back to the
 // rule-based verdict. Keeps the user out of an infinite spinner
@@ -647,6 +649,7 @@ export default function SafeCameraSurface({
           <ResultCard
             result={result}
             qualityIssue={qualityIssue}
+            isGarden={_readActiveExperience() === 'garden'}
           />
           <div style={S.btnRow}>
             <button
@@ -870,9 +873,19 @@ export default function SafeCameraSurface({
 //   • Severity chip (when the engine attached one)
 //   • Recommended action (first item from recommendedActions)
 //   • Next check time (nextAction or first follow-up task title)
-function ResultCard({ result, qualityIssue }) {
+function ResultCard({ result, qualityIssue, isGarden = false }) {
   if (!result) return null;
-  const finding = String(result.possibleIssue || result.label || 'Photo received');
+  // Garden-mode tone softener — applied to the human-readable
+  // strings only (finding / recommendation / nextCheck). Confidence
+  // + severity chips stay canonical because they're already
+  // localized labels, not engine prose. softenForGarden is pure
+  // and falls through to the original text when nothing matches.
+  const tone = (s) => {
+    const safe = String(s || '');
+    if (!isGarden) return safe;
+    return softenForGarden(safe) || safe;
+  };
+  const finding = tone(result.possibleIssue || result.label || 'Photo received');
   const confidenceLabel = (() => {
     const c = String(result.confidence || '').toLowerCase();
     if (c === 'high')   return tSafe('safeCamera.confHigh',   'Likely match');
@@ -888,18 +901,18 @@ function ResultCard({ result, qualityIssue }) {
   })();
   const recommendation = (() => {
     if (Array.isArray(result.recommendedActions) && result.recommendedActions.length > 0) {
-      return String(result.recommendedActions[0]);
+      return tone(result.recommendedActions[0]);
     }
-    if (result.explanation) return String(result.explanation);
+    if (result.explanation) return tone(result.explanation);
     return tSafe(
       'safeCamera.recDefault',
       'Take a clearer close-up of the leaf or affected area in good light.',
     );
   })();
   const nextCheck = (() => {
-    if (result.nextAction) return String(result.nextAction);
+    if (result.nextAction) return tone(result.nextAction);
     const tasks = Array.isArray(result.suggestedTasks) ? result.suggestedTasks : [];
-    if (tasks.length > 0 && tasks[0] && tasks[0].title) return String(tasks[0].title);
+    if (tasks.length > 0 && tasks[0] && tasks[0].title) return tone(tasks[0].title);
     return tSafe('safeCamera.nextDefault', 'Check leaves again tomorrow.');
   })();
 

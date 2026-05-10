@@ -64,6 +64,10 @@ import useExperience             from '../hooks/useExperience.js';
 // envelope. Memory cooldowns inside the orchestrator suppress
 // repeat surfacing across reloads, so Home never nags.
 import { getNextBestRecommendation } from '../orchestration/orchestrator.js';
+// Elite Garden Polish §6 — gardener-tone substitution layered on
+// top of the orchestrator title before render. Pure / never throws;
+// in farm mode we pass the resolved title through unchanged.
+import { softenForGarden } from '../core/scanResultPolicy.js';
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -628,6 +632,14 @@ export default function PilotHome() {
             );
           }
           if (!route || above.has(route)) return null;
+          // Elite Garden Polish §6 — apply the gardener-tone
+          // softener to the orchestrator's title only when the
+          // active mode is garden. Farm-mode tiles render the
+          // canonical wording untouched.
+          const resolved = tSafe(primaryGuidance.titleKey, primaryGuidance.titleKey);
+          const titleText = ctxIntel.mode === 'garden'
+            ? (softenForGarden(resolved) || resolved)
+            : resolved;
           return (
             <Link
               to={route}
@@ -636,7 +648,7 @@ export default function PilotHome() {
               data-testid="pilot-home-primary-guidance"
               data-route={route}
             >
-              {tSafe(primaryGuidance.titleKey, primaryGuidance.titleKey)}
+              {titleText}
             </Link>
           );
         })()}

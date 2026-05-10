@@ -68,16 +68,35 @@ export function selectPrimaryObservation(input = {}) {
       return _cap(`Harvest picked — ${nickname} is producing.`);
     }
     if (recent && recent.type === 'recovery_note') {
-      return _cap(`${nickname} is recovering well.`);
+      return _cap(`${nickname} looked healthier after recent care.`);
     }
     if (recent && recent.type === 'stage_advanced') {
       return _cap(`${nickname} reached a new growth stage.`);
     }
+    // Cross-session continuity (Polish §1) — when the last
+    // recorded event was a watering / care entry from a previous
+    // day, lead with reassurance instead of restating the action.
+    if (recent && recent.type === 'task_completed') {
+      const ageDays = _ageDays(recent.createdAt, now);
+      if (ageDays >= 1 && ageDays <= 3) {
+        return _cap(`${nickname} settled in nicely after recent care.`);
+      }
+    }
 
-    // 2. Growth-streak feel — three or more care moments in the
-    //    last 14 days produces a "steady growth" observation.
-    const streak = _recentMomentCount(timeline, 14, now);
-    if (streak >= 3) {
+    // 2. Growth-streak feel — care-consistency tiers (Polish §6 +
+    //    §9) so reassurance scales with how active the gardener
+    //    has actually been. Older runs of "Steady care this
+    //    fortnight" become "building momentum" / "consistent
+    //    rhythm" when the cadence is strong over a longer window.
+    const streakLong = _recentMomentCount(timeline, 30, now);
+    const streakShort = _recentMomentCount(timeline, 14, now);
+    if (streakLong >= 8) {
+      return _cap(`${nickname} is building steady momentum.`);
+    }
+    if (streakShort >= 5) {
+      return _cap(`Consistent rhythm with ${nickname} this fortnight.`);
+    }
+    if (streakShort >= 3) {
       return _cap(`Steady care for ${nickname} this fortnight.`);
     }
 
@@ -175,6 +194,17 @@ function _recentMomentCount(timeline, days, now) {
     }
     return n;
   } catch { return 0; }
+}
+
+// Number of full days between an ISO timestamp and `now`. Returns
+// NaN on parse failure so callers can short-circuit safely.
+function _ageDays(iso, now) {
+  try {
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return NaN;
+    const ms = now.getTime() - t;
+    return Math.floor(ms / (24 * 60 * 60 * 1000));
+  } catch { return NaN; }
 }
 
 function _weatherObservation(weather, nickname) {
