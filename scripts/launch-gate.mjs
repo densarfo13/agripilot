@@ -42,6 +42,13 @@ const steps = [
   // neon-green / dark-navy color literal in a guarded file.
   { name: 'CI guard — garden principles',
     cmd: 'node', args: ['scripts/ci/check-garden-principles.mjs'] },
+  // Experience Governance audit — broader rule set living in
+  // src/governance/. Re-uses the garden principles for tone +
+  // color, adds visual-pattern checks (neon, lime), and emits
+  // soft warnings for CTA-density drift without blocking the
+  // build until the count reaches the hard ceiling.
+  { name: 'CI guard — experience governance',
+    cmd: 'node', args: ['scripts/ci/run-experience-audit.mjs'] },
   { name: 'i18n usage check (warning-only)',
     cmd: 'node', args: ['scripts/check-i18n.js'],
     tolerate: true,  // soft signal — warns but never fails the gate
