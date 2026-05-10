@@ -147,6 +147,11 @@ async function main() {
                 || '').slice(0, 12);
       const stamp = sha ? sha : new Date().toISOString();
       console.log(`[Farroway] Next-stage readiness build active: ${stamp}`);
+      // Master Readiness §18 — paired marker for the master pass.
+      // Both lines fire so log dashboards keyed to either tag
+      // pick up the boot; the SHA is identical so dedup is
+      // trivial. Keep both until log infra is consolidated.
+      console.log(`[Farroway] Master readiness build active: ${stamp}`);
     } catch { /* never throw from a marker */ }
   });
 
