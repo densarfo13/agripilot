@@ -483,7 +483,7 @@ export default function FundingHub() {
             <a
               href="/dashboard"
               onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }}
-              style={{ color: '#22C55E', textDecoration: 'underline' }}
+              style={{ color: '#C8944D', textDecoration: 'underline' }}
             >
               {tStrict('common.back', 'Back')}
             </a>

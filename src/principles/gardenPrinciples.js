@@ -153,14 +153,31 @@ export const FORBIDDEN_GARDEN_COLORS = Object.freeze([
 // catches drift on day one.
 //
 export const GARDEN_GUARDED_FILES = Object.freeze([
+  // Garden-only surfaces
   'src/pages/JournalPage.jsx',
-  'src/pages/MyFarmPage.jsx',          // shared with farm; mode-branched
-  'src/pages/PilotHome.jsx',           // shared with farm; mode-branched
-  'src/pages/SoilScanPage.jsx',        // garden-mode soil flow
+  'src/pages/SoilScanPage.jsx',         // garden-mode soil flow
   'src/components/system/BackyardGuard.jsx',
-  'src/components/scan/SafeCameraSurface.jsx',
   'src/components/plant/PlantEditModal.jsx',
   'src/lib/garden/gardenObservations.js',
+
+  // Shared, mode-branched surfaces (Garden uses the same component
+  // as Farm but the wording must still pass the principles).
+  'src/pages/MyFarmPage.jsx',           // /my-grow + /my-farm
+  'src/pages/PilotHome.jsx',            // /home for both modes
+  'src/components/scan/SafeCameraSurface.jsx',
+
+  // Active routes enumerated in the spec route audit. Garden mode
+  // users land on each of these via the bottom nav (Tasks /
+  // Journal / Scan) or via taps from Home (Support / Funding /
+  // Sell — the latter two render BackyardGuard's empty state, but
+  // the wrapper itself must still pass the principles).
+  'src/pages/AllTasksPage.jsx',         // /tasks
+  'src/pages/FarmerProgressPage.jsx',   // /progress
+  'src/pages/FundingHub.jsx',           // /funding (BackyardGuard'd in garden)
+  'src/pages/Sell.jsx',                 // /sell    (BackyardGuard'd in garden)
+  'src/pages/support/SupportCenterPage.jsx',  // /support
+  'src/pages/support/SupportFAQPage.jsx',     // /support/faq
+  'src/pages/support/SupportContactPage.jsx', // /support/contact
 ]);
 
 // ─── Helpers ──────────────────────────────────────────────────────

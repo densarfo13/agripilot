@@ -587,7 +587,7 @@ export default function AllTasksPage() {
                   <div style={S.currentTextWrap}>
                     <span style={S.currentTitle}>{vmByTaskId[currentTask.id]?.title || getLocalizedTaskTitle(currentTask.id, currentTask.title, lang)}</span>
                     {vmByTaskId[currentTask.id]?.urgency && vmByTaskId[currentTask.id].urgency !== 'optional' && (
-                      <span style={{ ...S.urgencyBadge, background: vmByTaskId[currentTask.id].urgencyStyle?.bg || 'rgba(34,197,94,0.12)', color: vmByTaskId[currentTask.id].urgencyStyle?.text || '#22C55E' }}>
+                      <span style={{ ...S.urgencyBadge, background: vmByTaskId[currentTask.id].urgencyStyle?.bg || 'rgba(110,139,97,0.12)', color: vmByTaskId[currentTask.id].urgencyStyle?.text || '#3F6A3F' }}>
                         {t(vmByTaskId[currentTask.id].urgencyStyle?.labelKey || 'urgency.thisWeek')}
                       </span>
                     )}
@@ -741,7 +741,7 @@ export default function AllTasksPage() {
 const S = {
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)',
+    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
     padding: '0 0 5rem 0',
     animation: 'farroway-fade-in 0.3s ease-out',
   },
@@ -858,7 +858,7 @@ const S = {
   loadingWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' },
   spinner: {
     display: 'inline-block', width: '1.5rem', height: '1.5rem',
-    border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#22C55E',
+    border: '3px solid rgba(36,49,58,0.10)', borderTopColor: '#C8944D',
     borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite',
   },
 
@@ -917,10 +917,10 @@ const S = {
     marginTop: '0.5rem',
     padding: '0.875rem 1rem',
     borderRadius: '14px',
-    background: '#22C55E', color: '#fff', border: 'none',
+    background: '#C8944D', color: '#FFFFFF', border: 'none',
     fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer',
     minHeight: '48px',
-    boxShadow: '0 10px 24px rgba(34,197,94,0.22)',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.32)',
   },
 
   // Empty
@@ -928,7 +928,7 @@ const S = {
   emptyIcon: { fontSize: '3rem', marginBottom: '0.5rem' },
   emptyTitle: { fontSize: '1.125rem', fontWeight: 700, color: '#EAF2FF', margin: '0 0 0.25rem 0' },
   emptySubtext: { fontSize: '0.875rem', color: '#9FB3C8', margin: '0 0 1.5rem 0' },
-  homeBtn: { padding: '0.875rem 1.75rem', borderRadius: '14px', border: 'none', background: '#22C55E', color: '#fff', fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px rgba(34,197,94,0.22)' },
+  homeBtn: { padding: '0.875rem 1.75rem', borderRadius: '14px', border: 'none', background: '#C8944D', color: '#FFFFFF', fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px rgba(200,148,77,0.32)' },
 
   // Sections
   sections: { padding: '0.75rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' },
@@ -983,7 +983,7 @@ const S = {
   },
   progressFill: {
     height: '100%',
-    background: '#22C55E',
+    background: '#6E8B61',
     borderRadius: 999,
     transition: 'width 240ms ease',
   },
@@ -1041,7 +1041,7 @@ const S = {
   doneBtnCircle: { width: '12px', height: '12px', borderRadius: '50%', background: 'transparent' },
   doneBtnSpinner: {
     width: '12px', height: '12px', borderRadius: '50%',
-    border: '2px solid rgba(255,255,255,0.08)', borderTopColor: '#22C55E',
+    border: '2px solid rgba(36,49,58,0.10)', borderTopColor: '#C8944D',
     animation: 'farroway-spin 0.6s linear infinite',
   },
   doneBtnSmall: {
@@ -1054,7 +1054,7 @@ const S = {
   doneBtnCircleSmall: { width: '8px', height: '8px', borderRadius: '50%', background: 'transparent' },
   doneBtnSpinnerSmall: {
     width: '8px', height: '8px', borderRadius: '50%',
-    border: '2px solid rgba(255,255,255,0.06)', borderTopColor: '#22C55E',
+    border: '2px solid rgba(36,49,58,0.10)', borderTopColor: '#C8944D',
     animation: 'farroway-spin 0.6s linear infinite',
   },
 

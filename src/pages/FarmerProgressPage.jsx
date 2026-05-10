@@ -389,7 +389,7 @@ export default function FarmerProgressPage() {
                       key={s}
                       style={{
                         ...S.stepDot,
-                        background: i <= stageIndex ? '#22C55E' : 'rgba(255,255,255,0.12)',
+                        background: i <= stageIndex ? '#6E8B61' : 'rgba(36,49,58,0.12)',
                       }}
                     />
                   ))}
@@ -563,8 +563,8 @@ const S = {
     display: 'inline-block',
     width: '1.5rem',
     height: '1.5rem',
-    border: '3px solid rgba(255,255,255,0.06)',
-    borderTopColor: '#22C55E',
+    border: '3px solid rgba(36,49,58,0.10)',
+    borderTopColor: '#C8944D',
     borderRadius: '50%',
     animation: 'farroway-spin 0.8s linear infinite',
   },
@@ -656,7 +656,7 @@ const S = {
   progressFill: {
     height: '100%',
     borderRadius: '3px',
-    background: '#22C55E',
+    background: '#6E8B61',
     transition: 'width 0.4s ease',
     minWidth: '4px',
   },
@@ -769,7 +769,7 @@ const S = {
   },
   momentumIcon: { fontSize: '1.5rem', flexShrink: 0 },
   momentumContent: { display: 'flex', flexDirection: 'column', gap: '0.125rem' },
-  momentumTitle: { fontSize: '0.875rem', fontWeight: 700, color: '#22C55E' },
+  momentumTitle: { fontSize: '0.875rem', fontWeight: 700, color: '#3F6A3F' },
   momentumSub: { fontSize: '0.75rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.4 },
   // ─── Economics card (spec §6) ───
   econCard: {
@@ -825,7 +825,7 @@ const S = {
   },
   engineFill: {
     height: '100%', borderRadius: '4px',
-    background: '#22C55E', transition: 'width 0.3s ease',
+    background: '#6E8B61', transition: 'width 0.3s ease',
   },
   engineExplain: {
     fontSize: '0.8125rem', color: '#9FB3C8',
