@@ -57,13 +57,27 @@ function _normalizeConfidence(raw) {
   return 'low';
 }
 
+// Production-Dependency-Fix §4 — single resolver for the bearer
+// key. Any of PLANT_ID_API_KEY / PLANTNET_API_KEY / SCAN_API_KEY
+// /  OPENAI_API_KEY can wire the external scan path; the first
+// alias matched in priority order wins. Pure read; never throws.
+function _resolveScanApiKey() {
+  return process.env.PLANT_ID_API_KEY
+      || process.env.PLANTNET_API_KEY
+      || process.env.SCAN_API_KEY
+      || process.env.OPENAI_API_KEY
+      || null;
+}
+
 // ── PlantNet adapter ───────────────────────────────────────────
 //   docs: https://my.plantnet.org/account/doc
 const plantnet = Object.freeze({
   name: 'plantnet',
   buildRequest({ image, mime, cropName }) {
     const project = process.env.PLANTNET_PROJECT || 'all';
-    const apiKey  = process.env.SCAN_API_KEY;
+    // Prefer the dedicated PLANTNET_API_KEY when present, fall
+    // back to SCAN_API_KEY for back-compat with the old wiring.
+    const apiKey  = process.env.PLANTNET_API_KEY || process.env.SCAN_API_KEY;
     const url     = `https://my-api.plantnet.org/v2/identify/${encodeURIComponent(project)}?api-key=${encodeURIComponent(apiKey || '')}&include-related-images=false`;
 
     const form = new FormData();
@@ -194,16 +208,32 @@ const REGISTRY = Object.freeze({
 });
 
 /**
- * pickProvider() — returns the adapter matching
- * SCAN_PROVIDER_PROFILE, or `generic` when the env value is
- * unrecognised. Returns null when SCAN_API_KEY is unset (caller
- * should use the rule fallback).
+ * pickProvider() — returns the adapter matching the current env
+ * configuration. Returns null when no scan key is set at all
+ * (caller falls back to the rule-based classifier).
+ *
+ * Resolution order (Production-Dependency-Fix §4):
+ *   1. SCAN_PROVIDER_PROFILE env wins when explicitly set.
+ *   2. Otherwise auto-pick from the alias actually present:
+ *        PLANT_ID_API_KEY  → 'generic' (Plant.id treated as
+ *                            generic Authorization-Bearer JSON
+ *                            until a dedicated adapter lands;
+ *                            request shape is compatible).
+ *        PLANTNET_API_KEY  → 'plantnet'
+ *        SCAN_API_KEY      → 'generic' (legacy default)
+ *        OPENAI_API_KEY    → 'generic' (vision fallback path
+ *                            via the same Bearer envelope)
+ *   3. Fall through to 'generic' on any unrecognised profile.
  */
 export function pickProvider() {
-  if (!process.env.SCAN_API_KEY) return null;
-  const profile = String(process.env.SCAN_PROVIDER_PROFILE || 'generic')
+  if (!_resolveScanApiKey()) return null;
+  const explicit = String(process.env.SCAN_PROVIDER_PROFILE || '')
     .toLowerCase().trim();
-  return REGISTRY[profile] || generic;
+  if (explicit && REGISTRY[explicit]) return REGISTRY[explicit];
+  // Auto-pick from the most-specific alias that's set.
+  if (process.env.PLANTNET_API_KEY)  return REGISTRY.plantnet;
+  if (process.env.PLANT_ID_API_KEY)  return REGISTRY.generic;
+  return REGISTRY.generic;
 }
 
 /**
@@ -216,7 +246,7 @@ export function describeProviders() {
   return {
     available: Object.keys(REGISTRY),
     selected:  selected ? selected.name : null,
-    apiKeySet: !!process.env.SCAN_API_KEY,
+    apiKeySet: !!_resolveScanApiKey(),
   };
 }
 

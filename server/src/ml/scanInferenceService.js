@@ -51,9 +51,21 @@ const SYMPTOMS = Object.freeze([
 
 function _now() { return Date.now(); }
 
+// Production-Dependency-Fix §4 — provider priority order. Any of
+// the four canonical scan keys puts the inference into 'external'
+// mode; the rule-based fallback only fires when ALL are missing.
+// scanProviders.js resolves the actual adapter + reads the right
+// key (via _resolveScanApiKey() below).
+function _hasAnyScanKey() {
+  return !!(process.env.PLANT_ID_API_KEY
+         || process.env.PLANTNET_API_KEY
+         || process.env.SCAN_API_KEY
+         || process.env.OPENAI_API_KEY);
+}
+
 function _selectProvider(override) {
   if (typeof override === 'string' && override) return override;
-  if (process.env.SCAN_API_KEY) return 'external';
+  if (_hasAnyScanKey()) return 'external';
   return 'rule';
 }
 

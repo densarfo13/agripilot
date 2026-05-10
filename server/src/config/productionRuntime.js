@@ -47,13 +47,28 @@ const SERVICES = Object.freeze([
   { key: 'weather',  label: 'Weather',
     aliases: ['WEATHER_API_KEY', 'VITE_WEATHER_API_KEY'] },
   { key: 'maps',     label: 'Maps',
-    aliases: ['MAPS_API_KEY', 'VITE_MAPS_API_KEY',
-              'MAPBOX_TOKEN', 'VITE_MAPBOX_TOKEN'] },
+    aliases: [
+      'MAPS_API_KEY', 'VITE_MAPS_API_KEY',
+      'MAPBOX_TOKEN', 'VITE_MAPBOX_TOKEN',
+      // Production-Dependency-Fix §5 — Google Maps is the
+      // alternate provider documented in the operator
+      // checklist; aliases let either flavour wire the
+      // service without code changes.
+      'GOOGLE_MAPS_API_KEY', 'VITE_GOOGLE_MAPS_API_KEY',
+    ] },
   { key: 'scan',     label: 'Scan',
-    aliases: ['SCAN_API_KEY', 'PLANT_ID_API_KEY', 'PLANTNET_API_KEY'] },
+    // Production-Dependency-Fix §4 — provider priority order:
+    // 1) Plant.id key  2) PlantNet key  3) generic SCAN_API_KEY
+    // 4) OpenAI vision fallback. The first present alias wins;
+    // the inference resolver in scanInferenceService.js mirrors
+    // the same ordering.
+    aliases: ['PLANT_ID_API_KEY', 'PLANTNET_API_KEY',
+              'SCAN_API_KEY', 'OPENAI_API_KEY'] },
   { key: 'uploads',  label: 'Uploads',
     aliases: [
       'UPLOAD_BASE_URL',
+      // Cloudinary single-URL form (spec §3 first-class).
+      'CLOUDINARY_URL',
       'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET',
       'S3_BUCKET', 'S3_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
     ] },
@@ -62,7 +77,15 @@ const SERVICES = Object.freeze([
   { key: 'sentry',   label: 'Sentry',
     aliases: ['SENTRY_DSN', 'VITE_SENTRY_DSN'] },
   { key: 'sms',      label: 'SMS',
-    aliases: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER'] },
+    aliases: [
+      'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN',
+      // Production-Dependency-Fix §7 — accept the three
+      // outbound-number naming variants Railway operators
+      // commonly set. The Twilio service module reads them
+      // through a shared resolver so the first present wins.
+      'TWILIO_PHONE_NUMBER', 'TWILIO_PHONE', 'TWILIO_FROM_NUMBER',
+      'TWILIO_VERIFY_SERVICE_SID',
+    ] },
   { key: 'email',    label: 'Email',
     aliases: ['SENDGRID_API_KEY'] },
   { key: 'openai',   label: 'AI orchestration',
@@ -215,10 +238,18 @@ export function logProductionStartupBanner() {
   // operator can spot the disabled features at a glance. The
   // banner is silent under NODE_ENV=test (handled at the top of
   // this function) so vitest stays clean.
+  //
+  // Production-Dependency-Fix §6 + §9 — AI orchestration falls
+  // back to the rule-based ladder when OPENAI_API_KEY is unset
+  // (never to "disabled"); reflect that in the banner so the
+  // operator reads the actual runtime state, not just the
+  // present/absent of the env var.
   const status = serviceStatus();
   for (const s of status) {
     if (s.active) {
       log(`${tag} ${s.label}: active`);
+    } else if (s.key === 'openai') {
+      log(`${tag} ${s.label}: rule-based (no key)`);
     } else {
       log(`${tag} ${s.label}: disabled (no key)`);
     }
