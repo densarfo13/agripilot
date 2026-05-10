@@ -61,15 +61,35 @@ function _resolveTitles(entity, mode) {
     if (typeof c === 'string' && c.trim()) { subtitle = c.trim(); break; }
   }
 
+  // When there's no entity at all (entity prop is null/undefined),
+  // surface a calm "No farm added yet" / "No plant added yet"
+  // placeholder INSTEAD of "My New Farm". The previous hardcoded
+  // "My New Farm" string showed even on accounts that had not
+  // created a farm, producing the visible mismatch with the
+  // "0 farms" count on the right.
+  const hasAnyEntity = !!(entity && typeof entity === 'object'
+    && (entity.name || entity.farmName || entity.nickname || entity.plantName || entity.id));
   if (!primary) {
-    primary = isGarden
-      ? tSafe('home.profile.defaultGarden', 'My Grow')
-      : tSafe('home.profile.defaultFarm',   'My New Farm');
+    if (!hasAnyEntity) {
+      primary = isGarden
+        ? tSafe('home.profile.emptyGarden', 'No plant added yet')
+        : tSafe('home.profile.emptyFarm',   'No farm added yet');
+    } else {
+      primary = isGarden
+        ? tSafe('home.profile.defaultGarden', 'My Grow')
+        : tSafe('home.profile.defaultFarm',   'My New Farm');
+    }
   }
   if (!subtitle) {
-    subtitle = isGarden
-      ? tSafe('home.profile.gardenSubtitle', 'Active garden')
-      : tSafe('home.profile.farmSubtitle',   'Default farm');
+    if (!hasAnyEntity) {
+      subtitle = isGarden
+        ? tSafe('home.profile.emptyGardenSub', 'Tap to add a plant')
+        : tSafe('home.profile.emptyFarmSub',   'Tap to add your farm');
+    } else {
+      subtitle = isGarden
+        ? tSafe('home.profile.gardenSubtitle', 'Active garden')
+        : tSafe('home.profile.farmSubtitle',   'Default farm');
+    }
   }
   return { primary, subtitle };
 }

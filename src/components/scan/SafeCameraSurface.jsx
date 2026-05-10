@@ -377,29 +377,76 @@ export default function SafeCameraSurface({
     try {
       const file = e && e.target && e.target.files && e.target.files[0];
       if (!file) return;
+
+      // Defence-in-depth preview: generate an ObjectURL first so
+      // the preview <img> has a renderable src the instant the
+      // user taps Open. The FileReader's dataURL replaces it (the
+      // analyzer needs base64) but if the FileReader fails — large
+      // file, HEIC quirk, browser crash — the preview still works.
+      let objectUrl = null;
+      try {
+        if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+          objectUrl = URL.createObjectURL(file);
+        }
+      } catch { objectUrl = null; }
+
+      // Show the preview immediately with the ObjectURL while the
+      // FileReader runs in the background.
+      setPhoto({ dataUrl: '', objectUrl, file });
+      setResult(null);
+      setAnalyzeError(null);
+      setQualityIssue(null);
+      setSavedEntryId(null);
+      setTasksAdded(false);
+      setPhase('preview');
+      // Stop any live stream we no longer need.
+      _stopStream(streamRef.current, videoRef.current);
+      streamRef.current = null;
+      _logEvent('scan_photo_uploaded', { source: 'upload' });
+
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          setPhoto({ dataUrl: String(reader.result || ''), file });
-          setResult(null);
-          setAnalyzeError(null);
-          setQualityIssue(null);
-          setSavedEntryId(null);
-          setTasksAdded(false);
-          setPhase('preview');
-          // Stop any live stream we no longer need.
-          _stopStream(streamRef.current, videoRef.current);
-          streamRef.current = null;
-          _logEvent('scan_photo_uploaded', { source: 'upload' });
-        } catch { /* swallow */ }
+          const dataUrl = String(reader.result || '');
+          // Upgrade the preview to the dataURL. The ObjectURL is
+          // retained as a fallback for the rare case the dataURL
+          // is empty / unrenderable.
+          setPhoto((prev) => ({
+            dataUrl,
+            objectUrl: prev?.objectUrl || objectUrl,
+            file,
+          }));
+        } catch { /* swallow — ObjectURL preview keeps working */ }
       };
-      reader.onerror = () => { /* let the user retry — no crash */ };
-      reader.readAsDataURL(file);
+      reader.onerror = () => {
+        // Leave the ObjectURL preview in place so the user still
+        // sees their photo. The analyzer falls through to its
+        // own rule-based fallback if dataUrl is empty.
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn('[scan] FileReader failed; ObjectURL preview retained.');
+        }
+      };
+      try { reader.readAsDataURL(file); } catch { /* swallow */ }
     } catch (err) {
-      try { console.error('Upload failed:', err && err.message); }
-      catch { /* swallow */ }
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('[scan] Upload failed:', err && err.message);
+      }
     }
   }, []);
+
+  // ObjectURL revocation — when the photo state cycles (retake /
+  // new upload), revoke any prior URL so the browser releases the
+  // blob. This effect mirrors the camera-stream cleanup pattern.
+  useEffect(() => {
+    const prior = photo && photo.objectUrl;
+    return () => {
+      if (prior) {
+        try { URL.revokeObjectURL(prior); } catch { /* swallow */ }
+      }
+    };
+  }, [photo && photo.objectUrl]);
 
   // ─── Read the active experience (garden vs farm) ──────────
   // Defensive — `farroway_experience` is written by onboarding.
@@ -588,12 +635,21 @@ export default function SafeCameraSurface({
         </p>
       </header>
 
-      {/* Phase: preview — photo captured or uploaded; awaits Analyze */}
+      {/* Phase: preview — photo captured or uploaded; awaits Analyze.
+          Prefers the FileReader dataURL (needed by the analyzer)
+          but falls back to the ObjectURL when dataURL is empty,
+          and finally to a calm "preview unavailable" note so the
+          user never sees a gray locked card. */}
       {phase === 'preview' && photo ? (
         <section style={S.previewCard} data-testid="safe-scan-preview">
-          {photo.dataUrl ? (
-            <img src={photo.dataUrl} alt="" style={S.previewImg} />
-          ) : null}
+          {(photo.dataUrl || photo.objectUrl) ? (
+            <img src={photo.dataUrl || photo.objectUrl} alt="" style={S.previewImg} />
+          ) : (
+            <div style={S.previewHint} data-testid="safe-scan-preview-unavailable">
+              {tSafe('safeCamera.previewUnavailable',
+                'Image received, preview unavailable.')}
+            </div>
+          )}
           <div style={S.previewHint}>
             {tSafe(
               'safeCamera.previewHint',
@@ -619,8 +675,8 @@ export default function SafeCameraSurface({
           timeout falls through to the fallback verdict. */}
       {phase === 'analyzing' ? (
         <section style={S.previewCard} data-testid="safe-scan-analyzing">
-          {photo && photo.dataUrl ? (
-            <img src={photo.dataUrl} alt="" style={S.previewImg} />
+          {photo && (photo.dataUrl || photo.objectUrl) ? (
+            <img src={photo.dataUrl || photo.objectUrl} alt="" style={S.previewImg} />
           ) : null}
           <div style={S.analyzingBox}>
             <div style={S.spinner} aria-hidden="true" />
@@ -643,8 +699,8 @@ export default function SafeCameraSurface({
           Retake tertiary. */}
       {phase === 'result' && result ? (
         <section style={S.previewCard} data-testid="safe-scan-result">
-          {photo && photo.dataUrl ? (
-            <img src={photo.dataUrl} alt="" style={S.previewImg} />
+          {photo && (photo.dataUrl || photo.objectUrl) ? (
+            <img src={photo.dataUrl || photo.objectUrl} alt="" style={S.previewImg} />
           ) : null}
           <ResultCard
             result={result}

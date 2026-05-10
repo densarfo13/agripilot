@@ -407,8 +407,24 @@ export default function PilotHome() {
   // Fall back to the localStorage farm record so first-run pilot
   // accounts (one farm, no multi-experience entries yet) still
   // see a populated card.
+  //
+  // Farm-state hardening — keep the entity + count in lock-step.
+  // Previously the card could render "My New Farm" (from
+  // local.farm fallback) alongside "0 farms" (from xp.farms.length
+  // when the multi-experience store hadn't been seeded yet). Two
+  // different sources of truth = visible mismatch. When we use
+  // the local.farm fallback as the entity, we ALSO promote the
+  // count to at least 1; when we have no entity at all, we let
+  // the count chip self-hide by setting it to null.
   if (!experienceEntity && local.farm && experienceMode === 'farm') {
     experienceEntity = local.farm;
+    if (experienceCount == null || experienceCount === 0) {
+      experienceCount = 1;
+    }
+  } else if (!experienceEntity) {
+    // No entity at all — let the count chip vanish rather than
+    // showing the misleading "0 farms" hint.
+    experienceCount = null;
   }
 
   // ─── Memory-moment context (refinement spec §4) ─────────────

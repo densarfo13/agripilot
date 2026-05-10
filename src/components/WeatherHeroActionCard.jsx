@@ -230,20 +230,34 @@ export default function WeatherHeroActionCard({
   const type = (hero && VALID_TYPES.has(hero.type)) ? hero.type : 'unknown';
   const isGarden = mode === 'garden';
 
+  // Trust gate — only render numeric temperature when the data
+  // genuinely came from the weather API. A fallback / unavailable
+  // envelope can carry a numeric `temp: 0` from upstream
+  // serialisation; treating it as real produces the "0° on fresh
+  // boot" bug operators reported. When the source isn't
+  // 'weather-api', we render the em-dash placeholder + the "Add
+  // location" prompt path takes over below.
+  const _hasRealData = String(w.source || '') === 'weather-api'
+    && w.temp != null
+    && Number.isFinite(Number(w.temp))
+    && typeof w.condition === 'string'
+    && w.condition.trim()
+    && w.condition !== 'Weather unavailable';
+
   // Display values — em-dash fallbacks so layout never collapses.
-  const tempDisplay = (w.temp != null && Number.isFinite(Number(w.temp)))
+  const tempDisplay = _hasRealData
     ? Math.round(Number(w.temp)) + '°'
     : '—°';
 
-  const conditionDisplay = (typeof w.condition === 'string'
-      && w.condition.trim()
-      && w.condition !== 'Weather unavailable')
+  const conditionDisplay = _hasRealData
     ? w.condition
-    : tSafe('weather.partlyCloudy', 'Partly cloudy');
+    : tSafe('weather.addLocation', 'Add location for accurate weather.');
 
-  const feelsLikeNum = (w.feelsLike != null && Number.isFinite(Number(w.feelsLike)))
-    ? Math.round(Number(w.feelsLike))
-    : (Number.isFinite(Number(w.temp)) ? Math.round(Number(w.temp)) : null);
+  const feelsLikeNum = _hasRealData
+    ? ((w.feelsLike != null && Number.isFinite(Number(w.feelsLike)))
+        ? Math.round(Number(w.feelsLike))
+        : Math.round(Number(w.temp)))
+    : null;
   const feelsLikeLine = feelsLikeNum != null
     ? `${tSafe('weather.feelsLike', 'Feels like')} ${feelsLikeNum}°`
     : null;
