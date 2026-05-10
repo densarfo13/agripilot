@@ -499,6 +499,21 @@ const DEFAULTS = Object.freeze({
   // an opt-out lever in case a pilot needs the legacy card layout
   // back: set VITE_FARROWAY_FEATURE_FUNDINGSCREENV2=0 to disable.
   fundingScreenV2: true,
+
+  // ─── Invisible Intelligence Layer (Next-Stage Readiness §13) ──
+  // Feature flags that gate the heavy intelligence engines. All
+  // default to FALSE so the rule-based safe behaviour ships
+  // unchanged today; flipping any flag to true (via
+  // VITE_FARROWAY_FEATURE_<NAME>=1) opts that engine in WITHOUT
+  // exposing AI internals to the user. Farmers + gardeners only
+  // ever see one calm guidance line; these flags shape the
+  // ranking + timing underneath.
+  enableAnalyticsEngine:  false,
+  enablePredictionEngine: false,
+  enableAiAdapter:        false,
+  enableSatelliteEngine:  false,
+  enableScoringEngine:    false,
+  enableRiskEngine:       false,
 });
 
 function envOverride(name) {

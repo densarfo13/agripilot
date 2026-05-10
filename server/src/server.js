@@ -134,6 +134,20 @@ async function main() {
     // under NODE_ENV=test; idempotent on HMR / reconnect.
     try { logProductionStartupBanner(); }
     catch { /* never throw from a banner */ }
+
+    // Next-Stage Readiness §18 — single greppable build marker.
+    // Pulls Railway / Render / Source-commit env vars in priority
+    // order; falls back to the boot timestamp when no commit
+    // hash is available (local boots, custom hosting).
+    try {
+      const sha = (process.env.RAILWAY_GIT_COMMIT_SHA
+                || process.env.RENDER_GIT_COMMIT
+                || process.env.SOURCE_COMMIT
+                || process.env.FARROWAY_COMMIT_SHA
+                || '').slice(0, 12);
+      const stamp = sha ? sha : new Date().toISOString();
+      console.log(`[Farroway] Next-stage readiness build active: ${stamp}`);
+    } catch { /* never throw from a marker */ }
   });
 
   // Graceful shutdown handler
