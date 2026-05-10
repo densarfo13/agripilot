@@ -35,6 +35,13 @@ const steps = [
     cmd: 'node', args: ['scripts/ci/check-duplicate-crop-sources.mjs'] },
   { name: 'CI guard — raw crop render',
     cmd: 'node', args: ['scripts/ci/check-raw-crop-render.mjs'] },
+  // Garden Experience Principles guard — enforces the locked
+  // wording + visual rules from src/principles/gardenPrinciples.js
+  // across the active garden surfaces. Fails the gate on any
+  // alarmist wording, AI jargon, commercial language, or legacy
+  // neon-green / dark-navy color literal in a guarded file.
+  { name: 'CI guard — garden principles',
+    cmd: 'node', args: ['scripts/ci/check-garden-principles.mjs'] },
   { name: 'i18n usage check (warning-only)',
     cmd: 'node', args: ['scripts/check-i18n.js'],
     tolerate: true,  // soft signal — warns but never fails the gate
