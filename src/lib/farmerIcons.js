@@ -21,7 +21,11 @@ export const NAV_ICONS = {
   // `opportunities` icon below; the rename is purely a label
   // shift so the farmer nav reads "Funding" not "Opportunities".
   funding: '\uD83D\uDCB0',            // 💰
-  opportunities: '\uD83C\uDFAF',      // 🎯  Kept for legacy callers
+  opportunities: '\uD83C\uDFAF',
+  // Garden-mode Journal tab \u2014 calm timeline surface that replaces
+  // Progress in the garden bottom nav. Notebook glyph signals
+  // "track growth over time" without commercial tone.
+  journal: '\uD83D\uDCD3',      // 🎯  Kept for legacy callers
 };
 
 // ─── Section icons (used in headers / labels) ───────────────

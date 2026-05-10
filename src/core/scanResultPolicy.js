@@ -107,6 +107,59 @@ export function sanitizeScanText(text) {
   return out;
 }
 
+// Elite Garden spec §3 — gardener-tone substitutions. Layers on
+// top of `sanitizeScanText` to soften farm-style operational copy
+// for the garden surfaces (Journal, Home, Scan result). Never
+// changes the underlying agronomic meaning; only the register.
+//
+// Examples:
+//   "High risk of leaf spot" → "Worth a closer look at leaf spot"
+//   "Inspect irrigation"     → "Take a look at watering"
+//   "Critical issue"         → "Worth a closer look"
+//   "Severe damage"          → "Notable damage"
+const GARDEN_TONE_REPLACEMENTS = Object.freeze([
+  [/\bhigh risk of\b/gi,            'worth a closer look at'],
+  [/\bhigh risk\b/gi,               'worth a closer look'],
+  [/\bcritical issue\b/gi,          'worth a closer look'],
+  [/\bcritical\b/gi,                'worth a closer look at'],
+  [/\burgent\b/gi,                  'soon'],
+  [/\bsevere\b/gi,                  'notable'],
+  [/\binspect (?:the )?irrigation\b/gi, 'take a look at watering'],
+  [/\binspect (?:the )?(?:crop|crops|plant|plants|leaves)\b/gi,
+                                    'take a look at the plants'],
+  [/\binspect\b/gi,                 'take a look at'],
+  [/\bmonitor\b/gi,                 'keep an eye on'],
+  [/\bcrop\b/gi,                    'plant'],
+  [/\bcrops\b/gi,                   'plants'],
+  [/\bharvest ready\b/gi,           'ready to pick'],
+  [/\bfield\b/gi,                   'garden bed'],
+  [/\byield\b/gi,                   'growth progress'],
+]);
+
+/**
+ * softenForGarden(text) → string.
+ *
+ * Sanitises forbidden language (via `sanitizeScanText`) AND adapts
+ * tone to the gardener register. Pure / never throws; returns ''
+ * on non-string input. Safe to use on any user-facing copy that
+ * originates from the shared intelligence layer (orchestrator,
+ * scan engine, weather guidance) — the wording layer flips here
+ * so the engine output stays canonical.
+ */
+export function softenForGarden(text) {
+  let out = sanitizeScanText(text);
+  if (!out) return '';
+  for (const [re, repl] of GARDEN_TONE_REPLACEMENTS) {
+    try { out = out.replace(re, repl); } catch { /* swallow */ }
+  }
+  // Capitalise the first letter so the substituted prefix
+  // ("worth…", "take…") still reads as a sentence.
+  if (out.length > 0) {
+    out = out.charAt(0).toUpperCase() + out.slice(1);
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 /**
  * sanitizeActions(actions) \u2192 string[].
  *

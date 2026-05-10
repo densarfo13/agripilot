@@ -351,6 +351,10 @@ const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
 const AllTasksPage = lazy(() => import('./pages/AllTasksPage.jsx'));
 const MyFarmPage = lazy(() => import('./pages/MyFarmPage.jsx'));
 const FarmerProgressPage = lazy(() => import('./pages/FarmerProgressPage.jsx'));
+// Journal page — Garden Mode Refactor §4. Replaces Progress as the
+// 4th garden bottom-nav tab; surfaces the existing usePlantTimeline
+// data as a calm full-length growth story (not analytics).
+const JournalPage = lazy(() => import('./pages/JournalPage.jsx'));
 const CropFitIntake = lazy(() => import('./pages/CropFitIntake.jsx'));
 const CropRecommendations = lazy(() => import('./pages/CropRecommendations.jsx'));
 const USCropRecommendations = lazy(() => import('./pages/USCropRecommendations.jsx'));
@@ -1105,7 +1109,9 @@ export default function App() {
           <Route path="/marketplace" element={
             <SafeRouteShell routeName="marketplace">
               <FeatureGated flag="FEATURE_BUYER" feature="buyer">
-                <Marketplace />
+                {/* Garden Mode Refactor §3 — gardeners never see
+                    commercial marketplace. Calm empty-state instead. */}
+                <BackyardGuard surface="sell"><Marketplace /></BackyardGuard>
               </FeatureGated>
             </SafeRouteShell>
           } />
@@ -1264,6 +1270,16 @@ export default function App() {
                 <FarmerProgressPage />
               </SafeRouteShell>
             } />
+            {/* Garden Mode Refactor §4 — calm growth-story timeline
+                that replaces Progress as the 4th bottom-nav tab in
+                garden mode. Always-mounted (never gated) so deep
+                links never 404; the page itself reads
+                usePlantTimeline + usePlantIdentity locally. */}
+            <Route path="/journal" element={
+              <SafeRouteShell routeName="journal">
+                <JournalPage />
+              </SafeRouteShell>
+            } />
             <Route path="/season/start" element={<V2SeasonStart />} />
             <Route path="/beginner-reassurance" element={<BeginnerReassurance />} />
             <Route path="/crop-fit" element={<CropFitIntake />} />
@@ -1374,7 +1390,9 @@ export default function App() {
                 Coexists with /marketplace + /market/browse. */}
             <Route path="/buy" element={
               <SafeRouteShell routeName="buy">
-                <Buy />
+                {/* Garden Mode Refactor §3 — buy surface is
+                    commercial; garden mode gets the calm empty-state. */}
+                <BackyardGuard surface="sell"><Buy /></BackyardGuard>
               </SafeRouteShell>
             } />
             {/* /operator — marketplace operator dashboard. The page
@@ -1589,34 +1607,42 @@ export default function App() {
             <Route path="/notifications"
                    element={<Notifications />} />
             <Route path="/harvest/:cycleId/summary" element={<PostHarvestSummaryPage />} />
-            <Route path="/farmer/listings" element={<MyListingsPage />} />
-            <Route path="/farmer/listings/new" element={<CreateListingPage />} />
+            {/* Garden Mode Refactor §3 — wrap each commercial
+                farmer/buyer/marketplace surface in BackyardGuard so
+                gardeners hit the calm "this is for farm mode"
+                empty state instead of leaking commercial UI. */}
+            <Route path="/farmer/listings" element={
+              <BackyardGuard surface="sell"><MyListingsPage /></BackyardGuard>
+            } />
+            <Route path="/farmer/listings/new" element={
+              <BackyardGuard surface="sell"><CreateListingPage /></BackyardGuard>
+            } />
             <Route path="/farmer/notifications" element={<NotificationsPage />} />
             <Route path="/market/browse" element={
               <SafeRouteShell routeName="market-browse">
                 <FeatureGated flag="FEATURE_BUYER" feature="buyer">
-                  <BrowseListingsPage />
+                  <BackyardGuard surface="sell"><BrowseListingsPage /></BackyardGuard>
                 </FeatureGated>
               </SafeRouteShell>
             } />
             <Route path="/market/listings/:id" element={
               <SafeRouteShell routeName="market-listing-detail">
                 <FeatureGated flag="FEATURE_BUYER" feature="buyer">
-                  <ListingDetailPage />
+                  <BackyardGuard surface="sell"><ListingDetailPage /></BackyardGuard>
                 </FeatureGated>
               </SafeRouteShell>
             } />
             <Route path="/buyer/interests" element={
               <SafeRouteShell routeName="buyer-interests">
                 <FeatureGated flag="FEATURE_BUYER_INTEREST" feature="buyer-interest">
-                  <MyInterestsPage />
+                  <BackyardGuard surface="sell"><MyInterestsPage /></BackyardGuard>
                 </FeatureGated>
               </SafeRouteShell>
             } />
             <Route path="/buyer/notifications" element={
               <SafeRouteShell routeName="buyer-notifications">
                 <FeatureGated flag="FEATURE_BUYER" feature="buyer">
-                  <BuyerNotificationsPage />
+                  <BackyardGuard surface="sell"><BuyerNotificationsPage /></BackyardGuard>
                 </FeatureGated>
               </SafeRouteShell>
             } />

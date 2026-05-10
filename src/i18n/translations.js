@@ -7203,6 +7203,9 @@ const T = {
   'nav.myGrow':   { en: 'My Grow',  fr: 'Mon espace', sw: 'Kilimo Changu', ha: 'Gonata', tw: 'Me Mfuo', hi: 'मेरी फ़सल' },
   'nav.tasks':    { en: 'Tasks',    fr: 'Tâches',  sw: 'Kazi',       ha: 'Ayyuka',  tw: 'Adwuma', hi: 'कार्य' },
   'nav.progress': { en: 'Progress', fr: 'Progrès', sw: 'Maendeleo',  ha: 'Ci gaba', tw: 'Nkɔso',  hi: 'प्रगति' },
+  // Garden Mode Refactor §2 — Journal replaces Progress as the 4th
+  // garden bottom-nav tab; see also /journal route in App.jsx.
+  'nav.journal':  { en: 'Journal',  fr: 'Journal', sw: 'Diari',      ha: 'Diary',   tw: 'Nkrataa', hi: 'डायरी' },
   // Standardize Navigation System §1 — Scan promoted to a
   // top-level nav tab on the unified 5-tab structure (Home /
   // My Grow / Tasks / Progress / Scan).

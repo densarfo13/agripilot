@@ -27,6 +27,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import usePlantIdentity from '../../hooks/usePlantIdentity.js';
@@ -144,6 +145,39 @@ export default function PlantEditModal({ open = false, onClose }) {
     };
   }, [open, onClose]);
 
+  // Body scroll lock while open + always-restore on close/unmount.
+  // Spec §11 — never trap the user behind a frozen overlay; the
+  // cleanup runs even if the modal unmounts during an error so
+  // body scroll always comes back.
+  useEffect(() => {
+    if (!open) return undefined;
+    let prevOverflow = '';
+    let prevPaddingRight = '';
+    try {
+      if (typeof document !== 'undefined' && document.body) {
+        prevOverflow = document.body.style.overflow || '';
+        prevPaddingRight = document.body.style.paddingRight || '';
+        // Compensate for the disappearing scrollbar so layout
+        // doesn't jump on desktop browsers that reserve space.
+        const scrollbarWidth = (typeof window !== 'undefined' && window.innerWidth)
+          ? Math.max(0, window.innerWidth - document.documentElement.clientWidth)
+          : 0;
+        document.body.style.overflow = 'hidden';
+        if (scrollbarWidth > 0) {
+          document.body.style.paddingRight = scrollbarWidth + 'px';
+        }
+      }
+    } catch { /* swallow */ }
+    return () => {
+      try {
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.style.overflow = prevOverflow;
+          document.body.style.paddingRight = prevPaddingRight;
+        }
+      } catch { /* swallow */ }
+    };
+  }, [open]);
+
   // Photo upload state — local, not persisted until Save.
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(null);
@@ -205,7 +239,17 @@ export default function PlantEditModal({ open = false, onClose }) {
     }
   }
 
-  return (
+  // Render through a portal attached to document.body so the
+  // fixed-position overlay is never affected by a parent that
+  // applies `transform`, `filter`, or `contain` (which would
+  // otherwise re-scope our position:fixed and trap the sheet
+  // off-screen). SSR-safe: createPortal needs a target, so on
+  // the server we fall through to inline render.
+  const portalTarget = (typeof document !== 'undefined' && document.body)
+    ? document.body
+    : null;
+
+  const tree = (
     <div
       style={S.backdrop}
       onClick={(e) => {
@@ -459,6 +503,8 @@ export default function PlantEditModal({ open = false, onClose }) {
       </div>
     </div>
   );
+
+  return portalTarget ? createPortal(tree, portalTarget) : tree;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -476,50 +522,58 @@ function _draftFromPlant(plant) {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────
-
+//
+// Unified Soft Ochre / Beige system. Replaces the previous dark-
+// green sheet (which visually merged with the dim backdrop on a
+// beige page, making the modal look "blank"). Light dim per spec
+// §5; z-index hierarchy per spec §4 — overlay 40 / sheet 50 / no
+// negative values. Sheet is white-on-beige, ochre primary CTA.
 const S = {
   backdrop: {
     position: 'fixed', inset: 0,
-    background: 'rgba(8,16,12,0.62)',
-    backdropFilter: 'blur(2px)',
-    WebkitBackdropFilter: 'blur(2px)',
+    background: 'rgba(15,23,42,0.35)',
+    backdropFilter: 'blur(1px)',
+    WebkitBackdropFilter: 'blur(1px)',
     display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: 40,
     animation: 'farroway-fade-in 200ms ease-out',
   },
   sheet: {
     width: '100%',
     maxWidth: '32rem',
-    background: 'linear-gradient(180deg, #1A3128 0%, #163826 100%)',
-    border:     '1px solid rgba(255,255,255,0.08)',
+    background: '#FFFFFF',
+    border:     '1px solid rgba(36,49,58,0.08)',
     borderTopLeftRadius: '20px',
     borderTopRightRadius: '20px',
-    boxShadow:  '0 -16px 40px rgba(0,0,0,0.40)',
+    boxShadow:  '0 -16px 40px rgba(15,23,42,0.18)',
     display:    'flex',
     flexDirection: 'column',
     maxHeight:  '92vh',
     overflow:   'hidden',
-    color:      '#FFFFFF',
+    color:      '#1F2933',
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     animation:  'farroway-slide-up 220ms ease-out',
+    zIndex: 50,
+    position: 'relative',
   },
   head: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '1rem 1.1rem 0.75rem',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    borderBottom: '1px solid rgba(36,49,58,0.08)',
   },
-  title: { margin: 0, fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.005em' },
+  title: { margin: 0, fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.005em', color: '#1F2933' },
   closeBtn: {
     appearance: 'none', border: 'none', background: 'transparent',
-    color: 'rgba(255,255,255,0.65)', fontSize: '1.05rem',
+    color: '#667085', fontSize: '1.05rem',
     cursor: 'pointer', padding: '0.35rem 0.6rem',
     borderRadius: '8px',
   },
   body: {
     padding: '0.85rem 1.1rem',
     overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.85rem',
@@ -530,31 +584,31 @@ const S = {
     fontWeight: 700,
     letterSpacing: '0.07em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.55)',
+    color: '#667085',
   },
   input: {
     appearance: 'none',
     fontFamily: 'inherit',
     fontSize: '0.9375rem',
     padding: '0.7rem 0.8rem',
-    border: '1px solid rgba(255,255,255,0.10)',
+    border: '1px solid rgba(36,49,58,0.12)',
     borderRadius: '10px',
-    background: 'rgba(255,255,255,0.04)',
-    color: '#FFFFFF',
+    background: '#FFF9F0',
+    color: '#1F2933',
     minHeight: '44px',
   },
   foot: {
     display: 'flex',
     gap: '0.6rem',
     padding: '0.75rem 1.1rem 1rem',
-    borderTop: '1px solid rgba(255,255,255,0.06)',
+    borderTop: '1px solid rgba(36,49,58,0.08)',
   },
   cancelBtn: {
     flex: '0 0 auto',
     appearance: 'none',
-    border: '1px solid rgba(255,255,255,0.12)',
+    border: '1px solid rgba(36,49,58,0.12)',
     background: 'transparent',
-    color: 'rgba(255,255,255,0.78)',
+    color: '#1F2933',
     padding: '0.7rem 1rem',
     borderRadius: '10px',
     fontSize: '0.9375rem',
@@ -566,8 +620,8 @@ const S = {
     flex: '1 1 auto',
     appearance: 'none',
     border: 'none',
-    background: '#22C55E',
-    color: '#062714',
+    background: '#C8944D',
+    color: '#FFFFFF',
     padding: '0.75rem 1rem',
     borderRadius: '10px',
     fontSize: '0.95rem',
@@ -575,6 +629,7 @@ const S = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     minHeight: '44px',
+    boxShadow: '0 10px 24px rgba(200,148,77,0.32)',
   },
   saveBtnBusy: { opacity: 0.6, cursor: 'not-allowed' },
 
@@ -584,7 +639,7 @@ const S = {
     gap: '0.85rem',
     alignItems: 'center',
     paddingBottom: '0.6rem',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
+    borderBottom: '1px solid rgba(36,49,58,0.08)',
   },
   photoPreview: {
     width: '64px',
@@ -592,12 +647,12 @@ const S = {
     borderRadius: '50%',
     overflow: 'hidden',
     flexShrink: 0,
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-    border: '1px solid rgba(255,255,255,0.10)',
+    background: '#FFF9F0',
+    border: '1px solid rgba(36,49,58,0.10)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset',
+    color: '#98A2B3',
   },
   photoImg: {
     width: '100%',
@@ -608,7 +663,6 @@ const S = {
   photoEmpty: {
     fontSize: '1.6rem',
     lineHeight: 1,
-    opacity: 0.55,
   },
   photoActions: {
     display: 'flex',
@@ -624,9 +678,9 @@ const S = {
   },
   photoBtn: {
     appearance: 'none',
-    border: '1px solid rgba(34,197,94,0.32)',
-    background: 'rgba(34,197,94,0.10)',
-    color: '#86EFAC',
+    border: '1px solid rgba(200,148,77,0.42)',
+    background: 'rgba(200,148,77,0.10)',
+    color: '#7A5A28',
     padding: '0.45rem 0.8rem',
     borderRadius: '999px',
     fontSize: '0.78rem',
@@ -640,9 +694,9 @@ const S = {
   },
   photoRemoveBtn: {
     appearance: 'none',
-    border: '1px solid rgba(255,255,255,0.10)',
+    border: '1px solid rgba(36,49,58,0.10)',
     background: 'transparent',
-    color: 'rgba(255,255,255,0.65)',
+    color: '#667085',
     padding: '0.45rem 0.8rem',
     borderRadius: '999px',
     fontSize: '0.78rem',
@@ -653,7 +707,7 @@ const S = {
   photoError: {
     margin: '0.1rem 0 0',
     fontSize: '0.72rem',
-    color: '#FCA5A5',
+    color: '#8A2E22',
     lineHeight: 1.4,
   },
   fileInput: {

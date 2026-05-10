@@ -71,15 +71,17 @@ const FARMER_TABS = [
   { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell,     labelKey: 'nav.sell',     fallback: 'Sell' },
 ];
 
-// Garden / backyard nav (5 tabs) — spec §2:
-//   Home · My Grow · Tasks · Progress · Scan
+// Garden / backyard nav (5 tabs) — Garden Mode Refactor spec §2:
+//   Home · My Grow · Tasks · Journal · Scan
 //   Funding and Sell do NOT appear here.
+//   Progress is replaced by Journal — gardeners read their growth
+//   story as a timeline of care moments, not as commercial metrics.
 //   Scan tab is hidden when FEATURE_SCAN is off (route stays mounted).
 const GARDEN_TABS = [
   { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'grow',     path: '/my-grow',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
-  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
+  { key: 'journal',  path: '/journal',   icon: NAV_ICONS.journal,  labelKey: 'nav.journal',  fallback: 'Journal' },
   { key: 'scan',     path: '/scan',      icon: NAV_ICONS.scan,     labelKey: 'nav.scan',     fallback: 'Scan' },
 ];
 
