@@ -24,11 +24,20 @@ import {
 import { validateEmailConfig } from '../services/emailService.js';
 import { validateSmsConfig }   from '../services/smsService.js';
 import { logProductionStartupBanner } from './config/productionRuntime.js';
+// Sentry init — pure no-op when SENTRY_DSN isn't set. Called as
+// the first line of main() so server-side captureException paths
+// have an active SDK before any request handler runs.
+import { initSentry as _initSentry } from './lib/sentry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main() {
+  // Sentry first — so any later setup error flows through it.
+  // No-op when SENTRY_DSN isn't set; the productionRuntime
+  // banner already reports the "disabled safely" state below.
+  try { _initSentry(); } catch { /* never block boot */ }
+
   // Ensure uploads directory exists
   const uploadsDir = path.join(__dirname, '..', config.upload.dir);
   if (!fs.existsSync(uploadsDir)) {

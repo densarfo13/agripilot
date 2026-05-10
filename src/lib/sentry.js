@@ -93,15 +93,38 @@ export function initSentry() {
   }
 
   try {
+    // Session Replay — privacy-first defaults. Records the
+    // ~30 seconds before a crash for ALL error sessions
+    // (replaysOnErrorSampleRate: 1.0) so the high-value path is
+    // always captured, plus a tiny 5% sample of non-error
+    // sessions for general UX context. Every text node is
+    // masked and every <img>, <video>, <canvas> is blocked from
+    // recording — no farmer data, no plant photos, no scan
+    // images leave the device.
+    let _replay = null;
+    try {
+      if (typeof Sentry.replayIntegration === 'function') {
+        _replay = Sentry.replayIntegration({
+          maskAllText: true,
+          blockAllMedia: true,
+          maskAllInputs: true,
+          // Record network request URLs (no bodies) so a fetch
+          // failure shows up next to the resulting error frame.
+          networkDetailAllowUrls: [],
+        });
+      }
+    } catch { _replay = null; }
+
     Sentry.init({
       dsn,
       environment: _readEnvironment(),
       release:     _readRelease(),
       // Sample rates — keep noise low while we ramp.
       // Bump only when the volume + signal both warrant it.
-      tracesSampleRate:        0.1,
-      replaysSessionSampleRate: 0,
-      replaysOnErrorSampleRate: 0.1,
+      tracesSampleRate:         0.1,
+      replaysSessionSampleRate: _replay ? 0.05 : 0,
+      replaysOnErrorSampleRate: _replay ? 1.0  : 0,
+      integrations: _replay ? [_replay] : [],
       // Strip user PII from outbound events. Sentry will still
       // collect stacks + breadcrumbs, just not request bodies
       // or full URLs that may carry tokens.
@@ -172,6 +195,55 @@ export function captureException(err, ctx = {}) {
 }
 
 /**
+ * Tag the current Sentry session with non-PII identifiers.
+ * Safe to call after auth resolves; safe to call again when the
+ * profile changes. No-op when Sentry isn't initialised.
+ *
+ *   setSentryUser({ id: profile.id, role: profile.userType,
+ *                   country: profile.country });
+ *
+ * Privacy contract — we ONLY accept these fields:
+ *   • id      — opaque user identifier (UUID / numeric id). No
+ *               email, no phone, no national-id.
+ *   • role    — 'farmer' | 'gardener' | 'admin' | 'ngo' | 'buyer'
+ *   • country — ISO country code (low-cardinality regional tag)
+ *
+ * Anything else passed in is silently dropped. If a future
+ * caller wants more, add it here in one place rather than
+ * scattering setUser calls.
+ */
+export function setSentryUser(input = {}) {
+  if (!_initialized || !_dsnPresent) return;
+  try {
+    const safe = {};
+    if (input && input.id != null) safe.id = String(input.id);
+    if (input && typeof input.role === 'string' && input.role) {
+      safe.role = String(input.role).toLowerCase();
+    }
+    if (input && typeof input.country === 'string' && input.country) {
+      // Country code only (2-3 chars). Anything longer is treated
+      // as untrusted free-text and dropped.
+      const c = String(input.country).trim();
+      if (c.length <= 4) safe.country = c.toUpperCase();
+    }
+    if (Object.keys(safe).length === 0) {
+      try { Sentry.setUser(null); } catch { /* swallow */ }
+      return;
+    }
+    try { Sentry.setUser(safe); } catch { /* swallow */ }
+  } catch { /* swallow */ }
+}
+
+/**
+ * Clear the user tag (e.g. on sign-out). No-op when Sentry
+ * isn't initialised.
+ */
+export function clearSentryUser() {
+  if (!_initialized || !_dsnPresent) return;
+  try { Sentry.setUser(null); } catch { /* swallow */ }
+}
+
+/**
  * Convenience snapshot for diagnostic surfaces (DevTools, an
  * admin debug panel, etc.). Never reads the DSN itself.
  */
@@ -179,4 +251,10 @@ export function isSentryActive() {
   return _initialized && _dsnPresent;
 }
 
-export default { initSentry, captureException, isSentryActive };
+export default {
+  initSentry,
+  captureException,
+  setSentryUser,
+  clearSentryUser,
+  isSentryActive,
+};

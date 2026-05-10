@@ -1,5 +1,8 @@
 import { config } from '../config/index.js';
 import { opsEvent } from '../utils/opsLogger.js';
+// Sentry capture — no-op when SENTRY_DSN isn't set, so importing
+// here is free in unprod / no-key environments.
+import { captureException as _sentryCapture } from '../lib/sentry.js';
 
 // ─── Sensitive-leak scrubber ──────────────────────────────
 // Merged-blocker spec §5: API errors must never leak stack
@@ -68,6 +71,22 @@ export function errorHandler(err, req, res, _next) {
     ip: req.ip,
     ...(err.code ? { prismaCode: err.code } : {}),
   });
+
+  // Sentry capture — only 5xx (server faults). 4xx are
+  // expected user errors and would dwarf real bugs in volume.
+  // No-op when SENTRY_DSN isn't set. Runs in parallel with the
+  // existing JSON-line console.error + opsEvent paths; never
+  // changes the response.
+  if (statusCode >= 500) {
+    try {
+      _sentryCapture(err, {
+        req,
+        statusCode,
+        tag:   'http.unhandled',
+        extra: { prismaCode: err.code || null },
+      });
+    } catch { /* never propagate from a catch handler */ }
+  }
 
   if (config.isProduction) {
     console.error(JSON.stringify({

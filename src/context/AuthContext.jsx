@@ -17,6 +17,9 @@ import { startInactivityWatcher } from '../lib/auth/inactivityWatcher.js';
 import {
   isExplicitLogout, markExplicitLogout, clearExplicitLogout,
 } from '../utils/explicitLogout.js';
+// Sentry user-tagging — non-PII only (id + role + country code).
+// No-ops when VITE_SENTRY_DSN isn't set.
+import { setSentryUser, clearSentryUser } from '../lib/sentry.js';
 
 const AuthContext = createContext(null);
 
@@ -65,6 +68,25 @@ export function AuthProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   // Track whether current session is from cache (offline) vs verified server
   const [isOfflineSession, setIsOfflineSession] = useState(false);
+
+  // Mirror the resolved auth user into the Sentry session tag.
+  // Non-PII fields only (id, role, country); see src/lib/sentry.js
+  // for the privacy contract. The hook handles every login /
+  // logout / restore path because it just observes `user` rather
+  // than wrapping each setUser call site.
+  useEffect(() => {
+    try {
+      if (user && user.id != null) {
+        setSentryUser({
+          id:      user.id,
+          role:    user.userType || user.role || null,
+          country: user.country  || user.countryCode || null,
+        });
+      } else {
+        clearSentryUser();
+      }
+    } catch { /* never throw from a side-effect */ }
+  }, [user]);
 
   async function bootstrap() {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
