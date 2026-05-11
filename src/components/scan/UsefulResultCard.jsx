@@ -26,10 +26,14 @@
  *   onTaskAdded    — () → void  (optional; called after task persisted)
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { addScanTasks } from '../../core/scanToTask.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
+// Real scan macro photo resolver — maps the result category
+// (healthy / disease / fungal / pest) to a scientific macro
+// leaf photo from public/assets/realism/scan/.
+import { resolveScanImage } from '../../lib/realVisuals.jsx';
 // May 2026 scan-system production rebuild — replaces the per-
 // guidance emoji glyphs (✅ 🌿 🐛 🍂 💧 🌱 📷) with the canonical
 // RealisticIcon line-glyphs. Same single-stroke calm visual
@@ -465,6 +469,17 @@ export default function UsefulResultCard({
   const category = (result && result.category) ? String(result.category) : 'needs_review';
   const guidance  = GUIDANCE[category] || _FALLBACK;
 
+  // Scientific macro leaf photo keyed to the scan finding. When
+  // the result already carries the user's own captured image
+  // (most common case), we keep that as primary and the macro
+  // photo lands ONLY when no captured image is available — that
+  // way we never overwrite the farmer's own evidence.
+  const userImage  = (result && (result.imageUrl || result.thumbnail)) || null;
+  const macroPhoto = useMemo(
+    () => (!userImage ? resolveScanImage(category) : null),
+    [userImage, category],
+  );
+
   // Escalation handler — saves the request locally and flips the
   // button to a calm acknowledgement. Future NGO/agronomist
   // integration only needs to read AGRONOMY_REQUEST_KEY; this UI
@@ -487,6 +502,29 @@ export default function UsefulResultCard({
       data-category={category}
       data-experience={experience}
     >
+      {/* Scientific macro photo — only renders when the farmer's
+          own captured photo is not available (most common when
+          the scan flow runs without committing the image to
+          history). Maps the result category to the matching
+          leaf macro from public/assets/realism/scan/. */}
+      {macroPhoto && (
+        <img
+          src={macroPhoto}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{
+            width: '100%',
+            aspectRatio: '16 / 9',
+            objectFit: 'cover',
+            borderRadius: 14,
+            display: 'block',
+            marginBottom: 12,
+            filter: 'saturate(1.05)',
+          }}
+          data-testid={`useful-result-macro-${category}`}
+        />
+      )}
       {/* Category chip + confidence pill (Plantix-style header) */}
       <div style={S.chipRow}>
         <span

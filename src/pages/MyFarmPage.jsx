@@ -53,6 +53,11 @@ import { tSafe } from '../i18n/tSafe.js';
 import { getCountryLabel } from '../config/countriesStates.js';
 import { getCropLabelSafe, getCropLabel } from '../utils/crops.js';
 import CropImage from '../components/CropImage.jsx';
+// Real photograph resolver for the My Farm hero band. When the
+// active farm has a crop with a shipped closeup (cassava / pepper
+// / tomato) we render that macro shot; otherwise the environmental
+// hero from the realism set.
+import { resolveCropCloseupImage, resolveHeroImage } from '../lib/realVisuals.jsx';
 import { STAGE_KEYS } from '../utils/cropStages.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 import FarmSwitcher from '../components/farm/FarmSwitcher.jsx';
@@ -511,9 +516,31 @@ export default function MyFarmPage() {
         eyebrow={_heroEyebrow}
         title={_heroTitle}
         subtitle={_heroSubtitle}
-        bgImage={isBackyardActive
-          ? '/images/page-hero/garden.svg'
-          : '/images/page-hero/farm.svg'}
+        bgImage={(() => {
+          // Real-photo preference order:
+          //   1. Crop closeup if we ship one for the active crop
+          //      (cassava / pepper / tomato).
+          //   2. Environmental hero from the realism set
+          //      (rice → vietnam misty paddy; default → africa
+          //      farm atmosphere).
+          //   3. Legacy SVG hero if neither resolves (defensive
+          //      — both resolvers always return a path today).
+          try {
+            const cropKey = (farm && (farm.cropType || farm.crop)) || null;
+            const closeup = cropKey ? resolveCropCloseupImage(cropKey) : null;
+            if (closeup) return closeup;
+            const region = farm && (farm.region || farm.country || farm.regionName);
+            const hero = resolveHeroImage({
+              mode: isBackyardActive ? 'garden' : 'farm',
+              crop: cropKey,
+              region,
+            });
+            if (hero) return hero;
+          } catch { /* swallow — fall through to SVG */ }
+          return isBackyardActive
+            ? '/images/page-hero/garden.svg'
+            : '/images/page-hero/farm.svg';
+        })()}
         accent="green"
         testId="my-farm-hero"
       >

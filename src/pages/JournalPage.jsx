@@ -30,6 +30,10 @@ import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { useStrictTranslation } from '../i18n/useStrictTranslation.js';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
+// Documentary farming moment for the Journal hero. Garden mode
+// renders the greenhouse-work shot; farm-mode contexts default
+// to the farm-inspection photo.
+import { resolveJournalImage } from '../lib/realVisuals.jsx';
 import usePlantTimeline from '../hooks/usePlantTimeline.js';
 import usePlantIdentity from '../hooks/usePlantIdentity.js';
 // Elite Garden spec §2 + §7 — calm observational line above the
@@ -158,6 +162,7 @@ export default function JournalPage() {
           'journal.subtitle',
           'Care moments, photos, and milestones — in the order they happened.',
         )}
+        bgImage={resolveJournalImage('greenhouse') || undefined}
         accent={heroAccent}
         testId="journal-hero"
       />

@@ -62,7 +62,7 @@
 // AdminDashboard + NgoDashboardV1 + ProtectedLayout flipped to
 // the warm beige palette and remaining neon-green hex codes
 // purged from the high-leverage files.
-export const FARROWAY_BUILD_VERSION = 'realism-wired-2026-05-12-v5';
+export const FARROWAY_BUILD_VERSION = 'realism-full-2026-05-12-v6';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
@@ -76,7 +76,7 @@ export const FARROWAY_BUILD_VERSION = 'realism-wired-2026-05-12-v5';
 //     stale UI mode flags that masked the visual upgrades.
 //   • Any user with the old key gets a one-time state wipe
 //     (auth preserved) + reload, surfacing the latest UI.
-export const FARROWAY_UI_VERSION = 'realism-wired-2026-05-12-v5';
+export const FARROWAY_UI_VERSION = 'realism-full-2026-05-12-v6';
 
 // Monotonically-increasing build sequence — drives the direction
 // guard. Lexicographic compare on the human-readable version
@@ -85,7 +85,7 @@ export const FARROWAY_UI_VERSION = 'realism-wired-2026-05-12-v5';
 // shipped LATER). The sequence is the only source of truth for
 // "newer vs older". Bump on every release that adds, removes, or
 // changes the migration logic.
-export const FARROWAY_BUILD_SEQUENCE = 53;
+export const FARROWAY_BUILD_SEQUENCE = 54;
 const SEQUENCE_KEY = 'farroway_build_sequence';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
