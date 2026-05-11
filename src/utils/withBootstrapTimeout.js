@@ -52,15 +52,25 @@ export function withBootstrapTimeout(promise, ms = 3000, fallback = null, label 
         if (settled) return;
         settled = true;
         clearTimeout(timer);
-        try {
-          // eslint-disable-next-line no-console
-          console.warn(
-            '[FARROWAY_TIMEOUT]',
-            label || 'Bootstrap step',
-            'rejected:',
-            err && (err.message || err),
-          );
-        } catch { /* swallow */ }
+        // Suppress the expected "not authenticated" / 401 shape —
+        // the lib/api.js gate intentionally rejects authenticated
+        // requests with this when the session is dead / missing.
+        // Surfacing it here as a [FARROWAY_TIMEOUT] warn looks like
+        // a real failure to readers of the DevTools console; the
+        // bootstrap fallback path already handles the outcome.
+        const isAuthNoise =
+          err && (err.status === 401 || err.notAuthenticated === true);
+        if (!isAuthNoise) {
+          try {
+            // eslint-disable-next-line no-console
+            console.warn(
+              '[FARROWAY_TIMEOUT]',
+              label || 'Bootstrap step',
+              'rejected:',
+              err && (err.message || err),
+            );
+          } catch { /* swallow */ }
+        }
         resolve(fallback);
       },
     );

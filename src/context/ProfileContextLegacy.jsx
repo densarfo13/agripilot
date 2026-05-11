@@ -42,7 +42,15 @@ export function ProfileProvider({ children }) {
 
   useEffect(() => {
     refreshProfile().catch((err) => {
-      console.error('Failed to initialize profile context:', err);
+      // Suppress the expected "session expired" / "guest boot"
+      // shapes — the lib/api.js gate throws notAuthenticated and
+      // the server returns 401 for the same state. The empty-
+      // state UI already communicates the outcome.
+      const isAuthNoise =
+        err && (err.status === 401 || err.notAuthenticated === true);
+      if (!isAuthNoise) {
+        console.error('Failed to initialize profile context:', err);
+      }
       setLoading(false);
       setInitialized(true);
     });

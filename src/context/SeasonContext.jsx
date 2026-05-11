@@ -68,7 +68,14 @@ export function SeasonProvider({ children }) {
   useEffect(() => {
     if (!authLoading) {
       refreshSeason().catch((error) => {
-        console.error('Failed to initialize season context:', error);
+        // Suppress the expected "session expired" / "guest boot"
+        // shapes — same rule as the farm-switch catch below. The
+        // UI's empty-state already communicates the outcome.
+        const isAuthNoise =
+          error && (error.status === 401 || error.notAuthenticated === true);
+        if (!isAuthNoise) {
+          console.error('Failed to initialize season context:', error);
+        }
         setSeasonLoading(false);
         setSeasonInitialized(true);
       });
