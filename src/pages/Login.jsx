@@ -582,7 +582,29 @@ export default function Login() {
 }
 
 const S = {
-  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #0B1D34 0%, #081423 100%)', color: '#EAF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
+  // Investor-ready login backdrop — replaces the flat dark navy
+  // with a layered atmospheric composition (warm earth-tone
+  // horizon → deep navy sky, soft glow at the horizon line, and
+  // a subtle vignette). The card sits on top with its existing
+  // glass treatment. Inline so no asset commit is needed.
+  page: {
+    minHeight: '100vh',
+    color: '#EAF2FF',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '1rem',
+    position: 'relative',
+    background: [
+      // Top of the viewport: deep night sky
+      'radial-gradient(ellipse at 50% -10%, rgba(60,86,116,0.55) 0%, rgba(11,29,52,0) 55%)',
+      // Soft warm glow at the horizon line
+      'radial-gradient(ellipse at 50% 78%, rgba(200,148,77,0.22) 0%, rgba(200,148,77,0) 55%)',
+      // Base palette: night sky → earth horizon → soil floor
+      'linear-gradient(180deg, #0A1622 0%, #0B1D34 35%, #1A2433 72%, #2B2A24 100%)',
+    ].join(', '),
+    overflow: 'hidden',
+  },
   loadingInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' },
   spinner: { width: '2rem', height: '2rem', border: '3px solid rgba(255,255,255,0.06)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' },
   brand: { fontSize: '1.25rem', fontWeight: 700, color: '#EAF2FF', letterSpacing: '0.02em' },

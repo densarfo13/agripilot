@@ -419,15 +419,61 @@ export default function Sell() {
             const region = l.location?.region || '';
             const country = l.location?.country || '';
             const placeText = [region, country].filter(Boolean).join(', ');
+            // Lifecycle pill (investor-readiness §12) — derives the
+            // farmer-facing stage label from the listing's
+            // canonical status + buyer-interest count.
+            //   ACTIVE + interest=0 → "Active"
+            //   ACTIVE + interest>0 → "Interest received (N)"
+            //   CONTACTED          → "In negotiation"
+            //   RESERVED           → "Reserved"
+            //   SOLD               → "Sold"
+            //   DRAFT              → "Draft"
+            // SOLD/EXPIRED are excluded by getActiveListings so they
+            // won't render here, but the case is kept for safety.
+            const rawStatus = String(l.status || 'ACTIVE').toUpperCase();
+            const lifecycle = (() => {
+              if (rawStatus === 'DRAFT')      return { key: 'draft',     label: tSafe('sell.lifecycle.draft', 'Draft'),                   tone: 'neutral' };
+              if (rawStatus === 'RESERVED')   return { key: 'reserved',  label: tSafe('sell.lifecycle.reserved', 'Reserved'),             tone: 'warn'    };
+              if (rawStatus === 'CONTACTED')  return { key: 'nego',      label: tSafe('sell.lifecycle.negotiation', 'In negotiation'),   tone: 'info'    };
+              if (rawStatus === 'SOLD')       return { key: 'sold',      label: tSafe('sell.lifecycle.sold', 'Sold'),                     tone: 'success' };
+              if (interestCount > 0) {
+                return {
+                  key: 'interest',
+                  label: tSafe('sell.lifecycle.interest', `Interest received (${interestCount})`)
+                    .replace('{count}', String(interestCount)),
+                  tone: 'success',
+                };
+              }
+              return { key: 'active', label: tSafe('sell.lifecycle.active', 'Active'), tone: 'info' };
+            })();
+            const lifecycleStyle = {
+              ...S.lifecyclePill,
+              ...(lifecycle.tone === 'success'
+                ? { background: 'rgba(110,139,97,0.18)', borderColor: 'rgba(110,139,97,0.40)', color: '#6E8B61' }
+                : lifecycle.tone === 'warn'
+                  ? { background: 'rgba(200,148,77,0.16)', borderColor: 'rgba(200,148,77,0.40)', color: '#A77A2F' }
+                  : lifecycle.tone === 'neutral'
+                    ? { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(31,41,51,0.12)', color: '#5F6B78' }
+                    : { background: 'rgba(58,90,128,0.10)', borderColor: 'rgba(58,90,128,0.30)', color: '#3A5A80' }),
+            };
             return (
               <article
                 key={l.id}
                 style={S.statusCard}
                 data-testid={`sell-status-${l.id}`}
+                data-lifecycle={lifecycle.key}
               >
-                <h2 style={S.statusEyebrow}>
-                  {tSafe('market.status.yourListing', 'Your listing')}
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                  <h2 style={S.statusEyebrow}>
+                    {tSafe('market.status.yourListing', 'Your listing')}
+                  </h2>
+                  <span
+                    style={lifecycleStyle}
+                    data-testid={`sell-lifecycle-pill-${l.id}`}
+                  >
+                    {lifecycle.label}
+                  </span>
+                </div>
                 {/* Title + meta on the left, inline buyer-count
                     chip on the right. The chip is the single tap
                     target — replaces the prior stacked "N buyers
@@ -832,6 +878,22 @@ const S = {
     color: '#3F6A3F',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
+  },
+  // Investor-ready §12 — explicit lifecycle status pill so a
+  // farmer can read the stage at a glance. Colours flip per tone
+  // (success/warn/info/neutral) at the call site so the same
+  // base style is reused across all six taxonomy states.
+  lifecyclePill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.2rem 0.55rem',
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    letterSpacing: '0.02em',
+    borderRadius: 999,
+    border: '1px solid transparent',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   statusTitle: {
     margin: 0,
