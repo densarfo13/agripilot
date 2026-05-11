@@ -41,7 +41,7 @@
  *   • Pure presentational. Read-only props. SSR-safe.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { resolveHeroImage, resolveCropCloseupImage } from '../../lib/realVisuals.jsx';
 
@@ -109,25 +109,51 @@ export default function ImmersiveHomeHero({
   const isGarden = String(mode || 'farm').toLowerCase() === 'garden';
   const w = (weather && typeof weather === 'object') ? weather : {};
 
-  // ─── Background photo resolution ──────────────────────────────
+  // ─── Background photo resolution (session-stable) ─────────────
+  // ATMOSPHERIC PERSISTENCE — the hero photo intentionally does
+  // NOT depend on `weatherType`. Weather state updates every few
+  // minutes (rain chance, condition refresh, etc.), and we don't
+  // want the hero photo to swap mid-session as conditions shift.
+  // The dynamic atmosphere (temperature, condition, feels-like)
+  // lives in the center overlay and re-renders independently.
+  //
+  // The hour band IS used (sunrise → sunrise hero) but only when
+  // ImmersiveHomeHero first mounts — recomputing on every render
+  // would flicker the photo when React re-runs the useMemo for
+  // unrelated reasons. We cache the resolved src in a ref so the
+  // photo is stable across the full session.
+  const photoRef = useRef(null);
   const photoSrc = useMemo(() => {
+    // Return the cached src for the same (mode, crop, entity)
+    // combination. This survives weather updates AND React's
+    // own re-render churn.
+    const cacheKey = `${mode}|${crop || ''}|${(entity && (entity.id || entity.name)) || ''}`;
+    if (photoRef.current && photoRef.current.key === cacheKey) {
+      return photoRef.current.src;
+    }
     try {
-      // Country prefers an ISO code or readable name; region is
-      // the legacy single-key string. resolveHeroImage layers
-      // country → regional pack → crop closeup → weather → time
-      // of day → default.
       const country = entity && (entity.country || entity.countryCode || entity.countryLabel);
       const region  = entity && (entity.region  || entity.regionName);
       const hour = (() => { try { return new Date().getHours(); } catch { return null; } })();
       const closeup = crop ? resolveCropCloseupImage(crop) : null;
-      if (closeup) return closeup;
-      return resolveHeroImage({
+      const src = closeup || resolveHeroImage({
         mode, crop, country, region, hour,
-        weatherType: w.weatherType,
+        // weatherType deliberately omitted — see persistence note above.
       });
+      photoRef.current = { key: cacheKey, src };
+      return src;
     } catch { return null; }
-  }, [mode, crop, entity, w.weatherType]);
+  }, [mode, crop, entity]);
   const [photoErrored, setPhotoErrored] = useState(false);
+  // Cinematic fade-in — opacity 0 on first paint, 1 once the
+  // browser reports the image has loaded. Survives the seeded
+  // pick (same key → same src → same loaded state).
+  const [photoLoaded, setPhotoLoaded] = useState(false);
+  useEffect(() => {
+    // Reset the loaded flag whenever the resolved src changes so
+    // a manual re-resolve (mode/crop swap) triggers a fresh fade.
+    setPhotoLoaded(false);
+  }, [photoSrc]);
 
   // ─── Live-data trust gate ─────────────────────────────────────
   const hasRealWeather = String(w.source || '') === 'weather-api'
@@ -214,15 +240,23 @@ export default function ImmersiveHomeHero({
       data-has-real-weather={hasRealWeather ? 'true' : 'false'}
       data-real-photo={photoSrc && !photoErrored ? 'true' : 'false'}
     >
-      {/* Background photograph */}
+      {/* Background photograph — fades in over 700ms once the
+          browser reports it loaded so the first paint never
+          flashes the SVG fallback. Atmospheric persistence: the
+          src is cached via photoRef so weather updates don't
+          swap the photo, only the dynamic overlays above. */}
       {photoSrc && !photoErrored && (
         <img
           src={photoSrc}
           alt=""
           loading="eager"
           decoding="async"
+          onLoad={() => setPhotoLoaded(true)}
           onError={() => setPhotoErrored(true)}
-          style={S.photo}
+          style={{
+            ...S.photo,
+            opacity: photoLoaded ? 1 : 0,
+          }}
           data-testid={`${testId}-photo`}
         />
       )}
@@ -349,6 +383,12 @@ const S = {
     objectFit: 'cover',
     zIndex: 0,
     filter: 'saturate(0.95) brightness(0.86)',
+    // Cinematic fade-in — 700ms ease-out so the photo enters
+    // gently after the browser reports it loaded. Pairs with
+    // the photoLoaded state flag above; the inline opacity
+    // override flips from 0 → 1 on load.
+    transition: 'opacity 700ms ease-out',
+    willChange: 'opacity',
   },
   atmosphere: {
     position: 'absolute',
