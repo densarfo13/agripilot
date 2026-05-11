@@ -244,14 +244,41 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     try { inputRef.current?.click(); } catch { /* ignore */ }
   }, []);
 
+  // Ref points at the latest continueAnalysis closure. The
+  // handlers below are declared BEFORE continueAnalysis in the
+  // component body, so we can't reference it directly in the
+  // dep array (TDZ ReferenceError). The ref lets the handlers
+  // call the freshest continueAnalysis at invocation time.
+  const continueAnalysisRef = useRef(null);
+
   const onLiveCameraCaptured = useCallback(({ file: capturedFile }) => {
     setLiveCameraOpen(false);
-    if (capturedFile) acceptCapturedFile(capturedFile);
+    if (!capturedFile) return;
+    // Stage the file in local state (so retake/error paths still
+    // have access to it) AND fire analysis DIRECTLY via the ref
+    // — skipping the wrapper preview flash. Without this, the
+    // user saw the boxed wrapper for a render cycle before the
+    // page advanced to the analyzing phase.
+    const accepted = acceptCapturedFile(capturedFile);
+    if (accepted && continueAnalysisRef.current) {
+      let url = '';
+      try { url = URL.createObjectURL(capturedFile); } catch { /* swallow */ }
+      continueAnalysisRef.current(capturedFile, url);
+    }
   }, [acceptCapturedFile]);
 
   const onLiveCameraFallbackUpload = useCallback((uploadedFile) => {
     setLiveCameraOpen(false);
-    if (uploadedFile) acceptCapturedFile(uploadedFile);
+    if (!uploadedFile) return;
+    // Same auto-analysis path for the in-overlay gallery picker.
+    // The user picked a photo → they expect analysis to start;
+    // the wrapper preview is a double-tap that adds nothing.
+    const accepted = acceptCapturedFile(uploadedFile);
+    if (accepted && continueAnalysisRef.current) {
+      let url = '';
+      try { url = URL.createObjectURL(uploadedFile); } catch { /* swallow */ }
+      continueAnalysisRef.current(uploadedFile, url);
+    }
   }, [acceptCapturedFile]);
 
   const onLiveCameraCancel = useCallback(() => {
@@ -309,26 +336,32 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     }
   }, [preview]);
 
-  const continueAnalysis = useCallback(async () => {
-    if (!file) return;
+  const continueAnalysis = useCallback(async (fileOverride, previewOverride) => {
+    // fileOverride lets in-overlay handlers (capture / gallery)
+    // pass the captured File directly without waiting for the
+    // setFile state update. Without it, the user saw the boxed
+    // wrapper preview flash between overlay-close and analysis-
+    // start because React state hadn't updated yet.
+    const fileToUse = fileOverride || file;
+    if (!fileToUse) return;
     setBusy(true);
     setError('');
     try {
       // Encode to base64 for the engine. If encoding fails we
       // still hand off the URL so the engine can run the
       // rule-based fallback.
-      const b64 = await _readAsBase64(file).catch(() => null);
+      const b64 = await _readAsBase64(fileToUse).catch(() => null);
       // Downscale to a small dataURL for the history thumbnail.
       // Best-effort — if canvas isn't available the consumer
       // simply falls back to the placeholder emoji.
-      const thumbnail = await _makeThumbnail(file).catch(() => null);
+      const thumbnail = await _makeThumbnail(fileToUse).catch(() => null);
       if (typeof onContinue === 'function') {
         try {
           await onContinue({
             imageBase64: b64,
-            imageUrl:    preview,
+            imageUrl:    previewOverride || preview,
             thumbnail,
-            file,
+            file: fileToUse,
           });
         } catch { /* never propagate */ }
       }
@@ -336,6 +369,14 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       setBusy(false);
     }
   }, [file, preview, onContinue]);
+
+  // Keep the ref in sync so the in-overlay handlers (declared
+  // earlier in the component body to avoid hoisting issues) can
+  // call the freshest continueAnalysis closure when the user
+  // captures or uploads from inside the camera.
+  useEffect(() => {
+    continueAnalysisRef.current = continueAnalysis;
+  }, [continueAnalysis]);
 
   const captureLabel = isBackyard
     ? tStrict('scan.takePlantPhoto', 'Take Plant Photo')
