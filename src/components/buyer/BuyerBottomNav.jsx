@@ -49,10 +49,13 @@ function _isSetupPath(pathname) {
   return false;
 }
 
+// Unified app shell — beige cream palette matching the page
+// background (Soft Ochre system). Previously dark navy
+// (#0B1D34) which clashed with the cream page surface.
 const C = {
-  bg: '#0B1D34',
-  border: 'rgba(255,255,255,0.08)',
-  ink: 'rgba(255,255,255,0.65)',
+  bg: 'linear-gradient(180deg, rgba(246,241,231,0.96) 0%, rgba(239,231,213,0.98) 100%)',
+  border: 'rgba(31,41,51,0.08)',
+  ink: '#5F6B78',
   inkActive: '#C8944D',
 };
 
@@ -64,6 +67,9 @@ const S = {
     bottom: 0,
     background: C.bg,
     borderTop: `1px solid ${C.border}`,
+    boxShadow: '0 -4px 16px rgba(31,41,51,0.06)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     zIndex: 30,
   },

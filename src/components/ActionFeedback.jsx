@@ -1,6 +1,7 @@
 import React from 'react';
 import { ACTION_STATE } from '../hooks/useGuaranteedAction.js';
 import { useTranslation } from '../i18n/index.js';
+import { CheckGlyph, CrossGlyph } from './icons/InlineGlyphs.jsx';
 
 /**
  * ActionFeedback — standardized UI for guarantee-layer states.
@@ -57,7 +58,7 @@ export default function ActionFeedback({
   if (state === ACTION_STATE.SUCCESS) {
     return (
       <div style={S.center} data-testid="action-feedback-success">
-        <span style={S.icon}>✅</span>
+        <span style={S.icon} aria-hidden="true"><CheckGlyph size={22} /></span>
         <div style={S.title}>{message || successText}</div>
         {nextStepText && <div style={S.sub}>{nextStepText}</div>}
         {onDone && (
@@ -110,7 +111,7 @@ export default function ActionFeedback({
   if (state === ACTION_STATE.ERROR) {
     return (
       <div style={S.center} data-testid="action-feedback-error">
-        <span style={S.icon}>❌</span>
+        <span style={S.icon} aria-hidden="true"><CrossGlyph size={22} /></span>
         <div style={S.title}>{t('feedback.somethingWrong')}</div>
         <div style={S.sub}>{error}</div>
         {onCancel && (

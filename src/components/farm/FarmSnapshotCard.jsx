@@ -27,6 +27,7 @@
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
+import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
 
 export default function FarmSnapshotCard({
   farmName,
@@ -78,7 +79,7 @@ export default function FarmSnapshotCard({
           self-suppresses when no signal is provided. */}
       {weatherInsight ? (
         <p style={S.insight} data-testid="farm-snapshot-insight">
-          <span aria-hidden="true" style={S.insightEmoji}>🌿</span>
+          <span aria-hidden="true" style={S.insightEmoji}><LeafGlyph size={14} /></span>
           <span>{weatherInsight}</span>
         </p>
       ) : null}

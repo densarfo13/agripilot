@@ -45,6 +45,16 @@ import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTran
 import { tStrict } from '../../i18n/strictT.js';
 import { getRetentionState } from '../../lib/retention/streakStore.js';
 import { pickMicroReward } from '../../lib/retention/reminderEngine.js';
+import { CheckGlyph } from '../icons/InlineGlyphs.jsx';
+// Streak flame glyph — small inline SVG instead of 🔥 emoji.
+function _FlameGlyph({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3c2 4 5 6 5 11a5 5 0 1 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3-1-3 0-7 1-10z"
+            stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="currentColor" fillOpacity="0.18"/>
+    </svg>
+  );
+}
 
 export default function TaskCompletionFeedback({
   open,
@@ -104,13 +114,13 @@ export default function TaskCompletionFeedback({
       style={S.wrap}
     >
       <div style={S.row}>
-        <span style={S.checkIcon} aria-hidden="true">✅</span>
+        <span style={S.checkIcon} aria-hidden="true"><CheckGlyph size={20} /></span>
         <strong style={S.title}>{completedLabel}</strong>
       </div>
 
       {streakLabel ? (
         <div style={S.streakRow} data-testid="completion-streak">
-          <span style={S.flame} aria-hidden="true">🔥</span>
+          <span style={S.flame} aria-hidden="true"><_FlameGlyph size={14} /></span>
           <span style={S.streakText}>{streakLabel}</span>
           {progressDeltaLabel ? (
             <span style={S.progressDelta} aria-label={progressDeltaLabel}>

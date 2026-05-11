@@ -3,6 +3,7 @@ import { ALL_CROPS, OTHER_CROP, CATEGORY_LABELS, getCropByCode, getCropLabel, ge
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { recommendCrops } from '../utils/cropRecommendations.js';
 import { getLocalizedCropList } from '../data/cropRegionCatalog.js';
+import { SeedlingGlyph } from './icons/InlineGlyphs.jsx';
 import { fetchCropSuggestions, saveLastCrop, getLastCrop } from '../utils/cropSuggestionCache.js';
 
 /**
@@ -319,7 +320,7 @@ export default function CropSelect({
               <div style={S.noResults}>
                 No crops match "{search}" — select <strong>Other</strong> below
                 <div style={{ ...S.option, marginTop: '0.5rem', background: 'rgba(200,148,77,0.1)' }} onClick={() => selectCrop('OTHER')}>
-                  <span style={S.optionIcon}>🌱</span>
+                  <span style={S.optionIcon} aria-hidden="true"><SeedlingGlyph size={18} /></span>
                   <span style={S.optionName}>Other (type your crop)</span>
                 </div>
               </div>

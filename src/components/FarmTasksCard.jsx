@@ -15,6 +15,19 @@ import { useNetwork } from '../context/NetworkContext.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { buildTaskListViewModels, getTaskStateStyle } from '../domain/tasks/index.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
+import { ChartGlyph } from './icons/InlineGlyphs.jsx';
+// Note-row leading marker. The previous build used eight different
+// emoji (💡 🗓 🌦 🐛 🧪 🌾 💰 📈) — one per note type. Replacing
+// with a single calm bullet keeps the visual rhythm consistent
+// without painting cartoon-style icons on every row. Each note's
+// text already conveys the category.
+function _NoteDot() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <circle cx="5" cy="5" r="2.4" fill="currentColor" />
+    </svg>
+  );
+}
 
 const PRIORITY_LABELS = {
   high: 'farmTasks.priorityHigh',
@@ -192,7 +205,7 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
             onSetStage();
           }}
         >
-          <span style={S.stagePromptIcon}>📊</span>
+          <span style={S.stagePromptIcon} aria-hidden="true"><ChartGlyph size={20} /></span>
           <div>
             <div style={S.stagePromptText}>{t('farmTasks.setStagePrompt')}</div>
             <div style={S.stagePromptHint}>{t('farmTasks.setStageHint')}</div>
@@ -254,49 +267,49 @@ export default function FarmTasksCard({ onSetStage, weatherGuidance }) {
               )}
               {showNotes && task.reason && (
                 <div style={S.taskReason}>
-                  <span style={S.reasonIcon}>💡</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.reason}</span>
                 </div>
               )}
               {showNotes && task.seasonalNote && (
                 <div style={S.seasonalNote}>
-                  <span style={S.reasonIcon}>🗓</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.seasonalNote}</span>
                 </div>
               )}
               {showNotes && task.weatherNote && (
                 <div style={S.weatherNote}>
-                  <span style={S.reasonIcon}>🌦</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.weatherNote}</span>
                 </div>
               )}
               {showNotes && task.riskNote && (
                 <div style={S.riskNote}>
-                  <span style={S.reasonIcon}>🐛</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.riskNote}</span>
                 </div>
               )}
               {showNotes && task.inputNote && (
                 <div style={S.inputNote}>
-                  <span style={S.reasonIcon}>🧪</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.inputNote}</span>
                 </div>
               )}
               {showNotes && task.harvestNote && (
                 <div style={S.harvestNote}>
-                  <span style={S.reasonIcon}>🌾</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.harvestNote}</span>
                 </div>
               )}
               {showNotes && task.economicsNote && (
                 <div style={S.economicsNote}>
-                  <span style={S.reasonIcon}>💰</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.economicsNote}</span>
                 </div>
               )}
               {showNotes && task.benchmarkNote && (
                 <div style={S.benchmarkNote}>
-                  <span style={S.reasonIcon}>📈</span>
+                  <span style={S.reasonIcon} aria-hidden="true"><_NoteDot /></span>
                   <span>{task.benchmarkNote}</span>
                 </div>
               )}

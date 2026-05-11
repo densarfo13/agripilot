@@ -12,6 +12,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getFarmBenchmarks } from '../lib/api.js';
+import { ChartGlyph } from './icons/InlineGlyphs.jsx';
 
 const TREND_ICONS = { up: '\u25B2', down: '\u25BC', flat: '\u25CF', no_data: '\u2014' };
 
@@ -95,7 +96,7 @@ export default function FarmBenchmarkCard() {
       <div style={S.card} data-testid="farm-benchmark-card">
         <h3 style={S.title}>{t('benchmark.title')}</h3>
         <div style={S.noDataWrap}>
-          <span style={S.noDataIcon}>📊</span>
+          <span style={S.noDataIcon} aria-hidden="true"><ChartGlyph size={24} /></span>
           <div style={S.noDataText}>
             {benchmark.insufficientDataReason || t('benchmark.noData')}
           </div>

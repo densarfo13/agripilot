@@ -29,6 +29,7 @@
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
+import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
 
 // ─── Category → friendly label key ─────────────────────────────────
 const CHIP_KEY_BY_CATEGORY = Object.freeze({
@@ -180,7 +181,7 @@ function _Thumbnail({ entry }) {
   }
   return (
     <div style={S.thumbEmpty} aria-hidden="true">
-      <span style={S.thumbEmoji}>🌿</span>
+      <span style={S.thumbEmoji} aria-hidden="true"><LeafGlyph size={20} /></span>
     </div>
   );
 }
