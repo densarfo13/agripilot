@@ -54,12 +54,14 @@ const DENY_PATTERNS = [
   'safari-extension://',                       // Safari extension equivalent
   'tabs:outgoing.message.ready',               // Chrome tab internal channel (dotted)
   'tabs:outgoing_message_ready',               // Chrome tab internal channel (underscore variant)
+  'tabs:incoming.message.ready',
+  'tabs:outgoing',                             // catch any tabs:outgoing.* variant
+  'tabs:incoming',                             // catch any tabs:incoming.* variant
   'message channel closed',                    // 'A listener indicated…message channel closed' (extension noise)
-  'cornhusk/shared-service',                   // third-party SDK noise (slash variant)
-  'cornhusk,',                                 // third-party SDK noise (comma variant — actual prod format)
-  'cornhusk ',                                 // third-party SDK noise (space variant — captures other framings)
-  'shared-service, error',                     // cornhusk SDK error tag, in case 'cornhusk' is stripped
-  'No Listener: tabs:',                        // Chrome extension messaging leak (wrapped as Uncaught Error)
+  'cornhusk',                                  // third-party SDK — match bare token regardless of delimiter
+  'shared-service',                            // cornhusk SDK label (used independently of 'cornhusk')
+  'No Listener:',                              // generic extension messaging leak (e.g. 'No Listener: tabs:...')
+  "Failed to construct 'URL'",                 // cornhusk extension URL hook noise (wrapped TypeError)
   '[webpack]',                                 // webpack dev-server leak
   '[HMR]',                                     // Vite / webpack hot-module replacement
   'Download the React DevTools',               // React suggestion (production build)
@@ -100,9 +102,14 @@ let _installed = false;
 // ─── Helpers ─────────────────────────────────────────────────────
 
 /**
- * Return true if the first argument of a console call matches
- * any deny pattern. We only test the first argument because
- * that is where the meaningful prefix/tag always lives.
+ * Return true if ANY argument of a console call (stringified)
+ * matches any deny pattern. We scan every argument because the
+ * cornhusk SDK has been observed passing the meaningful tag as
+ * the second argument (the first arg is the bare error object
+ * which stringifies to the TypeError name only).
+ *
+ * Argument scanning is capped at the first ~512 chars per arg
+ * + first 6 args to keep the hot path cheap.
  *
  * @param {unknown[]} args
  * @returns {boolean}
@@ -110,9 +117,24 @@ let _installed = false;
 function _shouldSuppress(args) {
   try {
     if (!args || args.length === 0) return false;
-    const first = String(args[0]);
-    for (const pattern of DENY_PATTERNS) {
-      if (first.includes(pattern)) return true;
+    const limit = Math.min(args.length, 6);
+    for (let i = 0; i < limit; i += 1) {
+      const a = args[i];
+      let s;
+      try {
+        if (a == null) continue;
+        if (typeof a === 'string') {
+          s = a;
+        } else if (a instanceof Error) {
+          s = `${a.name || 'Error'}: ${a.message || ''}`;
+        } else {
+          s = String(a);
+        }
+      } catch { continue; }
+      if (s.length > 512) s = s.slice(0, 512);
+      for (const pattern of DENY_PATTERNS) {
+        if (s.includes(pattern)) return true;
+      }
     }
   } catch { /* never throw from filter */ }
   return false;
@@ -132,10 +154,45 @@ function _wrapMethod(method) {
   const original = console[method].bind(console);
   console[`_farroway_orig_${method}`] = original;
 
-  console[method] = (...args) => {
+  const wrapped = (...args) => {
     if (_shouldSuppress(args)) return;
     original(...args);
   };
+  console[method] = wrapped;
+  _wrapped[method] = wrapped;
+}
+
+// Watchdog — re-applies the wrap if a downstream script (a Chrome
+// extension that runs at document_start, typically) has replaced
+// our console.warn with its own reference. Cheap (one identity
+// check per method every 2 s) and self-stops on the first run
+// after the page hits 30 s of uptime, by which point any late-
+// loading extension content scripts have already injected.
+let _watchdogTimer = null;
+function _startWatchdog() {
+  try {
+    if (typeof window === 'undefined') return;
+    if (_watchdogTimer) return;
+    const stopAt = Date.now() + 30_000;
+    _watchdogTimer = setInterval(() => {
+      try {
+        for (const m of Object.keys(_wrapped)) {
+          if (console[m] !== _wrapped[m]) {
+            // A downstream script swapped console[m] for its own
+            // function. Reinstall our wrap; the previous
+            // overrider's reference (if it stashed one) keeps
+            // calling the original directly, which is the best we
+            // can do without freezing the global.
+            console[m] = _wrapped[m];
+          }
+        }
+      } catch { /* swallow */ }
+      if (Date.now() > stopAt) {
+        try { clearInterval(_watchdogTimer); } catch { /* swallow */ }
+        _watchdogTimer = null;
+      }
+    }, 2_000);
+  } catch { /* never throw */ }
 }
 
 // ─── Public API ───────────────────────────────────────────────────
@@ -147,6 +204,11 @@ function _wrapMethod(method) {
  * Only activates in production — dev builds are left untouched
  * so engineers still see everything.
  */
+// Track each method's wrapped function so the watchdog can
+// detect whether something downstream (an extension content
+// script) has replaced console.warn after our install.
+const _wrapped = {};
+
 export function installConsoleFilter() {
   try {
     // Browser-only.
@@ -161,13 +223,21 @@ export function installConsoleFilter() {
     if (_installed) return;
     _installed = true;
 
-    // Wrap non-error methods only. console.error always surfaces.
     _wrapMethod('log');
     _wrapMethod('warn');
     _wrapMethod('info');
     _wrapMethod('debug');
     _wrapMethod('group');
     _wrapMethod('groupCollapsed');
+    // Wrap console.error too — extensions (cornhusk in particular)
+    // use console.error to ship their own "shared-service, error:"
+    // tag onto the page console. Real app errors typically come
+    // through Sentry's beforeSend pipeline, not the bare console,
+    // so suppressing extension noise here is safe. The deny-list
+    // is strict-pattern; anything that doesn't match still falls
+    // through to the original console.error.
+    _wrapMethod('error');
+    _startWatchdog();
   } catch { /* never throw from console setup */ }
 }
 
@@ -177,7 +247,7 @@ export function installConsoleFilter() {
  */
 export function restoreConsole() {
   try {
-    for (const method of ['log', 'warn', 'info', 'debug', 'group', 'groupCollapsed']) {
+    for (const method of ['log', 'warn', 'info', 'debug', 'group', 'groupCollapsed', 'error']) {
       const orig = console[`_farroway_orig_${method}`];
       if (orig) {
         console[method] = orig;
