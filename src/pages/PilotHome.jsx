@@ -58,16 +58,12 @@ import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 import useExperience             from '../hooks/useExperience.js';
-// Unified recommendation controller (Intelligence Expansion §1).
-// Walks the spec's safety → weather → crop → soil → harvest →
-// buyer/funding → progress ladder and returns ONE primary guidance
-// envelope. Memory cooldowns inside the orchestrator suppress
-// repeat surfacing across reloads, so Home never nags.
-import { getNextBestRecommendation } from '../orchestration/orchestrator.js';
-// Elite Garden Polish §6 — gardener-tone substitution layered on
-// top of the orchestrator title before render. Pure / never throws;
-// in farm mode we pass the resolved title through unchanged.
-import { softenForGarden } from '../core/scanResultPolicy.js';
+// Single recommendation entry point (spec §2). Wires the
+// orchestrator's 7-step priority ladder through the mode adapter
+// (garden drops commercial surfaces + softens wording) and the
+// spec-exact fallback. Memory cooldowns inside the orchestrator
+// suppress repeat surfacing across reloads.
+import { getPrimaryGuidance } from '../intelligence/recommendations/getPrimaryGuidance.js';
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -258,14 +254,20 @@ export default function PilotHome() {
   // without adding a competing card.
   const primaryGuidance = useMemo(() => {
     try {
-      return getNextBestRecommendation({
-        mode:    ctxIntel.mode === 'garden' ? 'garden' : 'farm',
+      // getPrimaryGuidance handles the orchestrator call, the
+      // mode adapter (garden suppresses commercial routes +
+      // softens wording), and the spec-exact mode fallback in
+      // one place. Output shape: { id, title, message, reason,
+      // actionLabel, actionRoute, estimatedMinutes, tone,
+      // confidenceTone, priority, expiresAt }.
+      return getPrimaryGuidance({
+        mode:        ctxIntel.mode === 'garden' ? 'garden' : 'farm',
         weather,
-        crop:      local.farm?.crop || local.farm?.cropId || null,
-        cropStage: local.farm?.cropStage || null,
-        farmSize:  local.farm?.farmSize  || null,
-        country:   local.farm?.country   || null,
-        region:    local.farm?.region    || null,
+        crop:        local.farm?.crop || local.farm?.cropId || null,
+        cropStage:   local.farm?.cropStage || null,
+        farmSize:    local.farm?.farmSize  || null,
+        country:     local.farm?.country   || null,
+        region:      local.farm?.region    || null,
       }, { commit: false });
     } catch { return null; }
     // commit=false so re-renders don't keep stamping the memory.
@@ -648,14 +650,11 @@ export default function PilotHome() {
             );
           }
           if (!route || above.has(route)) return null;
-          // Elite Garden Polish §6 — apply the gardener-tone
-          // softener to the orchestrator's title only when the
-          // active mode is garden. Farm-mode tiles render the
-          // canonical wording untouched.
-          const resolved = tSafe(primaryGuidance.titleKey, primaryGuidance.titleKey);
-          const titleText = ctxIntel.mode === 'garden'
-            ? (softenForGarden(resolved) || resolved)
-            : resolved;
+          // The new getPrimaryGuidance returns the title as an i18n
+          // key string + already-mode-adapted wording (garden mode
+          // ran through softenForGarden inside the adapter). The
+          // tSafe resolver turns the key into the localised label.
+          const titleText = tSafe(primaryGuidance.title, primaryGuidance.title);
           return (
             <Link
               to={route}
