@@ -503,11 +503,26 @@ select option:checked {
 .ff-page             { animation: farroway-fade-in 200ms ease-out both; }
 .ff-card             { animation: farroway-slide-up 220ms ease-out both; }
 .ff-card-stagger > * { animation: farroway-slide-up 220ms ease-out both; }
-.ff-card-stagger > *:nth-child(2) { animation-delay: 60ms; }
-.ff-card-stagger > *:nth-child(3) { animation-delay: 120ms; }
-.ff-card-stagger > *:nth-child(4) { animation-delay: 180ms; }
-.ff-card-stagger > *:nth-child(5) { animation-delay: 240ms; }
-.ff-card-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.ff-card-stagger > *:nth-child(2)  { animation-delay:  60ms; }
+.ff-card-stagger > *:nth-child(3)  { animation-delay: 120ms; }
+.ff-card-stagger > *:nth-child(4)  { animation-delay: 180ms; }
+.ff-card-stagger > *:nth-child(5)  { animation-delay: 240ms; }
+.ff-card-stagger > *:nth-child(6)  { animation-delay: 300ms; }
+.ff-card-stagger > *:nth-child(7)  { animation-delay: 340ms; }
+.ff-card-stagger > *:nth-child(8)  { animation-delay: 380ms; }
+.ff-card-stagger > *:nth-child(9)  { animation-delay: 420ms; }
+.ff-card-stagger > *:nth-child(10) { animation-delay: 460ms; }
+.ff-card-stagger > *:nth-child(11) { animation-delay: 480ms; }
+.ff-card-stagger > *:nth-child(12) { animation-delay: 500ms; }
+/* Respect prefers-reduced-motion — collapse the stagger to a
+   single fade so dizziness-sensitive users still see the cards
+   appear gently, just without translation. */
+@media (prefers-reduced-motion: reduce) {
+  .ff-card-stagger > * {
+    animation: farroway-fade-in 160ms ease-out both;
+    animation-delay: 0ms !important;
+  }
+}
 
 /* ── Premium card surface (Visual realism polish, May 2026) ────────
    Softer borders, layered depth shadow, tactile feel. Combine with

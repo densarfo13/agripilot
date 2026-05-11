@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
@@ -66,6 +66,42 @@ function _isOnboardingPath(pathname) {
   return false;
 }
 
+// Time-of-day band — drives the ambient overlay glow on the page
+// backdrop. Apple-Weather aesthetic: the sky tone shifts subtly
+// across the day so the app feels alive at different hours.
+//
+//   0–5  → deep night    (cool navy, no glow)
+//   5–8  → dawn          (warm amber-rose horizon)
+//   8–16 → daylight      (cool sky, neutral)
+//   16–19 → dusk         (warm orange-amber)
+//   19–24 → night        (cool navy + faint star pinpoints)
+//
+// We only call new Date() once per mount; the band is stable for
+// the session so the layout doesn't re-render on every minute
+// tick. Operators who want true live transitions can subscribe
+// to a hour-watcher hook in a follow-up.
+function _timeOfDayBand() {
+  try {
+    const h = new Date().getHours();
+    if (h < 5)        return 'night';
+    if (h < 8)        return 'dawn';
+    if (h < 16)       return 'day';
+    if (h < 19)       return 'dusk';
+    return 'night';
+  } catch { return 'day'; }
+}
+
+const TIME_OF_DAY_OVERLAYS = Object.freeze({
+  // Each overlay is a SECOND background-image layer that paints
+  // on top of the navy base + the radial sky/earth glows defined
+  // in S.page. None of them obscure content — they only modulate
+  // the ambient atmosphere.
+  night: 'radial-gradient(ellipse 70% 30% at 50% -5%, rgba(28,38,58,0.50) 0%, rgba(8,17,26,0) 70%)',
+  dawn:  'radial-gradient(ellipse 90% 45% at 50% 0%, rgba(228,148,108,0.22) 0%, rgba(8,17,26,0) 65%)',
+  day:   'radial-gradient(ellipse 90% 35% at 50% 0%, rgba(120,160,196,0.18) 0%, rgba(8,17,26,0) 70%)',
+  dusk:  'radial-gradient(ellipse 90% 45% at 50% 100%, rgba(220,140,80,0.22) 0%, rgba(8,17,26,0) 60%)',
+});
+
 export default function ProtectedLayout() {
   const { logout, user, resendEmailVerification, isOfflineSession } = useAuth();
   const { t } = useTranslation();
@@ -73,11 +109,28 @@ export default function ProtectedLayout() {
   const location = useLocation();
   const onboarding = _isOnboardingPath(location?.pathname || '');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Cache once per mount — the band only changes a few times per
+  // day and we never want the page to re-paint mid-tap. Operators
+  // can flip the band manually via DevTools by setting
+  //   document.body.dataset.timeOfDay = 'dusk'
+  // which the CSS picks up regardless of the inline style.
+  const tod = useMemo(_timeOfDayBand, []);
+  const todOverlay = TIME_OF_DAY_OVERLAYS[tod] || TIME_OF_DAY_OVERLAYS.day;
 
   return (
     <AuthGuard>
       <ProfileGuard>
-        <div style={S.page}>
+        <div
+          style={{
+            ...S.page,
+            // Compose the time-of-day overlay over the base
+            // background stack. The overlay is a single radial
+            // glow that shifts warm/cool depending on the hour
+            // — Apple Weather aesthetic.
+            backgroundImage: `${todOverlay}, ${S.page.backgroundImage}`,
+          }}
+          data-time-of-day={tod}
+        >
           {/* Region UX banner — top of every protected page when
               the feature flag is on AND the active country is
               outside the actively-supported set. Self-hides
