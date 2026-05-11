@@ -529,11 +529,15 @@ export default function MyFarmPage() {
             const cropKey = (farm && (farm.cropType || farm.crop)) || null;
             const closeup = cropKey ? resolveCropCloseupImage(cropKey) : null;
             if (closeup) return closeup;
-            const region = farm && (farm.region || farm.country || farm.regionName);
+            // Country prefers ISO/code; region is the legacy
+            // single-key string. resolveHeroImage threads both —
+            // country drives the regional pack lookup.
+            const country = farm && (farm.country || farm.countryCode || farm.countryLabel);
+            const region  = farm && (farm.region  || farm.regionName);
             const hero = resolveHeroImage({
               mode: isBackyardActive ? 'garden' : 'farm',
               crop: cropKey,
-              region,
+              country, region,
             });
             if (hero) return hero;
           } catch { /* swallow — fall through to SVG */ }

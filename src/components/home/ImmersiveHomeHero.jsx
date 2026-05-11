@@ -112,15 +112,17 @@ export default function ImmersiveHomeHero({
   // ─── Background photo resolution ──────────────────────────────
   const photoSrc = useMemo(() => {
     try {
-      const region = entity && (entity.region || entity.country || entity.regionName);
+      // Country prefers an ISO code or readable name; region is
+      // the legacy single-key string. resolveHeroImage layers
+      // country → regional pack → crop closeup → weather → time
+      // of day → default.
+      const country = entity && (entity.country || entity.countryCode || entity.countryLabel);
+      const region  = entity && (entity.region  || entity.regionName);
       const hour = (() => { try { return new Date().getHours(); } catch { return null; } })();
-      // Crop closeup wins when available (the active crop the
-      // farmer cares about). Otherwise environmental hero
-      // adapted to weather + region + hour.
       const closeup = crop ? resolveCropCloseupImage(crop) : null;
       if (closeup) return closeup;
       return resolveHeroImage({
-        mode, crop, region, hour,
+        mode, crop, country, region, hour,
         weatherType: w.weatherType,
       });
     } catch { return null; }

@@ -40,6 +40,7 @@
 import React from 'react';
 import RealisticPhotoFallback from '../assets/realism/photography/RealisticPhotoFallback.jsx';
 import { normaliseCrop } from '../assets/realism/cropImages.jsx';
+import { resolveRegion } from './regions.js';
 
 // ─── Asset paths (exact filenames as uploaded) ──────────────────
 // Filenames preserve the operator's upload — some carry a
@@ -88,14 +89,55 @@ const CROP_CLOSEUP = Object.freeze({
   tomato:  ASSETS.farm.tomato,
 });
 
-// ─── Region preference (Home hero / Weather backdrops) ─────────
-// We don't have region-specific weather imagery (only the
-// hero photos are region-tagged), but rice → Vietnam misty
-// paddy is a meaningful match.
+// ─── Regional pack heroes ──────────────────────────────────────
+// Five regional clusters keyed off resolveRegion(country, crop):
+//
+//   africa         — uploaded set (sunrise / atmosphere / irrigation)
+//   asia           — uploaded set (vietnam misty rice, future expansion)
+//   latin-america  — no commissioned shoot yet (May 2026)
+//   north-america  — no commissioned shoot yet
+//   middle-east    — no commissioned shoot yet
+//
+// When a regional pack has no commissioned photo for the slot,
+// the resolver falls through to the default africa-farm-atmosphere
+// shot (the calmest, most universally-readable agricultural
+// frame in the upload). Drop new region packs under
+//   public/assets/realism/regions/<region>/
+// then add the slot path to REGION_HERO_PACK below — no other
+// code change needed.
 
+const REGION_HERO_PACK = Object.freeze({
+  africa: [
+    ASSETS.heroes.farmDefault,
+    ASSETS.heroes.farmSunrise,
+    ASSETS.heroes.farmIrrigation,
+  ],
+  asia: [
+    ASSETS.heroes.riceField,
+  ],
+  // The three packs below are intentionally empty arrays. The
+  // resolver picks them up automatically when assets land at
+  // /assets/realism/regions/<region>/. Until then,
+  // resolveHeroImage falls through to the africa-default frame.
+  'latin-america': [],
+  'north-america': [],
+  'middle-east':   [],
+});
+
+// Pick a stable photo from a regional pack. We hash the crop +
+// hour so a given farmer sees a consistent shot per session
+// (no flickering) but different farmers see different photos.
+function _pickFromPack(pack, seed) {
+  if (!Array.isArray(pack) || pack.length === 0) return null;
+  if (pack.length === 1) return pack[0];
+  const s = String(seed || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return pack[s % pack.length];
+}
+
+// Legacy back-compat — kept as a single-entry lookup for any
+// caller that still imports REGION_HERO directly. New code
+// should use the pack-aware resolver below.
 const REGION_HERO = Object.freeze({
-  // Africa is the default — every hero photo we ship is from
-  // african fields except the rice paddy.
   asia:    ASSETS.heroes.riceField,
   africa:  ASSETS.heroes.farmDefault,
 });
@@ -141,17 +183,23 @@ const SCAN_TO_IMAGE = Object.freeze({
 
 /**
  * Home hero — environmental imagery keyed on:
- *   1. Active crop → closeup if we ship one
+ *   1. Active crop → closeup if we ship one (ownership wins)
  *   2. Weather state → adaptive environmental shot
- *   3. Region → default region hero
- *   4. Time of day (hour 5-8 → sunrise)
+ *   3. Regional pack (country/crop → cluster) → pack photo
+ *   4. Time-of-day fallback (hour 5-8 → sunrise)
  *   5. Final fallback → africa-farm-atmosphere
+ *
+ * `country` is preferred over `region`. When country resolves
+ * to a regional cluster we serve a photo from that cluster's
+ * pack; if the cluster has no commissioned assets yet, the
+ * resolver falls through to the global default.
  */
 export function resolveHeroImage({
   mode = 'farm',
   crop = null,
   weatherType = null,
   region = null,
+  country = null,
   hour = null,
 } = {}) {
   const cropKey = crop ? normaliseCrop(crop) : null;
@@ -166,9 +214,6 @@ export function resolveHeroImage({
   // 1. Crop closeup wins when available — most personal.
   if (cropKey && CROP_CLOSEUP[cropKey]) return CROP_CLOSEUP[cropKey];
 
-  // Rice → Vietnam misty rice paddy regardless of region
-  if (cropKey === 'rice') return ASSETS.heroes.riceField;
-
   // 2. Weather state — drought/rain/storm imagery is more
   //    evocative than a generic farm shot when the day's
   //    conditions are noteworthy.
@@ -177,16 +222,29 @@ export function resolveHeroImage({
   if (w === 'drought' || w === 'heat' || w === 'dry') return ASSETS.weather.drought;
   if (w === 'fog' || w === 'misty' || w === 'cloudy') return ASSETS.weather.misty;
 
-  // 3. Region hero
-  const r = region ? String(region).toLowerCase() : null;
-  if (r && REGION_HERO[r]) return REGION_HERO[r];
+  // 3. Regional pack — country → cluster → pack array. The pack
+  //    rotates by a stable hash of (crop, hour) so the same
+  //    farmer sees a consistent photo per session but different
+  //    farmers see different shots. Empty packs fall through.
+  const cluster = resolveRegion({ country, crop: cropKey })
+                  || (region ? String(region).toLowerCase() : null);
+  if (cluster && REGION_HERO_PACK[cluster] && REGION_HERO_PACK[cluster].length > 0) {
+    const seed = `${cropKey || 'crop'}-${cluster}`;
+    const fromPack = _pickFromPack(REGION_HERO_PACK[cluster], seed);
+    if (fromPack) return fromPack;
+  }
+  // Back-compat: callers that still pass the legacy single-key
+  // region prop get the single-photo lookup.
+  if (region && REGION_HERO[String(region).toLowerCase()]) {
+    return REGION_HERO[String(region).toLowerCase()];
+  }
 
   // 4. Time-of-day — sunrise hero in the 5-8 hour band.
   const h = Number.isFinite(hour) ? hour : null;
   if (h != null && h >= 5 && h < 8) return ASSETS.heroes.farmSunrise;
 
-  // 5. Irrigation hero for visibly wet weather even when w is
-  //    unknown (fallback safety).
+  // 5. Final fallback — africa-farm-atmosphere (the calmest, most
+  //    universally-readable frame in the upload).
   return ASSETS.heroes.farmDefault;
 }
 
