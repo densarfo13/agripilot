@@ -146,6 +146,15 @@ export default function LiveCameraScanner({
 
   const [facing, setFacing] = useState(facingHint || 'environment');
   const [phase, setPhase] = useState('idle');
+  // Rotating guidance text — cycles through 3 tips on a 3.2s loop
+  // so the camera feels like it's coaching the user without
+  // adding click affordance. Pauses when the camera isn't
+  // streaming.
+  const [guideTipIdx, setGuideTipIdx] = useState(0);
+  // Capture flash flag — flips true for 220ms when the user taps
+  // the shutter so the viewport feels like a real camera body
+  // taking a photograph. CSS-only, no JS animation timer.
+  const [captureFlash, setCaptureFlash] = useState(false);
   // 'idle' | 'requesting' | 'streaming' | 'captured' | 'denied' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
   const [capturedUrl, setCapturedUrl] = useState(null);
@@ -295,6 +304,18 @@ export default function LiveCameraScanner({
     return () => { try { document.body.style.overflow = prev; } catch { /* swallow */ } };
   }, [open]);
 
+  // Rotating live guidance text — three tips cycle on a 3.2s
+  // loop while the camera is streaming. Reset to the first tip
+  // when the camera opens / re-streams so each capture session
+  // starts with "Place leaf or crop inside the frame".
+  useEffect(() => {
+    if (phase !== 'streaming') { setGuideTipIdx(0); return undefined; }
+    const id = setInterval(() => {
+      setGuideTipIdx((i) => (i + 1) % 3);
+    }, 3200);
+    return () => { try { clearInterval(id); } catch { /* swallow */ } };
+  }, [phase]);
+
   // ─── Actions ───────────────────────────────────────────────
 
   const toggleTorch = useCallback(async () => {
@@ -322,6 +343,13 @@ export default function LiveCameraScanner({
   const captureFrame = useCallback(async () => {
     const v = videoRef.current;
     if (!v) return;
+    // Flash the viewport for ~220ms so the capture feels like a
+    // real camera shutter. The flag clears via setTimeout so the
+    // overlay never sticks if the capture path bails out.
+    setCaptureFlash(true);
+    try {
+      setTimeout(() => { try { setCaptureFlash(false); } catch { /* swallow */ } }, 220);
+    } catch { /* swallow */ }
     const w = v.videoWidth || 1280;
     const h = v.videoHeight || 720;
     let canvas = canvasRef.current;
@@ -497,10 +525,27 @@ export default function LiveCameraScanner({
                               borderBottom: '3px solid #E6BC85',
                               borderRight:  '3px solid #E6BC85' }}/>
             </div>
-            <p style={S.guideHint}>
-              {tSafe('scan.camera.guide', 'Place leaf or crop inside the frame')}
+            {/* Live coaching text — rotates through three tips on
+                a 3.2s loop. The key on the <p> drives a CSS fade
+                transition between tips (each tip mounts fresh so
+                the entry animation re-fires). */}
+            <p
+              key={`tip-${guideTipIdx}`}
+              style={S.guideHint}
+              data-testid={`${testId}-tip-${guideTipIdx}`}
+            >
+              {guideTipIdx === 0 && tSafe('scan.camera.guideFrame',    'Place leaf or crop inside the frame')}
+              {guideTipIdx === 1 && tSafe('scan.camera.guideSteady',   'Hold the camera steady')}
+              {guideTipIdx === 2 && tSafe('scan.camera.guideLighting', 'Good lighting helps analysis')}
             </p>
           </>
+        )}
+
+        {/* Shutter flash overlay — paints a brief white wash
+            over the viewport when the capture button is tapped
+            so the moment feels like a real camera shutter. */}
+        {captureFlash && (
+          <div style={S.captureFlash} aria-hidden="true" />
         )}
 
         {/* Captured-frame confidence chip — sits above the
@@ -767,6 +812,21 @@ const S = {
     pointerEvents: 'none',
     textAlign: 'center',
     whiteSpace: 'nowrap',
+    // Soft fade-up when the tip swaps — the `key` change on the
+    // <p> remounts the element so this animation re-fires each
+    // rotation. 240ms in / 240ms out matches the global fade.
+    animation: 'farroway-fade-in 240ms ease-out both',
+  },
+  // Shutter flash — full-viewport white wash for ~220ms when
+  // the user taps capture. Three-stop opacity ramp so it reads
+  // as a punchy shutter rather than a slow fade.
+  captureFlash: {
+    position: 'absolute',
+    inset: 0,
+    background: '#FFFFFF',
+    pointerEvents: 'none',
+    zIndex: 3,
+    animation: 'farroway-capture-flash 220ms ease-out forwards',
   },
   statusOverlay: {
     position: 'absolute',

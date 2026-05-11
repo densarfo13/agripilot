@@ -430,6 +430,15 @@ select option:checked {
   90%  { opacity: 1; }
   100% { transform: translate3d(0, 100%, 0); opacity: 0; }
 }
+/* Shutter flash — punchy white wash for the camera capture
+   microinteraction. Three-stop ramp: rapid in, brief plateau,
+   fast fade. Pairs with LiveCameraScanner's captureFlash flag. */
+@keyframes farroway-capture-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 0.85; }
+  60%  { opacity: 0.45; }
+  100% { opacity: 0; }
+}
 /* Soft outer-edge pulse on the scan frame. Pure box-shadow ramp
    so it composites without affecting layout. */
 @keyframes farroway-scan-pulse {
