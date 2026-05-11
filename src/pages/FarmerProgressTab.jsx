@@ -14,6 +14,9 @@ import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
 import VoiceBar from '../components/VoiceBar.jsx';
 import { getFarmerLifecycleState, canStartSeason, FARMER_STATE } from '../utils/farmerLifecycle.js';
+// UI tightening pass §9 — replaces inline emoji glyphs with
+// clean SVG icons that flow through currentColor.
+import { SeedlingGlyph, PencilGlyph } from '../components/icons/InlineGlyphs.jsx';
 
 const STAGES = ['pre_planting', 'planting', 'vegetative', 'flowering', 'harvest', 'post_harvest'];
 function getStageLabels(t) {
@@ -400,7 +403,9 @@ export default function FarmerProgressTab() {
       {/* ─── No active season → prompt setup (lifecycle-gated) ─────── */}
       {!activeSeason && !showSeasonForm && (
         <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌱</div>
+          <div style={{ marginBottom: '0.5rem', display: 'inline-flex', color: '#6E8B61' }}>
+            <SeedlingGlyph size={32} />
+          </div>
           <h3 style={{ margin: '0 0 0.35rem' }}>{t('progress.noActiveSeason')}</h3>
           {setupComplete ? (
             <>
@@ -644,7 +649,10 @@ export default function FarmerProgressTab() {
                 }}
                 data-testid="quick-update-cta"
               >
-                <span style={{ fontSize: '1.3rem' }}>📝</span> {t('progress.addUpdate')}
+                <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 6 }}>
+                  <PencilGlyph size={18} />
+                </span>
+                {t('progress.addUpdate')}
               </button>
 
               {/* Detailed action buttons — secondary */}

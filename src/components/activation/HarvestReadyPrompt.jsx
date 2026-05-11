@@ -22,6 +22,7 @@
  */
 
 import { useMemo } from 'react';
+import { WheatGlyph } from '../icons/InlineGlyphs.jsx';
 
 const HARVEST_STAGES = new Set([
   'harvest',
@@ -102,7 +103,7 @@ export default function HarvestReadyPrompt({ profile, onListClick }) {
 
   return (
     <div style={S.banner} data-testid="harvest-ready-prompt">
-      <span aria-hidden="true" style={S.icon}>🌾</span>
+      <span aria-hidden="true" style={S.icon}><WheatGlyph size={24} /></span>
       <div style={S.body}>
         <p style={S.headline}>Ready to sell?</p>
         <p style={S.text}>

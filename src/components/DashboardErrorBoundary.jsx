@@ -14,6 +14,7 @@
  */
 
 import React from 'react';
+import { SeedlingGlyph, TractorGlyph, CheckGlyph, LeafGlyph } from './icons/InlineGlyphs.jsx';
 
 function _isDev() {
   try { return Boolean(import.meta?.env?.DEV); }
@@ -79,25 +80,25 @@ export default class DashboardErrorBoundary extends React.Component {
               dashboard data failed to load. */}
           <div style={S.cardGrid}>
             <div style={S.card} data-testid="dash-fallback-setup">
-              <span style={S.cardIcon} aria-hidden="true">🌱</span>
+              <span style={S.cardIcon} aria-hidden="true"><SeedlingGlyph size={20} /></span>
               <span style={S.cardLabel}>Setup</span>
               <span style={S.cardValue}>Continue setup</span>
               <a href="/profile/setup" style={S.cardLink}>Open →</a>
             </div>
             <div style={S.card} data-testid="dash-fallback-weather">
-              <span style={S.cardIcon} aria-hidden="true">🌤️</span>
+              <span style={S.cardIcon} aria-hidden="true"><LeafGlyph size={20} /></span>
               <span style={S.cardLabel}>Weather</span>
               <span style={S.cardValue}>Unavailable</span>
               <span style={S.cardNote}>Check back later</span>
             </div>
             <div style={S.card} data-testid="dash-fallback-farm">
-              <span style={S.cardIcon} aria-hidden="true">🚜</span>
+              <span style={S.cardIcon} aria-hidden="true"><TractorGlyph size={20} /></span>
               <span style={S.cardLabel}>Farm</span>
               <span style={S.cardValue}>No farm added yet</span>
               <a href="/farm/new" style={S.cardLink}>Add farm →</a>
             </div>
             <div style={S.card} data-testid="dash-fallback-tasks">
-              <span style={S.cardIcon} aria-hidden="true">✅</span>
+              <span style={S.cardIcon} aria-hidden="true"><CheckGlyph size={20} /></span>
               <span style={S.cardLabel}>Tasks</span>
               <span style={S.cardValue}>Loading…</span>
               <span style={S.cardNote}>Reload to refresh</span>

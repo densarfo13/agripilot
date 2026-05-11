@@ -3,6 +3,7 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import { detectCrop } from '../lib/vision/cropDetector.js';
 import { getCropLabel, getCropImage } from '../config/crops/index.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { CameraGlyph } from './icons/InlineGlyphs.jsx';
 import { getCropLabelSafe } from '../utils/crops.js';
 
 /**
@@ -139,7 +140,7 @@ export default function CropPhotoCapture({
       {/* ─── Idle / CTA ─────────────────────────────────────── */}
       {mode === 'idle' && (
         <div style={styles.ctaBlock}>
-          <div style={styles.iconCircle} aria-hidden>📷</div>
+          <div style={styles.iconCircle} aria-hidden="true"><CameraGlyph size={28} /></div>
           <h3 style={styles.title}>
             {tSafe('cropPhoto.title', '')}
           </h3>

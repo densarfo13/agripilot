@@ -27,6 +27,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import DashboardErrorBoundary from './DashboardErrorBoundary.jsx';
+import { SeedlingGlyph, TractorGlyph, CheckGlyph, LeafGlyph } from './icons/InlineGlyphs.jsx';
 
 // Safe fallback cards — shown when the watchdog detects empty content.
 // Mirrors DashboardErrorBoundary's card grid so the farmer always sees
@@ -50,25 +51,25 @@ function DashboardFallback() {
         {/* Safe status cards — always visible, no API dependency */}
         <div style={S.cardGrid}>
           <div style={S.card} data-testid="shell-fallback-setup">
-            <span style={S.cardIcon} aria-hidden="true">🌱</span>
+            <span style={S.cardIcon} aria-hidden="true"><SeedlingGlyph size={20} /></span>
             <span style={S.cardLabel}>Setup</span>
             <span style={S.cardValue}>Continue setup</span>
             <a href="/profile/setup" style={S.cardLink}>Open →</a>
           </div>
           <div style={S.card} data-testid="shell-fallback-weather">
-            <span style={S.cardIcon} aria-hidden="true">🌤️</span>
+            <span style={S.cardIcon} aria-hidden="true"><LeafGlyph size={20} /></span>
             <span style={S.cardLabel}>Weather</span>
             <span style={S.cardValue}>Unavailable</span>
             <span style={S.cardNote}>Loading…</span>
           </div>
           <div style={S.card} data-testid="shell-fallback-farm">
-            <span style={S.cardIcon} aria-hidden="true">🚜</span>
+            <span style={S.cardIcon} aria-hidden="true"><TractorGlyph size={20} /></span>
             <span style={S.cardLabel}>Farm</span>
             <span style={S.cardValue}>No farm added yet</span>
             <a href="/farm/new" style={S.cardLink}>Add farm →</a>
           </div>
           <div style={S.card} data-testid="shell-fallback-tasks">
-            <span style={S.cardIcon} aria-hidden="true">✅</span>
+            <span style={S.cardIcon} aria-hidden="true"><CheckGlyph size={20} /></span>
             <span style={S.cardLabel}>Tasks</span>
             <span style={S.cardValue}>Tasks loading</span>
             <span style={S.cardNote}>Please wait…</span>

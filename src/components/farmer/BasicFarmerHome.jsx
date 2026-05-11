@@ -33,6 +33,9 @@ import VoicePromptButton from '../VoicePromptButton.jsx';
 import CompletionCard from './CompletionCard.jsx';
 import { buildCompletionBridge } from '../../core/experience/index.js';
 import { renderLocalizedMessage } from '../../core/i18n/index.js';
+// UI tightening pass §9 — replaces 🌱/📋 emoji icons with calm
+// SVG glyphs so Simple mode reads consistent with Standard mode.
+import { SeedlingGlyph, PencilGlyph } from '../icons/InlineGlyphs.jsx';
 
 export default function BasicFarmerHome({
   decision,
@@ -93,7 +96,7 @@ export default function BasicFarmerHome({
     return (
       <div style={S.page} data-testid="basic-farmer-home">
         <div style={S.promptCard}>
-          <span style={S.promptIcon}>🌱</span>
+          <span style={S.promptIcon} aria-hidden="true"><SeedlingGlyph size={44} /></span>
           <button
             type="button"
             style={S.bigCta}
@@ -112,7 +115,7 @@ export default function BasicFarmerHome({
     return (
       <div style={S.page} data-testid="basic-farmer-home">
         <div style={S.promptCard}>
-          <span style={S.promptIcon}>📋</span>
+          <span style={S.promptIcon} aria-hidden="true"><PencilGlyph size={44} /></span>
           <button
             type="button"
             style={S.bigCta}
@@ -313,7 +316,11 @@ const S = {
     padding: '2rem 1.25rem',
     width: '100%',
   },
-  promptIcon: { fontSize: '3rem' },
+  promptIcon: {
+    display: 'inline-flex',
+    color: '#6E8B61',
+    marginBottom: '0.5rem',
+  },
   taskIconWrap: {
     display: 'flex',
     alignItems: 'center',
