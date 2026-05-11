@@ -110,6 +110,59 @@ const STYLES = {
     color: '#8A2E22',
     fontSize: 13,
   },
+  // Dark fallback panel — matches the immersive companion theme.
+  // Renders only when getUserMedia is unavailable OR while
+  // analysis is in flight (the spinner state). Replaces the
+  // legacy beige wrapper that used to be the first surface.
+  fallbackPanel: {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: 16,
+    padding: '1.5rem 1.25rem',
+    color: '#EAF2FF',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.6rem',
+    boxShadow: [
+      '0 1px 0 0 rgba(255,255,255,0.06) inset',
+      '0 12px 32px -12px rgba(0,0,0,0.55)',
+    ].join(', '),
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+  },
+  fallbackTitle: {
+    margin: 0,
+    fontSize: '1.1rem',
+    fontWeight: 800,
+    letterSpacing: '-0.005em',
+    color: '#FFFFFF',
+  },
+  fallbackBody: {
+    margin: 0,
+    fontSize: '0.92rem',
+    fontWeight: 500,
+    color: 'rgba(234,242,255,0.78)',
+    lineHeight: 1.45,
+  },
+  fallbackError: {
+    margin: 0,
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: '#F1A89E',
+  },
+  fallbackCta: {
+    alignSelf: 'flex-start',
+    padding: '0.7rem 1.1rem',
+    fontSize: '0.95rem',
+    fontWeight: 800,
+    color: '#FFFFFF',
+    background: 'linear-gradient(180deg, #C8944D 0%, #B9853F 100%)',
+    border: 'none',
+    borderRadius: 999,
+    cursor: 'pointer',
+    boxShadow: '0 8px 20px rgba(185,133,63,0.40)',
+    WebkitTapHighlightColor: 'transparent',
+  },
 };
 
 export default function ScanCapture({ onContinue, onCancel, experience = 'generic' }) {
@@ -322,6 +375,14 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     setPreview(url);
     setFile(next);
     setError('');
+    // Auto-fire analysis — the fallback-panel "Upload a photo"
+    // button is the only path that reaches onFileChange now (the
+    // boxed preview wrapper was removed). Any file the user picks
+    // should advance to analysis immediately; matching the
+    // in-overlay capture + in-overlay upload behaviour.
+    if (continueAnalysisRef.current) {
+      continueAnalysisRef.current(next, url);
+    }
   }, [preview]);
 
   const reset = useCallback(() => {
@@ -395,19 +456,6 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         onFallbackUpload={onLiveCameraFallbackUpload}
         testId="scan-live-camera"
       />
-      {error ? <div style={STYLES.error}>{error}</div> : null}
-      <div style={STYLES.preview} data-testid="scan-capture-preview">
-        {preview ? (
-          <img src={preview} alt="" style={STYLES.previewImg} />
-        ) : (
-          <span>
-            {tStrict(
-              'scan.previewPlaceholder',
-              'Take a photo, or pick one from your gallery.'
-            )}
-          </span>
-        )}
-      </div>
       <input
         ref={inputRef}
         type="file"
@@ -430,30 +478,57 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         style={{ display: 'none' }}
         data-testid="scan-capture-gallery-input"
       />
-      {/* App Store launch audit §4.1: when the camera permission
-          is explicitly denied, show a calm hint so the user
-          knows the gallery button below is the path forward.
-          Self-suppresses when permission isn't denied OR the
-          Permissions API is unavailable (we never assume denied). */}
-      {cameraDenied && !preview ? (
-        <div
-          style={{
-            background: 'rgba(245,158,11,0.10)',
-            border: '1px solid rgba(245,158,11,0.40)',
-            borderRadius: 10,
-            padding: '8px 12px',
-            color: '#FDE68A',
-            fontSize: 13,
-            lineHeight: 1.45,
-            marginBottom: 8,
-          }}
-          data-testid="scan-capture-camera-denied"
-        >
-          {tStrict('scan.cameraDenied',
-            'Camera access is off. Use Upload from gallery below, or enable camera in your browser settings.')}
+      {/* Dark fallback panel — renders ONLY when the browser
+          cannot open a live camera (no getUserMedia: old WebView,
+          locked corporate browsers, etc.). The happy path never
+          shows this panel: camera opens, LiveCameraScanner handles
+          denied state inside its own overlay, and any capture
+          fires analysis without painting wrapper UI. */}
+      {!supportsLiveCamera && !busy ? (
+        <div style={STYLES.fallbackPanel} data-testid="scan-capture-fallback">
+          <h2 style={STYLES.fallbackTitle}>
+            {tStrict('scan.fallback.title', 'Camera unavailable')}
+          </h2>
+          <p style={STYLES.fallbackBody}>
+            {tStrict(
+              'scan.fallback.body',
+              "This browser can't open the live camera. Pick a saved photo to continue scanning.",
+            )}
+          </p>
+          {error ? (
+            <p style={STYLES.fallbackError} data-testid="scan-capture-error">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={triggerGallery}
+            style={STYLES.fallbackCta}
+            data-testid="scan-capture-gallery"
+          >
+            {tStrict('journey.scan.upload', 'Upload a photo')}
+          </button>
         </div>
       ) : null}
-      <div style={STYLES.buttonsRow}>
+
+      {/* Analysis-in-flight inline status — keeps users oriented
+          on slow networks while ScanPage flips to its 'analyzing'
+          phase. ScanAnalyzing takes over soon after, but on
+          very-slow first paint this avoids a momentary blank. */}
+      {busy ? (
+        <div style={STYLES.fallbackPanel} role="status" aria-busy="true">
+          <p style={STYLES.fallbackBody}>
+            {tStrict('scan.analyzing', 'Analyzing…')}
+          </p>
+        </div>
+      ) : null}
+
+      {/* LEGACY BUTTONS REMOVED — the camera auto-opens on /scan
+          and the in-overlay Gallery button handles uploads from
+          inside the camera. The wrapper preview / buttons row
+          used to flash between overlay-close and analysis-start,
+          and the entire row is now obsolete on the happy path. */}
+      <div style={{ display: 'none' }}>
         {/* When camera is denied, demote the camera button to
             secondary and promote the gallery button to primary. */}
         <button
@@ -497,17 +572,6 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
           </button>
         ) : null}
       </div>
-      <p style={STYLES.helper}>
-        {tStrict(
-          'scan.captureHelper',
-          'Tip: take a close-up in bright daylight. Aim at the affected leaf or area.'
-        )}
-      </p>
-      {!preview && typeof onCancel === 'function' ? (
-        <button type="button" onClick={onCancel} style={{ ...STYLES.btn, alignSelf: 'flex-start' }}>
-          {tStrict('common.back', 'Back')}
-        </button>
-      ) : null}
     </div>
   );
 }
