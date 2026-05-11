@@ -2,7 +2,7 @@
  * HomeErrorBoundary — last-resort guard around the Home tree.
  *
  *   <HomeErrorBoundary>
- *     <PilotHome />
+ *     <Home />
  *   </HomeErrorBoundary>
  *
  * What it does

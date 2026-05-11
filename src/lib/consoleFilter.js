@@ -70,7 +70,7 @@ const DENY_PATTERNS = [
   'Invalid URL',                               // extension URL parse errors leaking into app
   '[BOOT] ',                                   // FarmerDashboardPage verbose boot spam
   '[FARROWAY_PAINT]',                          // blank-screen watchdog success branch (verbose)
-  'PilotHome mounted',                         // PilotHome lifecycle spam
+  'Home mounted',                              // Home lifecycle spam
   'Live weather source:',                      // weather hook verbose trace
   'Live weather type:',                        // weather hook verbose trace
   // Production audit (May 2026) — silence the calm app-version

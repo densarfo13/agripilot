@@ -11,7 +11,7 @@
  *   The mode-specific contracts (nav items, theme tokens, task
  *   vocabulary, empty-state copy keys, scan placement) had been
  *   inlined across BottomTabNav, MyFarmPage, contextEngine,
- *   PilotHome, the i18n overlays, and the theme CSS. The behaviour
+ *   Home, the i18n overlays, and the theme CSS. The behaviour
  *   was right — the configuration was scattered. This module
  *   collects it into a single immutable record per mode so:
  *     • New surfaces opt in with one import (no scavenger hunt).
@@ -134,7 +134,7 @@ const FARM = Object.freeze({
   }),
   emptyStateStyle: 'operational',
 
-  // Spec §4 — Home section order. Mirrors PilotHome's render
+  // Spec §4 — Home section order. Mirrors Home's render
   // structure when ctxIntel.mode === 'farm'.
   homeOrder: Object.freeze([
     'morning_briefing',

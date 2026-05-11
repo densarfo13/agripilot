@@ -115,7 +115,7 @@ export const DISABLE_EVENTS = true;
  * 'Add location for better weather tips'. No /api/weather
  * request is issued without coordinates.
  *
- * The downstream UI is unchanged — PilotHome still renders the
+ * The downstream UI is unchanged — Home still renders the
  * weather hero card, weatherActionEngine still picks a task,
  * and useTodayTaskSafe still ships the spec-literal default.
  *

@@ -36,7 +36,7 @@
 // entries outlive most file rewrites.
 export const STALE_KEYS = Object.freeze([
   // Pre-pilot v1 dashboard cache — schema replaced by the new
-  // PilotHome / WeatherHeroActionCard pipeline. The old payload
+  // Home / WeatherHeroActionCard pipeline. The old payload
   // shape includes fields (`mood`, `oldStreak`, `legacyAlert`)
   // that no current consumer reads, and re-hydrating them on
   // boot triggered the "ghost task" complaint in early-pilot QA.

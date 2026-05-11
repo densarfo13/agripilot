@@ -96,12 +96,12 @@ try {
 // When the pilot flag flips back to false, this block no-ops.
 // ── userType safe-default (May 2026 blank-screen fix §1) ────────
 //
-// PilotHome reads `userType` to pick the right copy. The dashboard
+// Home reads `userType` to pick the right copy. The dashboard
 // console diagnostic was logging "User type: (not set)" for live
 // pilot users because no save handler had stamped it on this
 // device. Default to 'farmer' so every render path has a usable
 // value — the only role the pilot serves anyway. Both the new
-// `userType` key (PilotHome's preferred name) and the legacy
+// `userType` key (Home's preferred name) and the legacy
 // `farroway_user_type` key (the existing useUserMode hook) are
 // stamped so all readers agree.
 //

@@ -29,7 +29,7 @@
  *     caller — those are resolved via tSafe at the surface layer.
  *     Title / message strings in PrimaryGuidance come back as the
  *     i18n KEY strings; the rendering component is expected to
- *     wrap them in tSafe(). The existing PilotHome bottom tile
+ *     wrap them in tSafe(). The existing Home bottom tile
  *     does exactly that.
  */
 

@@ -6,12 +6,12 @@
  *
  * Routing (May 2026 unified-runtime fix)
  *   farmer / null / unknown role  → <Navigate to="/home" />
- *                                   (PilotHome on Soft Ochre)
+ *                                   (Home on Soft Ochre)
  *   ngo / ngo_admin / ngo_officer
  *   / ngo_agent / admin           → renders <NgoDashboardV1 />
  *
  * WHY THE FARMER PATH NOW REDIRECTS
- *   `/home` mounts `<PilotHome />` — the canonical premium
+ *   `/home` mounts `<Home />` — the canonical premium
  *   farmer runtime (Soft Ochre tokens, locked design system,
  *   verified-funding gate, orchestrator wiring). `/dashboard`
  *   used to render the legacy `<V2Dashboard />` for farmers

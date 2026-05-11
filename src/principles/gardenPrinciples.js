@@ -163,7 +163,7 @@ export const GARDEN_GUARDED_FILES = Object.freeze([
   // Shared, mode-branched surfaces (Garden uses the same component
   // as Farm but the wording must still pass the principles).
   'src/pages/MyFarmPage.jsx',           // /my-grow + /my-farm
-  'src/pages/PilotHome.jsx',            // /home for both modes
+  'src/pages/Home.jsx',                 // /home for both modes
   'src/components/scan/SafeCameraSurface.jsx',
 
   // Active routes enumerated in the spec route audit. Garden mode

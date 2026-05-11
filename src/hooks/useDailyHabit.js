@@ -2,7 +2,7 @@
  * useDailyHabit — React hook for the FEATURE_DAILY_HABIT layer.
  *
  * Composes the three habit store modules into a single hook that
- * PilotHome (and any other surface) can consume with one import.
+ * Home (and any other surface) can consume with one import.
  *
  *   const {
  *     today,           // 'YYYY-MM-DD' — current calendar day

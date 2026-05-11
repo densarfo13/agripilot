@@ -2,7 +2,7 @@
  * SafeHomeFallback — the absolute-worst-case Home UI.
  *
  *   <HomeErrorBoundary fallback={SafeHomeFallback}>
- *     <PilotHome />
+ *     <Home />
  *   </HomeErrorBoundary>
  *
  * Contract

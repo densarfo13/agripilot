@@ -5,7 +5,7 @@
  * Spec §11: only ONE active runtime tree allowed for Home / My Farm
  * / My Grow. This test pins the canonical wiring:
  *
- *   • /home          → <PilotHome /> (Soft Ochre runtime)
+ *   • /home          → <Home /> (Soft Ochre runtime)
  *   • /dashboard     → RoleAwareDashboard
  *                        farmer/null → <Navigate to="/home" />
  *                        ngo / admin → <NgoDashboardV1 />
@@ -26,10 +26,12 @@ const ROOT = resolve(__dirname, '../../../');
 function read(rel) { return readFileSync(resolve(ROOT, rel), 'utf8'); }
 
 describe('Unified Home runtime — App.jsx route table', () => {
-  it('/home mounts PilotHome (canonical premium runtime)', () => {
+  it('/home mounts Home (canonical premium runtime)', () => {
     const src = read('src/App.jsx');
     expect(src).toMatch(/Route\s+path="\/home"/);
-    expect(src).toMatch(/<PilotHome/);
+    // The Home symbol — boundary-anchored so a substring like
+    // `HomeErrorBoundary` is not matched.
+    expect(src).toMatch(/<Home\s*\/>/);
   });
 
   it('/dashboard route still exists but goes through RoleAwareDashboard', () => {
@@ -68,18 +70,18 @@ describe('RoleAwareDashboard — farmer redirect', () => {
   });
 });
 
-describe('PilotHome runtime — Soft Ochre lock', () => {
+describe('Home runtime — Soft Ochre lock', () => {
   it('imports PREMIUM_TOKENS from the canonical leaf', () => {
-    const src = read('src/pages/PilotHome.jsx');
+    const src = read('src/pages/Home.jsx');
     expect(src).toMatch(/PREMIUM_TOKENS as T/);
     expect(src).toMatch(/from '\.\.\/components\/premium\/tokens\.js'/);
   });
 
   it('does not carry legacy neon-green hex literals', () => {
-    const src = read('src/pages/PilotHome.jsx');
+    const src = read('src/pages/Home.jsx');
     // The Soft Ochre migration pass removed every #22C55E /
-    // #16A34A / #86EFAC literal from PilotHome. Anyone
-    // reintroducing them fails CI.
+    // #16A34A / #86EFAC literal from Home. Anyone reintroducing
+    // them fails CI.
     expect(src).not.toMatch(/#22C55E/);
     expect(src).not.toMatch(/#16A34A/);
     expect(src).not.toMatch(/#86EFAC/);

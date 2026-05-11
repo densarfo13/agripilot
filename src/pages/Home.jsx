@@ -1,5 +1,5 @@
 /**
- * PilotHome — operational Home screen for the live pilot.
+ * Home — single canonical home screen.
  *
  * Always opens directly to dashboard mode — no onboarding cards,
  * no setup warnings, no blocking UX. Missing data uses silent
@@ -53,7 +53,7 @@ import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
 // Locked Soft Ochre / Beige design tokens (May 2026 visual restraint
 // pass + premium-beige-experience pass). Replaces the inline `C`
 // object below — the inline values predate the centralised token
-// system, so PilotHome was the last surface still rendering with
+// system, so Home was the last surface still rendering with
 // the OLD ochre `#D4A35F` instead of the spec-locked `#C8944D`.
 // Importing the canonical PREMIUM_TOKENS shape flips every value
 // automatically + keeps Home in sync with every other premium
@@ -166,7 +166,7 @@ function _resolveLocationLabel(farm) {
 }
 
 // ─── Component ──────────────────────────────────────────────────
-export default function PilotHome() {
+export default function Home() {
   const navigate = useNavigate();
   const [now] = useState(() => new Date());
 
@@ -190,7 +190,7 @@ export default function PilotHome() {
     try {
       const farm = _resolveFarm();
       // eslint-disable-next-line no-console
-      console.log('PilotHome mounted', {
+      console.log('Home mounted', {
         path:        _safePath(),
         userType:    _resolveUserType(),
         hasLocation: !!_resolveLocationLabel(farm),
@@ -531,7 +531,7 @@ export default function PilotHome() {
     <div
       style={S.page}
       className={`${themeClass} ff-page`}
-      data-testid="pilot-home"
+      data-testid="home"
       data-mode={ctxIntel.mode}
     >
       <div style={S.shell} className="ff-card-stagger">
@@ -549,7 +549,7 @@ export default function PilotHome() {
               <span
                 style={S.streakPill}
                 title={`${habit.streak}-day streak`}
-                data-testid="pilot-home-streak"
+                data-testid="home-streak"
               >
                 {habit.streak}-day streak
               </span>
@@ -609,7 +609,7 @@ export default function PilotHome() {
         {!taskDone && (
           <section
             style={S.card}
-            data-testid="pilot-home-task"
+            data-testid="home-task"
           >
             <p style={S.cardLabel}>Today's task</p>
             <h2 style={S.cardTitle}>{ctxIntel.todayTask.title}</h2>
@@ -619,7 +619,7 @@ export default function PilotHome() {
               onClick={handleMarkDone}
               style={S.btnPrimary}
               className="ff-tap"
-              data-testid="pilot-home-task-cta"
+              data-testid="home-task-cta"
             >
               {ctxIntel.todayTask.cta}
             </button>
@@ -627,7 +627,7 @@ export default function PilotHome() {
         )}
         {taskDone && (
           <FeatureShell name="on-track-row" silent>
-            <OnTrackRowCard testId="pilot-home-on-track" />
+            <OnTrackRowCard testId="home-on-track" />
           </FeatureShell>
         )}
 
@@ -646,7 +646,7 @@ export default function PilotHome() {
 // ─── Internal binder ───────────────────────────────────────────
 // Wraps the ImmersiveHomeHero with a useFarmHealth call so the
 // land-health pill appears inline when applicable. Keeping this
-// inside PilotHome.jsx avoids hoisting hook lifecycle out of the
+// inside Home.jsx avoids hoisting hook lifecycle out of the
 // page-level component AND prevents a second satellite call from
 // firing elsewhere — there's now a single subscriber.
 function _ImmersiveBound({
@@ -677,7 +677,7 @@ function _ImmersiveBound({
 // src/index.css (loaded at app boot, not theme-dependent).
 
 // May 2026 premium-beige-experience wiring — the inline `C{}`
-// object that used to live here is gone. PilotHome now reads
+// object that used to live here is gone. Home now reads
 // every colour through the locked PREMIUM_TOKENS re-export
 // (`src/design/tokens/colors.js` → `src/components/premium/tokens.js`).
 //
@@ -712,7 +712,7 @@ const C = {
 const S = {
   // Immersive companion shell — same atmospheric stack as
   // ProtectedLayout so the page reads consistently whether
-  // PilotHome renders inside Layout's Outlet or as the direct
+  // Home renders inside Layout's Outlet or as the direct
   // ProtectedRoute return. Apple Weather / Oura aesthetic:
   // navy base + cool sky glow at top + warm earth glow at
   // bottom.

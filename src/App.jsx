@@ -45,7 +45,7 @@ import RoleThemeApplicator from './components/system/RoleThemeApplicator.jsx';
 // /dashboard (ngo), or /market (buyer) based on their signed-in
 // role. Drives the new role-routing system in lib/roleFeatures.js.
 import RoleHomeRedirect from './components/system/RoleHomeRedirect.jsx';
-import PilotHome from './pages/PilotHome.jsx';
+import Home from './pages/Home.jsx';
 import HomeErrorBoundary from './components/system/HomeErrorBoundary.jsx';
 import { DashboardErrorBoundary } from './components/system/DashboardErrorBoundary.jsx';
 import {
@@ -626,8 +626,8 @@ function ProtectedRoute({ children, allowSetup }) {
     if (allowSetup) return <LegacyProfileProvider>{children}</LegacyProfileProvider>;
 
     // ─── Pilot bypass (May 2026 blank-screen fix §2) ───
-    // Under BYPASS_SETUP_FOR_PILOT we render <PilotHome />
-    // instead of FarmerDashboardPage. PilotHome has no
+    // Under BYPASS_SETUP_FOR_PILOT we render <Home />
+    // instead of FarmerDashboardPage. Home has no
     // context dependencies, no automatic redirects, and
     // always paints visible UI even when location / farm /
     // crop / weather are missing. The richer dashboard
@@ -637,7 +637,7 @@ function ProtectedRoute({ children, allowSetup }) {
       return (
         <LegacyProfileProvider>
           <HomeErrorBoundary>
-            <PilotHome />
+            <Home />
           </HomeErrorBoundary>
         </LegacyProfileProvider>
       );
@@ -1123,18 +1123,17 @@ export default function App() {
               These keep the spec's role-routing contract
               clean while reusing the existing destination
               pages — no codebase duplication. */}
-          {/* /home — emergency pilot fix (May 2026): always
-              render <PilotHome />, the safe-default Home that
-              never returns null, never redirects, and renders
-              with hard-coded fallbacks for missing location /
-              farm / crop / weather. Replaces RoleHomeRedirect
-              (which infinite-looped for farmer.homePath='/home').
-              The role-redirect helper is still imported for the
-              "/" entry below where staff/admin still benefit
-              from the role-aware landing logic. */}
+          {/* /home — single canonical Home route. Renders the
+              safe-default Home that never returns null, never
+              redirects, and renders with hard-coded fallbacks for
+              missing location / farm / crop / weather. Replaces
+              the old RoleHomeRedirect (which infinite-looped for
+              farmer.homePath='/home'). The role-redirect helper is
+              still imported for the "/" entry below where staff/
+              admin still benefit from the role-aware landing. */}
           <Route path="/home"   element={
             <SafeRouteShell routeName="home" loadingMs={5000}>
-              <PilotHome />
+              <Home />
             </SafeRouteShell>
           } />
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />

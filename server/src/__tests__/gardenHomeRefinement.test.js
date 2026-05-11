@@ -2,7 +2,7 @@
  * gardenHomeRefinement.test.js — pins the May 2026 Garden Home
  * production-refinement contract:
  *
- *   • PilotHome no longer renders the standalone "Add location
+ *   • Home no longer renders the standalone "Add location
  *     for weather tips" duplicate hint paragraph. The weather
  *     card itself shows the location label.
  *   • WeatherHeroActionCard renders the Start check CTA exactly
@@ -28,10 +28,10 @@ const ROOT = resolve(__dirname, '../../../');
 function read(rel) { return readFileSync(resolve(ROOT, rel), 'utf8'); }
 
 describe('Garden Home refinement (May 2026)', () => {
-  it('PilotHome no longer renders the standalone location-hint paragraph', () => {
-    const src = read('src/pages/PilotHome.jsx');
-    // Single greppable signature for the removed duplicate.
-    expect(src).not.toMatch(/data-testid="pilot-home-location-hint"/);
+  it('Home no longer renders the standalone location-hint paragraph', () => {
+    const src = read('src/pages/Home.jsx');
+    // Single greppable signature for the removed duplicate hint.
+    expect(src).not.toMatch(/data-testid="home-location-hint"/);
     // The locationHint style block may still live in the
     // styles table for now, but the JSX render is gone.
     expect(src).not.toMatch(/<p\s+style=\{S\.locationHint\}/);
