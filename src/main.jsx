@@ -57,6 +57,31 @@ try {
   console.log('Farroway restored stable pilot v1');
 } catch { /* swallow */ }
 
+// Alive-UI runtime marker (Active UI Audit pass). Single line
+// that proves the latest deploy is running in this tab. Console
+// filter does NOT suppress this prefix — engineers grep for
+// `[Farroway UI] Alive runtime active` to confirm a stale-cache
+// fix landed. The line includes the bundled UI version + an
+// ISO timestamp so the screenshot the operator captures is
+// self-dating.
+try {
+  /* eslint-disable no-console */
+  // Late-import the version string so the marker stays valid
+  // even if forceUiReset's export shape changes underneath us.
+  // Dynamic require is intentional: keeps this file's import
+  // graph identical to before so build hashing doesn't churn.
+  import('./lib/forceUiReset.js').then((mod) => {
+    try {
+      console.log(
+        '[Farroway UI] Alive runtime active',
+        new Date().toISOString(),
+        mod.FARROWAY_UI_VERSION || 'unknown',
+      );
+    } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
+  /* eslint-enable no-console */
+} catch { /* never throw from startup logger */ }
+
 // ── Pilot bypass: clear loop-state + stamp completion flag ──────
 //
 // When BYPASS_SETUP_FOR_PILOT is true (live pilot fix, May 2026)

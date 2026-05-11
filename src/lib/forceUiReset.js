@@ -62,12 +62,21 @@
 // AdminDashboard + NgoDashboardV1 + ProtectedLayout flipped to
 // the warm beige palette and remaining neon-green hex codes
 // purged from the high-leverage files.
-export const FARROWAY_BUILD_VERSION = 'soft-ochre-platform-2026-05-08-v2';
+export const FARROWAY_BUILD_VERSION = 'alive-ui-runtime-2026-05-11-v1';
 
 // Bump only when client state must be wiped. When this changes the
 // reset routine fires once and reloads the page.
 // Format: YYYY-MM-DD-vN. Always increment N for same-day reissues.
-export const FARROWAY_UI_VERSION = 'soft-ochre-platform-2026-05-08-v2';
+//
+// 2026-05-11-v1 — Alive UI runtime pass. Bumped because:
+//   • The previous May 8 key predated the new CropPlantHero,
+//     LandHealthCard, LiveCameraScanner, beige-shell nav unify,
+//     atmospheric login backdrop, and lifecycle status pill on
+//     Sell. Users with the old key cached locally were carrying
+//     stale UI mode flags that masked the visual upgrades.
+//   • Any user with the old key gets a one-time state wipe
+//     (auth preserved) + reload, surfacing the latest UI.
+export const FARROWAY_UI_VERSION = 'alive-ui-runtime-2026-05-11-v1';
 
 // Monotonically-increasing build sequence — drives the direction
 // guard. Lexicographic compare on the human-readable version
@@ -76,7 +85,7 @@ export const FARROWAY_UI_VERSION = 'soft-ochre-platform-2026-05-08-v2';
 // shipped LATER). The sequence is the only source of truth for
 // "newer vs older". Bump on every release that adds, removes, or
 // changes the migration logic.
-export const FARROWAY_BUILD_SEQUENCE = 48;
+export const FARROWAY_BUILD_SEQUENCE = 49;
 const SEQUENCE_KEY = 'farroway_build_sequence';
 
 // Commit SHA stamped at build time via the VITE_COMMIT_SHA env
