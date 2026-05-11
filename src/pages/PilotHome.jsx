@@ -42,7 +42,10 @@ import { tSafe }                 from '../i18n/tSafe.js';
 import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
 import { FEATURE_DAILY_HABIT }   from '../lib/pilotFlags.js';
-import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
+// WeatherHeroActionCard is no longer rendered on Home — the
+// immersive companion hero (ImmersiveHomeHero) absorbed its role.
+// The file still ships for any deep-link / legacy surface that
+// imports it directly.
 // Locked Soft Ochre / Beige design tokens (May 2026 visual restraint
 // pass + premium-beige-experience pass). Replaces the inline `C`
 // object below — the inline values predate the centralised token
@@ -53,20 +56,16 @@ import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
 // surface (My Farm, Tasks, Progress, Funding, Sell, Scan).
 import { PREMIUM_TOKENS as T }   from '../components/premium/tokens.js';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
-import LandHealthCard            from '../components/home/LandHealthCard.jsx';
-import ChooseCropCard            from '../components/home/ChooseCropCard.jsx';
-// Photographic-style crop/plant hero — replaces the empty top
-// space on Home with a real visual identity for the active
-// crop/garden. SVG fallback today; swaps to real photo as soon
-// as a .webp lands under public/assets/realism/photography/.
-import CropPlantHero             from '../components/home/CropPlantHero.jsx';
-// Live intelligence strip — horizontally scrolling row of
-// compact live-signal chips. Self-suppresses when fewer than
-// two signals qualify; pulls weather/scan/satellite/task data.
-import LiveIntelligenceStrip     from '../components/home/LiveIntelligenceStrip.jsx';
+// Immersive companion v6 — ONE full-bleed photo-backed hero
+// that absorbs the previous CropPlantHero + WeatherHeroActionCard
+// + LandHealthCard. The dashboard-card layout is gone.
+import ImmersiveHomeHero         from '../components/home/ImmersiveHomeHero.jsx';
+import useFarmHealth             from '../hooks/useFarmHealth.js';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
-import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
+// MemoryMomentLine removed from the lean immersive layout (the
+// hero's action band carries the "what next" line). Component
+// stays in the codebase for other surfaces that may use it.
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 import useExperience             from '../hooks/useExperience.js';
 // Single recommendation entry point (spec §2). Wires the
@@ -539,26 +538,10 @@ export default function PilotHome() {
           </div>
         </header>
 
-        {/* ── 1b. Crop / plant photographic hero ────────────────
-             Top-of-Home visual identity. Renders a rich crop or
-             plant scene (photographic-style SVG fallback today;
-             real .webp swaps in automatically when shipped) and
-             captions it with the active farm/garden name + stage.
-             Tap routes to /my-farm or /my-grow for editing. */}
-        <FeatureShell name="crop-plant-hero" silent>
-          <CropPlantHero
-            mode={experienceMode}
-            entity={experienceEntity || local.farm}
-            crop={local.crop && local.crop !== 'crop' ? local.crop : null}
-            weather={weather}
-          />
-        </FeatureShell>
-
-        {/* ── 1c. Farm/Garden selector strip ────────────────────
-             Compact secondary card so users with multiple farms
-             or gardens can flip between them. The hero above
-             already shows the active entity name, so this strip
-             stays minimal — just the count chevron. */}
+        {/* ── 2. Farm switcher (compact strip) ─────────────────
+             Only purpose: switch between multiple farms/gardens
+             and surface the count. Hero below carries the active
+             entity name. */}
         <FeatureShell name="profile-card" silent>
           <FarmGardenProfileCard
             mode={experienceMode}
@@ -567,120 +550,39 @@ export default function PilotHome() {
           />
         </FeatureShell>
 
-        {/* ── 1c. Choose-crop prompt (Farm mode, no crop on file) ─
-             Self-suppresses when a crop is already selected OR
-             when the active experience is Garden. Sits compact so
-             it never pushes the weather hero below the fold. */}
-        <FeatureShell name="choose-crop-card" silent>
-          <ChooseCropCard
+        {/* ── 3. Immersive companion hero ──────────────────────
+             ONE full-bleed photo-backed panel that combines what
+             used to be three cards (CropPlantHero, weather hero,
+             land-health). Hero photo resolves from the real
+             realism asset library based on mode + crop + weather
+             + region + hour. Trust gate hides the temperature
+             when no weather-api source — replaced by the
+             "Use my location" prompt with a single CTA. Daily
+             insight + primary action live in the bottom band. */}
+        <FeatureShell name="immersive-home-hero" silent>
+          <_ImmersiveBound
             mode={experienceMode}
-            farm={experienceEntity || local.farm}
-          />
-        </FeatureShell>
-
-        {/* ── 1d. Live intelligence strip ──────────────────────
-             Horizontally scrolling row of compact live signals
-             (weather shift / disease watch / moisture / growth
-             momentum / timing / land health). Self-suppresses
-             when fewer than two signals qualify so we never paint
-             a single lonely chip. */}
-        <FeatureShell name="live-intelligence-strip" silent>
-          <LiveIntelligenceStrip
-            mode={experienceMode}
+            entity={experienceEntity || local.farm}
+            crop={local.crop && local.crop !== 'crop' ? local.crop : null}
+            weather={weather}
             location={local.locationObj}
-            weather={weather}
-            recentScans={(() => {
-              try {
-                const raw = _safeJsonGet('farroway_scan_history_v1');
-                return Array.isArray(raw) ? raw : [];
-              } catch { return []; }
-            })()}
-            tasks={ctxIntel.todayTask ? [ctxIntel.todayTask] : []}
-          />
-        </FeatureShell>
-
-        {/* ── 2. Weather Hero Action Card ──────────────────────
-             Premium realistic hero — temperature, condition, rain,
-             wind, location PLUS one short insight + one
-             recommended action + a single CTA. Drives the next
-             action when the day's task isn't done; switches to a
-             positive "on track" surface once it is. Visuals reuse
-             the global .weather-hero CSS animations (rain drops,
-             sun glow, wind streaks) — pure CSS, prefers-reduced-
-             motion-respecting. */}
-        {weatherLoading && (
-          <div style={S.weatherLoading} aria-busy="true" aria-label="Loading weather">
-            <span>Checking weather…</span>
-          </div>
-        )}
-
-        <FeatureShell name="weather-hero-action" silent>
-          <WeatherHeroActionCard
-            weather={weather}
-            mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'}
             taskDone={taskDone}
+            primaryGuidance={primaryGuidance}
             onUseMyLocation={handleUseMyLocation}
-            onCta={taskDone
+            onPrimaryAction={taskDone
               ? () => { try { navigate('/scan'); } catch { /* swallow */ } }
-              // Wire-up audit (May 2026 §6) — when the daily task
-              // is OPEN, the weather CTA navigates to /tasks so
-              // the user can actually work the task. Marking it
-              // done is reserved for the explicit "Mark done"
-              // button on the Today's task card below — clicking
-              // a hero CTA should never silently complete work
-              // the user hasn't actually performed yet.
-              : () => { try { navigate('/tasks'); } catch { /* swallow */ } }}
+              : (primaryGuidance && primaryGuidance.actionRoute
+                  ? () => { try { navigate(primaryGuidance.actionRoute); } catch { /* swallow */ } }
+                  : () => { try { navigate('/tasks'); } catch { /* swallow */ } })}
           />
         </FeatureShell>
 
-        {/* ── 2b. Satellite-derived land health (Farm mode only) ─
-             Compact card that calls /api/v2/satellite/farm-health
-             when coordinates are available. Garden mode skips this
-             — backyard pots don't benefit from NDVI signals, and
-             surfacing a satellite card on a single tomato plant
-             would feel performative. */}
-        {ctxIntel.mode !== 'garden' && (
-          <FeatureShell name="land-health-card" silent>
-            <LandHealthCard
-              location={local.locationObj}
-              onAction={() => { try { navigate('/scan'); } catch { /* swallow */ } }}
-            />
-          </FeatureShell>
-        )}
-
-        {/* May 2026 Garden Home refinement (spec §1) — the
-            standalone "Add location for weather tips" hint
-            paragraph that used to live here is REMOVED. The
-            weather card itself shows the location label in
-            its header, so this surface duplicated the same
-            message + tap target one element below. The
-            location-missing state is still discoverable: the
-            weather card reads "Your area" when no coords are
-            set, and tapping the weather card routes to the
-            tasks/setup flow where the user can add location. */}
-
-        {/* ── 3. Today's task / Done state ─────────────────────
-             When the task is open: shows the action surface where
-             the user marks done. When done: replaced by a single
-             positive line ("All set for now") + one optional
-             secondary action (Scan crop / Scan plant). The
-             WeatherHeroActionCard above has already echoed the
-             "on track" message + offered the same scan CTA, so
-             this card stays calm and complementary. */}
-        {/* Memory moment (refinement spec §4 — emotional continuity).
-            Shows ONE small contextual line drawn from existing
-            signals (recent scan, recent weather, care streak,
-            last-task recency). Self-suppresses when no signal
-            qualifies, so the page stays calm by default. */}
-        <FeatureShell name="memory-moment" silent>
-          <MemoryMomentLine ctx={memoryCtx} />
-        </FeatureShell>
-
-        {/* Mockup-aligned (May 2026) — when the task is OPEN we
-            still surface a compact "Today's task" card so the
-            user can mark done in-place; when DONE we collapse
-            to the OnTrackRowCard (compact tappable row that
-            opens /progress). */}
+        {/* ── 4. Daily status insight (Today's task or On-track) ─
+             Below the immersive hero — compact, action-oriented.
+             When the task is OPEN: the explicit Today's task
+             card so the farmer can mark done in-place. When
+             DONE: collapses to OnTrackRowCard (compact tappable
+             row that opens /progress). */}
         {!taskDone && (
           <section
             style={S.card}
@@ -700,68 +602,49 @@ export default function PilotHome() {
             </button>
           </section>
         )}
-
         {taskDone && (
           <FeatureShell name="on-track-row" silent>
             <OnTrackRowCard testId="pilot-home-on-track" />
           </FeatureShell>
         )}
 
-        {/* Single Scan secondary action — full-width row card
-            that mirrors the FarmGardenProfileCard / OnTrackRowCard
-            visual family. Mode-aware copy ("Scan crop" vs
-            "Scan plant"). Always visible on Home (mockup §10). */}
+        {/* ── 5. Quick scan action ─────────────────────────────
+             Single row card — the only quick action that stays on
+             Home. Mode-aware copy ("Scan crop" vs "Scan plant"). */}
         <FeatureShell name="scan-row" silent>
           <ScanRowCard mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'} />
         </FeatureShell>
 
-        {/* ── 4. Unified primary-guidance tile ─────────────────
-             Replaces the harvest-only sell prompt with whichever
-             tile the orchestrator picks (sell, funding, buyer,
-             scan follow-up, soil follow-up, …). Suppresses itself
-             when the chosen route duplicates a surface already
-             rendered above (weather hero CTA, today's task,
-             ScanRowCard) so Home never doubles up. */}
-        {(() => {
-          const above = new Set([
-            taskDone ? '/scan' : '/tasks', // weather hero CTA target
-            '/scan',                       // ScanRowCard target
-          ]);
-          const route = primaryGuidance && primaryGuidance.actionRoute;
-          const showSellLegacy = !!ctxIntel.sellPrompt && (!route || above.has(route));
-          if (showSellLegacy) {
-            return (
-              <Link
-                to="/sell"
-                style={S.ctxSellTile}
-                className="ff-tap"
-                data-testid="pilot-home-ctx-sell-prompt"
-              >
-                {ctxIntel.sellPrompt}
-              </Link>
-            );
-          }
-          if (!route || above.has(route)) return null;
-          // The new getPrimaryGuidance returns the title as an i18n
-          // key string + already-mode-adapted wording (garden mode
-          // ran through softenForGarden inside the adapter). The
-          // tSafe resolver turns the key into the localised label.
-          const titleText = tSafe(primaryGuidance.title, primaryGuidance.title);
-          return (
-            <Link
-              to={route}
-              style={S.ctxSellTile}
-              className="ff-tap"
-              data-testid="pilot-home-primary-guidance"
-              data-route={route}
-            >
-              {titleText}
-            </Link>
-          );
-        })()}
-
       </div>
     </div>
+  );
+}
+
+// ─── Internal binder ───────────────────────────────────────────
+// Wraps the ImmersiveHomeHero with a useFarmHealth call so the
+// land-health pill appears inline when applicable. Keeping this
+// inside PilotHome.jsx avoids hoisting hook lifecycle out of the
+// page-level component AND prevents a second satellite call from
+// firing elsewhere — there's now a single subscriber.
+function _ImmersiveBound({
+  mode, entity, crop, weather, location, taskDone, primaryGuidance,
+  onUseMyLocation, onPrimaryAction,
+}) {
+  const isFarm = String(mode || 'farm').toLowerCase() !== 'garden';
+  const { health } = useFarmHealth(isFarm ? location : null);
+  return (
+    <ImmersiveHomeHero
+      mode={mode}
+      entity={entity}
+      crop={crop}
+      weather={weather}
+      location={location}
+      landHealth={health}
+      taskDone={taskDone}
+      primaryGuidance={primaryGuidance}
+      onUseMyLocation={onUseMyLocation}
+      onPrimaryAction={onPrimaryAction}
+    />
   );
 }
 
