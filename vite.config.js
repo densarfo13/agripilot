@@ -33,21 +33,32 @@ export default defineConfig({
         // the per-route lazy chunks the existing React.lazy()
         // splits already produce.
         manualChunks(id) {
+          // Normalise Windows backslashes so the path patterns
+          // below match consistently across platforms. Without
+          // this, `id.includes('/react/')` is FALSE on Windows
+          // (the ID arrives as `node_modules\react\index.js`)
+          // and every React file falls through to the `vendor`
+          // catchall. That creates a circular chunk graph where
+          // `vendor` both contains React AND is imported by
+          // `vendor-react-dom`, and at runtime the browser
+          // resolves `PureComponent` off `undefined` — exactly
+          // the prod regression observed at farroway.app.
+          const p = id.replace(/\\/g, '/');
           // Application-code splits — peel heavy first-party modules
           // off the main app shell so Home renders before the giant
           // dictionaries arrive.
-          if (id.includes('node_modules') === false) {
+          if (p.includes('node_modules') === false) {
             // i18n translation modules. translations.js alone is
             // ~1.8 MB of source (130+ keys × 6 locales) and pulls
             // 30+ overlay files. Loading these in parallel with
             // the app shell is the biggest single perf win.
-            if (id.includes('/src/i18n/translations.js'))     return 'i18n-core';
-            if (id.includes('/src/i18n/jsonLocaleLoader'))    return 'i18n-overlays';
-            if (id.includes('/src/i18n/') && id.endsWith('Translations.js'))
+            if (p.includes('/src/i18n/translations.js'))     return 'i18n-core';
+            if (p.includes('/src/i18n/jsonLocaleLoader'))    return 'i18n-overlays';
+            if (p.includes('/src/i18n/') && p.endsWith('Translations.js'))
                                                               return 'i18n-overlays';
             // Per-language single-file packs (hi.js / tw.js).
-            if (id.includes('/src/i18n/hi.js'))               return 'i18n-pack-hi';
-            if (id.includes('/src/i18n/tw.js'))               return 'i18n-pack-tw';
+            if (p.includes('/src/i18n/hi.js'))               return 'i18n-pack-hi';
+            if (p.includes('/src/i18n/tw.js'))               return 'i18n-pack-tw';
             // Brand mark data URL (~76 KB inline base64).
             // Eagerly imported by the splash so it can't move
             // out of the main bundle without changing the splash;
@@ -62,21 +73,26 @@ export default defineConfig({
           // both react and react-dom pull in are co-located with
           // react-dom to break the circular `vendor → vendor-react-dom
           // → vendor` warning that was visible on prior builds.
-          if (id.includes('recharts'))                       return 'vendor-recharts';
-          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-leaflet';
-          if (id.includes('react-router'))                   return 'vendor-router';
+          if (p.includes('/recharts/'))                      return 'vendor-recharts';
+          if (p.includes('/leaflet/') || p.includes('/react-leaflet/'))
+                                                              return 'vendor-leaflet';
+          if (p.includes('/react-router'))                   return 'vendor-router';
           // React-shared internals → bundle WITH react-dom so the
           // top-level chunk graph stays acyclic.
-          if (id.includes('react-dom')
-              || id.includes('/scheduler/')
-              || id.includes('/react-is/')
-              || id.includes('react/jsx-runtime')
-              || id.includes('react/jsx-dev-runtime'))       return 'vendor-react-dom';
-          if (id.includes('/react/') || id.endsWith('/react'))
-                                                              return 'vendor-react';
-          if (id.includes('axios'))                          return 'vendor-axios';
-          if (id.includes('lucide-react'))                   return 'vendor-icons';
-          if (id.includes('date-fns') || id.includes('dayjs'))
+          if (p.includes('/react-dom/')
+              || p.includes('/scheduler/')
+              || p.includes('/react-is/')
+              || p.includes('/react/jsx-runtime')
+              || p.includes('/react/jsx-dev-runtime'))       return 'vendor-react-dom';
+          // React itself — match `node_modules/react/...` and
+          // the bare `node_modules/react` entry. The leading
+          // slash anchors against `node_modules/` so we don't
+          // accidentally catch e.g. `node_modules/preact/`.
+          if (p.includes('/node_modules/react/')
+              || p.endsWith('/node_modules/react'))           return 'vendor-react';
+          if (p.includes('/axios/'))                         return 'vendor-axios';
+          if (p.includes('/lucide-react/'))                  return 'vendor-icons';
+          if (p.includes('/date-fns/') || p.includes('/dayjs/'))
                                                               return 'vendor-dates';
           // Everything else under node_modules — small libs
           // and shared utilities.
