@@ -93,6 +93,52 @@ function _formatTime(ts) {
   } catch { return ''; }
 }
 
+function _ClockGlyph() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" fill="none" />
+      <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
+// Derive a calm best-time window from the weather snapshot. Rules
+// kept deliberately tight — we only return a label when we have
+// enough signal to be useful; otherwise null (the renderer hides
+// the pill). This is what surfaces the trust-loop's "when to do it"
+// answer without inventing scientific precision.
+//   • Rain in the forecast → "Before rain"
+//   • Hot midday (>30°)    → "Cooler hours" (early morning / evening)
+//   • Before 11:00 local   → "This morning"
+//   • 11:00–15:00 local    → "Midday window"
+//   • 15:00–19:00 local    → "This afternoon"
+//   • ≥19:00               → "This evening"
+//   • No data              → null (renderer omits the chip)
+function _deriveBestTime(w) {
+  try {
+    const safe = (w && typeof w === 'object') ? w : {};
+    // Rain bias — if there's a meaningful rain chance, suggest acting
+    // before it arrives. We treat ≥40% as the threshold the way most
+    // farmers think about a rainy-day plan.
+    const rainChance = Number(safe.rainChance ?? safe.precipChance ?? safe.pop);
+    if (Number.isFinite(rainChance) && rainChance >= 40) {
+      return tSafe('hero.bestTime.beforeRain', 'Before rain');
+    }
+    // Hot midday bias — when it's already very warm, the best window
+    // is outside the heat.
+    const temp = Number(safe.temp);
+    const hour = (() => { try { return new Date().getHours(); } catch { return null; } })();
+    if (Number.isFinite(temp) && temp >= 30 && Number.isFinite(hour) && hour >= 10 && hour < 16) {
+      return tSafe('hero.bestTime.coolerHours', 'Cooler hours');
+    }
+    if (!Number.isFinite(hour)) return null;
+    if (hour < 11) return tSafe('hero.bestTime.morning',   'This morning');
+    if (hour < 15) return tSafe('hero.bestTime.midday',    'Midday window');
+    if (hour < 19) return tSafe('hero.bestTime.afternoon', 'This afternoon');
+    return tSafe('hero.bestTime.evening', 'This evening');
+  } catch { return null; }
+}
+
 export default function ImmersiveHomeHero({
   mode = 'farm',
   entity = null,
@@ -194,12 +240,17 @@ export default function ImmersiveHomeHero({
   // ─── Action band copy ─────────────────────────────────────────
   // Prefer the orchestrator's primary guidance (already mode-
   // adapted + cooldown-gated). Falls back to a calm default.
+  // Also derives a `bestTime` window + `estimatedMinutes` so the
+  // hero band answers the spec's daily-trust-loop questions:
+  //   what to do, why it matters, WHEN to do it, HOW LONG it takes.
   const action = (() => {
     if (taskDone) {
       return {
         title: tSafe('hero.onTrack',   "You’re on track today"),
         line:  tSafe('hero.checkLater', 'Check again tomorrow morning.'),
         cta:   tSafe('hero.scanPlant',  isGarden ? 'Scan plant' : 'Scan crop'),
+        bestTime: null,
+        estimatedMinutes: null,
       };
     }
     const g = primaryGuidance && typeof primaryGuidance === 'object' ? primaryGuidance : null;
@@ -208,6 +259,10 @@ export default function ImmersiveHomeHero({
         title: tSafe(g.title, g.title),
         line:  tSafe(g.message || g.reason || '', g.message || g.reason || ''),
         cta:   tSafe(g.actionLabel || 'Start check', g.actionLabel || 'Start check'),
+        bestTime: _deriveBestTime(w),
+        estimatedMinutes: Number.isFinite(Number(g.estimatedMinutes))
+          ? Number(g.estimatedMinutes)
+          : null,
       };
     }
     return {
@@ -216,6 +271,8 @@ export default function ImmersiveHomeHero({
         ? tSafe('hero.inspectLeavesGarden', 'Inspect leaves and soil in your pots.')
         : tSafe('hero.inspectLeaves', 'Check crop condition and soil moisture today.'),
       cta:   tSafe('actions.startCheck', 'Start check'),
+      bestTime: _deriveBestTime(w),
+      estimatedMinutes: isGarden ? 3 : 5,
     };
   })();
 
@@ -327,6 +384,25 @@ export default function ImmersiveHomeHero({
         <span style={S.farmEyebrow}>{farmName}</span>
         <h2 style={S.actionTitle}>{action.title}</h2>
         <p style={S.actionLine}>{action.line}</p>
+        {(action.bestTime || (action.estimatedMinutes != null)) && (
+          <div style={S.metaRow} data-testid={`${testId}-meta`}>
+            {action.bestTime && (
+              <span style={S.metaChip} data-testid={`${testId}-best-time`}>
+                <_ClockGlyph />
+                <span style={{ marginLeft: 5 }}>{action.bestTime}</span>
+              </span>
+            )}
+            {action.estimatedMinutes != null && (
+              <span style={S.metaChip} data-testid={`${testId}-est-minutes`}>
+                <span>
+                  {action.estimatedMinutes}
+                  {' '}
+                  {tSafe('hero.minutesSuffix', 'min')}
+                </span>
+              </span>
+            )}
+          </div>
+        )}
         <div style={S.actionRow}>
           {landPill && (
             <span
@@ -549,6 +625,27 @@ const S = {
     fontWeight: 500,
     color: 'rgba(255,255,255,0.86)',
     lineHeight: 1.4,
+  },
+  metaRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '0.4rem',
+    marginTop: '0.35rem',
+  },
+  metaChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.22rem 0.55rem',
+    fontSize: '0.74rem',
+    fontWeight: 700,
+    color: 'rgba(234,242,255,0.88)',
+    background: 'rgba(8,17,26,0.42)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    letterSpacing: '0.005em',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
   },
   actionRow: {
     display: 'flex',
