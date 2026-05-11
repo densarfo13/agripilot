@@ -275,6 +275,12 @@ export default function BottomTabNav() {
 }
 
 const S = {
+  // Unified app shell (May 2026 alive-UI pass) — the nav was
+  // dark navy on a beige page, which read as a "floating
+  // disconnected" surface. Flipped to a warm cream that sits on
+  // the same Soft Ochre palette as the page background. A subtle
+  // top gradient softens the transition from cards above, and
+  // the ochre active state stays as the brand accent.
   nav: {
     position: 'fixed',
     bottom: 0,
@@ -283,10 +289,11 @@ const S = {
     display: 'flex',
     alignItems: 'stretch',
     justifyContent: 'space-around',
-    background: 'rgba(8,20,35,0.92)',
+    background: 'linear-gradient(180deg, rgba(246,241,231,0.96) 0%, rgba(239,231,213,0.98) 100%)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    borderTop: '1px solid rgba(255,255,255,0.04)',
+    borderTop: '1px solid rgba(31,41,51,0.08)',
+    boxShadow: '0 -4px 16px rgba(31,41,51,0.06)',
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     zIndex: 100,
     minHeight: '62px',
@@ -305,6 +312,7 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
     minHeight: '58px',
     position: 'relative',
+    color: '#1F2933',
   },
   activeBar: {
     position: 'absolute',
@@ -318,17 +326,19 @@ const S = {
   icon: {
     fontSize: '1.375rem',
     lineHeight: 1,
-    opacity: 0.4,
+    opacity: 0.55,
+    color: '#1F2933',
     transition: 'opacity 0.2s ease, transform 0.15s ease',
   },
   iconActive: {
     opacity: 1,
+    color: '#C8944D',
     transform: 'scale(1.08)',
   },
   label: {
     fontSize: '0.625rem',
     fontWeight: 600,
-    color: '#6F8299',
+    color: '#5F6B78',
     letterSpacing: '0.02em',
     transition: 'color 0.2s ease',
   },

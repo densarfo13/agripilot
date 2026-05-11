@@ -31,6 +31,7 @@
 import React, { useEffect, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
+import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
 
 // Step keys + English fallbacks. Total cycle ≈ 2.4 seconds at the
 // default cadence below.
@@ -110,7 +111,7 @@ export default function ScanAnalyzing({
             decoding="async"
           />
         ) : (
-          <div style={S.placeholder} aria-hidden="true">🌿</div>
+          <div style={S.placeholder} aria-hidden="true"><LeafGlyph size={36} /></div>
         )}
         {/* Scan line — CSS animation defined in index.css
             (.ff-scan-line). prefers-reduced-motion disables it. */}

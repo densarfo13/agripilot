@@ -41,6 +41,16 @@ import usePlantIdentity from '../../hooks/usePlantIdentity.js';
 import usePlantTimeline from '../../hooks/usePlantTimeline.js';
 import { pickMessage } from '../../lib/plant/reassuranceEngine.js';
 
+// Alive-UI pass §1 — inline warning glyph instead of ⚠ emoji.
+function _WarnGlyph({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 4l9 16H3z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
+      <path d="M12 11v4M12 17.5v.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 // ─── Constants ─────────────────────────────────────────────────
 
 // English fallbacks live here. tSafe(key, fallback) returns the
@@ -308,7 +318,7 @@ export default function MorningBriefingCard({
         {/* Optional warning chip — small, calm, never alarming */}
         {warning && (
           <p style={S.warning} data-testid="morning-briefing-warning">
-            <span style={S.warnIcon} aria-hidden="true">⚠</span>
+            <span style={S.warnIcon} aria-hidden="true"><_WarnGlyph size={14} /></span>
             <span>{warning}</span>
           </p>
         )}

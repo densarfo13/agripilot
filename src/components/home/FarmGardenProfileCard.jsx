@@ -145,7 +145,17 @@ export default function FarmGardenProfileCard({
       : tSafe('home.profile.nFarms',   `${count} farms`).replace(/\{count\}/g, String(count));
   })();
 
-  const to = isGarden ? '/my-grow' : '/my-farm';
+  // Alive-UI pass §9 — when the user has no entity yet, route
+  // directly to the Add flow instead of bouncing them through the
+  // listing page. Cuts the "tap → see empty list → tap add" path
+  // down to one tap. We sniff the same hasAnyEntity signal the
+  // title resolver uses so the routing matches the visible
+  // "No farm added yet" / "No plant added yet" prompt.
+  const hasAnyEntity = !!(entity && typeof entity === 'object'
+    && (entity.name || entity.farmName || entity.nickname || entity.plantName || entity.id));
+  const to = hasAnyEntity
+    ? (isGarden ? '/my-grow' : '/my-farm')
+    : (isGarden ? '/farm/new?intent=garden' : '/farm/new?intent=farm');
 
   return (
     <Link
