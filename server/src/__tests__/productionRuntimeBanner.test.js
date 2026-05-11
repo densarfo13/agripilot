@@ -103,8 +103,16 @@ describe('productionRuntime — Railway ops banner', () => {
   it('checkOptional surfaces missing providers with feature labels', async () => {
     const mod = await import(MODULE);
     delete process.env.WEATHER_API_KEY;
+    delete process.env.VITE_WEATHER_API_KEY;
     delete process.env.MAPS_API_KEY;
+    delete process.env.VITE_MAPS_API_KEY;
+    delete process.env.MAPBOX_TOKEN;
+    delete process.env.VITE_MAPBOX_TOKEN;
     delete process.env.SENTRY_DSN;
+    // Test isolation: server/.env may carry VITE_SENTRY_DSN for
+    // a connected Sentry project; both aliases must be cleared
+    // for the "sentry is missing" assertion below to be honest.
+    delete process.env.VITE_SENTRY_DSN;
 
     const missing = mod.checkOptional();
     const names = missing.map((m) => m.name);
