@@ -55,6 +55,11 @@ import { PREMIUM_TOKENS as T }   from '../components/premium/tokens.js';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
 import LandHealthCard            from '../components/home/LandHealthCard.jsx';
 import ChooseCropCard            from '../components/home/ChooseCropCard.jsx';
+// Photographic-style crop/plant hero — replaces the empty top
+// space on Home with a real visual identity for the active
+// crop/garden. SVG fallback today; swaps to real photo as soon
+// as a .webp lands under public/assets/realism/photography/.
+import CropPlantHero             from '../components/home/CropPlantHero.jsx';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
@@ -530,12 +535,25 @@ export default function PilotHome() {
           </div>
         </header>
 
-        {/* ── 1b. Farm/Garden profile selector ─────────────────
-             Compact dark-glass card — active grow name + count
-             chevron. Tapping opens /my-farm or /my-grow. Replaces
-             the old "Tip for today" briefing card; the
-             WeatherHeroActionCard below now carries the daily
-             insight + recommendation surface. */}
+        {/* ── 1b. Crop / plant photographic hero ────────────────
+             Top-of-Home visual identity. Renders a rich crop or
+             plant scene (photographic-style SVG fallback today;
+             real .webp swaps in automatically when shipped) and
+             captions it with the active farm/garden name + stage.
+             Tap routes to /my-farm or /my-grow for editing. */}
+        <FeatureShell name="crop-plant-hero" silent>
+          <CropPlantHero
+            mode={experienceMode}
+            entity={experienceEntity || local.farm}
+            crop={local.crop && local.crop !== 'crop' ? local.crop : null}
+          />
+        </FeatureShell>
+
+        {/* ── 1c. Farm/Garden selector strip ────────────────────
+             Compact secondary card so users with multiple farms
+             or gardens can flip between them. The hero above
+             already shows the active entity name, so this strip
+             stays minimal — just the count chevron. */}
         <FeatureShell name="profile-card" silent>
           <FarmGardenProfileCard
             mode={experienceMode}
