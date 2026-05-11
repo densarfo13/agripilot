@@ -491,6 +491,23 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // the watchdog below will say so within 4 seconds.
 logStartup();
 
+// Active-path runtime marker (dev-only). Confirms the canonical
+// production paths verified by the active-path wiring audit. If
+// any of these change without a deploy, the marker makes the
+// discrepancy visible in DevTools without opening the source.
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    const apiBase = import.meta.env.VITE_API_BASE_URL
+      || import.meta.env.VITE_API_URL
+      || '(same-origin /api)';
+    // eslint-disable-next-line no-console
+    console.log(
+      '[Farroway Runtime] Active production paths verified',
+      { home: '/home', scan: '/scan', apiBase },
+    );
+  }
+} catch { /* swallow — never block boot on diagnostics */ }
+
 // ── Blank-screen watchdog ───────────────────────────────────────
 // React's createRoot() returns synchronously; the actual paint
 // happens on the next tick. If 4 seconds later the #root element

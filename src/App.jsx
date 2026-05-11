@@ -341,7 +341,10 @@ const FastFlow = lazy(() => import('./pages/onboarding/FastFlow.jsx'));
 // FastOnboardingRoute remain mounted for any deep links that
 // were previously documented.
 const MinimalOnboarding = lazy(() => import('./pages/onboarding/MinimalOnboarding.jsx'));
-const CameraScanPage = lazy(() => import('./pages/CameraScanPage.jsx'));
+// CameraScanPage was the legacy /scan-crop surface — its file header
+// is marked DEPRECATED and the only route that used it (line 1691)
+// now redirects to /scan (canonical ScanPage). The unused import is
+// removed so the bundler can tree-shake the deprecated page out.
 const LandCheckPage = lazy(() => import('./pages/LandCheckPage.jsx'));
 const VerifyOtp = lazy(() => import('./pages/VerifyOtp.jsx'));
 // ProtectedLayout is NOT lazy — it's the auth/profile gate and must stay mounted
@@ -1682,12 +1685,13 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/farmer-settings" element={<FarmerSettingsPage />} />
             {/* App Store launch audit: /scan-crop → /scan canonical
-                redirect per spec §8. The legacy CameraScanPage
-                stays in the bundle for direct callers but the
-                primary route forwards to the v2 ScanPage so all
-                deep links + the existing voice-assistant nav
-                ("scan crop" command) land on the canonical
-                surface. */}
+                redirect per spec §8. The legacy CameraScanPage is
+                marked DEPRECATED in its own file header and the
+                import is no longer wired (active-path audit cleanup),
+                so the only path that ever rendered it is this
+                Navigate. All deep links + the existing voice-assistant
+                nav ("scan crop" command) land on the canonical /scan
+                surface (ScanPage). */}
             <Route path="/scan-crop" element={<Navigate to="/scan" replace />} />
             <Route path="/land-check" element={<LandCheckPage />} />
             <Route path="/crop-recommendations" element={<CropRecommendations />} />

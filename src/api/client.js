@@ -11,10 +11,12 @@ const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNati
 
 // On native (Android/iOS), API calls must go to the server's full URL.
 // On web, relative '/api' works via Vite proxy or Express production serving.
-// VITE_API_URL can be set at build time for native or custom deployments.
+// VITE_API_BASE_URL is the canonical env name (see src/config/env.js);
+// VITE_API_URL is the legacy alias still honoured for backward compat.
+const _API_BASE_ENV = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
 const API_BASE = isNative
-  ? (import.meta.env.VITE_API_URL || 'https://farroway.app/api')
-  : (import.meta.env.VITE_API_URL || '/api');
+  ? (_API_BASE_ENV || 'https://farroway.app/api')
+  : (_API_BASE_ENV || '/api');
 
 const api = axios.create({
   baseURL: API_BASE,

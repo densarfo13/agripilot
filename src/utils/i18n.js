@@ -12,12 +12,16 @@
 // init below. Top-level ESM import (Vite is ESM-only).
 import { detectInitialLanguage } from './autoDetectLanguage.js';
 
-// Detect Capacitor native platform for correct API base URL
+// Detect Capacitor native platform for correct API base URL.
+// VITE_API_BASE_URL is the canonical env name (see src/config/env.js);
+// VITE_API_URL stays honoured for backward compat with older deploys.
 const cap = typeof window !== 'undefined' && window.Capacitor;
 const isNative = cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.isNativePlatform);
+const _API_BASE_ENV = (typeof import.meta !== 'undefined'
+  && (import.meta.env?.VITE_API_BASE_URL || import.meta.env?.VITE_API_URL));
 const API_BASE = isNative
-  ? (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || 'https://farroway.app/api')
-  : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL || '/api');
+  ? (_API_BASE_ENV || 'https://farroway.app/api')
+  : (_API_BASE_ENV || '/api');
 
 // Global Multilingual System §1 — initial language picked via
 // the autoDetectLanguage orchestrator (priority: stored pref →
