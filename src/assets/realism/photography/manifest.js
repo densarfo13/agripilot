@@ -88,8 +88,28 @@ export const PHOTO_SLOTS = Object.freeze({
 export const PHOTO_SLOT_LIST = Object.freeze(Object.values(PHOTO_SLOTS));
 
 /**
- * Canonical file path for a slot. Caller appends `.webp` (the
- * preferred format — modern browsers + ~30% smaller than JPEG).
+ * Slots that actually ship a .webp file under
+ * /assets/realism/photography/. Add a slot name here once the
+ * production photo lands at the canonical path — the resolver
+ * will start serving it automatically.
+ *
+ * Until then the resolver returns '' and <RealisticPhoto>
+ * renders the calm placeholder immediately, without firing a
+ * 404 that pollutes the production console.
+ */
+export const AVAILABLE_SLOTS = Object.freeze(new Set([
+  // Production photo shoot pending — list slots here as the
+  // real .webp files are committed under public/ (or wherever
+  // the asset pipeline serves /assets/realism/photography/).
+]));
+
+/**
+ * Canonical file path for a slot. Returns '' for any slot that
+ * has not been shipped yet — callers should treat '' as "render
+ * the fallback placeholder" rather than firing a network request.
+ *
+ * Caller appends `.webp` (the preferred format — modern browsers
+ * + ~30% smaller than JPEG).
  *
  * @param {string} slot
  * @returns {string}
@@ -99,8 +119,15 @@ export function slotPath(slot) {
   // Slot names are kebab-case; reject anything else so a typo
   // can't escape the filesystem boundary.
   const safe = slot.match(/^[a-z0-9-]+$/) ? slot : '';
-  return safe ? `/assets/realism/photography/${safe}.webp` : '';
+  if (!safe) return '';
+  // Suppress the path when the asset isn't shipped yet. This
+  // keeps the production console clean of 404s for slots that
+  // are catalogued but waiting on a real photo shoot. As soon
+  // as a slot is added to AVAILABLE_SLOTS the resolver returns
+  // its path and <RealisticPhoto> renders the image normally.
+  if (!AVAILABLE_SLOTS.has(safe)) return '';
+  return `/assets/realism/photography/${safe}.webp`;
 }
 
-const _module = { PHOTO_SLOTS, PHOTO_SLOT_LIST, slotPath };
+const _module = { PHOTO_SLOTS, PHOTO_SLOT_LIST, AVAILABLE_SLOTS, slotPath };
 export default _module;

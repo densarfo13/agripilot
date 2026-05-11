@@ -55,7 +55,11 @@ const DENY_PATTERNS = [
   'tabs:outgoing.message.ready',               // Chrome tab internal channel (dotted)
   'tabs:outgoing_message_ready',               // Chrome tab internal channel (underscore variant)
   'message channel closed',                    // 'A listener indicated…message channel closed' (extension noise)
-  'cornhusk/shared-service',                   // third-party SDK noise
+  'cornhusk/shared-service',                   // third-party SDK noise (slash variant)
+  'cornhusk,',                                 // third-party SDK noise (comma variant — actual prod format)
+  'cornhusk ',                                 // third-party SDK noise (space variant — captures other framings)
+  'shared-service, error',                     // cornhusk SDK error tag, in case 'cornhusk' is stripped
+  'No Listener: tabs:',                        // Chrome extension messaging leak (wrapped as Uncaught Error)
   '[webpack]',                                 // webpack dev-server leak
   '[HMR]',                                     // Vite / webpack hot-module replacement
   'Download the React DevTools',               // React suggestion (production build)
@@ -208,11 +212,36 @@ export function isConsoleFilterActive() {
 function _isExtensionError(ev) {
   try {
     const EXTENSION_PREFIXES = ['chrome-extension://', 'moz-extension://', 'safari-extension://'];
+    // Known extension-noise message patterns. Some extensions
+    // inject into the page's main world; their errors then carry
+    // a vendor.js / VM* filename instead of chrome-extension://.
+    // Matching on the message content is the only reliable
+    // signal in that case.
+    const EXTENSION_MESSAGES = [
+      'No Listener: tabs:',                   // generic Chrome tab-messaging rejection
+      'tabs:outgoing.message.ready',
+      'tabs:incoming.message.ready',
+      'tabs:outgoing_message_ready',
+      'tabs:incoming_message_ready',
+      'message channel closed',
+      'cornhusk',                             // cornhusk SDK noise
+    ];
     // ErrorEvent has .filename; PromiseRejectionEvent has .reason with .stack
     const filename = ev?.filename || '';
     const stack = ev?.error?.stack || ev?.reason?.stack || '';
     for (const prefix of EXTENSION_PREFIXES) {
       if (filename.includes(prefix) || stack.includes(prefix)) return true;
+    }
+    // Message-based fallback for main-world-injected extensions.
+    const message = String(
+      ev?.error?.message
+      || ev?.reason?.message
+      || ev?.reason
+      || ev?.message
+      || ''
+    );
+    for (const pattern of EXTENSION_MESSAGES) {
+      if (message.includes(pattern)) return true;
     }
   } catch { /* never throw from filter */ }
   return false;
@@ -241,6 +270,10 @@ export function installGlobalErrorFilter() {
     window.addEventListener('error', (ev) => {
       try {
         if (_isExtensionError(ev)) {
+          // preventDefault stops the browser from logging
+          // the extension error to the console; the propagation
+          // stop keeps it out of analytics / Sentry.
+          ev.preventDefault?.();
           ev.stopImmediatePropagation();
         }
       } catch { /* never throw from filter */ }
@@ -249,6 +282,11 @@ export function installGlobalErrorFilter() {
     window.addEventListener('unhandledrejection', (ev) => {
       try {
         if (_isExtensionError(ev)) {
+          // preventDefault on unhandledrejection suppresses
+          // the browser's "Uncaught (in promise) Error: ..."
+          // console line — the extension's noise never reaches
+          // the operator.
+          ev.preventDefault?.();
           ev.stopImmediatePropagation();
         }
       } catch { /* never throw from filter */ }
