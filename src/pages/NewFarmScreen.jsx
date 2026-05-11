@@ -197,25 +197,43 @@ export default function NewFarmScreen() {
   }
 
   // ─── Validation ───────────────────────────────────────────
+  // Investor-ready spec — farm name alone creates a draft. The
+  // server-bound full save still requires country / crop / size,
+  // but the draft path below saves locally only so the farmer can
+  // get on with their day and fill in the rest later. We
+  // distinguish the two modes via `isDraft`:
+  //
+  //   isDraft = name is set AND any of (country, crop, size) is
+  //             missing — local-only save, skip the backend POST.
+  //
+  // The only HARD validation is the farm name. Everything else
+  // shifts from "blocking error" to "complete-your-farm hint".
   function validate() {
     const next = {};
     const resolvedCropCode = form.cropType === CROP_OTHER
       ? normalizeCrop(form.cropOther)
       : form.cropType;
-    if (!form.country.trim()) {
-      next.country = resolve(t, 'farm.newFarm.countryRequired',
-        'Country is required to create a farm.');
-    }
-    if (!resolvedCropCode) {
-      next.cropType = resolve(t, 'farm.newFarm.cropRequired',
-        'Pick a crop or choose "Other" and name one.');
-    }
-    const sizeNum = Number(form.size);
-    if (!form.size || !Number.isFinite(sizeNum) || sizeNum <= 0) {
-      next.size = resolve(t, 'farm.newFarm.sizeRequired',
-        'Farm size is required and must be greater than zero.');
+    if (!form.farmName.trim()) {
+      next.farmName = resolve(t, 'farm.newFarm.nameRequired',
+        'Give your farm a name to get started.');
     }
     return { errors: next, cropCode: resolvedCropCode };
+  }
+
+  // True when the submission can NOT round-trip to the backend
+  // (any of the four required fields is missing). The draft path
+  // saves the entry locally so the farm becomes active immediately
+  // — the backend save happens later, when the farmer edits the
+  // farm in My Farm to add the remaining details.
+  function _isDraftSubmission(cropCode) {
+    const sizeNum = Number(form.size);
+    return (
+      !form.country.trim()
+      || !cropCode
+      || !form.size
+      || !Number.isFinite(sizeNum)
+      || sizeNum <= 0
+    );
   }
 
   async function handleSave(e) {
@@ -230,6 +248,68 @@ export default function NewFarmScreen() {
     setErrors({});
     setSubmitError('');
     setSaving(true);
+
+    // Draft path — name only (or any incomplete set). Saves to
+    // localStorage via farrowayLocal so the farm exists + is
+    // active immediately, without trying to POST a half-shaped
+    // payload the server would reject. The farmer completes the
+    // remaining fields later in My Farm → Edit, at which point
+    // the full backend save fires.
+    const isDraft = _isDraftSubmission(cropCode);
+    if (isDraft) {
+      try {
+        const draftName = form.farmName.trim();
+        const draftCountryLabel = form.country
+          ? (getCountryLabel(form.country) || form.country.trim())
+          : null;
+        const draftStateLabel = form.country && form.stateCode
+          ? (getStateLabel(form.country, form.stateCode) || form.stateCode)
+          : null;
+        const localFarm = farrowaySaveFarm({
+          name:         draftName,
+          crop:         cropCode || null,
+          cropLabel:    form.cropType === CROP_OTHER
+                          ? (form.cropOther.trim() || 'Other')
+                          : (cropCode ? getCropLabelSafe(cropCode, 'en') : null),
+          country:      form.country.trim() || null,
+          countryLabel: draftCountryLabel,
+          state:        form.stateCode.trim() || null,
+          stateLabel:   draftStateLabel,
+          farmSize:     form.size ? Number(form.size) : null,
+          sizeUnit:     form.sizeUnit || null,
+          stage:        form.stage || 'land_prep',
+          farmType:     form.farmType,
+          setActive:    !!form.setActive,
+          // Tag the row so the My Farm + Home surfaces can
+          // surface a calm "complete your farm" prompt later.
+          isDraft:      true,
+        });
+        if (form.setActive && localFarm?.id) {
+          farrowaySetActiveFarmId(localFarm.id);
+        }
+        safeTrackEvent('farm.new_farm_draft_created', {
+          hasCountry: !!form.country.trim(),
+          hasCrop:    !!cropCode,
+          hasSize:    !!form.size,
+        });
+        // Build a minimal profile-shaped object so the success
+        // screen + handleSwitchToNew path treat the draft like a
+        // real backend-created farm. The id comes from the local
+        // store so deep links don't 404 on the next render.
+        setCreatedFarm({
+          id:       localFarm?.id || null,
+          farmName: draftName,
+          isDraft:  true,
+        });
+      } catch (err) {
+        setSubmitError(err?.message
+          || resolve(t, 'farm.newFarm.saveFailed', 'Could not save the farm draft.'));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
       // Server-side validation requires `farmerName` and `location`
       // on every farm-profile POST. The form here doesn't collect

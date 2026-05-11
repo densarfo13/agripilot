@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
+import { SeedlingGlyph, WheatGlyph } from '../components/icons/InlineGlyphs.jsx';
 import { saveFarmerType as apiFarmerType } from '../lib/api.js';
 
 export default function FarmerType() {
@@ -67,7 +68,7 @@ export default function FarmerType() {
               onClick={() => handleSelect('new')}
               style={{ ...S.optionBtn, ...(saving ? { opacity: 0.6 } : {}) }}
             >
-              <div style={S.optionIcon}>🌱</div>
+              <div style={S.optionIcon} aria-hidden="true"><SeedlingGlyph size={28} /></div>
               <div>
                 <div style={S.optionTitle}>{t('farmerType.new')}</div>
                 <div style={S.optionDesc}>{t('farmerType.newDesc')}</div>
@@ -80,7 +81,7 @@ export default function FarmerType() {
               onClick={() => handleSelect('experienced')}
               style={{ ...S.optionBtn, ...(saving ? { opacity: 0.6 } : {}) }}
             >
-              <div style={S.optionIcon}>🌾</div>
+              <div style={S.optionIcon} aria-hidden="true"><WheatGlyph size={28} /></div>
               <div>
                 <div style={S.optionTitle}>{t('farmerType.experienced')}</div>
                 <div style={S.optionDesc}>{t('farmerType.experiencedDesc')}</div>

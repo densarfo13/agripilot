@@ -334,7 +334,15 @@ export default function Login() {
       <div style={S.page}>
         <div style={S.card}>
           <div style={S.mfaIconRow}>
-            <span style={S.mfaIcon}>🔐</span>
+            <span style={S.mfaIcon} aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="9" rx="2"
+                      stroke="currentColor" strokeWidth="1.7" fill="none"/>
+                <path d="M8 11V8a4 4 0 0 1 8 0v3"
+                      stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round"/>
+                <circle cx="12" cy="15.5" r="1.4" fill="currentColor"/>
+              </svg>
+            </span>
           </div>
           <h1 style={S.title}>Two-Factor Authentication</h1>
           <p style={S.subtitle}>
@@ -655,7 +663,16 @@ const S = {
   },
   // MFA-specific styles
   mfaIconRow: { textAlign: 'center', marginBottom: '0.5rem' },
-  mfaIcon: { fontSize: '2.5rem' },
+  mfaIcon: {
+    display: 'inline-flex',
+    color: '#C8944D',
+    width: 56, height: 56,
+    background: 'rgba(200,148,77,0.15)',
+    border: '1px solid rgba(200,148,77,0.35)',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   mfaInput: { fontSize: '1.5rem', letterSpacing: '0.3em', textAlign: 'center', fontFamily: 'monospace' },
   mfaHint: { color: '#6F8299', fontSize: '0.75rem', marginTop: '0.5rem' },
   backBtn: { marginTop: '1rem', width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '0.6rem', color: '#9FB3C8', fontSize: '0.875rem', cursor: 'pointer' },
