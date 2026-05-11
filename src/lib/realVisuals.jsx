@@ -54,11 +54,24 @@ const ASSETS = Object.freeze({
     farmSunrise:    '/assets/realism/heroes/afrca-sunrise-farm.webp.jpeg',
     farmIrrigation: '/assets/realism/heroes/africa-irrigation.webp.jpeg',
     riceField:      '/assets/realism/heroes/vietnam-misty-rice.webp.jpeg',
+    // Operator-uploaded supplementary regional shot. Named
+    // `IMG_5982` because that's the camera-roll filename; the
+    // semantic context is unknown but it sits in the regions
+    // folder so we treat it as an additional generic regional
+    // hero candidate.
+    regional1:      '/assets/realism/regions/IMG_5982.jpeg',
   },
   farm: {
     cassava: '/assets/realism/farm/cassava-leaf.webp.jpeg',
     pepper:  '/assets/realism/farm/pepper-closeup.webp.jpeg',
     tomato:  '/assets/realism/farm/tomato-greenhouse.webp.jpeg',
+    // Supplementary farm closeups (operator upload, semantic
+    // context not specified by the operator). Treated as
+    // generic-farm rotation candidates; the seeded picker
+    // distributes them so different farmers see different shots.
+    generic1: '/assets/realism/farm/IMG_5983.jpeg',
+    generic2: '/assets/realism/farm/IMG_5985.jpeg',
+    generic3: '/assets/realism/farm/IMG_5986.jpeg',
   },
   scan: {
     healthy: '/assets/realism/scan/healthy-leaf.webp.jpeg',
@@ -71,10 +84,22 @@ const ASSETS = Object.freeze({
     storm:   '/assets/realism/weather/storm-farm.webp.jpeg',
     drought: '/assets/realism/weather/drought-soil.webp.jpeg',
     misty:   '/assets/realism/weather/misty-morning.webp.jpeg',
+    // Supplementary weather frames (operator upload). Mapped
+    // as alternative shots; the resolver doesn't know which
+    // condition each represents, so they're additional ambient
+    // candidates the seeded picker may surface.
+    ambient1: '/assets/realism/weather/IMG_5988.jpeg',
+    ambient2: '/assets/realism/weather/IMG_5989.jpeg',
   },
   journal: {
     inspection: '/assets/realism/journal/farm-inspection.jpeg',
     greenhouse: '/assets/realism/journal/greenhouse-work.webp.jpeg',
+    // Supplementary documentary moments (operator upload).
+    // Rotated via the journal pack — distinct farmers see
+    // different memory shots.
+    moment1: '/assets/realism/journal/IMG_5990.jpeg',
+    moment2: '/assets/realism/journal/IMG_5991.jpeg',
+    moment3: '/assets/realism/journal/IMG_5992.jpeg',
   },
 });
 
@@ -111,6 +136,7 @@ const REGION_HERO_PACK = Object.freeze({
     ASSETS.heroes.farmDefault,
     ASSETS.heroes.farmSunrise,
     ASSETS.heroes.farmIrrigation,
+    ASSETS.heroes.regional1,
   ],
   asia: [
     ASSETS.heroes.riceField,
@@ -123,6 +149,33 @@ const REGION_HERO_PACK = Object.freeze({
   'north-america': [],
   'middle-east':   [],
 });
+
+// Journal documentary rotation — surfaces a different memory
+// shot per farmer/session via the same seeded picker so the
+// timeline page never reads as the same frame for everyone.
+const JOURNAL_PACK = Object.freeze({
+  farm: [
+    ASSETS.journal.inspection,
+    ASSETS.journal.moment1,
+    ASSETS.journal.moment2,
+    ASSETS.journal.moment3,
+  ],
+  garden: [
+    ASSETS.journal.greenhouse,
+    ASSETS.journal.moment1,
+    ASSETS.journal.moment2,
+  ],
+});
+
+// Generic-farm closeup rotation — when a farmer's crop doesn't
+// match cassava/pepper/tomato (the named closeups), and they're
+// in farm mode without a strong weather signal, we surface one
+// of these generic farm-detail shots from the operator upload.
+const FARM_GENERIC_PACK = Object.freeze([
+  ASSETS.farm.generic1,
+  ASSETS.farm.generic2,
+  ASSETS.farm.generic3,
+]);
 
 // Pick a stable photo from a regional pack. We hash the crop +
 // hour so a given farmer sees a consistent shot per session
@@ -186,8 +239,10 @@ const SCAN_TO_IMAGE = Object.freeze({
  *   1. Active crop → closeup if we ship one (ownership wins)
  *   2. Weather state → adaptive environmental shot
  *   3. Regional pack (country/crop → cluster) → pack photo
- *   4. Time-of-day fallback (hour 5-8 → sunrise)
- *   5. Final fallback → africa-farm-atmosphere
+ *   4. Generic-farm rotation (operator's IMG_* pool) when crop is
+ *      set but doesn't match a named closeup
+ *   5. Time-of-day fallback (hour 5-8 → sunrise)
+ *   6. Final fallback → africa-farm-atmosphere
  *
  * `country` is preferred over `region`. When country resolves
  * to a regional cluster we serve a photo from that cluster's
@@ -223,7 +278,7 @@ export function resolveHeroImage({
   if (w === 'fog' || w === 'misty' || w === 'cloudy') return ASSETS.weather.misty;
 
   // 3. Regional pack — country → cluster → pack array. The pack
-  //    rotates by a stable hash of (crop, hour) so the same
+  //    rotates by a stable hash of (crop, cluster) so the same
   //    farmer sees a consistent photo per session but different
   //    farmers see different shots. Empty packs fall through.
   const cluster = resolveRegion({ country, crop: cropKey })
@@ -233,17 +288,26 @@ export function resolveHeroImage({
     const fromPack = _pickFromPack(REGION_HERO_PACK[cluster], seed);
     if (fromPack) return fromPack;
   }
+
+  // 4. Generic-farm rotation — when no closeup, no weather state,
+  //    no regional pack match, we surface a generic farm-detail
+  //    photograph from the operator-uploaded pool. The seeded
+  //    picker keeps the shot stable per session.
+  if (cropKey && FARM_GENERIC_PACK.length > 0) {
+    const fromGeneric = _pickFromPack(FARM_GENERIC_PACK, cropKey);
+    if (fromGeneric) return fromGeneric;
+  }
   // Back-compat: callers that still pass the legacy single-key
   // region prop get the single-photo lookup.
   if (region && REGION_HERO[String(region).toLowerCase()]) {
     return REGION_HERO[String(region).toLowerCase()];
   }
 
-  // 4. Time-of-day — sunrise hero in the 5-8 hour band.
+  // 5. Time-of-day — sunrise hero in the 5-8 hour band.
   const h = Number.isFinite(hour) ? hour : null;
   if (h != null && h >= 5 && h < 8) return ASSETS.heroes.farmSunrise;
 
-  // 5. Final fallback — africa-farm-atmosphere (the calmest, most
+  // 6. Final fallback — africa-farm-atmosphere (the calmest, most
   //    universally-readable frame in the upload).
   return ASSETS.heroes.farmDefault;
 }
@@ -281,15 +345,24 @@ export function resolveCropCloseupImage(crop) {
 
 /**
  * Journal documentary moment — keyed off optional context
- * ('greenhouse' → the greenhouse-work shot, else farm
- * inspection). Garden mode reuses the greenhouse shot.
+ * ('greenhouse' → garden pack rotation; else farm pack
+ * rotation). Each context picks a stable photo from its pack
+ * via the seeded picker so a given farmer sees a consistent
+ * memory shot per session, but different farmers see different
+ * documentary frames.
+ *
+ *   resolveJournalImage('greenhouse', { seed: 'plant-abc' })
+ *   resolveJournalImage('inspection', { seed: 'farm-123' })
  */
-export function resolveJournalImage(context = '') {
+export function resolveJournalImage(context = '', { seed = '' } = {}) {
   const c = String(context || '').toLowerCase();
-  if (c.includes('greenhouse') || c.includes('garden') || c === 'garden') {
-    return ASSETS.journal.greenhouse;
-  }
-  return ASSETS.journal.inspection;
+  const isGarden = c.includes('greenhouse') || c.includes('garden') || c === 'garden';
+  const pack = isGarden ? JOURNAL_PACK.garden : JOURNAL_PACK.farm;
+  const picked = _pickFromPack(pack, seed || c || 'journal');
+  // Fallback to the canonical first frame if the pack is empty
+  // (shouldn't happen — both packs are non-empty today).
+  if (picked) return picked;
+  return isGarden ? ASSETS.journal.greenhouse : ASSETS.journal.inspection;
 }
 
 // ─── Spec §5 surface-named helpers (back-compat) ───────────────
