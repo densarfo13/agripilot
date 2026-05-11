@@ -236,6 +236,10 @@ export default function FarmerProgressPage() {
            background sets emotional context; the existing card
            stack below stays unchanged so all current behaviour
            is preserved. */}
+      {/* Documentary identity for Progress — farm-inspection
+          photograph carries the emotional "growth journey"
+          framing the spec calls out (story-telling, crop memory,
+          farming journey) rather than the prior abstract SVG. */}
       <PremiumPageHero
         mode="farm"
         eyebrow={tSafe('premium.eyebrow.progress', 'Growth journey')}
@@ -244,7 +248,7 @@ export default function FarmerProgressPage() {
           'progress.hero.subtitle',
           'Watch each stage build toward harvest.',
         )}
-        bgImage="/images/page-hero/progress.svg"
+        bgImage="/assets/realism/journal/farm-inspection.jpeg"
         accent="green"
         testId="progress-hero"
       />

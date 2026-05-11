@@ -662,17 +662,18 @@ export default function ScanPage() {
       maxWidth="36rem"
       bottomPad="2rem"
     >
-      {/* ── Hero (premium upgrade) ────────────────────────────
-           "AI camera for agriculture" tone — realistic frame
-           illustration, gentle scan line. The phase-specific
-           cards below own the actual capture/analyze/result UI;
-           this hero anchors the page identity. */}
+      {/* ── Hero — technical / diagnostic identity ────────────
+           Scan reads as the technical AI camera surface. The
+           macro leaf photo (healthy-leaf) is the right
+           identity — clinical, biological, scientific feel.
+           Phase-specific cards below own the capture/analyze
+           flow; this hero anchors the diagnostic atmosphere. */}
       <PremiumPageHero
         mode={isBackyard ? 'garden' : 'farm'}
         eyebrow={tStrict('premium.eyebrow.scan', 'Scan')}
         title={headerTitle}
         subtitle={headerSubtitle}
-        bgImage="/images/page-hero/scan.svg"
+        bgImage="/assets/realism/scan/healthy-leaf.webp.jpeg"
         accent="green"
         testId="scan-page-hero"
       />
