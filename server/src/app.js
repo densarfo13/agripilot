@@ -1,5 +1,6 @@
 import fs from 'fs';
 import express from 'express';
+import satelliteRoutes from './routes/satellite.js';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -960,6 +961,15 @@ app.get('/api/me', authenticate, async (req, res) => {
 // ─── Protected API Routes ───────────────────────────────
 // Note: /api/farmers handles its own /me endpoint (no approval gate for viewing own profile).
 // The requireApprovedFarmer middleware is applied inside individual route files where needed.
+//
+// Satellite intelligence (May 2026) — proxies Sentinel Hub NDVI
+// requests through the server so the OAuth secret never leaves
+// the backend. Mounted under `authenticate` because each call
+// consumes paid Sentinel Hub quota; anonymous access would let
+// any visitor drain it. Frontend consumer:
+//   src/hooks/useFarmHealth.js → src/components/home/LandHealthCard.jsx
+app.use('/api/v2/satellite', authenticate, satelliteRoutes);
+
 app.use('/api/farmers', farmersRoutes);
 app.use('/api/applications', applicationsRoutes);
 app.use('/api/location', locationRoutes);

@@ -53,6 +53,7 @@ import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
 // surface (My Farm, Tasks, Progress, Funding, Sell, Scan).
 import { PREMIUM_TOKENS as T }   from '../components/premium/tokens.js';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
+import LandHealthCard            from '../components/home/LandHealthCard.jsx';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
@@ -203,8 +204,27 @@ export default function PilotHome() {
   }, []);
 
   // ─── Live weather pipeline ───────────────────────────────────
-  const { weather, loading: weatherLoading } =
+  const { weather, loading: weatherLoading, refetch: refetchWeather } =
     useLiveWeather(local.locationObj);
+
+  // Inline "Use my location" handler for the weather hero's empty
+  // state. Runs the GPS-permission request → persists the row via
+  // saveLocation() → triggers a weather refetch so the hero
+  // transitions from the calm prompt to live data without a page
+  // reload. Pure best-effort: a denied prompt leaves the prompt
+  // visible and the user can tap again.
+  const handleUseMyLocation = useMemo(() => async () => {
+    try {
+      const mod = await import('../lib/locationSafe.js');
+      const row = await mod.requestUserLocation();
+      if (row && row.hasLocation) {
+        try { trackSafeEvent('home_use_my_location_granted'); } catch { /* swallow */ }
+        try { refetchWeather && refetchWeather(); } catch { /* swallow */ }
+      } else {
+        try { trackSafeEvent('home_use_my_location_denied'); } catch { /* swallow */ }
+      }
+    } catch { /* swallow — UI must not crash */ }
+  }, [refetchWeather]);
 
   // Debug console — DEV ONLY. Fires once when loading settles
   // (production cleanup spec §11: no "Source:" / "WeatherType:"
@@ -543,6 +563,7 @@ export default function PilotHome() {
             weather={weather}
             mode={ctxIntel.mode === 'garden' ? 'garden' : 'farm'}
             taskDone={taskDone}
+            onUseMyLocation={handleUseMyLocation}
             onCta={taskDone
               ? () => { try { navigate('/scan'); } catch { /* swallow */ } }
               // Wire-up audit (May 2026 §6) — when the daily task
@@ -555,6 +576,21 @@ export default function PilotHome() {
               : () => { try { navigate('/tasks'); } catch { /* swallow */ } }}
           />
         </FeatureShell>
+
+        {/* ── 2b. Satellite-derived land health (Farm mode only) ─
+             Compact card that calls /api/v2/satellite/farm-health
+             when coordinates are available. Garden mode skips this
+             — backyard pots don't benefit from NDVI signals, and
+             surfacing a satellite card on a single tomato plant
+             would feel performative. */}
+        {ctxIntel.mode !== 'garden' && (
+          <FeatureShell name="land-health-card" silent>
+            <LandHealthCard
+              location={local.locationObj}
+              onAction={() => { try { navigate('/scan'); } catch { /* swallow */ } }}
+            />
+          </FeatureShell>
+        )}
 
         {/* May 2026 Garden Home refinement (spec §1) — the
             standalone "Add location for weather tips" hint

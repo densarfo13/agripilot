@@ -52,9 +52,22 @@ describe('realism/photography — slot manifest', () => {
     for (const k of families) expect(PHOTO_SLOTS[k]).toBeTruthy();
   });
 
-  it('slotPath returns the canonical path for a valid slot', async () => {
-    const { slotPath } = await import('../../../src/assets/realism/photography/manifest.js');
-    expect(slotPath('crop-maize')).toBe('/assets/realism/photography/crop-maize.webp');
+  it('slotPath returns the canonical path only for slots in AVAILABLE_SLOTS', async () => {
+    const { slotPath, AVAILABLE_SLOTS } = await import('../../../src/assets/realism/photography/manifest.js');
+    // Production photo shoot pending — until a slot lands under
+    // public/assets/realism/photography/<slot>.webp, slotPath()
+    // returns '' so the RealisticPhoto fallback renders without
+    // firing a 404. As soon as a slot name is added to
+    // AVAILABLE_SLOTS, the resolver picks it up automatically.
+    expect(slotPath('crop-maize')).toBe(
+      AVAILABLE_SLOTS.has('crop-maize')
+        ? '/assets/realism/photography/crop-maize.webp'
+        : '',
+    );
+    // AVAILABLE_SLOTS is the gate: shipped slots return their path.
+    for (const slot of AVAILABLE_SLOTS) {
+      expect(slotPath(slot)).toBe(`/assets/realism/photography/${slot}.webp`);
+    }
   });
 
   it('slotPath refuses path-traversal + unsafe slot strings', async () => {

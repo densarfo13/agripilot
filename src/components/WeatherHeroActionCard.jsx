@@ -209,6 +209,7 @@ export default function WeatherHeroActionCard({
   mode = 'farm',
   taskDone = false,
   onCta = null,
+  onUseMyLocation = null,
   ctaLabelOverride = null,
   testId = 'weather-hero-action',
 }) {
@@ -387,14 +388,51 @@ export default function WeatherHeroActionCard({
       </div>
 
       <div style={S.tempBlock}>
-        {/* Hero glyph above the temperature — matches the May
-            2026 premium mockup where a 3D sun/cloud/rain icon
-            anchors the top-left of the card photo. */}
-        <span style={S.heroIcon} aria-hidden="true">{_typeIcon(type)}</span>
-        <span style={S.tempValue}>{tempDisplay}</span>
-        <p style={S.condition}>{conditionDisplay}</p>
-        {feelsLikeLine && !taskDone && (
-          <p style={S.feelsLike}>{feelsLikeLine}</p>
+        {/* Hero glyph above the temperature — only renders when we
+            have real weather data. The previous build painted a
+            3D sun/cloud/rain icon even on an empty fallback,
+            which looked like a fake placeholder graphic on a
+            fresh account. When _hasRealData is false the card
+            shows the "Add location" prompt + the inline GPS CTA
+            below instead. */}
+        {_hasRealData && (
+          <span style={S.heroIcon} aria-hidden="true">{_typeIcon(type)}</span>
+        )}
+        {_hasRealData ? (
+          <>
+            <span style={S.tempValue}>{tempDisplay}</span>
+            <p style={S.condition}>{conditionDisplay}</p>
+            {feelsLikeLine && !taskDone && (
+              <p style={S.feelsLike}>{feelsLikeLine}</p>
+            )}
+          </>
+        ) : (
+          <div style={S.locationPrompt} data-testid="weather-hero-location-prompt">
+            <p style={S.locationPromptTitle}>
+              {tSafe('weather.addLocationTitle', 'Add location to unlock weather tips')}
+            </p>
+            <p style={S.locationPromptBody}>
+              {tSafe(
+                'weather.addLocationBody',
+                'Live temperature, rain chance, and best action time appear once we know where your crop is.',
+              )}
+            </p>
+            {typeof onUseMyLocation === 'function' && (
+              <button
+                type="button"
+                onClick={() => { try { onUseMyLocation(); } catch { /* swallow */ } }}
+                style={S.locationCta}
+                data-testid="weather-hero-use-my-location"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 22s7-7.5 7-13a7 7 0 1 0-14 0c0 5.5 7 13 7 13z"
+                        stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinejoin="round"/>
+                  <circle cx="12" cy="9" r="2.4" stroke="currentColor" strokeWidth="1.7" fill="none"/>
+                </svg>
+                <span>{tSafe('weather.useMyLocation', 'Use my location')}</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -411,7 +449,7 @@ export default function WeatherHeroActionCard({
             <p style={S.actionLine} data-testid="weather-hero-action-line">
               {actionLine}
             </p>
-            {!taskDone && hero && (
+            {!taskDone && hero && _hasRealData && (
               <div style={S.metricChip} data-testid="weather-hero-action-meta">
                 <span style={S.metricIconWrap} aria-hidden="true">
                   {_metricIcon(type)}
@@ -573,6 +611,49 @@ const S = {
     fontSize: '0.9rem',
     fontWeight: 600,
     color: 'rgba(255,255,255,0.78)',
+  },
+  // Empty-state replacement for the fake 3D weather glyph +
+  // temperature stack. Renders when _hasRealData is false so the
+  // user sees a calm prompt + GPS CTA instead of placeholder art.
+  locationPrompt: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    maxWidth: '22rem',
+    marginTop: '0.3rem',
+  },
+  locationPromptTitle: {
+    margin: 0,
+    fontSize: '1.15rem',
+    fontWeight: 800,
+    letterSpacing: '-0.005em',
+    color: 'rgba(255,255,255,0.97)',
+    lineHeight: 1.25,
+    textShadow: '0 1px 12px rgba(0,0,0,0.45)',
+  },
+  locationPromptBody: {
+    margin: 0,
+    fontSize: '0.86rem',
+    fontWeight: 500,
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: 1.4,
+  },
+  locationCta: {
+    alignSelf: 'flex-start',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    padding: '0.55rem 0.95rem',
+    border: '1px solid rgba(255,255,255,0.35)',
+    borderRadius: '999px',
+    background: 'rgba(255,255,255,0.12)',
+    color: '#FFFFFF',
+    fontSize: '0.88rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
   },
   actionBlock: {
     marginTop: 'auto',
