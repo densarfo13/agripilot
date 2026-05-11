@@ -85,6 +85,67 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Early extension-noise trap. The bundled installGlobalErrorFilter
+         in src/lib/consoleFilter.js runs the same patterns, but module
+         scripts are deferred — extensions that inject at document_start
+         can fire unhandledrejection / error events BEFORE the bundle
+         executes, leaking the noise to the console. This inline script
+         runs synchronously at parse time so the listeners are armed
+         before any extension content script can throw.
+
+         Patterns kept short + load-bearing: tabs:outgoing.* (Chrome tab
+         messaging), No Listener: tabs: (sibling shape), cornhusk +
+         shared-service (third-party SDK), Failed to construct 'URL'
+         (cornhusk URL-hook noise). Anything that doesn't match falls
+         through to the regular console — real app errors are NEVER
+         suppressed here. -->
+    <script>
+      (function () {
+        var PATTERNS = [
+          'tabs:outgoing',
+          'tabs:incoming',
+          'No Listener: tabs:',
+          'message channel closed',
+          'cornhusk',
+          'shared-service',
+          "Failed to construct 'URL'",
+        ];
+        function _matches(ev) {
+          try {
+            var msg = '';
+            if (ev) {
+              if (ev.reason && typeof ev.reason === 'object') {
+                msg = (ev.reason.message || '') + ' ' + (ev.reason.stack || '');
+              } else if (ev.reason != null) {
+                msg = String(ev.reason);
+              } else if (ev.error && typeof ev.error === 'object') {
+                msg = (ev.error.message || '') + ' ' + (ev.error.stack || '');
+              } else if (ev.message != null) {
+                msg = String(ev.message);
+              }
+            }
+            for (var i = 0; i < PATTERNS.length; i += 1) {
+              if (msg.indexOf(PATTERNS[i]) >= 0) return true;
+            }
+          } catch (e) { /* never throw from filter */ }
+          return false;
+        }
+        try {
+          window.addEventListener('unhandledrejection', function (ev) {
+            if (_matches(ev)) {
+              try { ev.preventDefault(); } catch (e) {}
+              try { ev.stopImmediatePropagation(); } catch (e) {}
+            }
+          }, true);
+          window.addEventListener('error', function (ev) {
+            if (_matches(ev)) {
+              try { ev.preventDefault(); } catch (e) {}
+              try { ev.stopImmediatePropagation(); } catch (e) {}
+            }
+          }, true);
+        } catch (e) { /* never throw from setup */ }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
 
     <!--

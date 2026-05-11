@@ -73,6 +73,8 @@ const DENY_PATTERNS = [
   'Home mounted',                              // Home lifecycle spam
   'Live weather source:',                      // weather hook verbose trace
   'Live weather type:',                        // weather hook verbose trace
+  'Event system disabled',                     // analytics + offlineQueue kill-switch diagnostic
+  'Event sync disabled for pilot',             // analytics kill-switch alternate variant
   // Production audit (May 2026) — silence the calm app-version
   // diagnostics that ship from main.jsx so the console reads
   // clean for QA + investor-demo screen recordings. The
