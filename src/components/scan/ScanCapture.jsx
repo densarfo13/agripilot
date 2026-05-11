@@ -27,6 +27,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
@@ -126,10 +127,19 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  // Live in-app camera open state. The new LiveCameraScanner
-  // takes over the viewport when this is true. Closing it (cancel
-  // or capture-accepted) flips it back to false.
-  const [liveCameraOpen, setLiveCameraOpen] = useState(false);
+  // Live in-app camera open state. Per the May 2026 scan-flow
+  // fix: AUTO-OPEN on mount so /scan goes straight to the
+  // immersive camera. The boxed wrapper that used to be the
+  // first surface is now a fallback only — it appears when
+  // (a) the user has captured a photo and is reviewing it, OR
+  // (b) the camera was denied / errored and the upload path is
+  //     the active option.
+  const supportsLiveCamera = typeof navigator !== 'undefined'
+    && navigator.mediaDevices
+    && typeof navigator.mediaDevices.getUserMedia === 'function';
+  const [liveCameraOpen, setLiveCameraOpen] = useState(supportsLiveCamera);
+
+  const navigate = useNavigate();
   // App Store launch audit §4.1: detect camera permission state
   // proactively so we can promote the gallery button and show a
   // calm hint when the user denied camera access. The Permissions
@@ -246,7 +256,16 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
 
   const onLiveCameraCancel = useCallback(() => {
     setLiveCameraOpen(false);
-  }, []);
+    // May 2026 scan-flow fix: when the user closes the camera
+    // without capturing, route back to Home instead of dropping
+    // them on the boxed wrapper. The wrapper exists only as the
+    // post-capture preview + the denied/error fallback path. If
+    // the user has an in-progress preview, stay on the page so
+    // they can analyze or retake.
+    if (!preview && !cameraDenied) {
+      try { navigate('/'); } catch { /* swallow */ }
+    }
+  }, [preview, cameraDenied, navigate]);
 
   const triggerGallery = useCallback(() => {
     setError('');

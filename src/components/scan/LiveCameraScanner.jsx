@@ -304,15 +304,15 @@ export default function LiveCameraScanner({
     return () => { try { document.body.style.overflow = prev; } catch { /* swallow */ } };
   }, [open]);
 
-  // Rotating live guidance text — three tips cycle on a 3.2s
+  // Rotating live guidance text — four tips cycle on a 3.0s
   // loop while the camera is streaming. Reset to the first tip
   // when the camera opens / re-streams so each capture session
-  // starts with "Place leaf or crop inside the frame".
+  // starts with "Center crop or leaf".
   useEffect(() => {
     if (phase !== 'streaming') { setGuideTipIdx(0); return undefined; }
     const id = setInterval(() => {
-      setGuideTipIdx((i) => (i + 1) % 3);
-    }, 3200);
+      setGuideTipIdx((i) => (i + 1) % 4);
+    }, 3000);
     return () => { try { clearInterval(id); } catch { /* swallow */ } };
   }, [phase]);
 
@@ -525,8 +525,8 @@ export default function LiveCameraScanner({
                               borderBottom: '3px solid #E6BC85',
                               borderRight:  '3px solid #E6BC85' }}/>
             </div>
-            {/* Live coaching text — rotates through three tips on
-                a 3.2s loop. The key on the <p> drives a CSS fade
+            {/* Live coaching text — rotates through four tips on
+                a 3.0s loop. The key on the <p> drives a CSS fade
                 transition between tips (each tip mounts fresh so
                 the entry animation re-fires). */}
             <p
@@ -534,9 +534,10 @@ export default function LiveCameraScanner({
               style={S.guideHint}
               data-testid={`${testId}-tip-${guideTipIdx}`}
             >
-              {guideTipIdx === 0 && tSafe('scan.camera.guideFrame',    'Place leaf or crop inside the frame')}
-              {guideTipIdx === 1 && tSafe('scan.camera.guideSteady',   'Hold the camera steady')}
-              {guideTipIdx === 2 && tSafe('scan.camera.guideLighting', 'Good lighting helps analysis')}
+              {guideTipIdx === 0 && tSafe('scan.camera.guideCenter',   'Center crop or leaf')}
+              {guideTipIdx === 1 && tSafe('scan.camera.guideLighting', 'Good lighting helps analysis')}
+              {guideTipIdx === 2 && tSafe('scan.camera.guideSteady',   'Hold steady')}
+              {guideTipIdx === 3 && tSafe('scan.camera.guideReady',    'AI ready')}
             </p>
           </>
         )}

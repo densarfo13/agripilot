@@ -35,11 +35,23 @@ import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
 
 // Step keys + English fallbacks. Total cycle ≈ 2.4 seconds at the
 // default cadence below.
+// May 2026 scan-flow polish — premium analysis transition copy.
+// The previous four steps were generic ("Analyzing plant
+// image…", "Checking visible leaf patterns…", …). The spec
+// names the three steps explicitly:
+//
+//   1. "Analyzing crop health"
+//   2. "Checking disease patterns"
+//   3. "Comparing regional conditions"
+//
+// We keep four entries so the cycle still works on slow networks
+// (the fourth holds indefinitely until the parent transitions
+// to result phase).
 const STEPS = Object.freeze([
-  { key: 'scan.analyzing.step1', fallback: 'Analyzing plant image…',         msHold: 700 },
-  { key: 'scan.analyzing.step2', fallback: 'Checking visible leaf patterns…', msHold: 700 },
-  { key: 'scan.analyzing.step3', fallback: 'Looking for common stress signals…', msHold: 700 },
-  { key: 'scan.analyzing.step4', fallback: 'Preparing guidance…',             msHold: 999_999 }, // hold until parent moves on
+  { key: 'scan.analyzing.step1', fallback: 'Analyzing crop health…',          msHold: 800 },
+  { key: 'scan.analyzing.step2', fallback: 'Checking disease patterns…',      msHold: 800 },
+  { key: 'scan.analyzing.step3', fallback: 'Comparing regional conditions…',  msHold: 800 },
+  { key: 'scan.analyzing.step4', fallback: 'Preparing your guidance…',        msHold: 999_999 },
 ]);
 
 // Safety cap — if the parent never transitions out of analyzing
