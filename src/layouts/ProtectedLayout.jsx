@@ -219,15 +219,25 @@ export default function ProtectedLayout() {
 // surface — growth-green for "online" (success signal) and warm
 // amber for "offline" (warning signal).
 const S = {
+  // May 2026 v3 — immersive companion shell. Apple Weather /
+  // Oura aesthetic: deep navy base + layered atmospheric glows
+  // (cool sky at top, warm earth at bottom) so the page reads as
+  // an actual sky-to-ground atmosphere, not a flat dark surface.
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
-    color: '#1F2933',
+    color: '#EAF2FF',
+    backgroundColor: '#08111A',
+    backgroundImage: [
+      // Cool sky glow at the top
+      'radial-gradient(ellipse 90% 50% at 50% -10%, rgba(60,86,116,0.45) 0%, rgba(8,17,26,0) 70%)',
+      // Warm earth glow at the bottom (subtle ochre wash)
+      'radial-gradient(ellipse 90% 40% at 50% 110%, rgba(200,148,77,0.16) 0%, rgba(8,17,26,0) 65%)',
+      // Base atmospheric gradient: deep navy → twilight → earth
+      'linear-gradient(180deg, #08111A 0%, #0B1A28 35%, #0E1F2C 75%, #1A2026 100%)',
+    ].join(', '),
     // Bottom padding accounts for the fixed bottom nav (62px) +
     // iPhone safe-area inset so content doesn't tuck under the
-    // nav on devices with a home indicator. Spec §1 (compact
-    // mobile layout): keep important action above the fold and
-    // honour safe-area-inset-bottom.
+    // nav on devices with a home indicator.
     paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
     paddingTop: 'env(safe-area-inset-top, 0px)',
   },
@@ -261,11 +271,14 @@ const S = {
     gap: '0.3rem',
     fontSize: '0.625rem',
     fontWeight: 700,
-    color: '#3F6A3F',
-    background: 'rgba(94,142,94,0.12)',
+    color: '#A8C283',
+    background: 'rgba(143,171,115,0.16)',
+    border: '1px solid rgba(143,171,115,0.32)',
     padding: '0.2rem 0.5rem',
-    borderRadius: '6px',
+    borderRadius: '999px',
     letterSpacing: '0.02em',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
   },
   offlineChip: {
     display: 'inline-flex',
@@ -273,18 +286,21 @@ const S = {
     gap: '0.3rem',
     fontSize: '0.625rem',
     fontWeight: 700,
-    color: '#8A5C12',
-    background: 'rgba(224,162,56,0.16)',
+    color: '#F0CB7A',
+    background: 'rgba(214,161,61,0.20)',
+    border: '1px solid rgba(214,161,61,0.40)',
     padding: '0.2rem 0.5rem',
-    borderRadius: '6px',
+    borderRadius: '999px',
     letterSpacing: '0.02em',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
   },
   onlineDot: {
     display: 'inline-block',
     width: '5px',
     height: '5px',
     borderRadius: '50%',
-    background: '#5E8E5E',
+    background: '#8FAB73',
     flexShrink: 0,
   },
   offlineDot: {
@@ -292,15 +308,15 @@ const S = {
     width: '5px',
     height: '5px',
     borderRadius: '50%',
-    background: '#E0A238',
+    background: '#D6A13D',
     flexShrink: 0,
   },
   modeToggle: {
     fontSize: '0.625rem',
     fontWeight: 600,
-    color: '#667085',
-    background: '#FFF9F0',
-    border: '1px solid rgba(31,41,51,0.08)',
+    color: 'rgba(234,242,255,0.78)',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.10)',
     borderRadius: '6px',
     padding: '0.25rem 0.5rem',
     cursor: 'pointer',
@@ -310,33 +326,33 @@ const S = {
   },
   logoutBtn: {
     borderRadius: '6px',
-    border: '1px solid rgba(31,41,51,0.08)',
+    border: '1px solid rgba(255,255,255,0.10)',
     padding: '0.25rem 0.5rem',
     fontSize: '0.625rem',
     fontWeight: 600,
-    color: '#667085',
+    color: 'rgba(234,242,255,0.78)',
     background: 'transparent',
     cursor: 'pointer',
     minHeight: '26px',
     WebkitTapHighlightColor: 'transparent',
     transition: 'color 0.15s',
   },
-  // Single menu button that opens the settings drawer. Replaces
-  // the language/mode/voice/logout cluster that used to live on
-  // the right side of the header.
+  // Single glass menu button that opens the settings drawer.
   menuBtn: {
     width: 34,
     height: 34,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'rgba(31,41,51,0.05)',
-    border: '1px solid rgba(31,41,51,0.08)',
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 10,
-    color: '#1F2933',
+    color: '#EAF2FF',
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
     padding: 0,
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
   },
   // Drawer body sections — vertical stack with consistent gap.
   drawerSection: {
@@ -347,9 +363,9 @@ const S = {
   drawerModeToggle: {
     fontSize: '0.85rem',
     fontWeight: 700,
-    color: '#1F2933',
-    background: '#FFF9F0',
-    border: '1px solid rgba(31,41,51,0.12)',
+    color: '#EAF2FF',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.14)',
     borderRadius: 10,
     padding: '0.65rem 0.85rem',
     cursor: 'pointer',
@@ -359,9 +375,9 @@ const S = {
   drawerLogout: {
     fontSize: '0.9rem',
     fontWeight: 700,
-    color: '#C65A4B',
-    background: 'rgba(198,90,75,0.08)',
-    border: '1px solid rgba(198,90,75,0.25)',
+    color: '#F1A89E',
+    background: 'rgba(198,90,75,0.16)',
+    border: '1px solid rgba(198,90,75,0.42)',
     borderRadius: 10,
     padding: '0.7rem 0.9rem',
     cursor: 'pointer',

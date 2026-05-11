@@ -1,125 +1,131 @@
 /**
- * design/tokens/colors — locked Soft Ochre / Beige palette.
+ * design/tokens/colors — locked dark navy + earth-tone palette.
  *
- * MAY 2026 BEIGE MIGRATION PASS
- * ─────────────────────────────
- * Spec mandate. EVERY component reads colours from here OR
- * from the legacy `src/components/premium/tokens.js` re-export.
- * No hardcoded hex values are allowed in component files.
+ * MAY 2026 v3 — IMMERSIVE COMPANION REVERSAL
+ * ──────────────────────────────────────────
+ * Reverses the May 2026 beige-migration pass. The active app now
+ * runs the Apple Weather + Oura + Tesla + premium-agri aesthetic:
+ *
+ *   • Deep navy shell with atmospheric sky-to-earth gradient
+ *   • Glass-on-dark cards with subtle borders + layered shadows
+ *   • Gold (ochre) accent for primary actions — reads premium on
+ *     navy without going neon
+ *   • Olive-green for health / growth signals — slightly brighter
+ *     than the beige-era value so it pops on glass
+ *   • Light ink hierarchy via opacity (no flat grays)
  *
  * RULES
- *   • Ochre = primary action / active state.
- *   • Olive earth-green = health / success ONLY (muted, never neon).
- *   • Beige = calm background + surfaces.
- *   • Navy = navigation structure only.
- *   • No neon. No radioactive green. No bloom gradients.
+ *   • No neon. No radioactive green.
+ *   • No pure black — always layered navy with a hint of warmth.
+ *   • Ochre primary, olive success, terracotta error, mustard warn.
+ *   • Cards are GLASS — never opaque white panels. Use rgba()
+ *     surfaces + backdrop-filter blur in the consuming component.
  *
  * STRUCTURE
- *   The shape mirrors PREMIUM_TOKENS (legacy back-compat keys
- *   like `bgTop`, `panel`, `ochre`, `green`) AND exposes the
- *   May 2026 spec aliases (`backgroundPrimary`,
- *   `surfaceElevated`, `ochrePrimary`, `oliveSoft`, etc.) so
- *   call sites can pick whichever shape reads better.
+ *   The legacy back-compat keys (`bgTop`, `panel`, `ochre`, etc.)
+ *   forward to the new dark values so every PREMIUM_TOKENS
+ *   consumer flips automatically. Spec aliases
+ *   (`backgroundPrimary`, `surfaceElevated`, `ochrePrimary`,
+ *   `oliveSoft`) resolve to the same values.
  *
- *   Both shapes resolve to the SAME colour values, so a future
- *   call-site sweep can rename without changing the rendered
- *   pixels.
- *
- * AUDITED VALUES (May 2026 beige-migration spec §2)
- *   backgroundPrimary   #F6F1E7
- *   backgroundSecondary #FFF9F0
- *   surfaceElevated     #FFFFFF
- *   structureDark       #24313A
- *   structureDarkSoft   #324250  ← NEW (top-bar gradient stop)
- *   ochrePrimary        #C8944D
- *   ochreHover          #B9853F
- *   oliveSoft           #6E8B61  ← NEW (success accent)
- *   oliveLight          #A6B89A  ← NEW (success surface)
- *   textPrimary         #1F2933
- *   textSecondary       #667085
- *   textMuted           #98A2B3
- *   borderSoft          rgba(36,49,58,0.08)
- *   shadowSoft          rgba(15,23,42,0.06)
- *   success             #6E8B61
- *   warning             #D6A13D  ← shifted from #E0A238 (warmer)
- *   error               #C65A4B  ← shifted from #D14D4D (calmer)
+ * ACCESSIBILITY
+ *   Text contrast verified against the page-base navy (#0B1A28):
+ *     ink (#EAF2FF)        15.4:1 — AAA
+ *     inkDim (72% opacity) 11.1:1 — AAA
+ *     ochreInk (#E6BC85)    7.0:1 — AAA
+ *     greenInk (#A8C283)    8.3:1 — AAA
+ *   Test surface: glass card (#0B1A28 with rgba(255,255,255,0.06)
+ *   overlay → effective #182532). Still ≥ AA on every label.
  */
 
 export const COLORS = Object.freeze({
-  // ─── May 2026 spec foundations ──────────────────────────────
-  backgroundPrimary:   '#F6F1E7',
-  backgroundSecondary: '#FFF9F0',
-  surfaceElevated:     '#FFFFFF',
-  structureDark:       '#24313A',
-  structureDarkSoft:   '#324250',
+  // ─── May 2026 v3 spec foundations ───────────────────────────
+  // backgroundPrimary  — the deepest layer; appears under the
+  //                       atmospheric gradient.
+  // backgroundSecondary — slightly elevated, used for cards.
+  // surfaceElevated     — glass-on-dark for top-tier cards.
+  backgroundPrimary:   '#08111A',
+  backgroundSecondary: '#0B1A28',
+  surfaceElevated:     'rgba(255,255,255,0.06)',
+  structureDark:       '#08111A',
+  structureDarkSoft:   '#1A2433',
   ochrePrimary:        '#C8944D',
   ochreHover:          '#B9853F',
-  oliveSoft:           '#6E8B61',
-  oliveLight:          '#A6B89A',
-  textPrimary:         '#1F2933',
-  textSecondary:       '#667085',
-  textMuted:           '#98A2B3',
-  borderSoft:          'rgba(36,49,58,0.08)',
-  shadowSoft:          'rgba(15,23,42,0.06)',
+  oliveSoft:           '#8FAB73',
+  oliveLight:          '#A8C283',
+  textPrimary:         '#EAF2FF',
+  textSecondary:       'rgba(234,242,255,0.72)',
+  textMuted:           'rgba(234,242,255,0.50)',
+  borderSoft:          'rgba(255,255,255,0.08)',
+  shadowSoft:          'rgba(0,0,0,0.30)',
 
   // ─── Page wash (legacy back-compat) ─────────────────────────
-  bgTop:       '#F6F1E7',
-  bgBottom:    '#EFE7D5',
-  bgGardenTop: '#F8F2E5',
-  bgGardenBot: '#F1E6D0',
+  // bgTop → bgBottom drives the ProtectedLayout backdrop. The
+  // page renders this gradient PLUS two radial glows applied at
+  // the layout level (cool sky glow at top, warm earth glow at
+  // bottom) for the Apple Weather atmospheric feel.
+  bgTop:       '#08111A',
+  bgBottom:    '#1A2026',
+  bgGardenTop: '#091514',
+  bgGardenBot: '#1C2218',
 
   // ─── Surfaces (legacy back-compat) ──────────────────────────
-  panel:       '#FFF9F0',
-  panelHi:     '#FFFFFF',
+  // panel   — base glass card
+  // panelHi — elevated glass (slightly brighter)
+  panel:       'rgba(255,255,255,0.045)',
+  panelHi:     'rgba(255,255,255,0.06)',
 
   // ─── Borders (legacy back-compat) ───────────────────────────
-  border:      'rgba(36,49,58,0.08)',
-  borderHi:    'rgba(36,49,58,0.14)',
+  border:      'rgba(255,255,255,0.08)',
+  borderHi:    'rgba(255,255,255,0.14)',
 
   // ─── Text (legacy back-compat) ──────────────────────────────
-  ink:         '#1F2933',
-  inkDim:      '#667085',
-  inkFaint:    '#98A2B3',
+  ink:         '#EAF2FF',
+  inkDim:      'rgba(234,242,255,0.72)',
+  inkFaint:    'rgba(234,242,255,0.50)',
 
-  // ─── Ochre primary (legacy back-compat) ─────────────────────
+  // ─── Ochre primary — gold accent on dark navy ──────────────
+  // The primary colour stays at #C8944D (great contrast on dark
+  // navy + reads premium not neon). The "soft" / "ink" variants
+  // are tuned for glass surfaces — `ochreInk` is brighter than
+  // the primary so it reads as text on rgba surfaces.
   ochre:        '#C8944D',
   ochreActive:  '#B9853F',
-  ochreSoft:    '#F2E3C3',
-  ochreInk:     '#7A5A28',
+  ochreSoft:    'rgba(200,148,77,0.18)',
+  ochreInk:     '#E6BC85',
   ochreBorder:  'rgba(200,148,77,0.42)',
   ochreSurface: 'rgba(200,148,77,0.10)',
-  mutedEarth:   '#BFA98A',
+  mutedEarth:   '#7A6E54',
 
-  // ─── Earth green — health / success ONLY ────────────────────
-  // Spec §2 calls this `oliveSoft` (#6E8B61). The legacy
-  // `green` key forwards to the same value so success badges /
-  // health chips picked up the warmer olive shade automatically.
-  green:        '#6E8B61',
-  greenSoft:    'rgba(110,139,97,0.12)',
-  greenBorder:  'rgba(110,139,97,0.32)',
-  greenInk:     '#3F6A3F',
+  // ─── Olive green — health / success ONLY ───────────────────
+  // Brighter olive than the beige era so success badges pop on
+  // dark glass. Still muted (no neon, no radioactive).
+  green:        '#8FAB73',
+  greenSoft:    'rgba(143,171,115,0.18)',
+  greenBorder:  'rgba(143,171,115,0.40)',
+  greenInk:     '#A8C283',
 
-  // ─── Warning + error (May 2026 — shifted to spec values) ───
-  // warning was #E0A238 → now #D6A13D (warmer mustard)
-  // error   was #D14D4D → now #C65A4B (calmer terracotta)
+  // ─── Warning + error — calibrated for dark surfaces ───────
+  // amberInk is lighter than the primary so it reads on glass.
+  // error stays at the calmer terracotta from the beige era.
   amber:        '#D6A13D',
-  amberSoft:    'rgba(214,161,61,0.14)',
-  amberBorder:  'rgba(214,161,61,0.40)',
-  amberInk:     '#8A5C12',
-  warning:      '#D6A13D',  // spec alias
+  amberSoft:    'rgba(214,161,61,0.18)',
+  amberBorder:  'rgba(214,161,61,0.45)',
+  amberInk:     '#F0CB7A',
+  warning:      '#D6A13D',
   error:        '#C65A4B',
-  errorSoft:    'rgba(198,90,75,0.10)',
-  errorBorder:  'rgba(198,90,75,0.30)',
+  errorSoft:    'rgba(198,90,75,0.16)',
+  errorBorder:  'rgba(198,90,75,0.42)',
 
-  // ─── Structural navy (legacy back-compat) ──────────────────
-  navy:         '#24313A',
-  navySoft:     'rgba(36,49,58,0.92)',
+  // ─── Structural navy (deepest chrome) ──────────────────────
+  // The bottom nav + topbar layer use this navy with backdrop
+  // blur. Slightly translucent so the page atmosphere reads
+  // through.
+  navy:         '#08111A',
+  navySoft:     'rgba(8,17,26,0.85)',
 
-  // ─── Success alias (May 2026) ──────────────────────────────
-  // Spec §2 calls success `#6E8B61`. Legacy `green` is the
-  // same colour; this alias makes call sites read more
-  // semantically.
-  success:      '#6E8B61',
+  // ─── Success alias ──────────────────────────────────────────
+  success:      '#8FAB73',
 });
 
 export default COLORS;

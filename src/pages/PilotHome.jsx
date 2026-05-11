@@ -778,9 +778,20 @@ const C = {
 };
 
 const S = {
+  // Immersive companion shell — same atmospheric stack as
+  // ProtectedLayout so the page reads consistently whether
+  // PilotHome renders inside Layout's Outlet or as the direct
+  // ProtectedRoute return. Apple Weather / Oura aesthetic:
+  // navy base + cool sky glow at top + warm earth glow at
+  // bottom.
   page: {
     minHeight:  '100vh',
-    background: `linear-gradient(180deg, ${C.bgTop} 0%, ${C.bgBottom} 100%)`,
+    backgroundColor: '#08111A',
+    backgroundImage: [
+      'radial-gradient(ellipse 90% 50% at 50% -10%, rgba(60,86,116,0.45) 0%, rgba(8,17,26,0) 70%)',
+      'radial-gradient(ellipse 90% 40% at 50% 110%, rgba(200,148,77,0.16) 0%, rgba(8,17,26,0) 65%)',
+      'linear-gradient(180deg, #08111A 0%, #0B1A28 35%, #0E1F2C 75%, #1A2026 100%)',
+    ].join(', '),
     color:      C.ink,
     padding:    '1.5rem 1rem 4rem',
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

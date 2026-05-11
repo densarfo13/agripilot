@@ -275,12 +275,10 @@ export default function BottomTabNav() {
 }
 
 const S = {
-  // Unified app shell (May 2026 alive-UI pass) — the nav was
-  // dark navy on a beige page, which read as a "floating
-  // disconnected" surface. Flipped to a warm cream that sits on
-  // the same Soft Ochre palette as the page background. A subtle
-  // top gradient softens the transition from cards above, and
-  // the ochre active state stays as the brand accent.
+  // May 2026 v3 — immersive companion nav. Apple Weather / Oura
+  // aesthetic: deep navy glass with strong backdrop blur, subtle
+  // top divider so the nav reads as docked into the atmospheric
+  // page background rather than a floating panel.
   nav: {
     position: 'fixed',
     bottom: 0,
@@ -289,11 +287,11 @@ const S = {
     display: 'flex',
     alignItems: 'stretch',
     justifyContent: 'space-around',
-    background: 'linear-gradient(180deg, rgba(246,241,231,0.96) 0%, rgba(239,231,213,0.98) 100%)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
-    borderTop: '1px solid rgba(31,41,51,0.08)',
-    boxShadow: '0 -4px 16px rgba(31,41,51,0.06)',
+    background: 'rgba(8,17,26,0.78)',
+    backdropFilter: 'blur(24px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(150%)',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+    boxShadow: '0 -8px 24px rgba(0,0,0,0.32)',
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     zIndex: 100,
     minHeight: '62px',
@@ -312,7 +310,7 @@ const S = {
     WebkitTapHighlightColor: 'transparent',
     minHeight: '58px',
     position: 'relative',
-    color: '#1F2933',
+    color: '#EAF2FF',
   },
   activeBar: {
     position: 'absolute',
@@ -322,28 +320,29 @@ const S = {
     height: '2.5px',
     borderRadius: '0 0 2px 2px',
     background: '#C8944D',
+    boxShadow: '0 0 12px rgba(200,148,77,0.45)',
   },
   icon: {
     fontSize: '1.375rem',
     lineHeight: 1,
     opacity: 0.55,
-    color: '#1F2933',
-    transition: 'opacity 0.2s ease, transform 0.15s ease',
+    color: 'rgba(234,242,255,0.85)',
+    transition: 'opacity 0.2s ease, transform 0.15s ease, color 0.2s ease',
   },
   iconActive: {
     opacity: 1,
-    color: '#C8944D',
+    color: '#E6BC85',
     transform: 'scale(1.08)',
   },
   label: {
     fontSize: '0.625rem',
     fontWeight: 600,
-    color: '#5F6B78',
+    color: 'rgba(234,242,255,0.55)',
     letterSpacing: '0.02em',
     transition: 'color 0.2s ease',
   },
   labelActive: {
-    color: '#C8944D',
+    color: '#E6BC85',
     fontWeight: 700,
   },
 };

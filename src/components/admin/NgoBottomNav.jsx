@@ -49,14 +49,12 @@ function _isSetupPath(pathname) {
   return false;
 }
 
-// Unified app shell — beige cream palette matching the page
-// background (Soft Ochre system). Previously dark navy
-// (#0B1D34) which clashed with the cream page surface.
+// May 2026 v3 — immersive dark glass matching the farmer nav.
 const C = {
-  bg: 'linear-gradient(180deg, rgba(246,241,231,0.96) 0%, rgba(239,231,213,0.98) 100%)',
-  border: 'rgba(31,41,51,0.08)',
-  ink: '#5F6B78',
-  inkActive: '#C8944D',
+  bg: 'rgba(8,17,26,0.78)',
+  border: 'rgba(255,255,255,0.06)',
+  ink: 'rgba(234,242,255,0.55)',
+  inkActive: '#E6BC85',
 };
 
 const S = {
@@ -67,9 +65,9 @@ const S = {
     bottom: 0,
     background: C.bg,
     borderTop: `1px solid ${C.border}`,
-    boxShadow: '0 -4px 16px rgba(31,41,51,0.06)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
+    boxShadow: '0 -8px 24px rgba(0,0,0,0.32)',
+    backdropFilter: 'blur(24px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(150%)',
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     zIndex: 30,
   },

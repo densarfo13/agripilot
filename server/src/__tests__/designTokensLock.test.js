@@ -1,9 +1,19 @@
 /**
- * designTokensLock.test.js — locks the May 2026 visual restraint
- * palette so accidental drift in `src/design/tokens/` fails CI.
+ * designTokensLock.test.js — locks the May 2026 v3 immersive
+ * companion palette so accidental drift in `src/design/tokens/`
+ * fails CI.
  *
- * Spec §2 + §11. Every value below is the locked source of
- * truth — any change requires an explicit doc + design review.
+ * History
+ *   v1 (Feb 2026)  — dark green / neon (pre-restraint).
+ *   v2 (May 2026)  — beige migration. Locked Soft Ochre.
+ *   v3 (May 2026)  — immersive companion reversal. Operator
+ *                    request: revert to dark navy + earth-tone
+ *                    glass aesthetic (Apple Weather + Oura +
+ *                    Tesla + premium agri). Ochre stays as the
+ *                    primary action; olive shifts brighter so it
+ *                    pops on glass. Every value below is the
+ *                    locked source of truth — any change
+ *                    requires an explicit doc + design review.
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -17,46 +27,51 @@ describe('design/tokens/colors — locked palette', () => {
     expect(COLORS.ochreActive).toBe('#B9853F');
   });
 
-  it('surface + background match the spec', async () => {
+  it('surface is glass-on-dark (immersive companion v3)', async () => {
     const { COLORS } = await import('../../../src/design/tokens/colors.js');
-    expect(COLORS.panel).toBe('#FFF9F0');
-    expect(COLORS.bgTop).toBe('#F6F1E7');
+    // Cards are NOT opaque white panels anymore — they're
+    // translucent overlays that sit on the atmospheric page.
+    expect(COLORS.panel).toBe('rgba(255,255,255,0.045)');
+    expect(COLORS.panelHi).toBe('rgba(255,255,255,0.06)');
+    // Page base is the deepest navy in the stack; the atmospheric
+    // gradient + radial glows are applied at the layout level.
+    expect(COLORS.bgTop).toBe('#08111A');
   });
 
-  it('navy structural color is locked', async () => {
+  it('navy structural color is the deepest layer', async () => {
     const { COLORS } = await import('../../../src/design/tokens/colors.js');
-    expect(COLORS.navy).toBe('#24313A');
+    expect(COLORS.navy).toBe('#08111A');
   });
 
-  it('success accent stays muted olive earth-green (no neon)', async () => {
+  it('success accent stays muted olive (no neon, brighter for glass)', async () => {
     const { COLORS } = await import('../../../src/design/tokens/colors.js');
-    // May 2026 beige migration: success == oliveSoft == #6E8B61.
-    // Both `green` (legacy) and `oliveSoft` (spec) and `success`
-    // (semantic alias) resolve to the same value.
-    expect(COLORS.oliveSoft).toBe('#6E8B61');
-    expect(COLORS.success).toBe('#6E8B61');
-    expect(COLORS.green).toBe('#6E8B61');
+    // v3 lifts olive slightly so success badges read on glass
+    // surfaces. Still muted (no neon, no radioactive).
+    expect(COLORS.oliveSoft).toBe('#8FAB73');
+    expect(COLORS.success).toBe('#8FAB73');
+    expect(COLORS.green).toBe('#8FAB73');
     // Sanity — no #00FF style neon allowed.
     const banned = ['#00FF00', '#22FF22', '#39FF14', '#7FFF00', '#22C55E', '#16A34A'];
     expect(banned).not.toContain(COLORS.oliveSoft);
     expect(banned).not.toContain(COLORS.success);
   });
 
-  it('May 2026 beige migration spec §2 keys are present', async () => {
+  it('May 2026 v3 immersive companion keys are present', async () => {
     const { COLORS } = await import('../../../src/design/tokens/colors.js');
-    expect(COLORS.backgroundPrimary).toBe('#F6F1E7');
-    expect(COLORS.backgroundSecondary).toBe('#FFF9F0');
-    expect(COLORS.surfaceElevated).toBe('#FFFFFF');
-    expect(COLORS.structureDark).toBe('#24313A');
-    expect(COLORS.structureDarkSoft).toBe('#324250');
+    expect(COLORS.backgroundPrimary).toBe('#08111A');
+    expect(COLORS.backgroundSecondary).toBe('#0B1A28');
+    expect(COLORS.surfaceElevated).toBe('rgba(255,255,255,0.06)');
+    expect(COLORS.structureDark).toBe('#08111A');
+    expect(COLORS.structureDarkSoft).toBe('#1A2433');
     expect(COLORS.ochrePrimary).toBe('#C8944D');
     expect(COLORS.ochreHover).toBe('#B9853F');
-    expect(COLORS.oliveLight).toBe('#A6B89A');
-    expect(COLORS.textPrimary).toBe('#1F2933');
-    expect(COLORS.textSecondary).toBe('#667085');
-    expect(COLORS.textMuted).toBe('#98A2B3');
-    expect(COLORS.borderSoft).toBe('rgba(36,49,58,0.08)');
-    expect(COLORS.shadowSoft).toBe('rgba(15,23,42,0.06)');
+    expect(COLORS.oliveLight).toBe('#A8C283');
+    // Text scale flips light for dark surfaces.
+    expect(COLORS.textPrimary).toBe('#EAF2FF');
+    expect(COLORS.textSecondary).toBe('rgba(234,242,255,0.72)');
+    expect(COLORS.textMuted).toBe('rgba(234,242,255,0.50)');
+    expect(COLORS.borderSoft).toBe('rgba(255,255,255,0.08)');
+    expect(COLORS.shadowSoft).toBe('rgba(0,0,0,0.30)');
   });
 
   it('warning + error shift to the calmer spec values', async () => {
@@ -68,11 +83,12 @@ describe('design/tokens/colors — locked palette', () => {
     expect(COLORS.amber).toBe('#D6A13D');   // legacy alias forwards
   });
 
-  it('text scale uses the locked ink trio', async () => {
+  it('text scale uses the immersive light ink trio', async () => {
     const { COLORS } = await import('../../../src/design/tokens/colors.js');
-    expect(COLORS.ink).toBe('#1F2933');
-    expect(COLORS.inkDim).toBe('#667085');
-    expect(COLORS.inkFaint).toBe('#98A2B3');
+    // v3 — light text on dark surfaces with opacity hierarchy.
+    expect(COLORS.ink).toBe('#EAF2FF');
+    expect(COLORS.inkDim).toBe('rgba(234,242,255,0.72)');
+    expect(COLORS.inkFaint).toBe('rgba(234,242,255,0.50)');
   });
 });
 
