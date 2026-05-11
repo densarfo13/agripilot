@@ -43,7 +43,11 @@ export {
   COOLDOWN,
   shouldDeliver,
   markDelivered,
+  countDeliveredSince,
   clearDedup,
+  clearAllDedupScopes,
+  setActiveUserId,
+  getActiveUserId,
 } from './notificationDeduplication.js';
 
 export {
@@ -61,4 +65,22 @@ export {
   identifyCandidates,
   buildNotification,
   queueNotifications,
+  MAX_DAILY_TOTAL,
+  MAX_DAILY_WEATHER,
 } from './notificationEngine.js';
+
+export {
+  STATE_KEY,
+  ACTION_SUPPRESS_HOURS,
+  DISMISSED_SUPPRESS_HOURS,
+  markAction,
+  markDismissed,
+  getState,
+  isSuppressed,
+  clearAllState,
+} from './notificationState.js';
+
+export {
+  commitCalmQueue,
+  KIND_TO_TYPE,
+} from './notificationFeedBridge.js';

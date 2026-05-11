@@ -38,6 +38,10 @@ import { useNavigate }           from 'react-router-dom';
 import { useLiveWeather }        from '../hooks/useLiveWeather.js';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
+// Once-per-mount calm-notification feed sync — feeds the user-facing
+// bell + /notifications page with calm-engine output (cooldown +
+// quiet-hours + daily-cap aware). Zero-cost when the cap is hit.
+import useCalmFeedSync           from '../hooks/useCalmFeedSync.js';
 import { tSafe }                 from '../i18n/tSafe.js';
 import { getWeatherTask }        from '../lib/weatherTaskEngine.js';
 import { trackSafeEvent }        from '../lib/safeEventTracker.js';
@@ -302,6 +306,25 @@ export default function PilotHome() {
     // commit=false so re-renders don't keep stamping the memory.
     // The eventual click on the tile will commit via the controller.
   }, [ctxIntel.mode, weather, local.farm]);
+
+  // ─── Calm-notification feed sync ─────────────────────────────
+  // Fires once per mount (gated on weather settling) so the bell +
+  // /notifications page reflect today's calm-engine output. The
+  // calm engine's cooldown / quiet-hours / daily-cap gates do the
+  // real spam suppression — this hook is just the bridge.
+  const calmContext = useMemo(() => {
+    const w = weather && typeof weather === 'object' ? weather : null;
+    return {
+      mode:    ctxIntel.mode === 'garden' ? 'garden' : 'farm',
+      weather: w ? {
+        rainProbability: Number(w.rainProbability ?? w.precipitationProbability ?? 0) || 0,
+        tempC:           Number(w.temp ?? w.tempC ?? NaN),
+        windKph:         Number(w.windSpeedKph ?? w.windKph ?? NaN),
+      } : null,
+      region:  local.farm?.region || local.farm?.country || null,
+    };
+  }, [ctxIntel.mode, weather, local.farm]);
+  useCalmFeedSync(calmContext, { enabled: !weatherLoading });
 
   // Small inline hint — only when weather loaded AND no location
   // coords found. Never a large card; never a blocking warning.

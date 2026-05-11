@@ -279,4 +279,267 @@ describe('notificationEngine — identification + build', () => {
       expect([PRIORITY.LOW, PRIORITY.NORMAL, PRIORITY.IMPORTANT]).toContain(n.priority);
     }
   });
+
+  // ── Trusted-daily spec §6: explicit envelope fields ──────────
+  it('envelope exposes reason, expiresAt, dedupeKey', async () => {
+    const { queueNotifications } = await import('../../../src/intelligence/notifications/notificationEngine.js');
+    const out = queueNotifications({
+      weather: { rainProbability: 0.7 },
+      region:  'NG-Lagos',
+    }, { now: new Date('2026-05-09T14:00:00') });
+    expect(out.length).toBeGreaterThan(0);
+    const n = out[0];
+    expect(typeof n.reason).toBe('string');
+    expect(n.reason.length).toBeGreaterThan(0);
+    expect(typeof n.dedupeKey).toBe('string');
+    expect(n.dedupeKey).toMatch(/^[a-z_]+:/);
+    expect(typeof n.expiresAt).toBe('string');
+    // expiresAt must parse to a future date relative to scheduledAt.
+    expect(Date.parse(n.expiresAt)).toBeGreaterThan(Date.parse(n.scheduledAt));
+  });
+
+  // ── Trusted-daily spec §7: Farm vs Garden separation ─────────
+  it('garden mode strips funding + buyer candidates', async () => {
+    const { identifyCandidates } = await import('../../../src/intelligence/notifications/notificationEngine.js');
+    // Same context, two modes. Farm sees buyer + funding; Garden does not.
+    const ctxFarm   = { mode: 'farm',   buyerInterest: [{ id: 'b1' }], fundingMatches: [{ id: 'f1' }] };
+    const ctxGarden = { mode: 'garden', buyerInterest: [{ id: 'b1' }], fundingMatches: [{ id: 'f1' }] };
+    const farmCands   = identifyCandidates(ctxFarm);
+    const gardenCands = identifyCandidates(ctxGarden);
+    expect(farmCands.some((c) => c.kind === 'buyer')).toBe(true);
+    expect(farmCands.some((c) => c.kind === 'funding')).toBe(true);
+    // Garden — neither commercial category may appear.
+    expect(gardenCands.some((c) => c.kind === 'buyer')).toBe(false);
+    expect(gardenCands.some((c) => c.kind === 'funding')).toBe(false);
+  });
+
+  it('garden mode keeps weather + scan + task + progress candidates', async () => {
+    const { identifyCandidates } = await import('../../../src/intelligence/notifications/notificationEngine.js');
+    const cands = identifyCandidates({
+      mode:    'garden',
+      weather: { rainProbability: 0.7 },
+      tasks:   [{ id: 't1', completed: false }],
+      scanHistory: [{ scanId: 's1', category: 'yellowing' }],
+    });
+    expect(cands.some((c) => c.kind === 'weather')).toBe(true);
+    expect(cands.some((c) => c.kind === 'task')).toBe(true);
+    expect(cands.some((c) => c.kind === 'scan_followup')).toBe(true);
+  });
+
+  // ── Trusted-daily spec §3: daily ceilings ───────────────────
+  it('queueNotifications enforces MAX_DAILY_TOTAL', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const { queueNotifications, MAX_DAILY_TOTAL } =
+      await import('../../../src/intelligence/notifications/notificationEngine.js');
+    dd.clearDedup();
+    expect(MAX_DAILY_TOTAL).toBe(2);
+
+    const at8 = new Date('2026-05-09T08:00:00');
+    // Pretend 2 generic notifications have already shipped today.
+    dd.markDelivered('weather', 'rain', new Date('2026-05-09T07:00:00'));
+    dd.markDelivered('task',    'morning', new Date('2026-05-09T07:30:00'));
+
+    // A new context that would otherwise generate fresh candidates.
+    const out = queueNotifications({
+      mode:   'farm',
+      weather: { tempC: 33 }, // would be weather:heat
+      tasks:  [{ id: 't2', completed: false }],
+    }, { now: at8, commit: true });
+
+    // Ceiling already hit → nothing new should be DELIVERED.
+    const deliveredNow = out.filter((n) => n.deliveredAt);
+    expect(deliveredNow.length).toBe(0);
+  });
+
+  it('queueNotifications enforces MAX_DAILY_WEATHER for non-severe', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const { queueNotifications, MAX_DAILY_WEATHER } =
+      await import('../../../src/intelligence/notifications/notificationEngine.js');
+    dd.clearDedup();
+    expect(MAX_DAILY_WEATHER).toBe(1);
+    // One weather already today (heat = NORMAL priority).
+    dd.markDelivered('weather', 'heat', new Date('2026-05-09T08:00:00'));
+
+    // A cold context would also be weather:* — NORMAL priority,
+    // so the cap should drop it.
+    const out = queueNotifications({
+      mode:    'farm',
+      weather: { tempC: 4 }, // weather:cold (NORMAL)
+    }, { now: new Date('2026-05-09T14:00:00'), commit: true });
+    const deliveredWeather = out.filter((n) => n.kind === 'weather' && n.deliveredAt);
+    expect(deliveredWeather.length).toBe(0);
+  });
+
+  // ── Trusted-daily spec §3: 3-day encouragement cooldown ─────
+  it('progress cooldown lasts 72 hours (max 1 every 3 days)', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    dd.clearDedup();
+    const now = new Date('2026-05-09T18:00:00');
+    expect(dd.shouldDeliver('progress', 'evening', now)).toBe(true);
+    dd.markDelivered('progress', 'evening', now);
+    // 48 h later — still inside the 72 h window.
+    expect(dd.shouldDeliver('progress', 'evening', new Date(now.getTime() + 48 * 60 * 60 * 1000))).toBe(false);
+    // 73 h later — released.
+    expect(dd.shouldDeliver('progress', 'evening', new Date(now.getTime() + 73 * 60 * 60 * 1000))).toBe(true);
+  });
+
+  // ── Trusted-daily spec §8: missing data must not invent alerts
+  it('missing data never produces a fake candidate', async () => {
+    const { identifyCandidates } = await import('../../../src/intelligence/notifications/notificationEngine.js');
+    // Nothing in the context — no weather, no tasks, no scans.
+    const cands = identifyCandidates({ mode: 'farm' });
+    expect(cands).toEqual([]);
+  });
+
+  // ── Trusted-daily spec §3 day-count helper ──────────────────
+  it('countDeliveredSince counts only entries at/after the cutoff', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    dd.clearDedup();
+    const dayStart = new Date('2026-05-09T00:00:00');
+    dd.markDelivered('weather', 'rain', new Date('2026-05-09T07:00:00'));
+    dd.markDelivered('task',    'morning', new Date('2026-05-09T07:30:00'));
+    dd.markDelivered('scan_followup', 's1', new Date('2026-05-08T20:00:00')); // PREVIOUS day
+    expect(dd.countDeliveredSince(dayStart)).toBe(2);
+    expect(dd.countDeliveredSince(dayStart, 'weather')).toBe(1);
+    expect(dd.countDeliveredSince(dayStart, 'task')).toBe(1);
+    expect(dd.countDeliveredSince(dayStart, 'scan_followup')).toBe(0);
+  });
+});
+
+// ─── Per-user scoping ───────────────────────────────────────────
+describe('notificationDeduplication per-user scope', () => {
+  it('cooldowns set under user A do not affect user B', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    dd.clearAllDedupScopes();
+    const at = new Date('2026-05-09T08:00:00');
+    // User A delivers a weather:rain.
+    dd.setActiveUserId('userA');
+    dd.markDelivered('weather', 'rain', at);
+    expect(dd.shouldDeliver('weather', 'rain', at)).toBe(false);
+    // Switch to user B — cooldown does not apply.
+    dd.setActiveUserId('userB');
+    expect(dd.shouldDeliver('weather', 'rain', at)).toBe(true);
+    // Back to user A — still on cooldown.
+    dd.setActiveUserId('userA');
+    expect(dd.shouldDeliver('weather', 'rain', at)).toBe(false);
+  });
+
+  it('clearDedup only wipes the active scope; the other survives', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    dd.clearAllDedupScopes();
+    const at = new Date('2026-05-09T08:00:00');
+    dd.setActiveUserId('userA'); dd.markDelivered('task', 'morning', at);
+    dd.setActiveUserId('userB'); dd.markDelivered('task', 'morning', at);
+    // Clear active (user B) scope. User A's record is unaffected.
+    dd.clearDedup();
+    expect(dd.shouldDeliver('task', 'morning', at)).toBe(true);  // B was wiped
+    dd.setActiveUserId('userA');
+    expect(dd.shouldDeliver('task', 'morning', at)).toBe(false); // A intact
+  });
+
+  it('null userId falls back to __device scope', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    dd.clearAllDedupScopes();
+    dd.setActiveUserId(null);
+    expect(dd.getActiveUserId()).toBeNull();
+    const at = new Date('2026-05-09T08:00:00');
+    dd.markDelivered('weather', 'rain', at);
+    // A signed-in user inheriting the device-scope cooldown? No —
+    // the scopes are isolated. The signed-in lookup hits an empty
+    // map.
+    dd.setActiveUserId('userA');
+    expect(dd.shouldDeliver('weather', 'rain', at)).toBe(true);
+  });
+});
+
+// ─── Action / dismissed state ───────────────────────────────────
+describe('notificationState', () => {
+  it('markAction suppresses the same dedupeKey for 24h', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const ns = await import('../../../src/intelligence/notifications/notificationState.js');
+    dd.setActiveUserId('userS');
+    ns.clearAllState();
+    const at = new Date('2026-05-09T08:00:00');
+    ns.markAction('task:morning', at);
+    expect(ns.isSuppressed('task:morning', at)).toBe(true);
+    expect(ns.isSuppressed('task:morning', new Date(at.getTime() + 23 * 60 * 60 * 1000))).toBe(true);
+    expect(ns.isSuppressed('task:morning', new Date(at.getTime() + 25 * 60 * 60 * 1000))).toBe(false);
+  });
+
+  it('markDismissed suppresses for 72h', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const ns = await import('../../../src/intelligence/notifications/notificationState.js');
+    dd.setActiveUserId('userS');
+    ns.clearAllState();
+    const at = new Date('2026-05-09T08:00:00');
+    ns.markDismissed('weather:rain', at);
+    expect(ns.isSuppressed('weather:rain', at)).toBe(true);
+    expect(ns.isSuppressed('weather:rain', new Date(at.getTime() + 71 * 60 * 60 * 1000))).toBe(true);
+    expect(ns.isSuppressed('weather:rain', new Date(at.getTime() + 73 * 60 * 60 * 1000))).toBe(false);
+  });
+
+  it('engine skips candidates the user already dismissed', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const ns = await import('../../../src/intelligence/notifications/notificationState.js');
+    const { buildNotification } = await import('../../../src/intelligence/notifications/notificationEngine.js');
+    dd.setActiveUserId('userS');
+    dd.clearDedup();
+    ns.clearAllState();
+    const at = new Date('2026-05-09T08:00:00');
+    // Dismiss weather:rain proactively.
+    ns.markDismissed('weather:rain', at);
+    const out = buildNotification(
+      { id: 'weather:rain', kind: 'weather', key: 'rain', vars: {} },
+      { now: at, commit: false },
+    );
+    expect(out).toBeNull();
+  });
+});
+
+// ─── Feed bridge ────────────────────────────────────────────────
+describe('notificationFeedBridge', () => {
+  it('writes delivered envelopes to the user-facing feed', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const ns = await import('../../../src/intelligence/notifications/notificationState.js');
+    const { commitCalmQueue } = await import('../../../src/intelligence/notifications/notificationFeedBridge.js');
+    const feed = await import('../../../src/notifications/notificationStore.js');
+    dd.clearAllDedupScopes();
+    ns.clearAllState();
+    // Wipe any prior feed rows so the assertion below is clean.
+    try { globalThis.localStorage.removeItem('farroway_notifications'); } catch { /* ignore */ }
+
+    const ctx = { mode: 'farm', weather: { rainProbability: 0.7 }, region: 'Frederick' };
+    const at = new Date('2026-05-09T14:00:00');
+    const result = commitCalmQueue(ctx, { userId: 'userBridge', now: at, commit: true });
+
+    expect(result.delivered.length).toBeGreaterThan(0);
+    // Bridge persisted at least one feed row.
+    const rows = feed.getNotifications('userBridge');
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].userId).toBe('userBridge');
+    expect(rows[0].title).toMatch(/Rain expected/);
+    // weather kind → TASK in the existing feed schema.
+    expect(rows[0].type).toBe('TASK');
+  });
+
+  it('garden mode does not write funding rows', async () => {
+    const dd = await import('../../../src/intelligence/notifications/notificationDeduplication.js');
+    const ns = await import('../../../src/intelligence/notifications/notificationState.js');
+    const { commitCalmQueue } = await import('../../../src/intelligence/notifications/notificationFeedBridge.js');
+    const feed = await import('../../../src/notifications/notificationStore.js');
+    dd.clearAllDedupScopes();
+    ns.clearAllState();
+    try { globalThis.localStorage.removeItem('farroway_notifications'); } catch { /* ignore */ }
+
+    const at = new Date('2026-05-09T14:00:00');
+    commitCalmQueue({
+      mode:           'garden',
+      fundingMatches: [{ id: 'f1' }],
+      buyerInterest:  [{ id: 'b1' }],
+    }, { userId: 'userGarden', now: at, commit: true });
+
+    const rows = feed.getNotifications('userGarden');
+    expect(rows.some((r) => r.type === 'FUNDING')).toBe(false);
+    expect(rows.some((r) => r.type === 'BUYER')).toBe(false);
+  });
 });
