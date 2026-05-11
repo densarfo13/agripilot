@@ -30,6 +30,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
+// Live in-app camera (full-screen native-style scanner). Replaces
+// the previous `<input capture>` trigger that bounced the user
+// into the OS Camera app — the live preview now sits inside the
+// page so the experience reads like a real scanner.
+import LiveCameraScanner from './LiveCameraScanner.jsx';
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB
 
@@ -121,6 +126,10 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Live in-app camera open state. The new LiveCameraScanner
+  // takes over the viewport when this is true. Closing it (cancel
+  // or capture-accepted) flips it back to false.
+  const [liveCameraOpen, setLiveCameraOpen] = useState(false);
   // App Store launch audit §4.1: detect camera permission state
   // proactively so we can promote the gallery button and show a
   // calm hint when the user denied camera access. The Permissions
@@ -181,9 +190,62 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
 
   const isBackyard = experience === 'backyard';
 
+  // ─── Live-camera handoff ─────────────────────────────────
+  // Validates a captured/uploaded file and stages it as if it had
+  // come from the hidden file input. Returns true on success so
+  // the caller knows whether to keep the camera open or close.
+  const acceptCapturedFile = useCallback((next) => {
+    if (!next) return false;
+    if (next.size > MAX_BYTES) {
+      setError(tStrict('scan.error.tooLarge', 'That photo is too large. Try a smaller one.'));
+      return false;
+    }
+    const ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+    if (!ALLOWED_TYPES.has(String(next.type || '').toLowerCase())) {
+      setError(tStrict('scan.error.badType', 'Please use a JPEG, PNG, or WebP photo.'));
+      return false;
+    }
+    if (preview) {
+      try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
+    }
+    let url = '';
+    try { url = URL.createObjectURL(next); }
+    catch { /* fall through */ }
+    setPreview(url);
+    setFile(next);
+    setError('');
+    return true;
+  }, [preview]);
+
   const triggerPicker = useCallback(() => {
     setError('');
+    // Live in-app camera. Falls back to the OS file picker
+    // (with capture=environment) only if getUserMedia is
+    // unavailable — LiveCameraScanner's own denied/error states
+    // will show the "Use a saved photo" panel from inside the
+    // overlay before we ever reach this branch.
+    const supportsLive = typeof navigator !== 'undefined'
+      && navigator.mediaDevices
+      && typeof navigator.mediaDevices.getUserMedia === 'function';
+    if (supportsLive) {
+      setLiveCameraOpen(true);
+      return;
+    }
     try { inputRef.current?.click(); } catch { /* ignore */ }
+  }, []);
+
+  const onLiveCameraCaptured = useCallback(({ file: capturedFile }) => {
+    setLiveCameraOpen(false);
+    if (capturedFile) acceptCapturedFile(capturedFile);
+  }, [acceptCapturedFile]);
+
+  const onLiveCameraFallbackUpload = useCallback((uploadedFile) => {
+    setLiveCameraOpen(false);
+    if (uploadedFile) acceptCapturedFile(uploadedFile);
+  }, [acceptCapturedFile]);
+
+  const onLiveCameraCancel = useCallback(() => {
+    setLiveCameraOpen(false);
   }, []);
 
   const triggerGallery = useCallback(() => {
@@ -262,6 +324,17 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
 
   return (
     <div style={STYLES.wrap} data-testid="scan-capture" data-experience={experience}>
+      {/* Full-screen live camera scanner. Renders nothing when
+          liveCameraOpen is false and owns its own stream
+          lifecycle so we never leave the camera hot. */}
+      <LiveCameraScanner
+        open={liveCameraOpen}
+        facingHint="environment"
+        onCancel={onLiveCameraCancel}
+        onCaptured={onLiveCameraCaptured}
+        onFallbackUpload={onLiveCameraFallbackUpload}
+        testId="scan-live-camera"
+      />
       {error ? <div style={STYLES.error}>{error}</div> : null}
       <div style={STYLES.preview} data-testid="scan-capture-preview">
         {preview ? (
