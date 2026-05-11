@@ -3,12 +3,27 @@
 // an actionable message so a misconfigured deploy crashes the bundle
 // at startup rather than silently sending requests to same-origin.
 import { resolveApiBase } from './api/assertApiBaseUrl.js';
+import { isLoggedIn } from '../utils/session.js';
 const API_BASE = resolveApiBase();
 
 // P5.15 — re-export the normalizer so callers can `import { ...
 // normalizeApiResponse, safeCall } from '../lib/api.js'` instead of
 // having to know about the deeper module path.
 export { normalizeApiResponse, safeCall } from './api/normalizeApiResponse.js';
+
+// ─── Not-authenticated sentinel ──────────────────────────────────
+// When the request layer detects "no active session" BEFORE firing,
+// we synthesise the same Error shape a real 401 would produce, so
+// existing callers that check `err.status === 401` keep working.
+// The extra `notAuthenticated` flag lets callers distinguish a
+// pre-flight gate from a server-issued 401 (useful for telemetry).
+function _notAuthenticatedError() {
+  const err = new Error('Not authenticated');
+  err.status = 401;
+  err.notAuthenticated = true;
+  err.fieldErrors = {};
+  return err;
+}
 
 async function parseJson(res) {
   let data = null;
@@ -60,6 +75,21 @@ export async function refreshSession() {
 }
 
 async function request(path, options = {}, allowRefresh = true) {
+  // Pre-flight session gate — only for endpoints that participate in
+  // the refresh dance (allowRefresh === true, i.e. authenticated
+  // endpoints). When there's no session at all (no farroway_token,
+  // no session_cache mirror), skip the fetch entirely and synthesise
+  // a 401. This collapses the "401 → refresh 401 → cascade" noise
+  // that produced 4 reds in DevTools on every guest/expired boot.
+  //
+  // Endpoints that explicitly pass `allowRefresh: false` (login,
+  // register, verify, forgot-password, OTP request/verify, recovery
+  // probes, etc.) are UNAUTHENTICATED by definition — they MUST
+  // still fire even when isLoggedIn() is false.
+  if (allowRefresh && !isLoggedIn()) {
+    throw _notAuthenticatedError();
+  }
+
   // Destructure headers out so ...rest doesn't overwrite the merged headers
   const { headers: optHeaders, ...rest } = options;
   const res = await fetch(`${API_BASE}${path}`, {

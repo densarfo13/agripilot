@@ -56,10 +56,10 @@ const ASSETS = Object.freeze({
     riceField:      '/assets/realism/heroes/vietnam-misty-rice.webp.jpeg',
     // Operator-uploaded supplementary regional shot. Named
     // `IMG_5982` because that's the camera-roll filename; the
-    // semantic context is unknown but it sits in the regions
-    // folder so we treat it as an additional generic regional
-    // hero candidate.
-    regional1:      '/assets/realism/regions/IMG_5982.jpeg',
+    // semantic context is unknown but it was filed under the
+    // africa regions cluster so we treat it as an additional
+    // african-region hero candidate.
+    regional1:      '/assets/realism/regions/africa/IMG_5982.jpeg',
   },
   farm: {
     cassava: '/assets/realism/farm/cassava-leaf.webp.jpeg',

@@ -66,17 +66,13 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Preload the canonical fallback hero photograph — the
-         africa-farm-atmosphere shot is what every Home renders
-         when no crop closeup / weather state / region match
-         resolves. Preloading it knocks ~150ms off the first
-         meaningful paint on the daily-use entry point. -->
-    <link
-      rel="preload"
-      as="image"
-      href="/assets/realism/heroes/africa-farm-atmosphere.jpeg"
-      fetchpriority="high"
-    />
+    <!-- Hero preload removed: the realVisuals resolver picks from
+         5 region packs + crop closeups + operator-uploaded photos,
+         so the canonical fallback (africa-farm-atmosphere.jpeg) is
+         rarely the actual chosen image. Preloading it produced two
+         "preloaded but not used" warnings per page on most boots.
+         The chosen hero loads via the rendered <img> tag with
+         loading="eager" — fast enough without the preload nudge. -->
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
