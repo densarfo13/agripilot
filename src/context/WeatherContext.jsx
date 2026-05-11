@@ -105,8 +105,18 @@ export function WeatherProvider({ children }) {
         // surfaces as a red error in DevTools on every farmer
         // pageview, which was alarming pilot users (visible in
         // recent console screenshots).
-        try { console.warn('[weather] fetch failed (keeping stale data):', err && err.message); }
-        catch { /* ignore */ }
+        //
+        // Suppress entirely on the expected "session expired"
+        // states (401 from server OR the synthetic notAuthenticated
+        // error from the api-layer gate). The UI's "Add location
+        // to unlock weather" empty state already communicates the
+        // outcome; a duplicate console.warn just adds noise.
+        const isAuthNoise =
+          err && (err.status === 401 || err.notAuthenticated === true);
+        if (!isAuthNoise) {
+          try { console.warn('[weather] fetch failed (keeping stale data):', err && err.message); }
+          catch { /* ignore */ }
+        }
         // Keep stale data — don't clear weather on error
       } finally {
         setWeatherLoading(false);

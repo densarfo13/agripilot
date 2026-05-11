@@ -50,6 +50,35 @@ async function parseJson(res) {
 // and all other waiters reuse the same refresh result.
 let _refreshPromise = null;
 
+// ─── Refresh-failure cool-down ────────────────────────────
+// When the refresh endpoint returns ANY non-OK status (401 = no
+// refresh cookie, 429 = rate-limited, 5xx = server hiccup), we
+// mark the session as dead and short-circuit every subsequent
+// authenticated request until the user signs in again. This
+// collapses the expired-session cascade visible in production
+// (4 × 401s + 1 × 429 per page load → all silently gated after
+// the first refresh attempt) without changing the visible UX:
+// the UI already handles 401 calmly.
+//
+// Reset paths:
+//   • markSessionAlive() — called by loginUser / verifyPhoneOtp /
+//     refreshSession on a successful response.
+//   • clearSessionDead() — exported for tests + AuthContext
+//     re-bootstrap.
+let _sessionDead = false;
+
+export function markSessionAlive() {
+  _sessionDead = false;
+}
+
+export function isSessionDead() {
+  return _sessionDead;
+}
+
+export function clearSessionDead() {
+  _sessionDead = false;
+}
+
 async function refreshOnce() {
   if (_refreshPromise) return _refreshPromise;
   _refreshPromise = fetch(`${API_BASE}/api/v2/auth/refresh`, {
@@ -64,12 +93,17 @@ async function refreshOnce() {
  * Proactively refresh the access token.
  * Returns true if refresh succeeded, false otherwise.
  * Used by AuthContext bootstrap to pre-flight before /me.
+ *
+ * Mutates `_sessionDead`: marks dead on failure, alive on success.
  */
 export async function refreshSession() {
   try {
     const res = await refreshOnce();
-    return res.ok;
+    if (res.ok) { _sessionDead = false; return true; }
+    _sessionDead = true;
+    return false;
   } catch {
+    _sessionDead = true;
     return false;
   }
 }
@@ -90,6 +124,15 @@ async function request(path, options = {}, allowRefresh = true) {
     throw _notAuthenticatedError();
   }
 
+  // Second gate: once refresh has failed in this session, the access
+  // token can't be revived without a fresh sign-in. Every subsequent
+  // authenticated request short-circuits to keep the console quiet
+  // and the network panel clean. Reset by markSessionAlive() on a
+  // successful login / refresh.
+  if (allowRefresh && _sessionDead) {
+    throw _notAuthenticatedError();
+  }
+
   // Destructure headers out so ...rest doesn't overwrite the merged headers
   const { headers: optHeaders, ...rest } = options;
   const res = await fetch(`${API_BASE}${path}`, {
@@ -105,10 +148,18 @@ async function request(path, options = {}, allowRefresh = true) {
     try {
       const refreshRes = await refreshOnce();
       if (refreshRes.ok) {
+        _sessionDead = false;
         return request(path, options, false);
       }
+      // Refresh returned a non-OK status (401 = no refresh cookie,
+      // 429 = rate-limited, 5xx = server hiccup). Mark the session
+      // dead so every subsequent authenticated request short-
+      // circuits in the gate above — no more cascade.
+      _sessionDead = true;
     } catch {
-      // Refresh network failure — fall through to original 401
+      // Refresh network failure — same outcome: short-circuit
+      // future authenticated calls until the user signs in.
+      _sessionDead = true;
     }
   }
 
@@ -122,24 +173,35 @@ export function registerUser(payload) {
   });
 }
 
-export function loginUser(payload) {
-  return request('/api/v2/auth/login', {
+export async function loginUser(payload) {
+  const data = await request('/api/v2/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   }, false); // login 401 = wrong password, not an expired session
+  // Successful login clears any prior session-dead flag so the
+  // post-failure gate stops short-circuiting future calls.
+  _sessionDead = false;
+  return data;
 }
 
-export function verifyMfaCode(payload) {
-  return request('/api/v2/auth/mfa/verify', {
+export async function verifyMfaCode(payload) {
+  const data = await request('/api/v2/auth/mfa/verify', {
     method: 'POST',
     body: JSON.stringify(payload),
   }, false);
+  _sessionDead = false;
+  return data;
 }
 
-export function logoutUser() {
-  return request('/api/v2/auth/logout', {
+export async function logoutUser() {
+  const data = await request('/api/v2/auth/logout', {
     method: 'POST',
   }, false);
+  // After logout, the next login will reset; pre-emptively mark
+  // dead so any in-flight authenticated request from a previous
+  // surface short-circuits cleanly.
+  _sessionDead = true;
+  return data;
 }
 
 export function getCurrentUser() {
@@ -167,11 +229,15 @@ export function requestPhoneOtp(phone) {
   }, false);
 }
 
-export function verifyPhoneOtp(phone, code) {
-  return request('/api/v2/auth/otp/verify', {
+export async function verifyPhoneOtp(phone, code) {
+  const data = await request('/api/v2/auth/otp/verify', {
     method: 'POST',
     body: JSON.stringify({ phone, code }),
   }, false);
+  // OTP verify is the SMS branch of "exchange credentials for a
+  // session" — same reset semantics as loginUser.
+  _sessionDead = false;
+  return data;
 }
 
 export function forgotPassword(payload) {

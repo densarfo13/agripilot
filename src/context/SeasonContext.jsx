@@ -80,7 +80,16 @@ export function SeasonProvider({ children }) {
     if (currentFarmId && currentFarmId !== prevFarmIdRef.current && seasonInitialized) {
       prevFarmIdRef.current = currentFarmId;
       refreshSeason(currentFarmId).catch((error) => {
-        console.error('Failed to refresh season after farm switch:', error);
+        // Suppress the expected "session expired" / "guest boot"
+        // shapes — the api-layer gate throws notAuthenticated and
+        // the server returns 401 for the same state. Logging here
+        // produces a red error in DevTools that the UI already
+        // handles (empty-state copy in the consuming surface).
+        const isAuthNoise =
+          error && (error.status === 401 || error.notAuthenticated === true);
+        if (!isAuthNoise) {
+          console.error('Failed to refresh season after farm switch:', error);
+        }
       });
     } else {
       prevFarmIdRef.current = currentFarmId;

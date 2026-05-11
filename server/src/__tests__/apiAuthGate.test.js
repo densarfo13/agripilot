@@ -107,3 +107,83 @@ describe('lib/api.js auth-gate (May 2026 console-noise fix)', () => {
     expect(calls.length).toBe(0);
   });
 });
+
+// ─── Session-dead cool-down ────────────────────────────────────
+// After a refresh failure (401 / 429 / 5xx), subsequent
+// authenticated requests must short-circuit until a successful
+// login / OTP / refreshSession resets the flag.
+
+describe('lib/api.js session-dead cool-down', () => {
+  it('marks session dead after a 401 → refresh-429 cascade', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    // First fetch returns 401; refresh returns 429; client sees both.
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: 'unauthorized' }) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({ error: 'too_many_requests' }) });
+    const { getCurrentUser, isSessionDead } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(isSessionDead()).toBe(true);
+  });
+
+  it('short-circuits subsequent authenticated calls without firing', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { getCurrentUser } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    const callsAfterFirst = globalThis.fetch.mock.calls.length;
+
+    // Subsequent calls — these must NOT fire fetch.
+    let err1 = null, err2 = null;
+    try { await getCurrentUser(); } catch (e) { err1 = e; }
+    try { await getCurrentUser(); } catch (e) { err2 = e; }
+    expect(err1?.notAuthenticated).toBe(true);
+    expect(err2?.notAuthenticated).toBe(true);
+    // Network panel: exactly the original 2 calls (initial fetch +
+    // refresh), nothing after.
+    expect(globalThis.fetch.mock.calls.length).toBe(callsAfterFirst);
+  });
+
+  it('successful login resets the dead flag', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      // Then the user logs in successfully:
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, user: { id: 'u1' } }) })
+      // Then a subsequent authenticated call:
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ user: { id: 'u1' } }) });
+    const { getCurrentUser, loginUser, isSessionDead } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    expect(isSessionDead()).toBe(true);
+    await loginUser({ email: 'x@y', password: 'p' });
+    expect(isSessionDead()).toBe(false);
+    // The next authenticated call now goes through.
+    await getCurrentUser();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it('refreshSession success also clears the flag', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true }) });
+    const { getCurrentUser, refreshSession, isSessionDead } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    expect(isSessionDead()).toBe(true);
+    const ok = await refreshSession();
+    expect(ok).toBe(true);
+    expect(isSessionDead()).toBe(false);
+  });
+
+  it('logoutUser pre-emptively marks the session dead', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    const { logoutUser, isSessionDead } = await import('../../../src/lib/api.js');
+    await logoutUser();
+    expect(isSessionDead()).toBe(true);
+  });
+});
