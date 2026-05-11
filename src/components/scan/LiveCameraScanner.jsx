@@ -472,27 +472,47 @@ export default function LiveCameraScanner({
           />
         ) : null}
 
-        {/* Frame guide — only visible while live-streaming */}
+        {/* Frame guide + animated scan line — only visible while
+            live-streaming. The scan line sweeps top-to-bottom on
+            a 2.4s loop, CSS-driven (no JS timer), and gives the
+            viewfinder a "scanning" feel without claiming AI is
+            doing anything before the user actually captures. */}
         {phase === 'streaming' && (
           <>
             <div style={S.guideFrame} aria-hidden="true">
+              {/* Soft ochre glow ring around the frame */}
+              <span style={S.guideGlow} />
+              {/* Animated sweep line */}
+              <span style={S.scanLine} />
               <span style={{ ...S.guideCorner, top: -2,    left: -2,
-                              borderTop:  '3px solid #FFFFFF',
-                              borderLeft: '3px solid #FFFFFF' }}/>
+                              borderTop:  '3px solid #E6BC85',
+                              borderLeft: '3px solid #E6BC85' }}/>
               <span style={{ ...S.guideCorner, top: -2,    right: -2,
-                              borderTop:   '3px solid #FFFFFF',
-                              borderRight: '3px solid #FFFFFF' }}/>
+                              borderTop:   '3px solid #E6BC85',
+                              borderRight: '3px solid #E6BC85' }}/>
               <span style={{ ...S.guideCorner, bottom: -2, left: -2,
-                              borderBottom: '3px solid #FFFFFF',
-                              borderLeft:   '3px solid #FFFFFF' }}/>
+                              borderBottom: '3px solid #E6BC85',
+                              borderLeft:   '3px solid #E6BC85' }}/>
               <span style={{ ...S.guideCorner, bottom: -2, right: -2,
-                              borderBottom: '3px solid #FFFFFF',
-                              borderRight:  '3px solid #FFFFFF' }}/>
+                              borderBottom: '3px solid #E6BC85',
+                              borderRight:  '3px solid #E6BC85' }}/>
             </div>
             <p style={S.guideHint}>
               {tSafe('scan.camera.guide', 'Place leaf or crop inside the frame')}
             </p>
           </>
+        )}
+
+        {/* Captured-frame confidence chip — sits above the
+            preview to set expectation BEFORE the analyze tap.
+            Calm "Ready to analyze" pill, not a fake AI score.
+            Real confidence labels are emitted by the analysis
+            engine after the analyze call completes. */}
+        {phase === 'captured' && capturedUrl && (
+          <div style={S.capturedBadge} aria-hidden="true">
+            <span style={S.capturedDot} />
+            <span>{tSafe('scan.camera.readyAnalyze', 'Ready to analyze')}</span>
+          </div>
         )}
 
         {phase === 'requesting' && (
@@ -676,11 +696,59 @@ const S = {
     bottom: '24%',
     borderRadius: 16,
     pointerEvents: 'none',
+    overflow: 'hidden',
+  },
+  guideGlow: {
+    position: 'absolute',
+    inset: -8,
+    borderRadius: 22,
+    boxShadow: '0 0 0 1px rgba(230,188,133,0.18), 0 0 28px rgba(230,188,133,0.10)',
+    pointerEvents: 'none',
+  },
+  scanLine: {
+    position: 'absolute',
+    left: '6%',
+    right: '6%',
+    top: 0,
+    height: 2,
+    borderRadius: 2,
+    background: 'linear-gradient(90deg, rgba(230,188,133,0) 0%, rgba(230,188,133,0.95) 50%, rgba(230,188,133,0) 100%)',
+    boxShadow: '0 0 12px rgba(230,188,133,0.55)',
+    animation: 'farroway-scan-line-sweep 2.4s ease-in-out infinite',
+    willChange: 'transform, opacity',
+    pointerEvents: 'none',
   },
   guideCorner: {
     position: 'absolute',
     width: 28,
     height: 28,
+  },
+  capturedBadge: {
+    position: 'absolute',
+    top: '5%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '0.4rem 0.85rem',
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    color: '#A8C283',
+    background: 'rgba(143,171,115,0.18)',
+    border: '1px solid rgba(143,171,115,0.45)',
+    borderRadius: 999,
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    pointerEvents: 'none',
+    letterSpacing: '0.01em',
+  },
+  capturedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#8FAB73',
+    boxShadow: '0 0 8px rgba(143,171,115,0.7)',
   },
   guideHint: {
     position: 'absolute',

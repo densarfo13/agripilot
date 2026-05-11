@@ -60,6 +60,10 @@ import ChooseCropCard            from '../components/home/ChooseCropCard.jsx';
 // crop/garden. SVG fallback today; swaps to real photo as soon
 // as a .webp lands under public/assets/realism/photography/.
 import CropPlantHero             from '../components/home/CropPlantHero.jsx';
+// Live intelligence strip — horizontally scrolling row of
+// compact live-signal chips. Self-suppresses when fewer than
+// two signals qualify; pulls weather/scan/satellite/task data.
+import LiveIntelligenceStrip     from '../components/home/LiveIntelligenceStrip.jsx';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
@@ -570,6 +574,27 @@ export default function PilotHome() {
           <ChooseCropCard
             mode={experienceMode}
             farm={experienceEntity || local.farm}
+          />
+        </FeatureShell>
+
+        {/* ── 1d. Live intelligence strip ──────────────────────
+             Horizontally scrolling row of compact live signals
+             (weather shift / disease watch / moisture / growth
+             momentum / timing / land health). Self-suppresses
+             when fewer than two signals qualify so we never paint
+             a single lonely chip. */}
+        <FeatureShell name="live-intelligence-strip" silent>
+          <LiveIntelligenceStrip
+            mode={experienceMode}
+            location={local.locationObj}
+            weather={weather}
+            recentScans={(() => {
+              try {
+                const raw = _safeJsonGet('farroway_scan_history_v1');
+                return Array.isArray(raw) ? raw : [];
+              } catch { return []; }
+            })()}
+            tasks={ctxIntel.todayTask ? [ctxIntel.todayTask] : []}
           />
         </FeatureShell>
 
