@@ -30,11 +30,17 @@
  *   • Soft Ochre / olive ink palette throughout.
  */
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
 import CropImage, { resolveCropImage, normaliseCrop } from '../../assets/realism/cropImages.jsx';
+// Real photograph resolver (operator-uploaded assets under
+// public/assets/realism/). When a photo resolves for the active
+// crop / weather / region context, we render the real <img>
+// over the atmospheric SVG fallback. onError swaps back to the
+// SVG so a broken upload never paints a blank rectangle.
+import { resolveHeroImage } from '../../lib/realVisuals.jsx';
 
 function _resolveTitleLine(entity, crop, mode) {
   const isGarden = String(mode || '').toLowerCase() === 'garden';
@@ -88,16 +94,35 @@ export default function CropPlantHero({
   mode = 'farm',
   entity = null,
   crop = null,
+  weather = null,
   testId = 'crop-plant-hero',
 }) {
   const isGarden = String(mode || '').toLowerCase() === 'garden';
   const to = isGarden ? '/my-grow' : '/my-farm';
 
-  // Pick the crop key with a sensible default: when the user has
-  // no crop on file we still want a non-generic image — fall back
-  // to a friendly herb scene for garden mode and the generic crop
-  // horizon for farm mode. resolveCropImage handles both.
+  // The atmospheric SVG keeps its role as the LAST-LINE fallback
+  // so the hero never paints blank when no real photo resolves.
   const resolved = resolveCropImage(crop || (isGarden ? 'herb' : null), mode);
+
+  // Resolve a real photograph for the active mode + crop +
+  // weather + region. The resolver layers preferences: crop
+  // closeup → weather state → region → time of day. Returns a
+  // path under /assets/realism/...
+  const photoSrc = useMemo(() => {
+    try {
+      const region = entity && (entity.region || entity.country || entity.regionName);
+      const hour = (() => { try { return new Date().getHours(); } catch { return null; } })();
+      return resolveHeroImage({
+        mode,
+        crop,
+        weatherType: weather && weather.weatherType,
+        region,
+        hour,
+      });
+    } catch { return null; }
+  }, [mode, crop, entity, weather]);
+  const [photoErrored, setPhotoErrored] = useState(false);
+
   const titleLine    = _resolveTitleLine(entity, crop, mode);
   const stageLine    = _resolveStageLine(entity, crop, mode);
   const subtitleLine = _resolveSubtitleLine(entity, mode);
@@ -109,14 +134,35 @@ export default function CropPlantHero({
       data-testid={testId}
       data-mode={isGarden ? 'garden' : 'farm'}
       data-crop={resolved.key}
+      data-real-photo={photoSrc && !photoErrored ? 'true' : 'false'}
       aria-label={`${titleLine} — ${subtitleLine}`}
     >
+      {/* Real photograph layer — when the operator's uploaded
+          asset resolves for this context, render it as the
+          backdrop. SVG atmospheric fallback below stays mounted
+          so an image error never paints a blank rectangle. */}
+      {photoSrc && !photoErrored && (
+        <img
+          src={photoSrc}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setPhotoErrored(true)}
+          style={S.realPhoto}
+          data-testid={`${testId}-photo`}
+        />
+      )}
       <CropImage
         crop={crop || (isGarden ? 'herb' : 'crop')}
         mode={mode}
         rounded={0}
-        style={S.image}
-        testId={`${testId}-image`}
+        style={{
+          ...S.image,
+          // The SVG fallback hides behind the real photo when one
+          // is rendering; it un-hides via onError → re-render.
+          opacity: photoSrc && !photoErrored ? 0 : 1,
+        }}
+        testId={`${testId}-image-fallback`}
       />
       <div style={S.captionWrap}>
         <div style={S.captionTop}>
@@ -150,6 +196,20 @@ const S = {
     width: '100%',
     height: '100%',
     borderRadius: 0,
+    transition: 'opacity 220ms ease-out',
+  },
+  // Real photograph layer — sits ABOVE the atmospheric SVG so
+  // the photo is the visual identity when one is shipped. Object-
+  // fit:cover crops to the card's 9.5rem-min-height frame so any
+  // landscape photo composes correctly without letterboxing.
+  realPhoto: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+    zIndex: 1,
   },
   captionWrap: {
     position: 'relative',
@@ -159,7 +219,12 @@ const S = {
     padding: '0.95rem 1rem 0.85rem',
     height: '100%',
     minHeight: '9.5rem',
-    background: 'linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(15,22,32,0.55) 100%)',
+    // Stronger bottom gradient so the caption reads on top of
+    // bright environmental photography (the African sunrise +
+    // greenhouse shots are quite luminous).
+    background: 'linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(8,17,26,0.78) 100%)',
+    // Sits above the real-photo + SVG backdrop layers.
+    zIndex: 2,
   },
   captionTop: {
     display: 'flex',

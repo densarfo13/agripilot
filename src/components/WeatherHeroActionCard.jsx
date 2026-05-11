@@ -42,7 +42,7 @@
  *     during the loading window.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { tSafe } from '../i18n/tSafe.js';
 import {
   getWeatherHero, formatAccurateAsOf,
@@ -52,6 +52,10 @@ import {
   resolveScene,
   DynamicWeatherBackdrop,
 } from '../features/weather/environment/index.js';
+// Real weather state imagery (operator-uploaded under
+// public/assets/realism/weather/). Bypasses the slot manifest
+// for now so the photo lands without filesystem reorganisation.
+import { resolveWeatherImage } from '../lib/realVisuals.jsx';
 
 const VALID_TYPES = new Set([
   'rain', 'heat', 'wind', 'dry',
@@ -333,6 +337,14 @@ export default function WeatherHeroActionCard({
     });
   }, [w, mode]);
 
+  // Real weather state imagery — pulls from public/assets/realism/
+  // weather/*.webp.jpeg via the resolver. Maps rain/storm/drought/
+  // misty → matching photo. When type doesn't map (or the image
+  // fails to load), the existing DynamicWeatherBackdrop stays as
+  // the visible layer.
+  const realWeatherSrc = useMemo(() => resolveWeatherImage(type), [type]);
+  const [realWeatherErrored, setRealWeatherErrored] = useState(false);
+
   function handleCta() {
     if (typeof onCta === 'function') {
       try { onCta({ type, taskDone, mode }); }
@@ -354,8 +366,26 @@ export default function WeatherHeroActionCard({
       data-weather-type={type}
       data-mode={mode}
       data-done={taskDone ? 'true' : 'false'}
+      data-real-photo={realWeatherSrc && !realWeatherErrored ? 'true' : 'false'}
       style={S.section}
     >
+      {/* Real weather photograph — sits behind every content
+          layer so the existing DynamicWeatherBackdrop, CSS
+          animation layer, and section text all paint over it.
+          When the photo errors / no real image fits, the
+          existing dynamic backdrop remains the visible layer. */}
+      {realWeatherSrc && !realWeatherErrored && (
+        <img
+          src={realWeatherSrc}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setRealWeatherErrored(true)}
+          style={S.realWeatherPhoto}
+          aria-hidden="true"
+          data-testid={`${testId}-real-photo`}
+        />
+      )}
       {/* Animation layer (rain drops, sun glow, wind streaks) on
           top of the background image. Pure CSS; reduced-motion
           safe via the global stylesheet. */}
@@ -524,15 +554,38 @@ const S = {
     gap:        '0.7rem',
     color:      'rgba(255,255,255,0.96)',
     overflow:   'hidden',
+    position:   'relative',
     // Ensures the global .weather-hero CSS picks up the right
     // border-radius regardless of where this component is mounted.
     borderRadius: '22px',
+  },
+  // Real weather state photo — absolute fill, sits underneath
+  // the content + the existing CSS animation layer + the
+  // bottom-gradient. The card text reads cleanly because the
+  // gradient overlay in the global .weather-hero CSS still
+  // darkens the lower half.
+  realWeatherPhoto: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    zIndex: 0,
+    pointerEvents: 'none',
+    // Subtle filter to integrate with the dark companion theme
+    // — drops saturation slightly so the photo doesn't fight the
+    // ochre/olive caption palette. Real photographs from the
+    // operator upload are already well-composed; this is a 5%
+    // tonal adjustment, not a stylization.
+    filter: 'saturate(0.92) brightness(0.86)',
   },
   headerRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: '0.5rem',
+    position: 'relative',
+    zIndex: 1,
   },
   locRow: {
     display: 'inline-flex',
@@ -568,6 +621,8 @@ const S = {
     flexDirection: 'column',
     gap: '0.15rem',
     marginTop: '0.4rem',
+    position: 'relative',
+    zIndex: 1,
   },
   heroIcon: {
     display: 'inline-flex',
@@ -662,6 +717,7 @@ const S = {
     paddingTop: '0.85rem',
     borderTop: '1px solid rgba(255,255,255,0.16)',
     position: 'relative',
+    zIndex: 1,
   },
   actionRow: {
     display: 'flex',

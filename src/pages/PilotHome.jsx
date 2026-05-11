@@ -550,6 +550,7 @@ export default function PilotHome() {
             mode={experienceMode}
             entity={experienceEntity || local.farm}
             crop={local.crop && local.crop !== 'crop' ? local.crop : null}
+            weather={weather}
           />
         </FeatureShell>
 
