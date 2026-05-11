@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AuthGuard from '../components/AuthGuard.jsx';
 import ProfileGuard from '../components/ProfileGuard.jsx';
@@ -29,6 +29,11 @@ import { useUserMode } from '../context/UserModeContext.jsx';
 // Self-hides when FEATURE_NOTIFICATIONS is off; never blocks render.
 import NotificationBell from '../components/NotificationBell.jsx';
 import { isFeatureEnabled as isSurfaceEnabled } from '../utils/featureFlags.js';
+// Settings drawer — consolidates the chrome controls that used to
+// crowd the header (language, mode toggle, voice toggle, logout).
+// One menu button on the right opens the drawer; the visible header
+// shrinks to: online chip · notification bell · menu.
+import SettingsDrawer from '../components/system/SettingsDrawer.jsx';
 
 const InnerPageLoader = () => (
   <div style={S.innerLoader}>
@@ -67,6 +72,7 @@ export default function ProtectedLayout() {
   const { mode, setMode, allowedModes, isFarmer } = useUserMode();
   const location = useLocation();
   const onboarding = _isOnboardingPath(location?.pathname || '');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <AuthGuard>
@@ -79,37 +85,26 @@ export default function ProtectedLayout() {
           <RegionBannerHost />
           <div style={S.container}>
             <div style={S.header}>
-              {/* Left: connectivity + language */}
+              {/* Left: connectivity chip only. Language selector
+                  moved into the settings drawer per UI tightening
+                  spec section 5. */}
               <div style={S.headerLeft}>
                 <span style={isOfflineSession ? S.offlineChip : S.onlineChip}>
                   <span style={isOfflineSession ? S.offlineDot : S.onlineDot} />
                   {isOfflineSession ? t('farmer.offline') : t('farmer.online')}
                 </span>
-                <LanguageSelector />
               </div>
 
-              {/* Right: experience switcher + mode + voice + logout.
+              {/* Right: notification bell + menu button. The menu
+                  opens a slide-in drawer containing language,
+                  experience switcher, mode toggle, voice toggle,
+                  and logout \u2014 everything that used to crowd
+                  the header sits one tap away.
                   Spec \u00a74: suppress mode toggle / AutoVoice / logout
                   during onboarding so the user has zero distractions
                   while completing setup. The language selector
                   (left side) stays visible per spec. */}
               <div style={S.headerRight} data-testid="layout-chrome-right">
-                {isFarmer && !onboarding && <ExperienceSwitcher />}
-                {isFarmer && !onboarding && allowedModes.length > 1 && (
-                  <button
-                    onClick={() => setMode(mode === 'basic' ? 'standard' : 'basic')}
-                    style={S.modeToggle}
-                    type="button"
-                    data-testid="layout-mode-toggle"
-                  >
-                    {mode === 'basic' ? t('mode.simple') : t('mode.standard')}
-                  </button>
-                )}
-                {!onboarding && <AutoVoiceToggle />}
-                {/* In-app notification bell — safe mode (no push/SMS).
-                    Self-hides when FEATURE_NOTIFICATIONS is off. Placed
-                    before logout so it's always reachable with one tap.
-                    userId is the server-assigned sub/id — never PII. */}
                 {!onboarding && isSurfaceEnabled('FEATURE_NOTIFICATIONS') && (() => {
                   try {
                     const bellUserId = String(user?.sub || user?.id || '');
@@ -120,17 +115,66 @@ export default function ProtectedLayout() {
                 })()}
                 {!onboarding && (
                   <button
-                    onClick={logout}
-                    style={S.logoutBtn}
                     type="button"
-                    data-testid="layout-logout"
+                    onClick={() => setSettingsOpen(true)}
+                    style={S.menuBtn}
+                    aria-label={t('settings.title')}
+                    data-testid="layout-settings-menu"
                   >
-                    {t('common.logout')}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
                   </button>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Settings drawer — holds the chrome controls that used
+              to crowd the header. Self-hides during onboarding so
+              the user has zero distractions while completing setup. */}
+          {!onboarding && (
+            <SettingsDrawer
+              open={settingsOpen}
+              onClose={() => setSettingsOpen(false)}
+              title={t('settings.title')}
+              testId="layout-settings-drawer"
+            >
+              {isFarmer && (
+                <div style={S.drawerSection}>
+                  <ExperienceSwitcher />
+                </div>
+              )}
+              <div style={S.drawerSection}>
+                <LanguageSelector />
+              </div>
+              {isFarmer && allowedModes.length > 1 && (
+                <div style={S.drawerSection}>
+                  <button
+                    onClick={() => setMode(mode === 'basic' ? 'standard' : 'basic')}
+                    style={S.drawerModeToggle}
+                    type="button"
+                    data-testid="drawer-mode-toggle"
+                  >
+                    {mode === 'basic' ? t('mode.simple') : t('mode.standard')}
+                  </button>
+                </div>
+              )}
+              <div style={S.drawerSection}>
+                <AutoVoiceToggle />
+              </div>
+              <div style={{ ...S.drawerSection, marginTop: 'auto' }}>
+                <button
+                  onClick={() => { setSettingsOpen(false); try { logout(); } catch { /* swallow */ } }}
+                  style={S.drawerLogout}
+                  type="button"
+                  data-testid="drawer-logout"
+                >
+                  {t('common.logout')}
+                </button>
+              </div>
+            </SettingsDrawer>
+          )}
           <Suspense fallback={<InnerPageLoader />}>
             <Outlet />
           </Suspense>
@@ -179,12 +223,20 @@ const S = {
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #F6F1E7 0%, #EFE7D5 100%)',
     color: '#1F2933',
-    paddingBottom: '70px',
+    // Bottom padding accounts for the fixed bottom nav (62px) +
+    // iPhone safe-area inset so content doesn't tuck under the
+    // nav on devices with a home indicator. Spec §1 (compact
+    // mobile layout): keep important action above the fold and
+    // honour safe-area-inset-bottom.
+    paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
+    paddingTop: 'env(safe-area-inset-top, 0px)',
   },
   container: {
     maxWidth: '42rem',
     margin: '0 auto',
-    padding: '0.625rem 1rem',
+    // Tighter top padding so the hero card lifts toward the top
+    // of the viewport on mobile (spec §1: reduce top padding).
+    padding: '0.4rem 0.85rem 0',
   },
   header: {
     display: 'flex',
@@ -268,6 +320,53 @@ const S = {
     minHeight: '26px',
     WebkitTapHighlightColor: 'transparent',
     transition: 'color 0.15s',
+  },
+  // Single menu button that opens the settings drawer. Replaces
+  // the language/mode/voice/logout cluster that used to live on
+  // the right side of the header.
+  menuBtn: {
+    width: 34,
+    height: 34,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(31,41,51,0.05)',
+    border: '1px solid rgba(31,41,51,0.08)',
+    borderRadius: 10,
+    color: '#1F2933',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    padding: 0,
+  },
+  // Drawer body sections — vertical stack with consistent gap.
+  drawerSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  drawerModeToggle: {
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    color: '#1F2933',
+    background: '#FFF9F0',
+    border: '1px solid rgba(31,41,51,0.12)',
+    borderRadius: 10,
+    padding: '0.65rem 0.85rem',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    minHeight: 42,
+  },
+  drawerLogout: {
+    fontSize: '0.9rem',
+    fontWeight: 700,
+    color: '#C65A4B',
+    background: 'rgba(198,90,75,0.08)',
+    border: '1px solid rgba(198,90,75,0.25)',
+    borderRadius: 10,
+    padding: '0.7rem 0.9rem',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    minHeight: 44,
   },
   innerLoader: {
     display: 'flex',

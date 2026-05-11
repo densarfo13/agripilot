@@ -54,6 +54,10 @@ import { trackEvent as moatTrack } from '../core/analytics.js';
 // + ExperienceSwitcher are showing on screen.
 import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
+// UI tightening pass §8 — chips + recent-scans hint that sit below
+// the camera/upload card during the capture phase. Replaces the
+// previously empty page real-estate the spec called out.
+import ScanCaptureUpgrade from '../components/scan/ScanCaptureUpgrade.jsx';
 import ScanAnalyzing from '../components/scan/ScanAnalyzing.jsx';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 // Crash-safe fallback used by:
@@ -674,7 +678,10 @@ export default function ScanPage() {
       />
 
       {phase === 'capture' ? (
-        <ScanCapture experience={experience} onContinue={onContinue} />
+        <>
+          <ScanCapture experience={experience} onContinue={onContinue} />
+          <ScanCaptureUpgrade testId="scan-capture-upgrade" />
+        </>
       ) : null}
 
       {phase === 'analyzing' ? (

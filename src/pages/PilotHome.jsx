@@ -54,6 +54,7 @@ import WeatherHeroActionCard     from '../components/WeatherHeroActionCard.jsx';
 import { PREMIUM_TOKENS as T }   from '../components/premium/tokens.js';
 import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.jsx';
 import LandHealthCard            from '../components/home/LandHealthCard.jsx';
+import ChooseCropCard            from '../components/home/ChooseCropCard.jsx';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import MemoryMomentLine          from '../components/home/MemoryMomentLine.jsx';
@@ -540,6 +541,17 @@ export default function PilotHome() {
             mode={experienceMode}
             entity={experienceEntity}
             count={experienceCount}
+          />
+        </FeatureShell>
+
+        {/* ── 1c. Choose-crop prompt (Farm mode, no crop on file) ─
+             Self-suppresses when a crop is already selected OR
+             when the active experience is Garden. Sits compact so
+             it never pushes the weather hero below the fold. */}
+        <FeatureShell name="choose-crop-card" silent>
+          <ChooseCropCard
+            mode={experienceMode}
+            farm={experienceEntity || local.farm}
           />
         </FeatureShell>
 
