@@ -359,6 +359,11 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+// Build-marker module — exports FARROWAY_BUILD_INFO + installBuildMarker.
+// The deployment-reflection audit added this so ops can confirm at a
+// glance whether the deployed bundle is the latest commit (compare
+// FARROWAY_BUILD_INFO.version across two visitors).
+import { FARROWAY_BUILD_INFO, installBuildMarker } from './lib/buildInfo.js';
 // Sentry init — pure no-op when VITE_SENTRY_DSN isn't set (matches
 // the server's "Missing SENTRY_DSN — Sentry disabled safely"
 // banner). Must run before ReactDOM.createRoot so the SDK is in
@@ -505,7 +510,22 @@ try {
       '[Farroway Runtime] Active production paths verified',
       { home: '/home', scan: '/scan', apiBase },
     );
+    // Dev-only diagnostic: print which API base the bundle is wired
+    // to. Helps spot a stale .env.production after a deploy without
+    // having to dig into the network panel.
+    // eslint-disable-next-line no-console
+    console.log('[Farroway API Base]', apiBase);
   }
+} catch { /* swallow — never block boot on diagnostics */ }
+
+// Build-info marker — runs on every boot in BOTH dev and prod. The
+// version string is locked into the bundle at build time, so two
+// browsers running the same deploy see the same value. A mismatch
+// across visitors is a deterministic "stale cache" signal.
+try {
+  // eslint-disable-next-line no-console
+  console.log('[Farroway Frontend Build]', FARROWAY_BUILD_INFO);
+  installBuildMarker();
 } catch { /* swallow — never block boot on diagnostics */ }
 
 // ── Blank-screen watchdog ───────────────────────────────────────
