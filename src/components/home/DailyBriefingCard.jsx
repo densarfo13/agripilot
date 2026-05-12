@@ -41,6 +41,10 @@ import { detectScanPattern } from '../../lib/scanPatternDetection.js';
 import { computePredictiveRisks } from '../../lib/predictiveRisk.js';
 import { composeDailyBriefing } from '../../lib/dailyBriefing.js';
 import { topAction } from '../../lib/taskPrioritization.js';
+// Proactive farm-intelligence layer §6 — voice assistant surface.
+// Listens / speaks / answers a few canonical farmer questions from
+// the same context we already compute for the briefing.
+import VoiceAssistantPanel from './VoiceAssistantPanel.jsx';
 
 const STYLES = {
   card: {
@@ -180,10 +184,12 @@ export default function DailyBriefingCard({ farmerName, cropName }) {
       top = topAction(scanTasks, { weatherRisks: risks });
     } catch { /* empty */ }
 
-    return { composed, top };
+    const latestScan = scanHistory.length > 0 ? scanHistory[0] : null;
+
+    return { composed, top, risks, healthScore, latestScan };
   }, [farmerName, cropName]);
 
-  const { composed, top } = briefing;
+  const { composed, top, risks, healthScore, latestScan } = briefing;
   const hasLines = composed && Array.isArray(composed.lines) && composed.lines.length > 0;
   const hasTop   = top && top.task && top.task.title;
 
@@ -217,6 +223,18 @@ export default function DailyBriefingCard({ farmerName, cropName }) {
           <p style={STYLES.topActionText}>{top.task.title}</p>
         </div>
       ) : null}
+
+      {/* §6 voice surface — Listen button speaks the briefing,
+          text+mic field answers a handful of canonical farmer
+          questions. Self-hides cleanly on platforms without TTS
+          AND without speech recognition. */}
+      <VoiceAssistantPanel
+        briefing={composed}
+        risks={risks}
+        topAction={top}
+        healthScore={healthScore}
+        latestScan={latestScan}
+      />
     </section>
   );
 }
