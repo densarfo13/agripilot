@@ -551,9 +551,17 @@ export default function ScanPage() {
       // FEATURE_SCAN_USEFULNESS: also write the lightweight entry to
       // farroway_scan_history_v1 so UsefulScanHistory can display it
       // without depending on the per-farm history slot.
+      //
+      // Farm-intelligence loop §3: forward the thumbnail captured by
+      // ScanCapture so the journal timeline can render an inline
+      // preview. saveScanUseful pulls severity / recommendations /
+      // weather caution off the result envelope itself.
       if (FEATURE_SCAN_USEFULNESS) {
         try {
-          saveScanUseful(result, { experience: activeExperience });
+          saveScanUseful(result, {
+            experience: activeExperience,
+            thumbnail:  pendingThumbnail,
+          });
         } catch { /* non-fatal — old history still written above */ }
       }
       try { trackEvent('scan_saved', {
@@ -716,8 +724,15 @@ export default function ScanPage() {
         FEATURE_SCAN_USEFULNESS ? (
           // FEATURE_SCAN_USEFULNESS — clean farmer-friendly card.
           // saveScanUseful is idempotent (same scanId → no-op).
+          // §3: thumbnail passthrough mirrors the auto-save path
+          // above so both code paths produce the same enriched entry.
           (() => {
-            try { saveScanUseful(result, { experience: activeExperience }); } catch { /* ignore */ }
+            try {
+              saveScanUseful(result, {
+                experience: activeExperience,
+                thumbnail:  pendingThumbnail,
+              });
+            } catch { /* ignore */ }
             return (
               <UsefulResultCard
                 result={result}

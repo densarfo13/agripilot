@@ -82,9 +82,31 @@ function _makeId() {
  * Idempotent within the same scanId — a second call with the same id
  * is a no-op (returns the existing entry).
  *
- * @param {object} result       — ScanResult from the engine (at minimum: category, possibleIssue)
- * @param {object} [ctx]        — { experience, noticed }
- * @returns {{ id, category, noticed, createdAt, experience, taskAdded }}
+ * Farm-intelligence loop §3
+ * ─────────────────────────
+ *   The journal entry now captures the four extra fields the spec
+ *   calls out: severity, image thumbnail, recommendations, and the
+ *   weather-caution one-liner. All four are optional — when the
+ *   server hasn't populated them (older bundles, low-confidence
+ *   fallback path) the entry still saves cleanly with `null` values
+ *   so the timeline never silently drops a scan.
+ *
+ *   • severity        — pulled from decision.severityTone first
+ *                       (low/medium/high) then result.severity.
+ *   • thumbnail       — small dataURL string the timeline can render
+ *                       inline. Passed in by the scan page since
+ *                       only it has the captured File reference.
+ *   • recommendations — top 3 action bullets from result.recommendedActions
+ *                       or result.suggestedTasks[].title. The list
+ *                       lets the journal show a one-line "do X, Y, Z"
+ *                       summary without re-running the policy module.
+ *   • weatherCaution  — verbatim line from decision.weatherCaution so
+ *                       the journal can render "Weather likely
+ *                       contributed to this issue" without re-querying.
+ *
+ * @param {object} result       — ScanResult from the engine
+ * @param {object} [ctx]        — { experience, noticed, thumbnail }
+ * @returns {{ id, category, noticed, createdAt, experience, taskAdded, severity, thumbnail, recommendations, weatherCaution, crop, scanId }}
  */
 export function saveScanUseful(result, ctx = {}) {
   const safeResult = (result && typeof result === 'object') ? result : {};
@@ -95,13 +117,52 @@ export function saveScanUseful(result, ctx = {}) {
   const existing = list.find((e) => e && e.id === id);
   if (existing) return existing;
 
+  // §3 enrichment helpers — defensive on every read so a misshaped
+  // server response can't put a non-string into the timeline.
+  const _str = (v) => {
+    const s = String(v == null ? '' : v).trim();
+    return s ? s : null;
+  };
+  const decision = (safeResult.decision && typeof safeResult.decision === 'object')
+    ? safeResult.decision
+    : {};
+
+  // Severity priority: decision.severityTone (low/medium/high) →
+  // result.severity → null. The decision envelope is authoritative
+  // when present because it ran through the policy normaliser.
+  const severity = _str(decision.severityTone) || _str(safeResult.severity);
+
+  // Recommendations: top 3 lines. Prefer result.recommendedActions
+  // (already sanitised by scanResultPolicy) then suggestedTasks
+  // titles as a fallback when the engine only emitted tasks.
+  let recommendations = [];
+  if (Array.isArray(safeResult.recommendedActions)) {
+    recommendations = safeResult.recommendedActions
+      .map(_str)
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+  if (recommendations.length === 0 && Array.isArray(safeResult.suggestedTasks)) {
+    recommendations = safeResult.suggestedTasks
+      .map((t) => _str(t && t.title))
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+
   const entry = {
     id,
-    category:   String(safeResult.category  || 'needs_review'),
-    noticed:    String(ctx.noticed           || safeResult.possibleIssue || 'Needs closer inspection'),
-    createdAt:  _isoNow(),
-    experience: String(ctx.experience        || 'generic'),
-    taskAdded:  false,
+    category:        String(safeResult.category  || 'needs_review'),
+    noticed:         String(ctx.noticed           || safeResult.possibleIssue || 'Needs closer inspection'),
+    createdAt:       _isoNow(),
+    experience:      String(ctx.experience        || 'generic'),
+    taskAdded:       false,
+    // §3 enrichments — all optional, all null-safe.
+    severity,
+    thumbnail:       _str(ctx.thumbnail),
+    recommendations: recommendations.length > 0 ? recommendations : null,
+    weatherCaution:  _str(decision.weatherCaution),
+    crop:            _str(decision.cropDetected) || _str(safeResult.cropName) || _str(safeResult.crop),
+    scanId:          _str(safeResult.scanId) || id,
   };
 
   list.push(entry);

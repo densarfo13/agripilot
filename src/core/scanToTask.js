@@ -28,6 +28,26 @@ const STORAGE_KEY = 'farroway_scan_tasks';
 const MAX_KEPT = 50;
 const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
+// May 2026 farm-intelligence loop §1 — urgency → due-date offset.
+// Scan-derived tasks ship with a concrete due date so Today's Plan
+// can sort by "what needs attention soonest" without re-deriving
+// the schedule. The mapping is intentionally calm — even a "high"
+// urgency task is due TODAY (same-day), not "in 2 hours", because
+// farmers can't always act on a 2-hour clock and we don't want
+// the app to feel like it's bossing them around.
+const _DUE_DATE_OFFSETS_MS = Object.freeze({
+  high:   0,                          // today
+  medium: 2 * 24 * 60 * 60 * 1000,    // +2 days
+  low:    5 * 24 * 60 * 60 * 1000,    // +5 days
+});
+
+function _dueDateFor(urgency, nowMs) {
+  const offset = _DUE_DATE_OFFSETS_MS[String(urgency || 'medium').toLowerCase()];
+  const safeOffset = (typeof offset === 'number') ? offset : _DUE_DATE_OFFSETS_MS.medium;
+  try { return new Date(nowMs + safeOffset).toISOString(); }
+  catch { return null; }
+}
+
 function _readList() {
   try {
     if (typeof localStorage === 'undefined') return [];
@@ -102,22 +122,47 @@ export function addScanTasks(suggestedTasks, context = {}) {
       .map((t) => `${t.scanId}|${t.isFollowUp ? 'fu' : 'im'}|${String(t.title || '').toLowerCase()}`)
   );
 
-  const buildEntry = (t, isFollowUp) => ({
-    id:         t?.id || ('scantask_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 8)),
-    title:      String(t?.title || ''),
-    reason:     t?.reason ? String(t.reason) : '',
-    urgency:    t?.urgency || 'medium',
-    actionType: t?.actionType || 'inspect',
-    source:     'scan',
-    scanId:     context.scanId   || null,
-    gardenId:   context.gardenId || null,
-    farmId:     context.farmId   || null,
-    experience: context.experience || 'generic',
-    isFollowUp: !!isFollowUp,
-    createdAt:  new Date(now).toISOString(),
-    expiresAt:  new Date(now + EXPIRY_MS).toISOString(),
-    completed:  false,
-  });
+  const buildEntry = (t, isFollowUp) => {
+    const urgency = t?.urgency || 'medium';
+    // Farm-intelligence loop §1: pass through richer fields so
+    // Today's Plan can sort + filter by impact/cost/confidence,
+    // and so the upcoming health-score formula has real signals
+    // to read from. All four optional fields default to null so
+    // existing callers (and the older test suite) keep working.
+    const _num = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v : null;
+    const _str = (v) => {
+      const s = String(v == null ? '' : v).trim();
+      return s ? s : null;
+    };
+    return {
+      id:               t?.id || ('scantask_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 8)),
+      title:            String(t?.title || ''),
+      reason:           t?.reason ? String(t.reason) : '',
+      urgency,
+      actionType:       t?.actionType || 'inspect',
+      source:           'scan',
+      scanId:           context.scanId   || null,
+      gardenId:         context.gardenId || null,
+      farmId:           context.farmId   || null,
+      experience:       context.experience || 'generic',
+      isFollowUp:       !!isFollowUp,
+      createdAt:        new Date(now).toISOString(),
+      // §1: concrete due date. Follow-up tasks always carry the
+      // "tomorrow" cadence the policy module embeds in their
+      // dueAt; respect that override when present so we don't
+      // overwrite "Check this again tomorrow" with today.
+      dueAt:            _str(t?.dueAt) || _dueDateFor(urgency, now),
+      // §1: confidence / impact / cost passthrough — the engine
+      // can attach these to suggested tasks and we surface them
+      // verbatim. The fallback `null` keeps the shape stable so
+      // consumers don't have to feature-detect.
+      confidence:       _num(t?.confidence),
+      estimatedImpact:  _str(t?.estimatedImpact),
+      estimatedCost:    _str(t?.estimatedCost),
+      expiresAt:        new Date(now + EXPIRY_MS).toISOString(),
+      completed:        false,
+    };
+  };
 
   const candidates = [
     ...immediateSource.map((t) => buildEntry(t, false)),

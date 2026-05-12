@@ -48,6 +48,11 @@ import ScanContinueCard from '../growth/ScanContinueCard.jsx';
 import ScanRetryTips from './ScanRetryTips.jsx';
 import { trackFirstAction } from '../../analytics/funnelEvents.js';
 import { enforceHighTrustScanResult } from '../../core/scanResultPolicy.js';
+// AI Agronomist composer — sequences the decision envelope's pieces
+// into one calm conversational paragraph so the farmer hears the
+// human voice before the bullet lists below. Pure function; returns
+// '' when the envelope is empty so the block self-hides.
+import { composeAgronomistReply } from '../../lib/agronomistReply.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
 // `plantIdentification` envelope. Self-hides when absent so
@@ -291,6 +296,23 @@ const STYLES = {
     fontSize: 13,
     color: 'rgba(255,255,255,0.82)',
     lineHeight: 1.45,
+  },
+  // AI Agronomist conversational headline — sits near the top of
+  // the card so the farmer reads the human-voice synthesis before
+  // the structured Why / What-to-do / context blocks below. Calm
+  // beige tint matches the brand without screaming for attention.
+  agronomistBlock: {
+    padding: '12px 14px',
+    borderRadius: 12,
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.32)',
+  },
+  agronomistText: {
+    margin: 0,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.92)',
+    lineHeight: 1.55,
+    fontWeight: 500,
   },
 };
 
@@ -554,6 +576,24 @@ export default function ScanResultCard({
           </div>
         </div>
       ) : null}
+
+      {/* AI Agronomist conversational reply \u2014 composes the existing
+          decision envelope fields (what it means + action today +
+          weather + region) into ONE calm paragraph so the farmer
+          reads the human voice first, before the structured blocks.
+          Self-hides cleanly when the envelope is absent (older
+          servers) or carries nothing worth saying. */}
+      {(() => {
+        const reply = composeAgronomistReply(result && result.decision, {
+          cropFallback: result?.cropName || result?.crop || null,
+        });
+        if (!reply) return null;
+        return (
+          <div style={STYLES.agronomistBlock} data-testid="scan-agronomist-reply">
+            <p style={STYLES.agronomistText}>{reply}</p>
+          </div>
+        );
+      })()}
 
       {/* Spec \u00a71 "Why" \u2014 one-paragraph plain-language reason.
           Skips the section entirely when the engine has nothing
