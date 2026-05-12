@@ -30,13 +30,20 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
 const REQUIRED = [
-  // Realism trio — both extensions must exist for full back-compat.
+  // Realism canonical set — both extensions must exist for full
+  // back-compat with cached bundles. The trio was the original
+  // set; greenhouse-work + healthy-leaf were added after the
+  // May 2026 console screenshot showed 404s on those paths.
   'public/assets/realism/heroes/africa-farm-atmosphere.jpeg',
   'public/assets/realism/heroes/africa-farm-atmosphere.webp',
   'public/assets/realism/journal/farm-inspection.jpeg',
   'public/assets/realism/journal/farm-inspection.webp',
   'public/assets/realism/farm/pepper-closeup.jpeg',
   'public/assets/realism/farm/pepper-closeup.webp',
+  'public/assets/realism/journal/greenhouse-work.jpeg',
+  'public/assets/realism/journal/greenhouse-work.webp',
+  'public/assets/realism/scan/healthy-leaf.jpeg',
+  'public/assets/realism/scan/healthy-leaf.webp',
   // Brand icons referenced by index.html + public/manifest.json.
   'public/icons/logo-premium.jpg',
   'public/icons/logo-premium-192.jpg',

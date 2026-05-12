@@ -589,19 +589,24 @@ export default function LiveCameraScanner({
                 {tSafe('scan.camera.useSaved', 'Use a saved photo')}
               </span>
             </button>
-            {phase === 'error' && (
-              <button
-                type="button"
-                onClick={() => startStream(facing)}
-                style={S.retryBtn}
-                data-testid={`${testId}-retry`}
-              >
-                <_RetakeIcon size={16} />
-                <span style={{ marginLeft: 6 }}>
-                  {tSafe('common.tryAgain', 'Try again')}
-                </span>
-              </button>
-            )}
+            {/* Try-again is offered in BOTH error AND denied states.
+                In denied, the click re-invokes getUserMedia which
+                re-triggers the browser permission prompt (the user
+                may have dismissed it accidentally). One click = one
+                attempt — there's no auto-retry loop. If the user
+                explicitly denies again, the overlay stays put with
+                the gallery fallback. */}
+            <button
+              type="button"
+              onClick={() => startStream(facing)}
+              style={S.retryBtn}
+              data-testid={`${testId}-retry`}
+            >
+              <_RetakeIcon size={16} />
+              <span style={{ marginLeft: 6 }}>
+                {tSafe('common.tryAgain', 'Try again')}
+              </span>
+            </button>
           </div>
         )}
       </div>

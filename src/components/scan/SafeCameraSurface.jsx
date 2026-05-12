@@ -194,6 +194,19 @@ function _logEvent(eventName, payload) {
   } catch { /* never throw from a logger */ }
 }
 
+// Page-load-scoped once-per-event memo. Without this, the
+// scan_page_opened analytic fires every time SafeCameraSurface
+// remounts — which can happen when an auth flip / Suspense
+// rejection / parent re-render unmounts the scan tree. The
+// memo is module-level (not React state) so it survives the
+// component lifecycle for the lifetime of the page load.
+const _firedOncePerLoad = new Set();
+function _logEventOnce(eventName, payload) {
+  if (_firedOncePerLoad.has(eventName)) return;
+  _firedOncePerLoad.add(eventName);
+  _logEvent(eventName, payload);
+}
+
 export default function SafeCameraSurface({
   onResult = null,
   onBackHome = null,
@@ -227,7 +240,10 @@ export default function SafeCameraSurface({
   // tracks on visibility change, so without this the camera
   // light stays on while the user is on a different tab.
   useEffect(() => {
-    _logEvent('scan_page_opened', { surface: 'SafeCameraSurface' });
+    // Once-per-page-load — see _logEventOnce. Prevents
+    // scan_page_opened from spamming when SafeCameraSurface
+    // remounts (auth flip, Suspense reject, parent re-render).
+    _logEventOnce('scan_page_opened', { surface: 'SafeCameraSurface' });
     const tokenRefSnapshot  = startTokenRef;
     const streamRefSnapshot = streamRef;
     const videoRefSnapshot  = videoRef;

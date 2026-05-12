@@ -34,6 +34,18 @@ const PAIRS = [
     src: 'public/assets/realism/farm/pepper-closeup.jpeg',
     out: 'public/assets/realism/farm/pepper-closeup.webp',
   },
+  // Added after the May 2026 production console showed 404s for
+  // these two specific paths. Same compatibility pattern: ship
+  // .webp alongside .jpeg so cached old bundles requesting either
+  // extension resolve directly from disk.
+  {
+    src: 'public/assets/realism/journal/greenhouse-work.jpeg',
+    out: 'public/assets/realism/journal/greenhouse-work.webp',
+  },
+  {
+    src: 'public/assets/realism/scan/healthy-leaf.jpeg',
+    out: 'public/assets/realism/scan/healthy-leaf.webp',
+  },
 ];
 
 async function main() {

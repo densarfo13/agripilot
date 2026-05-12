@@ -1273,6 +1273,14 @@ if (config.isProduction) {
       '/assets/realism/journal/farm-inspection.webp',
     '/assets/realism/farm/pepper-closeup.jpeg':
       '/assets/realism/farm/pepper-closeup.webp',
+    // Added after the May 2026 production console showed 404s
+    // for these two paths specifically. Same conditional-redirect
+    // semantics: serve .jpeg directly when present, fall back to
+    // .webp only when the .jpeg is missing.
+    '/assets/realism/journal/greenhouse-work.jpeg':
+      '/assets/realism/journal/greenhouse-work.webp',
+    '/assets/realism/scan/healthy-leaf.jpeg':
+      '/assets/realism/scan/healthy-leaf.webp',
   });
   app.use((req, res, next) => {
     const target = _JPEG_TO_WEBP_FALLBACK[req.path];
