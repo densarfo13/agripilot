@@ -75,6 +75,11 @@ import { getLanguage } from '../i18n/index.js';
 import DailyMessage      from '../components/DailyMessage.jsx';
 import YesterdayMemory   from '../components/YesterdayMemory.jsx';
 import { getDailyMessage } from '../retention/dailyMessage.js';
+// Proactive farm intelligence layer §1 — daily briefing that
+// composes weather + tasks + scan history + farm health into one
+// calm multi-line readout the user sees first on /today. Self-hides
+// when there is genuinely nothing to say.
+import DailyBriefingCard from '../components/home/DailyBriefingCard.jsx';
 // Event-tracking layer (data foundation v2)
 import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
 
@@ -333,6 +338,16 @@ export default function Today() {
         {/* 1.6. Yesterday memory — supportive recall, hidden
               when memory is empty / today / older than yesterday. */}
         <YesterdayMemory />
+
+        {/* 1.7. Daily briefing — proactive farm-intelligence layer §1.
+              Sits below YesterdayMemory + above the task card so
+              the farmer reads "what's the situation" before "what's
+              the task." Self-hides cleanly when there is nothing
+              actionable AND nothing to say (brand-new user). */}
+        <DailyBriefingCard
+          farmerName={farm && (farm.ownerName || farm.farmerName || farm.name)}
+          cropName={farm && (farm.crop || farm.cropName)}
+        />
 
         {/* 2 + 3. Recovery branch OR Simple Mode card OR
               standard task + actions. Mutually exclusive — never
