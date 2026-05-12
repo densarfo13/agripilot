@@ -30,7 +30,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { isFeatureEnabled } from '../../config/features.js';
 // Live in-app camera (full-screen native-style scanner). Replaces
 // the previous `<input capture>` trigger that bounced the user
 // into the OS Camera app — the live preview now sits inside the
@@ -169,12 +168,11 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   // Subscribe to language change so labels refresh.
   useTranslation();
 
-  const inputRef = useRef(null);
-  // Robust journey §1: a second input WITHOUT the `capture`
-  // attribute so the OS shows the gallery picker directly when
-  // the user prefers an upload (or when camera permission is
-  // denied). Visually exposed as a small "Upload from gallery"
-  // button beside the camera trigger.
+  // Single file input — gallery-only (no `capture` attribute). The
+  // camera flow lives entirely in LiveCameraScanner's getUserMedia
+  // overlay; the OS "open native camera" wrapper would force an
+  // intermediate UI (iOS Safari opens a wrapper page) which is the
+  // anti-pattern the iPhone-style scan pass explicitly forbids.
   const galleryInputRef = useRef(null);
   const [preview, setPreview] = useState(null);   // ObjectURL
   const [file, setFile] = useState(null);
@@ -251,8 +249,6 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     }
   }, [preview]);
 
-  const isBackyard = experience === 'backyard';
-
   // ─── Live-camera handoff ─────────────────────────────────
   // Validates a captured/uploaded file and stages it as if it had
   // come from the hidden file input. Returns true on success so
@@ -280,22 +276,11 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     return true;
   }, [preview]);
 
-  const triggerPicker = useCallback(() => {
-    setError('');
-    // Live in-app camera. Falls back to the OS file picker
-    // (with capture=environment) only if getUserMedia is
-    // unavailable — LiveCameraScanner's own denied/error states
-    // will show the "Use a saved photo" panel from inside the
-    // overlay before we ever reach this branch.
-    const supportsLive = typeof navigator !== 'undefined'
-      && navigator.mediaDevices
-      && typeof navigator.mediaDevices.getUserMedia === 'function';
-    if (supportsLive) {
-      setLiveCameraOpen(true);
-      return;
-    }
-    try { inputRef.current?.click(); } catch { /* ignore */ }
-  }, []);
+  // triggerPicker removed (May 2026 iPhone-style scan pass). The
+  // only path that ever called it was the now-deleted hidden button
+  // row; the live overlay (LiveCameraScanner) owns the entire
+  // capture flow, and the gallery-only upload uses galleryInputRef
+  // directly via triggerGallery.
 
   // Ref points at the latest continueAnalysis closure. The
   // handlers below are declared BEFORE continueAnalysis in the
@@ -392,8 +377,8 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     }
     setPreview(null);
     setFile(null);
-    if (inputRef.current) {
-      try { inputRef.current.value = ''; } catch { /* ignore */ }
+    if (galleryInputRef.current) {
+      try { galleryInputRef.current.value = ''; } catch { /* ignore */ }
     }
   }, [preview]);
 
@@ -439,9 +424,9 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     continueAnalysisRef.current = continueAnalysis;
   }, [continueAnalysis]);
 
-  const captureLabel = isBackyard
-    ? tStrict('scan.takePlantPhoto', 'Take Plant Photo')
-    : tStrict('scan.takeCropPhoto', 'Scan Crop');
+  // captureLabel + the isBackyard branching it drove went away with
+  // the hidden legacy button row — LiveCameraScanner's own in-overlay
+  // copy is the only capture-trigger label that ever renders now.
 
   return (
     <div style={STYLES.wrap} data-testid="scan-capture" data-experience={experience}>
@@ -456,20 +441,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         onFallbackUpload={onLiveCameraFallbackUpload}
         testId="scan-live-camera"
       />
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={onFileChange}
-        style={{ display: 'none' }}
-        data-testid="scan-capture-input"
-      />
-      {/* Robust journey §1: explicit gallery upload fallback.
-          Same handler as the camera input but no `capture` hint
-          so the OS shows the file picker directly. Self-hides
-          when `journeyResilience` is off so existing surfaces
-          stay identical. */}
+      {/* Single gallery-only file input. The camera flow is owned
+          by LiveCameraScanner above (getUserMedia). The prior
+          `capture="environment"` input was removed in the iPhone-
+          style scan pass — it would have opened the OS's native
+          camera-wrapper UI on iOS Safari instead of the in-app
+          fullscreen camera, producing exactly the intermediate-
+          wrapper-page anti-pattern the spec forbids. */}
       <input
         ref={galleryInputRef}
         type="file"
@@ -528,50 +506,6 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
           inside the camera. The wrapper preview / buttons row
           used to flash between overlay-close and analysis-start,
           and the entire row is now obsolete on the happy path. */}
-      <div style={{ display: 'none' }}>
-        {/* When camera is denied, demote the camera button to
-            secondary and promote the gallery button to primary. */}
-        <button
-          type="button"
-          onClick={triggerPicker}
-          style={cameraDenied && !preview
-            ? { ...STYLES.btn, opacity: 0.7 }
-            : STYLES.btn}
-          data-testid="scan-capture-pick"
-        >
-          {preview ? tStrict('scan.retake', 'Retake') : captureLabel}
-        </button>
-        {!preview && (isFeatureEnabled('journeyResilience') || cameraDenied) ? (
-          <button
-            type="button"
-            onClick={triggerGallery}
-            style={cameraDenied
-              ? { ...STYLES.btn, ...(STYLES.btnPrimary || {}) }
-              : STYLES.btn}
-            data-testid="scan-capture-gallery"
-          >
-            {tStrict('journey.scan.upload', 'Upload from gallery')}
-          </button>
-        ) : null}
-        {preview ? (
-          <button
-            type="button"
-            onClick={continueAnalysis}
-            style={{ ...STYLES.btn, ...STYLES.btnPrimary, ...(busy ? STYLES.btnDisabled : null) }}
-            disabled={busy}
-            data-testid="scan-capture-analyze"
-          >
-            {busy
-              ? tStrict('scan.analyzing', 'Analyzing\u2026')
-              : tStrict('scan.analyze', 'Analyze')}
-          </button>
-        ) : null}
-        {preview ? (
-          <button type="button" onClick={reset} style={STYLES.btn} data-testid="scan-capture-cancel">
-            {tStrict('common.cancel', 'Cancel')}
-          </button>
-        ) : null}
-      </div>
     </div>
   );
 }
