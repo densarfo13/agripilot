@@ -142,6 +142,23 @@ function _readExperience(profile) {
   } catch { return 'generic'; }
 }
 
+// Single-interface scan fix: when the browser can open getUserMedia,
+// /scan is JUST the camera — no PremiumPage chrome, no hero, no
+// capability chips, no recent-scans summary. The previous wrapper
+// surface was the "Ready to scan / Scan Crop / Photograph the
+// affected area" hero painted behind LiveCameraScanner; this flag
+// makes that whole wrapper disappear so the user lands directly
+// on the camera viewfinder. The flag is computed at module load
+// so SSR-safe consumers see `false` and render the normal page
+// chrome (same fallback path as missing getUserMedia).
+function _scanSupportsLiveCamera() {
+  try {
+    return typeof navigator !== 'undefined'
+        && navigator.mediaDevices
+        && typeof navigator.mediaDevices.getUserMedia === 'function';
+  } catch { return false; }
+}
+
 export default function ScanPage() {
   // Subscribe to language change so labels refresh.
   useTranslation();
@@ -787,6 +804,18 @@ export default function ScanPage() {
   const headerSubtitle = isBackyard
     ? tStrict('scan.page.subtitle.backyard', 'Photograph the plant or leaf and we\u2019ll suggest possible issues.')
     : tStrict('scan.page.subtitle.farm', 'Photograph the affected area and we\u2019ll suggest possible issues.');
+
+  // Single-interface scan fix: when phase === 'capture' AND the
+  // browser can open the live camera, /scan renders ONLY the
+  // ScanCapture component (which is itself a Fragment hosting the
+  // LiveCameraScanner overlay). No PremiumPage wrap, no hero, no
+  // capability chips \u2014 the user sees exactly one surface: the
+  // fullscreen camera. All other phases (analyzing, result, error)
+  // and the camera-unsupported fallback fall through to the
+  // standard chrome below.
+  if (phase === 'capture' && _scanSupportsLiveCamera()) {
+    return <ScanCapture experience={experience} onContinue={onContinue} />;
+  }
 
   return (
     <PremiumPage

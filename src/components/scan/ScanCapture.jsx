@@ -471,26 +471,52 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   // the hidden legacy button row — LiveCameraScanner's own in-overlay
   // copy is the only capture-trigger label that ever renders now.
 
+  // Single-interface scan fix: when the browser supports getUserMedia
+  // AND we're not mid-analysis, render ONLY the live camera overlay
+  // + the hidden gallery input. No wrap chrome, no background card,
+  // no second surface behind the camera. The user sees exactly one
+  // interface: the fullscreen camera (or its permission-denied
+  // fallback, which LiveCameraScanner owns internally).
+  //
+  // The white wrapper card the user previously saw was this
+  // component's `STYLES.wrap` div peeking out behind any gap in the
+  // LiveCameraScanner overlay (cold start, permission grant pause,
+  // narrow viewports). Switching to a Fragment kills that ghost
+  // wrapper outright.
+  if (supportsLiveCamera && !busy) {
+    return (
+      <>
+        <LiveCameraScanner
+          open={liveCameraOpen}
+          facingHint="environment"
+          onCancel={onLiveCameraCancel}
+          onCaptured={onLiveCameraCaptured}
+          onFallbackUpload={onLiveCameraFallbackUpload}
+          testId="scan-live-camera"
+        />
+        {/* Gallery-only file input. No `capture` attribute — that
+            would open the OS Camera app on iOS Safari and re-create
+            the upload-opens-camera bug the fix is closing. */}
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          onChange={onFileChange}
+          style={{ display: 'none' }}
+          data-testid="scan-capture-gallery-input"
+        />
+      </>
+    );
+  }
+
+  // Camera unsupported OR analysis in flight: render the calm
+  // fallback panel. This is the ONLY surface that ever shows
+  // wrapper chrome, and only because the live camera isn't
+  // available right now.
   return (
     <div style={STYLES.wrap} data-testid="scan-capture" data-experience={experience}>
-      {/* Full-screen live camera scanner. Renders nothing when
-          liveCameraOpen is false and owns its own stream
-          lifecycle so we never leave the camera hot. */}
-      <LiveCameraScanner
-        open={liveCameraOpen}
-        facingHint="environment"
-        onCancel={onLiveCameraCancel}
-        onCaptured={onLiveCameraCaptured}
-        onFallbackUpload={onLiveCameraFallbackUpload}
-        testId="scan-live-camera"
-      />
-      {/* Single gallery-only file input. The camera flow is owned
-          by LiveCameraScanner above (getUserMedia). The prior
-          `capture="environment"` input was removed in the iPhone-
-          style scan pass — it would have opened the OS's native
-          camera-wrapper UI on iOS Safari instead of the in-app
-          fullscreen camera, producing exactly the intermediate-
-          wrapper-page anti-pattern the spec forbids. */}
+      {/* Gallery-only file input lives here too so the fallback
+          panel's "Upload a photo" button can trigger it. */}
       <input
         ref={galleryInputRef}
         type="file"
@@ -499,13 +525,7 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         style={{ display: 'none' }}
         data-testid="scan-capture-gallery-input"
       />
-      {/* Dark fallback panel — renders ONLY when the browser
-          cannot open a live camera (no getUserMedia: old WebView,
-          locked corporate browsers, etc.). The happy path never
-          shows this panel: camera opens, LiveCameraScanner handles
-          denied state inside its own overlay, and any capture
-          fires analysis without painting wrapper UI. */}
-      {!supportsLiveCamera && !busy ? (
+      {!supportsLiveCamera ? (
         <div style={STYLES.fallbackPanel} data-testid="scan-capture-fallback">
           <h2 style={STYLES.fallbackTitle}>
             {tStrict('scan.fallback.title', 'Camera unavailable')}
@@ -531,11 +551,6 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
           </button>
         </div>
       ) : null}
-
-      {/* Analysis-in-flight inline status — keeps users oriented
-          on slow networks while ScanPage flips to its 'analyzing'
-          phase. ScanAnalyzing takes over soon after, but on
-          very-slow first paint this avoids a momentary blank. */}
       {busy ? (
         <div style={STYLES.fallbackPanel} role="status" aria-busy="true">
           <p style={STYLES.fallbackBody}>
@@ -543,12 +558,6 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
           </p>
         </div>
       ) : null}
-
-      {/* LEGACY BUTTONS REMOVED — the camera auto-opens on /scan
-          and the in-overlay Gallery button handles uploads from
-          inside the camera. The wrapper preview / buttons row
-          used to flash between overlay-close and analysis-start,
-          and the entire row is now obsolete on the happy path. */}
     </div>
   );
 }

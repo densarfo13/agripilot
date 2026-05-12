@@ -923,12 +923,19 @@ export default function SafeCameraSurface({
         </section>
       ) : null}
 
-      {/* Hidden file picker — used by all upload paths. */}
+      {/* Hidden file picker — used by all upload paths.
+          Per the single-interface scan fix: NO `capture` attribute
+          here. The capture flow lives inside the live camera
+          overlay; the file input is for gallery uploads only. With
+          `capture="environment"` present, iOS Safari opens the
+          native Camera app instead of the Photos picker, which
+          collapsed the "Upload" and "Take photo" actions into one
+          screen and was the exact wrapper-vs-camera duality the
+          fix removes. */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         style={{ display: 'none' }}
         onChange={handleFileChange}
         data-testid="safe-scan-file-input"
