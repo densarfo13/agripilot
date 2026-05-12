@@ -80,6 +80,15 @@ import { getDailyMessage } from '../retention/dailyMessage.js';
 // calm multi-line readout the user sees first on /today. Self-hides
 // when there is genuinely nothing to say.
 import DailyBriefingCard from '../components/home/DailyBriefingCard.jsx';
+// Next-Best-Action layer §1 + §2 — the SINGLE highest-priority
+// recommendation across every intelligence signal. Sits ABOVE the
+// briefing so the farmer sees "what to do" before "what's the
+// situation."
+import NextBestActionCard from '../components/home/NextBestActionCard.jsx';
+// Next-Best-Action layer §10 — small progress strip surfacing the
+// honest "things are improving" signals (completed-today,
+// recovery trend, health band). Self-hides when nothing positive.
+import ProgressStrip from '../components/home/ProgressStrip.jsx';
 // Event-tracking layer (data foundation v2)
 import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
 
@@ -339,15 +348,28 @@ export default function Today() {
               when memory is empty / today / older than yesterday. */}
         <YesterdayMemory />
 
+        {/* 1.65. Next-best action — the SINGLE most important
+              recommendation across every intelligence signal.
+              Surfaces above the briefing so the farmer reads
+              "what to do" before "what's the situation." */}
+        <NextBestActionCard cropName={farm && (farm.crop || farm.cropName)} />
+
         {/* 1.7. Daily briefing — proactive farm-intelligence layer §1.
-              Sits below YesterdayMemory + above the task card so
-              the farmer reads "what's the situation" before "what's
-              the task." Self-hides cleanly when there is nothing
-              actionable AND nothing to say (brand-new user). */}
+              Sits below NextBestActionCard so the user gets a top-
+              level "do this" headline and then can scan the
+              supporting context below. Self-hides cleanly when
+              there is nothing actionable AND nothing to say. */}
         <DailyBriefingCard
           farmerName={farm && (farm.ownerName || farm.farmerName || farm.name)}
           cropName={farm && (farm.crop || farm.cropName)}
         />
+
+        {/* 1.75. Progress strip — calm "things are moving" readout
+              (recovery trend, completed-today, health band). Sits
+              below the briefing so positive signals are still
+              visible but never compete with the priority action.
+              Self-hides when there's nothing positive to surface. */}
+        <ProgressStrip />
 
         {/* 2 + 3. Recovery branch OR Simple Mode card OR
               standard task + actions. Mutually exclusive — never
