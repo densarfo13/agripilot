@@ -79,6 +79,11 @@ import useExperience             from '../hooks/useExperience.js';
 // suppress repeat surfacing across reloads.
 import { getPrimaryGuidance } from '../intelligence/recommendations/getPrimaryGuidance.js';
 
+// Module-level once-per-page-load guard for the [FARROWAY_HOME]
+// mount log. Without this, HMR + Suspense remounts replay the
+// boot line on every re-render of the Home tree.
+let _homeMountLogged = false;
+
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
   try {
@@ -183,14 +188,18 @@ export default function Home() {
   // and the card falls back to mode-default labels).
   const xp = useExperience();
 
-  // Boot diagnostic — DEV ONLY (production cleanup spec §11:
-  // suppress boot console spam in production builds).
+  // Boot diagnostic — uses the canonical `[FARROWAY_HOME]`
+  // namespace per the May 2026 PilotHome-removal pass. Fires
+  // AT MOST ONCE per page load (module-level `_homeMountLogged`
+  // guard) so HMR / Suspense remounts don't replay it. Dev only.
   useEffect(() => {
     if (!import.meta.env.DEV) return;
+    if (_homeMountLogged) return;
+    _homeMountLogged = true;
     try {
       const farm = _resolveFarm();
       // eslint-disable-next-line no-console
-      console.log('Home mounted', {
+      console.log('[FARROWAY_HOME] mounted', {
         path:        _safePath(),
         userType:    _resolveUserType(),
         hasLocation: !!_resolveLocationLabel(farm),
