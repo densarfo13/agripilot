@@ -565,6 +565,30 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       }));
     } catch { scanHistory = []; }
 
+    // Satellite land-health snapshot — fully optional. Reads the
+    // most recent fresh snapshot (≤7 days old) the satellite
+    // module persisted for this user. The placeholder service
+    // returns null when no snapshot exists, so the scan pipeline
+    // gracefully degrades: when present, contextFusionEngine
+    // gets an extra `landHealth` signal it can layer on top of
+    // weather; when absent, fuseContext runs on weather alone.
+    // Per spec: "If satellite missing, do not block scan."
+    let landHealth = null;
+    try {
+      if (req.user && req.user.id) {
+        const { getLatestSatelliteSnapshot } =
+          await import('./modules/satellite/service.js');
+        const snap = await getLatestSatelliteSnapshot(prisma, {
+          userId: req.user.id,
+        });
+        if (snap && typeof snap === 'object') landHealth = snap;
+      }
+    } catch (satErr) {
+      // Provider failure must never crash the scan — log + continue.
+      try { console.warn('[scan] satellite snapshot lookup failed:', satErr && satErr.message); }
+      catch { /* swallow */ }
+    }
+
     const inference = await analyzePlantImage({
       image:    pre.image,
       mime:     pre.mime,
@@ -579,6 +603,10 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       activeExperience,
       country, region, weather,
       scanHistory,
+      // landHealth flows through to the verdict alongside weather —
+      // fuseContext's optional consumer; pass-through-safe when the
+      // engine ignores it.
+      landHealth,
     });
 
     // Engine output is a "raw" verdict — pass it through the
@@ -678,6 +706,11 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
         latencyMs:    inference.meta?.latencyMs || 0,
         fallbackUsed: !!inference.fallbackUsed,
       },
+      // Surface the satellite snapshot (or null) so the result UI
+      // can render a "land-health caution" line when stress is
+      // visible. Pure pass-through — the snapshot shape is opaque
+      // to this route; consumers read what's there.
+      landHealth,
     });
   } catch (err) {
     // Smart Scan AI Backend §8 — total-failure fallback. We

@@ -313,13 +313,31 @@ export default function ScanPage() {
         }, 2000);
       } catch { /* swallow */ }
 
+      // Pre-fetch the weather snapshot so the backend's context
+      // fusion engine layers environmental signals on top of the
+      // image-only inference (raises confidence when image +
+      // weather agree, lowers it when they conflict). Same cache
+      // the hybridAnalyze call below uses — single read shared
+      // across both pipelines.
+      let weatherForBackend = null;
+      try {
+        if (typeof window !== 'undefined') {
+          const raw = window.localStorage?.getItem('farroway_weather_cache');
+          if (raw) weatherForBackend = JSON.parse(raw);
+        }
+      } catch { /* swallow — backend treats null as no-weather */ }
+
       const out = await analyzeScan({
         imageBase64,
         imageUrl,
-        cropId:     profile?.crop || profile?.cropId || null,
-        plantName:  profile?.plantName || null,
-        country:    profile?.country || null,
+        cropId:           profile?.crop || profile?.cropId || null,
+        cropName:         profile?.crop || profile?.cropId || null,
+        plantName:        profile?.plantName || null,
+        country:          profile?.country || null,
+        region:           profile?.region  || null,
         experience,
+        activeExperience: activeExperience,
+        weather:          weatherForBackend,
       });
       // Real result back — cancel the fallback timer if it
       // hasn't fired yet. If it HAS, the refinedOut below

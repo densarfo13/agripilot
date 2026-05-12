@@ -58,16 +58,33 @@ export async function requestScanAnalysis(input = {}) {
   if (!isFeatureEnabled('scanApiEnabled')) return null;
   if (typeof fetch === 'undefined') return null;
 
-  // Build a small, JSON-serializable payload. We never log the
-  // image — keep it inside the request body only.
+  // Build a JSON-serializable payload. We never log the image —
+  // it stays inside the request body only.
+  //
+  // Body shape mirrors the backend's /api/scan/analyze contract:
+  // weather, region, cropName, activeExperience are all read by
+  // contextFusionEngine on the server to layer environmental
+  // context onto the image-only inference. Missing fields fall
+  // back to safe defaults — the backend never fakes signals.
   const body = JSON.stringify({
-    imageBase64: input.imageBase64 || null,
-    imageUrl:    input.imageUrl    || null,
-    cropId:      input.cropId      || null,
-    plantName:   input.plantName   || null,
-    country:     input.country     || null,
-    experience:  input.experience  || 'generic',
-    language:    input.language    || 'en',
+    imageBase64:      input.imageBase64 || null,
+    imageUrl:         input.imageUrl    || null,
+    // Both naming conventions sent so the backend route handler
+    // can read either. cropId is the legacy alias; cropName is
+    // what the contextFusionEngine actually consumes.
+    cropId:           input.cropId      || null,
+    cropName:         input.cropName    || input.cropId   || null,
+    plantName:        input.plantName   || null,
+    country:          input.country     || null,
+    region:           input.region      || null,
+    experience:       input.experience  || 'generic',
+    activeExperience: input.activeExperience || input.experience || 'generic',
+    language:         input.language    || 'en',
+    // Weather snapshot — optional. When present, the backend
+    // contextFusionEngine raises confidence when image + weather
+    // agree, and surfaces a "weather-related caution" line. When
+    // absent, the engine treats the image as the only signal.
+    weather:          input.weather     || null,
   });
 
   let controller = null;

@@ -536,6 +536,44 @@ export default function ScanResultCard({
         </div>
       ) : null}
 
+      {/* Land-health caution \u2014 surfaces the satellite snapshot
+          when stressLevel is medium / high OR the drought signal
+          fired. Wired in the May 2026 scan-intelligence integration:
+          the server reads getLatestSatelliteSnapshot() inside
+          /api/scan/analyze and passes it through as `result.landHealth`.
+          The block self-hides when no snapshot exists (placeholder
+          service returns null) so backyard users never see an
+          empty satellite line. Wording stays calm \u2014 "observed",
+          "consider inspecting" \u2014 per the trust rules. */}
+      {(() => {
+        const lh = result && result.landHealth;
+        if (!lh || typeof lh !== 'object') return null;
+        const stressed = lh.stressLevel === 'medium' || lh.stressLevel === 'high';
+        const drought = lh.droughtSignal === true;
+        if (!stressed && !drought) return null;
+        const headlineKey = lh.stressLevel === 'high'
+          ? 'scan.landHealth.high'
+          : (drought ? 'scan.landHealth.drought' : 'scan.landHealth.medium');
+        const headlineFb = lh.stressLevel === 'high'
+          ? 'Land health observed: high stress nearby'
+          : (drought
+              ? 'Drought signal observed in your area'
+              : 'Land health observed: some stress nearby');
+        const note = tStrict(
+          'scan.landHealth.note',
+          'Consider inspecting other plants and watering windows alongside this scan.',
+        );
+        return (
+          <div data-testid="scan-land-health">
+            <span style={STYLES.metaLabel}>{tStrict('scan.landHealth.label', 'Land health')}</span>
+            <p style={{ ...STYLES.explain, marginTop: 4 }}>
+              {tStrict(headlineKey, headlineFb)}
+            </p>
+            <p style={{ ...STYLES.explain, marginTop: 4, opacity: 0.85 }}>{note}</p>
+          </div>
+        );
+      })()}
+
       {/* Spec \u00a71 "What to do now" \u2014 2\u20133 action bullets, sanitised
           and capped by the policy module. */}
       {policy.recommendedActions.length > 0 ? (

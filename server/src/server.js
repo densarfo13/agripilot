@@ -127,6 +127,28 @@ async function main() {
   try { validateEmailConfig(); } catch (e) { console.warn('[SERVER] email config check failed:', e?.message); }
   try { validateSmsConfig();   } catch (e) { console.warn('[SERVER] sms config check failed:',   e?.message); }
 
+  // Scan-provider check — surface when no provider key is configured
+  // so operators see "rule-based fallback only" at boot instead of
+  // wondering why every /api/scan/analyze returns low-confidence
+  // verdicts. The pipeline degrades gracefully (rule classifier) so
+  // this is informational, not fatal — match the email/sms tone.
+  try {
+    const hasScanKey = !!(process.env.PLANT_ID_API_KEY
+                       || process.env.PLANTNET_API_KEY
+                       || process.env.SCAN_API_KEY
+                       || process.env.OPENAI_API_KEY);
+    const profile = process.env.SCAN_PROVIDER_PROFILE || '(unset → auto)';
+    if (hasScanKey) {
+      console.log(`[SERVER] Scan provider: profile=${profile}, key=present (external inference active)`);
+    } else {
+      console.warn(
+        `[SERVER] Scan provider: NO KEY CONFIGURED — falling back to rule-based classifier. `
+        + 'Set PLANT_ID_API_KEY / PLANTNET_API_KEY / SCAN_API_KEY / OPENAI_API_KEY '
+        + 'and SCAN_PROVIDER_PROFILE for real image analysis.',
+      );
+    }
+  } catch (e) { console.warn('[SERVER] scan provider check failed:', e?.message); }
+
   const host = '0.0.0.0';
   const server = app.listen(config.port, host, () => {
     console.log(`[SERVER] Farroway running on http://${host}:${config.port}`);
