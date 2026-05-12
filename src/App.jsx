@@ -49,7 +49,6 @@ import Home from './pages/Home.jsx';
 import HomeErrorBoundary from './components/system/HomeErrorBoundary.jsx';
 import { DashboardErrorBoundary } from './components/system/DashboardErrorBoundary.jsx';
 import {
-  BYPASS_SETUP_FOR_PILOT,
   FEATURE_EVENT_SYNC as PILOT_FEATURE_EVENT_SYNC,
   DISABLE_EVENTS,
   FEATURE_OFFLINE_SAFE,
@@ -443,7 +442,12 @@ const AdminOrganizationsPage = lazy(() => import('./pages/AdminOrganizationsPage
 const OrganizationDashboardPage = lazy(() => import('./pages/OrganizationDashboardPage.jsx'));
 const AdminSyncQueuePage = lazy(() => import('./pages/AdminSyncQueuePage.jsx'));
 const FarmerRegisterPage = lazy(() => import('./pages/FarmerRegisterPage.jsx'));
-const FarmerDashboardPage = lazy(() => import('./pages/FarmerDashboardPage.jsx'));
+// FarmerDashboardPage was the legacy V1 farmer dashboard rendered
+// under the BYPASS_SETUP_FOR_PILOT=false branch. The flag was
+// removed in the May 2026 permanent-PilotHome-removal pass — Home
+// is now the only canonical farmer surface. The file stays in
+// src/pages/ for any standalone test imports but is no longer
+// part of the route bundle.
 const PendingRegistrationsPage = lazy(() => import('./pages/PendingRegistrationsPage.jsx'));
 const InvestorIntelligencePage = lazy(() => import('./pages/InvestorIntelligencePage.jsx'));
 const PilotMetricsPage = lazy(() => import('./pages/PilotMetricsPage.jsx'));
@@ -623,31 +627,24 @@ function ProtectedRoute({ children, allowSetup }) {
     // ProtectedRoute we can set state directly here too.
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
-  // Farmer-role users get their own limited dashboard
+  // Farmer-role users get the canonical Home render. The earlier
+  // BYPASS_SETUP_FOR_PILOT conditional + the legacy
+  // FarmerDashboardPage fallback branch were removed in the May
+  // 2026 permanent-PilotHome-removal pass: Home is the only
+  // canonical home for farmers, no flag gates it, no parallel V1
+  // dashboard exists. Home itself has no context dependencies, no
+  // automatic redirects, and always paints visible UI even when
+  // location / farm / crop / weather are missing.
   if (user?.role === 'farmer') {
-    // Wrap farmer routes in legacy ProfileProvider for shared profile state
+    // Wrap farmer routes in legacy ProfileProvider for shared profile state.
     if (allowSetup) return <LegacyProfileProvider>{children}</LegacyProfileProvider>;
-
-    // ─── Pilot bypass (May 2026 blank-screen fix §2) ───
-    // Under BYPASS_SETUP_FOR_PILOT we render <Home />
-    // instead of FarmerDashboardPage. Home has no
-    // context dependencies, no automatic redirects, and
-    // always paints visible UI even when location / farm /
-    // crop / weather are missing. The richer dashboard
-    // returns once the pilot stabilises and the bypass flag
-    // flips to false.
-    if (BYPASS_SETUP_FOR_PILOT) {
-      return (
-        <LegacyProfileProvider>
-          <HomeErrorBoundary>
-            <Home />
-          </HomeErrorBoundary>
-        </LegacyProfileProvider>
-      );
-    }
-
-    // ProfileGuard redirects to /profile/setup if profile is incomplete
-    return <LegacyProfileProvider><LegacyProfileGuard><Suspense fallback={<PageLoader />}><FarmerDashboardPage /></Suspense></LegacyProfileGuard></LegacyProfileProvider>;
+    return (
+      <LegacyProfileProvider>
+        <HomeErrorBoundary>
+          <Home />
+        </HomeErrorBoundary>
+      </LegacyProfileProvider>
+    );
   }
   return children;
 }

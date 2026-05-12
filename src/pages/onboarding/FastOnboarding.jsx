@@ -43,7 +43,12 @@ import { generateFirstPlan } from '../../core/firstPlanEngine.js';
 import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../core/analytics.js';
 import { stampOnboardingStart } from '../../core/onboardingTiming.js';
-import { BYPASS_SETUP_FOR_PILOT } from '../../lib/pilotFlags.js';
+// BYPASS_SETUP_FOR_PILOT removed in the May 2026 permanent-
+// PilotHome-removal pass. The Continue path below is now
+// always the direct "stamp complete + navigate to /" path
+// (previously the BYPASS branch); the alternative setStepIdx(1)
+// path was crash-prone on missing location data per the comment
+// preserved below.
 
 // ── Color tokens (mirror onboarding visual language) ────────────
 const C = {
@@ -1024,24 +1029,24 @@ export default function FastOnboarding() {
               // renders <ProtectedRoute><Layout /></...> with
               // <DashboardPage /> at the index — direct paint,
               // no redirect indirection.
-              if (BYPASS_SETUP_FOR_PILOT) {
-                try { setOnboardingComplete(); } catch { /* swallow */ }
-                try {
-                  if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem('farroway_location_skipped', 'true');
-                  }
-                } catch { /* swallow */ }
-                try {
-                  trackEvent('pilot_bypass_continue', {
-                    geoStatus,
-                    from: 'fast-onboarding/location',
-                  });
-                } catch { /* swallow */ }
-                navigate('/', { replace: true });
-                return;
-              }
-
-              setStepIdx(1);
+              // Continue → always stamp completion + navigate to /.
+              // The earlier conditional (and the crash-prone
+              // setStepIdx(1) fallback it gated) was removed in
+              // the May 2026 permanent-PilotHome-removal pass.
+              try { setOnboardingComplete(); } catch { /* swallow */ }
+              try {
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.setItem('farroway_location_skipped', 'true');
+                }
+              } catch { /* swallow */ }
+              try {
+                trackEvent('onboarding_location_continue', {
+                  geoStatus,
+                  from: 'fast-onboarding/location',
+                });
+              } catch { /* swallow */ }
+              navigate('/', { replace: true });
+              return;
             }}
             style={S.primaryBtn}
             data-testid="fast-onboarding-location-continue"

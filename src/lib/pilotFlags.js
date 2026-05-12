@@ -26,25 +26,11 @@
  *     normal redirect logic on the next deploy.
  */
 
-/**
- * BYPASS_SETUP_FOR_PILOT
- *
- * When true:
- *   • ProfileGuard never auto-redirects to a setup / onboarding
- *     route — authenticated users land on Home directly.
- *   • The location-screen "Continue" handler stamps the
- *     onboarding-complete flag, marks location as skipped,
- *     and navigates straight to Home instead of advancing
- *     through the rest of the wizard.
- *   • main.jsx wipes the loop-state localStorage keys at boot
- *     so a stuck tab can recover without manual DevTools work.
- *
- * Auth + user identity is NEVER touched by anything gated on
- * this flag — the user is not logged out, their role / userType
- * is preserved, and the in-app "Complete setup" card surfaces
- * missing context inline on Home.
- */
-export const BYPASS_SETUP_FOR_PILOT = true;
+// BYPASS_SETUP_FOR_PILOT was removed in the May 2026 permanent-
+// PilotHome-removal pass. Home is the only canonical farmer
+// surface; the loop-state cleanup it gated now runs unconditionally
+// at boot (see main.jsx). Consumers that imported this flag have
+// been updated to either omit the gate or use the always-on path.
 
 /**
  * LOOP_STATE_KEYS — localStorage keys that have caused
@@ -308,4 +294,6 @@ export const SCAN_HISTORY_KEY = 'farroway_scan_history_v1';
  */
 export const FEATURE_ACTIVATION_POLISH = true;
 
-export default BYPASS_SETUP_FOR_PILOT;
+// Default export removed alongside BYPASS_SETUP_FOR_PILOT. Every
+// known consumer used the named-export form; verified with
+// `grep "import [a-zA-Z]+ from .*pilotFlags"` returning zero hits.

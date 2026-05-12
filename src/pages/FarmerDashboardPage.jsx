@@ -35,7 +35,11 @@ import {
 import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
 import { tSafe } from '../i18n/tSafe.js';
-import { BYPASS_SETUP_FOR_PILOT } from '../lib/pilotFlags.js';
+// BYPASS_SETUP_FOR_PILOT removed in the May 2026 permanent-
+// PilotHome-removal pass. The conditional below collapsed to a
+// no-op (both branches did setShowOnboarding(true); return).
+// This page is now unreachable from App.jsx — kept in src/pages
+// for legacy test fixtures.
 
 /** Collapsible section — keeps secondary content below the fold */
 function ExpandableSection({ title, icon, children, testId }) {
@@ -226,10 +230,6 @@ export default function FarmerDashboardPage() {
             );
           } catch { /* tolerate quota */ }
           // Surface the inline setup card; never redirect.
-          if (BYPASS_SETUP_FOR_PILOT) {
-            setShowOnboarding(true);
-            return;
-          }
           setShowOnboarding(true);
           return;
         }

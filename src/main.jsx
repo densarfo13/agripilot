@@ -38,7 +38,6 @@ try {
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
 import {
-  BYPASS_SETUP_FOR_PILOT,
   LOOP_STATE_KEYS,
   FEATURE_EVENT_SYNC,
   EVENT_QUEUE_KEYS,
@@ -82,15 +81,15 @@ try {
   /* eslint-enable no-console */
 } catch { /* never throw from startup logger */ }
 
-// ── Pilot bypass: clear loop-state + stamp completion flag ──────
+// ── Loop-state cleanup + onboarding completion stamp ────────────
 //
-// When BYPASS_SETUP_FOR_PILOT is true (live pilot fix, May 2026)
-// we wipe the localStorage keys that have caused setup-redirect
-// loops in past releases and stamp the onboarding-complete flag.
-// This way a tab that was stuck mid-wizard recovers the next
-// time the page loads — even if the user never taps Continue
-// again. Auth + user identity are NEVER touched. The contract
-// is a hard guarantee: dropping every key in LOOP_STATE_KEYS
+// On every boot we wipe the localStorage keys that have caused
+// setup-redirect loops in past releases and stamp the onboarding-
+// complete flag. This way a tab that was stuck mid-wizard
+// recovers the next time the page loads — even if the user
+// never taps Continue again. Auth + user identity are NEVER
+// touched. The contract is a hard guarantee: dropping every
+// key in LOOP_STATE_KEYS
 // must leave the user signed in and routable to Home.
 //
 // When the pilot flag flips back to false, this block no-ops.
@@ -182,8 +181,13 @@ try {
   }
 } catch { /* never throw from boot */ }
 
+// Loop-state localStorage cleanup runs unconditionally at boot.
+// The earlier BYPASS_SETUP_FOR_PILOT gate was removed in the
+// May 2026 permanent-PilotHome-removal pass — the cleanup is
+// defensive (it only deletes the specific loop-prone keys listed
+// in LOOP_STATE_KEYS) and safe to run on every boot.
 try {
-  if (BYPASS_SETUP_FOR_PILOT && typeof localStorage !== 'undefined') {
+  if (typeof localStorage !== 'undefined') {
     let droppedLoopKeys = 0;
     for (const k of LOOP_STATE_KEYS) {
       try {
