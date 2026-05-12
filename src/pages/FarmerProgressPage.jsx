@@ -36,6 +36,7 @@ import {
 } from '../components/premium/index.js';
 import GrowthJourneyCard from '../components/progress/GrowthJourneyCard.jsx';
 import { resolveMemoryMoment } from '../lib/memoryMoment.js';
+import { resolveRealismImage } from '../lib/realVisuals.jsx';
 // Define Tab Tap Behavior §4 — farmer-only Funding/Sell
 // shortcuts on Progress. Visibility gated by the central
 // per-userType registry (backyard users get false →
@@ -248,7 +249,7 @@ export default function FarmerProgressPage() {
           'progress.hero.subtitle',
           'Watch each stage build toward harvest.',
         )}
-        bgImage="/assets/realism/journal/farm-inspection.jpeg"
+        bgImage={resolveRealismImage('/assets/realism/journal/farm-inspection.jpeg')}
         accent="green"
         testId="progress-hero"
       />

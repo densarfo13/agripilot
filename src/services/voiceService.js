@@ -138,10 +138,27 @@ function playAudioUrl(url) {
 
 /**
  * Fetch provider availability (cached for session).
+ *
+ * Auth-gated: /api/v2/tts/status is an authenticated endpoint, so
+ * calling it on a guest boot produces a 401 in the console for
+ * zero benefit (the endpoint always returns no providers anyway
+ * when the user isn't signed in). We short-circuit to an empty
+ * provider map BEFORE the fetch fires when there's no session —
+ * same outcome as the catch path, without the network noise.
  */
 async function getProviderStatus() {
   if (_providerStatus) return _providerStatus;
   if (_providerStatusPromise) return _providerStatusPromise;
+
+  // No session → no providers. Cache the empty result so we don't
+  // re-attempt on every voice request. The cache is invalidated on
+  // sign-in (call sites can reset _providerStatus + _providerStatusPromise
+  // if a finer signal is needed; for now, a fresh page load post-login
+  // re-evaluates because module state resets).
+  if (!_isLoggedInSafe()) {
+    _providerStatus = {};
+    return _providerStatus;
+  }
 
   _providerStatusPromise = (async () => {
     try {
@@ -149,10 +166,7 @@ async function getProviderStatus() {
       // is the source of truth. The `farroway_token` (underscore,
       // not colon) bearer header is the V1 admin session fallback
       // — kept for back-compat with admin-tools call sites that
-      // never migrated to cookies. NOTE: prior versions read
-      // `farroway:token` (colon) which is NEVER written anywhere,
-      // so the auth header was always empty and provider-TTS auth
-      // silently fell back to the unauthenticated path.
+      // never migrated to cookies.
       const token = (typeof localStorage !== 'undefined' &&
         localStorage.getItem('farroway_token')) || '';
       const res = await fetch('/api/v2/tts/status', {
@@ -164,13 +178,29 @@ async function getProviderStatus() {
       _providerStatus = data.providers || {};
       return _providerStatus;
     } catch {
-      // Server unreachable — no provider TTS available
+      // Server unreachable / 401 / 5xx — no provider TTS available
       _providerStatus = {};
       return _providerStatus;
     }
   })();
 
   return _providerStatusPromise;
+}
+
+// Local helper — reads the same session-cache shape utils/session.js
+// uses, without importing it (voiceService is module-init free and
+// we want to keep its dependency graph thin). Mirrors the contract
+// of isLoggedIn() at src/utils/session.js exactly.
+function _isLoggedInSafe() {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const token = localStorage.getItem('farroway_token');
+    if (token && String(token).trim()) return true;
+    const raw = localStorage.getItem('farroway:session_cache');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return !!(parsed && parsed.user && (parsed.user.id || parsed.user.email));
+  } catch { return false; }
 }
 
 /**
