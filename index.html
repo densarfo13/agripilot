@@ -144,6 +144,57 @@
             }
           }, true);
         } catch (e) { /* never throw from setup */ }
+
+        // Console-method wrap. The window event listeners above
+        // catch unhandledrejection + error events, but cornhusk
+        // also calls `console.error("cornhusk, shared-service,
+        // error:", ...)` directly — those bypass the event path
+        // entirely. The bundled installConsoleFilter() wraps
+        // console.* too, but cornhusk loads at document_start
+        // (before our module bundle) and caches the ORIGINAL
+        // console references; subsequent cornhusk calls then
+        // hit the original, bypassing our module-level wrap.
+        // Wrapping inline here — before any extension can cache
+        // the reference — closes that race.
+        try {
+          function _stringifyArgs(args) {
+            var out = '';
+            for (var i = 0; i < Math.min(args.length, 6); i += 1) {
+              try {
+                var a = args[i];
+                if (a == null) continue;
+                if (typeof a === 'string') out += ' ' + a;
+                else if (a instanceof Error) out += ' ' + (a.name || 'Error') + ': ' + (a.message || '');
+                else { try { out += ' ' + JSON.stringify(a).slice(0, 256); } catch (e) {} }
+              } catch (e) { /* skip arg */ }
+              if (out.length > 1024) break;
+            }
+            return out;
+          }
+          function _shouldSuppress(args) {
+            try {
+              var s = _stringifyArgs(args);
+              for (var i = 0; i < PATTERNS.length; i += 1) {
+                if (s.indexOf(PATTERNS[i]) >= 0) return true;
+              }
+            } catch (e) { /* never throw */ }
+            return false;
+          }
+          ['error', 'warn'].forEach(function (method) {
+            try {
+              var orig = console[method];
+              if (typeof orig !== 'function') return;
+              // Keep the original under a unique key so other code
+              // (debuggers, tests) can recover it if needed.
+              console['__farroway_orig_inline_' + method] = orig;
+              console[method] = function () {
+                if (_shouldSuppress(arguments)) return;
+                try { return orig.apply(console, arguments); }
+                catch (e) { /* swallow — never throw from console */ }
+              };
+            } catch (e) { /* per-method failure is non-fatal */ }
+          });
+        } catch (e) { /* never throw from setup */ }
       })();
     </script>
     <script type="module" src="/src/main.jsx"></script>
