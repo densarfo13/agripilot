@@ -518,6 +518,35 @@ try {
   }
 } catch { /* swallow — never block boot on diagnostics */ }
 
+// API base validation marker — runs in BOTH dev and prod so a
+// stale .env.production / malformed base URL surfaces on the very
+// first boot rather than the first failing fetch. The validation
+// is intentionally permissive: it accepts (a) a fully-qualified
+// https URL, (b) a relative '/api' path for same-origin Railway
+// monolith deploys, or (c) an empty string (also same-origin).
+// Anything else (a stray space, a typo without leading slash) gets
+// a single greppable warn so ops can see it once.
+try {
+  const rawBase = (typeof import.meta !== 'undefined' && import.meta.env)
+    ? (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '')
+    : '';
+  const baseStr = String(rawBase).trim();
+  const validBase =
+       baseStr === ''
+    || baseStr.startsWith('/')
+    || /^https?:\/\//i.test(baseStr);
+  if (validBase) {
+    // eslint-disable-next-line no-console
+    console.log('[Farroway API Base Validated]', {
+      base: baseStr || '(same-origin)',
+    });
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn('[Farroway API Base Validated] INVALID base — '
+      + 'expected empty, "/" path, or http(s):// URL. Got:', baseStr);
+  }
+} catch { /* never block boot on a diagnostic */ }
+
 // Build-info marker — runs on every boot in BOTH dev and prod. The
 // version string is locked into the bundle at build time, so two
 // browsers running the same deploy see the same value. A mismatch

@@ -30,6 +30,57 @@ vi.setConfig({ testTimeout: 10000 });
 // `__dirname` here is server/src/__tests__ — climb to repo root.
 const ROOT = resolve(__dirname, '../../../');
 
+describe('resolveRealismImage — runtime-safe path resolver', () => {
+  it('echoes a valid /assets/realism/ path back', async () => {
+    const { resolveRealismImage } = await import('../../../src/lib/realVisuals.jsx');
+    const p = '/assets/realism/farm/cassava-leaf.webp.jpeg';
+    expect(resolveRealismImage(p)).toBe(p);
+  });
+
+  it('returns the default fallback for undefined / null / empty', async () => {
+    const { resolveRealismImage, DEFAULT_REALISM_FALLBACK } =
+      await import('../../../src/lib/realVisuals.jsx');
+    expect(resolveRealismImage(undefined)).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage(null)).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage('')).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage('   ')).toBe(DEFAULT_REALISM_FALLBACK);
+  });
+
+  it('honours caller-supplied fallback', async () => {
+    const { resolveRealismImage } = await import('../../../src/lib/realVisuals.jsx');
+    expect(resolveRealismImage(undefined, '/custom/x.jpeg')).toBe('/custom/x.jpeg');
+  });
+
+  it('rejects non-realism paths (defends against ../, ./, src/)', async () => {
+    const { resolveRealismImage, DEFAULT_REALISM_FALLBACK } =
+      await import('../../../src/lib/realVisuals.jsx');
+    // ./, ../, and src/ paths can crash Vite's build URL rewriter
+    // or escape the public/ root in production — all must fall back.
+    expect(resolveRealismImage('./assets/realism/farm/x.jpeg')).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage('../assets/realism/farm/x.jpeg')).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage('src/assets/realism/farm/x.jpeg')).toBe(DEFAULT_REALISM_FALLBACK);
+    // Anything that isn't /assets/realism/ falls back too.
+    expect(resolveRealismImage('/icons/logo-premium.jpg')).toBe(DEFAULT_REALISM_FALLBACK);
+  });
+
+  it('blocks path traversal attempts (.. segments anywhere)', async () => {
+    const { resolveRealismImage, DEFAULT_REALISM_FALLBACK } =
+      await import('../../../src/lib/realVisuals.jsx');
+    expect(resolveRealismImage('/assets/realism/../etc/passwd')).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage('/assets/realism/farm/../../../etc')).toBe(DEFAULT_REALISM_FALLBACK);
+  });
+
+  it('never throws on arbitrary garbage input', async () => {
+    const { resolveRealismImage, DEFAULT_REALISM_FALLBACK } =
+      await import('../../../src/lib/realVisuals.jsx');
+    // Non-string types — number, object, boolean, symbol.
+    expect(resolveRealismImage(42)).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage({})).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage(false)).toBe(DEFAULT_REALISM_FALLBACK);
+    expect(resolveRealismImage([])).toBe(DEFAULT_REALISM_FALLBACK);
+  });
+});
+
 describe('realVisuals manifest — every referenced asset exists in public/', () => {
   it('lists no path that 404s on the deployed build', () => {
     const src = readFileSync(resolve(ROOT, 'src/lib/realVisuals.jsx'), 'utf8');

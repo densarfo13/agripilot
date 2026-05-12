@@ -429,6 +429,90 @@ export default function RealVisual({
 
 export { RealisticPhotoFallback };
 
+// ─── Safe resolver (runtime asset emergency fix) ────────────────
+// Canonical fallback — the calmest, most universally-readable
+// agricultural frame in the upload set. Every consumer that asks
+// for a realism image lands on this if the requested path is
+// missing or malformed; the UI never shows a broken-image box.
+const DEFAULT_REALISM_FALLBACK = '/assets/realism/heroes/africa-farm-atmosphere.jpeg';
+
+// Dev-only memo so a missing-asset log fires AT MOST once per
+// unique path per session — without this, every render of a
+// broken card would log a fresh warning.
+const _missingPathSeen = new Set();
+
+function _logMissingOnce(path) {
+  try {
+    if (typeof import.meta === 'undefined' || !import.meta.env || !import.meta.env.DEV) return;
+    const key = String(path || '');
+    if (_missingPathSeen.has(key)) return;
+    _missingPathSeen.add(key);
+    // eslint-disable-next-line no-console
+    console.warn('[realVisuals] missing or invalid asset path:', key);
+  } catch { /* never throw from a diagnostic */ }
+}
+
+/**
+ * resolveRealismImage — runtime-safe image-path resolver.
+ *
+ *   resolveRealismImage('/assets/realism/farm/cassava-leaf.webp.jpeg')
+ *     → '/assets/realism/farm/cassava-leaf.webp.jpeg'  (echoed back)
+ *
+ *   resolveRealismImage(undefined)
+ *     → '/assets/realism/heroes/africa-farm-atmosphere.jpeg'  (fallback)
+ *
+ *   resolveRealismImage('  ', '/custom/fallback.jpeg')
+ *     → '/custom/fallback.jpeg'  (caller-supplied fallback)
+ *
+ * Validation rules (intentionally tight — anything that doesn't
+ * pass returns the fallback):
+ *   • Must be a non-empty string.
+ *   • Must start with '/assets/realism/' (root-relative — never
+ *     ./ , ../ , or src/ which would crash a Vite build's URL
+ *     rewriter at runtime).
+ *   • Must not contain '..' segments (path traversal guard).
+ *   • Trailing whitespace is trimmed.
+ *
+ * The resolver does NOT do an HTTP HEAD to verify the file is on
+ * disk — that would be heavier than just letting the <img> tag's
+ * onError handle a real 404. Instead, the realVisualsManifest
+ * test (server/src/__tests__/realVisualsManifest.test.js) enforces
+ * the registry-side invariant at PR time, and the consumer
+ * components handle runtime 404s with their own onError swap.
+ *
+ * Pure / never throws / SSR-safe.
+ *
+ * @param {string} path
+ * @param {string} [fallback]
+ * @returns {string}
+ */
+export function resolveRealismImage(path, fallback = DEFAULT_REALISM_FALLBACK) {
+  try {
+    if (typeof path !== 'string') {
+      _logMissingOnce(path);
+      return fallback || DEFAULT_REALISM_FALLBACK;
+    }
+    const trimmed = path.trim();
+    if (!trimmed) {
+      _logMissingOnce(path);
+      return fallback || DEFAULT_REALISM_FALLBACK;
+    }
+    if (!trimmed.startsWith('/assets/realism/')) {
+      _logMissingOnce(path);
+      return fallback || DEFAULT_REALISM_FALLBACK;
+    }
+    if (trimmed.includes('..')) {
+      _logMissingOnce(path);
+      return fallback || DEFAULT_REALISM_FALLBACK;
+    }
+    return trimmed;
+  } catch {
+    return fallback || DEFAULT_REALISM_FALLBACK;
+  }
+}
+
+export { DEFAULT_REALISM_FALLBACK };
+
 // Diagnostics — exposed for admin + test surfaces.
 export const _internal = Object.freeze({
   ASSETS,
@@ -436,4 +520,5 @@ export const _internal = Object.freeze({
   WEATHER_TO_IMAGE,
   SCAN_TO_IMAGE,
   REGION_HERO,
+  DEFAULT_REALISM_FALLBACK,
 });
