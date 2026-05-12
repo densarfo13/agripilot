@@ -25,7 +25,7 @@
  *     fallback "walk the field" line by default).
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getActiveScanTasks } from '../../core/scanToTask.js';
 import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 import { computeFarmHealthScore } from '../../lib/farmHealthScore.js';
@@ -33,6 +33,13 @@ import { detectScanPattern } from '../../lib/scanPatternDetection.js';
 import { computePredictiveRisks } from '../../lib/predictiveRisk.js';
 import { topAction } from '../../lib/taskPrioritization.js';
 import { computeNextBestAction } from '../../lib/nextBestAction.js';
+// §5 AI memory — explicit ignore tracking + bounded suppression.
+// User-initiated only; transparent and reversible.
+import {
+  recordSignal,
+  shouldSuppress,
+  SIGNAL_TYPES,
+} from '../../lib/aiMemoryStore.js';
 
 const STYLES = {
   card: {
@@ -105,6 +112,27 @@ const STYLES = {
     cursor: 'default',
     fontFamily: 'inherit',
   },
+  // §5 — "Skip for now" affordance. The button is intentionally
+  // quiet (no fill, secondary color) so users don't feel pushed
+  // to use it. Five explicit skips of the same kind in 14 days
+  // triggers a 7-day suppression — and the suppression is fully
+  // reversible via aiMemoryStore.resumeKind.
+  skipRow: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+  skipBtn: {
+    appearance: 'none',
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: 'transparent',
+    color: 'rgba(255,255,255,0.55)',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
 };
 
 function _readCachedWeather() {
@@ -130,6 +158,14 @@ function _cardStyleFor(urgency) {
 }
 
 export default function NextBestActionCard({ cropName }) {
+  // §5 — `skipTick` bumps when the user taps "Skip for now" so the
+  // useMemo re-runs computeNextBestAction. We don't pass the
+  // suppressed list down explicitly; the engine reads it via the
+  // injected isSuppressed probe and falls through to the next
+  // priority tier.
+  const [skipTick, setSkipTick] = useState(0);
+  const lastShownKindRef = useRef(null);
+
   const action = useMemo(() => {
     let scanHistory = [];
     let scanTasks   = [];
@@ -185,9 +221,39 @@ export default function NextBestActionCard({ cropName }) {
         healthScore,
         latestScan,
         topPrioritizedAction: topPri,
+        // §5 adaptation gate — let the engine drop any candidate
+        // whose kind the user has explicitly skipped too many
+        // times. The store's API is pure; the helper wraps any
+        // storage error and falls back to "not suppressed."
+        isSuppressed: (kind) => {
+          try { return !!shouldSuppress(kind).suppressed; }
+          catch { return false; }
+        },
       });
     } catch { return null; }
-  }, [cropName]);
+    // skipTick is intentional — re-runs the memoized engine after
+    // a Skip tap so the next-priority recommendation renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cropName, skipTick]);
+
+  // §5 — Record that this kind was SHOWN exactly once per change.
+  // The ref guards against double-recording from React's
+  // double-invoke in dev mode.
+  useEffect(() => {
+    if (!action || !action.kind) return;
+    if (lastShownKindRef.current === action.kind) return;
+    lastShownKindRef.current = action.kind;
+    try { recordSignal(action.kind, SIGNAL_TYPES.SHOWN); } catch { /* swallow */ }
+  }, [action]);
+
+  const onSkip = () => {
+    if (!action || !action.kind) return;
+    try { recordSignal(action.kind, SIGNAL_TYPES.IGNORED); } catch { /* swallow */ }
+    // Reset the shown-ref so the NEXT kind also gets a clean
+    // 'shown' record on the re-render.
+    lastShownKindRef.current = null;
+    setSkipTick((t) => t + 1);
+  };
 
   if (!action) return null;
 
@@ -212,6 +278,19 @@ export default function NextBestActionCard({ cropName }) {
       ) : null}
       {action.hint ? (
         <span style={STYLES.hint} data-testid="next-best-action-hint">→ {action.hint}</span>
+      ) : null}
+      {action.kind && action.kind !== 'fallback_walk' ? (
+        <div style={STYLES.skipRow}>
+          <button
+            type="button"
+            onClick={onSkip}
+            style={STYLES.skipBtn}
+            data-testid="next-best-action-skip"
+            title="Skip for now. After 5 skips of this kind, it pauses for a week."
+          >
+            Skip for now
+          </button>
+        </div>
       ) : null}
     </section>
   );

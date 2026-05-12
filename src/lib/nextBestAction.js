@@ -49,6 +49,15 @@
 
 const _MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// §5 adaptation hook — the engine calls this for every candidate
+// kind it would surface. When the user has explicitly skipped the
+// same kind too many times in the rolling window, the candidate is
+// dropped and we fall through to the next priority tier. The
+// adapter is INJECTED rather than imported so the helper stays
+// pure + testable; the page-level wiring passes a real
+// aiMemoryStore.shouldSuppress.
+function _defaultIsSuppressed(_kind) { return false; }
+
 function _safeStr(v) {
   const s = String(v == null ? '' : v).trim();
   return s || null;
@@ -96,9 +105,27 @@ export function computeNextBestAction(input) {
     ? safe.topPrioritizedAction
     : null;
 
+  // §5 adaptation gate: caller may inject an isSuppressed(kind)
+  // probe (typically backed by aiMemoryStore.shouldSuppress). When
+  // a candidate's kind is suppressed, we drop it and fall through
+  // to the next priority. The fallback ('fallback_walk') is NEVER
+  // suppressed — there always has to be SOMETHING to say.
+  const isSuppressedFn = (typeof safe.isSuppressed === 'function')
+    ? safe.isSuppressed
+    : _defaultIsSuppressed;
+  const _maybe = (candidate) => {
+    if (!candidate) return null;
+    try {
+      if (candidate.kind && candidate.kind !== 'fallback_walk' && isSuppressedFn(candidate.kind)) {
+        return null;
+      }
+    } catch { /* defensive — caller-provided fn */ }
+    return candidate;
+  };
+
   // ── 1. Urgent health band ────────────────────────────────────
   if (health && health.band === 'urgent' && typeof health.score === 'number') {
-    return {
+    const picked = _maybe({
       kind:       'health_urgent',
       title:      'Multiple signs need care today',
       reason:     `Farm health score is ${health.score}/100 — open Today's Plan and clear the highest-priority tasks first.`,
@@ -109,7 +136,8 @@ export function computeNextBestAction(input) {
       dedupeKey:  'nba_health_urgent',
       hint:       "Open Today's Plan",
       sourceRef:  health,
-    };
+    });
+    if (picked) return picked;
   }
 
   // ── 2. Overdue high-urgency task ─────────────────────────────
@@ -117,7 +145,7 @@ export function computeNextBestAction(input) {
                                    && String(t.urgency || '').toLowerCase() === 'high'
                                    && _isOverdue(t.dueAt, nowMs));
   if (overdue) {
-    return {
+    const picked = _maybe({
       kind:       'task_overdue_high',
       title:      _safeStr(overdue.title) || 'Overdue farm task needs attention',
       reason:     _safeStr(overdue.reason) || 'This task is past its due time and was marked high-urgency.',
@@ -128,13 +156,14 @@ export function computeNextBestAction(input) {
       dedupeKey:  'nba_task_' + String(overdue.id || 'unknown'),
       hint:       'Mark as done when finished',
       sourceRef:  overdue,
-    };
+    });
+    if (picked) return picked;
   }
 
   // ── 3. Top high-level risk ───────────────────────────────────
   const highRisk = risks.find((r) => r && r.level === 'high' && r.headline);
   if (highRisk) {
-    return {
+    const picked = _maybe({
       kind:       'risk_high:' + String(highRisk.kind || 'generic'),
       title:      String(highRisk.headline),
       reason:     `Weather + crop signals point to elevated ${String(highRisk.kind || '')} risk.`.replace(/\s+/g, ' ').trim(),
@@ -145,13 +174,14 @@ export function computeNextBestAction(input) {
       dedupeKey:  'nba_risk_' + String(highRisk.kind || 'generic'),
       hint:       _safeStr(highRisk.action) || 'Open the briefing for details',
       sourceRef:  highRisk,
-    };
+    });
+    if (picked) return picked;
   }
 
   // ── 4. Top prioritized task ──────────────────────────────────
   if (topPri && topPri.task && topPri.task.title) {
     const t = topPri.task;
-    return {
+    const picked = _maybe({
       kind:       'task_top',
       title:      String(t.title),
       reason:     _safeStr(t.reason) || 'Highest-priority item across urgency, due date, weather match, and impact.',
@@ -162,13 +192,14 @@ export function computeNextBestAction(input) {
       dedupeKey:  'nba_task_' + String(t.id || 'top'),
       hint:       "Open Today's Plan",
       sourceRef:  t,
-    };
+    });
+    if (picked) return picked;
   }
 
   // ── 5. Top medium-level risk ─────────────────────────────────
   const medRisk = risks.find((r) => r && r.level === 'medium' && r.headline);
   if (medRisk) {
-    return {
+    const picked = _maybe({
       kind:       'risk_medium:' + String(medRisk.kind || 'generic'),
       title:      String(medRisk.headline),
       reason:     `A medium-level ${String(medRisk.kind || '')} signal fired today.`.replace(/\s+/g, ' ').trim(),
@@ -179,12 +210,13 @@ export function computeNextBestAction(input) {
       dedupeKey:  'nba_risk_' + String(medRisk.kind || 'generic'),
       hint:       _safeStr(medRisk.action) || 'Check the briefing',
       sourceRef:  medRisk,
-    };
+    });
+    if (picked) return picked;
   }
 
   // ── 6. Worsening recovery trend ─────────────────────────────
   if (pattern && pattern.trend === 'worsening' && pattern.previous) {
-    return {
+    const picked = _maybe({
       kind:       'pattern_worsening',
       title:      'Take a closer look at your most recent scan crop',
       reason:     `Your latest rescan looks worse than the one ${pattern.previous.daysAgo ?? 'a few'} days ago.`,
@@ -195,14 +227,15 @@ export function computeNextBestAction(input) {
       dedupeKey:  'nba_pattern_worsening',
       hint:       'Walk the field',
       sourceRef:  pattern,
-    };
+    });
+    if (picked) return picked;
   }
 
   // ── 7. Recent scan follow-up ─────────────────────────────────
   if (latest && latest.id) {
     const noticed = _safeStr(latest.noticed);
     if (noticed) {
-      return {
+      const picked = _maybe({
         kind:       'scan_followup',
         title:      `Re-check the ${_safeStr(latest.crop) || 'crop'} from your last scan`,
         reason:     `Your last scan flagged ${noticed}. A short re-check confirms whether it's spreading.`,
@@ -213,7 +246,8 @@ export function computeNextBestAction(input) {
         dedupeKey:  'nba_scan_followup_' + String(latest.id),
         hint:       'Rescan when you walk past',
         sourceRef:  latest,
-      };
+      });
+      if (picked) return picked;
     }
   }
 
