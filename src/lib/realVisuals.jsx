@@ -515,6 +515,20 @@ export function resolveRealismImage(path, fallback = DEFAULT_REALISM_FALLBACK) {
 
 export { DEFAULT_REALISM_FALLBACK };
 
+// Public asset registry — the canonical names every consumer
+// should use INSTEAD of hardcoded path strings. Routing through
+// this named constant means:
+//   1. The check:assets script can flag any component that still
+//      hardcodes a literal path.
+//   2. Renames in public/assets/realism/ only need to update this
+//      one file, not every consumer.
+//   3. A typo at a call site fails the type-check (when callers
+//      are TS) instead of silently 404ing at runtime.
+//
+// Mirrors `ASSETS` exactly — same nested shape, same paths, just
+// the public-export face. Frozen for safety.
+export const REALISM_ASSETS = ASSETS;
+
 // Diagnostics — exposed for admin + test surfaces.
 export const _internal = Object.freeze({
   ASSETS,

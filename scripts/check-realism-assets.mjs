@@ -88,5 +88,61 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-ok(`registry clean — ${seen.size} unique realism paths, all on disk, no double extensions.`);
+// 3. Centralisation guard — no consumer outside the canonical
+// registry may hardcode a literal `/assets/realism/...` string.
+// Every component should import REALISM_ASSETS from realVisuals.jsx
+// and reference the named constant. This catches stray literals at
+// PR time so a future contributor doesn't reintroduce a hardcoded
+// path that drifts out of sync with the file move.
+//
+// Allowed locations:
+//   - src/lib/realVisuals.jsx  (the registry itself)
+//   - src/assets/realism/photography/manifest.js  (photography
+//     subsystem — separate registry, builds paths from slot names)
+//   - any *.test.js / *.test.jsx file (test fixtures)
+//   - any *.md file (documentation)
+//   - any *-comment in JS/JSX source (false-positive avoided by
+//     matching only quoted string literals)
+import { readdirSync, statSync } from 'node:fs';
+
+const ALLOW_PATHS = [
+  resolve(ROOT, 'src/lib/realVisuals.jsx'),
+  resolve(ROOT, 'src/assets/realism/photography/manifest.js'),
+  resolve(ROOT, 'src/assets/realism/photography/RealisticPhoto.jsx'),
+];
+const REALISM_LITERAL = /['"](\/assets\/realism\/[^'"]+)['"]/g;
+const offenders = [];
+
+function walk(dir) {
+  let entries;
+  try { entries = readdirSync(dir); } catch { return; }
+  for (const name of entries) {
+    if (name === 'node_modules' || name === 'dist' || name === '.git') continue;
+    const full = resolve(dir, name);
+    let st;
+    try { st = statSync(full); } catch { continue; }
+    if (st.isDirectory()) { walk(full); continue; }
+    if (!/\.(js|jsx|ts|tsx)$/.test(name)) continue;
+    if (/\.test\.(js|jsx|ts|tsx)$/.test(name)) continue;
+    if (ALLOW_PATHS.includes(full)) continue;
+    let src;
+    try { src = readFileSync(full, 'utf8'); } catch { continue; }
+    let mm;
+    while ((mm = REALISM_LITERAL.exec(src)) !== null) {
+      offenders.push({ file: full, path: mm[1] });
+    }
+  }
+}
+walk(resolve(ROOT, 'src'));
+if (offenders.length > 0) {
+  console.error(`[check:assets] FAIL — ${offenders.length} hardcoded /assets/realism/ literal${offenders.length === 1 ? '' : 's'} found outside the registry:`);
+  for (const row of offenders) {
+    const rel = row.file.replace(ROOT + '\\', '').replace(ROOT + '/', '').replace(/\\/g, '/');
+    console.error(`  • ${rel}\n      ${row.path}`);
+  }
+  console.error('\nReplace with REALISM_ASSETS.<category>.<key> from src/lib/realVisuals.jsx.');
+  process.exit(1);
+}
+
+ok(`registry clean — ${seen.size} unique realism paths, all on disk, no double extensions, no stray literals in src/.`);
 process.exit(0);

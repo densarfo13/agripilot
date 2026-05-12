@@ -86,7 +86,7 @@ import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
 import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
 import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
-import { resolveRealismImage } from '../lib/realVisuals.jsx';
+import { resolveRealismImage, REALISM_ASSETS } from '../lib/realVisuals.jsx';
 // Premium line-icon system (May 2026 realism migration). Used by
 // the soil-scan tile at the bottom of the Scan page; replaces the
 // legacy plant-pot emoji that previously sat there.
@@ -674,7 +674,7 @@ export default function ScanPage() {
         eyebrow={tStrict('premium.eyebrow.scan', 'Scan')}
         title={headerTitle}
         subtitle={headerSubtitle}
-        bgImage={resolveRealismImage('/assets/realism/scan/healthy-leaf.jpeg')}
+        bgImage={resolveRealismImage(REALISM_ASSETS.scan.healthy)}
         accent="green"
         testId="scan-page-hero"
       />
