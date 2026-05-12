@@ -85,6 +85,16 @@ import { FEATURE_SCAN_USEFULNESS } from '../lib/pilotFlags.js';
 import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
 import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
 import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
+// Farm-intelligence loop §10 — minimum-viable offline scan queue.
+// When the network call fails AND we have a usable base64 image,
+// stash the scan locally so an online retry can run it through
+// the real ML model. The queue auto-drains on the browser's
+// `online` event AND on ScanPage mount when we're online.
+import {
+  enqueueScan,
+  drainQueue,
+  isLikelyOnline,
+} from '../lib/offlineScanQueue.js';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 import { resolveRealismImage, REALISM_ASSETS } from '../lib/realVisuals.jsx';
 // Premium line-icon system (May 2026 realism migration). Used by
@@ -245,6 +255,75 @@ export default function ScanPage() {
     }, 3000);
     return () => { cancelled = true; clearTimeout(t0); clearTimeout(t3); };
     // Intentional one-shot — only fires on initial mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flagOn]);
+
+  // §10 offline-first auto-drain — when ScanPage mounts AND the
+  // user is online, try to retry any queued scans in the background.
+  // Also listen for the browser's `online` event so a queue that
+  // built up while the user was offline gets drained as soon as
+  // the network returns. The retry function re-runs analyzeScan
+  // and persists each success via saveScanUseful so the journal
+  // catches up automatically. Failures bump each entry's attempt
+  // counter (capped inside drainQueue) so we don't loop forever
+  // on a permanently bad image.
+  useEffect(() => {
+    if (!flagOn) return undefined;
+    let cancelled = false;
+
+    const retryFn = async (entry) => {
+      const out = await analyzeScan({
+        imageBase64: entry.imageBase64,
+        imageUrl:    null,
+        cropId:      entry.cropName || null,
+        cropName:    entry.cropName || null,
+        plantName:   null,
+        country:     null,
+        region:      entry.region || null,
+        experience:  entry.experience || 'generic',
+        activeExperience: entry.experience || 'generic',
+        weather:     null,
+      });
+      // Best-effort persist so the timeline picks it up. We don't
+      // overwrite the user's CURRENT result — they may have already
+      // moved on. The journal entry is enough.
+      if (FEATURE_SCAN_USEFULNESS) {
+        try { saveScanUseful(out, { experience: entry.experience || 'generic' }); }
+        catch { /* non-fatal */ }
+      }
+      try { moatTrack('scan_offline_retry_success', { scanId: out?.scanId || null }); }
+      catch { /* swallow */ }
+      return out;
+    };
+
+    const tryDrain = async () => {
+      if (cancelled) return;
+      if (!isLikelyOnline()) return;
+      try { await drainQueue(retryFn); } catch { /* never propagate */ }
+    };
+
+    // Drain on mount (when we're online).
+    tryDrain();
+
+    // Drain on the browser's online event.
+    let onlineHandler = null;
+    try {
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        onlineHandler = () => { tryDrain(); };
+        window.addEventListener('online', onlineHandler);
+      }
+    } catch { /* swallow */ }
+
+    return () => {
+      cancelled = true;
+      try {
+        if (onlineHandler && typeof window !== 'undefined') {
+          window.removeEventListener('online', onlineHandler);
+        }
+      } catch { /* swallow */ }
+    };
+    // Intentional one-shot — drain wiring runs once per ScanPage
+    // mount + persists across phase changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagOn]);
 
@@ -474,6 +553,33 @@ export default function ScanPage() {
         }
       } catch { /* ignore */ }
     } catch (err) {
+      // §10 offline-first: when we have the captured image AND the
+      // failure looks plausibly network-related (or we're explicitly
+      // offline), stash the scan so a future retry can run it
+      // through the real ML once the network is back. We enqueue
+      // EAGERLY here — even when mlScan's fallback path takes over
+      // below — because the user paid the cost of taking the photo
+      // and deserves the better verdict eventually.
+      try {
+        const msg = String((err && err.message) || '').toLowerCase();
+        const looksNetworky = !isLikelyOnline()
+          || msg.includes('network')
+          || msg.includes('fetch')
+          || msg.includes('timeout')
+          || msg.includes('failed to fetch')
+          || msg.includes('offline');
+        if (looksNetworky && imageBase64) {
+          enqueueScan({
+            imageBase64,
+            cropName:   profile?.crop || profile?.cropId || null,
+            region:     profile?.region || null,
+            experience: activeExperience,
+          });
+          try { moatTrack('scan_queued_offline', { reason: msg || 'offline' }); }
+          catch { /* swallow */ }
+        }
+      } catch { /* never propagate from the queue path */ }
+
       // Phase 7E — ML scan safe mode: when mlScan is on, a failed
       // analysis does NOT crash to an error screen. Instead we show
       // a needs_review result with "Photo saved. Review needed." so

@@ -53,6 +53,10 @@ import { enforceHighTrustScanResult } from '../../core/scanResultPolicy.js';
 // human voice before the bullet lists below. Pure function; returns
 // '' when the envelope is empty so the block self-hides.
 import { composeAgronomistReply } from '../../lib/agronomistReply.js';
+// §5 + §6 pattern detection — derives before/after + local
+// recurrence from this device's own scan history. Pure read.
+import { detectScanPattern } from '../../lib/scanPatternDetection.js';
+import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
 // `plantIdentification` envelope. Self-hides when absent so
@@ -314,7 +318,52 @@ const STYLES = {
     lineHeight: 1.55,
     fontWeight: 500,
   },
+  // §5 + §6 pattern block — calm strip that surfaces "improving",
+  // "worsening", or "third time you've seen this" so the user
+  // knows the scan isn't an isolated reading. Quieter than the
+  // agronomist block (no border) so it doesn't compete for the
+  // reader's first attention.
+  patternBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    padding: '8px 12px',
+    borderRadius: 10,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  patternHeader: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  patternLine: {
+    margin: 0,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 1.5,
+  },
 };
+
+// Pattern-tone copy for the three before/after states. Wording is
+// deliberately calm: "improving" is genuinely good news, "worsening"
+// is a heads-up not an alarm, "stable" is neutral.
+const _PATTERN_TREND_COPY = Object.freeze({
+  improving: {
+    label:    'Improving',
+    sentence: (crop, daysAgo) => `${crop} looks better than your last scan ${daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago'}.`,
+  },
+  worsening: {
+    label:    'Worsening',
+    sentence: (crop, daysAgo) => `${crop} severity is higher than your scan ${daysAgo === 0 ? 'earlier today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago'}. Worth a closer look.`,
+  },
+  stable: {
+    label:    'Stable',
+    sentence: (crop, daysAgo) => `Severity looks similar to your scan ${daysAgo === 0 ? 'earlier today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago'}.`,
+  },
+});
 
 function _confidencePill(level) {
   if (level === 'high')   return { ...STYLES.pill, ...STYLES.pillHigh };
@@ -591,6 +640,60 @@ export default function ScanResultCard({
         return (
           <div style={STYLES.agronomistBlock} data-testid="scan-agronomist-reply">
             <p style={STYLES.agronomistText}>{reply}</p>
+          </div>
+        );
+      })()}
+
+      {/* \u00a75 + \u00a76 pattern detection \u2014 surfaces before/after for the
+          same crop AND local recurrence ("third time in 2 weeks").
+          Reads from the device's own scanHistoryStore so it works
+          fully offline. Self-hides when there's nothing to say
+          (first scan, no matching prior, no recurrence). The full
+          \u00a75 spec (regional outbreak intelligence across many farms)
+          remains a server-side roadmap item \u2014 anything we said
+          about "your neighbours" would be made-up until that
+          aggregation endpoint exists. */}
+      {(() => {
+        let pattern;
+        try {
+          pattern = detectScanPattern(result, getScanUsefulHistory());
+        } catch { return null; }
+        if (!pattern) return null;
+        const cropLabel = String(
+          result?.decision?.cropDetected
+            || result?.cropName
+            || result?.crop
+            || 'Your crop'
+        ).trim() || 'Your crop';
+        const lines = [];
+        if (pattern.previous && pattern.trend && pattern.trend !== 'first_scan') {
+          const copy = _PATTERN_TREND_COPY[pattern.trend];
+          if (copy) {
+            lines.push({
+              label: copy.label,
+              text:  copy.sentence(cropLabel, pattern.previous.daysAgo ?? 0),
+            });
+          }
+        }
+        if (pattern.recurrence && pattern.recurrence.count >= 3) {
+          const since = pattern.recurrence.sinceDays;
+          const sinceLabel = (since == null || since <= 1)
+            ? 'recently'
+            : (since <= 14 ? `the last ${since} days` : 'the last 2 weeks');
+          lines.push({
+            label: 'Recurring',
+            text:  `This is the ${pattern.recurrence.count}th time you've reported this on ${cropLabel.toLowerCase()} in ${sinceLabel}. Worth treating as a pattern, not a one-off.`,
+          });
+        }
+        if (lines.length === 0) return null;
+        return (
+          <div style={STYLES.patternBlock} data-testid="scan-pattern">
+            {lines.map((ln, i) => (
+              <div key={i}>
+                <span style={STYLES.patternHeader}>{ln.label}</span>
+                <p style={STYLES.patternLine}>{ln.text}</p>
+              </div>
+            ))}
           </div>
         );
       })()}
