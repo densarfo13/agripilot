@@ -246,6 +246,46 @@ if (config.isProduction && !fs.existsSync(_distPath)) {
   );
 }
 
+// Canonical-asset boot check. When dist/ exists, verify the
+// fallback hero + the three spec-listed realism trio + the brand
+// icons are all present. The realism-fallback middleware below
+// can only do its job if `africa-farm-atmosphere.jpeg` exists —
+// when it doesn't, every missing-asset request falls all the way
+// through to the SPA real-404 catch-all, which is exactly the
+// noise the user has been seeing in production screenshots. Log
+// one greppable line listing every missing file so ops can spot
+// the partial-deploy state without grep-ing user reports.
+if (config.isProduction && fs.existsSync(_distPath)) {
+  const _critical = [
+    'icons/logo-premium.jpg',
+    'icons/logo-premium-192.jpg',
+    'icons/logo-premium-512.jpg',
+    'icons/logo-premium-1024.jpg',
+    'assets/realism/heroes/africa-farm-atmosphere.jpeg',
+    'assets/realism/farm/pepper-closeup.jpeg',
+    'assets/realism/journal/farm-inspection.jpeg',
+    'assets/realism/journal/greenhouse-work.jpeg',
+    'assets/realism/scan/healthy-leaf.jpeg',
+  ];
+  const _missing = [];
+  for (const rel of _critical) {
+    if (!fs.existsSync(path.join(_distPath, rel))) _missing.push(rel);
+  }
+  if (_missing.length > 0) {
+    console.error(
+      '[Farroway Static Serve] WARN: ' + _missing.length
+      + ' canonical asset' + (_missing.length === 1 ? '' : 's')
+      + ' missing from dist — realism-fallback middleware will degrade. '
+      + 'Missing:\n  • ' + _missing.join('\n  • ')
+      + '\nRun `npm run check:production-assets` locally to verify, '
+      + 'then redeploy with the full public/ tree.',
+    );
+  } else {
+    console.log('[Farroway Static Serve] All ' + _critical.length
+      + ' canonical assets present in dist/.');
+  }
+}
+
 // ─── Security Headers ──────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: false, // Vite bundles use inline scripts; configure CSP via reverse proxy if needed

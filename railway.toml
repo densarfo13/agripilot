@@ -19,7 +19,22 @@
 
 [build]
 builder = "nixpacks"
-buildCommand = "npm ci && cd server && npm ci && cd .. && npm run build"
+# `npm run build:safe` chains:
+#   1. npm run check:assets            — fails if realVisuals.jsx references
+#                                        any path that doesn't exist on disk
+#                                        OR contains a .webp.jpeg double-ext
+#                                        OR has a hardcoded /assets/realism/
+#                                        literal outside the registry.
+#   2. npm run check:production-assets — fails if any of the 11 canonical
+#                                        files (realism trio in both .jpeg
+#                                        + .webp + brand icons) is missing
+#                                        from public/.
+#   3. npm run build                   — vite build + prisma generate +
+#                                        intelligence tsc.
+# Failing either guard at build time means the deploy never ships a
+# broken public/ tree — the same files the realism-fallback middleware
+# in server/src/app.js relies on are verified BEFORE the container boots.
+buildCommand = "npm ci && cd server && npm ci && cd .. && npm run build:safe"
 
 [deploy]
 # `npm start` resolves to:
