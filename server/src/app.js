@@ -1167,10 +1167,17 @@ if (config.isProduction) {
   }));
 
   // ─── Realism asset compatibility layer (May 2026) ─────────
-  // Two safety nets that bracket every cached/stale request for a
-  // realism image. Both fire AFTER the static handler above (which
-  // serves the file when it exists on disk) and BEFORE the SPA
-  // catch-all below (which would return a real 404).
+  // Three safety nets that bracket every cached/stale request for
+  // a realism image. All fire BEFORE the SPA catch-all (which would
+  // return a real 404).
+  //
+  // 0. JPEG → WebP fallback (this audit): for the three canonical
+  //    fallback paths the production audit named, when only the
+  //    .webp variant exists on disk (e.g. the .jpeg got deleted in
+  //    a future cleanup), 301-redirect the .jpeg request to the
+  //    .webp file. Both extensions ship side-by-side today, so the
+  //    middleware no-ops when the .jpeg is present. Acts as a
+  //    permanent stale-asset compatibility shim.
   //
   // 1. Legacy-path mapper: 21 realism files were renamed from
   //    `.webp.jpeg` / `.webp.png` to single-extension `.jpeg` /
@@ -1180,12 +1187,34 @@ if (config.isProduction) {
   //    render correctly without any browser cache eviction.
   //
   // 2. Realism fallback: any /assets/realism/* image request that
-  //    survives both the static handler AND the legacy mapper
-  //    falls back to the canonical hero (africa-farm-atmosphere
-  //    .jpeg). The user gets an image (just not the right one),
-  //    the console doesn't 404, and the UI never shows a broken
-  //    box. Short cache (1 h) so the fallback doesn't stick once
-  //    the real file is back on disk.
+  //    survives the static handler AND both mappers above falls
+  //    back to the canonical hero (africa-farm-atmosphere.jpeg).
+  //    The user gets an image (just not the right one), the
+  //    console doesn't 404, and the UI never shows a broken box.
+  //    Short cache (1 h) so the fallback doesn't stick once the
+  //    real file is back on disk.
+  const _JPEG_TO_WEBP_FALLBACK = Object.freeze({
+    '/assets/realism/heroes/africa-farm-atmosphere.jpeg':
+      '/assets/realism/heroes/africa-farm-atmosphere.webp',
+    '/assets/realism/journal/farm-inspection.jpeg':
+      '/assets/realism/journal/farm-inspection.webp',
+    '/assets/realism/farm/pepper-closeup.jpeg':
+      '/assets/realism/farm/pepper-closeup.webp',
+  });
+  app.use((req, res, next) => {
+    const target = _JPEG_TO_WEBP_FALLBACK[req.path];
+    if (!target) return next();
+    // If the requested .jpeg exists on disk, let the static handler
+    // serve it directly — no redirect needed. The redirect is the
+    // FALLBACK for the cleanup scenario where the .jpeg got
+    // deleted.
+    const jpegOnDisk = path.join(clientDist, req.path);
+    if (fs.existsSync(jpegOnDisk)) return next();
+    const webpOnDisk = path.join(clientDist, target);
+    if (!fs.existsSync(webpOnDisk)) return next();
+    return res.redirect(301, target);
+  });
+
   app.use('/assets/realism', (req, res, next) => {
     if (!/\.webp\.(jpe?g|png)$/i.test(req.path)) return next();
     const remapped = req.path.replace(/\.webp\.(jpe?g|png)$/i, '.$1');
