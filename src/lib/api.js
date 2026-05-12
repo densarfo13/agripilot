@@ -67,6 +67,36 @@ let _refreshPromise = null;
 //     re-bootstrap.
 let _sessionDead = false;
 
+// Throttle for the [Auth Loop Prevented] log — without this, every
+// request after _sessionDead flips would log a line. We rate-limit
+// to once per 5 s so the signal is greppable without flooding.
+let _lastLoopLogAt = 0;
+const _LOOP_LOG_WINDOW_MS = 5_000;
+
+// Dispatched when _sessionDead flips false → true. AuthContext (or
+// any other listener) can use this as a "hard logout" signal — clear
+// local state, route to /login, etc. Idempotent within the same dead
+// state; a second flip without an intervening alive doesn't fire.
+//
+//   window.addEventListener(SESSION_EXPIRED_EVENT, () => { … })
+//
+// Exported for typed consumers; the literal string is the contract.
+export const SESSION_EXPIRED_EVENT = 'farroway:session_expired';
+
+function _emitSessionExpired() {
+  try {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+    }
+  } catch { /* never throw from a diagnostic */ }
+}
+
+function _markSessionDead() {
+  if (_sessionDead) return; // idempotent — only fires the event once
+  _sessionDead = true;
+  _emitSessionExpired();
+}
+
 export function markSessionAlive() {
   _sessionDead = false;
 }
@@ -81,6 +111,7 @@ export function clearSessionDead() {
 
 async function refreshOnce() {
   if (_refreshPromise) return _refreshPromise;
+  try { console.log('[Auth Refresh Start]'); } catch { /* swallow */ }
   _refreshPromise = fetch(`${API_BASE}/api/v2/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
@@ -99,11 +130,17 @@ async function refreshOnce() {
 export async function refreshSession() {
   try {
     const res = await refreshOnce();
-    if (res.ok) { _sessionDead = false; return true; }
-    _sessionDead = true;
+    if (res.ok) {
+      try { console.log('[Auth Refresh Success]'); } catch { /* swallow */ }
+      _sessionDead = false;
+      return true;
+    }
+    try { console.log('[Auth Refresh Failed]', { status: res.status }); } catch { /* swallow */ }
+    _markSessionDead();
     return false;
-  } catch {
-    _sessionDead = true;
+  } catch (err) {
+    try { console.log('[Auth Refresh Failed]', { reason: err && err.message }); } catch { /* swallow */ }
+    _markSessionDead();
     return false;
   }
 }
@@ -130,6 +167,15 @@ async function request(path, options = {}, allowRefresh = true) {
   // and the network panel clean. Reset by markSessionAlive() on a
   // successful login / refresh.
   if (allowRefresh && _sessionDead) {
+    // Throttled "loop prevented" log — fires at most once per 5 s so
+    // ops can see the gate working without flooding DevTools.
+    try {
+      const now = Date.now();
+      if (now - _lastLoopLogAt >= _LOOP_LOG_WINDOW_MS) {
+        _lastLoopLogAt = now;
+        console.log('[Auth Loop Prevented]', { path });
+      }
+    } catch { /* swallow */ }
     throw _notAuthenticatedError();
   }
 
@@ -148,18 +194,23 @@ async function request(path, options = {}, allowRefresh = true) {
     try {
       const refreshRes = await refreshOnce();
       if (refreshRes.ok) {
+        try { console.log('[Auth Refresh Success]'); } catch { /* swallow */ }
         _sessionDead = false;
         return request(path, options, false);
       }
       // Refresh returned a non-OK status (401 = no refresh cookie,
       // 429 = rate-limited, 5xx = server hiccup). Mark the session
       // dead so every subsequent authenticated request short-
-      // circuits in the gate above — no more cascade.
-      _sessionDead = true;
-    } catch {
+      // circuits in the gate above — no more cascade. Use the
+      // helper that emits the farroway:session_expired event so
+      // AuthContext can pick up the hard-logout signal.
+      try { console.log('[Auth Refresh Failed]', { status: refreshRes.status }); } catch { /* swallow */ }
+      _markSessionDead();
+    } catch (refreshErr) {
       // Refresh network failure — same outcome: short-circuit
       // future authenticated calls until the user signs in.
-      _sessionDead = true;
+      try { console.log('[Auth Refresh Failed]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
+      _markSessionDead();
     }
   }
 
