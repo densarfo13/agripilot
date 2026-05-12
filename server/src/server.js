@@ -157,6 +157,32 @@ async function main() {
       // trivial. Keep both until log infra is consolidated.
       console.log(`[Farroway] Master readiness build active: ${stamp}`);
     } catch { /* never throw from a marker */ }
+
+    // ─── Dist/Static-serve audit log (May 2026) ──────────────────
+    // Spec-mandated single-line markers so the operator can confirm
+    // at a glance which dist folder production is serving and when
+    // the bundle was last produced. Pairs with the front-end
+    // [Farroway Frontend Build] log so a stale-deploy mismatch shows
+    // up in seconds (front-end version older than back-end stamp).
+    try {
+      const distAbs = path.resolve(__dirname, '../../dist');
+      const distExists = fs.existsSync(distAbs);
+      console.log(`[Farroway Static Serve] Serving frontend from: ${distAbs}${distExists ? '' : ' (MISSING)'}`);
+      // Build timestamp — prefer the mtime of dist/index.html (the
+      // SPA entry point Vite rewrites on every build). Falls back to
+      // the boot timestamp on dev / missing-dist boots so the line
+      // always renders SOMETHING greppable.
+      let buildIso = new Date().toISOString();
+      try {
+        if (distExists) {
+          const indexPath = path.join(distAbs, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            buildIso = fs.statSync(indexPath).mtime.toISOString();
+          }
+        }
+      } catch { /* keep boot timestamp */ }
+      console.log(`[Farroway Build Timestamp] ${buildIso}`);
+    } catch { /* never throw from a marker */ }
   });
 
   // Graceful shutdown handler

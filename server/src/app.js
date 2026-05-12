@@ -214,8 +214,36 @@ if (fs.existsSync(_distPath)) {
     express.static(path.join(_distPath, 'robots.txt'), pwaCache));
 }
 
-if (config.isProduction) {
-  app.use(express.static(_distPath));
+// Removed: duplicate `app.use(express.static(_distPath))` that
+// previously lived here. Two mounts of the same dist path were
+// installed (this one + the cache-header-aware one at the bottom of
+// the file). Express middleware runs in registration order, so this
+// no-header mount served every dist file BEFORE the proper cache-
+// header logic could attach — making the no-cache rule for
+// index.html dead code. With this mount removed, the single canonical
+// static handler (see "Production Static Serving" block at the end
+// of this file) is now the only one — and the explicit cache rules
+// (no-cache on .html, immutable on /assets/*) become live.
+//
+// The PWA-critical mounts above (/icons, /manifest.json, etc.) are
+// preserved — they target specific paths and ship the appropriate
+// pwaCache headers themselves.
+//
+// Fail-loud guard for the dist directory in production: if the
+// build artefact is missing on the deploy host (a Railway/Render
+// build that didn't run `npm run build`, or a Docker stage that
+// skipped the COPY step), every frontend request would silently
+// 404 with no signal. Log a single greppable banner so ops sees
+// the cause immediately. We DO NOT throw — the API surface stays
+// reachable so health checks still pass and the operator can fix
+// the deploy.
+if (config.isProduction && !fs.existsSync(_distPath)) {
+  console.error(
+    '[Farroway Static Serve] FATAL: frontend dist not found at '
+    + _distPath
+    + ' — the deploy is missing the build artefact. Run `npm run build` '
+    + 'before starting the server, or check the build pipeline.',
+  );
 }
 
 // ─── Security Headers ──────────────────────────────────
