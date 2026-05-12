@@ -1165,6 +1165,53 @@ if (config.isProduction) {
       }
     },
   }));
+
+  // ─── Realism asset compatibility layer (May 2026) ─────────
+  // Two safety nets that bracket every cached/stale request for a
+  // realism image. Both fire AFTER the static handler above (which
+  // serves the file when it exists on disk) and BEFORE the SPA
+  // catch-all below (which would return a real 404).
+  //
+  // 1. Legacy-path mapper: 21 realism files were renamed from
+  //    `.webp.jpeg` / `.webp.png` to single-extension `.jpeg` /
+  //    `.png` in commit 8277714f. Old cached bundles still ship
+  //    URLs with the old names. This middleware rewrites the URL
+  //    to the new name and serves the renamed file — old bundles
+  //    render correctly without any browser cache eviction.
+  //
+  // 2. Realism fallback: any /assets/realism/* image request that
+  //    survives both the static handler AND the legacy mapper
+  //    falls back to the canonical hero (africa-farm-atmosphere
+  //    .jpeg). The user gets an image (just not the right one),
+  //    the console doesn't 404, and the UI never shows a broken
+  //    box. Short cache (1 h) so the fallback doesn't stick once
+  //    the real file is back on disk.
+  app.use('/assets/realism', (req, res, next) => {
+    if (!/\.webp\.(jpe?g|png)$/i.test(req.path)) return next();
+    const remapped = req.path.replace(/\.webp\.(jpe?g|png)$/i, '.$1');
+    const realPath = path.join(clientDist, 'assets/realism' + remapped);
+    if (fs.existsSync(realPath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      return res.sendFile(realPath);
+    }
+    return next();
+  });
+  app.use('/assets/realism', (req, res, next) => {
+    // Only intercept image extensions; other realism resources
+    // (json metadata, video, etc.) fall through to the catch-all.
+    if (!/\.(jpe?g|png|webp|gif|svg)$/i.test(req.path)) return next();
+    const requested = path.join(clientDist, 'assets/realism' + req.path);
+    if (fs.existsSync(requested)) return next(); // static will serve below — defensive only
+    const fallbackAbs = path.join(clientDist, 'assets/realism/heroes/africa-farm-atmosphere.jpeg');
+    if (fs.existsSync(fallbackAbs)) {
+      // Short cache — a broken-state response shouldn't pin into
+      // browser caches once the real file is restored.
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.sendFile(fallbackAbs);
+    }
+    return next();
+  });
+
   // SPA fallback: serve index.html for non-API routes (React Router handles
   // client-side routing). Same no-cache headers — this path serves
   // the SAME index.html as the static handler when the URL doesn't
