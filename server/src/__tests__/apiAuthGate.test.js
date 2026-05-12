@@ -187,3 +187,116 @@ describe('lib/api.js session-dead cool-down', () => {
     expect(isSessionDead()).toBe(true);
   });
 });
+
+// ─── Auth-refresh diagnostics + hard-logout event ───────────────
+// Spec requirements: the four [Auth Refresh *] log lines + a
+// dispatchable session-expired window event for AuthContext.
+
+describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
+  it('logs [Auth Refresh Start] when refreshOnce begins', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+    const { getCurrentUser } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    const startCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Start]'));
+    expect(startCalls.length).toBe(1);
+    logSpy.mockRestore();
+  });
+
+  it('logs [Auth Refresh Success] when refresh returns ok', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ user: { id: 'u1' } }) });
+    const { getCurrentUser } = await import('../../../src/lib/api.js');
+    await getCurrentUser();
+    const successCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Success]'));
+    expect(successCalls.length).toBeGreaterThanOrEqual(1);
+    logSpy.mockRestore();
+  });
+
+  it('logs [Auth Refresh Failed] when refresh returns non-ok', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { getCurrentUser } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    const failedCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Failed]'));
+    expect(failedCalls.length).toBeGreaterThanOrEqual(1);
+    logSpy.mockRestore();
+  });
+
+  it('logs [Auth Loop Prevented] when the _sessionDead gate trips', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { getCurrentUser } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    // Now a subsequent call should short-circuit + log loop-prevented.
+    await getCurrentUser().catch(() => null);
+    const loopCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Loop Prevented]'));
+    expect(loopCalls.length).toBeGreaterThanOrEqual(1);
+    logSpy.mockRestore();
+  });
+
+  it('dispatches farroway:session_expired window event on refresh failure', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    // Stub window.dispatchEvent + the SESSION_EXPIRED_EVENT pickup.
+    const events = [];
+    const fakeWindow = {
+      dispatchEvent: vi.fn((ev) => { events.push(ev && ev.type); return true; }),
+    };
+    const prevWindow = globalThis.window;
+    globalThis.window = fakeWindow;
+    // Polyfill CustomEvent for the test runner.
+    if (typeof globalThis.CustomEvent !== 'function') {
+      globalThis.CustomEvent = class CustomEvent {
+        constructor(type, init) { this.type = type; this.detail = init && init.detail; }
+      };
+    }
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { getCurrentUser, SESSION_EXPIRED_EVENT } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    expect(events).toContain(SESSION_EXPIRED_EVENT);
+    expect(events).toContain('farroway:session_expired');
+    globalThis.window = prevWindow;
+  });
+
+  it('session_expired event fires AT MOST once per dead-state transition', async () => {
+    globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    const events = [];
+    const fakeWindow = {
+      dispatchEvent: vi.fn((ev) => { events.push(ev && ev.type); return true; }),
+    };
+    const prevWindow = globalThis.window;
+    globalThis.window = fakeWindow;
+    if (typeof globalThis.CustomEvent !== 'function') {
+      globalThis.CustomEvent = class CustomEvent {
+        constructor(type, init) { this.type = type; this.detail = init && init.detail; }
+      };
+    }
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { getCurrentUser } = await import('../../../src/lib/api.js');
+    await getCurrentUser().catch(() => null);
+    // Subsequent calls trip the gate but MUST NOT re-dispatch the event.
+    await getCurrentUser().catch(() => null);
+    await getCurrentUser().catch(() => null);
+    const sessionEvents = events.filter((t) => t === 'farroway:session_expired');
+    expect(sessionEvents.length).toBe(1);
+    globalThis.window = prevWindow;
+  });
+});
