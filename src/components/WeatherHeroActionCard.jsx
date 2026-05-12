@@ -338,7 +338,7 @@ export default function WeatherHeroActionCard({
   }, [w, mode]);
 
   // Real weather state imagery — pulls from public/assets/realism/
-  // weather/*.webp.jpeg via the resolver. Maps rain/storm/drought/
+  // weather/*.jpeg via the resolver. Maps rain/storm/drought/
   // misty → matching photo. When type doesn't map (or the image
   // fails to load), the existing DynamicWeatherBackdrop stays as
   // the visible layer.

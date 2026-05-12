@@ -33,7 +33,7 @@ const ROOT = resolve(__dirname, '../../../');
 describe('resolveRealismImage — runtime-safe path resolver', () => {
   it('echoes a valid /assets/realism/ path back', async () => {
     const { resolveRealismImage } = await import('../../../src/lib/realVisuals.jsx');
-    const p = '/assets/realism/farm/cassava-leaf.webp.jpeg';
+    const p = '/assets/realism/farm/cassava-leaf.jpeg';
     expect(resolveRealismImage(p)).toBe(p);
   });
 
@@ -87,8 +87,8 @@ describe('realVisuals manifest — every referenced asset exists in public/', ()
 
     // Match anything inside single quotes that starts with
     // `/assets/realism/`. Vite serves public/ at /, so a path like
-    // `/assets/realism/farm/pepper-closeup.webp.jpeg` resolves to
-    // `public/assets/realism/farm/pepper-closeup.webp.jpeg`.
+    // `/assets/realism/farm/pepper-closeup.jpeg` resolves to
+    // `public/assets/realism/farm/pepper-closeup.jpeg`.
     const re = /'(\/assets\/realism\/[^']+)'/g;
     const seen = new Set();
     let m;

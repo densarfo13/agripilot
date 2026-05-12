@@ -42,18 +42,20 @@ import RealisticPhotoFallback from '../assets/realism/photography/RealisticPhoto
 import { normaliseCrop } from '../assets/realism/cropImages.jsx';
 import { resolveRegion } from './regions.js';
 
-// ─── Asset paths (exact filenames as uploaded) ──────────────────
-// Filenames preserve the operator's upload — some carry a
-// `.webp.jpeg` double extension because that's how the export
-// pipeline saved them. Browsers serve them correctly regardless;
-// MIME type comes from the actual bytes, not the file ext.
+// ─── Asset paths (canonical single-extension naming) ────────────
+// Every realism asset is referenced with a single honest extension
+// matching its actual content type. The earlier `.webp.jpeg` double
+// extension (from the operator's upload pipeline) was renamed to
+// `.jpeg` in the May 2026 canonical-asset pass — see the
+// `Realism Asset 404 Fix` commit. The `scripts/check-realism-assets.js`
+// guard prevents this drift from re-entering at PR time.
 
 const ASSETS = Object.freeze({
   heroes: {
     farmDefault:    '/assets/realism/heroes/africa-farm-atmosphere.jpeg',
-    farmSunrise:    '/assets/realism/heroes/afrca-sunrise-farm.webp.jpeg',
-    farmIrrigation: '/assets/realism/heroes/africa-irrigation.webp.jpeg',
-    riceField:      '/assets/realism/heroes/vietnam-misty-rice.webp.jpeg',
+    farmSunrise:    '/assets/realism/heroes/afrca-sunrise-farm.jpeg',
+    farmIrrigation: '/assets/realism/heroes/africa-irrigation.jpeg',
+    riceField:      '/assets/realism/heroes/vietnam-misty-rice.jpeg',
     // Operator-uploaded supplementary regional shot. Named
     // `IMG_5982` because that's the camera-roll filename; the
     // semantic context is unknown but it was filed under the
@@ -62,9 +64,9 @@ const ASSETS = Object.freeze({
     regional1:      '/assets/realism/regions/africa/IMG_5982.jpeg',
   },
   farm: {
-    cassava: '/assets/realism/farm/cassava-leaf.webp.jpeg',
-    pepper:  '/assets/realism/farm/pepper-closeup.webp.jpeg',
-    tomato:  '/assets/realism/farm/tomato-greenhouse.webp.jpeg',
+    cassava: '/assets/realism/farm/cassava-leaf.jpeg',
+    pepper:  '/assets/realism/farm/pepper-closeup.jpeg',
+    tomato:  '/assets/realism/farm/tomato-greenhouse.jpeg',
     // Supplementary farm closeups (operator upload, semantic
     // context not specified by the operator). Treated as
     // generic-farm rotation candidates; the seeded picker
@@ -74,16 +76,16 @@ const ASSETS = Object.freeze({
     generic3: '/assets/realism/farm/IMG_5986.jpeg',
   },
   scan: {
-    healthy: '/assets/realism/scan/healthy-leaf.webp.jpeg',
-    disease: '/assets/realism/scan/disease-leaf.webp.jpeg',
-    fungal:  '/assets/realism/scan/fungal-leaf.webp.jpeg',
-    pest:    '/assets/realism/scan/pest-leaf.webp.jpeg',
+    healthy: '/assets/realism/scan/healthy-leaf.jpeg',
+    disease: '/assets/realism/scan/disease-leaf.jpeg',
+    fungal:  '/assets/realism/scan/fungal-leaf.jpeg',
+    pest:    '/assets/realism/scan/pest-leaf.jpeg',
   },
   weather: {
-    rain:    '/assets/realism/weather/rain-crops.webp.jpeg',
-    storm:   '/assets/realism/weather/storm-farm.webp.jpeg',
-    drought: '/assets/realism/weather/drought-soil.webp.jpeg',
-    misty:   '/assets/realism/weather/misty-morning.webp.jpeg',
+    rain:    '/assets/realism/weather/rain-crops.jpeg',
+    storm:   '/assets/realism/weather/storm-farm.jpeg',
+    drought: '/assets/realism/weather/drought-soil.jpeg',
+    misty:   '/assets/realism/weather/misty-morning.jpeg',
     // Supplementary weather frames (operator upload). Mapped
     // as alternative shots; the resolver doesn't know which
     // condition each represents, so they're additional ambient
@@ -93,7 +95,7 @@ const ASSETS = Object.freeze({
   },
   journal: {
     inspection: '/assets/realism/journal/farm-inspection.jpeg',
-    greenhouse: '/assets/realism/journal/greenhouse-work.webp.jpeg',
+    greenhouse: '/assets/realism/journal/greenhouse-work.jpeg',
     // Supplementary documentary moments (operator upload).
     // Rotated via the journal pack — distinct farmers see
     // different memory shots.
@@ -455,8 +457,8 @@ function _logMissingOnce(path) {
 /**
  * resolveRealismImage — runtime-safe image-path resolver.
  *
- *   resolveRealismImage('/assets/realism/farm/cassava-leaf.webp.jpeg')
- *     → '/assets/realism/farm/cassava-leaf.webp.jpeg'  (echoed back)
+ *   resolveRealismImage('/assets/realism/farm/cassava-leaf.jpeg')
+ *     → '/assets/realism/farm/cassava-leaf.jpeg'  (echoed back)
  *
  *   resolveRealismImage(undefined)
  *     → '/assets/realism/heroes/africa-farm-atmosphere.jpeg'  (fallback)

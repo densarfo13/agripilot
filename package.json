@@ -13,6 +13,8 @@
     "build": "vite build && cd server && npx prisma generate && npx tsc -p intelligence/tsconfig.json",
     "clean": "node scripts/clean-dist.mjs",
     "build:clean": "npm run clean && npm run build",
+    "check:assets": "node scripts/check-realism-assets.mjs",
+    "build:safe": "npm run check:assets && npm run build",
     "build:icons": "node scripts/build-icons.mjs",
     "build:intelligence": "cd server && npx tsc -p intelligence/tsconfig.json",
     "start": "node scripts/prisma-deploy-with-baseline.mjs && cd server && node scripts/init-admin.mjs && node src/server.js",

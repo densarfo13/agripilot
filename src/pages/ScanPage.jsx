@@ -673,7 +673,7 @@ export default function ScanPage() {
         eyebrow={tStrict('premium.eyebrow.scan', 'Scan')}
         title={headerTitle}
         subtitle={headerSubtitle}
-        bgImage="/assets/realism/scan/healthy-leaf.webp.jpeg"
+        bgImage="/assets/realism/scan/healthy-leaf.jpeg"
         accent="green"
         testId="scan-page-hero"
       />
