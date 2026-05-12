@@ -690,6 +690,15 @@ export default function ScanResultCard({
           action row so it never displaces the spec buttons. */}
       <ChannelShareButtons
         text={(() => {
+          // Prefer the May 2026 decision-shape one-liner — it
+          // composes crop · issue · → action so the shared link
+          // already tells the recipient what to do, not just
+          // what was seen. Falls back to the legacy "Possible
+          // issue:" composer when the backend hasn't emitted
+          // the decision envelope yet (older bundles / older
+          // server versions).
+          const summary = String(result?.decision?.saveableSummary || '').trim();
+          if (summary) return summary + ' Scanned with Farroway.';
           const issue = String(result?.issue || result?.diagnosis || '').trim();
           return issue
             ? `Possible issue: ${issue}. Scanned with Farroway.`

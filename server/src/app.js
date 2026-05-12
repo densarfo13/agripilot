@@ -545,6 +545,11 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       // plantIdentification + healthAnalysis. Existing verdictV2
       // stays for back-compat; new consumers bind to verdictV3.
       normalizeToFullSpecShape, SPEC_FALLBACK_FULL,
+      // Scan Decision Intelligence (May 2026 §2) — tight 12-field
+      // action-card envelope. Consumers that only want the
+      // headline + action read `decision`; the rich verdicts stay
+      // for back-compat.
+      normalizeToDecisionShape, SPEC_FALLBACK_DECISION,
     } = await import('./ml/scanResultNormalizer.js');
     // Smart Scan AI Backend §7 — daily per-user quota guard.
     const { checkDailyScanLimit } = await import('./ml/scanLimitGuard.js');
@@ -573,6 +578,7 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
         // "uncertain / monitor" state with a clear retry hint.
         verdictV2: SPEC_FALLBACK_VERDICT,
         verdictV3: SPEC_FALLBACK_FULL,
+        decision:  SPEC_FALLBACK_DECISION,
         message:   'Daily scan limit reached. Upgrade to Pro for more scans.',
       });
     }
@@ -587,6 +593,7 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
         // null-check the verdict field.
         verdictV2: SPEC_FALLBACK_VERDICT,
         verdictV3: SPEC_FALLBACK_FULL,
+        decision:  SPEC_FALLBACK_DECISION,
       });
     }
 
@@ -724,11 +731,28 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       selectedCropOrPlant:  cropName || plantName || null,
     });
 
+    // Scan Decision Intelligence — tight 12-field action-card
+    // envelope built from the safe verdict + caller context.
+    // Pure function; never throws. Consumers bind to
+    // `result.decision.{actionToday|nextCheck|saveableSummary|…}`
+    // for the action-oriented UI without traversing the rich
+    // verdict.
+    const decision = normalizeToDecisionShape(safe, {
+      selectedCropOrPlant:   cropName || plantName || null,
+      tierPolicy:            policy,
+      verificationQuestions: questions,
+      weather, region, country,
+      landHealth,
+      providerName:          (inference.meta && inference.meta.provider) || null,
+      forceLowConfidence:    !!inference.fallbackUsed,
+    });
+
     return res.json({
       ok:                    true,
       verdict:               safe,
       verdictV2,
       verdictV3,
+      decision,
       tierPolicy:            policy,
       verificationQuestions: questions,
       scanId,
@@ -764,10 +788,11 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
       message:  err && err.message,
     };
     try {
-      const { SPEC_FALLBACK_VERDICT, SPEC_FALLBACK_FULL } =
+      const { SPEC_FALLBACK_VERDICT, SPEC_FALLBACK_FULL, SPEC_FALLBACK_DECISION } =
         await import('./ml/scanResultNormalizer.js');
       fallbackBody.verdictV2 = SPEC_FALLBACK_VERDICT;
       fallbackBody.verdictV3 = SPEC_FALLBACK_FULL;
+      fallbackBody.decision  = SPEC_FALLBACK_DECISION;
     } catch { /* swallow — body still ships error code */ }
     return res.status(500).json(fallbackBody);
   }

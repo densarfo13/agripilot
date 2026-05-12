@@ -90,6 +90,35 @@ export function saveScanEntry(result, context = {}) {
     recommendedActions:  Array.isArray(safeResult.recommendedActions)
                             ? safeResult.recommendedActions.map(String)
                             : [],
+    // Scan Decision Intelligence (May 2026 §7) — clean one-line
+    // summary the journal / progress feed can render without
+    // recomposing the action card. Prefers the server's pre-
+    // composed `decision.saveableSummary` (crop · issue · → action);
+    // falls back to a local compose when an older bundle saves
+    // a scan before the server has decision wired. Older entries
+    // (saved before this field landed) read as undefined — the
+    // feed renderer treats that as "use possibleIssue".
+    summary:             (() => {
+      const fromDecision = safeResult.decision && safeResult.decision.saveableSummary;
+      if (fromDecision && typeof fromDecision === 'string' && fromDecision.trim()) {
+        return fromDecision.trim();
+      }
+      const parts = [];
+      const crop = context.cropId || context.plantName || safeResult.cropName || safeResult.plantName;
+      if (crop) parts.push(String(crop));
+      const issue = String(safeResult.possibleIssue || '').trim();
+      if (issue) parts.push(issue);
+      const action = Array.isArray(safeResult.recommendedActions)
+                       && safeResult.recommendedActions.length > 0
+        ? String(safeResult.recommendedActions[0])
+        : '';
+      if (action) parts.push('→ ' + action);
+      return parts.join(' · ') || 'Scan recorded.';
+    })(),
+    // Persist the decision envelope verbatim when present — gives
+    // future Journal / Progress surfaces a single field-per-piece
+    // structure to bind to without re-deriving from raw.
+    decision:            safeResult.decision || null,
     experience:          context.experience || 'generic',
     language:            context.language   || null,
     createdAt:           _isoNow(),
