@@ -125,9 +125,23 @@ export function clearSessionDead() {
   _sessionDead = false;
 }
 
+// Dev-only console.log helper. Per the runtime-stabilization spec
+// "Keep only warn/error/fatal logs" in production — auth refresh
+// info lines (Start / Success) were firing on every refresh and
+// reading as noise in prod DevTools. They stay in dev so a
+// developer chasing an auth flow can see the sequence.
+function _devLog(...args) {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log(...args);
+    }
+  } catch { /* swallow */ }
+}
+
 async function refreshOnce() {
   if (_refreshPromise) return _refreshPromise;
-  try { console.log('[Auth Refresh Start]'); } catch { /* swallow */ }
+  _devLog('[Auth Refresh Start]');
   _refreshPromise = fetch(`${API_BASE}/api/v2/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
@@ -147,15 +161,15 @@ export async function refreshSession() {
   try {
     const res = await refreshOnce();
     if (res.ok) {
-      try { console.log('[Auth Refresh Success]'); } catch { /* swallow */ }
+      _devLog('[Auth Refresh Success]');
       _sessionDead = false;
       return true;
     }
-    try { console.log('[Auth Refresh Failed]', { status: res.status }); } catch { /* swallow */ }
+    try { console.warn('[Auth Refresh Failed]', { status: res.status }); } catch { /* swallow */ }
     _markSessionDead();
     return false;
   } catch (err) {
-    try { console.log('[Auth Refresh Failed]', { reason: err && err.message }); } catch { /* swallow */ }
+    try { console.warn('[Auth Refresh Failed]', { reason: err && err.message }); } catch { /* swallow */ }
     _markSessionDead();
     return false;
   }
@@ -210,7 +224,7 @@ async function request(path, options = {}, allowRefresh = true) {
     try {
       const refreshRes = await refreshOnce();
       if (refreshRes.ok) {
-        try { console.log('[Auth Refresh Success]'); } catch { /* swallow */ }
+        _devLog('[Auth Refresh Success]');
         _sessionDead = false;
         return request(path, options, false);
       }
@@ -220,12 +234,12 @@ async function request(path, options = {}, allowRefresh = true) {
       // circuits in the gate above — no more cascade. Use the
       // helper that emits the farroway:session_expired event so
       // AuthContext can pick up the hard-logout signal.
-      try { console.log('[Auth Refresh Failed]', { status: refreshRes.status }); } catch { /* swallow */ }
+      try { console.warn('[Auth Refresh Failed]', { status: refreshRes.status }); } catch { /* swallow */ }
       _markSessionDead();
     } catch (refreshErr) {
       // Refresh network failure — same outcome: short-circuit
       // future authenticated calls until the user signs in.
-      try { console.log('[Auth Refresh Failed]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
+      try { console.warn('[Auth Refresh Failed]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
       _markSessionDead();
     }
   }

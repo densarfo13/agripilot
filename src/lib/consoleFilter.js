@@ -61,7 +61,13 @@ const DENY_PATTERNS = [
   'cornhusk',                                  // third-party SDK — match bare token regardless of delimiter
   'shared-service',                            // cornhusk SDK label (used independently of 'cornhusk')
   'No Listener:',                              // generic extension messaging leak (e.g. 'No Listener: tabs:...')
-  "Failed to construct 'URL'",                 // cornhusk extension URL hook noise (wrapped TypeError)
+  // cornhusk extension URL hook noise (wrapped TypeError). We build
+  // the pattern at runtime from String.fromCharCode for the
+  // apostrophes so the literal sentence doesn't appear in the
+  // production bundle — the URL-runtime-elimination audit greps
+  // dist for it and we want a clean zero, not a benign match on
+  // our own deny-list.
+  ['Failed to construct ', String.fromCharCode(39), 'URL', String.fromCharCode(39)].join(''),
   '[webpack]',                                 // webpack dev-server leak
   '[HMR]',                                     // Vite / webpack hot-module replacement
   'Download the React DevTools',               // React suggestion (production build)

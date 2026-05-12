@@ -540,10 +540,17 @@ try {
     || baseStr.startsWith('/')
     || /^https?:\/\//i.test(baseStr);
   if (validBase) {
-    // eslint-disable-next-line no-console
-    console.log('[Farroway API Base Validated]', {
-      base: baseStr || '(same-origin)',
-    });
+    // Per the URL-runtime elimination spec (§6): keep only warn/
+    // error/fatal logs in production. The valid-base success line
+    // was firing once per page load in prod and reading as noise.
+    // Dev still gets it so a developer chasing a stale .env can see
+    // the validated base immediately.
+    if (import.meta.env && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('[Farroway API Base Validated]', {
+        base: baseStr || '(same-origin)',
+      });
+    }
   } else {
     // eslint-disable-next-line no-console
     console.warn('[Farroway API Base Validated] INVALID base — '
