@@ -6,6 +6,22 @@ import { resolveApiBase } from './api/assertApiBaseUrl.js';
 import { isLoggedIn } from '../utils/session.js';
 const API_BASE = resolveApiBase();
 
+// Dev-only one-shot diagnostic per the runtime-stabilization spec
+// (§2). Fires once per page load in development so a developer can
+// confirm at a glance that the API base resolved cleanly. Suppressed
+// in production to keep the user console quiet — the same-origin
+// fallback is the documented Railway monolith pattern (handled in
+// assertApiBaseUrl.js without warning) and shouldn't read as an error.
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    if (typeof globalThis !== 'undefined' && !globalThis.__farrowayApiBaseLogged) {
+      globalThis.__farrowayApiBaseLogged = true;
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_API] base validated', { base: API_BASE || '(same-origin)' });
+    }
+  }
+} catch { /* never throw from a diagnostic */ }
+
 // P5.15 — re-export the normalizer so callers can `import { ...
 // normalizeApiResponse, safeCall } from '../lib/api.js'` instead of
 // having to know about the deeper module path.
