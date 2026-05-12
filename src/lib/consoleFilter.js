@@ -89,11 +89,16 @@ const DENY_PATTERNS = [
   'LocalStorage keys:',
   // Pilot readiness lockdown (May 2026 §1): suppress the
   // duplicate version-stamp lines so production console reads
-  // clean. The `[Farroway] Pilot readiness build active` line
-  // and `[Farroway] Active UI build:` line are kept (those are
-  // the two greppable signals QA + ops rely on).
+  // clean. Per the May 2026 PilotHome-removal pass, the
+  // "Pilot readiness build active" stamp is also silenced —
+  // it was kept earlier as a greppable signal but the user-
+  // facing console treats it as legacy noise. The active
+  // pilot-readiness mode itself (pilotReadiness.js) stays —
+  // it's operational UI-polish tooling that gates banner
+  // visibility / placeholder hiding / softer error states.
   '[Farroway] Soft Ochre platform build active',
   '[Farroway] Runtime integration stable',
+  '[Farroway] Pilot readiness build active',
   'Farroway Build:',
   'Farroway UI version:',
 ];
