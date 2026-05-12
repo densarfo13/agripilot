@@ -261,6 +261,37 @@ const STYLES = {
     alignItems: 'center',
     gap: 4,
   },
+  // "Why Farroway thinks this" — trust / explainability block that
+  // surfaces the meta-signals the agricultural-intelligence pipeline
+  // folded together (confidence basis, region context, weather
+  // caution, provider status). Visually quieter than the action
+  // bullets so it reads as supporting context, not another to-do.
+  trustBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    padding: '10px 12px',
+    borderRadius: 10,
+    background: 'rgba(53,93,73,0.10)',
+    border: '1px solid rgba(53,93,73,0.30)',
+  },
+  trustHeader: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.65)',
+  },
+  trustList: {
+    margin: 0,
+    paddingLeft: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.82)',
+    lineHeight: 1.45,
+  },
 };
 
 function _confidencePill(level) {
@@ -535,6 +566,42 @@ export default function ScanResultCard({
           </p>
         </div>
       ) : null}
+
+      {/* "Why Farroway thinks this" \u2014 trust / explainability block.
+          Surfaces the meta-signals the agricultural-intelligence
+          pipeline fused (confidence basis + region context +
+          weather caution + provider status) so the farmer sees
+          WHY the verdict is trustworthy, not just WHAT it is.
+          Reads from result.decision (the 12-field envelope the
+          server normaliser emits). Each line is rendered ONLY when
+          its decision field is present and non-empty, and the
+          whole block self-hides when no lines remain \u2014 older
+          server versions (no decision envelope) pass through
+          cleanly with no visible regression. */}
+      {(() => {
+        const dec = result && result.decision;
+        if (!dec || typeof dec !== 'object') return null;
+        const lines = [];
+        const _push = (raw) => {
+          const s = String(raw || '').trim();
+          if (s) lines.push(s);
+        };
+        _push(dec.confidenceTone);
+        _push(dec.regionContext);
+        _push(dec.weatherCaution);
+        _push(dec.providerStatus);
+        if (lines.length === 0) return null;
+        return (
+          <div style={STYLES.trustBlock} data-testid="scan-why-farroway">
+            <span style={STYLES.trustHeader}>
+              {tStrict('scan.whyFarroway', 'Why Farroway thinks this')}
+            </span>
+            <ul style={STYLES.trustList}>
+              {lines.map((line, i) => <li key={i}>{line}</li>)}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* Land-health caution \u2014 surfaces the satellite snapshot
           when stressLevel is medium / high OR the drought signal

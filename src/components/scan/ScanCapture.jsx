@@ -35,6 +35,12 @@ import { tStrict } from '../../i18n/strictT.js';
 // into the OS Camera app — the live preview now sits inside the
 // page so the experience reads like a real scanner.
 import LiveCameraScanner from './LiveCameraScanner.jsx';
+// Stage 1 of the agricultural-intelligence pipeline — score the
+// captured photo's quality (blur + light) BEFORE we burn a backend
+// scan call on it. The helper is pure, never throws, and SSR-safe;
+// when document/Image are unavailable it returns ok=true so legacy
+// callers keep working unchanged.
+import { scoreImageQuality } from '../../lib/imageQualityPreflight.js';
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB
 
@@ -253,7 +259,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   // Validates a captured/uploaded file and stages it as if it had
   // come from the hidden file input. Returns true on success so
   // the caller knows whether to keep the camera open or close.
-  const acceptCapturedFile = useCallback((next) => {
+  //
+  // Async to give the image-quality preflight (Stage 1 of the
+  // scan-intelligence pipeline) room to paint the candidate photo
+  // onto a tiny canvas and compute luminance + sharpness. The
+  // helper itself never throws — we still defensively wrap so a
+  // rogue browser policy can't poison the capture path.
+  const acceptCapturedFile = useCallback(async (next) => {
     if (!next) return false;
     if (next.size > MAX_BYTES) {
       setError(tStrict('scan.error.tooLarge', 'That photo is too large. Try a smaller one.'));
@@ -264,6 +276,17 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       setError(tStrict('scan.error.badType', 'Please use a JPEG, PNG, or WebP photo.'));
       return false;
     }
+    // Stage 1 preflight — block blurry / dark / washed-out photos
+    // BEFORE the scan API call. Returns ok=true on any environment
+    // it can't measure (SSR, missing canvas) so legacy paths keep
+    // working unchanged.
+    try {
+      const report = await scoreImageQuality(next);
+      if (report && report.ok === false && report.hint) {
+        setError(report.hint);
+        return false;
+      }
+    } catch { /* preflight is best-effort — never block on it */ }
     if (preview) {
       try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
     }
@@ -289,7 +312,7 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   // call the freshest continueAnalysis at invocation time.
   const continueAnalysisRef = useRef(null);
 
-  const onLiveCameraCaptured = useCallback(({ file: capturedFile }) => {
+  const onLiveCameraCaptured = useCallback(async ({ file: capturedFile }) => {
     setLiveCameraOpen(false);
     if (!capturedFile) return;
     // Stage the file in local state (so retake/error paths still
@@ -297,22 +320,33 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     // — skipping the wrapper preview flash. Without this, the
     // user saw the boxed wrapper for a render cycle before the
     // page advanced to the analyzing phase.
-    const accepted = acceptCapturedFile(capturedFile);
-    if (accepted && continueAnalysisRef.current) {
+    //
+    // The Stage 1 preflight inside acceptCapturedFile may reject
+    // the photo (blur / dark / washed out). When that happens it
+    // returns false AND sets a calm inline hint via setError so
+    // the user can retake without leaving the page — we re-open
+    // the camera overlay so the retake path is one tap away.
+    const accepted = await acceptCapturedFile(capturedFile);
+    if (!accepted) {
+      if (supportsLiveCamera) setLiveCameraOpen(true);
+      return;
+    }
+    if (continueAnalysisRef.current) {
       let url = '';
       try { url = URL.createObjectURL(capturedFile); } catch { /* swallow */ }
       continueAnalysisRef.current(capturedFile, url);
     }
-  }, [acceptCapturedFile]);
+  }, [acceptCapturedFile, supportsLiveCamera]);
 
-  const onLiveCameraFallbackUpload = useCallback((uploadedFile) => {
+  const onLiveCameraFallbackUpload = useCallback(async (uploadedFile) => {
     setLiveCameraOpen(false);
     if (!uploadedFile) return;
     // Same auto-analysis path for the in-overlay gallery picker.
     // The user picked a photo → they expect analysis to start;
     // the wrapper preview is a double-tap that adds nothing.
-    const accepted = acceptCapturedFile(uploadedFile);
-    if (accepted && continueAnalysisRef.current) {
+    const accepted = await acceptCapturedFile(uploadedFile);
+    if (!accepted) return;
+    if (continueAnalysisRef.current) {
       let url = '';
       try { url = URL.createObjectURL(uploadedFile); } catch { /* swallow */ }
       continueAnalysisRef.current(uploadedFile, url);
@@ -337,7 +371,7 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     try { galleryInputRef.current?.click(); } catch { /* ignore */ }
   }, []);
 
-  const onFileChange = useCallback((e) => {
+  const onFileChange = useCallback(async (e) => {
     const next = e?.target?.files?.[0];
     if (!next) return;
     if (next.size > MAX_BYTES) {
@@ -350,6 +384,15 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       setError(tStrict('scan.error.badType', 'Please use a JPEG, PNG, or WebP photo.'));
       return;
     }
+    // Stage 1 preflight — same gate the live-camera path runs.
+    try {
+      const report = await scoreImageQuality(next);
+      if (report && report.ok === false && report.hint) {
+        setError(report.hint);
+        if (e?.target) { try { e.target.value = ''; } catch { /* swallow */ } }
+        return;
+      }
+    } catch { /* best-effort */ }
     // Revoke any previous preview URL.
     if (preview) {
       try { URL.revokeObjectURL(preview); } catch { /* ignore */ }

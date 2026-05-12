@@ -33,25 +33,23 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
 
-// Step keys + English fallbacks. Total cycle ≈ 2.4 seconds at the
+// Step keys + English fallbacks. Total cycle ≈ 3.2 seconds at the
 // default cadence below.
-// May 2026 scan-flow polish — premium analysis transition copy.
-// The previous four steps were generic ("Analyzing plant
-// image…", "Checking visible leaf patterns…", …). The spec
-// names the three steps explicitly:
-//
-//   1. "Analyzing crop health"
-//   2. "Checking disease patterns"
-//   3. "Comparing regional conditions"
-//
-// We keep four entries so the cycle still works on slow networks
-// (the fourth holds indefinitely until the parent transitions
-// to result phase).
+// May 2026 agricultural-intelligence pipeline — the progressive
+// labels now mirror the FIVE pipeline stages the engine actually
+// runs (photo quality → identification → leaf-pattern comparison
+// → weather + region context fusion → guidance composition).
+// Surfacing each stage builds trust: the user sees that Farroway
+// isn't just "thinking" but is checking the photo, comparing it
+// against patterns, AND folding their farm's own context into the
+// answer. The final entry holds open-ended so a slow network just
+// keeps the calmest line on screen until the parent flips phase.
 const STEPS = Object.freeze([
-  { key: 'scan.analyzing.step1', fallback: 'Analyzing crop health…',          msHold: 800 },
-  { key: 'scan.analyzing.step2', fallback: 'Checking disease patterns…',      msHold: 800 },
-  { key: 'scan.analyzing.step3', fallback: 'Comparing regional conditions…',  msHold: 800 },
-  { key: 'scan.analyzing.step4', fallback: 'Preparing your guidance…',        msHold: 999_999 },
+  { key: 'scan.analyzing.step1', fallback: 'Checking photo quality…',                  msHold: 600 },
+  { key: 'scan.analyzing.step2', fallback: 'Identifying the crop…',                    msHold: 700 },
+  { key: 'scan.analyzing.step3', fallback: 'Comparing leaf patterns…',                 msHold: 700 },
+  { key: 'scan.analyzing.step4', fallback: 'Adding weather and region context…',       msHold: 700 },
+  { key: 'scan.analyzing.step5', fallback: 'Preparing your guidance…',                 msHold: 999_999 },
 ]);
 
 // Safety cap — if the parent never transitions out of analyzing
