@@ -87,18 +87,15 @@ const DENY_PATTERNS = [
   'Onboarding complete:',
   'Migration ran:',
   'LocalStorage keys:',
-  // Pilot readiness lockdown (May 2026 §1): suppress the
-  // duplicate version-stamp lines so production console reads
-  // clean. Per the May 2026 PilotHome-removal pass, the
-  // "Pilot readiness build active" stamp is also silenced —
-  // it was kept earlier as a greppable signal but the user-
-  // facing console treats it as legacy noise. The active
-  // pilot-readiness mode itself (pilotReadiness.js) stays —
-  // it's operational UI-polish tooling that gates banner
-  // visibility / placeholder hiding / softer error states.
+  // Version-stamp suppression: production console reads clean
+  // without the duplicate build-version lines. The legacy
+  // PilotHome-era stamp entry was removed in the permanent
+  // PilotHome cleanup — the source that emitted it is gone, so
+  // a deny-pattern for it is dead code AND a regression-guard
+  // false positive (the literal string itself shipped to dist/,
+  // which the canonical-home audit script flagged).
   '[Farroway] Soft Ochre platform build active',
   '[Farroway] Runtime integration stable',
-  '[Farroway] Pilot readiness build active',
   'Farroway Build:',
   'Farroway UI version:',
 ];
