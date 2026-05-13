@@ -61,6 +61,7 @@ const DENY_PATTERNS = [
   'cornhusk',                                  // third-party SDK — match bare token regardless of delimiter
   'shared-service',                            // cornhusk SDK label (used independently of 'cornhusk')
   'No Listener:',                              // generic extension messaging leak (e.g. 'No Listener: tabs:...')
+  'runtime.lastError',                         // chrome.runtime.lastError leak from any extension messaging callback
   // cornhusk extension URL hook noise (wrapped TypeError). We build
   // the pattern at runtime from String.fromCharCode for the
   // apostrophes so the literal sentence doesn't appear in the

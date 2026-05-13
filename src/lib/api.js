@@ -146,6 +146,17 @@ function _emitSessionExpired() {
 function _markSessionDead() {
   if (_sessionDead) return; // idempotent — only fires the event once
   _sessionDead = true;
+  // Canonical single-line session-expired marker (Final Runtime
+  // Noise Isolation §2). Fires exactly once per dead-state
+  // transition thanks to the idempotent guard above, so noisy
+  // refresh loops can't produce more than one of these per
+  // session lifetime. Stays as console.log (not console.warn)
+  // because the event is operationally expected — a normal user
+  // hitting their access-token expiry is not a warning condition.
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[FARROWAY_AUTH] session expired');
+  } catch { /* never throw from a diagnostic */ }
   _emitSessionExpired();
 }
 
@@ -762,18 +773,25 @@ function _hasAuthSignal() {
 }
 
 export function trackEvent(event, metadata) {
-  // Guard: avoid the guaranteed-401 call from anonymous routes
-  // (login / forgot-password / public landing). A logged-out
-  // farmer never has a valid analytics session anyway, so the
-  // call is a pure browser-console-noise generator. Caller still
-  // gets a thenable so existing `.then` chains don't crash.
+  // Final Runtime Noise Isolation §3 — triple gate so analytics
+  // never produces auth-loop console noise:
+  //   1. Skip when no auth signal (logged-out anonymous page).
+  //   2. Skip when session is dead (post-refresh-failure window).
+  //      Without this, request()'s _sessionDead gate would log
+  //      [Auth Loop Prevented] every time analytics fired.
+  //   3. Use allowRefresh:false so even if the call goes
+  //      through, a 401 does NOT trigger refreshOnce(). Analytics
+  //      must never drive the auth lifecycle.
   if (!_hasAuthSignal()) {
     return Promise.resolve({ skipped: true, reason: 'no_auth' });
+  }
+  if (_sessionDead) {
+    return Promise.resolve({ skipped: true, reason: 'session_dead' });
   }
   return request('/api/v2/analytics/track', {
     method: 'POST',
     body: JSON.stringify({ event, metadata }),
-  });
+  }, false).catch(() => ({ skipped: true, reason: 'fetch_failed' }));
 }
 
 /**
@@ -781,18 +799,19 @@ export function trackEvent(event, metadata) {
  * Logs to the analytics endpoint but never throws or blocks the caller.
  */
 export function trackPilotEvent(event, metadata = {}) {
-  // Same anonymous-skip as trackEvent above. The previous shape
-  // fired the request, the server returned 401, and the browser
-  // logged "Failed to load resource: .../analytics/track 401" on
-  // every public-route render. The fire-and-forget catch swallows
-  // the JS error but cannot suppress the browser's own console
-  // line — gating the call is the only way to silence the noise.
+  // Same triple gate as trackEvent: no-auth skip, session-dead
+  // skip, allowRefresh:false. The fire-and-forget catch swallows
+  // the JS error but cannot suppress the browser's own
+  // "Failed to load resource: …/analytics/track 401" line, so
+  // gating + allowRefresh:false are the only ways to silence
+  // the noise.
   if (!_hasAuthSignal()) return;
+  if (_sessionDead) return;
   try {
     request('/api/v2/analytics/track', {
       method: 'POST',
       body: JSON.stringify({ event, metadata, source: 'pilot' }),
-    }).catch(() => {});
+    }, false).catch(() => {});
   } catch {
     // silently ignore — analytics must never block the UI
   }
