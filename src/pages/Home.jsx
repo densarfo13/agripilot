@@ -130,8 +130,45 @@ function _resolveUserType() {
 }
 
 function _resolveFarm() {
-  const farm = _safeJsonGet('farroway_active_farm');
-  if (farm && typeof farm === 'object') return farm;
+  // Farm State + Backyard Type Fix §1 — read order:
+  //   1. legacy `farroway_active_farm` blob (single-farm pre-V2)
+  //   2. multi-experience store's active entity (covers users who
+  //      created their farm via the new multi-farm/garden flow
+  //      without writing back to the legacy key — that's why
+  //      "No farm added yet" was surfacing for users who DID
+  //      have a saved farm)
+  //   3. first row of `farroway.farms` (most recent farm fallback
+  //      per spec: "if activeFarmId missing, use most recent")
+  // All three reads are SSR-safe + never throw.
+  const legacy = _safeJsonGet('farroway_active_farm');
+  if (legacy && typeof legacy === 'object') return legacy;
+  // Multi-experience store fallback.
+  try {
+    const v2Farms = _safeJsonGet('farroway.farms');
+    if (Array.isArray(v2Farms) && v2Farms.length > 0) {
+      const activeId = _safeGet('farroway.activeFarmId');
+      if (activeId) {
+        const match = v2Farms.find((f) => f && String(f.id) === String(activeId));
+        if (match) return match;
+      }
+      // Spec §1: "if activeFarmId missing, use most recent farm".
+      return v2Farms[v2Farms.length - 1];
+    }
+  } catch { /* swallow */ }
+  // Garden fallback — when the user is in garden mode and has a
+  // garden row but no farm, surface the garden as the active
+  // entity so the canonical Home renders garden context.
+  try {
+    const v2Gardens = _safeJsonGet('farroway.gardens');
+    if (Array.isArray(v2Gardens) && v2Gardens.length > 0) {
+      const activeGardenId = _safeGet('farroway_active_garden_id');
+      if (activeGardenId) {
+        const match = v2Gardens.find((g) => g && String(g.id) === String(activeGardenId));
+        if (match) return match;
+      }
+      return v2Gardens[v2Gardens.length - 1];
+    }
+  } catch { /* swallow */ }
   return null;
 }
 
@@ -409,6 +446,25 @@ export default function Home() {
         authState:       'unknown',  // AuthContext is upstream; not threaded here
         renderedBranch:  'canonical_shell',
       });
+      // Farm State + Backyard Type Fix §1 — dedicated trace
+      // listing the multi-farm-store contents + active pointer
+      // so ops can verify "No farm added yet" reports against
+      // the actual data shape on the user's device.
+      try {
+        const farms       = _safeJsonGet('farroway.farms') || [];
+        const gardens     = _safeJsonGet('farroway.gardens') || [];
+        const activeFarmId   = _safeGet('farroway.activeFarmId');
+        const activeGardenId = _safeGet('farroway_active_garden_id');
+        // eslint-disable-next-line no-console
+        console.log('[FARM_STATE]', {
+          farmsCount:      Array.isArray(farms)   ? farms.length   : 0,
+          gardensCount:    Array.isArray(gardens) ? gardens.length : 0,
+          activeFarmId:    activeFarmId   || null,
+          activeGardenId:  activeGardenId || null,
+          activeFarmName:  farm && (farm.name || farm.farmName) || null,
+          mode:            ctxIntel && ctxIntel.mode === 'garden' ? 'garden' : 'farm',
+        });
+      } catch { /* swallow */ }
     } catch { /* swallow */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weather]);
