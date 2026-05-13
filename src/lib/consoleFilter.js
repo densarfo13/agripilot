@@ -72,11 +72,21 @@ const ALLOW_PATTERNS = [
   '[REFRESH_FAILED]',
   '[FARROWAY_API]',
   '[INVALID_URL]',
+  '[INVALID_URL_PATH]',    // Production stabilization §1
+  '[URL_BUILD]',           // Production stabilization §1
+  '[API_REQUEST]',         // Production stabilization §1
   '[CORS_BLOCKED]',
-  '[FARROWAY_CAMERA]',     // scan subsystem
+  '[FARROWAY_CAMERA]',     // scan subsystem (legacy)
+  '[SCAN_INIT]',           // scan subsystem (spec §2.9)
+  '[SCAN_PERMISSION]',     // scan subsystem (spec §2.9)
+  '[SCAN_STREAM_READY]',   // scan subsystem (spec §2.9)
+  '[SCAN_STREAM_FAILED]',  // scan subsystem (spec §2.9)
+  '[SCAN_CLEANUP]',        // scan subsystem (spec §2.9)
   '[FARROWAY_HOME]',       // routing subsystem
   '[FARROWAY_NAV]',        // routing subsystem
   '[CANONICAL_HOME]',      // routing subsystem
+  '[AUTH_REFRESH]',        // auth subsystem (spec §3 alias)
+  '[AUTH_EXPIRED]',        // auth subsystem (spec §3 alias)
   // Generic subsystem keywords — broad fallback so future
   // log prefixes that include any of these tokens stay visible
   // without each one needing an explicit entry. Lower-cased

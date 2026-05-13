@@ -96,7 +96,7 @@ function _isMobileSafari() {
 // under 2s. Pick the deadline per platform so the retry surface
 // doesn't kick in before iOS has had a fair chance.
 const CAMERA_READY_DEADLINE_MS_IOS     = 12000;
-const CAMERA_READY_DEADLINE_MS_DEFAULT = 6000;
+const CAMERA_READY_DEADLINE_MS_DEFAULT = 8000;  // Spec §2.7 — 8s default.
 
 // ─── Canonical camera state machine ─────────────────────────────
 // Permanent Scanner Hardening spec — 5 canonical phases. Exposed
@@ -154,6 +154,34 @@ async function _queryCameraPermission() {
 // Dev-only structured log. Production builds tree-shake the body
 // thanks to the import.meta.env.DEV guard (Vite replaces it with a
 // literal `false` in build) — the entire branch drops out.
+//
+// Production Runtime Stabilization spec §2.9 — also emit the
+// spec-named prefix ([SCAN_INIT] / [SCAN_PERMISSION] /
+// [SCAN_STREAM_READY] / [SCAN_STREAM_FAILED] / [SCAN_CLEANUP])
+// derived from the internal event name so audit greps for the
+// canonical scan-log format succeed without renaming every
+// call site.
+const _SCAN_LOG_MAP = Object.freeze({
+  // Lifecycle
+  requesting_permission:  'SCAN_PERMISSION',
+  preflight_denied:       'SCAN_PERMISSION',
+  permission_denied:      'SCAN_PERMISSION',
+  permission_error:       'SCAN_PERMISSION',
+  // Stream
+  stream_created:         'SCAN_INIT',
+  metadata_loaded:        'SCAN_INIT',
+  autoplay_blocked:       'SCAN_INIT',
+  video_playing:          'SCAN_STREAM_READY',
+  camera_ready:           'SCAN_STREAM_READY',
+  // Failure
+  ready_timeout:          'SCAN_STREAM_FAILED',
+  not_supported:          'SCAN_STREAM_FAILED',
+  no_video_element:       'SCAN_STREAM_FAILED',
+  // Cleanup
+  stream_stopped:         'SCAN_CLEANUP',
+  stale_start_discarded:  'SCAN_CLEANUP',
+});
+
 function _cameraLog(event, extra) {
   try {
     if (typeof import.meta !== 'undefined'
@@ -161,7 +189,12 @@ function _cameraLog(event, extra) {
         && import.meta.env.DEV === true
         && typeof console !== 'undefined'
         && typeof console.log === 'function') {
-      console.log('[FARROWAY_CAMERA]', event, extra || {});
+      const specPrefix = _SCAN_LOG_MAP[event];
+      if (specPrefix) {
+        console.log('[' + specPrefix + ']', event, extra || {});
+      } else {
+        console.log('[FARROWAY_CAMERA]', event, extra || {});
+      }
     }
   } catch { /* swallow */ }
 }

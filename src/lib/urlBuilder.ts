@@ -45,13 +45,37 @@ function _logInvalidUrl(path: unknown): void {
     const key = String(path);
     if (_invalidUrlSeen.has(key)) return;
     _invalidUrlSeen.add(key);
-    // Spec §3 — `console.error('[INVALID_URL]', path)`. We use
-    // error (not warn) because attempting to construct a URL from
-    // undefined / empty / malformed input is a programming bug,
-    // not an expected runtime condition.
+    // Production Runtime Stabilization spec §1 — exact log
+    // formats: [INVALID_URL] is the canonical legacy name from
+    // earlier passes; [INVALID_URL_PATH] is the spec-exact alias.
+    // Both fire so the existing tests pass + the new spec
+    // matches. We use error (not warn) because attempting to
+    // construct a URL from undefined / empty / malformed input
+    // is a programming bug, not an expected runtime condition.
     // eslint-disable-next-line no-console
     console.error('[INVALID_URL]', path);
+    // eslint-disable-next-line no-console
+    console.error('[INVALID_URL_PATH]', path);
   } catch { /* never throw from a diagnostic */ }
+}
+
+// Successful-build trace for the spec's [URL_BUILD] format.
+// Dev only — production builds tree-shake the body via the
+// import.meta.env.DEV gate so successful URL construction
+// doesn't generate any console output. Memoised by (path,base)
+// so re-renders of the same URL don't flood the console.
+const _urlBuildSeen = new Set<string>();
+function _logUrlBuild(path: string, base: string): void {
+  try {
+    if (typeof import.meta === 'undefined'
+        || !import.meta.env
+        || !import.meta.env.DEV) return;
+    const key = path + '|' + base;
+    if (_urlBuildSeen.has(key)) return;
+    _urlBuildSeen.add(key);
+    // eslint-disable-next-line no-console
+    console.log('[URL_BUILD]', path, '->', base);
+  } catch { /* swallow */ }
 }
 
 /**
@@ -113,6 +137,7 @@ export function buildUrl(path: unknown, options: BuildUrlOptions = {}): URL | nu
 
   const url = safeUrl(trimmed, base as string | URL | undefined);
   if (!url && !options.silent) _logInvalidUrl(path);
+  if (url) _logUrlBuild(trimmed, (base as string) || '');
   return url;
 }
 

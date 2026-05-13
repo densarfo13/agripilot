@@ -57,6 +57,44 @@ const STYLES = {
     flexDirection: 'column',
     gap: 12,
   },
+  // Production Runtime Stabilization §2 — Start Camera gate.
+  // Minimal centered-button layout on the page background.
+  // Intentionally NO headline, NO body chatter — those were
+  // banned in the prior single-interface pass.
+  startGate: {
+    minHeight: '60vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: '1.5rem',
+  },
+  startGateBtn: {
+    padding: '0.9rem 1.6rem',
+    background: '#C8944D',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: 12,
+    fontSize: '1rem',
+    fontWeight: 800,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    minWidth: 200,
+    WebkitTapHighlightColor: 'transparent',
+  },
+  startGateGhost: {
+    padding: '0.7rem 1.2rem',
+    background: 'transparent',
+    color: '#1F2933',
+    border: '1px solid rgba(36,49,58,0.18)',
+    borderRadius: 12,
+    fontSize: '0.9375rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    WebkitTapHighlightColor: 'transparent',
+  },
   preview: {
     width: '100%',
     aspectRatio: '4 / 3',
@@ -184,17 +222,19 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  // Live in-app camera open state. Per the May 2026 scan-flow
-  // fix: AUTO-OPEN on mount so /scan goes straight to the
-  // immersive camera. The boxed wrapper that used to be the
-  // first surface is now a fallback only — it appears when
-  // (a) the user has captured a photo and is reviewing it, OR
-  // (b) the camera was denied / errored and the upload path is
-  //     the active option.
+  // Production Runtime Stabilization spec §2 — camera must
+  // NEVER initialize automatically; the user must press an
+  // explicit "Start Camera" button before getUserMedia is
+  // called. Reverses the prior auto-open behaviour: the boxed
+  // wrapper at /scan now renders a minimal start gate, and
+  // the LiveCameraScanner overlay only mounts when the user
+  // taps. This gives iOS Safari users a chance to prepare for
+  // the permission prompt and prevents the "page loads → camera
+  // light comes on immediately" surprise.
   const supportsLiveCamera = typeof navigator !== 'undefined'
     && navigator.mediaDevices
     && typeof navigator.mediaDevices.getUserMedia === 'function';
-  const [liveCameraOpen, setLiveCameraOpen] = useState(supportsLiveCamera);
+  const [liveCameraOpen, setLiveCameraOpen] = useState(false);
 
   const navigate = useNavigate();
   // App Store launch audit §4.1: detect camera permission state
@@ -486,14 +526,45 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   if (supportsLiveCamera && !busy) {
     return (
       <>
-        <LiveCameraScanner
-          open={liveCameraOpen}
-          facingHint="environment"
-          onCancel={onLiveCameraCancel}
-          onCaptured={onLiveCameraCaptured}
-          onFallbackUpload={onLiveCameraFallbackUpload}
-          testId="scan-live-camera"
-        />
+        {/* Production Runtime Stabilization spec §2 — render the
+            LiveCameraScanner overlay (`open=true` only after tap)
+            OR the minimal "Start Camera" gate when liveCameraOpen
+            is false. The gate is intentionally minimal: a single
+            centered button on the page background. No headline,
+            no body copy, no landing-card chatter — those were
+            banned in the prior single-interface pass. The gate
+            exists ONLY to satisfy the "camera must never
+            initialize automatically" requirement without
+            re-introducing the dual-interface UX. */}
+        {liveCameraOpen ? (
+          <LiveCameraScanner
+            open={liveCameraOpen}
+            facingHint="environment"
+            onCancel={onLiveCameraCancel}
+            onCaptured={onLiveCameraCaptured}
+            onFallbackUpload={onLiveCameraFallbackUpload}
+            testId="scan-live-camera"
+          />
+        ) : (
+          <div style={STYLES.startGate} data-testid="scan-start-gate">
+            <button
+              type="button"
+              onClick={() => setLiveCameraOpen(true)}
+              style={STYLES.startGateBtn}
+              data-testid="scan-start-gate-button"
+            >
+              {tStrict('scan.startCamera', 'Start Camera')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { try { galleryInputRef.current?.click(); } catch { /* swallow */ } }}
+              style={STYLES.startGateGhost}
+              data-testid="scan-start-gate-upload"
+            >
+              {tStrict('scan.uploadFromGallery', 'Upload from gallery')}
+            </button>
+          </div>
+        )}
         {/* Gallery-only file input. No `capture` attribute — that
             would open the OS Camera app on iOS Safari and re-create
             the upload-opens-camera bug the fix is closing. */}
