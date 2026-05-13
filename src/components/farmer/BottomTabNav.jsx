@@ -264,7 +264,7 @@ export default function BottomTabNav() {
               try {
                 if (import.meta.env.DEV && tab.key === 'home') {
                   // eslint-disable-next-line no-console
-                  console.log('[FARROWAY_NAV] Home target', tab.path);
+                  console.log('[FARROWAY_NAV] farmer home target: ' + tab.path);
                 }
               } catch { /* swallow */ }
               navigate(tab.path);

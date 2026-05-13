@@ -231,6 +231,11 @@ export default function Home() {
         hasLocation: !!_resolveLocationLabel(farm),
         hasFarm:     !!farm,
       });
+      // Source-of-Truth Audit spec §6 — also emit the spec-exact
+      // log line so the canonical-home audit greps for both
+      // formats succeed. Same mount event; two greppable names.
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_HOME] canonical farmer home mounted');
     } catch { /* swallow */ }
   }, []);
 
