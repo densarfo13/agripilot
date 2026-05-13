@@ -199,7 +199,7 @@ export default function Home() {
     try {
       const farm = _resolveFarm();
       // eslint-disable-next-line no-console
-      console.log('[FARROWAY_HOME] canonical_home_active', {
+      console.log('[FARROWAY_HOME] ACTUAL_CANONICAL_HOME_ACTIVE', {
         path:        _safePath(),
         userType:    _resolveUserType(),
         hasLocation: !!_resolveLocationLabel(farm),

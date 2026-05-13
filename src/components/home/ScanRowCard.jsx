@@ -14,8 +14,9 @@
  *
  * Behaviour
  *   * Tap → /scan (canonical scan route).
- *   * Mode-aware copy: "Scan crop" / "Check your crop health"
- *     vs "Scan plant" / "Check your plant health".
+ *   * Universal copy ("Scan") — mode-conditional labels were
+ *     removed in the actual-Home runtime pass per Home spec
+ *     "no mode-conditional pilot wording".
  *   * Fires `scan_cta_clicked` so the existing Home funnel
  *     keeps observing the click.
  *
@@ -51,12 +52,8 @@ export default function ScanRowCard({
   const navigate = useNavigate();
   const isGarden = mode === 'garden';
 
-  const title = isGarden
-    ? tSafe('home.scanPlant', 'Scan plant')
-    : tSafe('home.scanCrop',  'Scan crop');
-  const subtitle = isGarden
-    ? tSafe('home.checkPlantHealth', 'Check your plant health')
-    : tSafe('home.checkCropHealth',  'Check your crop health');
+  const title    = tSafe('home.scan',         'Scan');
+  const subtitle = tSafe('home.checkHealth',  'Check crop or plant health');
 
   function handleTap() {
     try {

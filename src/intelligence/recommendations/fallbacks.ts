@@ -8,14 +8,18 @@
 
 import type { PrimaryGuidance } from './getPrimaryGuidance.js';
 
+// Empty-title fallback. Consumers (ImmersiveHomeHero,
+// NextBestActionCard, etc.) already gate on `title` presence, so
+// an empty-title guidance collapses the surface to its own
+// no-data branch instead of rendering generic chatter.
 export const FARM_FALLBACK: PrimaryGuidance = Object.freeze({
-  id:               'fallback_farm_quick_check',
-  title:            'Quick crop check',
-  message:          'Check your crop condition and soil moisture today.',
-  reason:           'A short walk through the fields keeps the rhythm.',
-  actionLabel:      'View task',
+  id:               'fallback_farm_empty',
+  title:            '',
+  message:          '',
+  reason:           '',
+  actionLabel:      '',
   actionRoute:      '/tasks',
-  estimatedMinutes: 10,
+  estimatedMinutes: 0,
   tone:             'practical',
   confidenceTone:   'limited-data',
   priority:         'low',
@@ -23,13 +27,13 @@ export const FARM_FALLBACK: PrimaryGuidance = Object.freeze({
 });
 
 export const GARDEN_FALLBACK: PrimaryGuidance = Object.freeze({
-  id:               'fallback_garden_quick_check',
-  title:            'Walk the garden',
-  message:          'Notice anything new on the leaves or in the soil.',
-  reason:           'A small daily glance catches early signals.',
-  actionLabel:      'Walk the garden',
+  id:               'fallback_garden_empty',
+  title:            '',
+  message:          '',
+  reason:           '',
+  actionLabel:      '',
   actionRoute:      '/tasks',
-  estimatedMinutes: 3,
+  estimatedMinutes: 0,
   tone:             'calm',
   confidenceTone:   'limited-data',
   priority:         'low',

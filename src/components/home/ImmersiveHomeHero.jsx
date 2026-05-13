@@ -208,9 +208,10 @@ export default function ImmersiveHomeHero({
     && w.condition !== 'Weather unavailable';
 
   const temp = hasRealWeather ? Math.round(Number(w.temp)) : null;
-  const condition = hasRealWeather
-    ? w.condition
-    : tSafe('hero.noWeather', 'Set your farm location for weather guidance');
+  // No fallback chatter when weather is missing — render an empty
+  // string so the surrounding center block can collapse cleanly.
+  // The location-prompt branch handles the no-weather UI below.
+  const condition = hasRealWeather ? w.condition : '';
   const feelsLike = hasRealWeather && w.feelsLike != null && Number.isFinite(Number(w.feelsLike))
     ? Math.round(Number(w.feelsLike))
     : null;
@@ -248,7 +249,7 @@ export default function ImmersiveHomeHero({
       return {
         title: tSafe('hero.onTrack',   "You’re on track today"),
         line:  tSafe('hero.checkLater', 'Check again tomorrow morning.'),
-        cta:   tSafe('hero.scanPlant',  isGarden ? 'Scan plant' : 'Scan crop'),
+        cta:   tSafe('hero.scan',       'Scan'),
         bestTime: null,
         estimatedMinutes: null,
       };
@@ -258,21 +259,22 @@ export default function ImmersiveHomeHero({
       return {
         title: tSafe(g.title, g.title),
         line:  tSafe(g.message || g.reason || '', g.message || g.reason || ''),
-        cta:   tSafe(g.actionLabel || 'Walk the field', g.actionLabel || 'Walk the field'),
+        cta:   tSafe(g.actionLabel || 'Scan', g.actionLabel || 'Scan'),
         bestTime: _deriveBestTime(w),
         estimatedMinutes: Number.isFinite(Number(g.estimatedMinutes))
           ? Number(g.estimatedMinutes)
           : null,
       };
     }
+    // No real guidance — no fallback chatter. Minimal CTA that
+    // routes to Scan. Card-level surfaces (NextBestAction /
+    // DailyBriefing) hide themselves when there's no real data.
     return {
-      title: tSafe('hero.quickCheck', 'Good time for a quick check'),
-      line:  isGarden
-        ? tSafe('hero.inspectLeavesGarden', 'Inspect leaves and soil in your pots.')
-        : tSafe('hero.inspectLeaves', 'Check crop condition and soil moisture today.'),
-      cta:   tSafe('actions.startCheck', 'Walk the field'),
-      bestTime: _deriveBestTime(w),
-      estimatedMinutes: isGarden ? 3 : 5,
+      title: tSafe('hero.openScan', 'Open scan when you are ready'),
+      line:  '',
+      cta:   tSafe('hero.scan',    'Scan'),
+      bestTime: null,
+      estimatedMinutes: null,
     };
   })();
 
@@ -352,30 +354,23 @@ export default function ImmersiveHomeHero({
             )}
           </>
         ) : (
-          <div style={S.promptBlock}>
-            <span style={S.promptTitle}>
-              {tSafe('hero.promptTitle', 'Set your farm location')}
-            </span>
-            <span style={S.promptBody}>
-              {tSafe(
-                'hero.promptBody',
-                'Weather, rain timing, and best action windows appear once your farm location is set.',
-              )}
-            </span>
-            {typeof onUseMyLocation === 'function' && (
-              <button
-                type="button"
-                onClick={() => { try { onUseMyLocation(); } catch { /* swallow */ } }}
-                style={S.promptCta}
-                data-testid={`${testId}-use-my-location`}
-              >
-                <_LocPinGlyph />
-                <span style={{ marginLeft: 6 }}>
-                  {tSafe('weather.useMyLocation', 'Use my location')}
-                </span>
-              </button>
-            )}
-          </div>
+          // No-weather state: render only a quiet single-button prompt
+          // to enable location. No headline / body chatter — when real
+          // weather is missing, the hero stays minimal until the user
+          // grants location.
+          typeof onUseMyLocation === 'function' ? (
+            <button
+              type="button"
+              onClick={() => { try { onUseMyLocation(); } catch { /* swallow */ } }}
+              style={S.promptCta}
+              data-testid={`${testId}-use-my-location`}
+            >
+              <_LocPinGlyph />
+              <span style={{ marginLeft: 6 }}>
+                {tSafe('weather.useMyLocation', 'Use my location')}
+              </span>
+            </button>
+          ) : null
         )}
       </div>
 

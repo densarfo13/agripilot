@@ -14,7 +14,8 @@
  *
  * Behaviour
  *   • Tap → /scan (canonical scan route).
- *   • Copy adapts via mode: "Scan crop" (farm) / "Scan plant" (garden).
+ *   • Universal copy ("Scan") — mode-conditional labels removed
+ *     in the actual-Home runtime pass.
  *   • Fires `scan_cta_clicked` so the existing Home funnel still
  *     observes the button.
  *
@@ -36,9 +37,7 @@ export default function ScanSecondaryButton({
   const navigate = useNavigate();
   const isGarden = mode === 'garden';
 
-  const label = isGarden
-    ? tSafe('actions.scanPlant', 'Scan plant')
-    : tSafe('actions.scanCrop',  'Scan crop');
+  const label = tSafe('actions.scan', 'Scan');
 
   function handleTap() {
     try {

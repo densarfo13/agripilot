@@ -43,7 +43,7 @@
 
 const FALLBACK_TASK = Object.freeze({
   title:    'Check soil moisture around your crop',
-  reason:   'Feel the soil before watering — water only if it reads dry.',
+  reason:   '',
   urgency:  'medium',
   cta:      'Mark as done',
   category: 'crop-care',
@@ -668,10 +668,12 @@ function _gardenTask(ctx) {
     };
   }
 
-  // 9. Fallback
+  // 9. Fallback — no chatter when there's no real signal.
+  // Briefing/NBA cards collapse this empty-title task into a
+  // hidden state so the surface stays minimal.
   return {
-    title:    `Walk past your ${name} today`,
-    reason:   'Feel the soil before watering — water only if it reads dry.',
+    title:    '',
+    reason:   '',
     urgency:  'medium',
     cta:      'Mark as done',
     category: 'crop-care',
@@ -778,7 +780,7 @@ function _buildRecommendation(ctx) {
     // Follow a scan with another scan to track progress
     return {
       text:       'Run another scan tomorrow to track how your plant is responding.',
-      action:     'Scan plant',
+      action:     'Scan',
       actionPath: '/scan',
       type:       'scan',
     };
