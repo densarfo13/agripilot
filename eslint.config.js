@@ -17,8 +17,19 @@
 //   import/order, etc.) add the rules here in a follow-up PR.
 //
 // Targets
-//   • src/**/*.{js,jsx,ts,tsx}            — every client module
+//   • src/**/*.{js,jsx}                   — every client JS/JSX module
 //   • Excludes: node_modules, dist, build, .next, coverage, server.
+//
+// Note on TypeScript files
+//   .ts and .tsx files are NOT linted by this config. ESLint's
+//   default parser (espree) can't read TS syntax — interface
+//   declarations + `as` casts + type annotations trip a parsing
+//   error on every file. The build pipeline (Vite + oxc) handles
+//   TS type-checking at compile time, which is the correct gate.
+//   Adding @typescript-eslint/parser would let lint cover .ts
+//   too, but it's a heavier dependency for marginal value given
+//   none of the .ts files in the tree are React components
+//   (governance/coordination/global modules only).
 //
 // Why ESLint flat config (not legacy .eslintrc)
 //   ESLint 9 (installed) DEFAULTS to flat config. The legacy
@@ -44,7 +55,7 @@ export default [
     ],
   },
   {
-    files: ['src/**/*.{js,jsx,ts,tsx}'],
+    files: ['src/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType:  'module',
