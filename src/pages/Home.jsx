@@ -205,6 +205,11 @@ export default function Home() {
         hasLocation: !!_resolveLocationLabel(farm),
         hasFarm:     !!farm,
       });
+      // Active Home + Nav Wiring Audit spec §5 — explicit file
+      // path marker so auditors can confirm in DevTools which
+      // source file is rendering Home.
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_HOME_TRACE] ACTIVE_HOME:', 'src/pages/Home.jsx');
     } catch { /* swallow */ }
   }, []);
 

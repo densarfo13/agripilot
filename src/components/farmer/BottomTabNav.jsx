@@ -62,8 +62,15 @@ import useGrowMode from '../../hooks/useGrowMode.js';
 // Farmer nav (6 tabs) — spec §1:
 //   Home · My Farm · Tasks · Progress · Funding · Sell
 //   Scan does NOT appear here; it lives as a card inside My Farm.
+// Home target is /home — the canonical Home component lives at
+// src/pages/Home.jsx and is mounted directly at both / and /home.
+// Previously this tab pointed at /dashboard, which forced a hop
+// through RoleAwareDashboard → <Navigate to="/home"> for farmers.
+// Routing direct to /home eliminates the redirect hop, the
+// transient DashboardLoader spinner, and any chance of the wrong
+// V2Dashboard surface flashing during the redirect window.
 const FARMER_TABS = [
-  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
+  { key: 'home',     path: '/home',      icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'My Farm' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
   { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
@@ -78,7 +85,7 @@ const FARMER_TABS = [
 //   story as a timeline of care moments, not as commercial metrics.
 //   Scan tab is hidden when FEATURE_SCAN is off (route stays mounted).
 const GARDEN_TABS = [
-  { key: 'home',     path: '/dashboard', icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
+  { key: 'home',     path: '/home',      icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'grow',     path: '/my-grow',   icon: NAV_ICONS.farm,     labelKey: 'nav.myGrow',   fallback: 'My Grow' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
   { key: 'journal',  path: '/journal',   icon: NAV_ICONS.journal,  labelKey: 'nav.journal',  fallback: 'Journal' },
@@ -247,7 +254,20 @@ export default function BottomTabNav() {
           <button
             key={tab.key}
             type="button"
-            onClick={() => navigate(tab.path)}
+            onClick={() => {
+              // Dev-only nav trace per Active Home + Nav Wiring
+              // Audit spec §5. Fires once per Home tab tap so an
+              // auditor can verify in DevTools that the Home
+              // button targets /home (the canonical Home path).
+              // Production builds tree-shake the entire branch.
+              try {
+                if (import.meta.env.DEV && tab.key === 'home') {
+                  // eslint-disable-next-line no-console
+                  console.log('[FARROWAY_NAV_TRACE] HOME_NAV_TARGET:', tab.path);
+                }
+              } catch { /* swallow */ }
+              navigate(tab.path);
+            }}
             style={S.tab}
             aria-label={label}
             aria-current={isActive ? 'page' : undefined}
