@@ -41,6 +41,10 @@ import { useNavigate }           from 'react-router-dom';
 // Home; tree-shaken in production via the import.meta.env.DEV
 // gate inside the guard.
 import { assertCanonicalHome }   from '../lib/canonicalHomeGuard.js';
+// Hard route lockdown §1 — build commit + canonical-file marker.
+// FARROWAY_COMMIT_SHA reads VITE_COMMIT_SHA from the CI build env
+// (Railway), falling back to 'local-{epoch}' when running locally.
+import { FARROWAY_COMMIT_SHA }   from '../lib/forceUiReset.js';
 import { useLiveWeather }        from '../hooks/useLiveWeather.js';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
@@ -89,6 +93,10 @@ import { getPrimaryGuidance } from '../intelligence/recommendations/getPrimaryGu
 // mount log. Without this, HMR + Suspense remounts replay the
 // boot line on every re-render of the Home tree.
 let _homeMountLogged = false;
+// Separate guard for the lockdown markers ([FARROWAY_BUILD_COMMIT]
+// + [FARROWAY_HOME_LOCK]) — fires once per page load, both in
+// dev AND production so ops can confirm the deployed bundle.
+let _homeMountLockLogged = false;
 
 // ─── Local-storage helpers ──────────────────────────────────────
 function _safeGet(key) {
@@ -236,6 +244,22 @@ export default function Home() {
       // formats succeed. Same mount event; two greppable names.
       // eslint-disable-next-line no-console
       console.log('[FARROWAY_HOME] canonical farmer home mounted');
+    } catch { /* swallow */ }
+  }, []);
+
+  // Hard route lockdown spec §1 — build commit + canonical-file
+  // markers. Visible in BOTH dev AND production so ops can verify
+  // the deployed bundle is the latest commit + that the canonical
+  // Home file path is the only thing rendering Home. Fires once
+  // per page load via the same _homeMountLogged guard.
+  useEffect(() => {
+    if (_homeMountLockLogged) return;
+    _homeMountLockLogged = true;
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_BUILD_COMMIT]', FARROWAY_COMMIT_SHA);
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_HOME_LOCK]', 'src/pages/Home.jsx');
     } catch { /* swallow */ }
   }, []);
 
