@@ -190,6 +190,11 @@ export default function ScanPage() {
   // sequence is visually anchored to the actual photo, not a
   // black rectangle. Cleared when phase moves back to capture.
   const [analyzingImageUrl, setAnalyzingImageUrl] = useState(null);
+  // Scan Pipeline Audit §4 — staged-timeout escalation flag.
+  // null         → default "Analyzing crop" copy
+  // 'still_checking' → escalated "Still checking your crop" copy
+  //                    (set after 5s of pending analysis)
+  const [analyzingEscalation, setAnalyzingEscalation] = useState(null);
 
   // Read profile defensively — the page must work in a logged-out
   // / no-active-farm state.
@@ -359,11 +364,29 @@ export default function ScanPage() {
     setError('');
     setPhase('analyzing');
     setPendingThumbnail(thumbnail || null);
-    // Stamp the live preview URL so ScanAnalyzing can show the
-    // actual photo while the engine runs. Falls back to the
-    // thumbnail dataURL when imageUrl was an ObjectURL we shouldn't
-    // hold onto past the capture lifetime.
-    setAnalyzingImageUrl(thumbnail || imageUrl || null);
+    // Scan Pipeline Audit §2 + §3 — prefer self-contained dataURL
+    // (thumbnail or base64) over the Object URL. Object URLs are
+    // tied to the source Blob's lifetime and the source File may
+    // be GC'd after ScanCapture unmounts, leaving the result
+    // screen with a broken-image placeholder. The thumbnail (small,
+    // canvas-derived dataURL) is the cheapest option; if thumbnail
+    // creation failed (no canvas, decode error), the full
+    // FileReader base64 dataURL is the next-best self-contained
+    // option. The raw imageUrl (Object URL) is the last resort.
+    setAnalyzingImageUrl(thumbnail || imageBase64 || imageUrl || null);
+    // §7 — production pipeline trace. Dev-only via _devLog
+    // would tree-shake; we keep this production-visible for ops
+    // diagnostics. Fires once per scan.
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_SCAN_PIPELINE] imageCaptured', {
+        hasBase64:    !!imageBase64,
+        hasThumbnail: !!thumbnail,
+        hasFile:      !!file,
+        fileSize:     file && file.size || null,
+        previewSource: thumbnail ? 'thumbnail' : (imageBase64 ? 'base64' : 'object_url'),
+      });
+    } catch { /* swallow */ }
     try {
       try { trackEvent('scan_photo_taken', { experience, hasFile: !!file }); }
       catch { /* ignore */ }
@@ -376,14 +399,26 @@ export default function ScanPage() {
       try { moatTrack('scan_started', { hasFile: !!file }); }
       catch { /* ignore */ }
 
-      // Retention spec §2 + §12: surface a fallback verdict
-      // after 2s so the user never stares at a spinner. The
-      // fallback is the rule-based hybrid result (no API call —
-      // hybridAnalyze is pure). When the real `analyzeScan`
-      // resolves later, refinedOut overwrites the fallback in
-      // a single setResult call below.
+      // Scan Pipeline Audit §4 — staged timeout messaging.
+      // The prior 2s hard-fallback was too aggressive: users saw
+      // a rule-based result flash on screen and then watched it
+      // get overwritten when the real analysis landed a beat
+      // later. New staging:
+      //   0-5s   "Analyzing crop"         (default spinner copy)
+      //   5-15s  "Still checking your crop" (escalation message)
+      //   15s+   real fallback hybrid result + retry surface
+      // The escalation messages are state flags read by
+      // ScanAnalyzing for the spinner caption. Only the 15s
+      // hard-stop triggers the rule-based fallback verdict.
       let fallbackTimer = null;
       let fallbackShown = false;
+      let escalationTimer = null;
+      try {
+        escalationTimer = setTimeout(() => {
+          try { setAnalyzingEscalation('still_checking'); }
+          catch { /* swallow */ }
+        }, 5000);
+      } catch { /* swallow */ }
       try {
         fallbackTimer = setTimeout(() => {
           if (fallbackShown) return;
@@ -411,13 +446,13 @@ export default function ScanPage() {
               hybridUrgency:      fallbackHybrid.urgency,
               hybridContext:      fallbackHybrid.contextType,
               disclaimer:         fallbackHybrid.disclaimer,
-              meta:               { source: 'fallback_2s_timer' },
+              meta:               { source: 'fallback_15s_timer' },
             });
             setPhase('result');
-            try { trackEvent('scan_fallback_used', { reason: '2s_timeout' }); }
+            try { trackEvent('scan_fallback_used', { reason: '15s_timeout' }); }
             catch { /* swallow */ }
           } catch { /* swallow — wait for the real result */ }
-        }, 2000);
+        }, 15000);
       } catch { /* swallow */ }
 
       // Pre-fetch the weather snapshot so the backend's context
@@ -450,7 +485,9 @@ export default function ScanPage() {
       // hasn't fired yet. If it HAS, the refinedOut below
       // overwrites the fallback in one render so the user sees
       // the better result without a flicker.
-      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (fallbackTimer)   clearTimeout(fallbackTimer);
+      if (escalationTimer) clearTimeout(escalationTimer);
+      try { setAnalyzingEscalation(null); } catch { /* swallow */ }
 
       // Hybrid refinement: layer active experience + weather +
       // region on top of the image-only verdict. The hybrid
@@ -862,6 +899,7 @@ export default function ScanPage() {
         <ScanAnalyzing
           imageUrl={analyzingImageUrl}
           experience={experience}
+          escalation={analyzingEscalation}
           onCancel={onRetake}
         />
       ) : null}

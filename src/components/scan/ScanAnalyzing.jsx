@@ -63,6 +63,10 @@ export default function ScanAnalyzing({
   imageUrl   = null,
   onCancel,
   experience = 'generic',
+  // Scan Pipeline Audit §4 — escalation flag fed by ScanPage.
+  // null            → default step copy
+  // 'still_checking' → "Still checking your crop" (after 5s)
+  escalation = null,
 }) {
   useStrictTranslation();
 
@@ -96,9 +100,16 @@ export default function ScanAnalyzing({
   }, []);
 
   const step = STEPS[stepIdx] || STEPS[STEPS.length - 1];
-  const message = tookLong
-    ? tSafe('scan.analyzing.taking', 'This is taking a moment. Hang on…')
-    : tSafe(step.key, step.fallback);
+  // Message priority (Scan Pipeline Audit §4):
+  //   1. escalation === 'still_checking' (parent's 5s timer fired)
+  //   2. tookLong (this component's internal SAFETY_MS timer)
+  //   3. current step copy
+  const message =
+    escalation === 'still_checking'
+      ? tSafe('scan.analyzing.stillChecking', 'Still checking your crop')
+      : tookLong
+        ? tSafe('scan.analyzing.taking', 'This is taking a moment. Hang on…')
+        : tSafe(step.key, step.fallback);
 
   return (
     <section
