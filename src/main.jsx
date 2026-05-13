@@ -81,6 +81,18 @@ try {
   /* eslint-enable no-console */
 } catch { /* never throw from startup logger */ }
 
+// Service Worker + Cache Purge Pass spec §7 — dev-only build
+// version log in the exact format the audit expects. Gated on
+// import.meta.env.DEV so production builds drop the literal.
+// FARROWAY_COMMIT_SHA is the build hash (CI sets VITE_COMMIT_SHA,
+// falls back to a per-build epoch fingerprint locally).
+try {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.log('[FARROWAY_BUILD] version:', FARROWAY_COMMIT_SHA);
+  }
+} catch { /* never throw from startup logger */ }
+
 // ── Loop-state cleanup + onboarding completion stamp ────────────
 //
 // On every boot we wipe the localStorage keys that have caused
