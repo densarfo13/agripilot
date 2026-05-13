@@ -136,7 +136,12 @@ export function maybeShowBrowserNotification(text, opts = {}) {
     if (typeof window === 'undefined' || !('Notification' in window)) return false;
     if (Notification.permission !== 'granted') return false;
     new Notification(text, {
-      icon: opts.icon || '/icons/farroway-192.png',
+      // Production Asset Cleanup — the previous '/icons/
+      // farroway-192.png' default 404'd in production (no file
+      // on disk). Point at the existing 192px PWA icon so the
+      // Notification renders the brand mark instead of the
+      // browser's generic-bell fallback.
+      icon: opts.icon || '/icons/icon-192.png',
       tag:  opts.tag  || 'farroway-daily-reminder',
       silent: false,
     });
