@@ -275,31 +275,6 @@ export default function Home() {
     } catch { /* swallow */ }
   }, []);
 
-  // Canonical Home State Fix spec §8 — branch-state trace.
-  // Dev-only. Emits which render branch the canonical Home is
-  // currently in, so future "Home looks wrong" reports can be
-  // diagnosed in DevTools without re-instrumenting. Fires once
-  // per state transition (the deps array tracks the inputs).
-  useEffect(() => {
-    try {
-      if (!import.meta.env.DEV) return;
-      const farm = _resolveFarm();
-      // eslint-disable-next-line no-console
-      console.log('[HOME_BRANCH]', {
-        // Defaults to 'farm' per Canonical Home State spec §4 —
-        // missing mode reads as farmer (not garden).
-        mode:            ctxIntel && ctxIntel.mode === 'garden' ? 'garden' : 'farm',
-        hasFarm:         !!farm,
-        hasLocation:     !!_resolveLocationLabel(farm),
-        hasWeather:      !!(weather && weather.temp != null && weather.source === 'weather-api'),
-        hasTasks:        false,  // ctxIntel exposes a single task; Today's Plan owns the list
-        authState:       'unknown',  // AuthContext is upstream; not threaded here
-        renderedBranch:  'canonical_shell',
-      });
-    } catch { /* swallow */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weather]);
-
   // Resolve LOCAL view-model from localStorage. Pure + synchronous.
   const local = useMemo(() => {
     let userType, farm, crop, locationObj;
@@ -377,6 +352,37 @@ export default function Home() {
   // We pass the farm record from local so the engine has crop /
   // cropStage / indoor / containerSize without a second localStorage read.
   const ctxIntel = useContextIntelligence({ weather, farm: local.farm });
+
+  // Canonical Home State Fix spec §8 — branch-state trace.
+  // Dev-only. Emits which render branch the canonical Home is
+  // currently in, so future "Home looks wrong" reports can be
+  // diagnosed in DevTools without re-instrumenting.
+  //
+  // Placement note (Home ReferenceError Hotfix): this effect must
+  // come AFTER `weather` (from useLiveWeather) and `ctxIntel`
+  // (from useContextIntelligence) are declared, otherwise Vite's
+  // minifier renames those variables to single letters and the
+  // TDZ throws `ReferenceError: Cannot access 'i' before
+  // initialization` when the dep array is evaluated.
+  useEffect(() => {
+    try {
+      if (!import.meta.env.DEV) return;
+      const farm = _resolveFarm();
+      // eslint-disable-next-line no-console
+      console.log('[HOME_BRANCH]', {
+        // Defaults to 'farm' per Canonical Home State spec §4 —
+        // missing mode reads as farmer (not garden).
+        mode:            ctxIntel && ctxIntel.mode === 'garden' ? 'garden' : 'farm',
+        hasFarm:         !!farm,
+        hasLocation:     !!_resolveLocationLabel(farm),
+        hasWeather:      !!(weather && weather.temp != null && weather.source === 'weather-api'),
+        hasTasks:        false,  // ctxIntel exposes a single task; Today's Plan owns the list
+        authState:       'unknown',  // AuthContext is upstream; not threaded here
+        renderedBranch:  'canonical_shell',
+      });
+    } catch { /* swallow */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weather]);
 
   // ─── Unified primary guidance (Intelligence Expansion §1) ──
   // Calls the orchestrator with the same context we already have.
