@@ -45,6 +45,53 @@
  *   • SSR-safe — window guard.
  */
 
+// ─── Patterns that are ALWAYS shown (force-allow override) ───────
+// Production-safe console filtering spec: errors from the named
+// subsystems (auth / api / scan / weather / task / routing) must
+// remain visible even if they incidentally include text that
+// matches a deny pattern. Matching here SHORT-CIRCUITS the deny
+// check so the message passes through to the original console.
+//
+// We intentionally do NOT implement a strict whitelist — a pure
+// "only show these" filter would silence React render errors,
+// unhandled rejections, syntax errors, and other framework
+// diagnostics that don't carry our subsystem tags. The
+// allow-list's job is to GUARANTEE the named subsystems are
+// audible, not to silence everything else.
+//
+// All entries are case-insensitive substring matches.
+const ALLOW_PATTERNS = [
+  // Canonical Farroway log prefixes (exact tokens from the
+  // various stability passes — these are how the named
+  // subsystems identify themselves in console output).
+  '[FARROWAY_AUTH]',
+  '[AUTH_STATE]',
+  '[AUTH_CLEARED]',
+  '[REFRESH_START]',
+  '[REFRESH_SUCCESS]',
+  '[REFRESH_FAILED]',
+  '[FARROWAY_API]',
+  '[INVALID_URL]',
+  '[CORS_BLOCKED]',
+  '[FARROWAY_CAMERA]',     // scan subsystem
+  '[FARROWAY_HOME]',       // routing subsystem
+  '[FARROWAY_NAV]',        // routing subsystem
+  '[CANONICAL_HOME]',      // routing subsystem
+  // Generic subsystem keywords — broad fallback so future
+  // log prefixes that include any of these tokens stay visible
+  // without each one needing an explicit entry. Lower-cased
+  // here; the matcher does its own toLowerCase. We use
+  // bracketed tokens to avoid colliding with extension URLs
+  // (e.g. chrome-extension://xyz/api/foo would NOT match
+  // because the brackets aren't there).
+  '[auth',
+  '[api',
+  '[scan',
+  '[weather',
+  '[task',
+  '[routing',
+];
+
 // ─── Patterns that are ALWAYS suppressed ─────────────────────────
 // Each entry is tested with String.prototype.includes() against
 // the stringified first argument of the console call.
@@ -125,10 +172,40 @@ let _installed = false;
  * @param {unknown[]} args
  * @returns {boolean}
  */
+// Exported for the consoleFilter test suite — production code
+// should never read this directly. The leading underscore +
+// `_test` suffix mark it as an internal-only export.
+export function _shouldSuppress_test(args) {
+  return _shouldSuppress(args);
+}
+
 function _shouldSuppress(args) {
   try {
     if (!args || args.length === 0) return false;
     const limit = Math.min(args.length, 6);
+    // First pass — allow-list override. If ANY argument matches
+    // an allow pattern, the message is force-shown regardless of
+    // deny matches further down. Case-insensitive substring.
+    for (let i = 0; i < limit; i += 1) {
+      const a = args[i];
+      let s;
+      try {
+        if (a == null) continue;
+        if (typeof a === 'string') {
+          s = a;
+        } else if (a instanceof Error) {
+          s = `${a.name || 'Error'}: ${a.message || ''}`;
+        } else {
+          s = String(a);
+        }
+      } catch { continue; }
+      if (s.length > 512) s = s.slice(0, 512);
+      const lower = s.toLowerCase();
+      for (const pattern of ALLOW_PATTERNS) {
+        if (lower.includes(pattern.toLowerCase())) return false;
+      }
+    }
+    // Second pass — deny-list. Same loop shape as before.
     for (let i = 0; i < limit; i += 1) {
       const a = args[i];
       let s;
