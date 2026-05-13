@@ -99,44 +99,49 @@ const CAMERA_READY_DEADLINE_MS_IOS     = 12000;
 const CAMERA_READY_DEADLINE_MS_DEFAULT = 8000;  // Spec §2.7 — 8s default.
 
 // ─── Canonical camera state machine ─────────────────────────────
-// Permanent Scanner Hardening spec — 5 canonical phases. Exposed
-// for tests + future external consumers. The internal `phase`
-// state uses these strings verbatim so `data-phase` (used by E2E
-// tests) reflects the canonical names.
+// Scan Fullscreen Auto-Camera spec §4 — unified scan state
+// machine names. The IDLE state is removed: /scan auto-opens
+// the camera so there is no idle pause. Phases below are the
+// internal `phase` state values; `data-phase` (used by E2E
+// tests) reflects these strings verbatim.
 //
-//   idle        — component mounted but not requesting yet.
-//   requesting  — getUserMedia in flight (permission prompt may
-//                 be visible to the user).
-//   granted     — stream attached, video element has fired
-//                 loadedmetadata + playing (or canplay + a frame).
-//                 Capture button enabled.
-//   denied      — user explicitly denied OR Permissions API
-//                 returned 'denied'. Upload-from-gallery
-//                 fallback rendered.
-//   failed      — any non-permission failure (no getUserMedia
-//                 API, hardware unavailable, playback deadline
-//                 exceeded). Upload fallback + retry rendered.
+//   requesting_camera — getUserMedia in flight (permission
+//                       prompt may be visible). Also the
+//                       initial state on mount — no idle pause.
+//   camera_active     — stream attached, loadedmetadata +
+//                       playing fired. Capture button enabled.
+//   image_captured    — post-shutter preview shown; stream
+//                       paused while user reviews.
+//   permission_denied — user explicitly denied OR Permissions
+//                       API returned 'permission_denied'. Upload-from-
+//                       gallery fallback rendered.
+//   error             — any non-permission failure (no gUM
+//                       API, hardware unavailable, deadline
+//                       exceeded). Upload + retry rendered.
 //
-// `captured` is a sub-state of granted that represents the post-
-// shutter preview. Not in the spec's 5-state list because the
-// spec is scoped to the permission/boot lifecycle, but kept as
-// an internal phase so the UI knows to swap viewport to <img>.
+// The page-level scan flow (ScanPage.jsx) layers ANALYZING /
+// RESULT_READY on top of these — see spec §4 for the unified
+// vocabulary. Camera-component phases stop at image_captured;
+// once the parent accepts the captured frame, the page
+// transitions to ANALYZING / RESULT_READY.
 export const CAMERA_STATES = Object.freeze({
-  IDLE:       'idle',
-  REQUESTING: 'requesting',
-  GRANTED:    'granted',
-  DENIED:     'denied',
-  FAILED:     'failed',
-  CAPTURED:   'captured',
+  REQUESTING_CAMERA: 'requesting_camera',
+  CAMERA_ACTIVE:     'camera_active',
+  IMAGE_CAPTURED:    'image_captured',
+  PERMISSION_DENIED: 'permission_denied',
+  ERROR:             'error',
 });
 
-// Permissions API pre-flight. Returns:
+// Permissions API pre-flight. Returns the W3C spec value:
 //   'granted' — user has previously approved; we can proceed.
 //   'denied'  — user has previously denied; skip the gUM call
 //               and surface the upload fallback immediately.
 //   'prompt'  — first-time visit; gUM will trigger the prompt.
 //   null      — Permissions API unavailable (Safari historically,
 //               Permissions for 'camera' name unsupported).
+// NB: these are the raw W3C values — they are NOT our internal
+// CAMERA_STATES phase names. The caller is responsible for
+// mapping ('denied' → PERMISSION_DENIED phase).
 async function _queryCameraPermission() {
   try {
     if (typeof navigator === 'undefined' || !navigator.permissions) return null;
@@ -286,7 +291,11 @@ export default function LiveCameraScanner({
   // the shutter so the viewport feels like a real camera body
   // taking a photograph. CSS-only, no JS animation timer.
   const [captureFlash, setCaptureFlash] = useState(false);
-  // 'idle' | 'requesting' | 'granted' | 'captured' | 'denied' | 'failed'
+  // Internal phase values. 'idle' is the closed-state (never
+  // rendered — see `if (!open) return null` at the bottom).
+  // The 5 visible phases match the spec's CAMERA_STATES:
+  //   'requesting_camera' | 'camera_active' | 'image_captured'
+  //   | 'permission_denied' | 'error'
   // — see CAMERA_STATES constants above.
   const [errorMsg, setErrorMsg] = useState('');
   const [capturedUrl, setCapturedUrl] = useState(null);
@@ -421,7 +430,7 @@ export default function LiveCameraScanner({
         || typeof navigator.mediaDevices.getUserMedia !== 'function') {
       // No gUM API at all — surface FAILED (not denied) since
       // this is a capability gap, not a permission decision.
-      setPhase('failed');
+      setPhase('error');
       setErrorMsg(tSafe(
         'scan.camera.notSupported',
         'Camera is not available in this browser. Upload a photo instead.',
@@ -438,8 +447,11 @@ export default function LiveCameraScanner({
     // that case so we fall through to the standard gUM flow.
     const preflight = await _queryCameraPermission();
     if (isStale()) return;
+    // Permissions API uses W3C spec values ('granted' / 'denied'
+    // / 'prompt') — those are NOT our internal phase names. Map
+    // the W3C 'denied' value to our PERMISSION_DENIED phase.
     if (preflight === 'denied') {
-      setPhase('denied');
+      setPhase('permission_denied');
       setErrorMsg(tSafe(
         'scan.camera.denied',
         'Camera access was denied. Tap "Use a saved photo" to continue.',
@@ -448,7 +460,7 @@ export default function LiveCameraScanner({
       return;
     }
 
-    setPhase('requesting');
+    setPhase('requesting_camera');
     setErrorMsg('');
     // Always tear down the previous stream FIRST — guarantees
     // there is never more than one active stream / srcObject.
@@ -474,7 +486,7 @@ export default function LiveCameraScanner({
         }
         const denied = (e2 && (e2.name === 'NotAllowedError' || e2.name === 'SecurityError'))
                     || (e1 && (e1.name === 'NotAllowedError' || e1.name === 'SecurityError'));
-        setPhase(denied ? 'denied' : 'failed');
+        setPhase(denied ? 'permission_denied' : 'error');
         setErrorMsg(
           denied
             ? tSafe(
@@ -549,7 +561,7 @@ export default function LiveCameraScanner({
       // Genuine startup failure — release the stream and show
       // the error surface with retry + gallery fallback.
       stopStream();
-      setPhase('failed');
+      setPhase('error');
       setErrorMsg(tSafe(
         'scan.camera.failed',
         "Couldn't open the camera. Tap retry or upload a photo.",
@@ -573,7 +585,7 @@ export default function LiveCameraScanner({
       const cams = devs.filter((d) => d.kind === 'videoinput');
       setCanSwitch(cams.length > 1);
     } catch { setCanSwitch(false); }
-    setPhase('granted');
+    setPhase('camera_active');
     _cameraLog('camera_ready');
   }, [facing, stopStream, isIos, isMobileSafari, readyDeadlineMs, _awaitVideoPlaying]);
 
@@ -614,7 +626,7 @@ export default function LiveCameraScanner({
       try {
         if (document.visibilityState === 'hidden') {
           stopStream();
-        } else if (phase !== 'captured') {
+        } else if (phase !== 'image_captured') {
           startStream(facing);
         }
       } catch { /* swallow */ }
@@ -639,7 +651,7 @@ export default function LiveCameraScanner({
   // when the camera opens / re-streams so each capture session
   // starts with "Center crop or leaf".
   useEffect(() => {
-    if (phase !== 'granted') { setGuideTipIdx(0); return undefined; }
+    if (phase !== 'camera_active') { setGuideTipIdx(0); return undefined; }
     const id = setInterval(() => {
       setGuideTipIdx((i) => (i + 1) % 4);
     }, 3000);
@@ -727,7 +739,7 @@ export default function LiveCameraScanner({
     stopStream();
     setCapturedFile(file);
     setCapturedUrl(dataUrl);
-    setPhase('captured');
+    setPhase('image_captured');
   }, [stopStream]);
 
   const retake = useCallback(() => {
@@ -774,8 +786,8 @@ export default function LiveCameraScanner({
   if (!open) return null;
   if (typeof document === 'undefined') return null;
 
-  const showFlash  = hasTorch && !isIos && phase === 'granted';
-  const showSwitch = canSwitch && phase === 'granted';
+  const showFlash  = hasTorch && !isIos && phase === 'camera_active';
+  const showSwitch = canSwitch && phase === 'camera_active';
 
   return createPortal(
     <div
@@ -813,7 +825,7 @@ export default function LiveCameraScanner({
 
       {/* ─── Camera viewport ────────────────────────────────── */}
       <div style={S.viewport} data-testid={`${testId}-viewport`}>
-        {phase === 'granted' || phase === 'requesting' ? (
+        {phase === 'camera_active' || phase === 'requesting_camera' ? (
           <video
             ref={videoRef}
             playsInline
@@ -824,7 +836,7 @@ export default function LiveCameraScanner({
           />
         ) : null}
 
-        {phase === 'captured' && capturedUrl ? (
+        {phase === 'image_captured' && capturedUrl ? (
           <img
             src={capturedUrl}
             alt=""
@@ -838,7 +850,7 @@ export default function LiveCameraScanner({
             a 2.4s loop, CSS-driven (no JS timer), and gives the
             viewfinder a "scanning" feel without claiming AI is
             doing anything before the user actually captures. */}
-        {phase === 'granted' && (
+        {phase === 'camera_active' && (
           <>
             <div style={S.guideFrame} aria-hidden="true">
               {/* Soft ochre glow ring around the frame */}
@@ -887,14 +899,14 @@ export default function LiveCameraScanner({
             Calm "Ready to analyze" pill, not a fake AI score.
             Real confidence labels are emitted by the analysis
             engine after the analyze call completes. */}
-        {phase === 'captured' && capturedUrl && (
+        {phase === 'image_captured' && capturedUrl && (
           <div style={S.capturedBadge} aria-hidden="true">
             <span style={S.capturedDot} />
             <span>{tSafe('scan.camera.readyAnalyze', 'Ready to analyze')}</span>
           </div>
         )}
 
-        {phase === 'requesting' && (
+        {phase === 'requesting_camera' && (
           <div style={S.statusOverlay}>
             <span style={S.spinner} />
             <p style={S.statusText}>
@@ -903,10 +915,10 @@ export default function LiveCameraScanner({
           </div>
         )}
 
-        {(phase === 'denied' || phase === 'failed') && (
+        {(phase === 'permission_denied' || phase === 'error') && (
           <div style={S.statusOverlay}>
             <p style={S.statusTitle}>
-              {phase === 'denied'
+              {phase === 'permission_denied'
                 ? tSafe('scan.camera.deniedTitle', 'Camera blocked')
                 : tSafe('scan.camera.errorTitle',  'Camera unavailable')}
             </p>
@@ -946,7 +958,7 @@ export default function LiveCameraScanner({
 
       {/* ─── Bottom control bar ────────────────────────────── */}
       <div style={S.bottomBar}>
-        {phase === 'captured' ? (
+        {phase === 'image_captured' ? (
           <>
             <button
               type="button"
@@ -990,10 +1002,10 @@ export default function LiveCameraScanner({
             <button
               type="button"
               onClick={captureFrame}
-              disabled={phase !== 'granted'}
+              disabled={phase !== 'camera_active'}
               style={{
                 ...S.shutter,
-                ...(phase !== 'granted' ? S.shutterDisabled : null),
+                ...(phase !== 'camera_active' ? S.shutterDisabled : null),
               }}
               aria-label={tSafe('scan.camera.capture', 'Capture')}
               data-testid={`${testId}-capture`}
