@@ -43,7 +43,7 @@
 
 const FALLBACK_TASK = Object.freeze({
   title:    'Check soil moisture around your crop',
-  reason:   'Healthy plants need the right amount of water. Check if the soil feels dry before watering.',
+  reason:   'Feel the soil before watering — water only if it reads dry.',
   urgency:  'medium',
   cta:      'Mark as done',
   category: 'crop-care',
@@ -670,8 +670,8 @@ function _gardenTask(ctx) {
 
   // 9. Fallback
   return {
-    title:    `Check moisture for ${name}`,
-    reason:   'Healthy plants need the right amount of water. Feel the soil before watering.',
+    title:    `Walk past your ${name} today`,
+    reason:   'Feel the soil before watering — water only if it reads dry.',
     urgency:  'medium',
     cta:      'Mark as done',
     category: 'crop-care',

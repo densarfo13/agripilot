@@ -24,10 +24,10 @@ export const FARM_FALLBACK: PrimaryGuidance = Object.freeze({
 
 export const GARDEN_FALLBACK: PrimaryGuidance = Object.freeze({
   id:               'fallback_garden_quick_check',
-  title:            'Quick plant check',
-  message:          'Take a moment to check moisture and leaf condition.',
+  title:            'Walk the garden',
+  message:          'Notice anything new on the leaves or in the soil.',
   reason:           'A small daily glance catches early signals.',
-  actionLabel:      'Start check',
+  actionLabel:      'Walk the garden',
   actionRoute:      '/tasks',
   estimatedMinutes: 3,
   tone:             'calm',

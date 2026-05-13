@@ -53,7 +53,7 @@ export function generateSmartTask(opts) {
   // its conditions match.
   let task = {
     title:    `Check soil moisture around your ${cropName}`,
-    reason:   'Healthy plants need the right amount of water. Water only if the soil feels dry.',
+    reason:   'Feel the soil before watering — water only if it reads dry.',
     urgency:  'medium',
     time:     '5 mins',
     cta:      'Mark as done',

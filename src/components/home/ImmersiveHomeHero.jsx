@@ -210,7 +210,7 @@ export default function ImmersiveHomeHero({
   const temp = hasRealWeather ? Math.round(Number(w.temp)) : null;
   const condition = hasRealWeather
     ? w.condition
-    : tSafe('hero.noWeather', 'Add location to unlock weather tips');
+    : tSafe('hero.noWeather', 'Set your farm location for weather guidance');
   const feelsLike = hasRealWeather && w.feelsLike != null && Number.isFinite(Number(w.feelsLike))
     ? Math.round(Number(w.feelsLike))
     : null;
@@ -354,12 +354,12 @@ export default function ImmersiveHomeHero({
         ) : (
           <div style={S.promptBlock}>
             <span style={S.promptTitle}>
-              {tSafe('hero.promptTitle', 'Add location to unlock weather')}
+              {tSafe('hero.promptTitle', 'Set your farm location')}
             </span>
             <span style={S.promptBody}>
               {tSafe(
                 'hero.promptBody',
-                'Live temperature, rain chance, and best action time appear once we know where your crop is.',
+                'Weather, rain timing, and best action windows appear once your farm location is set.',
               )}
             </span>
             {typeof onUseMyLocation === 'function' && (

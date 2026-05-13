@@ -439,12 +439,12 @@ export default function WeatherHeroActionCard({
         ) : (
           <div style={S.locationPrompt} data-testid="weather-hero-location-prompt">
             <p style={S.locationPromptTitle}>
-              {tSafe('weather.addLocationTitle', 'Add location to unlock weather tips')}
+              {tSafe('weather.addLocationTitle', 'Set your farm location for weather')}
             </p>
             <p style={S.locationPromptBody}>
               {tSafe(
                 'weather.addLocationBody',
-                'Live temperature, rain chance, and best action time appear once we know where your crop is.',
+                'Weather, rain timing, and best action windows appear once your farm location is set.',
               )}
             </p>
             {typeof onUseMyLocation === 'function' && (
