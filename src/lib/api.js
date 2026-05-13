@@ -89,6 +89,42 @@ let _sessionDead = false;
 let _lastLoopLogAt = 0;
 const _LOOP_LOG_WINDOW_MS = 5_000;
 
+// ─── Refresh attempt counter + cooldown (May 2026 §3) ──────
+// Defence against retry storms. Even with _refreshPromise + the
+// _sessionDead gate, external code (AuthContext bootstrap loops,
+// repeated user taps) can call refreshSession() many times in
+// quick succession. The counter caps attempts; the cooldown
+// blocks further attempts after the cap is reached until the
+// cooldown elapses.
+//
+// Reset paths:
+//   • markSessionAlive() / clearSessionDead() — explicit alive.
+//   • successful refresh / login / OTP verify.
+let _refreshAttempts = 0;
+let _lastRefreshAttemptAt = 0;
+const _REFRESH_MAX_ATTEMPTS = 3;       // 3 failures within window → cooldown.
+const _REFRESH_COOLDOWN_MS  = 60_000;  // 60s cooldown after cap reached.
+const _REFRESH_WINDOW_MS    = 60_000;  // attempt count resets after this idle gap.
+
+function _resetRefreshCounter() {
+  _refreshAttempts      = 0;
+  _lastRefreshAttemptAt = 0;
+}
+
+// Returns true when a refresh attempt is currently allowed.
+// Side-effects: prunes the counter if the window elapsed.
+function _refreshAllowed() {
+  const now = Date.now();
+  // Counter resets if the user/system has been idle longer than
+  // the window — a single spike doesn't permanently block.
+  if (_lastRefreshAttemptAt && (now - _lastRefreshAttemptAt) > _REFRESH_WINDOW_MS) {
+    _resetRefreshCounter();
+  }
+  if (_refreshAttempts < _REFRESH_MAX_ATTEMPTS) return true;
+  // Cap reached. Allow again only after the cooldown elapses.
+  return (now - _lastRefreshAttemptAt) > _REFRESH_COOLDOWN_MS;
+}
+
 // Dispatched when _sessionDead flips false → true. AuthContext (or
 // any other listener) can use this as a "hard logout" signal — clear
 // local state, route to /login, etc. Idempotent within the same dead
@@ -115,6 +151,7 @@ function _markSessionDead() {
 
 export function markSessionAlive() {
   _sessionDead = false;
+  _resetRefreshCounter();
 }
 
 export function isSessionDead() {
@@ -123,6 +160,7 @@ export function isSessionDead() {
 
 export function clearSessionDead() {
   _sessionDead = false;
+  _resetRefreshCounter();
 }
 
 // Dev-only console.log helper. Per the runtime-stabilization spec
@@ -140,8 +178,28 @@ function _devLog(...args) {
 }
 
 async function refreshOnce() {
+  // Single-flight: piggyback on an in-flight refresh.
   if (_refreshPromise) return _refreshPromise;
-  _devLog('[Auth Refresh Start]');
+  // Cooldown gate: after _REFRESH_MAX_ATTEMPTS failures within
+  // the window, refuse further attempts for _REFRESH_COOLDOWN_MS
+  // so a remount loop can't storm the endpoint.
+  if (!_refreshAllowed()) {
+    _devLog('[Auth Refresh Cooldown]', {
+      attempts: _refreshAttempts,
+      cooldownMs: _REFRESH_COOLDOWN_MS,
+    });
+    // Return a synthetic non-ok response so callers' existing
+    // `res.ok ? success : fail` branches work unchanged.
+    return Promise.resolve({
+      ok: false,
+      status: 429,
+      _cooldown: true,
+      json: async () => ({ error: 'refresh_cooldown' }),
+    });
+  }
+  _refreshAttempts      += 1;
+  _lastRefreshAttemptAt  = Date.now();
+  _devLog('[Auth Refresh Start]', { attempt: _refreshAttempts });
   _refreshPromise = fetch(`${API_BASE}/api/v2/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
@@ -163,6 +221,7 @@ export async function refreshSession() {
     if (res.ok) {
       _devLog('[Auth Refresh Success]');
       _sessionDead = false;
+      _resetRefreshCounter();
       return true;
     }
     try { console.warn('[Auth Refresh Failed]', { status: res.status }); } catch { /* swallow */ }
@@ -226,6 +285,7 @@ async function request(path, options = {}, allowRefresh = true) {
       if (refreshRes.ok) {
         _devLog('[Auth Refresh Success]');
         _sessionDead = false;
+        _resetRefreshCounter();
         return request(path, options, false);
       }
       // Refresh returned a non-OK status (401 = no refresh cookie,
@@ -262,6 +322,7 @@ export async function loginUser(payload) {
   // Successful login clears any prior session-dead flag so the
   // post-failure gate stops short-circuiting future calls.
   _sessionDead = false;
+  _resetRefreshCounter();
   return data;
 }
 
@@ -271,6 +332,7 @@ export async function verifyMfaCode(payload) {
     body: JSON.stringify(payload),
   }, false);
   _sessionDead = false;
+  _resetRefreshCounter();
   return data;
 }
 
@@ -282,6 +344,7 @@ export async function logoutUser() {
   // dead so any in-flight authenticated request from a previous
   // surface short-circuits cleanly.
   _sessionDead = true;
+  _resetRefreshCounter();
   return data;
 }
 
@@ -318,6 +381,7 @@ export async function verifyPhoneOtp(phone, code) {
   // OTP verify is the SMS branch of "exchange credentials for a
   // session" — same reset semantics as loginUser.
   _sessionDead = false;
+  _resetRefreshCounter();
   return data;
 }
 

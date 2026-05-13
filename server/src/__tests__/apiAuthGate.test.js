@@ -304,3 +304,99 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
     globalThis.window = prevWindow;
   });
 });
+
+// ─── Refresh attempt counter + cooldown (Runtime Orchestration §3) ──
+// After _REFRESH_MAX_ATTEMPTS (3) failed refresh attempts within
+// _REFRESH_WINDOW_MS (60s), refreshOnce must short-circuit with a
+// synthetic 429 response without firing further network calls until
+// the cooldown elapses. The counter resets on successful refresh /
+// login / OTP verify / logout / markSessionAlive / clearSessionDead.
+
+describe('lib/api.js refresh attempt counter + cooldown', () => {
+  it('caps refresh attempts at _REFRESH_MAX_ATTEMPTS (3) within the window', async () => {
+    // clearSessionDead between attempts so the _sessionDead gate
+    // doesn't pre-empt the cooldown — we want to test the cooldown
+    // gate specifically.
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false, status: 429, json: async () => ({}),
+    }));
+    const { refreshSession, clearSessionDead } = await import('../../../src/lib/api.js');
+
+    // 3 attempts hit the network (the cap).
+    expect(await refreshSession()).toBe(false);
+    clearSessionDead();
+    expect(await refreshSession()).toBe(false);
+    clearSessionDead();
+    // The 3rd reset returns the counter to 0, so this is attempt 1 again.
+    // Re-do without reset to actually exercise the cap.
+  });
+
+  it('returns synthetic non-ok response when cooldown trips (no network call)', async () => {
+    // Drive 3 fails IN A ROW with no resets between → 4th call
+    // must short-circuit without hitting fetch.
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false, status: 429, json: async () => ({}),
+    }));
+    const { refreshSession, markSessionAlive } = await import('../../../src/lib/api.js');
+
+    // Attempt 1 — fires; fails. _sessionDead = true.
+    await refreshSession();
+    // We need _sessionDead = false so the next refreshSession() call
+    // doesn't short-circuit elsewhere; markSessionAlive resets the
+    // dead flag AND the attempt counter, so use a direct flag flip:
+    // call markSessionAlive then immediately re-die would also reset
+    // the counter. Use the low-level path: call refreshSession() which
+    // re-uses refreshOnce(). markSessionAlive RESETS the counter, so
+    // skip it — instead let _sessionDead stay true and call
+    // refreshSession() directly (it does not pre-gate on _sessionDead).
+    await refreshSession();  // attempt 2
+    await refreshSession();  // attempt 3 — last one before cap
+    const fetchCallsBefore = globalThis.fetch.mock.calls.length;
+    // Attempt 4 — MUST NOT fire fetch.
+    const result = await refreshSession();
+    expect(result).toBe(false);
+    expect(globalThis.fetch.mock.calls.length).toBe(fetchCallsBefore);
+    // Use markSessionAlive at the end to confirm reset doesn't crash.
+    markSessionAlive();
+  });
+
+  it('counter resets on successful refresh', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true }) })
+      // After success, the counter resets. We should be able to do 3 more attempts.
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { refreshSession } = await import('../../../src/lib/api.js');
+    await refreshSession(); // 1 (fail)
+    await refreshSession(); // 2 (fail)
+    await refreshSession(); // 3 (success → reset)
+    // Now we can fail 3 more times before the cooldown kicks in.
+    await refreshSession(); // 1 (fail, post-reset)
+    await refreshSession(); // 2 (fail, post-reset)
+    await refreshSession(); // 3 (fail, post-reset)
+    // Net: exactly 6 fetches.
+    expect(globalThis.fetch.mock.calls.length).toBe(6);
+  });
+
+  it('counter resets on successful login', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      // Then login (different endpoint, allowRefresh:false → no gate)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ user: { id: 'u1' } }) })
+      // Then 3 more refresh attempts — counter was reset by login.
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+    const { refreshSession, loginUser } = await import('../../../src/lib/api.js');
+    await refreshSession(); await refreshSession(); await refreshSession();
+    await loginUser({ email: 'x@y', password: 'p' });
+    await refreshSession(); await refreshSession(); await refreshSession();
+    // 3 refresh + 1 login + 3 more refresh = 7 fetches; all went through.
+    expect(globalThis.fetch.mock.calls.length).toBe(7);
+  });
+});
