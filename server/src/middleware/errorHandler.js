@@ -60,6 +60,21 @@ export function errorHandler(err, req, res, _next) {
   const rid = req.requestId || 'unknown';
   const statusCode = err.statusCode || 500;
 
+  // ─── CORS-block fast path (Production CORS Noise Hardening) ──
+  // Unknown origins (Mozilla Observatory, security scanners,
+  // automated probes) are EXPECTED rejections, not application
+  // failures. Treat them as a clean 403 with a single greppable
+  // warn line; skip the unhandled-route-error ops event, skip
+  // Sentry, skip the JSON error log. Strict CORS enforcement is
+  // preserved — only the noise is suppressed.
+  if (err && err.isCorsBlocked) {
+    try {
+      // eslint-disable-next-line no-console
+      console.warn('[CORS_BLOCKED] origin=' + (err.blockedOrigin || 'unknown'));
+    } catch { /* never propagate from a diagnostic */ }
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+
   // Emit structured ops event for all handled errors
   opsEvent('system', 'unhandled_route_error', statusCode >= 500 ? 'error' : 'warn', {
     requestId: rid,

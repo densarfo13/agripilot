@@ -123,6 +123,58 @@ describe('Error Handler', () => {
       expect(res.status).toHaveBeenCalledWith(413);
       expect(res.json).toHaveBeenCalledWith({ error: 'File too large. Maximum size is 10MB' });
     });
+
+    // ─── Production CORS Noise Hardening ─────────────────────
+    // Unknown origins (scanners, Mozilla Observatory, automated
+    // probes) must return a clean 403 with a single [CORS_BLOCKED]
+    // warn line — no 500, no Sentry escalation, no
+    // unhandled_route_error ops event.
+    describe('CORS-block fast path', () => {
+      it('returns 403 with neutral message for isCorsBlocked errors', () => {
+        const { req, res, next } = createMocks();
+        const err = new Error('CORS: origin https://http-observatory.security.mozilla.org not allowed');
+        err.statusCode    = 403;
+        err.isCorsBlocked = true;
+        err.blockedOrigin = 'https://http-observatory.security.mozilla.org';
+
+        errorHandler(err, req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Origin not allowed' });
+      });
+
+      it('emits a single [CORS_BLOCKED] warn line with the blocked origin', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { req, res, next } = createMocks();
+        const err = new Error('CORS: origin https://evil.example not allowed');
+        err.isCorsBlocked = true;
+        err.blockedOrigin = 'https://evil.example';
+
+        errorHandler(err, req, res, next);
+
+        const corsLines = warnSpy.mock.calls.filter(
+          (c) => String(c[0]).startsWith('[CORS_BLOCKED]'),
+        );
+        expect(corsLines.length).toBe(1);
+        expect(String(corsLines[0][0])).toBe('[CORS_BLOCKED] origin=https://evil.example');
+        warnSpy.mockRestore();
+      });
+
+      it('does NOT log an [ERROR] line (no 500-treatment noise)', () => {
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { req, res, next } = createMocks();
+        const err = new Error('CORS: origin https://x.test not allowed');
+        err.isCorsBlocked = true;
+        err.blockedOrigin = 'https://x.test';
+
+        errorHandler(err, req, res, next);
+
+        // The existing dev/prod error log paths run AFTER the
+        // CORS short-circuit returns, so neither path fires.
+        expect(errSpy).not.toHaveBeenCalled();
+        errSpy.mockRestore();
+      });
+    });
   });
 
   describe('asyncHandler', () => {

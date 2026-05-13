@@ -90,6 +90,13 @@ export function initSentry() {
         /Request aborted/i,
         /ECONNRESET/i,
         /ECONNABORTED/i,
+        // CORS blocks (Production CORS Noise Hardening) — strict
+        // origin validation is preserved at the middleware layer;
+        // rejections are EXPECTED, not bugs. The errorHandler
+        // already short-circuits these before captureException
+        // fires, but this pattern is the defense-in-depth net
+        // for any future path that captures the error directly.
+        /^CORS: origin .* not allowed$/i,
       ],
       beforeSend(event) {
         try {

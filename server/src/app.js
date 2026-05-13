@@ -299,6 +299,20 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'x-user-id'],
 };
 
+// Build a structured CORS-block error so the rejection is treated
+// as an EXPECTED 4xx by the error handler instead of bubbling up
+// as a 5xx that gets captured by Sentry + escalated as a server
+// fault. Mozilla Observatory, security scanners, and other
+// unauthorized origins are SUPPOSED to be blocked — they are not
+// internal application failures.
+function _corsBlockedError(origin) {
+  const err = new Error(`CORS: origin ${origin} not allowed`);
+  err.statusCode    = 403;
+  err.isCorsBlocked = true;
+  err.blockedOrigin = origin;
+  return err;
+}
+
 if (config.cors.origins.includes('*')) {
   // Wildcard — allow all origins (explicit opt-in)
   corsOptions.origin = true;
@@ -309,14 +323,14 @@ if (config.cors.origins.includes('*')) {
     if (!origin || config.cors.origins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS: origin ${origin} not allowed`));
+      callback(_corsBlockedError(origin));
     }
   };
 } else if (config.isProduction) {
   // Production with no CORS_ORIGIN set — allow same-origin (no Origin header) requests only
   corsOptions.origin = (origin, callback) => {
     if (!origin) callback(null, true);
-    else callback(new Error(`CORS: origin ${origin} not allowed`));
+    else callback(_corsBlockedError(origin));
   };
 } else {
   // Development: allow all origins
