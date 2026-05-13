@@ -32,6 +32,11 @@ import React, { useEffect, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
+// Scan Hardening §1 — every <img> on the scan flow renders through
+// SafeImagePreview which probes the URL with a hidden Image() decode
+// BEFORE rendering, so the browser's broken-image icon never appears
+// for a stale Object URL / malformed data: URL / 404'd server path.
+import { SafeImagePreview, validateImageUrl } from '../../lib/safeImagePreview.jsx';
 
 // Step keys + English fallbacks. Total cycle ≈ 3.2 seconds at the
 // default cadence below.
@@ -121,15 +126,17 @@ export default function ScanAnalyzing({
     >
       {/* Photo preview frame — rounded, soft shadow, scan line.
           Falls back to a calm gradient placeholder when no image
-          URL was supplied (offline / file-API edge cases). */}
+          URL was supplied OR the URL fails to decode (offline /
+          file-API edge cases / GC'd Object URL). The synchronous
+          validateImageUrl() gate eliminates obviously-malformed
+          inputs without firing the Image() probe at all. */}
       <div style={S.frame} data-testid="scan-analyzing-frame">
-        {imageUrl ? (
-          <img
+        {validateImageUrl(imageUrl) ? (
+          <SafeImagePreview
             src={imageUrl}
             alt={tSafe('scan.preview.alt', 'Plant photo')}
             style={S.image}
-            draggable="false"
-            decoding="async"
+            testId="scan-analyzing-image"
           />
         ) : (
           <div style={S.placeholder} aria-hidden="true"><LeafGlyph size={36} /></div>

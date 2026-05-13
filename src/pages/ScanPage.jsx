@@ -360,7 +360,26 @@ export default function ScanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagOn]);
 
+  // Scan Hardening §6 — duplicate-scan prevention. A simple ref
+  // guard prevents a second analyzeScan from kicking off while one
+  // is already in flight. Rapid double-taps on Analyze (common on
+  // touch devices with imprecise hit detection) previously created
+  // parallel requests that fought for setResult — now the second
+  // tap is a no-op until the first call returns.
+  const _scanInflightRef = useRef(false);
+
   const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file }) => {
+    // §6 — inflight guard. Bail silently if a scan is already
+    // running; the in-progress analyzing surface is its own UI
+    // feedback that the request is live.
+    if (_scanInflightRef.current) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log('[FARROWAY_SCAN_PIPELINE] duplicate_suppressed');
+      } catch { /* swallow */ }
+      return;
+    }
+    _scanInflightRef.current = true;
     setError('');
     setPhase('analyzing');
     setPendingThumbnail(thumbnail || null);
@@ -688,6 +707,13 @@ export default function ScanPage() {
         try { moatTrack('scan_failed', { reason: err && err.message }); }
         catch { /* ignore */ }
       }
+    } finally {
+      // §6 — always release the inflight guard so a subsequent
+      // tap (after the result lands OR after the error surface
+      // shows) can fire a fresh scan. Without this, a network
+      // failure would leave the guard set and Retry would be a
+      // no-op until page refresh.
+      _scanInflightRef.current = false;
     }
   }, [experience, activeExperience, profile]);
 
