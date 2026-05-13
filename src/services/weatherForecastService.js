@@ -11,6 +11,8 @@
  *   { days: [{ date, rainMm, rainProbability, tempMin, tempMax, weatherCode }], fetchedAt }
  */
 
+import { buildUrl } from '../lib/urlBuilder.ts';
+
 // ─── Country centroids (fallback when no GPS) ──────────────
 const COUNTRY_CENTROIDS = {
   GH: { lat: 7.95,  lng: -1.02  },  // Ghana
@@ -100,11 +102,22 @@ export async function fetchForecast({ lat, lng, countryCode, force = false } = {
   // Dedup concurrent requests for same location
   if (inflight && inflightKey === locKey) return inflight;
 
-  const url = `https://api.open-meteo.com/v1/forecast`
-    + `?latitude=${coords.lat}&longitude=${coords.lng}`
-    + `&daily=precipitation_sum,precipitation_probability_max,temperature_2m_max,temperature_2m_min,weathercode`
-    + `&timezone=auto`
-    + `&forecast_days=7`;
+  // Permanent URL Construction §1 + §5 — route through the
+  // canonical urlBuilder so a future env-driven provider swap
+  // (or a coord regression that slips past the Number.isFinite
+  // gate above) returns null + [INVALID_URL] log instead of
+  // crashing with "Failed to construct 'URL'". URLSearchParams
+  // replaces the prior template-string concat (spec §6).
+  const _u = buildUrl('https://api.open-meteo.com/v1/forecast');
+  if (!_u) return null;
+  _u.searchParams.set('latitude',  String(latNum));
+  _u.searchParams.set('longitude', String(lngNum));
+  _u.searchParams.set('daily',
+    'precipitation_sum,precipitation_probability_max,'
+    + 'temperature_2m_max,temperature_2m_min,weathercode');
+  _u.searchParams.set('timezone',      'auto');
+  _u.searchParams.set('forecast_days', '7');
+  const url = _u.toString();
 
   const promise = (async () => {
     try {
