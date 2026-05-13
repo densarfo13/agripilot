@@ -34,20 +34,17 @@ describe('scan-canonical-lock — only one scan flow ships', () => {
     expect(banned.test(src)).toBe(false);
   });
 
-  it('CameraScanPage unconditionally redirects to /scan', () => {
-    const src = read('src/pages/CameraScanPage.jsx');
-    // Must contain the redirect — the deprecation contract.
-    expect(/navigate\(\s*['"`]\/scan['"`]/.test(src)).toBe(true);
-    // Must NOT carry the old flag-gated bounce; specifically: no
-    // `isFeatureEnabled` reference inside CameraScanPage now that
-    // the redirect is unconditional.
-    expect(/isFeatureEnabled\(\s*['"`]scanDetection['"`]/.test(src)).toBe(false);
-  });
-
-  it('CameraScanPage carries the DEPRECATED header', () => {
-    const src = read('src/pages/CameraScanPage.jsx');
-    expect(src.includes('DEPRECATED')).toBe(true);
-    expect(src.includes('canonical scan')).toBe(true);
+  it('CameraScanPage source file has been deleted', () => {
+    // Stronger contract than the previous "deprecated header"
+    // check: CameraScanPage was deleted in commit a9b71c1c as
+    // part of the dual-Scan-interface fix. The /scan-crop legacy
+    // route is now a Navigate redirect handled in App.jsx (see
+    // the next test), with no source file to deprecate.
+    const fs = readFileSync;
+    let exists = true;
+    try { fs(resolve(ROOT, 'src/pages/CameraScanPage.jsx'), 'utf8'); }
+    catch { exists = false; }
+    expect(exists).toBe(false);
   });
 
   it('App.jsx routes /scan-crop to <Navigate to="/scan" />', () => {

@@ -161,6 +161,26 @@ export function addScanTasks(suggestedTasks, context = {}) {
       estimatedCost:    _str(t?.estimatedCost),
       expiresAt:        new Date(now + EXPIRY_MS).toISOString(),
       completed:        false,
+      // Scan-to-Platform Stabilization spec §3 — additional task
+      // fields so downstream surfaces (Today's Plan, Progress)
+      // can render the scan context without re-fetching the
+      // source scan. All optional + null-safe.
+      plantType:            _str(t?.plantType) || _str(context.plantType) || _str(context.cropName),
+      issueCategory:        _str(t?.issueCategory) || _str(context.issueCategory),
+      possibleDiseaseOrPest: _str(t?.possibleDiseaseOrPest) || _str(context.possibleIssue),
+      bestTime:             _str(t?.bestTime),
+      // `action` is a spec alias for `title` — consumers can
+      // read either. We keep `title` as the primary field for
+      // backwards compatibility with existing tasks rendering.
+      action:               String(t?.title || ''),
+      // `dueDate` is a spec alias for `dueAt`. Same value, two
+      // accessors so spec-shaped consumers don't break.
+      dueDate:              _str(t?.dueAt) || _dueDateFor(urgency, now),
+      // Explicit task status. Spec §3 expects 'open'. We default
+      // to 'open' on creation; `completed: true` callers should
+      // also flip this to 'done' for spec-shaped readers. The
+      // legacy `completed` boolean stays for backward compat.
+      status:               'open',
     };
   };
 

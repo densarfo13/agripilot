@@ -149,20 +149,44 @@ export function saveScanUseful(result, ctx = {}) {
       .slice(0, 3);
   }
 
+  const plantType        = _str(decision.cropDetected) || _str(safeResult.cropName) || _str(safeResult.crop);
+  const conditionCategory = String(safeResult.category  || 'needs_review');
+  const noticed          = String(ctx.noticed || safeResult.possibleIssue || 'Needs closer inspection');
+  const recommendation0  = recommendations.length > 0 ? recommendations[0] : null;
+  const imageUrl         = _str(ctx.thumbnail) || _str(ctx.imageUrl);
+
   const entry = {
     id,
-    category:        String(safeResult.category  || 'needs_review'),
-    noticed:         String(ctx.noticed           || safeResult.possibleIssue || 'Needs closer inspection'),
+    // Legacy field names (kept for backward-compat with existing
+    // history consumers).
+    category:        conditionCategory,
+    noticed,
     createdAt:       _isoNow(),
     experience:      String(ctx.experience        || 'generic'),
     taskAdded:       false,
-    // §3 enrichments — all optional, all null-safe.
     severity,
-    thumbnail:       _str(ctx.thumbnail),
+    thumbnail:       imageUrl,
     recommendations: recommendations.length > 0 ? recommendations : null,
     weatherCaution:  _str(decision.weatherCaution),
-    crop:            _str(decision.cropDetected) || _str(safeResult.cropName) || _str(safeResult.crop),
+    crop:            plantType,
     scanId:          _str(safeResult.scanId) || id,
+
+    // Scan-to-Platform Stabilization spec §4 — canonical field
+    // names so Journal / Home / Progress can read the entry
+    // shape verbatim without re-mapping. All aliases mirror the
+    // legacy fields above; both names point at the same value.
+    farmId:                _str(ctx.farmId) || _str(ctx.gardenId),
+    imageUrl,
+    timestamp:             _isoNow(),
+    plantType,
+    scanQuality:           _str(safeResult.scanQuality) || _str(ctx.scanQuality),
+    conditionCategory,
+    possibleDiseaseOrPest: noticed,
+    confidenceTone:        _str(decision.confidenceTone) || _str(safeResult.confidence),
+    urgency:               severity,
+    recommendation:        recommendation0,
+    weatherContext:        _str(decision.weatherCaution) || _str(ctx.weatherContext),
+    soilContext:           _str(ctx.soilContext),
   };
 
   list.push(entry);
