@@ -75,6 +75,44 @@ function _isIos() {
   } catch { return false; }
 }
 
+// Treat iOS Safari + iOS PWA + iPadOS Safari uniformly — they all
+// share the same getUserMedia latency profile (3–8s cold start)
+// and the same playsInline + user-gesture autoplay constraints.
+function _isMobileSafari() {
+  try {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    if (!_isIos()) return false;
+    // Exclude Chrome / Firefox / Edge / Opera on iOS (they all
+    // ship a WKWebView under the hood but the UA distinguishes
+    // them). We want any iOS browser, so this is mostly true.
+    return /Safari/.test(ua) || /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  } catch { return false; }
+}
+
+// Camera startup deadline. On iOS Safari the user-gesture →
+// permission prompt → stream-attach → first-frame chain can take
+// 8–10s on a cold app launch; on Android Chrome it's typically
+// under 2s. Pick the deadline per platform so the retry surface
+// doesn't kick in before iOS has had a fair chance.
+const CAMERA_READY_DEADLINE_MS_IOS     = 12000;
+const CAMERA_READY_DEADLINE_MS_DEFAULT = 6000;
+
+// Dev-only structured log. Production builds tree-shake the body
+// thanks to the import.meta.env.DEV guard (Vite replaces it with a
+// literal `false` in build) — the entire branch drops out.
+function _cameraLog(event, extra) {
+  try {
+    if (typeof import.meta !== 'undefined'
+        && import.meta && import.meta.env
+        && import.meta.env.DEV === true
+        && typeof console !== 'undefined'
+        && typeof console.log === 'function') {
+      console.log('[FARROWAY_CAMERA]', event, extra || {});
+    }
+  } catch { /* swallow */ }
+}
+
 // ─── Icons (inline SVG, no emoji) ───────────────────────────────
 
 function _CloseIcon({ size = 22 }) {
@@ -143,6 +181,13 @@ export default function LiveCameraScanner({
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+  // Sequence id — every startStream() call bumps this. Any
+  // in-flight async work that resolves AFTER a newer call has
+  // started sees a stale id and bails out instead of mutating
+  // state / attaching to a torn-down video element. Prevents the
+  // "duplicate streams" + "stream attached to unmounted element"
+  // races the iOS hardening spec calls out.
+  const startSeqRef = useRef(0);
 
   const [facing, setFacing] = useState(facingHint || 'environment');
   const [phase, setPhase] = useState('idle');
@@ -164,12 +209,35 @@ export default function LiveCameraScanner({
   const [canSwitch, setCanSwitch] = useState(false);
 
   const isIos = useMemo(_isIos, []);
+  const isMobileSafari = useMemo(_isMobileSafari, []);
+  const readyDeadlineMs = isIos
+    ? CAMERA_READY_DEADLINE_MS_IOS
+    : CAMERA_READY_DEADLINE_MS_DEFAULT;
 
   // ─── Stream lifecycle ──────────────────────────────────────
+  //
+  // Camera startup state machine (spec §3 + §7):
+  //   idle → requesting (gUM) → streaming (loadedmetadata + playing)
+  //   any step can fall through to denied / error.
+  //
+  // `streamRef` holds the SINGLE active stream. Every code path
+  // that opens a new stream must first call stopStream() so we
+  // never leak a track. The sequence id (startSeqRef) cancels
+  // stale in-flight starts so two rapid toggles can't both
+  // attach a stream to the same <video>.
 
   const stopStream = useCallback(() => {
     const s = streamRef.current;
-    if (!s) return;
+    if (!s) {
+      // Still clear srcObject defensively — covers the case
+      // where the stream was nulled but the video element still
+      // holds a reference (iOS Safari leak).
+      const v = videoRef.current;
+      if (v) { try { v.srcObject = null; } catch { /* swallow */ } }
+      setTorchOn(false);
+      setHasTorch(false);
+      return;
+    }
     try {
       s.getTracks().forEach((t) => { try { t.stop(); } catch { /* swallow */ } });
     } catch { /* swallow */ }
@@ -177,13 +245,90 @@ export default function LiveCameraScanner({
     const v = videoRef.current;
     if (v) {
       try { v.srcObject = null; } catch { /* swallow */ }
+      // iOS Safari sometimes keeps the camera light on if we
+      // don't also pause + clear the readyState. Defensive.
+      try { v.pause(); } catch { /* swallow */ }
     }
     setTorchOn(false);
     setHasTorch(false);
+    _cameraLog('stream_stopped');
   }, []);
+
+  // Wait for the video element to actually start playing.
+  // Resolves once loadedmetadata + playing have both fired (or
+  // a single canplay frame on browsers that don't emit the
+  // playing event reliably). Rejects on deadline.
+  const _awaitVideoPlaying = useCallback((v, deadlineMs) => new Promise((resolve, reject) => {
+    if (!v) { reject(new Error('no_video_element')); return; }
+    let done = false;
+    let metadataSeen = false;
+    let playingSeen = false;
+    const cleanup = () => {
+      try { v.removeEventListener('loadedmetadata', onMeta); } catch { /* swallow */ }
+      try { v.removeEventListener('canplay',        onCanPlay); } catch { /* swallow */ }
+      try { v.removeEventListener('playing',        onPlaying); } catch { /* swallow */ }
+      try { v.removeEventListener('error',          onErr); } catch { /* swallow */ }
+      try { clearTimeout(deadlineTimer); } catch { /* swallow */ }
+    };
+    const finish = (ok, why) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      if (ok) resolve(); else reject(new Error(why || 'unknown'));
+    };
+    function maybeReady() {
+      if (metadataSeen && (playingSeen || (v.readyState >= 3))) {
+        _cameraLog('video_playing', {
+          videoWidth: v.videoWidth || 0,
+          videoHeight: v.videoHeight || 0,
+          readyState: v.readyState,
+        });
+        finish(true);
+      }
+    }
+    function onMeta() {
+      metadataSeen = true;
+      _cameraLog('metadata_loaded', {
+        videoWidth: v.videoWidth || 0,
+        videoHeight: v.videoHeight || 0,
+      });
+      maybeReady();
+    }
+    function onCanPlay() {
+      // Some iOS builds never emit `playing` — canplay + a
+      // non-zero videoWidth is good enough for us.
+      if (v.videoWidth > 0) {
+        metadataSeen = true;
+        playingSeen  = true;
+        maybeReady();
+      }
+    }
+    function onPlaying() {
+      playingSeen = true;
+      maybeReady();
+    }
+    function onErr() { finish(false, 'video_error'); }
+    try { v.addEventListener('loadedmetadata', onMeta); } catch { /* swallow */ }
+    try { v.addEventListener('canplay',        onCanPlay); } catch { /* swallow */ }
+    try { v.addEventListener('playing',        onPlaying); } catch { /* swallow */ }
+    try { v.addEventListener('error',          onErr); } catch { /* swallow */ }
+    // If metadata was already there when we attached (fast
+    // hardware), trigger the checks once synchronously.
+    if (v.readyState >= 1) onMeta();
+    if (v.readyState >= 3) onCanPlay();
+    const deadlineTimer = setTimeout(
+      () => finish(false, 'video_deadline'),
+      Math.max(1000, deadlineMs | 0),
+    );
+  }), []);
 
   const startStream = useCallback(async (nextFacing) => {
     const facingToUse = nextFacing || facing;
+    // Bump sequence id — any in-flight start from a previous
+    // call sees a stale id and bails before mutating state.
+    const mySeq = ++startSeqRef.current;
+    const isStale = () => startSeqRef.current !== mySeq;
+
     if (typeof navigator === 'undefined'
         || !navigator.mediaDevices
         || typeof navigator.mediaDevices.getUserMedia !== 'function') {
@@ -192,11 +337,16 @@ export default function LiveCameraScanner({
         'scan.camera.notSupported',
         'Camera is not available in this browser. Upload a photo instead.',
       ));
+      _cameraLog('not_supported');
       return;
     }
     setPhase('requesting');
     setErrorMsg('');
+    // Always tear down the previous stream FIRST — guarantees
+    // there is never more than one active stream / srcObject.
     stopStream();
+    _cameraLog('requesting_permission', { facing: facingToUse, isIos, isMobileSafari });
+
     let stream = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia(PREFERRED_CONSTRAINTS(facingToUse));
@@ -207,6 +357,11 @@ export default function LiveCameraScanner({
       try {
         stream = await navigator.mediaDevices.getUserMedia(MIN_CONSTRAINTS(facingToUse));
       } catch (e2) {
+        if (isStale()) {
+          // A newer startStream call superseded us. Don't
+          // touch state — the newer call owns it now.
+          return;
+        }
         const denied = (e2 && (e2.name === 'NotAllowedError' || e2.name === 'SecurityError'))
                     || (e1 && (e1.name === 'NotAllowedError' || e1.name === 'SecurityError'));
         setPhase(denied ? 'denied' : 'error');
@@ -221,23 +376,80 @@ export default function LiveCameraScanner({
                 "Couldn't open the camera. Tap retry or upload a photo.",
               ),
         );
+        _cameraLog(denied ? 'permission_denied' : 'permission_error', {
+          e1: e1 && e1.name,
+          e2: e2 && e2.name,
+        });
         return;
       }
     }
+    if (isStale()) {
+      // Newer start superseded us between gUM resolution and
+      // here. Drop the just-acquired stream so we don't leak.
+      try { stream.getTracks().forEach((t) => { try { t.stop(); } catch { /* swallow */ } }); }
+      catch { /* swallow */ }
+      _cameraLog('stale_start_discarded');
+      return;
+    }
+    _cameraLog('stream_created');
+
     streamRef.current = stream;
     const v = videoRef.current;
-    if (v) {
-      try {
-        v.srcObject = stream;
-        // iOS Safari needs the explicit play() with a Promise so
-        // we can await — the muted + playsInline attrs let it run
-        // without user-gesture once a stream is attached.
-        const p = v.play();
-        if (p && typeof p.then === 'function') {
-          await p.catch(() => { /* autoplay-blocked: leave UI to recover */ });
-        }
-      } catch { /* swallow */ }
+    if (!v) {
+      // Video element unmounted between gUM and attach. Tear
+      // down the stream we just got so we don't leak.
+      try { stream.getTracks().forEach((t) => { try { t.stop(); } catch { /* swallow */ } }); }
+      catch { /* swallow */ }
+      streamRef.current = null;
+      _cameraLog('no_video_element');
+      return;
     }
+    try {
+      v.srcObject = stream;
+      // iOS Safari + Android Chrome both need an explicit play()
+      // call. The `muted` + `playsInline` attributes on the
+      // <video> element let play() succeed without an active
+      // user gesture in most flows; if the browser still
+      // refuses (autoplay policy), we surface the error path.
+      const p = v.play();
+      if (p && typeof p.then === 'function') {
+        try { await p; }
+        catch (autoplayErr) {
+          if (isStale()) return;
+          // Autoplay was blocked. Log it but don't bail yet —
+          // some iOS WKWebView builds throw here even though
+          // playback actually starts a beat later. We let
+          // _awaitVideoPlaying decide; if no frames arrive, it
+          // rejects on the deadline and we go to error state.
+          _cameraLog('autoplay_blocked', { name: autoplayErr && autoplayErr.name });
+        }
+      }
+    } catch { /* swallow */ }
+
+    // Wait for the video to actually be playing before flipping
+    // to streaming. This is the critical fix for the
+    // "Camera didn't start in time" false-positive: previously
+    // we marked the camera ready before the first frame had
+    // even decoded, so any iOS hiccup surfaced as a generic
+    // failure surface.
+    try {
+      await _awaitVideoPlaying(v, readyDeadlineMs);
+    } catch (waitErr) {
+      if (isStale()) return;
+      // Genuine startup failure — release the stream and show
+      // the error surface with retry + gallery fallback.
+      stopStream();
+      setPhase('error');
+      setErrorMsg(tSafe(
+        'scan.camera.failed',
+        "Couldn't open the camera. Tap retry or upload a photo.",
+      ));
+      _cameraLog('ready_timeout', { why: waitErr && waitErr.message });
+      return;
+    }
+
+    if (isStale()) return;
+
     // Probe torch capability + camera count for the switch button.
     try {
       const track = stream.getVideoTracks()[0];
@@ -247,15 +459,20 @@ export default function LiveCameraScanner({
     } catch { setHasTorch(false); }
     try {
       const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+      if (isStale()) return;
       const cams = devs.filter((d) => d.kind === 'videoinput');
       setCanSwitch(cams.length > 1);
     } catch { setCanSwitch(false); }
     setPhase('streaming');
-  }, [facing, stopStream]);
+    _cameraLog('camera_ready');
+  }, [facing, stopStream, isIos, isMobileSafari, readyDeadlineMs, _awaitVideoPlaying]);
 
   // Open / close gating.
   useEffect(() => {
     if (!open) {
+      // Bump seq so any in-flight start aborts before it can
+      // mutate state on a closed surface.
+      startSeqRef.current += 1;
       stopStream();
       // Reset captured state so a re-open shows the live preview,
       // not the previously frozen frame.
@@ -272,7 +489,10 @@ export default function LiveCameraScanner({
     // open=true: kick off the stream.
     startStream(facing);
     // Cleanup on every open→close transition AND on unmount.
-    return () => { stopStream(); };
+    return () => {
+      startSeqRef.current += 1;
+      stopStream();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -416,6 +636,9 @@ export default function LiveCameraScanner({
   }, [capturedFile, capturedUrl, onCaptured]);
 
   const close = useCallback(() => {
+    // Bump seq so any in-flight start aborts before mutating
+    // state on the closing surface.
+    startSeqRef.current += 1;
     stopStream();
     if (capturedUrl) {
       try { URL.revokeObjectURL(capturedUrl); } catch { /* swallow */ }

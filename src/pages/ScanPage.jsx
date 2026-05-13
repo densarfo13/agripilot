@@ -247,11 +247,23 @@ export default function ScanPage() {
     }
   }, [flagOn, experience]);
 
-  // May 2026 scan-crash hardening §7-§8 — Mark the page mounted
-  // after a microtask so the loading state can render once,
-  // then flip. Also arm a 3-second hard stop that flips
-  // loadTimedOut → true if something stalls the mount path
-  // (slow JS chunk fetch, frozen render).
+  // iPhone Safari camera hardening (2026-05-13) §1 — the previous
+  // 3-second hard-stop fired whenever phase === 'capture', which
+  // is the DEFAULT phase. On iOS Safari getUserMedia + the
+  // permission prompt routinely take 3–8s, so the timer was
+  // racing the camera and surfacing "Camera didn't start in
+  // time" before iOS had even granted permission.
+  //
+  // New behaviour:
+  //   • The hard-stop is gated on `!mounted` only — it protects
+  //     the case where React itself never reached interactive
+  //     state (lazy chunk fetch stalled, render frozen). The
+  //     LiveCameraScanner owns its own camera-ready timeout and
+  //     surfaces its own Try-again / Upload from gallery panel,
+  //     so the page does NOT need to second-guess it.
+  //   • Deadline extended to 15s (well above the iOS cold-start
+  //     budget) — `mounted` flips after a microtask in practice,
+  //     so this only fires on genuine mount failures.
   useEffect(() => {
     if (!flagOn) return undefined;
     let cancelled = false;
@@ -259,18 +271,17 @@ export default function ScanPage() {
     // render between mount and this state update IS the
     // "Preparing camera…" frame.
     const t0 = setTimeout(() => { if (!cancelled) setMounted(true); }, 0);
-    const t3 = setTimeout(() => {
+    const tHardStop = setTimeout(() => {
       if (cancelled) return;
-      // Only fire if we're still in capture state and the
-      // mount didn't move forward — covers the wedged-render
-      // case the spec calls out.
-      if (phase === 'capture') {
+      // Only fire if the page truly never finished mounting.
+      // Camera startup latency is handled by LiveCameraScanner.
+      if (!mounted) {
         setLoadTimedOut(true);
-        try { trackEvent('scan_load_failed', { reason: 'timeout_3s' }); }
+        try { trackEvent('scan_load_failed', { reason: 'mount_stall_15s' }); }
         catch { /* swallow */ }
       }
-    }, 3000);
-    return () => { cancelled = true; clearTimeout(t0); clearTimeout(t3); };
+    }, 15000);
+    return () => { cancelled = true; clearTimeout(t0); clearTimeout(tHardStop); };
     // Intentional one-shot — only fires on initial mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagOn]);

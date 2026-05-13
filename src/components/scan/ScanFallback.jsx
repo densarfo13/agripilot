@@ -53,7 +53,7 @@ const RETRY_COPY = Object.freeze({
   camera_unavailable: { title: 'Camera unavailable',          body: 'Tap retry to try again, or upload a photo instead.' },
   permission_denied:  { title: 'Camera access is needed',     body: 'Tap retry to grant access, or upload a photo from your gallery.' },
   unsupported:        { title: 'This browser can\'t open the camera', body: 'Upload a photo from your gallery to keep going.' },
-  timeout:            { title: "Camera didn't start in time", body: 'Tap retry to try again, or upload a photo instead.' },
+  timeout:            { title: 'Scan is taking longer than expected', body: 'Tap retry to try again, or upload a photo instead.' },
 });
 
 export default function ScanFallback({
