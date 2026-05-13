@@ -260,6 +260,18 @@ export default function Home() {
       console.log('[FARROWAY_BUILD_COMMIT]', FARROWAY_COMMIT_SHA);
       // eslint-disable-next-line no-console
       console.log('[FARROWAY_HOME_LOCK]', 'src/pages/Home.jsx');
+      // Final Runtime Cleanup spec §D — verification line that
+      // proves the canonical Home rendered at the canonical URL.
+      // Production-visible so ops can read it from any browser
+      // session. Format: [HOME_VERIFIED] <location.pathname>.
+      // Expected output is "[HOME_VERIFIED] /home"; anything else
+      // means a non-canonical mount path slipped through.
+      try {
+        if (typeof window !== 'undefined' && window.location) {
+          // eslint-disable-next-line no-console
+          console.log('[HOME_VERIFIED]', window.location.pathname);
+        }
+      } catch { /* swallow */ }
     } catch { /* swallow */ }
   }, []);
 
