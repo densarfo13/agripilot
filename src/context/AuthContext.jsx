@@ -136,17 +136,25 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Redirect-to-/login effect — fires once when sessionExpired
-  // flips true, AND only when we are NOT already at /login (so a
-  // session that expires while the user is already on /login
-  // doesn't trigger a redundant navigation).
+  // Redirect-to-/login effect. Fires once when sessionExpired
+  // flips true.
+  //
+  // Canonical Home State Fix spec §5 — do NOT redirect away from
+  // /home when the session expires. The canonical farmer Home
+  // must remain visible as an anonymous-farmer view; the user
+  // will be redirected only when they tap a protected action
+  // (Add task / Save scan / etc.) that requires a session. Other
+  // protected surfaces (/tasks, /scan, /progress, etc.) still
+  // get the immediate redirect so the user doesn't stare at a
+  // broken page that silently 401's every API call.
   useEffect(() => {
     if (!sessionExpired) return;
     if (typeof window === 'undefined' || !window.location) return;
     try {
-      if (window.location.pathname !== '/login') {
-        window.location.replace('/login');
-      }
+      const path = window.location.pathname;
+      // Stay put on the canonical farmer Home OR /login itself.
+      if (path === '/home' || path === '/' || path === '/login') return;
+      window.location.replace('/login');
     } catch { /* swallow */ }
   }, [sessionExpired]);
 

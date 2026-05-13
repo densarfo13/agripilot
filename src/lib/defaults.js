@@ -29,7 +29,7 @@ export const defaultFarm = Object.freeze({
 // always shows a useful action instead of a profitability
 // nudge.
 export const defaultTask = Object.freeze({
-  title:   'Check soil moisture around your crop',
+  title:   'Check your crop today',
   reason:  'Dry weather can stress plants. Water only if the soil feels dry.',
   urgency: 'medium',
   time:    '5 mins',

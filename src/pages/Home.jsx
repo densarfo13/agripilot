@@ -275,6 +275,31 @@ export default function Home() {
     } catch { /* swallow */ }
   }, []);
 
+  // Canonical Home State Fix spec §8 — branch-state trace.
+  // Dev-only. Emits which render branch the canonical Home is
+  // currently in, so future "Home looks wrong" reports can be
+  // diagnosed in DevTools without re-instrumenting. Fires once
+  // per state transition (the deps array tracks the inputs).
+  useEffect(() => {
+    try {
+      if (!import.meta.env.DEV) return;
+      const farm = _resolveFarm();
+      // eslint-disable-next-line no-console
+      console.log('[HOME_BRANCH]', {
+        // Defaults to 'farm' per Canonical Home State spec §4 —
+        // missing mode reads as farmer (not garden).
+        mode:            ctxIntel && ctxIntel.mode === 'garden' ? 'garden' : 'farm',
+        hasFarm:         !!farm,
+        hasLocation:     !!_resolveLocationLabel(farm),
+        hasWeather:      !!(weather && weather.temp != null && weather.source === 'weather-api'),
+        hasTasks:        false,  // ctxIntel exposes a single task; Today's Plan owns the list
+        authState:       'unknown',  // AuthContext is upstream; not threaded here
+        renderedBranch:  'canonical_shell',
+      });
+    } catch { /* swallow */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weather]);
+
   // Resolve LOCAL view-model from localStorage. Pure + synchronous.
   const local = useMemo(() => {
     let userType, farm, crop, locationObj;
@@ -338,7 +363,7 @@ export default function Home() {
     try { return getWeatherTask(weather); }
     catch {
       return {
-        title:  'Check soil moisture around your crop',
+        title:  'Check your crop today',
         reason: 'Water only if soil feels dry.',
         cta:    'Mark as done',
       };
@@ -407,7 +432,7 @@ export default function Home() {
   const hasLocation = !!(
     weather.source === 'weather-api'
     || (weather.locationLabel
-        && weather.locationLabel !== 'Add location for weather tips'
+        && weather.locationLabel !== 'Add location for better weather timing'
         && weather.locationLabel !== 'Your area')
   );
   const showLocationHint = !weatherLoading && !hasLocation;

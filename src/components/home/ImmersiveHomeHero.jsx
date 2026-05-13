@@ -266,13 +266,16 @@ export default function ImmersiveHomeHero({
           : null,
       };
     }
-    // No real guidance — no fallback chatter. Minimal CTA that
-    // routes to Scan. Card-level surfaces (NextBestAction /
-    // DailyBriefing) hide themselves when there's no real data.
+    // No real guidance — render the spec's canonical safe-default
+    // (Canonical Home State Fix §7): "Check your crop today" +
+    // "A quick check helps catch problems early." + Scan CTA.
+    // Matches the FALLBACK_TASK across contextEngine /
+    // taskIntelligence / weatherTaskEngine so the hero text
+    // doesn't drift from the task-list fallback.
     return {
-      title: tSafe('hero.openScan', 'Open scan when you are ready'),
-      line:  '',
-      cta:   tSafe('hero.scan',    'Scan'),
+      title: tSafe('hero.safeDefault.title', 'Check your crop today'),
+      line:  tSafe('hero.safeDefault.line',  'A quick check helps catch problems early.'),
+      cta:   tSafe('hero.scan', 'Scan'),
       bestTime: null,
       estimatedMinutes: null,
     };

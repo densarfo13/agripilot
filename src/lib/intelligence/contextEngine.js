@@ -42,8 +42,8 @@
 // ─── Fallback constants ───────────────────────────────────────────
 
 const FALLBACK_TASK = Object.freeze({
-  title:    'Check soil moisture around your crop',
-  reason:   '',
+  title:    'Check your crop today',
+  reason:   'A quick check helps catch problems early.',
   urgency:  'medium',
   cta:      'Mark as done',
   category: 'crop-care',

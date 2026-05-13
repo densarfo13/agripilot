@@ -23,7 +23,7 @@
  */
 
 const FALLBACK_TASK = Object.freeze({
-  title:  'Check soil moisture around your crop',
+  title:  'Check your crop today',
   reason: 'Water only if soil feels dry.',
   cta:    'Mark as done',
 });

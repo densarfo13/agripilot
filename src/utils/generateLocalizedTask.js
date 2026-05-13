@@ -102,8 +102,8 @@ const SHORT_TITLE_OVERRIDES = Object.freeze({
   'Refresh crop stage':                               'Update crop stage',
   // Defensive entries — strip legacy strings if a stale cache
   // ever resurfaces them. The mapped titles are crop-care.
-  'Start logging farm costs to track profitability': 'Check soil moisture around your crop',
-  'Log farm expenses to track profitability':         'Check soil moisture around your crop',
+  'Start logging farm costs to track profitability': 'Check your crop today',
+  'Log farm expenses to track profitability':         'Check your crop today',
   'Keep logging harvest and costs to unlock performance comparison':
                                                       'Inspect leaves for pests or yellow spots',
 });

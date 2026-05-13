@@ -52,8 +52,8 @@ export function generateSmartTask(opts) {
   // Soil-moisture default. Every branch below replaces this when
   // its conditions match.
   let task = {
-    title:    `Check soil moisture around your ${cropName}`,
-    reason:   '',
+    title:    'Check your crop today',
+    reason:   'A quick check helps catch problems early.',
     urgency:  'medium',
     time:     '5 mins',
     cta:      'Mark as done',

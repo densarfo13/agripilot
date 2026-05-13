@@ -247,7 +247,7 @@ export function useLiveWeather(location) {
       const label = (loc && (loc.label || loc.region)) || null;
       setWeather({
         ...FALLBACK_WEATHER,
-        locationLabel: label ? label : 'Add location for weather tips',
+        locationLabel: label ? label : 'Add location for better weather timing',
       });
       setLoading(false);
       setError(null);

@@ -154,7 +154,7 @@ export const SAFE_TASKS = Object.freeze([]);
  */
 export const SAFE_TASK_ITEM = Object.freeze({
   id:          null,
-  title:       'Check soil moisture around your crop',
+  title:       'Check your crop today',
   reason:      'Water only if soil feels dry.',
   cta:         'Mark as done',
   urgency:     'low',
