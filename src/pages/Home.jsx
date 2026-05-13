@@ -289,10 +289,18 @@ export default function Home() {
       try {
         if (typeof window !== 'undefined') {
           window.__FARROWAY_HOME_VERSION__ = 'canonical-farmer-home-v1';
+          // Production Cache Purge spec §4 — single hard-version
+          // identifier ops can read in any browser session to
+          // confirm the deployed bundle carries the latest
+          // routing-lockdown infrastructure. Updates per-cycle
+          // when a deploy needs to assert a hard cache flush.
+          window.__FARROWAY_BUILD__ = 'HOME_LOCK_V3';
         }
       } catch { /* swallow */ }
       // eslint-disable-next-line no-console
       console.log('[FARROWAY_HOME_ACTIVE] canonical-farmer-home-v1');
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_BUILD]', 'HOME_LOCK_V3');
     } catch { /* swallow */ }
   }, []);
 
