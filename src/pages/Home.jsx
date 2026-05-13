@@ -41,6 +41,10 @@ import { useNavigate }           from 'react-router-dom';
 // Home; tree-shaken in production via the import.meta.env.DEV
 // gate inside the guard.
 import { assertCanonicalHome }   from '../lib/canonicalHomeGuard.js';
+// Backyard subtype catalog — used by the [FARM_STATE] trace so
+// the resolved type (pots/raised_bed/greenhouse/etc.) is visible
+// in DevTools alongside the farms count + active pointer.
+import { resolveBackyardType }   from '../lib/backyardTypes.js';
 // Hard route lockdown §1 — build commit + canonical-file marker.
 // FARROWAY_COMMIT_SHA reads VITE_COMMIT_SHA from the CI build env
 // (Railway), falling back to 'local-{epoch}' when running locally.
@@ -172,6 +176,11 @@ function _resolveFarm() {
   return null;
 }
 
+function _resolveBackyardTypeSafe(farm) {
+  try { return resolveBackyardType(farm); }
+  catch { return null; }
+}
+
 function _resolveCrop(farm) {
   if (farm && typeof farm === 'object') {
     const c = farm.cropName || farm.crop || farm.cropType;
@@ -258,7 +267,7 @@ export default function Home() {
     _homeMountLogged = true;
     try {
       const farm = _resolveFarm();
-      // eslint-disable-next-line no-console
+       
       // Permanent Farmer Home Nav Enforcement spec §6 — single
       // canonical mount marker. Fires once per page load, dev
       // only. Format is the spec-exact wording; replaced the
@@ -279,7 +288,7 @@ export default function Home() {
       // Source-of-Truth Audit spec §6 — also emit the spec-exact
       // log line so the canonical-home audit greps for both
       // formats succeed. Same mount event; two greppable names.
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_HOME] canonical farmer home mounted');
     } catch { /* swallow */ }
   }, []);
@@ -293,9 +302,9 @@ export default function Home() {
     if (_homeMountLockLogged) return;
     _homeMountLockLogged = true;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_BUILD_COMMIT]', FARROWAY_COMMIT_SHA);
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_HOME_LOCK]', 'src/pages/Home.jsx');
       // Final Runtime Cleanup spec §D — verification line that
       // proves the canonical Home rendered at the canonical URL.
@@ -305,13 +314,13 @@ export default function Home() {
       // means a non-canonical mount path slipped through.
       try {
         if (typeof window !== 'undefined' && window.location) {
-          // eslint-disable-next-line no-console
+           
           console.log('[HOME_VERIFIED]', window.location.pathname);
           // Bottom Nav Home Source-of-Truth §7 — spec-exact marker
           // proving the canonical Home mounted via the canonical
           // /home route. Production-visible so ops can correlate
           // a Home tap (BottomNav log) with the mount (this log).
-          // eslint-disable-next-line no-console
+           
           console.log('[FARROWAY_HOME_MOUNTED_FROM_ROUTE]', window.location.pathname);
         }
       } catch { /* swallow */ }
@@ -334,9 +343,9 @@ export default function Home() {
           window.__FARROWAY_BUILD__ = 'HOME_LOCK_V3';
         }
       } catch { /* swallow */ }
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_HOME_ACTIVE] canonical-farmer-home-v1');
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_BUILD]', 'HOME_LOCK_V3');
     } catch { /* swallow */ }
   }, []);
@@ -391,9 +400,9 @@ export default function Home() {
     if (_debugFiredRef.current) return;
     _debugFiredRef.current = true;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('Live weather source:', weather.source);
-      // eslint-disable-next-line no-console
+       
       console.log('Live weather type:',   weather.weatherType);
     } catch { /* swallow */ }
   }, [weatherLoading, weather]);
@@ -434,7 +443,7 @@ export default function Home() {
     try {
       if (!import.meta.env.DEV) return;
       const farm = _resolveFarm();
-      // eslint-disable-next-line no-console
+       
       console.log('[HOME_BRANCH]', {
         // Defaults to 'farm' per Canonical Home State spec §4 —
         // missing mode reads as farmer (not garden).
@@ -455,13 +464,15 @@ export default function Home() {
         const gardens     = _safeJsonGet('farroway.gardens') || [];
         const activeFarmId   = _safeGet('farroway.activeFarmId');
         const activeGardenId = _safeGet('farroway_active_garden_id');
-        // eslint-disable-next-line no-console
+        const backyardType   = farm ? _resolveBackyardTypeSafe(farm) : null;
         console.log('[FARM_STATE]', {
           farmsCount:      Array.isArray(farms)   ? farms.length   : 0,
           gardensCount:    Array.isArray(gardens) ? gardens.length : 0,
           activeFarmId:    activeFarmId   || null,
           activeGardenId:  activeGardenId || null,
           activeFarmName:  farm && (farm.name || farm.farmName) || null,
+          farmType:        farm && farm.farmType || null,
+          backyardType,
           mode:            ctxIntel && ctxIntel.mode === 'garden' ? 'garden' : 'farm',
         });
       } catch { /* swallow */ }

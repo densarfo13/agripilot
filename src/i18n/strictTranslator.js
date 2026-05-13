@@ -126,7 +126,7 @@ export function useScreenTranslator(screenId, keys) {
     if (!_warnedScreens.has(tag)) {
       _warnedScreens.add(tag);
       try {
-        // eslint-disable-next-line no-console
+         
         console.warn(
           `[i18n SCREEN-FALLBACK] Screen "${screenId}" rendered in English (lang=${lang}); missing keys:`,
           validation.missing,

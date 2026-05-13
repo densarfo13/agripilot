@@ -150,7 +150,7 @@ export default function BottomTabNav() {
       && !_bottomNavActiveFileLogged) {
     _bottomNavActiveFileLogged = true;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_NAV_ACTIVE_FILE]', 'src/components/farmer/BottomTabNav.jsx');
     } catch { /* swallow */ }
   }
@@ -285,9 +285,9 @@ export default function BottomTabNav() {
                   // Bottom Nav Home Source-of-Truth §7 — spec-exact
                   // log alongside the prior canonical-home one. Two
                   // greppable lines, one tap.
-                  // eslint-disable-next-line no-console
+                   
                   console.log('[FARROWAY_NAV] farmer home target: ' + tab.path);
-                  // eslint-disable-next-line no-console
+                   
                   console.log('[FARROWAY_NAV_HOME_TARGET]', tab.path);
                 }
               } catch { /* swallow */ }

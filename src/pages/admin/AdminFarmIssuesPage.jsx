@@ -58,7 +58,7 @@ export default function AdminFarmIssuesPage() {
   const [assignDraft, setAssignDraft] = useState({}); // { [issueId]: 'officer_id' }
 
   const issues = useMemo(() => {
-    // eslint-disable-next-line no-unused-vars
+     
     const _ = tick;
     return getIssuesForRole('admin', {
       status:       filters.status       || null,
@@ -72,7 +72,7 @@ export default function AdminFarmIssuesPage() {
   }, [tick, filters]);
 
   const metrics = useMemo(() => {
-    // eslint-disable-next-line no-unused-vars
+     
     const _ = tick;
     // Metrics read from the full store, not the filtered view, so the
     // row above the table reflects the program, not whatever slice is
@@ -83,7 +83,7 @@ export default function AdminFarmIssuesPage() {
   // Derive filter option lists from the current dataset so the
   // dropdowns never offer a value that doesn't exist.
   const allIssues = useMemo(() => {
-    // eslint-disable-next-line no-unused-vars
+     
     const _ = tick;
     return getIssuesForRole('admin');
   }, [tick]);

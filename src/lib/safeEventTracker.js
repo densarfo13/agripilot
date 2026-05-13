@@ -60,7 +60,7 @@ function _warnOnce(key, ...args) {
   if (_warnedKeys.has(key)) return;
   _warnedKeys.add(key);
   try {
-    // eslint-disable-next-line no-console
+     
     console.warn('[safeEventTracker]', ...args);
   } catch { /* swallow */ }
 }

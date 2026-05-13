@@ -80,9 +80,9 @@ export function mapLocationToLanguage(country) {
   // ISO-2/ISO-3 path — defer to the lower-level mapper which
   // owns the full ~50-row country table.
   try {
-    /* eslint-disable global-require */
+     
     const { mapLocationToLanguage: lower } = require('../i18n/localeDetection/mapLocationToLanguage.js');
-    /* eslint-enable global-require */
+     
     const richer = lower(country);
     if (richer && richer.primary) return richer.primary;
   } catch { /* fall through */ }

@@ -92,7 +92,7 @@ import { DISABLE_EVENTS } from '../lib/pilotFlags.js';
 try {
   if (typeof process !== 'undefined' && process.env
       && process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
+     
     console.log('[analytics] initialized — circular-import TDZ fix active');
   }
 } catch { /* swallow — diagnostic never blocks the module */ }
@@ -105,7 +105,7 @@ function _logDisabledOnce() {
   if (_disabledNoticeLogged) return;
   _disabledNoticeLogged = true;
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('Event system disabled');
   } catch { /* swallow */ }
 }
@@ -291,7 +291,7 @@ export function trackEvent(eventName, payload = {}) {
     if (!KNOWN_EVENTS.has(name)) {
       try {
         if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
+           
           console.warn('[analytics] unknown event name:', name);
         }
       } catch { /* swallow */ }

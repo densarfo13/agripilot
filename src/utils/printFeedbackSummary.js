@@ -65,7 +65,7 @@ export function printFeedbackSummary() {
   };
 
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[farroway feedback summary]', summary);
   } catch { /* swallow */ }
 

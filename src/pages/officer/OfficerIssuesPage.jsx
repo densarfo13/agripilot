@@ -62,7 +62,7 @@ export default function OfficerIssuesPage() {
   }, []);
 
   const issues = useMemo(() => {
-    // eslint-disable-next-line no-unused-vars
+     
     const _ = tick;
     return getIssuesForRole('field_officer', { officerId });
   }, [tick, officerId]);

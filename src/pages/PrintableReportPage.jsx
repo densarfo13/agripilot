@@ -48,7 +48,7 @@ export default function PrintableReportPage() {
     farms:       getFarms(),
     events:      getEvents(),
     completions: getTaskCompletions(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }), []);
 
   const filteredFarms = useMemo(() => filterFarms(farms, {

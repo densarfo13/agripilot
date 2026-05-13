@@ -43,7 +43,7 @@ function _logBadBaseOnce(base) {
     const key = String(base);
     if (_badBasesLogged.has(key)) return;
     _badBasesLogged.add(key);
-    // eslint-disable-next-line no-console
+     
     console.warn('[FARROWAY_URL_GUARD] prevented invalid URL', base);
   } catch { /* never throw from a diagnostic */ }
 }
@@ -124,7 +124,7 @@ export async function safeTrack(event, metadata) {
     // warn for visibility.
     try {
       if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.warn('[FARROWAY_URL_GUARD] safeTrack failed', { event, err: err && err.message });
       }
     } catch { /* swallow */ }

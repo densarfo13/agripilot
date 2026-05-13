@@ -188,13 +188,13 @@ function bumpSeverity(level, steps = 1) {
  */
 export function triageFarmHealthIssue({
   crop              = null,
-  region            = null,      // eslint-disable-line no-unused-vars
+  region            = null,       
   symptoms          = [],
   affectedPart      = null,
   extent            = null,
   duration          = null,
   weather           = null,
-  description       = '',        // eslint-disable-line no-unused-vars
+  description       = '',         
   recentFarmReports = 0,
 } = {}) {
   const reasoning = [];

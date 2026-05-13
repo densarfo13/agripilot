@@ -117,7 +117,7 @@ export default function DashboardShell({ children }) {
         const textLen    = typeof el.innerText === 'string' ? el.innerText.trim().length : 0;
         const childCount = el.children ? el.children.length : 0;
         if (textLen === 0 && childCount === 0) {
-          // eslint-disable-next-line no-console
+           
           console.warn('[FARROWAY_SHELL] Empty content at 2s — showing safe fallback.');
           setShowFallback(true);
         }
@@ -131,7 +131,7 @@ export default function DashboardShell({ children }) {
         // If the loading sentinel is still present, the dashboard is deadlocked.
         const loadingNode = el.querySelector('[data-testid="today-loading"]');
         if (loadingNode) {
-          // eslint-disable-next-line no-console
+           
           console.warn('[FARROWAY_SHELL] Loading state stuck at 4s — showing safe fallback.');
           setShowFallback(true);
         }
@@ -143,7 +143,7 @@ export default function DashboardShell({ children }) {
       clearTimeout(stage2);
     };
     // Run once on mount only — the watchdog is a one-shot safety net.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   if (showFallback) {

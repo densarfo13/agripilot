@@ -60,7 +60,7 @@ function isDev() {
 
 function warn(reason, details = {}) {
   if (!isDev()) return;
-  // eslint-disable-next-line no-console
+   
   console.warn('[farroway.cache]', reason, { ...details, at: new Date().toISOString() });
 }
 

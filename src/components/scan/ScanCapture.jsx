@@ -221,7 +221,7 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       if (firedDeniedEvent) return;
       firedDeniedEvent = true;
       try {
-        // eslint-disable-next-line no-console
+         
         console.warn('[FARROWAY_SCAN] camera_permission_denied');
       } catch { /* swallow */ }
       try {

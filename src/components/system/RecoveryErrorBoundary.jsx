@@ -41,7 +41,7 @@ import { clearAllOnboardingDrafts } from '../../core/onboardingDraft.js';
 // longer surfaces it \u2014 the three new buttons cover the
 // realistic failure modes without scaring a farmer with words
 // like "session" or "cache".
-// eslint-disable-next-line no-unused-vars
+ 
 import { repairFarrowaySession } from '../../utils/repairSession.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 
@@ -69,7 +69,7 @@ export default class RecoveryErrorBoundary extends React.Component {
     try {
       if (typeof import.meta !== 'undefined'
           && import.meta.env && import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.error('[RecoveryErrorBoundary]', error, info);
       }
     } catch { /* swallow */ }

@@ -127,7 +127,7 @@ export class SafeRouteShell extends Component {
       // formatted line; the analytics dispatch below stays
       // unchanged so dashboards keep working.
       try {
-        // eslint-disable-next-line no-console
+         
         console.error(
           `[Farroway] Route crashed: /${routeName} → ${failingComponent}\n` +
           `${err?.message || String(err)}\n` +

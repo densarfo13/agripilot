@@ -115,7 +115,7 @@ export function AuthProvider({ children }) {
     if (typeof window === 'undefined') return undefined;
     const onExpired = () => {
       try {
-        // eslint-disable-next-line no-console
+         
         if (import.meta.env.DEV) {
           console.log('[AUTH_CLEARED]', { reason: 'refresh_failed' });
         }
@@ -173,7 +173,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     try {
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.log('[AUTH_STATE]', authState);
       }
     } catch { /* swallow */ }

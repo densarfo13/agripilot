@@ -67,7 +67,7 @@ export function wrapTranslationForAudit(t, lang) {
     const text = t(key, vars);
     if (looksLikeEnglishLeak(text) && !_warned.has(key)) {
       _warned.add(key);
-      // eslint-disable-next-line no-console
+       
       console.warn(`[i18n-audit] Key "${key}" returned English on Hindi screen: "${text}"`);
     }
     return text;

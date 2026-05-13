@@ -174,7 +174,7 @@ export function addToQueue(action) {
     if (!_eventEnqueueRefusedOnce) {
       _eventEnqueueRefusedOnce = true;
       try {
-        // eslint-disable-next-line no-console
+         
         console.log('Event system disabled (addToQueue refused event)');
       } catch { /* swallow */ }
     }

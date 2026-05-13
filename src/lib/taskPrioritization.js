@@ -177,7 +177,7 @@ export function prioritizeTasks(tasks, options = {}) {
   });
 
   // Strip the internal index before returning.
-  return scored.map(({ _originalIdx, ...rest }) => rest);  // eslint-disable-line no-unused-vars
+  return scored.map(({ _originalIdx, ...rest }) => rest);   
 }
 
 /**

@@ -31,7 +31,7 @@ export function withBootstrapTimeout(promise, ms = 3000, fallback = null, label 
       if (settled) return;
       settled = true;
       try {
-        // eslint-disable-next-line no-console
+         
         console.warn(
           '[FARROWAY_TIMEOUT]',
           label || 'Bootstrap step',
@@ -62,7 +62,7 @@ export function withBootstrapTimeout(promise, ms = 3000, fallback = null, label 
           err && (err.status === 401 || err.notAuthenticated === true);
         if (!isAuthNoise) {
           try {
-            // eslint-disable-next-line no-console
+             
             console.warn(
               '[FARROWAY_TIMEOUT]',
               label || 'Bootstrap step',

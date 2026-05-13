@@ -53,7 +53,7 @@ function _stampToday() {
 function _notify(title, body) {
   try {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      // eslint-disable-next-line no-new
+       
       new Notification(title, { body });
       return true;
     }
@@ -62,7 +62,7 @@ function _notify(title, body) {
   // don't want to spam a backgrounded tab with modal dialogs.
   try {
     if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-      // eslint-disable-next-line no-alert
+       
       alert(`${title}: ${body}`);
       return true;
     }

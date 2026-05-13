@@ -89,7 +89,7 @@ function _setState(next) {
   if (_state === next) return;
   _state = next;
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[SCAN_CAMERA_STATE]', next);
   } catch { /* swallow */ }
 }
@@ -139,12 +139,12 @@ export function stopCamera() {
   _setState(CAMERA_SESSION_STATES.IDLE);
   if (stopped) {
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[SCAN_STREAM_STOPPED]');
     } catch { /* swallow */ }
   }
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[SCAN_STREAM_ACTIVE]', false);
   } catch { /* swallow */ }
 }
@@ -215,7 +215,7 @@ function _awaitVideoReady(videoEl, deadlineMs) {
       if (metaSeen && (playingSeen || videoEl.readyState >= 3)) {
         if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
           try {
-            // eslint-disable-next-line no-console
+             
             console.log('[SCAN_VIDEO_READY]');
           } catch { /* swallow */ }
           finish(true);
@@ -333,7 +333,7 @@ export async function startCamera(videoEl, options = {}) {
     _installVisibilityHandler();
     _setState(CAMERA_SESSION_STATES.CAMERA_READY);
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[SCAN_STREAM_ACTIVE]', true);
     } catch { /* swallow */ }
     return { ok: true, stream };
@@ -354,7 +354,7 @@ export async function startCamera(videoEl, options = {}) {
  */
 export async function retryCamera(videoEl, options = {}) {
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[SCAN_RETRY_TRIGGERED]');
   } catch { /* swallow */ }
   stopCamera();

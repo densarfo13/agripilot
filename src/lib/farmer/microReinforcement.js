@@ -67,7 +67,7 @@ export function getReinforcement({ task = null, streak = 0, stage = null } = {})
   // When the caller knows the completed task's id and has a
   // task-specific follow-up in their own map, they can append it;
   // this module stays stage-level so it's safe default.
-  // eslint-disable-next-line no-unused-vars
+   
   const _maybe = task;
   return Object.freeze(result);
 }

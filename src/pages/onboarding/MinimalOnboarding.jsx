@@ -251,7 +251,7 @@ export default function MinimalOnboarding() {
     } catch (e) {
       // Save failures don't block — the local-first layer kept
       // a draft and progressive setup will retry.
-      // eslint-disable-next-line no-console
+       
       console.warn('[onboarding.minimal] save failed:', e?.message || e);
     } finally {
       // Always flip the flag + send the farmer to Home. ProfileGuard

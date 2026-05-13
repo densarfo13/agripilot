@@ -318,7 +318,7 @@ export async function bumpVerificationWithLocation(actionId, farmerId) {
 
   // Best-effort GPS — the helper resolves null on denial
   // / timeout / no API. Never throws.
-  // eslint-disable-next-line global-require
+   
   const gps = await tryReadGeolocation(4000);
   if (!gps) {
     // Caller can decide whether to surface a hint; we just

@@ -351,7 +351,7 @@ export default function ApplicationPreviewModal({
     const v = card?.timeToComplete;
     if (v && String(v).trim()) return String(v);
     return tStrict('funding.modal.timeDefault', '~10 minutes');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [card?.timeToComplete]);
 
   const whyItFits = useMemo(() => {
@@ -361,7 +361,7 @@ export default function ApplicationPreviewModal({
       'funding.modal.whyDefault',
       'Programs in this category often suit farmers like you.',
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [card?.matchReason, card?.eligibilityHint]);
 
   const handleContinue = useCallback(() => {

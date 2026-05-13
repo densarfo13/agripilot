@@ -361,7 +361,7 @@ export default function OnboardingV3() {
         'We could not save your farm right now. Please try again.'));
       // Keep the draft + step so the farmer doesn't lose data on
       // a transient failure.
-      // eslint-disable-next-line no-console
+       
       console.error('[onboarding-v3] save failed:', err);
     } finally {
       setSaving(false);

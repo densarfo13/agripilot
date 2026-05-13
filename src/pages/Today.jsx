@@ -240,7 +240,7 @@ export default function Today() {
     } catch { /* lockdown — accept that next reload may re-play */ }
 
     return () => { try { stopSpeech(); } catch { /* swallow */ } };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [simple, missed.needsRecovery, taskId]);
 
   function handleListen() {

@@ -38,7 +38,7 @@ function _warnOnce(key, msg, extra) {
     if (!_isDev()) return;
     if (_seen.has(key)) return;
     _seen.add(key);
-    // eslint-disable-next-line no-console
+     
     console.warn(`[Farroway safeFetch] ${msg}`, extra);
   } catch { /* never throw from a diagnostic */ }
 }

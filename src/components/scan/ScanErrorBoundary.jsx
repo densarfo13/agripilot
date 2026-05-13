@@ -43,7 +43,7 @@ export default class ScanErrorBoundary extends React.Component {
     // Console-log the crash with a greppable prefix so engineers
     // can filter for it in Chrome DevTools / Railway log drains.
     try {
-      // eslint-disable-next-line no-console
+       
       console.error('[FARROWAY_CRASH][scan_component_error]',
         error && error.message ? error.message : error,
         info && info.componentStack ? info.componentStack.slice(0, 500) : '');

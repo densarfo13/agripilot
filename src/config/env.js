@@ -131,7 +131,7 @@ export const ENV = _resolved;
 export function dumpEnv() {
   try {
     if (!ENV.IS_DEV) return;
-    // eslint-disable-next-line no-console
+     
     console.log('[Farroway env]', {
       API_URL:     ENV.API_URL,
       WS_URL:      ENV.WS_URL     || '(disabled)',

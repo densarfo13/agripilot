@@ -154,7 +154,7 @@ export function generateDailyTasks({
   completions = [],
   limit = DEFAULT_LIMIT,
   weather = null,        // optional summarizeWeather shape
-  // eslint-disable-next-line no-unused-vars
+   
   now = null,
 } = {}) {
   const resolvedStage = resolveStage({ stage, plantingStatus });

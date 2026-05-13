@@ -194,7 +194,7 @@ export async function drainQueue(retryFn) {
     try {
       // Await each retry sequentially — concurrent requests from a
       // cold-start drain would just thrash the network.
-      // eslint-disable-next-line no-await-in-loop
+       
       const result = await retryFn(entry);
       successes.push(result);
       // success — entry is dropped (not pushed to survivors)

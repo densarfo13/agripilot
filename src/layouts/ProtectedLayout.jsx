@@ -127,13 +127,13 @@ export default function ProtectedLayout() {
       const navKind = (isFarmer || role === 'farmer') ? 'farmer'
                     : (role === 'buyer') ? 'buyer'
                     : 'role-aware';
-      // eslint-disable-next-line no-console
+       
       console.log('[APP_SHELL_ACTIVE]', path);
-      // eslint-disable-next-line no-console
+       
       console.log('[BOTTOM_NAV_RENDERED]', navKind);
-      // eslint-disable-next-line no-console
+       
       console.log('[BOTTOM_NAV_HOME_TARGET]', '/home');
-      // eslint-disable-next-line no-console
+       
       console.log('[HOME_PAGE_RENDERED_INSIDE_SHELL]', path === '/home' || path === '/');
     } catch { /* swallow */ }
   }

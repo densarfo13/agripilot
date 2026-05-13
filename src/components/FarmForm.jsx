@@ -209,7 +209,7 @@ export default function FarmForm({
       }
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [form.country, availableStates]);
 
   // ─── Handlers ─────────────────────────────────────────────
@@ -393,7 +393,7 @@ export default function FarmForm({
         tSafe('farm.err.saveFailed', 'Unable to save the farm right now. Please check your inputs and try again.')));
       // Swallow the console noise in prod, keep it in dev.
       if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.warn('FARM_SAVE_ERROR', error);
       }
     } finally {

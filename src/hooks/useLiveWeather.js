@@ -222,7 +222,7 @@ export function useLiveWeather(location) {
     // Round to 3 decimal places (~110m precision) to avoid floating-
     // point noise from GPS retries re-triggering the fetch.
     return loc.lat.toFixed(3) + ',' + loc.lng.toFixed(3);
-  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location]);  
 
   useEffect(() => {
     // ── Kill switch ──────────────────────────────────────────────

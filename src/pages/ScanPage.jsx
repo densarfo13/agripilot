@@ -357,7 +357,7 @@ export default function ScanPage() {
     };
     // Intentional one-shot — drain wiring runs once per ScanPage
     // mount + persists across phase changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [flagOn]);
 
   // Scan Hardening §6 — duplicate-scan prevention. A simple ref
@@ -374,7 +374,7 @@ export default function ScanPage() {
     // feedback that the request is live.
     if (_scanInflightRef.current) {
       try {
-        // eslint-disable-next-line no-console
+         
         console.log('[FARROWAY_SCAN_PIPELINE] duplicate_suppressed');
       } catch { /* swallow */ }
       return;
@@ -397,7 +397,7 @@ export default function ScanPage() {
     // would tree-shake; we keep this production-visible for ops
     // diagnostics. Fires once per scan.
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_SCAN_PIPELINE] imageCaptured', {
         hasBase64:    !!imageBase64,
         hasThumbnail: !!thumbnail,
@@ -998,10 +998,10 @@ export default function ScanPage() {
                     actionType: 'treatment',
                   })).filter((t) => t.title);
                   if (result && Array.isArray(result.suggestedTasks)) {
-                    // eslint-disable-next-line no-param-reassign
+                     
                     result.suggestedTasks = [...adapted, ...result.suggestedTasks];
                   } else if (result) {
-                    // eslint-disable-next-line no-param-reassign
+                     
                     result.suggestedTasks = adapted;
                   }
                   onAddTasks();

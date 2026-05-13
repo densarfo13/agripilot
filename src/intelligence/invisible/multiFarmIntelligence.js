@@ -200,7 +200,7 @@ export function computeMultiFarmIntelligence(input) {
 
   const mostUrgent = scored[0];
   const mostStable = scored[scored.length - 1];
-  const ranked = scored.map(({ _originalIdx, ...rest }) => rest);  // eslint-disable-line no-unused-vars
+  const ranked = scored.map(({ _originalIdx, ...rest }) => rest);   
 
   // Compose the calm one-sentence summary. Only quantitative
   // information allowed: the farm name(s). Never expose the score.

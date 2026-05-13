@@ -44,6 +44,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { resolveHeroImage, resolveCropCloseupImage } from '../../lib/realVisuals.jsx';
+// Backyard subtype catalog — drives the hero's daily-rhythm copy
+// so pots / raised beds / greenhouses each get tuned wording
+// instead of the generic "Today on your farm" fallback.
+import {
+  resolveBackyardType,
+  getHeroCopyForBackyardType,
+} from '../../lib/backyardTypes.js';
 
 // Sealed status palette for the land-health pill — same tones the
 // dedicated LandHealthCard used, scaled down to a chip.
@@ -266,20 +273,18 @@ export default function ImmersiveHomeHero({
           : null,
       };
     }
-    // No real guidance — render the Farmer Home canonical empty
-    // state (Content Upgrade §3): a confident daily-rhythm tile
-    // that reads like the real Home, not a fallback. Title carries
-    // the farm context, the line tells the user WHY the check
-    // matters, and the CTA names the action ("Start farm check")
-    // instead of leaving the user wondering what tapping Scan
-    // would do.
+    // No real guidance — render the canonical empty-state hero
+    // tuned to the resolved backyard/farm subtype. The hero now
+    // reads "Today in your greenhouse" / "Today in your garden"
+    // / "Today on your farm" depending on the farm row's
+    // backyardType (or inferred type from farmType + size).
+    // Falls back to small-farm copy for any unknown input.
+    const subtype = resolveBackyardType(entity);
+    const heroCopy = getHeroCopyForBackyardType(subtype);
     return {
-      title: tSafe('hero.farmerDefault.title', 'Today on your farm'),
-      line:  tSafe(
-        'hero.farmerDefault.line',
-        'A quick field check helps catch problems early.',
-      ),
-      cta:   tSafe('hero.farmerDefault.cta', 'Start farm check'),
+      title: tSafe('hero.subtype.' + subtype + '.title', heroCopy.title),
+      line:  tSafe('hero.subtype.' + subtype + '.line',  heroCopy.line),
+      cta:   tSafe('hero.subtype.' + subtype + '.cta',   heroCopy.cta),
       bestTime: null,
       estimatedMinutes: null,
     };

@@ -109,7 +109,7 @@ export default function OutbreakMap({
   useEffect(() => {
     try {
       if (L && L.Icon && L.Icon.Default) {
-        // eslint-disable-next-line no-underscore-dangle
+         
         delete L.Icon.Default.prototype._getIconUrl;
         L.Icon.Default.mergeOptions({});
       }

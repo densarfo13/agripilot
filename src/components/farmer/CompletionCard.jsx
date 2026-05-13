@@ -57,7 +57,7 @@ export default function CompletionCard({
 
   function handleSelectCompletion(opt) {
     if (!opt) return;
-    // eslint-disable-next-line no-console
+     
     console.log('completion selected:', opt.value);
     setSelectedCompletion(opt.value);
     safeTrackEvent('followup_selected', {

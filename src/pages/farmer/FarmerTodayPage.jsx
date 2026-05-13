@@ -218,7 +218,7 @@ export default function FarmerTodayPage() {
       setState((s) => {
         if (!s.loading) return s; // already resolved — no-op
         try {
-          // eslint-disable-next-line no-console
+           
           console.warn('[FARROWAY_BOOT] 3s loading deadlock detected — forcing degraded state.');
         } catch { /* ignore */ }
         return { ...s, loading: false, error: s.error || 'timeout', phase: 'degraded' };
@@ -247,7 +247,7 @@ export default function FarmerTodayPage() {
       }
     } catch { /* never block the page */ }
     // Once-per-mount; we don't want this to re-run on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Bump the lifetime "Today visits" counter once per browser
@@ -623,7 +623,7 @@ export default function FarmerTodayPage() {
   // this both to pick the <RiskAlertsPanel> suppression set AND to
   // read `dismissBump` so the memo invalidates on every dismiss.
   const topBannerActive = useMemo(() => {
-    // eslint-disable-next-line no-unused-vars
+     
     const _bump = dismissBump;
     if (!reminder.show) return false;
     const content = t(reminder.messageKey) || reminderFallback(reminder.kind);

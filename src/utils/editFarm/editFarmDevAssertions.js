@@ -15,7 +15,7 @@ function isDev() {
 
 function warn(reason, details = {}) {
   if (!isDev()) return;
-  // eslint-disable-next-line no-console
+   
   console.warn(TAG, reason, { ...details, at: new Date().toISOString() });
 }
 

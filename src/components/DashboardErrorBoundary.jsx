@@ -40,10 +40,10 @@ export default class DashboardErrorBoundary extends React.Component {
       const tag = _isDev()
         ? '[FARROWAY_DASH_CRASH]'
         : '[FARROWAY_DASH_CRASH]';
-      // eslint-disable-next-line no-console
+       
       console.error(tag, error?.message || error, _currentPath());
       if (_isDev()) {
-        // eslint-disable-next-line no-console
+         
         console.error('[FARROWAY_DASH_CRASH][stack]', info?.componentStack);
       }
     } catch { /* never throw from componentDidCatch */ }

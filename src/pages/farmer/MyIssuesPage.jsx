@@ -38,7 +38,7 @@ function useFarmerIssues() {
     return unsub;
   }, []);
   return useMemo(() => {
-    // eslint-disable-next-line no-unused-vars
+     
     const _ = tick;
     const activeFarm = getActiveFarm();
     const farmerId = (activeFarm && activeFarm.farmerId) || getActiveFarmId();

@@ -205,7 +205,7 @@ export function useSessionBootstrap({
       if (typeof window !== 'undefined'
           && typeof import.meta !== 'undefined'
           && import.meta.env && import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.log('[Farroway Session] repair', r.actions, r.snapshot);
       }
     } catch { /* never propagate repair errors */ }
@@ -224,7 +224,7 @@ export function useSessionBootstrap({
   useEffect(() => {
     if (typeof import.meta === 'undefined' || !import.meta.env || !import.meta.env.DEV) return;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[Farroway Session]', {
         userId: user && (user.id || user.userId),
         farmsCount: Array.isArray(farms) ? farms.length : null,

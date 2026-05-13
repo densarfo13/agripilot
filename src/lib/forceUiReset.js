@@ -226,17 +226,17 @@ const SHAPED_LOCAL_KEYS = Object.freeze([
 // for backwards-compat with existing dashboards.
 function _stampVersion() {
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[Farroway] Active UI build:', FARROWAY_BUILD_VERSION);
     // Runtime integration stamp (May 2026 §14) — emitted after
     // the premium-primitives circular import fix landed.
-    // eslint-disable-next-line no-console
+     
     console.log('[Farroway] Runtime integration stable');
     // Soft Ochre platform stamp (May 2026 platform-refactor pass) —
     // single line so QA can grep the deployed build to confirm the
     // ochre system is actually serving. ISO timestamp resolves at
     // module load so the same value travels with the bundle.
-    // eslint-disable-next-line no-console
+     
     console.log(
       '[Farroway] Soft Ochre platform build active:',
       FARROWAY_BUILD_VERSION,
@@ -251,9 +251,9 @@ function _stampVersion() {
     // observable effect was the "[Farroway] Pilot readiness build
     // active" console log, which is already in consoleFilter's
     // deny patterns as a regression guard.
-    // eslint-disable-next-line no-console
+     
     console.log('Farroway Build:', FARROWAY_BUILD_VERSION);
-    // eslint-disable-next-line no-console
+     
     console.log('Farroway UI version:', FARROWAY_UI_VERSION);
   } catch { /* swallow */ }
 }
@@ -310,7 +310,7 @@ export function ensureUiVersion() {
   } catch { storedSeq = NaN; }
   if (Number.isFinite(storedSeq) && storedSeq > FARROWAY_BUILD_SEQUENCE) {
     try {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         '[Farroway] Stale bundle detected (in-bundle seq '
         + FARROWAY_BUILD_SEQUENCE + ' < stored seq ' + storedSeq + '). '
@@ -324,7 +324,7 @@ export function ensureUiVersion() {
   // Version mismatch (older stored → newer bundle) → run the reset.
   _resetInFlight = true;
   try {
-    // eslint-disable-next-line no-console
+     
     console.warn(
       '[Farroway] UI version changed (' + String(stored)
       + ' → ' + FARROWAY_UI_VERSION + '). Clearing cached client state.'
@@ -380,7 +380,7 @@ export function validateLocalStorageShapes() {
   }
   if (removed > 0) {
     try {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         '[Farroway] cleared ' + removed
         + ' malformed localStorage entr' + (removed === 1 ? 'y' : 'ies')
@@ -429,7 +429,7 @@ function _clearLegacyHomeFlags() {
     }
     if (removed > 0) {
       try {
-        // eslint-disable-next-line no-console
+         
         console.log('[FARROWAY_HOME_FLAGS] cleared ' + removed
           + ' legacy Home flag' + (removed === 1 ? '' : 's'));
       } catch { /* swallow */ }
@@ -454,7 +454,7 @@ export function killServiceWorkerAndCaches() {
         if (!Array.isArray(regs)) return;
         regs.forEach((r) => { try { r.unregister(); } catch { /* tolerate */ } });
         try {
-          // eslint-disable-next-line no-console
+           
           console.log('Service workers unregistered:', regs.length);
         } catch { /* swallow */ }
       }).catch(() => { /* tolerate */ });
@@ -475,7 +475,7 @@ export function killServiceWorkerAndCaches() {
           try { caches.delete(k); dropped += 1; } catch { /* tolerate */ }
         });
         try {
-          // eslint-disable-next-line no-console
+           
           console.log('Cache cleanup complete (' + dropped + ' deleted)');
         } catch { /* swallow */ }
       }).catch(() => { /* tolerate */ });

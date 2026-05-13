@@ -156,7 +156,7 @@ export default function FastFlow() {
   useEffect(() => {
     try { trackEvent('onboarding_started', { draftVersion: 2 }); }
     catch { /* swallow */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
   useEffect(() => {
     try {

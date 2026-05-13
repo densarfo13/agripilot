@@ -120,7 +120,7 @@ export function recordGpsRegion({ country, stateCode }) {
  */
 export async function detectRegionViaGps({ geocoder, timeoutMs = 7000 } = {}) {
   if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-    // eslint-disable-next-line no-console
+     
     console.warn(
       '[farroway] detectRegionViaGps is deprecated — use productionDetectFn() instead.',
     );

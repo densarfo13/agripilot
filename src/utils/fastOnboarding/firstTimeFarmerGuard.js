@@ -74,7 +74,7 @@ export function warnFirstTimeRoutingRegression(reason, details = {}) {
   if (typeof window === 'undefined') return;
   const env = (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) || 'development';
   if (env === 'production') return;
-  // eslint-disable-next-line no-console
+   
   console.warn(
     '[farroway.firstTimeRouting]',
     reason,

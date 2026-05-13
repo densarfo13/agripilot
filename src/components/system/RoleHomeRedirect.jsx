@@ -99,7 +99,7 @@ export default function RoleHomeRedirect() {
   if (_samePath(primary, here)) {
     if (!_samePath(fallback, here)) {
       try {
-        // eslint-disable-next-line no-console
+         
         console.warn(
           '[Farroway] RoleHomeRedirect: primary home "'
           + primary + '" equals current path; using fallback "'
@@ -113,7 +113,7 @@ export default function RoleHomeRedirect() {
     // the "always paint SOMETHING" guarantee for the blank-
     // screen failsafe.
     try {
-      // eslint-disable-next-line no-console
+       
       console.error(
         '[Farroway] RoleHomeRedirect: both primary and fallback '
         + 'home paths equal current path "' + here + '". '

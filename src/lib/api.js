@@ -16,7 +16,7 @@ try {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
     if (typeof globalThis !== 'undefined' && !globalThis.__farrowayApiBaseLogged) {
       globalThis.__farrowayApiBaseLogged = true;
-      // eslint-disable-next-line no-console
+       
       console.log('[FARROWAY_API] base validated', { base: API_BASE || '(same-origin)' });
     }
   }
@@ -154,7 +154,7 @@ function _markSessionDead() {
   // because the event is operationally expected — a normal user
   // hitting their access-token expiry is not a warning condition.
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[FARROWAY_AUTH] session expired');
   } catch { /* never throw from a diagnostic */ }
   _emitSessionExpired();
@@ -182,7 +182,7 @@ export function clearSessionDead() {
 function _devLog(...args) {
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.log(...args);
     }
   } catch { /* swallow */ }

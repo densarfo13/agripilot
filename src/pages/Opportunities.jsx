@@ -101,7 +101,7 @@ export default function Opportunities() {
       status:       i.status || INTEREST_STATUS.INTERESTED,
       updatedAt:    i.updatedAt || i.createdAt || 0,
     })).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [farmerId]);
 
   // Fire FUNDING_OPPORTUNITY_VIEWED once + FUNDING_MATCH_SHOWN

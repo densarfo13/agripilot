@@ -162,7 +162,7 @@ export default function useFarrowayGuidance({
         intel,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [intel, weather, farm, profile, doneToday]);
 }
 

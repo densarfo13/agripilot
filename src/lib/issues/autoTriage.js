@@ -137,7 +137,7 @@ export function pickOfficer({ issue, registry = [], activeCountsByOfficer = {} }
       best = o; bestScore = score; bestIdx = i;
     }
   }
-  // eslint-disable-next-line no-unused-vars
+   
   return bestIdx >= 0 && bestScore > 0 ? best : null;
 }
 

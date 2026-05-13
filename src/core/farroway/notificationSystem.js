@@ -69,7 +69,7 @@ function showBrowserNotification(message) {
   try {
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
-    /* eslint-disable no-new */
+     
     new Notification('Farroway', { body: message });
   } catch { /* never propagate */ }
 }

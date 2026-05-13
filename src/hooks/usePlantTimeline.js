@@ -71,7 +71,7 @@ export default function usePlantTimeline(recentLimit = 10) {
 
   const recent = useMemo(() => {
     try { return getRecentEntries(recentLimit); } catch { return entries.slice(0, recentLimit); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [entries, recentLimit]);
 
   const flags = useMemo(() => {

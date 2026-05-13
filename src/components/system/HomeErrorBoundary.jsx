@@ -59,7 +59,7 @@ export default class HomeErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     // Single greppable line. No PII; just route + message.
     try {
-      // eslint-disable-next-line no-console
+       
       console.error(
         '[FARROWAY_HOME_CRASH]',
         _currentPath(),

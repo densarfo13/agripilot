@@ -94,7 +94,7 @@ export class FeatureShell extends Component {
 
       // Warn in dev — no-op in production.
       if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.warn(`[FeatureShell:${featureName}] Feature crashed:`, err?.message);
       }
     } catch { /* never block */ }

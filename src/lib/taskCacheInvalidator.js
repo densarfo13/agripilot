@@ -59,7 +59,7 @@ const TASK_CACHE_KEYS = Object.freeze([
  */
 export function enforceTaskApiOnly() {
   // Always log so engineers can confirm the enforcement fired.
-  try { console.log('Task source = API ONLY'); }                        // eslint-disable-line no-console
+  try { console.log('Task source = API ONLY'); }                         
   catch { /* swallow */ }
 
   if (typeof localStorage === 'undefined') {

@@ -50,7 +50,7 @@ export default class RouteErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     const route = String(this.props.routeName || 'unknown');
     try {
-      // eslint-disable-next-line no-console
+       
       console.error('[FARROWAY_CRASH][' + route + '_route_error]',
         error && error.message ? error.message : error,
         info && info.componentStack ? info.componentStack.slice(0, 500) : '');

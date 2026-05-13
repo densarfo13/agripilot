@@ -112,7 +112,7 @@ export default function FarmerDashboardPage() {
     if (bootDeadlineRef.current) clearTimeout(bootDeadlineRef.current);
     bootDeadlineRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
-      // eslint-disable-next-line no-console
+       
       console.error('[Farroway] dashboard load timeout — forcing loading=false');
       setLoading(false);
       setProfileError((prev) => prev
@@ -164,7 +164,7 @@ export default function FarmerDashboardPage() {
         // painting the console red on every fresh install.
         const handledStatus = status === 401 || status === 403 || status === 404;
         if (!handledStatus && !aborted) {
-          // eslint-disable-next-line no-console
+           
           console.error('[Farroway] dashboard bootstrap failed', err);
         }
 
@@ -312,7 +312,7 @@ export default function FarmerDashboardPage() {
           setShowOnboarding(true);
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
+         
         console.error('[Farroway] dashboard bootstrap failed', err);
         // do NOT show onboarding on fetchProfiles failure — preserve loading state
         if (aliveRef.current && !_fromCache) {
@@ -325,7 +325,7 @@ export default function FarmerDashboardPage() {
       try { fetchReferral(); } catch { /* noop */ }
       try { trackEvent('dashboard_viewed'); } catch { /* noop */ }
     } catch (err) {
-      // eslint-disable-next-line no-console
+       
       console.error('[Farroway] dashboard bootstrap failed', err);
       if (!aliveRef.current) return;
       setProfileError('Failed to load account. Please refresh or login again.');
@@ -337,7 +337,7 @@ export default function FarmerDashboardPage() {
       }
       if (aliveRef.current) setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [navigate, fetchProfiles, fetchReferral, trackEvent, user, _fromCache]);
 
   // Retry entry point bound to the error-card button.

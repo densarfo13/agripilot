@@ -510,7 +510,7 @@ export default function FastOnboarding() {
     // no-throw no-op when geolocation is unsupported / denied,
     // so this can run unconditionally on every mount.
     try { requestLocation(); } catch { /* swallow */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const isGarden = experience === 'garden';

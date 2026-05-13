@@ -200,7 +200,7 @@ export default function FastOnboardingRoute() {
     } catch (err) {
       // Even if save fails, still navigate to Home — the fast flow
       // already persisted locally and progressive onboarding can retry.
-      // eslint-disable-next-line no-console
+       
       console.warn('[farroway.fastOnboarding] profile save failed:', err?.message || err);
     } finally {
       navigate('/dashboard', { replace: true });

@@ -159,7 +159,7 @@ function collectFarmers(reports) {
  */
 export function detectOutbreaks({
   issues          = [],
-  regionProfiles  = {},             // eslint-disable-line no-unused-vars
+  regionProfiles  = {},              
   timeWindowDays  = 7,
   mediumThreshold = 3,
   highThreshold   = 5,

@@ -449,7 +449,7 @@ function _logMissingOnce(path) {
     const key = String(path || '');
     if (_missingPathSeen.has(key)) return;
     _missingPathSeen.add(key);
-    // eslint-disable-next-line no-console
+     
     console.warn('[realVisuals] missing or invalid asset path:', key);
   } catch { /* never throw from a diagnostic */ }
 }

@@ -72,7 +72,7 @@ export function logMissingTranslation({ key, lang, surface = '' } = {}) {
   // 1. Dev console.
   if (isDev()) {
     try {
-      // eslint-disable-next-line no-console
+       
       console.warn('[i18n missing]', `${key} (lang=${lang})`,
         surface ? `via ${surface}` : '');
     } catch { /* swallow */ }

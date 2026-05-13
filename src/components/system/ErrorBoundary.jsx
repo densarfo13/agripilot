@@ -76,7 +76,7 @@ export default class SystemErrorBoundary extends React.Component {
 
     // Greppable console line for ops.
     try {
-      // eslint-disable-next-line no-console
+       
       console.error('[FARROWAY_CRASH][system-boundary]',
         error && error.message ? error.message : error,
         _currentPath());

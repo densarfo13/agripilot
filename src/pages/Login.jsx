@@ -139,7 +139,7 @@ export default function Login() {
   // order every render. Single greppable line per session.
   useEffect(() => {
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('Hooks stable check: V2Login mounted');
     } catch { /* swallow */ }
   }, []);

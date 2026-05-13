@@ -156,7 +156,7 @@ export function runStateMigration() {
   } catch { storedSeq = NaN; }
   if (Number.isFinite(storedSeq) && storedSeq > CURRENT_STATE_SEQUENCE) {
     try {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         '[Farroway] State migration skipped: stale bundle '
         + '(in-bundle seq ' + CURRENT_STATE_SEQUENCE

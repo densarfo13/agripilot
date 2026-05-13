@@ -167,14 +167,14 @@ function _hadRecentScan(completions) {
  */
 export function generateEngagementPlan({
   plant,
-  country,         // eslint-disable-line no-unused-vars
-  region,          // eslint-disable-line no-unused-vars
+  country,          
+  region,           
   stage,
   plantingStatus,
   weather = null,
   farmerType = null,
   completions = null,
-  todayISO,        // eslint-disable-line no-unused-vars
+  todayISO,         
   limit = MAX_TASKS,
 } = {}) {
   const cap = Math.max(MIN_TASKS, Math.min(MAX_TASKS, Number(limit) || MAX_TASKS));

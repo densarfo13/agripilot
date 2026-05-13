@@ -49,7 +49,7 @@ export function useDecisionEngineSnapshot({
       if (aliveRef.current) setLoading(false);
       inFlight.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [enabled, body, effectiveFetcher]);
 
   useEffect(() => {

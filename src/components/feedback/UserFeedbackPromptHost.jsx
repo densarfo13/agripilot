@@ -100,7 +100,7 @@ export default function UserFeedbackPromptHost() {
     // location.pathname listed so a route change while the host
     // is mounted re-evaluates the setup-path guard for any new
     // request events that arrive afterwards.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [active, location?.pathname]);
 
   if (!active) return null;

@@ -159,7 +159,7 @@ export function initSentry() {
   if (inDev && !devOptIn) {
     _dsnPresent = false;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('[Sentry] disabled in dev (set VITE_SENTRY_ENABLE_DEV=1 to opt in).');
     } catch { /* swallow */ }
     return false;
@@ -170,7 +170,7 @@ export function initSentry() {
     _dsnPresent = false;
     try {
       if (inDev) {
-        // eslint-disable-next-line no-console
+         
         console.log('[Sentry] disabled (no VITE_SENTRY_DSN set).');
       }
     } catch { /* swallow */ }
@@ -279,7 +279,7 @@ export function initSentry() {
     });
     _dsnPresent = true;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log(`[Sentry] active — ${_readEnvironment()}${_replayEnabled ? ' + replay' : ''}`);
     } catch { /* swallow */ }
     return true;

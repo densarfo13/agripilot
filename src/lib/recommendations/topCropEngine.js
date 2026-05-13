@@ -356,7 +356,7 @@ export function recommendTopCrops(rawContext = {}) {
   if (typeof process !== 'undefined'
       && process.env && process.env.NODE_ENV !== 'production') {
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('TOP_CROP_RECOMMENDATION', {
         language: rawContext.language || null,
         context: ctx,

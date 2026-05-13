@@ -69,7 +69,7 @@ function _warnEventsBadRequestOnce(name) {
   if (_eventsBadRequestWarned) return;
   _eventsBadRequestWarned = true;
   try {
-    // eslint-disable-next-line no-console
+     
     console.warn(
       '[Farroway] POST /api/events returned 400 for "'
       + (typeof name === 'string' ? name : 'unknown')
@@ -704,7 +704,7 @@ export default function App() {
     };
     const cleanup = installSafeOnlineSync({ taskSender });
     return cleanup;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   useEffect(() => {

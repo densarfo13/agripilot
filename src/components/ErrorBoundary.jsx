@@ -173,7 +173,7 @@ export default class ErrorBoundary extends React.Component {
     // threw without dev tools open. Single line, no PII, safe
     // for production console drains.
     try {
-      // eslint-disable-next-line no-console
+       
       console.error(
         'Route crash:',
         _currentPath(),

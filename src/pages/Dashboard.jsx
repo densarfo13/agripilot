@@ -203,15 +203,15 @@ export default function Dashboard() {
         // Progress all read from the same useFarmerLoop pipeline.
         const taskSource = 'useFarmerLoop()';
         const liveTask   = loop.task || loop.activeTask || null;
-        // eslint-disable-next-line no-console
+         
         console.log('Today task source:', taskSource);
-        // eslint-disable-next-line no-console
+         
         console.log('Today task:', liveTask && (liveTask.title || liveTask.todayTaskTitle));
-        // eslint-disable-next-line no-console
+         
         console.log('[Farroway Home] farm:', loop.profile || null);
-        // eslint-disable-next-line no-console
+         
         console.log('[Farroway Home] task:', liveTask);
-        // eslint-disable-next-line no-console
+         
         console.log('[Farroway Home] weather:', loop.weather || null);
       }
     } catch { /* never throw from a diagnostic */ }
@@ -263,7 +263,7 @@ export default function Dashboard() {
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(msg));
       }
     } catch { /* voice errors are non-blocking */ }
-  }, [isBasic, profile, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isBasic, profile, t]);  
 
   // ─── Farm-scoped data loading (RULE 5+6: lazy + online-only) ────
   // Separate from task load for performance (spec §5).
@@ -1058,7 +1058,7 @@ export default function Dashboard() {
   // To revert: delete the new return above and this comment,
   // then restore the return below. Rollup tree-shakes this
   // block in production — it does NOT ship to end users.
-  // eslint-disable-next-line no-unreachable
+   
   return (
     <div style={S.page}>
       <div style={S.container}>

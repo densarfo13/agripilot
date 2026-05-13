@@ -64,10 +64,10 @@ function weatherSecondary(weather) {
  */
 export function getReturnTrigger({
   stage           = null,
-  crop            = null,        // eslint-disable-line no-unused-vars
+  crop            = null,         
   weather         = null,
-  cycleStartedAt  = null,        // eslint-disable-line no-unused-vars
-  now             = Date.now(),  // eslint-disable-line no-unused-vars
+  cycleStartedAt  = null,         
+  now             = Date.now(),   
 } = {}) {
   const stageKey = lower(stage);
   const stageRow = STAGE_TRIGGERS[stageKey] || STAGE_TRIGGERS.mid_growth;

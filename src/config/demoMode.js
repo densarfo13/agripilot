@@ -21,7 +21,7 @@
 // falls back to process.env for server-side / test contexts.
 function readEnvFlag() {
   try {
-    // eslint-disable-next-line no-undef
+     
     if (typeof import.meta !== 'undefined' && import.meta.env) {
       const v = import.meta.env.VITE_DEMO_MODE;
       if (v === '1' || v === 'true') return true;

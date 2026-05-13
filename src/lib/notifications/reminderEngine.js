@@ -364,7 +364,7 @@ export function sendBrowserNotification({ title, body, tag } = {}) {
   if (typeof Notification === 'undefined') return 'unsupported';
   if (Notification.permission !== 'granted') return 'skipped';
   try {
-    // eslint-disable-next-line no-new
+     
     new Notification(String(title), {
       body: body ? String(body) : undefined,
       tag:  tag   ? String(tag)  : undefined,

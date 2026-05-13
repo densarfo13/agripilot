@@ -132,7 +132,7 @@ export function useRenderWatchdog(opts = {}) {
 
         // Diagnostic log (dev only).
         if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
-          // eslint-disable-next-line no-console
+           
           console.warn(
             `[useRenderWatchdog] Blank render detected at "${route}" — `
             + `container=${containerId || 'root'}, `

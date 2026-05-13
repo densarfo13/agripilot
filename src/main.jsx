@@ -52,7 +52,7 @@ killServiceWorkerAndCaches();
 // greppable line per boot — engineers can confirm the
 // restored bundle is live without opening DevTools deeply.
 try {
-  // eslint-disable-next-line no-console
+   
   console.log('Farroway restored stable pilot v1');
 } catch { /* swallow */ }
 
@@ -64,7 +64,7 @@ try {
 // ISO timestamp so the screenshot the operator captures is
 // self-dating.
 try {
-  /* eslint-disable no-console */
+   
   // Late-import the version string so the marker stays valid
   // even if forceUiReset's export shape changes underneath us.
   // Dynamic require is intentional: keeps this file's import
@@ -78,7 +78,7 @@ try {
       );
     } catch { /* swallow */ }
   }).catch(() => { /* swallow */ });
-  /* eslint-enable no-console */
+   
 } catch { /* never throw from startup logger */ }
 
 // Service Worker + Cache Purge Pass spec §7 — dev-only build
@@ -88,7 +88,7 @@ try {
 // falls back to a per-build epoch fingerprint locally).
 try {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
+     
     console.log('[FARROWAY_BUILD] version:', FARROWAY_COMMIT_SHA);
   }
 } catch { /* never throw from startup logger */ }
@@ -147,12 +147,12 @@ try {
     }
     // Spec-literal log line — engineers grep for the exact
     // string in user-supplied DevTools captures.
-    // eslint-disable-next-line no-console
+     
     console.log(DISABLE_EVENTS
       ? 'Event system disabled'
       : 'Event sync disabled for pilot');
     if (dropped > 0) {
-      // eslint-disable-next-line no-console
+       
       console.log(
         '[Farroway] Cleared ' + dropped
         + ' stale event-queue key(s) at boot.'
@@ -166,7 +166,7 @@ try {
 // are suppressed in production. The fallback handler still
 // runs unconditionally; only the console echo is gated.
 if (import.meta.env.DEV) try {
-  // eslint-disable-next-line no-console
+   
   console.log('Farmer profile fallback active');
 } catch { /* swallow */ }
 
@@ -186,7 +186,7 @@ try {
       // DEV-only echo (production cleanup §11) — the default
       // is still applied unconditionally; only the log is gated.
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
+         
         console.log('[Farroway] userType defaulted to "farmer" (was missing).');
       }
     }
@@ -221,7 +221,7 @@ try {
     // reader (CompleteSetupCard logic, dashboard gating,
     // legacy guards) treats the user as already-onboarded.
     try { setOnboardingComplete(); } catch { /* swallow */ }
-    // eslint-disable-next-line no-console
+     
     console.log(
       '[Farroway] Pilot bypass active — cleared '
       + droppedLoopKeys + ' loop-state key(s); stamped onboarding flag.'
@@ -275,11 +275,11 @@ try {
         migrationRan = v === '1' || v === 'true';
       }
     } catch { migrationRan = false; }
-    // eslint-disable-next-line no-console
+     
     console.log('Auth exists:', Boolean(authExists));
-    // eslint-disable-next-line no-console
+     
     console.log('Onboarding complete:', Boolean(onboardingComplete));
-    // eslint-disable-next-line no-console
+     
     console.log('Migration ran:', Boolean(migrationRan));
     // CHECK 5 — list every localStorage key currently on the
     // device. DEV ONLY (production cleanup spec §11: no verbose
@@ -293,7 +293,7 @@ try {
           const k = localStorage.key(i);
           if (typeof k === 'string') keys.push(k);
         }
-        // eslint-disable-next-line no-console
+         
         console.log('LocalStorage keys:', keys);
       }
     } catch { /* swallow */ }
@@ -311,14 +311,14 @@ try {
                   || parsed.region || parsed.country || null;
         }
       } catch { location = null; }
-      // eslint-disable-next-line no-console
+       
       console.log('Location:', location ? '<set>' : null);
       // User type — read from the dedicated key the
       // useUserMode hook persists to.
       let userType = null;
       try { userType = localStorage.getItem('farroway_user_type'); }
       catch { userType = null; }
-      // eslint-disable-next-line no-console
+       
       console.log('User type:', userType || '(not set)');
     } catch { /* never throw from a diagnostic */ }
   }
@@ -334,24 +334,24 @@ if (import.meta.env.DEV) try {
   // (forceUiReset.js was imported above; the constants are
   // available via that import). We resolve them lazily inside
   // a try block so a missing constant doesn't crash the boot.
-  // eslint-disable-next-line no-console
+   
   console.log('───────────────  Farroway deployment  ───────────────');
-  // eslint-disable-next-line no-console
+   
   console.log('App version:',
     (typeof window !== 'undefined' && window.__FARROWAY_BUILD_VERSION)
       || '(see "Farroway Build:" line above)');
-  // eslint-disable-next-line no-console
+   
   console.log('Current URL:',
     typeof window !== 'undefined' && window.location ? window.location.href : '(no window)');
   // Phase-2 spec line — pathname-only so it's grep-friendly
   // when a user reports an issue from a deep link.
-  // eslint-disable-next-line no-console
+   
   console.log('Current route:',
     typeof window !== 'undefined' && window.location ? window.location.pathname : '(no window)');
-  // eslint-disable-next-line no-console
+   
   console.log('Environment:',
     (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE) || 'production');
-  // eslint-disable-next-line no-console
+   
   console.log('API base URL:',
     (typeof import.meta !== 'undefined' && import.meta.env
       && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL))
@@ -364,10 +364,10 @@ if (import.meta.env.DEV) try {
         flags[k] = import.meta.env[k];
       }
     }
-    // eslint-disable-next-line no-console
+     
     console.log('Feature flags:', Object.keys(flags).length > 0 ? flags : '(none from import.meta.env)');
   }
-  // eslint-disable-next-line no-console
+   
   console.log('───────────────────────────────────────────────────────');
 } catch { /* never throw from a diagnostic */ }
 
@@ -521,7 +521,7 @@ try {
     const apiBase = import.meta.env.VITE_API_BASE_URL
       || import.meta.env.VITE_API_URL
       || '(same-origin /api)';
-    // eslint-disable-next-line no-console
+     
     console.log(
       '[Farroway Runtime] Active production paths verified',
       { home: '/home', scan: '/scan', apiBase },
@@ -529,7 +529,7 @@ try {
     // Dev-only diagnostic: print which API base the bundle is wired
     // to. Helps spot a stale .env.production after a deploy without
     // having to dig into the network panel.
-    // eslint-disable-next-line no-console
+     
     console.log('[Farroway API Base]', apiBase);
   }
 } catch { /* swallow — never block boot on diagnostics */ }
@@ -558,13 +558,13 @@ try {
     // Dev still gets it so a developer chasing a stale .env can see
     // the validated base immediately.
     if (import.meta.env && import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.log('[Farroway API Base Validated]', {
         base: baseStr || '(same-origin)',
       });
     }
   } else {
-    // eslint-disable-next-line no-console
+     
     console.warn('[Farroway API Base Validated] INVALID base — '
       + 'expected empty, "/" path, or http(s):// URL. Got:', baseStr);
   }
@@ -575,7 +575,7 @@ try {
 // browsers running the same deploy see the same value. A mismatch
 // across visitors is a deterministic "stale cache" signal.
 try {
-  // eslint-disable-next-line no-console
+   
   console.log('[Farroway Frontend Build]', FARROWAY_BUILD_INFO);
   installBuildMarker();
 } catch { /* swallow — never block boot on diagnostics */ }
@@ -599,7 +599,7 @@ try {
           ? root.innerText.trim().length
           : 0;
         if (childCount === 0 || textLen === 0) {
-          // eslint-disable-next-line no-console
+           
           console.error(
             '[FARROWAY_BLANK] No content rendered after 4s.',
             'path:', window.location && window.location.pathname,

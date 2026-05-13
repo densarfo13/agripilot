@@ -116,9 +116,9 @@ export function useSmartTask({
     if (!task || !task.title || lastTitleRef.current === task.title) return;
     lastTitleRef.current = task.title;
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('Today task source:', task.source);
-      // eslint-disable-next-line no-console
+       
       console.log('Today task:', task.title);
     } catch { /* never throw from a diagnostic */ }
   }, [task]);
@@ -202,9 +202,9 @@ export function useBestTask(input) {
       }
     }
     try {
-      // eslint-disable-next-line no-console
+       
       console.log('Today task source:', best.source);
-      // eslint-disable-next-line no-console
+       
       console.log('Today task:', best.title);
     } catch { /* swallow */ }
   }, [result, o.crop, o.cropStage, o.weather, o.userType]);

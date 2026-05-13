@@ -98,7 +98,7 @@ export async function logTaskEvent(eventName, meta) {
   } catch { /* analytics module unavailable — diagnostic only */ }
   // Fallback: console-log so engineers can grep DevTools.
   try {
-    // eslint-disable-next-line no-console
+     
     console.log('[' + eventName + ']', payload);
   } catch { /* swallow */ }
 }

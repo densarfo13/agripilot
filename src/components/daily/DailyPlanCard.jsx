@@ -430,7 +430,7 @@ export default function DailyPlanCard({
     } catch { /* swallow */ }
     return () => { cancelled = true; };
     // Only run on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Retention Loop spec \u00a75 \u2014 adaptive home banner. Behaviour

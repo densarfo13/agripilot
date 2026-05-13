@@ -70,7 +70,7 @@ export async function recomputeAll(farmId) {
     .map((r, i) => r.status === 'rejected' ? { i, reason: r.reason?.message } : null)
     .filter(Boolean);
   if (errors.length > 0) {
-    // eslint-disable-next-line no-console
+     
     console.warn('[farroway.recompute] partial failure', errors);
   }
   return { ok: errors.length === 0, errors };
@@ -211,7 +211,7 @@ export async function changeLanguage(lang, i18n, farmStore) {
     }
   } catch (err) {
     // Don't block; we still try to recompute.
-    // eslint-disable-next-line no-console
+     
     console.warn('[farroway.lang] change failed', err?.message);
   }
   const currentFarm = farmStore && farmStore.currentFarm;

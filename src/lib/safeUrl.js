@@ -36,7 +36,7 @@ function _logBadOnce(value) {
     const key = String(value);
     if (_badInputsSeen.has(key)) return;
     _badInputsSeen.add(key);
-    // eslint-disable-next-line no-console
+     
     console.warn('[safeUrl] rejected invalid input:', value);
   } catch { /* never throw from a diagnostic */ }
 }

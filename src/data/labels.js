@@ -207,14 +207,14 @@ export function saveLabel(input) {
     // src/data/labels.js and src/ai/learningEngine.js
     // (learningEngine imports labels for the LABEL_KIND /
     // CONFIDENCE enums).
-    /* eslint-disable global-require */
+     
     import('../ai/learningEngine.js')
       .then((mod) => {
         try { mod.learnFromLabel(record); }
         catch { /* swallow */ }
       })
       .catch(() => { /* swallow */ });
-    /* eslint-enable global-require */
+     
   } catch { /* swallow */ }
 
   return record;
