@@ -210,7 +210,10 @@ async function refreshOnce() {
   }
   _refreshAttempts      += 1;
   _lastRefreshAttemptAt  = Date.now();
-  _devLog('[Auth Refresh Start]', { attempt: _refreshAttempts });
+  // Canonical refresh log format (Final Auth Refresh Stability
+  // §7). Dev-only via _devLog; production builds drop the entire
+  // body via import.meta.env.DEV constant folding.
+  _devLog('[REFRESH_START]', { attempt: _refreshAttempts });
   _refreshPromise = fetch(`${API_BASE}/api/v2/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
@@ -230,16 +233,16 @@ export async function refreshSession() {
   try {
     const res = await refreshOnce();
     if (res.ok) {
-      _devLog('[Auth Refresh Success]');
+      _devLog('[REFRESH_SUCCESS]');
       _sessionDead = false;
       _resetRefreshCounter();
       return true;
     }
-    try { console.warn('[Auth Refresh Failed]', { status: res.status }); } catch { /* swallow */ }
+    try { console.warn('[REFRESH_FAILED]', { status: res.status }); } catch { /* swallow */ }
     _markSessionDead();
     return false;
   } catch (err) {
-    try { console.warn('[Auth Refresh Failed]', { reason: err && err.message }); } catch { /* swallow */ }
+    try { console.warn('[REFRESH_FAILED]', { reason: err && err.message }); } catch { /* swallow */ }
     _markSessionDead();
     return false;
   }
@@ -294,7 +297,7 @@ async function request(path, options = {}, allowRefresh = true) {
     try {
       const refreshRes = await refreshOnce();
       if (refreshRes.ok) {
-        _devLog('[Auth Refresh Success]');
+        _devLog('[REFRESH_SUCCESS]');
         _sessionDead = false;
         _resetRefreshCounter();
         return request(path, options, false);
@@ -305,12 +308,12 @@ async function request(path, options = {}, allowRefresh = true) {
       // circuits in the gate above — no more cascade. Use the
       // helper that emits the farroway:session_expired event so
       // AuthContext can pick up the hard-logout signal.
-      try { console.warn('[Auth Refresh Failed]', { status: refreshRes.status }); } catch { /* swallow */ }
+      try { console.warn('[REFRESH_FAILED]', { status: refreshRes.status }); } catch { /* swallow */ }
       _markSessionDead();
     } catch (refreshErr) {
       // Refresh network failure — same outcome: short-circuit
       // future authenticated calls until the user signs in.
-      try { console.warn('[Auth Refresh Failed]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
+      try { console.warn('[REFRESH_FAILED]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
       _markSessionDead();
     }
   }

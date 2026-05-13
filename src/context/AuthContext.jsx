@@ -9,6 +9,7 @@ import {
   verifyMfaCode as verifyMfaCodeApi,
   requestPhoneOtp as requestPhoneOtpApi,
   verifyPhoneOtp as verifyPhoneOtpApi,
+  SESSION_EXPIRED_EVENT,
 } from '../lib/api.js';
 import { withBootstrapTimeout } from '../utils/withBootstrapTimeout.js';
 import { logActivity } from '../services/activityLogger.js';
@@ -63,11 +64,112 @@ function clearSessionCache() {
   try { localStorage.removeItem(SESSION_CACHE_KEY); } catch { /* ignore */ }
 }
 
+// ─── Canonical auth state machine ──────────────────────────────
+// Four states; every transition emits a single [AUTH_STATE] log
+// in dev so the state graph is visible in DevTools without
+// inspecting React internals.
+//
+//   loading        — bootstrap in flight (initial mount + post-
+//                    logout transient).
+//   authenticated  — server confirmed user OR cached offline
+//                    session valid.
+//   expired        — refresh failed; auth state cleared; redirect
+//                    to /login pending. Components that render off
+//                    `user` MUST treat this as unauthenticated.
+//   anonymous      — no session, no cache, never logged in (or
+//                    explicit logout completed).
+export const AUTH_STATE = Object.freeze({
+  LOADING:       'loading',
+  AUTHENTICATED: 'authenticated',
+  EXPIRED:       'expired',
+  ANONYMOUS:     'anonymous',
+});
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   // Track whether current session is from cache (offline) vs verified server
   const [isOfflineSession, setIsOfflineSession] = useState(false);
+  // Explicit 'expired' marker — flipped to true when api.js
+  // dispatches SESSION_EXPIRED_EVENT. The redirect-to-/login
+  // effect resets this back to false once the user is at /login.
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  // ─── Session-expired listener (auth refresh stability §1) ───
+  // api.js dispatches SESSION_EXPIRED_EVENT exactly once per
+  // dead-state transition. We respond by:
+  //   1. Logging the state change ([AUTH_CLEARED]).
+  //   2. Clearing the React user state immediately so any
+  //      component reading `user` stops rendering logged-in UI
+  //      (prevents Home from rendering fallback content with
+  //      stale auth — §5).
+  //   3. Clearing the localStorage session cache so isLoggedIn()
+  //      reflects reality.
+  //   4. Flipping sessionExpired=true so the derived authState
+  //      surfaces EXPIRED and the redirect effect can act.
+  //   5. Marking the explicit-logout flag so the next bootstrap
+  //      doesn't try to repair the dead session.
+  // The window-level redirect happens in a separate effect so
+  // SSR / test environments without window don't crash here.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onExpired = () => {
+      try {
+        // eslint-disable-next-line no-console
+        if (import.meta.env.DEV) {
+          console.log('[AUTH_CLEARED]', { reason: 'refresh_failed' });
+        }
+      } catch { /* swallow */ }
+      try { setUser(null); } catch { /* swallow */ }
+      try { setIsOfflineSession(false); } catch { /* swallow */ }
+      try { clearSessionCache(); } catch { /* swallow */ }
+      try { localStorage.removeItem('farroway_token'); } catch { /* swallow */ }
+      try { localStorage.removeItem('farroway_user'); } catch { /* swallow */ }
+      try { markExplicitLogout(); } catch { /* swallow */ }
+      setSessionExpired(true);
+    };
+    try { window.addEventListener(SESSION_EXPIRED_EVENT, onExpired); }
+    catch { /* swallow */ }
+    return () => {
+      try { window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired); }
+      catch { /* swallow */ }
+    };
+  }, []);
+
+  // Redirect-to-/login effect — fires once when sessionExpired
+  // flips true, AND only when we are NOT already at /login (so a
+  // session that expires while the user is already on /login
+  // doesn't trigger a redundant navigation).
+  useEffect(() => {
+    if (!sessionExpired) return;
+    if (typeof window === 'undefined' || !window.location) return;
+    try {
+      if (window.location.pathname !== '/login') {
+        window.location.replace('/login');
+      }
+    } catch { /* swallow */ }
+  }, [sessionExpired]);
+
+  // Derived canonical authState. Computed each render — no
+  // useState shadow copy that could drift out of sync with the
+  // underlying inputs.
+  const authState = (() => {
+    if (sessionExpired) return AUTH_STATE.EXPIRED;
+    if (authLoading)    return AUTH_STATE.LOADING;
+    if (user)           return AUTH_STATE.AUTHENTICATED;
+    return AUTH_STATE.ANONYMOUS;
+  })();
+
+  // [AUTH_STATE] transition log — dev only, fires once per
+  // change so the state graph is greppable in DevTools.
+  useEffect(() => {
+    try {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log('[AUTH_STATE]', authState);
+      }
+    } catch { /* swallow */ }
+  }, [authState]);
 
   // Mirror the resolved auth user into the Sentry session tag.
   // Non-PII fields only (id, role, country); see src/lib/sentry.js
@@ -508,8 +610,17 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       authLoading,
-      isAuthenticated: !!user,
+      isAuthenticated: !!user && !sessionExpired,
       isOfflineSession,
+      // Canonical state machine — see AUTH_STATE constants above.
+      // Consumers that want to render based on the four canonical
+      // states (loading / authenticated / expired / anonymous)
+      // should read this instead of deriving from `user` +
+      // `authLoading` themselves. Home and other guarded surfaces
+      // can check authState === AUTH_STATE.EXPIRED to short-
+      // circuit fallback content rendering during the redirect
+      // window.
+      authState,
       login,
       completeMfaChallenge,
       register,
@@ -520,7 +631,7 @@ export function AuthProvider({ children }) {
       verifyPhoneOtp,
       continueOffline,
     }),
-    [user, authLoading, isOfflineSession],
+    [user, authLoading, isOfflineSession, sessionExpired, authState],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

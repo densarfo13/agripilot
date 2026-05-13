@@ -193,7 +193,7 @@ describe('lib/api.js session-dead cool-down', () => {
 // dispatchable session-expired window event for AuthContext.
 
 describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
-  it('logs [Auth Refresh Start] when refreshOnce begins', async () => {
+  it('logs [REFRESH_START] when refreshOnce begins', async () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     globalThis.fetch = vi.fn()
@@ -202,12 +202,12 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
-    const startCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Start]'));
+    const startCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[REFRESH_START]'));
     expect(startCalls.length).toBe(1);
     logSpy.mockRestore();
   });
 
-  it('logs [Auth Refresh Success] when refresh returns ok', async () => {
+  it('logs [REFRESH_SUCCESS] when refresh returns ok', async () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     globalThis.fetch = vi.fn()
@@ -216,12 +216,12 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ user: { id: 'u1' } }) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser();
-    const successCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Success]'));
+    const successCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[REFRESH_SUCCESS]'));
     expect(successCalls.length).toBeGreaterThanOrEqual(1);
     logSpy.mockRestore();
   });
 
-  it('logs [Auth Refresh Failed] (as warn) when refresh returns non-ok', async () => {
+  it('logs [REFRESH_FAILED] (as warn) when refresh returns non-ok', async () => {
     // The Failed log was promoted from console.log → console.warn in
     // the URL-runtime-elimination pass (commit 759d5d37) per the
     // spec rule "Keep only warn/error/fatal logs in production."
@@ -233,7 +233,7 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
       .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
-    const failedCalls = warnSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Failed]'));
+    const failedCalls = warnSpy.mock.calls.filter((c) => String(c[0]).includes('[REFRESH_FAILED]'));
     expect(failedCalls.length).toBeGreaterThanOrEqual(1);
     warnSpy.mockRestore();
   });
