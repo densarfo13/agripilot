@@ -168,6 +168,34 @@ const RESET_KEYS = Object.freeze([
   'farroway_offline_state',
 ]);
 
+// Legacy Home-variant flags. NONE of these are read by any
+// current source file — confirmed by grep audit. They are listed
+// here as a DEFENSIVE purge per the Home Persistence Cleanup
+// spec §2: any user whose browser still has one of these from a
+// past prototype gets it wiped on the next boot. Cleared on
+// EVERY boot (not just version-bump) via _clearLegacyHomeFlags().
+//
+// Auth + token + farmId + preferences keys are NOT in this list
+// — they remain untouched per spec §2's preservation rule.
+const LEGACY_HOME_FLAGS = Object.freeze([
+  'safeMode',
+  'fallbackHome',
+  'simpleHome',
+  'legacyHome',
+  'homeVariant',
+  'gardenFallback',
+  'reducedHome',
+  'setupHome',
+  'onboardingMode',
+  'farroway_safe_mode',
+  'farroway_fallback_home',
+  'farroway_simple_home',
+  'farroway_legacy_home',
+  'farroway_home_variant',
+  'farroway_garden_fallback',
+  'farroway_reduced_home',
+]);
+
 // JSON-encoded localStorage keys whose shape we validate at boot.
 // Each entry: { key, kind } where kind ∈ {'object','array'}. If a
 // value is present but doesn't parse, OR doesn't match the expected
@@ -380,7 +408,44 @@ export function validateLocalStorageShapes() {
  * Safe to call BEFORE React mounts and BEFORE ensureUiVersion's
  * own cleanup — the operations are idempotent.
  */
+// Defensive purge of legacy Home-variant flags. Fires on every
+// boot from killServiceWorkerAndCaches() so any user whose
+// browser carries a stale flag from a past prototype gets it
+// wiped without needing a version bump. Safe to call repeatedly
+// — localStorage.removeItem on a non-existent key is a no-op.
+//
+// Auth + token + farm + preference keys are NEVER touched here.
+function _clearLegacyHomeFlags() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    let removed = 0;
+    for (const k of LEGACY_HOME_FLAGS) {
+      try {
+        if (localStorage.getItem(k) != null) {
+          localStorage.removeItem(k);
+          removed += 1;
+        }
+      } catch { /* per-key tolerate */ }
+    }
+    if (removed > 0) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log('[FARROWAY_HOME_FLAGS] cleared ' + removed
+          + ' legacy Home flag' + (removed === 1 ? '' : 's'));
+      } catch { /* swallow */ }
+    }
+  } catch { /* swallow */ }
+}
+
 export function killServiceWorkerAndCaches() {
+  // Home Persistence Cleanup §2 — purge legacy Home-variant
+  // flags BEFORE the SW unregister + cache drop so the boot
+  // sequence is: clear stale flags → drop caches → unregister
+  // workers. Order matters: if a flag was set by a stale SW,
+  // the unregister might race the read; clearing flags first
+  // guarantees the canonical Home renders with a clean slate.
+  _clearLegacyHomeFlags();
+
   // SW unregister — fire and forget. Logs the count per spec
   // wording so engineers can confirm the cleanup fired.
   try {

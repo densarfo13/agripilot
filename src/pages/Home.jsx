@@ -272,6 +272,21 @@ export default function Home() {
           console.log('[HOME_VERIFIED]', window.location.pathname);
         }
       } catch { /* swallow */ }
+      // Home Persistence Cleanup §4 — canonical Home version marker.
+      // Stamped on window so DevTools + ops can read the canonical
+      // version of the Home implementation in any session. The
+      // accompanying [FARROWAY_HOME_ACTIVE] log is the greppable
+      // signal that the canonical-farmer-home-v1 implementation is
+      // the one mounted. Both fire in dev AND production so this
+      // is the long-running source of truth for "which Home is
+      // active on this device".
+      try {
+        if (typeof window !== 'undefined') {
+          window.__FARROWAY_HOME_VERSION__ = 'canonical-farmer-home-v1';
+        }
+      } catch { /* swallow */ }
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_HOME_ACTIVE] canonical-farmer-home-v1');
     } catch { /* swallow */ }
   }, []);
 
