@@ -244,10 +244,34 @@ export function setUserTemperatureUnitPreference(preference) {
  * Test helper — clears the in-memory session cache so tests can
  * reset between cases.
  */
+/**
+ * getPreferredTemperatureUnit — spec-named alias for the
+ * Production Readiness §6 contract. Same semantics as
+ * resolveTemperatureUnit() but returns ONLY the 'C'|'F' string
+ * (not the { unit, source } envelope), to match the spec's
+ * documented call signature:
+ *
+ *   getPreferredTemperatureUnit({
+ *     userPreference, countryCode, locale,
+ *   }) → 'C' | 'F'
+ *
+ * Both functions share the same priority ladder:
+ *   1. explicit user preference
+ *   2. country default (US / Liberia / Myanmar → F; else C)
+ *   3. fallback C
+ */
+export function getPreferredTemperatureUnit(input) {
+  const result = resolveTemperatureUnit(input);
+  return (result && result.unit) || 'C';
+}
+
 export function _resetUnitCache() {
   _sessionUnit = null;
   _sessionSource = null;
 }
+
+// Export the spec-named alias in the default object too.
+const _exportedSpecAlias = { getPreferredTemperatureUnit };
 
 export default {
   resolveTemperatureUnit,
