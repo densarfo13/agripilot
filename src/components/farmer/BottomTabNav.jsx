@@ -255,15 +255,16 @@ export default function BottomTabNav() {
             key={tab.key}
             type="button"
             onClick={() => {
-              // Dev-only nav trace per Active Home + Nav Wiring
-              // Audit spec §5. Fires once per Home tab tap so an
-              // auditor can verify in DevTools that the Home
-              // button targets /home (the canonical Home path).
-              // Production builds tree-shake the entire branch.
+              // Permanent Farmer Home Nav Enforcement spec §6 —
+              // dev-only Home-tap trace. Fires once per Home tab
+              // tap so auditors can verify in DevTools that the
+              // Home button targets /home (the canonical Home
+              // path). Production builds tree-shake the entire
+              // branch via import.meta.env.DEV.
               try {
                 if (import.meta.env.DEV && tab.key === 'home') {
                   // eslint-disable-next-line no-console
-                  console.log('[FARROWAY_NAV_TRACE] HOME_NAV_TARGET:', tab.path);
+                  console.log('[FARROWAY_NAV] Home target', tab.path);
                 }
               } catch { /* swallow */ }
               navigate(tab.path);

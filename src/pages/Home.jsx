@@ -199,17 +199,18 @@ export default function Home() {
     try {
       const farm = _resolveFarm();
       // eslint-disable-next-line no-console
-      console.log('[FARROWAY_HOME] ACTUAL_CANONICAL_HOME_ACTIVE', {
+      // Permanent Farmer Home Nav Enforcement spec §6 — single
+      // canonical mount marker. Fires once per page load, dev
+      // only. Format is the spec-exact wording; replaced the
+      // previous ACTUAL_CANONICAL_HOME_ACTIVE +
+      // [FARROWAY_HOME_TRACE] pair so DevTools shows ONE
+      // unambiguous line per Home mount.
+      console.log('[FARROWAY_HOME] canonical farmer home mounted', {
         path:        _safePath(),
         userType:    _resolveUserType(),
         hasLocation: !!_resolveLocationLabel(farm),
         hasFarm:     !!farm,
       });
-      // Active Home + Nav Wiring Audit spec §5 — explicit file
-      // path marker so auditors can confirm in DevTools which
-      // source file is rendering Home.
-      // eslint-disable-next-line no-console
-      console.log('[FARROWAY_HOME_TRACE] ACTIVE_HOME:', 'src/pages/Home.jsx');
     } catch { /* swallow */ }
   }, []);
 

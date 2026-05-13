@@ -627,24 +627,20 @@ function ProtectedRoute({ children, allowSetup }) {
     // ProtectedRoute we can set state directly here too.
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
-  // Farmer-role users get the canonical Home render. The earlier
-  // BYPASS_SETUP_FOR_PILOT conditional + the legacy
-  // FarmerDashboardPage fallback branch were removed in the May
-  // 2026 permanent-PilotHome-removal pass: Home is the only
-  // canonical home for farmers, no flag gates it, no parallel V1
-  // dashboard exists. Home itself has no context dependencies, no
-  // automatic redirects, and always paints visible UI even when
-  // location / farm / crop / weather are missing.
+  // Farmer-role users: "/" is a pure redirect to "/home" per the
+  // Permanent Farmer Home Nav Enforcement spec §2. The canonical
+  // farmer Home renders ONLY at "/home" via the dedicated route
+  // at App.jsx:1134-1138 (SafeRouteShell → Home). Rendering Home
+  // directly at "/" duplicated the entry point + made route
+  // audits confusing — the new contract is one canonical URL.
+  //
+  // The setup-flow branch (allowSetup === true) still threads
+  // children through LegacyProfileProvider so /v1/profile/setup
+  // and the other in-setup routes keep their shared profile
+  // state.
   if (user?.role === 'farmer') {
-    // Wrap farmer routes in legacy ProfileProvider for shared profile state.
     if (allowSetup) return <LegacyProfileProvider>{children}</LegacyProfileProvider>;
-    return (
-      <LegacyProfileProvider>
-        <HomeErrorBoundary>
-          <Home />
-        </HomeErrorBoundary>
-      </LegacyProfileProvider>
-    );
+    return <Navigate to="/home" replace />;
   }
   return children;
 }
@@ -1131,9 +1127,21 @@ export default function App() {
               farmer.homePath='/home'). The role-redirect helper is
               still imported for the "/" entry below where staff/
               admin still benefit from the role-aware landing. */}
+          {/* Canonical farmer Home — the SINGLE entry point per
+              Permanent Farmer Home Nav Enforcement spec §1.
+              Bottom-nav Home tab routes here directly; "/"
+              redirects here; legacy "/dashboard" redirects
+              here (via RoleAwareDashboard for non-NGO roles).
+              HomeErrorBoundary wraps Home so any render throw
+              shows a calm fallback instead of crashing the
+              shell — was previously only wrapped on the "/"
+              path; now wraps the canonical path so both
+              entry vectors benefit from the boundary. */}
           <Route path="/home"   element={
             <SafeRouteShell routeName="home" loadingMs={5000}>
-              <Home />
+              <HomeErrorBoundary>
+                <Home />
+              </HomeErrorBoundary>
             </SafeRouteShell>
           } />
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
