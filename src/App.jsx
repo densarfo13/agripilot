@@ -1137,13 +1137,10 @@ export default function App() {
               shell — was previously only wrapped on the "/"
               path; now wraps the canonical path so both
               entry vectors benefit from the boundary. */}
-          <Route path="/home"   element={
-            <SafeRouteShell routeName="home" loadingMs={5000}>
-              <HomeErrorBoundary>
-                <Home />
-              </HomeErrorBoundary>
-            </SafeRouteShell>
-          } />
+          {/* /home moved INSIDE V2ProtectedLayout (see below) per
+              Home Bottom Nav Visibility Fix — the previous mount
+              point HERE was outside the layout shell, so the
+              canonical Home rendered without a BottomTabNav. */}
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
@@ -1235,6 +1232,22 @@ export default function App() {
             <Route path="/onboarding/minimal" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/onboarding/farmer-type" element={<Navigate to="/onboarding/fast" replace />} />
             <Route path="/onboarding/starter-guide" element={<Navigate to="/onboarding/fast" replace />} />
+            {/* Canonical Farmer Home — Home Bottom Nav Visibility
+                Fix: /home MUST be a child of V2ProtectedLayout so
+                the persistent BottomTabNav (rendered by the
+                layout's Outlet siblings) wraps the canonical Home.
+                Previous mount was at line ~1140 OUTSIDE this
+                layout, which is why Home rendered without a
+                bottom nav on production. Now sits next to
+                /dashboard, /tasks, /my-farm as canonical
+                authenticated routes. */}
+            <Route path="/home" element={
+              <SafeRouteShell routeName="home" loadingMs={5000}>
+                <HomeErrorBoundary>
+                  <Home />
+                </HomeErrorBoundary>
+              </SafeRouteShell>
+            } />
             <Route path="/dashboard" element={
               <SafeRouteShell routeName="dashboard">
                 <DashboardErrorBoundary>

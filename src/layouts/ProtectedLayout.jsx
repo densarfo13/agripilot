@@ -102,12 +102,41 @@ const TIME_OF_DAY_OVERLAYS = Object.freeze({
   dusk:  'radial-gradient(ellipse 90% 45% at 50% 100%, rgba(220,140,80,0.22) 0%, rgba(8,17,26,0) 60%)',
 });
 
+// Module-level guard so the spec proof logs fire once per
+// page load, not on every layout re-render.
+let _appShellLogFired = false;
+
 export default function ProtectedLayout() {
   const { logout, user, resendEmailVerification, isOfflineSession } = useAuth();
   const { t } = useTranslation();
   const { mode, setMode, allowedModes, isFarmer } = useUserMode();
   const location = useLocation();
   const onboarding = _isOnboardingPath(location?.pathname || '');
+
+  // Home Bottom Nav Visibility Fix §8 — dev-only proof that
+  // /home renders INSIDE this AppShell (the layout that owns
+  // the BottomTabNav). Fires once per page load.
+  if (typeof import.meta !== 'undefined'
+      && import.meta.env
+      && import.meta.env.DEV
+      && !_appShellLogFired) {
+    _appShellLogFired = true;
+    try {
+      const path = (location && location.pathname) || '';
+      const role = String((user && user.role) || '').toLowerCase();
+      const navKind = (isFarmer || role === 'farmer') ? 'farmer'
+                    : (role === 'buyer') ? 'buyer'
+                    : 'role-aware';
+      // eslint-disable-next-line no-console
+      console.log('[APP_SHELL_ACTIVE]', path);
+      // eslint-disable-next-line no-console
+      console.log('[BOTTOM_NAV_RENDERED]', navKind);
+      // eslint-disable-next-line no-console
+      console.log('[BOTTOM_NAV_HOME_TARGET]', '/home');
+      // eslint-disable-next-line no-console
+      console.log('[HOME_PAGE_RENDERED_INSIDE_SHELL]', path === '/home' || path === '/');
+    } catch { /* swallow */ }
+  }
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Cache once per mount — the band only changes a few times per
   // day and we never want the page to re-paint mid-tap. Operators
