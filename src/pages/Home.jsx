@@ -35,6 +35,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate }           from 'react-router-dom';
+// Permanent Farmer Home spec §7 — dev-only assertion that this
+// is the ONLY component rendering the canonical Home. Throws in
+// development if any other file ever tries to register itself as
+// Home; tree-shaken in production via the import.meta.env.DEV
+// gate inside the guard.
+import { assertCanonicalHome }   from '../lib/canonicalHomeGuard.js';
 import { useLiveWeather }        from '../hooks/useLiveWeather.js';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
@@ -172,6 +178,15 @@ function _resolveLocationLabel(farm) {
 
 // ─── Component ──────────────────────────────────────────────────
 export default function Home() {
+  // Permanent Farmer Home spec §7 — dev-only assertion. If any
+  // future commit reintroduces a parallel Home component (a new
+  // PilotHome / GardenHome / SimpleHome / etc.) and that component
+  // doesn't call this guard with its own import.meta.url, the
+  // canonical Home stays correct. If a parallel component DOES
+  // call this guard, the assertion throws with a clear message.
+  // Production no-ops via the DEV gate inside the guard.
+  assertCanonicalHome(import.meta.url);
+
   const navigate = useNavigate();
   const [now] = useState(() => new Date());
 
@@ -205,8 +220,13 @@ export default function Home() {
       // previous ACTUAL_CANONICAL_HOME_ACTIVE +
       // [FARROWAY_HOME_TRACE] pair so DevTools shows ONE
       // unambiguous line per Home mount.
-      console.log('[FARROWAY_HOME] canonical farmer home mounted', {
-        path:        _safePath(),
+      // Permanent Farmer Home spec §6 — canonical mount marker.
+      // Single greppable line per page load (module-level guard
+      // dedupes HMR / Suspense re-mounts). The path is included
+      // so DevTools shows both that Home rendered AND the URL it
+      // rendered at — useful for confirming /home is the only
+      // path mounting Home in any given session.
+      console.log('[CANONICAL_HOME]', _safePath(), {
         userType:    _resolveUserType(),
         hasLocation: !!_resolveLocationLabel(farm),
         hasFarm:     !!farm,
