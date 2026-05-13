@@ -190,3 +190,15 @@ export function useWeather() {
   if (!context) throw new Error('useWeather must be used within WeatherProvider');
   return context;
 }
+
+// useWeatherOptional — never-throw variant. Returns the canonical
+// { weather: null, ... } envelope when no WeatherProvider is in
+// the tree, so consumers that may render outside the provider
+// (offline pages, error boundaries, page-shells before provider
+// mounts) can read the context without a try/catch wrapper —
+// the prior pattern triggered a rules-of-hooks violation because
+// hooks-in-callbacks (the try/catch wrapper) are illegal.
+export function useWeatherOptional() {
+  const context = useContext(WeatherContext);
+  return context || { weather: null };
+}

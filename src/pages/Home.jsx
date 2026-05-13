@@ -786,7 +786,7 @@ export default function Home() {
              "Use my location" prompt with a single CTA. Daily
              insight + primary action live in the bottom band. */}
         <FeatureShell name="immersive-home-hero" silent>
-          <_ImmersiveBound
+          <ImmersiveBound
             mode={experienceMode}
             entity={experienceEntity || local.farm}
             crop={local.crop && local.crop !== 'crop' ? local.crop : null}
@@ -852,7 +852,10 @@ export default function Home() {
 // inside Home.jsx avoids hoisting hook lifecycle out of the
 // page-level component AND prevents a second satellite call from
 // firing elsewhere — there's now a single subscriber.
-function _ImmersiveBound({
+// Rename: leading-underscore component names trip rules-of-hooks
+// because ESLint requires React component names to start with an
+// uppercase letter. Renamed `_ImmersiveBound` → `ImmersiveBound`.
+function ImmersiveBound({
   mode, entity, crop, weather, location, taskDone, primaryGuidance,
   onUseMyLocation, onPrimaryAction,
 }) {

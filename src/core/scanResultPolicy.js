@@ -398,7 +398,6 @@ export function enforceHighTrustScanResult(raw, ctx = {}) {
   // (getSafeFallback is a leaf module).
   if (recommendedActions.length === 0) {
     try {
-      // eslint-disable-next-line import/no-dynamic-require
       const fb = _SCAN_FALLBACK_ACTIONS;
       recommendedActions = fb.slice();
     } catch { /* swallow \u2014 leaf-module import shouldn't fail */ }

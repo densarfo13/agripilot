@@ -23,7 +23,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeather } from '../context/WeatherContext.jsx';
+import { useWeatherOptional } from '../context/WeatherContext.jsx';
 import { tSafe } from '../i18n/tSafe.js';
 import {
   PremiumPage, PremiumPageHero,
@@ -70,10 +70,11 @@ function _resolveMode() {
 
 export default function SoilScanPage() {
   const navigate = useNavigate();
-  const { weather } = (() => {
-    try { return useWeather(); }
-    catch { return { weather: null }; }
-  })();
+  // useWeatherOptional returns { weather: null } when no
+  // WeatherProvider — replaces the prior try/catch IIFE wrap
+  // that violated rules-of-hooks (hooks can't be inside
+  // callbacks).
+  const { weather } = useWeatherOptional();
   const fileInputRef = useRef(null);
 
   const [imageUrl, setImageUrl] = useState('');

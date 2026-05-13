@@ -69,7 +69,6 @@ export default function VoiceButton({
     // Behavior tracking — gated. Lazy import keeps the analytics
     // store out of the bundle when the flag is off at build time.
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       import('../config/features.js').then((cfg) => {
         if (cfg.isFeatureEnabled?.('behaviorTracking')) {
           import('../analytics/analyticsStore.js')

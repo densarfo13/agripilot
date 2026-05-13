@@ -181,7 +181,6 @@ export function getAreaUnitLabel(unitKey, language) {
   if (!key) return '';
   // Lazy require to avoid a circular import at module load.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getUnitLabel } = require('../../config/onboardingLabels.js');
     // Existing helper uses UPPERCASE canonical; map our lowercase
     // back to its shape for the lookup.
