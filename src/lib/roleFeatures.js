@@ -52,7 +52,13 @@ const FARMER_FEATURES = Object.freeze({
   // Fallback if /home doesn't render for any reason.
   fallbackHomePath: '/dashboard',
   navTabs: Object.freeze([
-    Object.freeze({ key: 'home',     path: '/dashboard', label: 'Home' }),
+    // Bottom Nav Home Source-of-Truth §2 — Home must target
+    // /home, never /dashboard. RoleAwareBottomNav already self-
+    // hides for farmer so this config is effectively dormant,
+    // but keeping `/dashboard` here was a future-regression
+    // hazard if anything else ever consumed the FARMER nav
+    // config. Aligned with the canonical farmer/BottomTabNav.
+    Object.freeze({ key: 'home',     path: '/home',      label: 'Home' }),
     Object.freeze({ key: 'grow',     path: '/my-grow',   label: 'My Grow' }),
     Object.freeze({ key: 'tasks',    path: '/tasks',     label: 'Tasks' }),
     Object.freeze({ key: 'progress', path: '/progress',  label: 'Progress' }),

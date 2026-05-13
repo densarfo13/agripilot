@@ -48,7 +48,12 @@
  */
 
 const FARM_ITEMS = [
-  { key: 'nav.home',     fallback: 'Home',       path: '/dashboard',         icon: '\uD83C\uDFE1', testid: 'tab-home' },
+  // Bottom Nav Home Source-of-Truth \u00A72 \u2014 Home must target /home.
+  // The prior /dashboard target relied on RoleAwareDashboard's
+  // Navigate-to-/home redirect for farmers; routing direct
+  // skips the hop and keeps the canonical Home URL visible
+  // from tap to mount.
+  { key: 'nav.home',     fallback: 'Home',       path: '/home',              icon: '\uD83C\uDFE1', testid: 'tab-home' },
   { key: 'nav.myFarm',   fallback: 'My Farm',    path: '/my-farm',           icon: '\uD83C\uDF3E', testid: 'tab-farm' },
   { key: 'nav.tasks',    fallback: 'Tasks',      path: '/tasks',             icon: '\u2705',       testid: 'tab-tasks' },
   { key: 'nav.progress', fallback: 'Progress',   path: '/progress',          icon: '\uD83D\uDCC8', testid: 'tab-progress' },
@@ -64,7 +69,7 @@ const FARM_ITEMS = [
 // /scan flow is reachable when the `scanDetection` feature
 // flag is on without changing this static table.
 const _BACKYARD_ITEMS_BASE = [
-  { key: 'nav.home',      fallback: 'Home',       path: '/dashboard', icon: '\uD83C\uDFE1', testid: 'tab-home' },
+  { key: 'nav.home',      fallback: 'Home',       path: '/home',      icon: '\uD83C\uDFE1', testid: 'tab-home' },
   { key: 'nav.myGarden',  fallback: 'My Garden',  path: '/my-farm',   icon: '\uD83C\uDF31', testid: 'tab-farm' },
   { key: 'nav.tasks',     fallback: 'Tasks',      path: '/tasks',     icon: '\u2705',       testid: 'tab-tasks' },
   { key: 'nav.progress',  fallback: 'Progress',   path: '/progress',  icon: '\uD83D\uDCC8', testid: 'tab-progress' },
@@ -76,7 +81,7 @@ const GENERIC_ITEMS = [
   // Generic experience: subset of farm items, sell hidden until
   // we know the region opens marketplace flow. Mirrors §10
   // (Sell flow visibility) — backyard + generic both hide Sell.
-  { key: 'nav.home',     fallback: 'Home',     path: '/dashboard', icon: '\uD83C\uDFE1', testid: 'tab-home' },
+  { key: 'nav.home',     fallback: 'Home',     path: '/home',      icon: '\uD83C\uDFE1', testid: 'tab-home' },
   { key: 'nav.myFarm',   fallback: 'My Farm',  path: '/my-farm',   icon: '\uD83C\uDF3E', testid: 'tab-farm' },
   { key: 'nav.tasks',    fallback: 'Tasks',    path: '/tasks',     icon: '\u2705',       testid: 'tab-tasks' },
   { key: 'nav.progress', fallback: 'Progress', path: '/progress',  icon: '\uD83D\uDCC8', testid: 'tab-progress' },

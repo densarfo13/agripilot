@@ -270,6 +270,12 @@ export default function Home() {
         if (typeof window !== 'undefined' && window.location) {
           // eslint-disable-next-line no-console
           console.log('[HOME_VERIFIED]', window.location.pathname);
+          // Bottom Nav Home Source-of-Truth §7 — spec-exact marker
+          // proving the canonical Home mounted via the canonical
+          // /home route. Production-visible so ops can correlate
+          // a Home tap (BottomNav log) with the mount (this log).
+          // eslint-disable-next-line no-console
+          console.log('[FARROWAY_HOME_MOUNTED_FROM_ROUTE]', window.location.pathname);
         }
       } catch { /* swallow */ }
       // Home Persistence Cleanup §4 — canonical Home version marker.

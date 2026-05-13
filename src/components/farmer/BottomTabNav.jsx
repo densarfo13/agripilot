@@ -127,6 +127,10 @@ function _isSetupPath(pathname) {
   return false;
 }
 
+// Module-level guard so the [FARROWAY_NAV_ACTIVE_FILE] marker
+// fires once per page load, not once per BottomTabNav re-mount.
+let _bottomNavActiveFileLogged = false;
+
 export default function BottomTabNav() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -135,6 +139,21 @@ export default function BottomTabNav() {
   // tSafe for every nav label so a missing key shows the visible
   // tab key fallback rather than humanised English.
   useTranslation();
+
+  // Bottom Nav Home Source-of-Truth §7 — dev-only marker proving
+  // this is the active BottomNav file. Fires once per page load
+  // (module-level guard); production builds tree-shake the body
+  // via import.meta.env.DEV.
+  if (typeof import.meta !== 'undefined'
+      && import.meta.env
+      && import.meta.env.DEV
+      && !_bottomNavActiveFileLogged) {
+    _bottomNavActiveFileLogged = true;
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[FARROWAY_NAV_ACTIVE_FILE]', 'src/components/farmer/BottomTabNav.jsx');
+    } catch { /* swallow */ }
+  }
 
   // ─── Hook-order fix (May 2026 React #300 hardening) ────────
   // ALL hooks (useProfileOrNull, useExperience) MUST run on every
@@ -263,8 +282,13 @@ export default function BottomTabNav() {
               // branch via import.meta.env.DEV.
               try {
                 if (import.meta.env.DEV && tab.key === 'home') {
+                  // Bottom Nav Home Source-of-Truth §7 — spec-exact
+                  // log alongside the prior canonical-home one. Two
+                  // greppable lines, one tap.
                   // eslint-disable-next-line no-console
                   console.log('[FARROWAY_NAV] farmer home target: ' + tab.path);
+                  // eslint-disable-next-line no-console
+                  console.log('[FARROWAY_NAV_HOME_TARGET]', tab.path);
                 }
               } catch { /* swallow */ }
               navigate(tab.path);
