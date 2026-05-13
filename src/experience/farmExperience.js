@@ -21,7 +21,7 @@ export function getFarmDailyPlan(_context = {}) {
     actions: Object.freeze([
       Object.freeze({
         id: 'farm.checkCrop',
-        title: 'Check your crop today',
+        title: 'Walk your field and check crop health',
         reason: 'Early inspection helps catch pest or disease issues before they spread.',
         urgency: 'medium',
         actionType: 'inspect',

@@ -41,7 +41,7 @@ import { useMemo } from 'react';
 import { decideWeatherAction } from '../lib/weatherActionEngine.js';
 
 const DEFAULT_TASK = Object.freeze({
-  title:   'Check your crop today',
+  title:   'Walk your field and check crop health',
   reason:  'Dry weather can stress plants. Water only if the soil feels dry.',
   urgency: 'medium',
   time:    '5 mins',

@@ -266,16 +266,20 @@ export default function ImmersiveHomeHero({
           : null,
       };
     }
-    // No real guidance — render the spec's canonical safe-default
-    // (Canonical Home State Fix §7): "Check your crop today" +
-    // "A quick check helps catch problems early." + Scan CTA.
-    // Matches the FALLBACK_TASK across contextEngine /
-    // taskIntelligence / weatherTaskEngine so the hero text
-    // doesn't drift from the task-list fallback.
+    // No real guidance — render the Farmer Home canonical empty
+    // state (Content Upgrade §3): a confident daily-rhythm tile
+    // that reads like the real Home, not a fallback. Title carries
+    // the farm context, the line tells the user WHY the check
+    // matters, and the CTA names the action ("Start farm check")
+    // instead of leaving the user wondering what tapping Scan
+    // would do.
     return {
-      title: tSafe('hero.safeDefault.title', 'Check your crop today'),
-      line:  tSafe('hero.safeDefault.line',  'A quick check helps catch problems early.'),
-      cta:   tSafe('hero.scan', 'Scan'),
+      title: tSafe('hero.farmerDefault.title', 'Today on your farm'),
+      line:  tSafe(
+        'hero.farmerDefault.line',
+        'A quick field check helps catch problems early.',
+      ),
+      cta:   tSafe('hero.farmerDefault.cta', 'Start farm check'),
       bestTime: null,
       estimatedMinutes: null,
     };

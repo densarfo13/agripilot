@@ -353,7 +353,7 @@ export default function Home() {
     try { return getWeatherTask(weather); }
     catch {
       return {
-        title:  'Check your crop today',
+        title:  'Walk your field and check crop health',
         reason: 'Water only if soil feels dry.',
         cta:    'Mark as done',
       };

@@ -336,7 +336,7 @@ function _tomorrowPreview(ctx, w) {
 function _fallbackPlan(type) {
   const isGarden = type === 'garden';
   return {
-    priority: isGarden ? 'Check your plant today' : 'Check your crop today',
+    priority: isGarden ? 'Check your plant today' : 'Walk your field and check crop health',
     reason:   isGarden
       ? 'A short check-in keeps small problems from growing.'
       : 'A short walk through the field catches issues early.',
