@@ -221,17 +221,21 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
     logSpy.mockRestore();
   });
 
-  it('logs [Auth Refresh Failed] when refresh returns non-ok', async () => {
+  it('logs [Auth Refresh Failed] (as warn) when refresh returns non-ok', async () => {
+    // The Failed log was promoted from console.log → console.warn in
+    // the URL-runtime-elimination pass (commit 759d5d37) per the
+    // spec rule "Keep only warn/error/fatal logs in production."
+    // Spy on warn now to match the corrected behavior.
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
-    const failedCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Failed]'));
+    const failedCalls = warnSpy.mock.calls.filter((c) => String(c[0]).includes('[Auth Refresh Failed]'));
     expect(failedCalls.length).toBeGreaterThanOrEqual(1);
-    logSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   it('logs [Auth Loop Prevented] when the _sessionDead gate trips', async () => {
