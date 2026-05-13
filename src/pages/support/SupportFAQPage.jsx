@@ -27,7 +27,7 @@ const FAQ_ENTRIES = [
     items: [
       { key: 'support.faq.scans.use',
         q: 'How do I scan a plant or crop?',
-        a: 'Open Scan from the bottom tab, tap "Open camera," and aim at the leaf or affected area. You can also upload a photo from your gallery if the camera is unavailable.' },
+        a: 'Open Scan from the bottom tab. The camera starts on its own — aim at the leaf or affected area. If the camera does not start, the screen will offer Retry or Upload from gallery.' },
       { key: 'support.faq.scans.accuracy',
         q: 'Is the scan diagnosis guaranteed?',
         a: 'No. Scan results are guidance only. Local agronomy advice may help confirm treatment options.' },
@@ -81,7 +81,7 @@ const FAQ_ENTRIES = [
     items: [
       { key: 'support.faq.camera.black',
         q: 'My camera shows a black screen — what should I do?',
-        a: 'Tap "Retry camera" or "Upload photo." If the issue continues, check that another app isn\'t already using your camera, and that camera permission is on in your browser settings.' },
+        a: 'Tap Retry, or use Upload from gallery to send a photo instead. If the issue continues, check that another app isn\'t already using your camera, and that camera permission is on in your browser settings.' },
       { key: 'support.faq.camera.permission',
         q: 'I denied camera access by accident.',
         a: 'You can still upload a photo. To re-enable the camera, change the permission in your phone or browser settings, then reopen Scan.' },

@@ -6,22 +6,27 @@
  * return. Tracked by the May 2026 React #300 stability spec.
  */
 /**
- * ScanFallback — crash-safe alternate surface for the /scan
- * route.
+ * ScanFallback — crash-safe alternate surface for the /scan route.
  *
  *   <ScanErrorBoundary fallback={<ScanFallback reason="..." />}>
  *     <ScanPage />
  *   </ScanErrorBoundary>
  *
- * What changed (May 2026 §1)
- *   The previous ScanFallback was a static error screen with
- *   Upload + Retry buttons. The new fallback EMBEDS the
- *   SafeCameraSurface so the user lands on a fully-working
- *   scan flow even when the live ScanPage crashed. Camera +
- *   upload + safe-mock result + 4-second timeout are all
- *   handled inside SafeCameraSurface.
+ * Active-runtime canonical-home-replacement pass (May 2026 §4-§6)
+ *   The previous fallback EMBEDDED SafeCameraSurface, which
+ *   rendered a "Ready to scan" / "Open camera" landing card —
+ *   exactly the dual-interface bug the spec calls out. This
+ *   rewrite renders ONLY a minimal calm retry surface:
+ *     • One message: "Couldn't open the camera."
+ *     • Retry button → onRetry()
+ *     • "Upload from gallery" button → opens a gallery-only
+ *        <input type="file" accept="image/*"> (NO `capture` attribute)
+ *     • No landing card. No "Ready to scan". No "Open camera".
  *
- * Reasons supported (back-compat with the previous boundary)
+ *   SafeCameraSurface + CameraScanPage are deleted in the same
+ *   commit since they're the only sources of the banned wording.
+ *
+ * Reasons supported
  *   crash             — ScanErrorBoundary caught a render throw
  *   camera_unavailable
  *   permission_denied
@@ -29,21 +34,26 @@
  *   timeout           — the 3s mount-load timeout in ScanPage
  *   setup_required    — profile has no crop / plant / cropId
  *
- * For setup_required the surface is still a static prompt that
- * routes to /onboarding — there's nothing to scan if the user
- * hasn't told Farroway what crop they have.
- *
  * Strict-rule audit
  *   • Pure presentational. Never throws.
  *   • Inline styles only.
+ *   • Upload input has NO `capture` attribute — gallery only.
+ *   • Stream / camera handlers are NOT shared with upload.
  */
 
-import React, { useCallback } from 'react';
-import SafeCameraSurface from './SafeCameraSurface.jsx';
+import React, { useCallback, useRef } from 'react';
 
 const SETUP_COPY = Object.freeze({
   title: 'Add your crop first',
   body:  'Farroway needs a crop or plant on your farm before we can scan it. Set up your farm and the scan will work.',
+});
+
+const RETRY_COPY = Object.freeze({
+  crash:              { title: 'Camera ran into a problem',  body: 'Tap retry to try again, or upload a photo instead.' },
+  camera_unavailable: { title: 'Camera unavailable',          body: 'Tap retry to try again, or upload a photo instead.' },
+  permission_denied:  { title: 'Camera access is needed',     body: 'Tap retry to grant access, or upload a photo from your gallery.' },
+  unsupported:        { title: 'This browser can\'t open the camera', body: 'Upload a photo from your gallery to keep going.' },
+  timeout:            { title: "Camera didn't start in time", body: 'Tap retry to try again, or upload a photo instead.' },
 });
 
 export default function ScanFallback({
@@ -52,81 +62,98 @@ export default function ScanFallback({
   onUploadFile,
   onSetup,
 }) {
-  // setup_required is a distinct surface — show a clear setup
-  // prompt instead of the camera flow.
   if (reason === 'setup_required') {
-    return (
-      <SetupRequiredCard onSetup={onSetup} />
-    );
+    return <SetupRequiredCard onSetup={onSetup} />;
   }
 
-  // For every other reason (crash / timeout / camera-denied /
-  // unsupported / unavailable), embed the safe camera surface
-  // so the user has a working flow IMMEDIATELY — no extra tap
-  // through an error screen first.
-  const handleResult = useCallback((res) => {
-    // Reuse onUploadFile when caller passed one (legacy
-    // signature). Otherwise no-op — SafeCameraSurface already
-    // showed the result preview.
-    try {
-      if (typeof onUploadFile === 'function' && res && res.photo && res.photo.file) {
-        onUploadFile(res.photo.file);
-      }
-    } catch { /* swallow */ }
-  }, [onUploadFile]);
+  const copy = RETRY_COPY[reason] || RETRY_COPY.crash;
+  const fileInputRef = useRef(null);
 
-  const handleBackHome = useCallback(() => {
+  const handleRetry = useCallback(() => {
     try {
-      if (typeof onRetry === 'function') {
-        onRetry();
-        return;
-      }
+      if (typeof onRetry === 'function') { onRetry(); return; }
       if (typeof window !== 'undefined' && window.location) {
-        window.location.href = '/';
+        window.location.reload();
       }
     } catch { /* swallow */ }
   }, [onRetry]);
 
+  const handleUploadClick = useCallback(() => {
+    try { fileInputRef.current && fileInputRef.current.click(); }
+    catch { /* swallow */ }
+  }, []);
+
+  const handleFile = useCallback((e) => {
+    try {
+      const f = e && e.target && e.target.files && e.target.files[0];
+      if (!f) return;
+      if (typeof onUploadFile === 'function') onUploadFile(f);
+    } catch { /* swallow */ }
+  }, [onUploadFile]);
+
   return (
-    <SafeCameraSurface
-      onResult={handleResult}
-      onBackHome={handleBackHome}
-    />
+    <main style={S.page} data-testid="scan-fallback" data-reason={reason}>
+      <div style={S.card}>
+        <h2 style={S.title}>{copy.title}</h2>
+        <p style={S.body}>{copy.body}</p>
+        <div style={S.row}>
+          <button
+            type="button"
+            onClick={handleRetry}
+            style={S.primaryBtn}
+            data-testid="scan-fallback-retry"
+          >
+            Retry
+          </button>
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            style={S.secondaryBtn}
+            data-testid="scan-fallback-upload"
+          >
+            Upload from gallery
+          </button>
+        </div>
+        {/* Gallery-only — NO `capture` attribute (would force the OS
+            Camera app on iOS Safari, re-introducing the dual-
+            interface bug the canonical-home replacement pass
+            closed). */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFile}
+          data-testid="scan-fallback-file-input"
+        />
+      </div>
+    </main>
   );
 }
-
-// ─── Setup-required sub-surface ─────────────────────────────
 
 function SetupRequiredCard({ onSetup }) {
   const handleSetup = useCallback(() => {
     try {
       if (typeof onSetup === 'function') { onSetup(); return; }
       if (typeof window !== 'undefined' && window.location) {
-        window.location.href = '/my-grow';
+        window.location.href = '/onboarding';
       }
     } catch { /* swallow */ }
   }, [onSetup]);
 
   return (
-    <main
-      style={S.page}
-      data-testid="scan-fallback"
-      data-reason="setup_required"
-    >
+    <main style={S.page} data-testid="scan-fallback" data-reason="setup_required">
       <div style={S.card}>
-        <span aria-hidden="true" style={S.icon}>{'\uD83C\uDF31'}</span>
-        <h1 style={S.title}>{SETUP_COPY.title}</h1>
+        <h2 style={S.title}>{SETUP_COPY.title}</h2>
         <p style={S.body}>{SETUP_COPY.body}</p>
-        <div style={S.btnRow}>
-          <button
-            type="button"
-            onClick={handleSetup}
-            style={S.btnPrimary}
-            data-testid="scan-fallback-setup"
-          >
-            Go to My Farm
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleSetup}
+          style={S.primaryBtn}
+          data-testid="scan-fallback-setup"
+        >
+          Set up my farm
+        </button>
       </div>
     </main>
   );
@@ -134,62 +161,65 @@ function SetupRequiredCard({ onSetup }) {
 
 const S = {
   page: {
-    minHeight: '100vh',
-    background: '#0B1D34',
-    color: '#fff',
-    padding: '24px 16px 96px',
-    boxSizing: 'border-box',
+    minHeight: '100dvh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: '1.25rem',
+    background: '#FFF9F0',
   },
   card: {
+    maxWidth: '24rem',
     width: '100%',
-    maxWidth: '28rem',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 20,
-    padding: '2rem 1.5rem',
-    textAlign: 'center',
+    background: '#FFFFFF',
+    border: '1px solid rgba(36,49,58,0.10)',
+    borderRadius: 14,
+    padding: '1.25rem 1.25rem 1rem',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
     gap: '0.75rem',
-    boxShadow: '0 14px 36px rgba(0,0,0,0.3)',
+    boxShadow: '0 8px 24px -16px rgba(0,0,0,0.20)',
   },
-  icon: { fontSize: 56, lineHeight: 1 },
   title: {
-    margin: '0.5rem 0 0',
-    fontSize: '1.25rem',
+    margin: 0,
+    fontSize: '1.125rem',
     fontWeight: 800,
-    letterSpacing: '-0.01em',
+    color: '#1F2933',
   },
   body: {
-    margin: '0.25rem 0 0',
+    margin: 0,
     fontSize: '0.9375rem',
-    color: 'rgba(255,255,255,0.78)',
+    color: '#667085',
     lineHeight: 1.5,
   },
-  btnRow: {
+  row: {
     display: 'flex',
-    flexWrap: 'wrap',
     gap: '0.5rem',
-    justifyContent: 'center',
-    marginTop: '1rem',
-    width: '100%',
+    flexWrap: 'wrap',
+    marginTop: '0.25rem',
   },
-  btnPrimary: {
-    flex: 1,
-    minWidth: '10rem',
-    minHeight: 48,
-    padding: '0.85rem 1.25rem',
-    border: 'none',
-    borderRadius: 12,
+  primaryBtn: {
+    flex: '1 1 auto',
+    padding: '0.625rem 1rem',
     background: '#C8944D',
     color: '#FFFFFF',
+    border: 'none',
+    borderRadius: 10,
     fontSize: '0.9375rem',
     fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 8px 22px rgba(200,148,77,0.25)',
+    fontFamily: 'inherit',
+  },
+  secondaryBtn: {
+    flex: '1 1 auto',
+    padding: '0.625rem 1rem',
+    background: 'transparent',
+    color: '#1F2933',
+    border: '1px solid rgba(36,49,58,0.18)',
+    borderRadius: 10,
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
   },
 };

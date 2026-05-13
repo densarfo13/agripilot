@@ -258,7 +258,7 @@ export default function ImmersiveHomeHero({
       return {
         title: tSafe(g.title, g.title),
         line:  tSafe(g.message || g.reason || '', g.message || g.reason || ''),
-        cta:   tSafe(g.actionLabel || 'Start check', g.actionLabel || 'Start check'),
+        cta:   tSafe(g.actionLabel || 'Walk the field', g.actionLabel || 'Walk the field'),
         bestTime: _deriveBestTime(w),
         estimatedMinutes: Number.isFinite(Number(g.estimatedMinutes))
           ? Number(g.estimatedMinutes)
@@ -270,7 +270,7 @@ export default function ImmersiveHomeHero({
       line:  isGarden
         ? tSafe('hero.inspectLeavesGarden', 'Inspect leaves and soil in your pots.')
         : tSafe('hero.inspectLeaves', 'Check crop condition and soil moisture today.'),
-      cta:   tSafe('actions.startCheck', 'Start check'),
+      cta:   tSafe('actions.startCheck', 'Walk the field'),
       bestTime: _deriveBestTime(w),
       estimatedMinutes: isGarden ? 3 : 5,
     };

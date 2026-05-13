@@ -164,7 +164,6 @@ export const GARDEN_GUARDED_FILES = Object.freeze([
   // as Farm but the wording must still pass the principles).
   'src/pages/MyFarmPage.jsx',           // /my-grow + /my-farm
   'src/pages/Home.jsx',                 // /home for both modes
-  'src/components/scan/SafeCameraSurface.jsx',
 
   // Active routes enumerated in the spec route audit. Garden mode
   // users land on each of these via the bottom nav (Tasks /
