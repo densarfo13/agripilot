@@ -24,7 +24,11 @@
  *   ever happens — every hero gets a real path.
  */
 
-export const DEFAULT_FARM_IMAGE = '/assets/realism/heroes/africa-farm-atmosphere.jpeg';
+// Sourced from the realism asset registry so check:assets stays
+// satisfied. The constant is exported separately so consumers
+// can import it without pulling the full REALISM_ASSETS tree.
+import { REALISM_ASSETS } from '../lib/realVisuals.jsx';
+export const DEFAULT_FARM_IMAGE = REALISM_ASSETS.heroes.farmDefault;
 
 function _looksRenderable(value) {
   if (typeof value !== 'string') return false;

@@ -16,9 +16,9 @@
  *   Home / Funding / Sell tier even on devices that previously
  *   rendered the SVG flat.
  *
- *   The mapping is keyed by short page identifiers — NOT route
- *   paths — so a future rename of `/today` to `/tasks` etc.
- *   does not require touching this map.
+ *   Every value is sourced from `REALISM_ASSETS` so the
+ *   check:assets script stays satisfied — there are no raw
+ *   `/assets/realism/...` string literals in this file.
  *
  * Strict-rule audit
  *   * Pure data module — no React, no DOM, no storage.
@@ -27,24 +27,25 @@
  *     helper so a typo can never produce a broken-image icon.
  */
 
+import { REALISM_ASSETS } from '../lib/realVisuals.jsx';
 import { safeImage, DEFAULT_FARM_IMAGE } from '../utils/safeImage.js';
 
-// All assets live in /public/assets/realism — they're real
-// jpegs commissioned for the realism library. Each page key
-// maps to a single canonical photo. Where realism has a
-// closer thematic match (scan → close-up leaf), we use it.
+// All assets come from REALISM_ASSETS so check:assets stays
+// satisfied. Each page key maps to a single canonical photo.
+// Where realism has a closer thematic match (scan → close-up
+// leaf), we use it.
 export const PAGE_HERO_IMAGES = Object.freeze({
-  home:     '/assets/realism/heroes/africa-farm-atmosphere.jpeg',
-  tasks:    '/assets/realism/heroes/afrca-sunrise-farm.jpeg',
-  myFarm:   '/assets/realism/farm/IMG_5985.jpeg',
-  progress: '/assets/realism/journal/farm-inspection.jpeg',
-  scan:     '/assets/realism/scan/healthy-leaf.jpeg',
-  funding:  '/assets/realism/heroes/africa-farm-atmosphere.jpeg',
-  sell:     '/assets/realism/journal/IMG_5990.jpeg',
-  journal:  '/assets/realism/journal/greenhouse-work.jpeg',
-  admin:    '/assets/realism/heroes/africa-farm-atmosphere.jpeg',
-  ngo:      '/assets/realism/heroes/afrca-sunrise-farm.jpeg',
-  buyer:    '/assets/realism/journal/IMG_5990.jpeg',
+  home:     REALISM_ASSETS.heroes.farmDefault,
+  tasks:    REALISM_ASSETS.heroes.farmSunrise,
+  myFarm:   REALISM_ASSETS.farm.generic2,
+  progress: REALISM_ASSETS.journal.inspection,
+  scan:     REALISM_ASSETS.scan.healthy,
+  funding:  REALISM_ASSETS.heroes.farmDefault,
+  sell:     REALISM_ASSETS.journal.moment1,
+  journal:  REALISM_ASSETS.journal.greenhouse,
+  admin:    REALISM_ASSETS.heroes.farmDefault,
+  ngo:      REALISM_ASSETS.heroes.farmSunrise,
+  buyer:    REALISM_ASSETS.journal.moment1,
 });
 
 /**
