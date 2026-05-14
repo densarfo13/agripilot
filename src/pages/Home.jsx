@@ -86,6 +86,11 @@ import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 // stays in the codebase for other surfaces that may use it.
 import { FeatureShell }          from '../components/system/FeatureShell.jsx';
 import useExperience             from '../hooks/useExperience.js';
+// Farm State Synchronization Audit — canonical REACTIVE farm
+// context. Replaces Home's stale `useMemo([])` over the inline
+// _resolveFarm helper so adding/switching a farm propagates to
+// Home without a refresh.
+import useFarmContext             from '../hooks/useFarmContext.js';
 // Single recommendation entry point (spec §2). Wires the
 // orchestrator's 7-step priority ladder through the mode adapter
 // (garden drops commercial surfaces + softens wording) and the
@@ -350,22 +355,26 @@ export default function Home() {
     } catch { /* swallow */ }
   }, []);
 
-  // Resolve LOCAL view-model from localStorage. Pure + synchronous.
+  // Resolve LOCAL view-model from the canonical reactive farm
+  // context. `useFarmContext()` re-renders Home on FARM_CREATED /
+  // FARM_UPDATED / FARM_DELETED / LOCATION_UPDATED / CROP_ADDED
+  // events, the experience-switched window event, and cross-tab
+  // localStorage writes — so a farm added in another surface
+  // (or in another tab) appears here immediately.
+  //
+  // The previous implementation memoized over `[]` and called an
+  // inline _resolveFarm() helper, which meant adding a farm
+  // AFTER Home mounted never updated this view-model. That was
+  // the visible "No farm added yet" bug.
+  const farmCtx = useFarmContext();
   const local = useMemo(() => {
-    let userType, farm, crop, locationObj;
-    try {
-      userType    = _resolveUserType();
-      farm        = _resolveFarm();
-      crop        = _resolveCrop(farm);
-      locationObj = _resolveLocationObj(farm);
-    } catch {
-      userType    = 'farmer';
-      farm        = null;
-      crop        = 'crop';
-      locationObj = null;
-    }
+    let userType;
+    try { userType = _resolveUserType(); } catch { userType = 'farmer'; }
+    const farm = (farmCtx && farmCtx.farm) || null;
+    const crop = (farmCtx && farmCtx.crop) || _resolveCrop(farm);
+    const locationObj = (farmCtx && farmCtx.location) || _resolveLocationObj(farm);
     return { userType, farm, crop, locationObj };
-  }, []);
+  }, [farmCtx]);
 
   // ─── Live weather pipeline ───────────────────────────────────
   const { weather, loading: weatherLoading, refetch: refetchWeather } =
@@ -661,22 +670,30 @@ export default function Home() {
       experienceCount = Array.isArray(list) ? list.length : null;
     }
   } catch { /* swallow — show mode-default labels */ }
-  // Fall back to the localStorage farm record so first-run pilot
-  // accounts (one farm, no multi-experience entries yet) still
-  // see a populated card.
-  //
-  // Farm-state hardening — keep the entity + count in lock-step.
-  // Previously the card could render "My New Farm" (from
-  // local.farm fallback) alongside "0 farms" (from xp.farms.length
-  // when the multi-experience store hadn't been seeded yet). Two
-  // different sources of truth = visible mismatch. When we use
-  // the local.farm fallback as the entity, we ALSO promote the
-  // count to at least 1; when we have no entity at all, we let
-  // the count chip self-hide by setting it to null.
-  if (!experienceEntity && local.farm && experienceMode === 'farm') {
+  // Farm State Synchronization Audit — when the multi-experience
+  // store hasn't yet surfaced an activeEntity (a transient state
+  // that happens whenever `farroway_active_experience` is null but
+  // farm rows DO exist), fall through to the canonical farm
+  // context's `.farm` field. The previous version gated this on
+  // `experienceMode === 'farm'`, which silently dropped the
+  // fallback whenever ctxIntel inferred 'garden' even though a
+  // farm was saved — that was the visible "No farm added yet"
+  // mismatch with My Farm. The mode gate is gone; if the
+  // canonical reader sees a farm, we surface it.
+  if (!experienceEntity && local.farm) {
     experienceEntity = local.farm;
     if (experienceCount == null || experienceCount === 0) {
+      // Promote the count chip in lock-step with the entity so the
+      // card never reads "My New Farm · 0 farms" again.
       experienceCount = 1;
+    }
+    // Align experienceMode with the canonical context so the
+    // FarmGardenProfileCard's mode-specific copy matches the
+    // entity we just promoted (a backyard fallback shouldn't be
+    // labeled "0 farms" because ctxIntel happened to default to
+    // 'garden').
+    if (farmCtx && farmCtx.experience) {
+      experienceMode = farmCtx.experience === 'garden' ? 'garden' : 'farm';
     }
   } else if (!experienceEntity) {
     // No entity at all — let the count chip vanish rather than

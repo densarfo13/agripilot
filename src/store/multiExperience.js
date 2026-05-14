@@ -51,6 +51,10 @@ import {
 // sizes BLOCK the save and a backyard-tagged 100-acre row
 // auto-corrects to the size-derived farm class.
 import { validateGrowingContext } from '../core/contextValidation.js';
+// Farm State Synchronization Audit — every farm/garden mutation
+// publishes a typed event so useFarmContext + continuityEngine
+// observers re-render without waiting for the legacy SWITCH_EVENT.
+import { FarmEvents, publish as _publishFarmEvent } from '../lib/farmEventBus.js';
 
 export const EXPERIENCE = Object.freeze({
   GARDEN: 'garden',
@@ -90,11 +94,24 @@ function _write(key, value) {
 
 function _emitSwitch(experience, activeId, extra = {}) {
   try {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent(SWITCH_EVENT, {
-      detail: { experience, activeId, ...extra },
-    }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(SWITCH_EVENT, {
+        detail: { experience, activeId, ...extra },
+      }));
+    }
   } catch { /* never propagate */ }
+  // Mirror to the typed farm event bus so non-window subscribers
+  // (useFarmContext, continuityEngine, scan flows) hear the same
+  // signal. FARM_UPDATED covers add / switch / repair — callers
+  // that need the more specific FARM_CREATED publish it directly
+  // after the row write.
+  try {
+    _publishFarmEvent(FarmEvents.FARM_UPDATED, {
+      experience,
+      activeId,
+      ...extra,
+    });
+  } catch { /* swallow */ }
 }
 
 // ── Classification ────────────────────────────────────────────
@@ -469,6 +486,16 @@ export function addFarm(payload = {}) {
   _write(STORAGE_KEYS.ACTIVE_EXPERIENCE, EXPERIENCE.FARM);
   _emitSwitch(EXPERIENCE.FARM, row.id, { added: true });
   _setLastValidation(validation);
+  // Farm State Synchronization Audit — publish a typed bus event
+  // so reactive subscribers (useFarmContext, continuityEngine)
+  // re-render against the new farm without a refresh.
+  try {
+    _publishFarmEvent(FarmEvents.FARM_CREATED, {
+      farmId:   row.id,
+      farmType: correctedType,
+      crop:     safe.crop || safe.cropName || null,
+    });
+  } catch { /* swallow */ }
   // Soft-launch monitoring (Phase 3 §C) — fire farm_created.
   // Skip when this farm was auto-created as a garden parent
   // (autoCreated marker) so the dashboard counts only the
