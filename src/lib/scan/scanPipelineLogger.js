@@ -34,14 +34,24 @@
  */
 
 export const SCAN_STAGES = Object.freeze({
+  // Hard Debug Mode (Pipeline V2) — broader granularity so a
+  // stuck "taking longer than expected" surfaces the exact step.
+  START:               'SCAN_START',
+  IMAGE_READY:         'SCAN_IMAGE_READY',
   CAPTURED:            'SCAN_CAPTURED',
   COMPRESSED:          'SCAN_COMPRESSED',
+  IMAGE_COMPRESSED:    'SCAN_IMAGE_COMPRESSED',
+  UPLOAD_BEGIN:        'SCAN_UPLOAD_BEGIN',
   UPLOAD_STARTED:      'SCAN_UPLOAD_STARTED',
   UPLOAD_SUCCESS:      'SCAN_UPLOAD_SUCCESS',
+  API_REQUEST:         'SCAN_API_REQUEST',
+  API_RESPONSE:        'SCAN_API_RESPONSE',
   INFERENCE_STARTED:   'SCAN_INFERENCE_STARTED',
   INFERENCE_RESPONSE:  'SCAN_INFERENCE_RESPONSE',
+  PARSE_SUCCESS:       'SCAN_PARSE_SUCCESS',
   RENDER_SUCCESS:      'SCAN_RENDER_SUCCESS',
   PIPELINE_ERROR:      'SCAN_PIPELINE_ERROR',
+  FATAL:               'SCAN_FATAL',
 });
 
 const _SAFE_KEYS = new Set([
