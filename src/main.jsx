@@ -37,6 +37,12 @@ try {
 } catch { /* swallow */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
+// Farm State Synchronization Audit — non-destructive mirror of
+// the canonical active farm into a single v1 cache key. Runs
+// once on boot + re-mirrors on every FarmEvents.FARM_*. Legacy
+// keys remain the primary write path; v1 is a fast-read slot
+// future surfaces can prefer.
+import { startFarmActiveCache } from './lib/farmActiveCache.js';
 import {
   LOOP_STATE_KEYS,
   FEATURE_EVENT_SYNC,
@@ -47,6 +53,10 @@ import { setOnboardingComplete } from './utils/onboarding.js';
 import { logStartup } from './core/runtime/logger.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
+// Idempotent — safe to call ahead of React mount; the cache
+// listens to the typed bus and writes whenever farm state
+// changes. The initial mirror runs synchronously.
+startFarmActiveCache();
 
 // Stable-pilot restore marker (May 2026 spec §10). Single
 // greppable line per boot — engineers can confirm the

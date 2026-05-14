@@ -444,10 +444,22 @@ export function getActiveFarmId() {
 }
 
 export function getActiveFarm() {
-  const id = getActiveFarmId();
-  if (!id) return null;
+  // Farm State Synchronization Audit — match farmContextEngine's
+  // 3-tier fall-through. Previously, a missing activeFarmId
+  // returned null even when farm rows existed, which caused the
+  // Tasks / FarmerTodayPage surface to render empty while Home
+  // (post-fix) and My Farm rendered the most recent farm. The
+  // fallback below mirrors farmContextEngine: prefer the id
+  // match, then most-recent, then first.
   const farms = getFarms();
-  return farms.find((f) => f.id === id) || farms[0] || null;
+  if (!Array.isArray(farms) || farms.length === 0) return null;
+  const id = getActiveFarmId();
+  if (id) {
+    const match = farms.find((f) => f && f.id === id);
+    if (match) return match;
+  }
+  // Spec: "if activeFarmId missing, use most recent farm".
+  return farms[farms.length - 1] || null;
 }
 
 // ─── Offline queue ─────────────────────────────────────────────────

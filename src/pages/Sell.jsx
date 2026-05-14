@@ -30,6 +30,10 @@
 import React, { useCallback, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+// Farm State Synchronization Audit — canonical reactive farm
+// context so Sell stays in sync when farms are added/switched
+// on other surfaces (Home, My Farm).
+import useFarmContext from '../hooks/useFarmContext.js';
 import { useAuth }    from '../context/AuthContext.jsx';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 import {
@@ -75,14 +79,24 @@ export default function Sell() {
   // crop name + buyer-count line refresh on flip.
   const { lang } = useTranslation();
 
-  // Pick the first active farm — every farmer starts with at
-  // least one farm if they've completed onboarding. Caller
-  // can swap this for a farm-picker in v2.
+  // Canonical reactive farm context — wins over the legacy
+  // farms[0] heuristic so multi-farm households see the SAME
+  // active farm on Sell that Home and My Farm show.
+  const farmCtx = useFarmContext();
+
+  // Pick the active farm. Priority order:
+  //   1. canonical farmContextEngine.activeFarm (respects
+  //      farroway.activeFarmId + 3-tier fall-through)
+  //   2. profile farms[0] — legacy onboarding shape
+  //   3. profile itself when it carries a farmId — earliest
+  //      single-farm pilot accounts
   const activeFarm = useMemo(() => {
+    const canonical = farmCtx && farmCtx.farm;
+    if (canonical && canonical.id) return canonical;
     if (Array.isArray(farms) && farms.length) return farms[0];
     if (profile && profile.farmId) return profile;
     return null;
-  }, [farms, profile]);
+  }, [farmCtx, farms, profile]);
 
   // Active listings on this farm — read-only summary at the top
   // of the page. Filtered by farmId so multi-farm households only
