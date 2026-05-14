@@ -58,6 +58,30 @@ killServiceWorkerAndCaches();
 // changes. The initial mirror runs synchronously.
 startFarmActiveCache();
 
+// Dev-only UAT seed handle. Exposes `window.__farrowayUat` so a
+// QA operator can run `__farrowayUat.seed({ mode: 'farm_us' })`
+// from DevTools without an admin page. Production builds (where
+// import.meta.env.DEV is false) skip this entirely so the seed
+// surface never reaches real users. The seed itself writes to
+// localStorage only and is always tagged UAT_DEMO so production
+// filters can exclude it even when called by accident.
+try {
+  if (typeof window !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    import('./lib/seed/uatSeed.js').then((mod) => {
+      try {
+        window.__farrowayUat = {
+          seed:        mod.seedUatData,
+          clear:       mod.clearUatData,
+          isSeeded:    mod.isUatSeeded,
+          sentinel:    mod.getUatSentinel,
+        };
+
+        console.log('[UAT] seed helpers exposed: window.__farrowayUat.{seed,clear,isSeeded,sentinel}');
+      } catch { /* swallow */ }
+    }).catch(() => { /* swallow */ });
+  }
+} catch { /* swallow */ }
+
 // Stable-pilot restore marker (May 2026 spec §10). Single
 // greppable line per boot — engineers can confirm the
 // restored bundle is live without opening DevTools deeply.
