@@ -21,9 +21,17 @@
  */
 
 import { isFeatureEnabled } from '../config/features.js';
+import {
+  logScanStage, logScanPipelineError, SCAN_STAGES,
+} from '../lib/scan/scanPipelineLogger.js';
 
 const ENDPOINT = '/api/scan/analyze';
 const TIMEOUT_MS = 8000;
+// Scan Pipeline Timeout Audit — separate budget for body parsing.
+// The previous code awaited res.json() with NO timeout; a slow
+// server stream produced the indefinite "taking longer than
+// expected" stall. 3s is the canonical parsing ceiling.
+const PARSE_TIMEOUT_MS = 3000;
 
 function _withTimeout(promise, ms, signal) {
   return new Promise((resolve, reject) => {
@@ -91,6 +99,9 @@ export async function requestScanAnalysis(input = {}) {
   try { controller = typeof AbortController !== 'undefined' ? new AbortController() : null; }
   catch { controller = null; }
 
+  const t0 = logScanStage(SCAN_STAGES.INFERENCE_STARTED, {
+    size: typeof body === 'string' ? body.length : null,
+  });
   try {
     const fetchPromise = fetch(ENDPOINT, {
       method:  'POST',
@@ -100,10 +111,31 @@ export async function requestScanAnalysis(input = {}) {
       signal:   controller?.signal,
     });
     const res = await _withTimeout(fetchPromise, TIMEOUT_MS, controller);
-    if (!res || !res.ok) return null;
-    const json = await res.json().catch(() => null);
+    if (!res || !res.ok) {
+      logScanPipelineError('inference', {
+        message: 'http_' + (res && res.status),
+      });
+      return null;
+    }
+    // Bound the body-parse independently. A slow JSON stream
+    // used to surface as the indefinite "taking longer than
+    // expected" stall because the fetch itself succeeded but
+    // res.json() awaited forever.
+    const json = await _withTimeout(
+      res.json().catch(() => null),
+      PARSE_TIMEOUT_MS,
+      controller,
+    ).catch((err) => {
+      logScanPipelineError('parsing', err);
+      return null;
+    });
+    logScanStage(SCAN_STAGES.INFERENCE_RESPONSE, {
+      durationMs: (Date.now() - t0),
+      outcome:    json ? 'ok' : 'empty',
+    });
     return json && typeof json === 'object' ? json : null;
-  } catch {
+  } catch (err) {
+    logScanPipelineError('inference', err);
     return null;
   }
 }
