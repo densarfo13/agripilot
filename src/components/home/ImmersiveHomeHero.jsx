@@ -44,6 +44,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { resolveHeroImage, resolveCropCloseupImage } from '../../lib/realVisuals.jsx';
+// Weather Unit System Audit — region-aware temperature formatter
+// so US/Liberia/Myanmar users see Fahrenheit while everyone else
+// keeps Celsius. The hook bypasses the in-session unit cache so a
+// late-hydrating farm.country still wins over the initial Celsius
+// pin (that was the "Maryland shows 13°" bug).
+import useTemperatureUnit from '../../hooks/useTemperatureUnit.js';
 // Backyard subtype catalog — drives the hero's daily-rhythm copy
 // so pots / raised beds / greenhouses each get tuned wording
 // instead of the generic "Today on your farm" fallback.
@@ -161,6 +167,10 @@ export default function ImmersiveHomeHero({
 }) {
   const isGarden = String(mode || 'farm').toLowerCase() === 'garden';
   const w = (weather && typeof weather === 'object') ? weather : {};
+  // Weather Unit System Audit — region-aware unit + formatter.
+  // Backend returns Celsius for every farm; this hook resolves
+  // F for US/Liberia/Myanmar (or honours the user override).
+  const tempUnit = useTemperatureUnit();
 
   // ─── Background photo resolution (session-stable) ─────────────
   // ATMOSPHERIC PERSISTENCE — the hero photo intentionally does
@@ -356,12 +366,12 @@ export default function ImmersiveHomeHero({
         {hasRealWeather ? (
           <>
             <span style={S.tempBig}>
-              {temp}<span style={S.tempDeg}>°</span>
+              {tempUnit.format(temp)}
             </span>
             <span style={S.condition}>{condition}</span>
             {feelsLike != null && feelsLike !== temp && (
               <span style={S.feelsLike}>
-                {tSafe('weather.feelsLike', 'Feels like')} {feelsLike}°
+                {tSafe('weather.feelsLike', 'Feels like')} {tempUnit.format(feelsLike)}
               </span>
             )}
           </>
