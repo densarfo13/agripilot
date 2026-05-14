@@ -45,12 +45,16 @@
 
 export const FarmEvents = Object.freeze({
   WEATHER_UPDATED:         'weather.updated',
+  WEATHER_CHANGED:         'weather.updated',     // spec alias — same channel
   SCAN_COMPLETED:          'scan.completed',
   TASK_CREATED:            'task.created',
   TASK_COMPLETED:          'task.completed',
   TASK_OVERDUE:            'task.overdue',
+  TASK_MISSED:             'task.overdue',        // spec alias — same channel
   FARM_CREATED:            'farm.created',
   FARM_UPDATED:            'farm.updated',
+  LOCATION_UPDATED:        'farm.location_updated',
+  CROP_ADDED:              'farm.crop_added',
   DISEASE_DETECTED:        'disease.detected',
   OUTBREAK_DETECTED:       'outbreak.detected',
   SOIL_UPDATED:            'soil.updated',
@@ -58,13 +62,19 @@ export const FarmEvents = Object.freeze({
   HARVEST_READY:           'harvest.ready',
   IRRIGATION_RISK:         'irrigation.risk',
   USER_LOCATION_CHANGED:   'user.location_changed',
+  FOLLOW_UP_DUE:           'followup.due',
+  PRODUCE_LISTED:          'produce.listed',
 
   // Internal observability events the bus publishes about itself.
   HANDLER_FAILED:          'bus.handler_failed',
 });
 
 export const ALL_EVENT_NAMES = Object.freeze(
-  Object.values(FarmEvents).filter((n) => !n.startsWith('bus.')),
+  // dedupe: a few public-facing keys (WEATHER_CHANGED, TASK_MISSED)
+  // are aliases that share a channel with the canonical name.
+  Array.from(new Set(
+    Object.values(FarmEvents).filter((n) => !n.startsWith('bus.')),
+  )),
 );
 
 // ─── Internal state ───────────────────────────────────────────

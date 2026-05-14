@@ -59,9 +59,10 @@
  *   • Auto-subscribes to farmEventBus on first import — idempotent.
  */
 
-import { FarmEvents, subscribe } from '../../lib/farmEventBus.js';
+import { FarmEvents, subscribe, publish } from '../../lib/farmEventBus.js';
 import { getFarmContext } from '../../lib/farmContextEngine.js';
 import { getPrimaryGuidance } from '../../intelligence/recommendations/getPrimaryGuidance.js';
+import { getFarmHealthStatus } from '../../lib/farmHealthStatus.js';
 
 // ─── Memory storage ────────────────────────────────────────────
 //
@@ -69,14 +70,32 @@ import { getPrimaryGuidance } from '../../intelligence/recommendations/getPrimar
 // (or offline session) preserves "you checked your tomatoes
 // yesterday." Single JSON blob keeps the storage footprint
 // minimal — ~1 KB even with a year of history.
+//
+// PER-FARM SCOPE (Operational Trust + Farm Memory spec §1):
+//   The blob is keyed by `farroway.continuity.memory.v1::<farmId>`
+//   when an active farm exists. A user juggling multiple farms
+//   keeps a separate memory for each. The global key (no suffix)
+//   is preserved for callers without farm context — pre-onboarding
+//   state stays where it was.
 
-const MEMORY_KEY = 'farroway.continuity.memory.v1';
+const MEMORY_KEY_BASE = 'farroway.continuity.memory.v1';
 const MAX_RECENT_EVENTS = 20;
+
+function _memoryKey() {
+  try {
+    const ctx = getFarmContext();
+    const id  = ctx && ctx.activeFarmId;
+    if (id && typeof id === 'string' && id.length < 80) {
+      return `${MEMORY_KEY_BASE}::${id}`;
+    }
+  } catch { /* fall through */ }
+  return MEMORY_KEY_BASE;
+}
 
 function _safeReadMemory() {
   try {
     if (typeof localStorage === 'undefined') return _emptyMemory();
-    const raw = localStorage.getItem(MEMORY_KEY);
+    const raw = localStorage.getItem(_memoryKey());
     if (!raw) return _emptyMemory();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return _emptyMemory();
@@ -105,7 +124,7 @@ function _emptyMemory() {
 function _safeWriteMemory(memory) {
   try {
     if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
+    localStorage.setItem(_memoryKey(), JSON.stringify(memory));
   } catch { /* swallow — quota exceeded etc. */ }
 }
 
@@ -184,8 +203,37 @@ export function recordEvent(eventType, payload) {
           temp:      payload && Number.isFinite(payload.temp) ? payload.temp : null,
         };
         break;
+      case FarmEvents.TASK_OVERDUE:
+        // A missed task is itself a follow-up.
+        if (payload && payload.taskId) {
+          memory.followUps = [
+            ...memory.followUps.filter(
+              (f) => !(f.source === 'task' && f.taskId === payload.taskId),
+            ),
+            {
+              source:  'task',
+              taskId:  payload.taskId,
+              dueAt:   payload.dueAt || now,
+              note:    payload.title || 'Missed task',
+            },
+          ].slice(-MAX_RECENT_EVENTS);
+        }
+        break;
+      case FarmEvents.FOLLOW_UP_DUE:
+        // Surfaced by the ticker. Already in memory.followUps — we
+        // bump the recentEvents buffer so the journal/timeline can
+        // render it without re-reading the follow-up list.
+        break;
+      case FarmEvents.PRODUCE_LISTED:
+      case FarmEvents.FARM_CREATED:
+      case FarmEvents.LOCATION_UPDATED:
+      case FarmEvents.CROP_ADDED:
+        // Contribute only to the ring buffer. The journal timeline
+        // composer (farmTimeline.buildFarmTimeline) reads
+        // recentEvents to surface them.
+        break;
       default:
-        // Other events (FARM_CREATED, OUTBREAK_DETECTED, etc.)
+        // Other events (OUTBREAK_DETECTED, HARVEST_READY, etc.)
         // contribute to the ring buffer but don't get their own
         // slot. Consumers that need them can read recentEvents.
         break;
@@ -338,9 +386,14 @@ function _wireEventBus() {
     subscribe(FarmEvents.SCAN_COMPLETED,    (p) => recordEvent(FarmEvents.SCAN_COMPLETED, p));
     subscribe(FarmEvents.TASK_COMPLETED,    (p) => recordEvent(FarmEvents.TASK_COMPLETED, p));
     subscribe(FarmEvents.TASK_CREATED,      (p) => recordEvent(FarmEvents.TASK_CREATED, p));
+    subscribe(FarmEvents.TASK_OVERDUE,      (p) => recordEvent(FarmEvents.TASK_OVERDUE, p));
     subscribe(FarmEvents.WEATHER_UPDATED,   (p) => recordEvent(FarmEvents.WEATHER_UPDATED, p));
     subscribe(FarmEvents.FARM_CREATED,      (p) => recordEvent(FarmEvents.FARM_CREATED, p));
     subscribe(FarmEvents.FARM_UPDATED,      (p) => recordEvent(FarmEvents.FARM_UPDATED, p));
+    subscribe(FarmEvents.LOCATION_UPDATED,  (p) => recordEvent(FarmEvents.LOCATION_UPDATED, p));
+    subscribe(FarmEvents.CROP_ADDED,        (p) => recordEvent(FarmEvents.CROP_ADDED, p));
+    subscribe(FarmEvents.PRODUCE_LISTED,    (p) => recordEvent(FarmEvents.PRODUCE_LISTED, p));
+    subscribe(FarmEvents.FOLLOW_UP_DUE,     (p) => recordEvent(FarmEvents.FOLLOW_UP_DUE, p));
     subscribe(FarmEvents.OUTBREAK_DETECTED, (p) => recordEvent(FarmEvents.OUTBREAK_DETECTED, p));
     subscribe(FarmEvents.HARVEST_READY,     (p) => recordEvent(FarmEvents.HARVEST_READY, p));
   } catch { /* swallow — bus init failures don't break callers */ }
@@ -350,12 +403,145 @@ function _wireEventBus() {
 _wireEventBus();
 
 // Test seam — flush memory so unit tests start from a clean slate.
+// Clears BOTH the per-farm key (if a farm is active) and the global
+// fallback key, so tests don't have to know which one was written.
 export function _resetContinuityMemory() {
   try {
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(MEMORY_KEY);
+      localStorage.removeItem(_memoryKey());
+      localStorage.removeItem(MEMORY_KEY_BASE);
     }
   } catch { /* swallow */ }
+  _stopFollowUpTicker();
+}
+
+/**
+ * Calm 3-tone farm health state derived from the current memory +
+ * follow-ups (Operational Trust spec §6).
+ *
+ *   STABLE          — no overdue follow-ups, last scan healthy or
+ *                     stale, no severe weather.
+ *   WATCH           — one signal worth noticing: a non-healthy scan
+ *                     with a future follow-up, or moderate weather.
+ *   NEEDS_ATTENTION — multiple inputs: overdue follow-ups, severe
+ *                     weather, or repeat issues.
+ *
+ * Returns the same envelope shape as farmHealthStatus.getFarmHealthStatus
+ * so callers can swap in either source.
+ */
+export function getFarmHealthState() {
+  try {
+    const memory = _safeReadMemory();
+    const now    = Date.now();
+
+    let attentionPoints = 0;
+    let watchPoints     = 0;
+
+    // ── Overdue follow-ups ────────────────────────────────────
+    const overdueCount = (memory.followUps || []).filter(
+      (f) => f && f.dueAt && f.dueAt < now,
+    ).length;
+    if (overdueCount >= 2) attentionPoints += 2;
+    else if (overdueCount === 1) watchPoints += 1;
+
+    // ── Last scan signal ──────────────────────────────────────
+    if (memory.lastScan && memory.lastScan.category && memory.lastScan.category !== 'healthy') {
+      const dueAt = memory.lastScan.followUpAt || 0;
+      if (dueAt && dueAt < now) attentionPoints += 1;
+      else watchPoints += 1;
+    }
+
+    // ── Weather signal ────────────────────────────────────────
+    if (memory.lastWeatherChange) {
+      const cond = String(memory.lastWeatherChange.condition || '').toLowerCase();
+      if (cond.includes('storm') || cond.includes('frost') || cond.includes('hail')) {
+        attentionPoints += 1;
+      } else if (cond.includes('heat') || cond.includes('rain')) {
+        watchPoints += 1;
+      }
+    }
+
+    let band = 'good';
+    if (attentionPoints >= 2)      band = 'urgent';
+    else if (attentionPoints === 1) band = 'needs_care';
+    else if (watchPoints >= 1)      band = 'needs_care';
+
+    return getFarmHealthStatus({ band });
+  } catch {
+    return getFarmHealthStatus({ band: 'good' });
+  }
+}
+
+// ─── Follow-up ticker ─────────────────────────────────────────
+//
+// Periodically scans memory.followUps and publishes FOLLOW_UP_DUE
+// for entries whose dueAt has crossed `now`. Idempotent — each
+// follow-up is fired exactly once per session (tracked via the
+// `firedFollowUps` Set). Cleared on _resetContinuityMemory().
+
+const TICKER_INTERVAL_MS = 60 * 1000; // 1 minute
+let _tickerHandle = null;
+const _firedFollowUps = new Set();
+
+function _firedKey(f) {
+  return `${f.source || ''}::${f.taskId || f.scanId || ''}::${f.dueAt || 0}`;
+}
+
+function _runFollowUpTick() {
+  try {
+    const memory = _safeReadMemory();
+    const now    = Date.now();
+    for (const f of (memory.followUps || [])) {
+      if (!f || !f.dueAt) continue;
+      if (f.dueAt > now) continue;
+      const k = _firedKey(f);
+      if (_firedFollowUps.has(k)) continue;
+      _firedFollowUps.add(k);
+      try {
+        publish(FarmEvents.FOLLOW_UP_DUE, {
+          source:  f.source || null,
+          taskId:  f.taskId || null,
+          scanId:  f.scanId || null,
+          dueAt:   f.dueAt,
+          note:    f.note   || null,
+        });
+      } catch { /* swallow */ }
+    }
+  } catch { /* swallow */ }
+}
+
+export function startFollowUpTicker(intervalMs) {
+  try {
+    if (_tickerHandle) return; // already running — idempotent
+    if (typeof setInterval !== 'function') return;
+    const ms = Number.isFinite(intervalMs) && intervalMs > 0
+      ? intervalMs
+      : TICKER_INTERVAL_MS;
+    // Fire once immediately so a freshly-due item doesn't wait the
+    // full interval before surfacing.
+    _runFollowUpTick();
+    _tickerHandle = setInterval(_runFollowUpTick, ms);
+  } catch { /* swallow */ }
+}
+
+function _stopFollowUpTicker() {
+  try {
+    if (_tickerHandle) {
+      clearInterval(_tickerHandle);
+      _tickerHandle = null;
+    }
+    _firedFollowUps.clear();
+  } catch { /* swallow */ }
+}
+
+export function stopFollowUpTicker() {
+  _stopFollowUpTicker();
+}
+
+// Test seam — manually trigger a tick + reset the fired-set.
+export function _runFollowUpTickerOnce() {
+  _firedFollowUps.clear();
+  _runFollowUpTick();
 }
 
 // ─── Internal helpers ─────────────────────────────────────────
@@ -415,6 +601,10 @@ const _module = {
   getNextBestAction,
   getRecentMemory,
   recordEvent,
+  getFarmHealthState,
+  startFollowUpTicker,
+  stopFollowUpTicker,
   _resetContinuityMemory,
+  _runFollowUpTickerOnce,
 };
 export default _module;
