@@ -557,8 +557,82 @@ export function saveFarmerType(farmerType) {
 }
 
 // ─── Multi-Farm Support ─────────────────────────────────
-export function getFarms() {
-  return request('/api/v2/farm-profile/list');
+//
+// Farm API 500 Error Audit — getFarms now:
+//   1. Emits a tagged dev log on request + response so a future
+//      "Home shows No farm" report can be diagnosed by grepping
+//      [HOME_FARM_API_REQUEST] / [HOME_FARM_API_RESPONSE].
+//   2. Retries up to 2 times with 350ms + 700ms backoff on 5xx
+//      (transient DB / cold-start). 4xx is not retried.
+//   3. NEVER throws on failure — returns { farms: [], error }
+//      so the caller (ProfileContext) can distinguish API
+//      failure from a genuine empty state, and skip the
+//      "no farms" mirror that would clobber a real local farm.
+const _FARM_LIST_RETRIES = 2;
+const _FARM_LIST_BACKOFF_MS = [350, 700];
+
+async function _delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export async function getFarms() {
+  const endpoint = '/api/v2/farm-profile/list';
+  if (import.meta.env && import.meta.env.DEV) {
+    try {
+      // eslint-disable-next-line no-console
+      console.log('[HOME_FARM_API_REQUEST]', { endpoint, attempt: 0 });
+    } catch { /* swallow */ }
+  }
+
+  let lastError = null;
+  for (let attempt = 0; attempt <= _FARM_LIST_RETRIES; attempt += 1) {
+    try {
+      const body = await request(endpoint);
+      if (import.meta.env && import.meta.env.DEV) {
+        try {
+          // eslint-disable-next-line no-console
+          console.log('[HOME_FARM_API_RESPONSE]', {
+            attempt,
+            status:    'ok',
+            farmsCount: Array.isArray(body && body.farms) ? body.farms.length : 0,
+            source:    body && body.source || 'unknown',
+          });
+        } catch { /* swallow */ }
+      }
+      return body && typeof body === 'object'
+        ? body
+        : { farms: [], source: 'malformed_response' };
+    } catch (error) {
+      lastError = error;
+      const status = error && (error.status || error.statusCode || 0);
+      // Only retry transient server failures. 401 / 403 / 404
+      // should fail fast — retrying does not help.
+      const transient = status >= 500 || status === 0;
+      if (import.meta.env && import.meta.env.DEV) {
+        try {
+          // eslint-disable-next-line no-console
+          console.log('[HOME_FARM_API_RESPONSE]', {
+            attempt,
+            status:    status || 'network',
+            error:     (error && error.message) || 'unknown',
+            willRetry: transient && attempt < _FARM_LIST_RETRIES,
+          });
+        } catch { /* swallow */ }
+      }
+      if (!transient || attempt >= _FARM_LIST_RETRIES) break;
+      await _delay(_FARM_LIST_BACKOFF_MS[attempt] || 700);
+    }
+  }
+
+  // All retries exhausted — return a typed failure envelope so
+  // ProfileContext can preserve the last-known-good state
+  // instead of clobbering it with "no farms".
+  return {
+    farms:   [],
+    error:   (lastError && lastError.message) || 'getFarms failed',
+    status:  (lastError && (lastError.status || lastError.statusCode)) || 0,
+    failed:  true,
+  };
 }
 
 export function createNewFarm(payload) {

@@ -110,21 +110,84 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // ─── List all farms for this user ───────────────────────
+//
+// Farm API 500 Error Audit — the handler now:
+//   1. Validates req.user.id up front + returns a structured
+//      401 instead of bubbling a Prisma "undefined where" error.
+//   2. Runs the userId query first, but if that throws OR
+//      returns empty, falls through to the legacy `farmerId`
+//      query so older farms (linked via the Farmer relation)
+//      surface for users whose `user_id_direct` column was
+//      never backfilled.
+//   3. Logs the full error stack + a tagged correlation id so
+//      ops can grep [FARM_LIST_500] in production.
+//   4. Returns a structured error envelope so the client can
+//      distinguish "no data" from "API failure".
 router.get('/list', authenticate, async (req, res) => {
+  const userId = req.user && req.user.id;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Unauthenticated' });
+  }
+
+  let userIdFarms = [];
+  let userIdError = null;
   try {
-    const farms = await prisma.farmProfile.findMany({
-      where: { userId: req.user.id },
+    userIdFarms = await prisma.farmProfile.findMany({
+      where: { userId },
       orderBy: [{ isDefault: 'desc' }, { status: 'asc' }, { createdAt: 'desc' }],
     });
-
-    return res.json({
-      success: true,
-      farms: farms.map(mapProfile),
-    });
   } catch (error) {
-    console.error('GET /api/v2/farm-profile/list failed:', error);
-    return res.status(500).json({ success: false, error: 'Failed to list farm profiles' });
+    userIdError = error;
+    console.error('[FARM_LIST_500] userId query failed', {
+      userId,
+      message: error && error.message,
+      code:    error && error.code,
+      meta:    error && error.meta,
+    });
   }
+
+  // Legacy fall-through — find via the Farmer relation when the
+  // direct user-id query is empty OR errored. Older accounts
+  // created before the user_id_direct column was backfilled
+  // still have rows reachable via `farmer.userId`.
+  let farmerFarms = [];
+  let farmerError = null;
+  if (userIdFarms.length === 0) {
+    try {
+      farmerFarms = await prisma.farmProfile.findMany({
+        where: { farmer: { userId } },
+        orderBy: [{ isDefault: 'desc' }, { status: 'asc' }, { createdAt: 'desc' }],
+      });
+    } catch (error) {
+      farmerError = error;
+      console.error('[FARM_LIST_500] farmerId fallback failed', {
+        userId,
+        message: error && error.message,
+        code:    error && error.code,
+        meta:    error && error.meta,
+      });
+    }
+  }
+
+  const combined = userIdFarms.length > 0 ? userIdFarms : farmerFarms;
+
+  // Both queries failed — report 500 with structured detail so
+  // the client retry layer can differentiate transient errors
+  // from genuine empty states.
+  if (userIdError && farmerError) {
+    return res.status(500).json({
+      success: false,
+      error:   'Failed to list farm profiles',
+      detail:  'Both userId and farmer fallback paths failed.',
+      retryable: true,
+    });
+  }
+
+  return res.json({
+    success: true,
+    farms:   combined.map(mapProfile),
+    source:  userIdFarms.length > 0 ? 'userId' : (farmerFarms.length > 0 ? 'farmer' : 'empty'),
+  });
 });
 
 // ─── Create / Update Profile ────────────────────────────

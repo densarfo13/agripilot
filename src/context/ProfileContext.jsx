@@ -202,7 +202,15 @@ export function ProfileProvider({ children }) {
     if (!isAuthenticated || !isOnline) return [];
     try {
       const data = await getFarms();
-      const list = data.farms || [];
+      // Farm API 500 Error Audit — getFarms now ALWAYS resolves
+      // to an envelope. If `failed === true`, the API errored
+      // after retries — preserve the last-known-good farms state
+      // and skip the mirror so a transient 500 never clobbers a
+      // real local farm with "No farm added yet".
+      if (data && data.failed) {
+        return farms; // keep current React state untouched
+      }
+      const list = (data && data.farms) || [];
       const sorted = sortFarms(list);
       setFarms(sorted);
       // Emergency Active Farm Hydration Fix — mirror backend farms
@@ -210,12 +218,17 @@ export function ProfileProvider({ children }) {
       // (which read via farmContextEngine) see the same farms My
       // Farm renders. Active id derived from persisted selection,
       // server default farm, or the first active row — same order
-      // resolveCurrentFarm uses.
+      // resolveCurrentFarm uses. Skip the mirror when the backend
+      // returned 0 farms BUT we already have local rows (transient
+      // empty response after a server cold-start could otherwise
+      // wipe canonical state).
       try {
         const persistedId = getPersistedFarmId();
         const resolved    = resolveCurrentFarm(sorted, persistedId);
         const activeId    = resolved ? resolved.id : null;
-        mirrorFarmsToCanonical(sorted, activeId);
+        if (sorted.length > 0) {
+          mirrorFarmsToCanonical(sorted, activeId);
+        }
       } catch { /* swallow */ }
       return sorted;
     } catch {
