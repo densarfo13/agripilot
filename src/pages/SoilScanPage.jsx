@@ -29,6 +29,9 @@ import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
 import { PREMIUM_TOKENS as T } from '../components/premium/tokens.js';
+// Visual Header Consistency Fix — canonical realism photo for the
+// Soil Scan hero. Replaces the flat page-hero SVG illustration.
+import { getPageHeroImage } from '../constants/pageHeroImages.js';
 // Premium line-icon system (May 2026 realism migration). Replaces
 // the legacy camera emoji that previously sat in the soil-photo
 // placeholder with the soil glyph from the canonical icon set.
@@ -205,7 +208,7 @@ export default function SoilScanPage() {
           'soilScan.subtitle',
           'Take a photo for a quick visual soil check.',
         )}
-        bgImage="/images/page-hero/scan.svg"
+        bgImage={getPageHeroImage('scan')}
         accent="green"
         testId="soil-scan-hero"
       />

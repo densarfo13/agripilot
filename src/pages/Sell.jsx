@@ -34,6 +34,9 @@ import { useProfile } from '../context/ProfileContext.jsx';
 // context so Sell stays in sync when farms are added/switched
 // on other surfaces (Home, My Farm).
 import useFarmContext from '../hooks/useFarmContext.js';
+// Visual Header Consistency Fix — canonical realism photo for the
+// Sell hero. Replaces the flat page-hero SVG illustration.
+import { getPageHeroImage } from '../constants/pageHeroImages.js';
 import { useAuth }    from '../context/AuthContext.jsx';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 import {
@@ -405,14 +408,14 @@ export default function Sell() {
            sets a trustworthy, ready-to-sell tone before the form
            below loads. */}
       {/* Sell refinement spec §14 (May 2026) — short headline
-           + subtitle, realistic produce hero. The richer market
-           imagery lives at /images/page-hero/sell.svg already. */}
+           + subtitle, realistic produce hero. Background image
+           comes from the canonical realism photo map. */}
       <PremiumPageHero
         mode="farm"
         eyebrow={tSafe('premium.eyebrow.sell', 'Sell')}
         title={tSafe('sell.title', 'Sell your produce')}
         subtitle={tSafe('sell.subtitle', 'Let nearby buyers know when your crop is ready.')}
-        bgImage="/images/page-hero/sell.svg"
+        bgImage={getPageHeroImage('sell')}
         accent="green"
         testId="sell-hero"
       />

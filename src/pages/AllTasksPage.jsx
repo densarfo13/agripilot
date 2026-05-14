@@ -58,6 +58,11 @@ import { speak } from '../core/farroway/voice.js';
 import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
+// Visual Header Consistency Fix — canonical realism photo for the
+// Tasks hero. Previously pointed at the flat page-hero SVG
+// illustration which read as dashboard art rather than real
+// farm imagery.
+import { getPageHeroImage } from '../constants/pageHeroImages.js';
 import TaskCompletionCelebration from '../components/tasks/TaskCompletionCelebration.jsx';
 
 export default function AllTasksPage() {
@@ -378,7 +383,7 @@ export default function AllTasksPage() {
           'tasks.hero.subtitle',
           'One clear task at a time — pick the next one.',
         )}
-        bgImage="/images/page-hero/tasks.svg"
+        bgImage={getPageHeroImage('tasks')}
         accent="green"
         chip={totalAll > 0
           ? {
