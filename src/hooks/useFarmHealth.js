@@ -39,6 +39,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '../api/apiClient.js';
+// Farm Health API Stability Fix — canonical lat/lng guard rejects
+// the null-island (0,0) sentinel that unset farm records emit and
+// that was causing /v2/satellite/farm-health to 500.
+import { inspectCoordinate } from '../lib/geo/coordinateGuard.js';
 
 const TIMEOUT_MS = 8_000;
 
@@ -93,9 +97,31 @@ function _normalize(raw) {
 }
 
 export function useFarmHealth(location) {
-  const lat = (location && Number.isFinite(Number(location.lat))) ? Number(location.lat) : null;
-  const lng = (location && Number.isFinite(Number(location.lng))) ? Number(location.lng) : null;
-  const hasCoords = lat != null && lng != null;
+  // Run every input through the canonical guard so 0,0 / NaN /
+  // out-of-range / missing values ALL collapse to "no coords"
+  // before any network call is attempted. The previous code
+  // accepted (0, 0) because Number.isFinite(0) is true — that
+  // was the source of the /v2/satellite/farm-health 500s.
+  const check = inspectCoordinate(
+    location && (location.lat != null ? location.lat : location.latitude),
+    location && (location.lng != null ? location.lng : location.longitude),
+  );
+  const lat = check.valid ? check.lat : null;
+  const lng = check.valid ? check.lng : null;
+  const hasCoords = check.valid;
+  // Dev-only trace so a future "no farm health" report can be
+  // diagnosed by grepping [FARM_HEALTH_LOCATION] in DevTools.
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    try {
+
+      console.log('[FARM_HEALTH_LOCATION]', {
+        valid:  check.valid,
+        reason: check.valid ? null : check.reason,
+        lat,
+        lng,
+      });
+    } catch { /* swallow */ }
+  }
 
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(false);
