@@ -23,6 +23,8 @@ import { getScanEntry } from '../data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
+import { computeProduceIntelligence } from '../features/scan/ProduceIntelligenceEngine/index.js';
+import ProduceQualityBadge from '../components/produce/ProduceQualityBadge.jsx';
 
 // Soft Ochre / Beige unified system. Replaces the legacy
 // dark-navy + neon-green inline tokens with the locked palette so
@@ -88,6 +90,28 @@ export default function ScanResultPage() {
 
   const [tasksAdded, setTasksAdded] = useState(false);
 
+  // Produce-intelligence badge — render only for scans that look
+  // produce-flavored (orchestrator's FRUIT_RIPENESS / PRODUCE_QUALITY
+  // intents, or any entry that carries ripenessStage / qualityFlag).
+  // For crop-health scans the engine would still produce an envelope,
+  // but the badge would be semantically wrong on those surfaces.
+  const produceIntel = useMemo(() => {
+    const raw = entry && entry.raw;
+    if (!raw || typeof raw !== 'object') return null;
+    const looksProduce =
+      raw.ripenessStage ||
+      raw.qualityFlag ||
+      raw.scanType === 'fruit_ripeness' ||
+      raw.scanType === 'produce_quality';
+    if (!looksProduce) return null;
+    try {
+      return computeProduceIntelligence({
+        scan: raw,
+        crop: entry?.cropId || entry?.plantName || raw.subjectDetected || raw.cropName,
+      });
+    } catch { return null; }
+  }, [entry]);
+
   useEffect(() => {
     if (!flagOn) {
       try { navigate('/scan-crop', { replace: true }); } catch { /* ignore */ }
@@ -121,13 +145,18 @@ export default function ScanResultPage() {
       </button>
 
       {entry?.raw ? (
-        <ScanResultCard
-          result={entry.raw}
-          experience={entry.experience || 'generic'}
-          onRetake={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
-          onAddTasks={onAddTasks}
-          alreadyAddedTasks={tasksAdded}
-        />
+        <>
+          <ScanResultCard
+            result={entry.raw}
+            experience={entry.experience || 'generic'}
+            onRetake={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
+            onAddTasks={onAddTasks}
+            alreadyAddedTasks={tasksAdded}
+          />
+          {produceIntel ? (
+            <ProduceQualityBadge intel={produceIntel} variant="seller" />
+          ) : null}
+        </>
       ) : (
         <div style={STYLES.notFound} data-testid="scan-result-not-found">
           {tStrict(
