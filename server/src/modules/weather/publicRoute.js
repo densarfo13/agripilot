@@ -53,16 +53,41 @@ const FALLBACK_RESPONSE = Object.freeze({
 /**
  * Translate the weatherProvider's normalized payload into the
  * frontend-facing shape the pilot Home renders. Never throws.
+ *
+ * Production Weather Accuracy Audit fix — the public surface now
+ * prefers the CURRENT ambient temperature (current.temperature_2m
+ * from Open-Meteo) over the daily high. Returning the daily
+ * forecast high as "the temperature right now" was the root cause
+ * of the Maryland weather mismatch: a 55F morning was rendered as
+ * the 75F afternoon projection.
  */
 function _toPublicShape(provider, locationLabel) {
   if (!provider || typeof provider !== 'object') return null;
-  const tempHigh = Number.isFinite(provider.tempHighC) ? provider.tempHighC : null;
+  const currentTemp = Number.isFinite(provider.currentTempC) ? provider.currentTempC : null;
+  const tempHigh = Number.isFinite(provider.tempHighC)    ? provider.tempHighC    : null;
+  // Prefer current ambient; fall back to the daily high only when
+  // current is missing (offline providers, ancient cache entries).
+  const tempForDisplay = currentTemp != null ? currentTemp : tempHigh;
   const rain = Number.isFinite(provider.rainChancePct) ? provider.rainChancePct : null;
   const wind = Number.isFinite(provider.windKph) ? provider.windKph : null;
-  const condition = _summariseCondition({ tempHigh, rain, wind });
-  const weatherType = _deriveWeatherType({ tempHigh, rain, wind, condition });
+  const condition = _summariseCondition({
+    tempCurrent: currentTemp,
+    tempHigh,
+    rain,
+    wind,
+  });
+  const weatherType = _deriveWeatherType({
+    tempHigh: tempForDisplay,
+    rain,
+    wind,
+    condition,
+  });
   return {
-    temp:          tempHigh != null ? Math.round(tempHigh) : null,
+    temp:          tempForDisplay != null ? Math.round(tempForDisplay) : null,
+    // Surface the daily high separately so the UI can render
+    // both "now" + "today's high" without re-fetching.
+    tempHigh:      tempHigh != null ? Math.round(tempHigh) : null,
+    tempCurrent:   currentTemp != null ? Math.round(currentTemp) : null,
     condition,
     rainChance:    rain != null ? Math.round(rain) : null,
     windSpeed:     wind != null ? Math.round(wind) : null,
@@ -72,12 +97,16 @@ function _toPublicShape(provider, locationLabel) {
   };
 }
 
-function _summariseCondition({ tempHigh, rain, wind }) {
+function _summariseCondition({ tempCurrent, tempHigh, rain, wind }) {
   if (rain != null && rain >= 60) return 'Rain likely';
-  if (tempHigh != null && tempHigh >= 32) return 'Hot day';
+  // Use the CURRENT temperature for the "hot/cold right now"
+  // headline; fall back to the daily high when current is missing
+  // so the line still reflects the prevailing day.
+  const tempForHeadline = tempCurrent != null ? tempCurrent : tempHigh;
+  if (tempForHeadline != null && tempForHeadline >= 32) return 'Hot day';
   if (wind != null && wind >= 25) return 'Windy';
-  if (tempHigh != null && tempHigh < 12) return 'Cold';
-  if (rain != null && rain <= 20 && tempHigh != null) return 'Clear and dry';
+  if (tempForHeadline != null && tempForHeadline < 12) return 'Cold';
+  if (rain != null && rain <= 20 && tempForHeadline != null) return 'Clear and dry';
   return 'Mild conditions';
 }
 

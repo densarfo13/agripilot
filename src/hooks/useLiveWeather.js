@@ -62,6 +62,8 @@ const TIMEOUT_MS = 6_000;
 /** Canonical fallback — same shape the server returns on failure. */
 const FALLBACK_WEATHER = Object.freeze({
   temp:          null,
+  tempCurrent:   null,
+  tempHigh:      null,
   condition:     'Weather unavailable',
   rainChance:    null,
   windSpeed:     null,
@@ -166,8 +168,19 @@ function _normalise(json, fallbackLabel) {
   if (!json || typeof json !== 'object') {
     return { ...FALLBACK_WEATHER, locationLabel: fallbackLabel || 'Your area' };
   }
+  // Production Weather Accuracy Audit — surface BOTH the current
+  // ambient temp and the day's high. The backend now emits both;
+  // older bundles only emit `temp`, so we accept either and prefer
+  // the new `tempCurrent` when present so a stale server response
+  // never produces the "morning showing 75F" mismatch.
+  const tempCurrent = Number.isFinite(json.tempCurrent) ? json.tempCurrent : null;
+  const tempHigh    = Number.isFinite(json.tempHigh)    ? json.tempHigh    : null;
+  const tempLegacy  = Number.isFinite(json.temp)        ? json.temp        : null;
+  const temp = tempCurrent != null ? tempCurrent : tempLegacy;
   return {
-    temp:          Number.isFinite(json.temp)       ? json.temp          : null,
+    temp,
+    tempCurrent,
+    tempHigh,
     condition:     typeof json.condition === 'string' && json.condition.trim()
                      ? json.condition.trim()
                      : 'Weather unavailable',
@@ -264,6 +277,26 @@ export function useLiveWeather(location) {
     }, TIMEOUT_MS);
 
     const fallbackLabel = loc.label || loc.region || 'Your area';
+
+    // Production Weather Accuracy Audit §2 — single greppable log
+    // line every time useLiveWeather decides what coordinates to
+    // hit the backend with. Lets ops verify a "wrong weather"
+    // report against the actual lat/lng + label the page used,
+    // without re-instrumenting.
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+      try {
+
+        console.log('[WEATHER_LOCATION]', {
+          latitude:  loc.lat,
+          longitude: loc.lng,
+          source:    (location && (location.lat || location.latitude))
+                      ? 'prop'
+                      : 'storage_fallback',
+          label:     fallbackLabel,
+          region:    loc.region || null,
+        });
+      } catch { /* swallow */ }
+    }
 
     setLoading(true);
     setError(null);
