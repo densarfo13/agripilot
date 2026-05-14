@@ -152,7 +152,42 @@ const _SEVERE_DEFECT_WORDS = ['rot', 'mold', 'mould', 'severe', 'spoil'];
 const _MEDIUM_DEFECT_WORDS = ['crack', 'insect', 'bug ', 'bite', 'biting', 'puncture', 'wound'];
 const _MILD_DEFECT_WORDS   = ['bruis', 'discolor', 'spot', 'blemish'];
 
-function _classifyQuality(input, ripeness) {
+// Heat / wet-weather / time-since-harvest pressure on freshness,
+// applied as a soft downgrade — NEVER promotes quality, only
+// drops it when the surrounding context indicates the produce is
+// more likely to be stressed. Two pressure points drop two steps;
+// one pressure point drops one step.
+//
+// Quality never drops below FAIR via context alone — severe
+// defects are the only path to NEEDS_SORTING.
+const _DOWNGRADE_LADDER = [
+  QUALITY_STATES.EXCELLENT,
+  QUALITY_STATES.GOOD,
+  QUALITY_STATES.FAIR,
+];
+
+function _contextualDowngrade(quality, ctx) {
+  if (quality === QUALITY_STATES.NEEDS_SORTING) return quality;
+  if (quality === QUALITY_STATES.FAIR)          return quality; // floor
+
+  const cond = _safeLower(ctx && ctx.weatherCondition);
+  const temp = Number.isFinite(ctx && ctx.weatherTemp) ? ctx.weatherTemp : null;
+  const hrs  = Number.isFinite(ctx && ctx.storageHoursSinceHarvest)
+             ? ctx.storageHoursSinceHarvest : null;
+
+  let pressure = 0;
+  if (temp != null && temp >= 32)                       pressure += 1;
+  if (cond.includes('rain') || cond.includes('humid'))  pressure += 1;
+  if (hrs != null && hrs >= 48)                         pressure += 1;
+  if (pressure === 0) return quality;
+
+  const startIdx = _DOWNGRADE_LADDER.indexOf(quality);
+  if (startIdx < 0) return quality;
+  const targetIdx = Math.min(_DOWNGRADE_LADDER.length - 1, startIdx + pressure);
+  return _DOWNGRADE_LADDER[targetIdx];
+}
+
+function _classifyQuality(input, ripeness, ctx) {
   const defects = _safeArray(input.defects).map(_safeLower).filter(Boolean);
   const flagStr = _safeLower(input.qualityFlag || input.qualityState || input.category || '');
   const allText = defects.concat(flagStr ? [flagStr] : []);
@@ -161,21 +196,20 @@ function _classifyQuality(input, ripeness) {
     (t) => words.some((w) => t.includes(w)),
   );
 
-  if (has(_SEVERE_DEFECT_WORDS)) return QUALITY_STATES.NEEDS_SORTING;
-  if (ripeness === RIPENESS_STATES.OVERRIPE) return QUALITY_STATES.FAIR;
+  let base;
+  if (has(_SEVERE_DEFECT_WORDS))                 base = QUALITY_STATES.NEEDS_SORTING;
+  else if (ripeness === RIPENESS_STATES.OVERRIPE) base = QUALITY_STATES.FAIR;
+  else {
+    const mediumHits = has(_MEDIUM_DEFECT_WORDS);
+    const mildHits   = has(_MILD_DEFECT_WORDS);
+    if (mediumHits)                                    base = QUALITY_STATES.FAIR;
+    else if (mildHits)                                 base = QUALITY_STATES.GOOD;
+    else if (allText.some((t) => t.includes('excellent'))) base = QUALITY_STATES.EXCELLENT;
+    else if (allText.some((t) => t.includes('good')))      base = QUALITY_STATES.GOOD;
+    else                                               base = QUALITY_STATES.EXCELLENT;
+  }
 
-  const mediumHits = has(_MEDIUM_DEFECT_WORDS);
-  const mildHits   = has(_MILD_DEFECT_WORDS);
-  if (mediumHits && mildHits)        return QUALITY_STATES.FAIR;
-  if (mediumHits)                    return QUALITY_STATES.FAIR;
-  if (mildHits)                      return QUALITY_STATES.GOOD;
-
-  // Explicit "good"/"excellent" passthrough.
-  if (allText.some((t) => t.includes('excellent'))) return QUALITY_STATES.EXCELLENT;
-  if (allText.some((t) => t.includes('good')))      return QUALITY_STATES.GOOD;
-
-  // Default: excellent when no defects found AND ripeness is read.
-  return QUALITY_STATES.EXCELLENT;
+  return _contextualDowngrade(base, ctx);
 }
 
 // ─── Step 3: Market readiness ────────────────────────────────
@@ -342,8 +376,15 @@ export function computeProduceIntelligence(input) {
     const crop   = _safeStr(safe.crop) || _safeStr(scan.subjectDetected) || _safeStr(scan.crop);
     const now    = Number.isFinite(safe.now) ? safe.now : Date.now();
 
+    const weather  = (safe.weather && typeof safe.weather === 'object') ? safe.weather : {};
+    const ctx = {
+      weatherCondition:         weather.condition,
+      weatherTemp:              weather.temp,
+      storageHoursSinceHarvest: safe.storageHoursSinceHarvest,
+    };
+
     const ripeness = _classifyRipeness(scan);
-    const quality  = _classifyQuality(scan, ripeness);
+    const quality  = _classifyQuality(scan, ripeness, ctx);
     const market   = _classifyMarketReadiness(ripeness, quality);
     const buyer    = _buyerTrustSignal(quality, ripeness, market);
     const handle   = _handlingRecommendation(quality, ripeness);

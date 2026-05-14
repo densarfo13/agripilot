@@ -1,19 +1,20 @@
 /**
  * HarvestReadyPrompt — FEATURE_ACTIVATION_POLISH "Ready to sell?" banner.
  *
- * Shown on /sell when the farmer's active farm crop stage indicates
- * the crop is at or near harvest. Self-hides when stage is not
- * harvest-ready. Does NOT force any action.
+ * Triggered when EITHER:
+ *   1. The active farm's crop stage is in HARVEST_STAGES   — OR —
+ *   2. The latest produce scan envelope says marketReadiness
+ *      is 'market_ready' or 'sell_soon'.
  *
- * Stage detection reads from localStorage('farroway_active_farm').cropStage.
- * Harvest-ready stages: harvest, post_harvest, ready_to_sell, ready,
- * harvest_ready, harvesting.
+ * The scan-intel trigger is more authoritative — a real produce
+ * scan that found ripe + low-defect lots is stronger evidence than
+ * a self-reported stage label. When both fire, the scan copy wins.
  *
  * Rules
  * ─────
  *   • Hooks called unconditionally — rules-of-hooks safe.
- *   • Never throws — localStorage read is guarded.
- *   • Returns null when stage is not harvest-ready (no render).
+ *   • Never throws — localStorage reads are guarded.
+ *   • Returns null when neither trigger applies (no render).
  *   • No network, no blocking render, no forced redirect.
  *
  * Props
@@ -21,8 +22,8 @@
  *   onListClick   — () → void  optional; scrolls to / focuses the form
  */
 
-import { useMemo } from 'react';
 import { WheatGlyph } from '../icons/InlineGlyphs.jsx';
+import { readLatestProduceIntel } from '../../features/scan/produceIntelMemory.js';
 
 const HARVEST_STAGES = new Set([
   'harvest',
@@ -93,22 +94,50 @@ const S = {
   },
 };
 
-export default function HarvestReadyPrompt({ profile, onListClick }) {
-  // All hooks unconditional.
-  const stage = useMemo(() => _readStage(profile), [profile]);
-  const isHarvestReady = HARVEST_STAGES.has(stage || '');
+function _readScanTrigger() {
+  try {
+    const latest = readLatestProduceIntel();
+    if (!latest || !latest.intel) return null;
+    const m = latest.intel.marketReadiness;
+    if (m === 'market_ready' || m === 'sell_soon') {
+      return {
+        crop:            latest.crop,
+        marketReadiness: m,
+        suggestedWindow: latest.intel.sellFlow && latest.intel.sellFlow.suggestedWindowDays || 0,
+      };
+    }
+    return null;
+  } catch { return null; }
+}
 
-  // Self-hide when not harvest-ready.
+export default function HarvestReadyPrompt({ profile, onListClick }) {
+  // Synchronous derivations — no memoization needed (both reads
+  // are cheap localStorage lookups + return primitives).
+  const stage = _readStage(profile);
+  const scanTrigger = _readScanTrigger();
+  const isHarvestReady = HARVEST_STAGES.has(stage || '') || scanTrigger !== null;
+
   if (!isHarvestReady) return null;
+
+  // Scan-driven copy wins — it cites the specific crop.
+  const headline = scanTrigger
+    ? (scanTrigger.marketReadiness === 'market_ready'
+        ? 'Your produce appears market ready'
+        : 'Your produce is ready to sell soon')
+    : 'Ready to sell?';
+
+  const text = scanTrigger
+    ? `Your last scan suggests this is a good window to list${
+        scanTrigger.crop ? ' your ' + scanTrigger.crop : ''
+      }. Open the form below to share it with buyers.`
+    : 'Your crop looks ready to harvest. List it here so buyers can find you.';
 
   return (
     <div style={S.banner} data-testid="harvest-ready-prompt">
       <span aria-hidden="true" style={S.icon}><WheatGlyph size={24} /></span>
       <div style={S.body}>
-        <p style={S.headline}>Ready to sell?</p>
-        <p style={S.text}>
-          Your crop looks ready to harvest. List it here so buyers can find you.
-        </p>
+        <p style={S.headline}>{headline}</p>
+        <p style={S.text}>{text}</p>
         {typeof onListClick === 'function' ? (
           <button
             type="button"
