@@ -15,10 +15,58 @@ import {
   getSyncMeta,
 } from '../lib/offlineDb.js';
 import { log } from '../lib/logger.js';
+// Emergency Active Farm Hydration Fix — bridge between the
+// backend-hydrated profile farms and the canonical localStorage
+// reader that powers Home / Tasks / Scan / Sell. Without this
+// mirror, Home stays empty even when My Farm shows farms because
+// it reads localStorage and ProfileContext only stores farms in
+// React state.
+import { FarmEvents, publish as _publishFarmEvent } from '../lib/farmEventBus.js';
 
 const ProfileContext = createContext(null);
 
 const CURRENT_FARM_KEY = 'agripilot_currentFarmId';
+const CANONICAL_FARMS_KEY        = 'farroway.farms';
+const CANONICAL_ACTIVE_FARM_KEY  = 'farroway.activeFarmId';
+const CANONICAL_ACTIVE_EXPERIENCE = 'farroway_active_experience';
+
+/**
+ * Mirror the backend-hydrated farms into the canonical localStorage
+ * shape so Home / Tasks / Sell — which all read via
+ * farmContextEngine — see the same farms My Farm renders.
+ *
+ * Idempotent + never throws. Publishes FARM_CREATED on the typed
+ * bus so reactive subscribers (useFarmContext) re-render.
+ */
+function mirrorFarmsToCanonical(farms, activeFarmId) {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (!Array.isArray(farms)) return;
+    // Only write when the shape actually changed — avoids loops
+    // when ProfileContext re-renders with the same farms array.
+    const prevRaw = localStorage.getItem(CANONICAL_FARMS_KEY);
+    const nextRaw = JSON.stringify(farms);
+    const idChanged = activeFarmId
+      && activeFarmId !== localStorage.getItem(CANONICAL_ACTIVE_FARM_KEY);
+    if (prevRaw === nextRaw && !idChanged) return;
+    localStorage.setItem(CANONICAL_FARMS_KEY, nextRaw);
+    if (activeFarmId) {
+      localStorage.setItem(CANONICAL_ACTIVE_FARM_KEY, String(activeFarmId));
+      // Ensure the experience is pinned to 'farm' so legacy
+      // surfaces that gate on activeExperience surface the farm
+      // (a missing pin used to default to null and suppress the
+      // entity render).
+      if (!localStorage.getItem(CANONICAL_ACTIVE_EXPERIENCE)) {
+        localStorage.setItem(CANONICAL_ACTIVE_EXPERIENCE, 'farm');
+      }
+    }
+    _publishFarmEvent(FarmEvents.FARM_CREATED, {
+      source:  'profile_context_mirror',
+      farmId:  activeFarmId || null,
+      count:   farms.length,
+    });
+  } catch { /* swallow — never break ProfileContext on a storage error */ }
+}
 
 function nextBackoffMs(retryCount) {
   return Math.min(1000 * Math.pow(2, retryCount), 60000);
@@ -157,6 +205,18 @@ export function ProfileProvider({ children }) {
       const list = data.farms || [];
       const sorted = sortFarms(list);
       setFarms(sorted);
+      // Emergency Active Farm Hydration Fix — mirror backend farms
+      // to the canonical localStorage shape so Home / Tasks / Sell
+      // (which read via farmContextEngine) see the same farms My
+      // Farm renders. Active id derived from persisted selection,
+      // server default farm, or the first active row — same order
+      // resolveCurrentFarm uses.
+      try {
+        const persistedId = getPersistedFarmId();
+        const resolved    = resolveCurrentFarm(sorted, persistedId);
+        const activeId    = resolved ? resolved.id : null;
+        mirrorFarmsToCanonical(sorted, activeId);
+      } catch { /* swallow */ }
       return sorted;
     } catch {
       return farms;
@@ -180,6 +240,19 @@ export function ProfileProvider({ children }) {
         if (serverProfile) {
           await saveProfileDraft(serverProfile);
           persistFarmId(serverProfile.id);
+          // Emergency Active Farm Hydration Fix — also write the
+          // active id to the canonical pointer key so Home reads
+          // the same active farm My Farm does. The full farms[]
+          // mirror happens in refreshFarms; this just covers the
+          // case where the profile loads before farms.
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(CANONICAL_ACTIVE_FARM_KEY, String(serverProfile.id));
+              if (!localStorage.getItem(CANONICAL_ACTIVE_EXPERIENCE)) {
+                localStorage.setItem(CANONICAL_ACTIVE_EXPERIENCE, 'farm');
+              }
+            }
+          } catch { /* swallow */ }
         }
         return serverProfile;
       } else {

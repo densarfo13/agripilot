@@ -125,10 +125,19 @@ export default function FarmGardenProfileCard({
   mode = 'farm',
   entity = null,
   count = null,
+  loading = false,
   testId = 'home-profile-card',
 }) {
   const isGarden = mode === 'garden';
-  const { primary, subtitle } = _resolveTitles(entity, mode);
+  // Emergency Active Farm Hydration Fix §3 — during profile load
+  // we MUST NOT surface the empty-state copy. ProfileContext takes
+  // ~200-500ms to round-trip /api/farms; showing "No farm added
+  // yet" in that window is the visible mismatch with My Farm.
+  // Render a calm "Loading..." placeholder until the caller passes
+  // loading=false or a real entity arrives.
+  const { primary, subtitle } = loading && !entity
+    ? { primary: tSafe('home.profile.loading', 'Loading…'), subtitle: '' }
+    : _resolveTitles(entity, mode);
   const icon = isGarden ? _gardenIcon() : _farmIcon();
 
   // Right-hand count chip. Falls back gracefully when count is

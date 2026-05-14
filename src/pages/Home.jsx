@@ -91,6 +91,10 @@ import useExperience             from '../hooks/useExperience.js';
 // _resolveFarm helper so adding/switching a farm propagates to
 // Home without a refresh.
 import useFarmContext             from '../hooks/useFarmContext.js';
+// Emergency Active Farm Hydration Fix — read ProfileContext's
+// `loading` so the FarmGardenProfileCard can suppress its
+// empty-state copy while backend /api/farms is in flight.
+import { useProfileOrNull }       from '../context/ProfileContext.jsx';
 // Single recommendation entry point (spec §2). Wires the
 // orchestrator's 7-step priority ladder through the mode adapter
 // (garden drops commercial surfaces + softens wording) and the
@@ -367,6 +371,15 @@ export default function Home() {
   // AFTER Home mounted never updated this view-model. That was
   // the visible "No farm added yet" bug.
   const farmCtx = useFarmContext();
+  // Profile loading flag — used to suppress the empty-state copy
+  // on the FarmGardenProfileCard while /api/farms is in flight.
+  // useProfileOrNull is the non-throwing variant so Home stays
+  // safe on surfaces that mount outside the ProfileProvider.
+  const _profileCtx = useProfileOrNull();
+  const profileLoadingForCard = !!(_profileCtx && _profileCtx.loading);
+  const profileFarmsCount = (_profileCtx && Array.isArray(_profileCtx.farms))
+    ? _profileCtx.farms.length
+    : null;
   const local = useMemo(() => {
     let userType;
     try { userType = _resolveUserType(); } catch { userType = 'farmer'; }
@@ -452,7 +465,7 @@ export default function Home() {
     try {
       if (!import.meta.env.DEV) return;
       const farm = _resolveFarm();
-       
+
       console.log('[HOME_BRANCH]', {
         // Defaults to 'farm' per Canonical Home State spec §4 —
         // missing mode reads as farmer (not garden).
@@ -463,6 +476,31 @@ export default function Home() {
         hasTasks:        false,  // ctxIntel exposes a single task; Today's Plan owns the list
         authState:       'unknown',  // AuthContext is upstream; not threaded here
         renderedBranch:  'canonical_shell',
+      });
+      // Emergency Active Farm Hydration Fix §4 — dedicated trace
+      // for the active-farm hydration path. Shows what the
+      // canonical reader saw vs what ProfileContext fetched, plus
+      // the source the entity was resolved from. Single greppable
+      // line so a "Home is empty" report can be diagnosed
+      // without re-instrumenting.
+
+      console.log('[HOME_FARM_HYDRATION]', {
+        loadingFarms:         profileLoadingForCard,
+        farmsCount:           profileFarmsCount != null
+                                ? profileFarmsCount
+                                : (farmCtx && farmCtx.farmsCount) || 0,
+        activeFarmId:         (farmCtx && farmCtx.activeFarmId) || null,
+        resolvedActiveFarmName: experienceEntity
+          ? (experienceEntity.name || experienceEntity.farmName
+             || experienceEntity.plantName || experienceEntity.id || null)
+          : null,
+        source: experienceEntity
+          ? ((xp && xp.activeEntity && xp.activeEntity.id === experienceEntity.id)
+              ? 'useExperience.activeEntity'
+              : (local.farm && local.farm.id === experienceEntity.id)
+                ? 'farmContextEngine'
+                : 'fallback')
+          : 'empty',
       });
       // Farm State + Backyard Type Fix §1 — dedicated trace
       // listing the multi-farm-store contents + active pointer
@@ -790,6 +828,7 @@ export default function Home() {
             mode={experienceMode}
             entity={experienceEntity}
             count={experienceCount}
+            loading={profileLoadingForCard}
           />
         </FeatureShell>
 
