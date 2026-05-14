@@ -29,6 +29,7 @@ import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 // `liveWeather` state (line ~381) the rest of the engines already
 // see, so we don't subscribe to WeatherContext twice.
 import { useDynamicGreeting } from '../../hooks/useDynamicGreeting.js';
+import useFarmContext from '../../hooks/useFarmContext.js';
 import { deriveWeatherRisk } from '../../intelligence/weatherRiskModel.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { CloudRain, AlertTriangle } from '../../components/icons/lucide.jsx';
@@ -172,6 +173,15 @@ export default function FarmerTodayPage() {
   // profile on mount, and PATCHes the profile when either changes.
   // Fire-and-forget; never blocks the UI.
   usePreferenceSync();
+  // Farm State Synchronization Audit — reactive canonical farm
+  // context. Replaces direct getActiveFarm() reads scattered
+  // through this component so adding/switching a farm re-runs
+  // the dependent effects without a refresh. `activeFarmId`
+  // (a stable string) is the safe dep value — `farmCtx.farm`
+  // is a frozen object whose identity changes on every event.
+  const farmCtx = useFarmContext();
+  const farmCtxFarm = (farmCtx && farmCtx.farm) || null;
+  const farmCtxActiveFarmId = (farmCtx && farmCtx.activeFarmId) || null;
   // Bootstrap state machine: booting → partial | ready | degraded.
   // `phase` tracks where we are for diagnostic logging + the warning banner.
   const [state, setState] = useState({
@@ -637,7 +647,9 @@ export default function FarmerTodayPage() {
   // available or the API is unreachable (offline mode).
   const [liveWeather, setLiveWeather] = useState(null);
   useEffect(() => {
-    const activeFarm = getActiveFarm();
+    // Prefer the reactive farm context; fall back to the legacy
+    // helper so a transient null doesn't drop the weather pin.
+    const activeFarm = farmCtxFarm || getActiveFarm();
     const lat = activeCycle?.latitude
       ?? activeFarm?.latitude
       ?? region?.lat
@@ -655,7 +667,7 @@ export default function FarmerTodayPage() {
       if (!cancelled) setLiveWeather(summary || null);
     }).catch(() => { if (!cancelled) setLiveWeather(null); });
     return () => { cancelled = true; };
-  }, [activeCycle, region]);
+  }, [activeCycle, region, farmCtxActiveFarmId]);
 
   // ─── Task Engine snapshot (deterministic, offline-first) ───
   // Generates stage + crop + weather-aware tasks from pure inputs.
@@ -710,7 +722,7 @@ export default function FarmerTodayPage() {
   // user through a recovery route.
   const journeySnapshot = useMemo(() => {
     const stored = getJourneyState();
-    const activeFarm = getActiveFarm();
+    const activeFarm = farmCtxFarm || getActiveFarm();
     const derived = deriveJourneyState({
       profile:     null,               // server profile isn't needed on Today
       activeFarm,
@@ -720,7 +732,7 @@ export default function FarmerTodayPage() {
     });
     return derived;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCycle, progressTick]);
+  }, [activeCycle, progressTick, farmCtxActiveFarmId]);
 
   // Persist when the derived state moves forward. Never regresses.
   useEffect(() => {
@@ -772,7 +784,7 @@ export default function FarmerTodayPage() {
   // Reads crop / country / state from the local active farm when
   // the server cycle hasn't been created yet.
   const dailySnapshot = useMemo(() => {
-    const activeFarm = getActiveFarm();
+    const activeFarm = farmCtxFarm || getActiveFarm();
     const crop = activeCycle?.cropType || activeFarm?.crop || null;
     const stage = activeCycle?.lifecycleStatus || null;
     const plantingStatus = inferPlantingStatus({
@@ -787,7 +799,7 @@ export default function FarmerTodayPage() {
       weather: liveWeather || null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCycle, progressTick, liveWeather]);
+  }, [activeCycle, progressTick, liveWeather, farmCtxActiveFarmId]);
 
   // ─── Progress Engine snapshot ──────────────────────────────
   // Reads locally-persisted task completions + feedback. Prefers the

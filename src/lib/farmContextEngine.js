@@ -89,6 +89,27 @@ function _safeJson(key) {
 // ─── Active-farm resolver (3-tier fallback) ────────────────────
 
 function _resolveActiveFarm() {
+  // Tier 0: v1 fast-read cache.
+  //   Mirrored by farmActiveCache on every FARM_CREATED /
+  //   FARM_UPDATED / LOCATION_UPDATED / CROP_ADDED. When the v1
+  //   slot's `activeFarmId` agrees with the canonical pointer
+  //   `farroway.activeFarmId`, we trust the cached object and
+  //   skip re-resolving from the V2 array. If they disagree
+  //   (e.g. a different writer mutated V2 without going through
+  //   the bus — rare but possible), we fall through to the
+  //   authoritative tiers so the canonical reader never serves
+  //   a stale row.
+  try {
+    const v1 = _safeJson('farroway_active_farm_v1');
+    if (v1 && v1.farm && typeof v1.farm === 'object' && v1.farm.id) {
+      const canonicalActiveFarmId = _safeGet('farroway.activeFarmId');
+      if (!canonicalActiveFarmId
+          || String(canonicalActiveFarmId) === String(v1.farm.id)) {
+        return { farm: v1.farm, source: 'v1_cache' };
+      }
+    }
+  } catch { /* swallow */ }
+
   // Tier 1: legacy single-farm blob.
   const legacy = _safeJson('farroway_active_farm');
   if (legacy && typeof legacy === 'object') return { farm: legacy, source: 'legacy' };
