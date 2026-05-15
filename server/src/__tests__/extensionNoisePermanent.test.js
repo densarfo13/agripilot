@@ -85,7 +85,7 @@ describe('isExtensionNoise — Farroway logs still pass through', () => {
   });
 
   it('does NOT match a 404 GET line on our own asset', () => {
-    expect(isExtensionNoise(['GET https://farroway.app/assets/realism/heroes/afrca-sunrise-farm.jpeg 404 (Not Found)']))
+    expect(isExtensionNoise(['GET https://farroway.app/assets/realism/heroes/africa-sunrise-farm.jpeg 404 (Not Found)']))
       .toBe(false);
   });
 });

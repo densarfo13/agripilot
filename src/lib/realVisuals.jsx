@@ -53,7 +53,7 @@ import { resolveRegion } from './regions.js';
 const ASSETS = Object.freeze({
   heroes: {
     farmDefault:    '/assets/realism/heroes/africa-farm-atmosphere.jpeg',
-    farmSunrise:    '/assets/realism/heroes/afrca-sunrise-farm.jpeg',
+    farmSunrise:    '/assets/realism/heroes/africa-sunrise-farm.jpeg',
     farmIrrigation: '/assets/realism/heroes/africa-irrigation.jpeg',
     riceField:      '/assets/realism/heroes/vietnam-misty-rice.jpeg',
     // Operator-uploaded supplementary regional shot. Named

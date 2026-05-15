@@ -48,12 +48,26 @@ const SETUP_COPY = Object.freeze({
   body:  'Farroway needs a crop or plant on your farm before we can scan it. Set up your farm and the scan will work.',
 });
 
+// State-specific retry copy (Scan + Asset Final Blocker Fix §7).
+// The legacy generic-timeout message was the visible dead-end
+// the spec called out. Replaced with state-specific outcomes
+// that ALWAYS give the user a next action.
+// Each entry must include a primary CTA the user can tap.
 const RETRY_COPY = Object.freeze({
   crash:              { title: 'Camera ran into a problem',  body: 'Tap retry to try again, or upload a photo instead.' },
   camera_unavailable: { title: 'Camera unavailable',          body: 'Tap retry to try again, or upload a photo instead.' },
-  permission_denied:  { title: 'Camera access is needed',     body: 'Tap retry to grant access, or upload a photo from your gallery.' },
+  permission_denied:  { title: 'Camera blocked',               body: 'Use a saved photo to keep scanning. You can re-enable the camera in browser settings later.' },
   unsupported:        { title: 'This browser can\'t open the camera', body: 'Upload a photo from your gallery to keep going.' },
-  timeout:            { title: 'Scan is taking longer than expected', body: 'Tap retry to try again, or upload a photo instead.' },
+  // The OLD generic "taking longer" message — kept as the
+  // last-resort label but with calmer copy + a clearer next
+  // action. Surface-specific failures below should be preferred.
+  timeout:            { title: 'Camera is taking a moment', body: 'Tap retry, or use a saved photo to keep scanning now.' },
+  // Spec §7 — surface-specific outcomes the FSM emits.
+  upload_failed:      { title: 'Upload failed',               body: 'Try a smaller photo, or check your connection and retry.' },
+  analysis_delayed:   { title: 'Analysis is delayed',          body: 'Your photo was saved for retry — you can keep using the app.' },
+  ai_unavailable:     { title: 'AI check unavailable',         body: 'You can still pick what you see manually and save it to your journal.' },
+  low_confidence:     { title: 'Photo is hard to read',        body: 'Retake the photo in better light, or pick a symptom below.' },
+  network_unavailable: { title: 'You appear to be offline',    body: 'Your photo will retry automatically when you reconnect.' },
 });
 
 export default function ScanFallback({

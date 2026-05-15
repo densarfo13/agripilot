@@ -137,10 +137,10 @@ describe('package.json — check:icons registered + build:safe wiring', () => {
 
 // ─── 4. Spec acceptance — the 4 flagged 404 files ──────────
 
-describe('Acceptance — 4 production-flagged 404 files exist locally', () => {
+describe('Acceptance — production-flagged 404 files now exist + typo fixed', () => {
   it.each([
     'public/assets/realism/journal/IMG_5990.jpeg',
-    'public/assets/realism/heroes/afrca-sunrise-farm.jpeg',
+    'public/assets/realism/heroes/africa-sunrise-farm.jpeg',
     'public/icons/logo-premium.jpg',
     'public/icons/logo-premium-192.jpg',
   ])('%s exists on disk + has non-zero size', (rel) => {
@@ -149,14 +149,13 @@ describe('Acceptance — 4 production-flagged 404 files exist locally', () => {
     expect(fileSize(rel)).toBeGreaterThan(100);
   });
 
-  it('"afrca-sunrise-farm.jpeg" is preserved as the actual filename (NOT a typo)', () => {
-    // The hero asset was uploaded with the typo. Renaming to
-    // "africa-sunrise-farm.jpeg" would break every existing
-    // reference + git-history link. The check:icons + check:assets
-    // gates verify the file EXISTS at its current path; that
-    // is the canonical contract.
-    const abs = resolve(ROOT, 'public/assets/realism/heroes/afrca-sunrise-farm.jpeg');
-    expect(existsSync(abs)).toBe(true);
+  it('typo path "afrca-sunrise-farm.jpeg" no longer exists', () => {
+    // Renamed to "africa-sunrise-farm.jpeg" per spec §3 - the
+    // misspelled string should not appear anywhere in src/ or
+    // public/. check:assets enforces no stray realism literals
+    // in src/; this test pins the disk-side rename.
+    const oldPath = resolve(ROOT, 'public/assets/realism/heroes/afrca-sunrise-farm.jpeg');
+    expect(existsSync(oldPath)).toBe(false);
   });
 });
 

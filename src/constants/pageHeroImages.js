@@ -4,7 +4,7 @@
  *   import { getPageHeroImage } from '../constants/pageHeroImages.js';
  *
  *   const url = getPageHeroImage('tasks');
- *   //   /assets/realism/heroes/afrca-sunrise-farm.jpeg
+ *   //   /assets/realism/heroes/africa-sunrise-farm.jpeg
  *
  * Why this exists
  *   Visual Header Consistency Fix — Tasks, Sell, SoilScan, and a
