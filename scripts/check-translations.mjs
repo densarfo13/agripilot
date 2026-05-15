@@ -150,10 +150,44 @@ if (localeProblems.length > 0) {
   fail('locales/*.json key-set drift:\n  • ' + localeProblems.join('\n  • '));
 }
 
+// ── 4. translations.js — no duplicate keys ───────────────────
+// translations.js is a flat object literal. A key declared twice
+// is a SILENT last-wins drift bug — the earlier (often correct)
+// value is dropped with no error. Scan the source for repeats.
+const transSrc = readFileSync(transPath, 'utf8');
+const keyRe = /^\s{1,8}(['"])([\w.-]+)\1\s*:\s*\{/gm;
+const seenKeys = new Set();
+const dupKeys = new Set();
+let km;
+while ((km = keyRe.exec(transSrc)) !== null) {
+  const k = km[2];
+  if (seenKeys.has(k)) dupKeys.add(k);
+  else seenKeys.add(k);
+}
+// Duplicate baseline ratchet. translations.js has accumulated 88
+// duplicate keys — a documented governance debt (76 of them carry
+// CONFLICTING values; resolving each needs human translation
+// review, surfaced by translationReviewQueue.js). The gate FAILS
+// the build only when a NEW duplicate is introduced; the baseline
+// is ratcheted DOWN as the debt is paid. Same pattern as the Hindi
+// coverage ratchet above — prevents drift without blocking deploys
+// on a pre-existing mess.
+const DUP_BASELINE = 88;
+if (dupKeys.size > DUP_BASELINE) {
+  fail(
+    `${dupKeys.size} duplicate key(s) in translations.js — `
+    + `${dupKeys.size - DUP_BASELINE} NEW beyond the governance baseline `
+    + `of ${DUP_BASELINE}. A repeated key silently drops the earlier `
+    + `value. Remove the new duplicate(s):\n  • `
+    + [...dupKeys].slice(0, 25).join('\n  • '),
+  );
+}
+
 const hiPct = ((hiCovered / activeKeys) * 100).toFixed(1);
 console.log(
   '[check:translations] PASS — '
   + `${activeKeys} active keys, ${REQUIRED_LANGS.join('/')} at 100%; `
   + `hi ${hiCovered}/${activeKeys} (${hiPct}%, baseline ${HI_BASELINE}); `
-  + `${LOCALE_LANGS.length} locale JSON files key-identical.`,
+  + `${LOCALE_LANGS.length} locale JSON files key-identical; `
+  + `${dupKeys.size}/${DUP_BASELINE} duplicate keys (baselined, no new).`,
 );
