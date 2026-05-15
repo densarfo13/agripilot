@@ -42,6 +42,22 @@
  */
 
 import React, { useCallback, useRef } from 'react';
+import ManualIssuePicker from './ManualIssuePicker.jsx';
+
+// Reasons where the camera itself failed or is not ready. For
+// these, "Use a saved photo" becomes the PRIMARY action and the
+// camera retry drops to secondary — the farmer is steered
+// gallery-first instead of being pushed to keep retrying a camera
+// that just failed (Final Scan Preview + Gallery-First Fix §2).
+const CAMERA_FAIL_REASONS = Object.freeze([
+  'crash', 'camera_unavailable', 'permission_denied', 'unsupported', 'timeout',
+]);
+
+// Reasons where the AI could not read the photo confidently —
+// the farmer is offered the manual issue picker (§4, §5).
+const MANUAL_PICKER_REASONS = Object.freeze([
+  'low_confidence', 'ai_unavailable',
+]);
 
 const SETUP_COPY = Object.freeze({
   title: 'Add your crop first',
@@ -82,6 +98,8 @@ export default function ScanFallback({
 
   const copy = RETRY_COPY[reason] || RETRY_COPY.crash;
   const fileInputRef = useRef(null);
+  const galleryFirst    = CAMERA_FAIL_REASONS.includes(reason);
+  const showManualPicker = MANUAL_PICKER_REASONS.includes(reason);
 
   const handleRetry = useCallback(() => {
     try {
@@ -111,23 +129,52 @@ export default function ScanFallback({
         <h2 style={S.title}>{copy.title}</h2>
         <p style={S.body}>{copy.body}</p>
         <div style={S.row}>
-          <button
-            type="button"
-            onClick={handleRetry}
-            style={S.primaryBtn}
-            data-testid="scan-fallback-retry"
-          >
-            Retry
-          </button>
-          <button
-            type="button"
-            onClick={handleUploadClick}
-            style={S.secondaryBtn}
-            data-testid="scan-fallback-upload"
-          >
-            Upload from gallery
-          </button>
+          {galleryFirst ? (
+            <>
+              {/* Camera failed → gallery is the PRIMARY action.
+                  Retry camera drops to secondary; no auto-retry. */}
+              <button
+                type="button"
+                onClick={handleUploadClick}
+                style={S.primaryBtn}
+                data-testid="scan-fallback-upload"
+              >
+                Use a saved photo
+              </button>
+              <button
+                type="button"
+                onClick={handleRetry}
+                style={S.secondaryBtn}
+                data-testid="scan-fallback-retry"
+              >
+                Retry camera
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleRetry}
+                style={S.primaryBtn}
+                data-testid="scan-fallback-retry"
+              >
+                Retry
+              </button>
+              <button
+                type="button"
+                onClick={handleUploadClick}
+                style={S.secondaryBtn}
+                data-testid="scan-fallback-upload"
+              >
+                Upload from gallery
+              </button>
+            </>
+          )}
         </div>
+        {/* Manual fallback — low-confidence / AI-unavailable scans
+            never dead-end: the farmer picks what they see and it is
+            saved to the journal + a follow-up task (§4, §5). */}
+        {showManualPicker && <ManualIssuePicker />}
         {/* Gallery-only — NO `capture` attribute (would force the OS
             Camera app on iOS Safari, re-introducing the dual-
             interface bug the canonical-home replacement pass
