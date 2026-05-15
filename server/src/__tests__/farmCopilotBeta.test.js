@@ -9,7 +9,7 @@
  *   - it is mounted in the farmer shell but renders nothing dark
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -154,5 +154,112 @@ describe('ProtectedLayout — mounts the copilot launcher (dark by default)', ()
     const block = src.slice(Math.max(0, idx - 240), idx);
     expect(block).toMatch(/!onboarding/);
     expect(block).toMatch(/isFarmer|'farmer'/);
+  });
+});
+
+// ─── 6. copilotMemory — cross-session persisted memory ─────
+
+describe('copilotMemory — persisted, capped, never throws', () => {
+  const hadLS = 'localStorage' in globalThis;
+  const savedLS = globalThis.localStorage;
+
+  beforeEach(() => {
+    const store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: (k) => store.delete(k),
+    };
+  });
+  afterEach(() => {
+    if (hadLS) globalThis.localStorage = savedLS;
+    else delete globalThis.localStorage;
+  });
+
+  it('readCopilotMemory returns the { turns, recs } shape', async () => {
+    const { readCopilotMemory } = await import('../../../src/copilot/copilotMemory.js');
+    const m = readCopilotMemory();
+    expect(Array.isArray(m.turns)).toBe(true);
+    expect(Array.isArray(m.recs)).toBe(true);
+  });
+
+  it('recordTurn persists turns and caps at MAX_TURNS', async () => {
+    const { recordTurn, readCopilotMemory, COPILOT_MEMORY_LIMITS } =
+      await import('../../../src/copilot/copilotMemory.js');
+    for (let i = 0; i < COPILOT_MEMORY_LIMITS.MAX_TURNS + 8; i += 1) {
+      recordTurn({ question: 'q' + i, answer: 'a' + i, intent: 'should_water_today' });
+    }
+    const turns = readCopilotMemory().turns;
+    expect(turns.length).toBe(COPILOT_MEMORY_LIMITS.MAX_TURNS);
+    // The oldest turns were dropped — newest survive.
+    expect(turns[turns.length - 1].question).toBe('q' + (COPILOT_MEMORY_LIMITS.MAX_TURNS + 7));
+  });
+
+  it('recordRecommendation tracks accepted vs ignored', async () => {
+    const { recordRecommendation, summariseMemory } =
+      await import('../../../src/copilot/copilotMemory.js');
+    recordRecommendation({ intent: 'add_to_tasks', accepted: true });
+    recordRecommendation({ intent: 'add_to_tasks', accepted: false });
+    recordRecommendation({ intent: 'add_to_tasks', accepted: true });
+    const s = summariseMemory();
+    expect(s.acceptedCount).toBe(2);
+    expect(s.ignoredCount).toBe(1);
+  });
+
+  it('summariseMemory surfaces repeated intents', async () => {
+    const { recordTurn, summariseMemory } =
+      await import('../../../src/copilot/copilotMemory.js');
+    recordTurn({ question: 'a', answer: 'x', intent: 'should_water_today' });
+    recordTurn({ question: 'b', answer: 'y', intent: 'should_water_today' });
+    recordTurn({ question: 'c', answer: 'z', intent: 'read_my_task' });
+    expect(summariseMemory().repeatedIntents).toContain('should_water_today');
+  });
+
+  it('clearCopilotMemory wipes everything', async () => {
+    const { recordTurn, clearCopilotMemory, readCopilotMemory } =
+      await import('../../../src/copilot/copilotMemory.js');
+    recordTurn({ question: 'q', answer: 'a', intent: 'x' });
+    clearCopilotMemory();
+    expect(readCopilotMemory().turns).toEqual([]);
+  });
+
+  it('never throws when localStorage is unavailable', async () => {
+    const { recordTurn, readCopilotMemory, summariseMemory } =
+      await import('../../../src/copilot/copilotMemory.js');
+    delete globalThis.localStorage;
+    expect(() => recordTurn({ question: 'q', answer: 'a' })).not.toThrow();
+    expect(() => readCopilotMemory()).not.toThrow();
+    expect(() => summariseMemory()).not.toThrow();
+  });
+});
+
+// ─── 7. Sheet — memory restore + real navigation wiring ────
+
+describe('FarmCopilotSheet — memory + safe navigation', () => {
+  const src = read('src/components/copilot/FarmCopilotSheet.jsx');
+
+  it('restores the prior conversation from copilotMemory on open', () => {
+    expect(src).toMatch(/import \{[\s\S]*readCopilotMemory[\s\S]*\} from '\.\.\/\.\.\/copilot\/copilotMemory\.js'/);
+    expect(src).toMatch(/readCopilotMemory\(\)/);
+  });
+
+  it('persists each turn via recordTurn', () => {
+    expect(src).toMatch(/recordTurn\(\{\s*question/);
+  });
+
+  it('records accept/ignore via recordRecommendation', () => {
+    expect(src).toMatch(/recordRecommendation\(\{ intent, accepted \}\)/);
+  });
+
+  it('wires a real in-app navigation for NAVIGATE actions', () => {
+    expect(src).toMatch(/import \{ useNavigate \} from 'react-router-dom'/);
+    expect(src).toMatch(/navigate\(path\)/);
+    // navigation is non-destructive — offered as an "Open" button,
+    // not gated behind the Yes/No confirmation.
+    expect(src).toMatch(/data-testid="farm-copilot-open"/);
+  });
+
+  it('offers a Clear control to wipe persisted memory', () => {
+    expect(src).toMatch(/clearCopilotMemory\(\)/);
   });
 });

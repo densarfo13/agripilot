@@ -4,31 +4,39 @@
  *
  *   <FarmCopilotSheet open={open} onClose={fn} />
  *
- * Features (spec §4, §9, §10, §15, §16)
+ * Features (spec §4, §7, §9, §10, §15, §16)
  *   • Typed input + send.
  *   • Voice input via the browser SpeechRecognition API — guarded;
  *     if unavailable or the mic is denied, the typed input simply
  *     stays the path. The copilot NEVER fails on missing voice.
- *   • Conversation history, capped at MAX_TURNS so memory cannot
+ *   • Cross-session memory — on open, the conversation is restored
+ *     from copilotMemory (localStorage-backed, capped). A "Clear"
+ *     control wipes it.
+ *   • Conversation history capped at MAX_TURNS so memory cannot
  *     bloat (spec §15).
  *   • Suggested starter prompts.
  *   • Tap-to-play speech for any answer (speechSynthesis) — never
  *     autoplays (spec §7).
- *   • Safe-action confirmation: when an answer carries an action,
- *     a Yes / No row is shown. The Beta does not silently mutate
- *     anything — "Yes" acknowledges; real action wiring is a
- *     tracked follow-up.
+ *   • Real safe actions: a NAVIGATE reply renders an "Open" button
+ *     that routes in-app (non-destructive — no confirmation). A
+ *     reply that carries a mutating action shows a Yes / No
+ *     confirmation; "Yes" is recorded to memory but the Beta does
+ *     not silently mutate — destructive wiring is a tracked
+ *     follow-up.
  *
  * Strict-rule audit
- *   • Never throws. Every browser API (SpeechRecognition, speech
- *     Synthesis) is feature-detected and wrapped.
- *   • Speaking stops on close / unmount (spec §17).
- *   • Inline styles only. i18n labels via tSafe (spec §12).
+ *   • Never throws. Every browser API is feature-detected + wrapped.
+ *   • Speaking stops on close / unmount.
+ *   • Inline styles only. i18n labels via tSafe.
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import { askCopilot, SUGGESTED_PROMPTS } from '../../copilot/copilotEngine.js';
+import {
+  readCopilotMemory, recordTurn, recordRecommendation, clearCopilotMemory,
+} from '../../copilot/copilotMemory.js';
 
 // Conversation history cap — bounds memory + render cost (spec §15).
 const MAX_TURNS = 24;
@@ -50,7 +58,19 @@ function _getSpeechRecognition() {
   } catch { return null; }
 }
 
+function _navPathOf(reply) {
+  try {
+    if (reply && reply.action === 'navigate'
+        && reply.actionPayload && typeof reply.actionPayload.path === 'string'
+        && reply.actionPayload.path.startsWith('/')) {
+      return reply.actionPayload.path;
+    }
+  } catch { /* swallow */ }
+  return null;
+}
+
 export default function FarmCopilotSheet({ open, onClose }) {
+  const navigate = useNavigate();
   const [messages, setMessages]   = useState([]);
   const [input, setInput]         = useState('');
   const [listening, setListening] = useState(false);
@@ -58,7 +78,7 @@ export default function FarmCopilotSheet({ open, onClose }) {
   const recognitionRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // Stop any speech when the sheet closes or unmounts (spec §17).
+  // Stop any speech when the sheet closes or unmounts.
   const stopSpeaking = useCallback(() => {
     try {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -76,6 +96,26 @@ export default function FarmCopilotSheet({ open, onClose }) {
       catch { /* swallow */ }
     };
   }, [open, stopSpeaking]);
+
+  // Cross-session memory — restore the prior conversation on open
+  // (spec §7). Only seeds when the sheet has no live messages yet.
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const { turns } = readCopilotMemory();
+      if (Array.isArray(turns) && turns.length > 0) {
+        const seeded = [];
+        for (const t of turns) {
+          seeded.push({ id: 'mu' + t.at, role: 'user', text: t.question });
+          seeded.push({
+            id: 'mc' + t.at, role: 'copilot', text: t.answer,
+            confidence: 'likely', restored: true,
+          });
+        }
+        setMessages((prev) => (prev.length === 0 ? seeded : prev));
+      }
+    } catch { /* swallow */ }
+  }, [open]);
 
   useEffect(() => {
     try {
@@ -107,11 +147,15 @@ export default function FarmCopilotSheet({ open, onClose }) {
       id: 'c' + Date.now(),
       role: 'copilot',
       text: reply.answer,
+      intent: reply.intent || 'unknown',
       confidence: reply.confidence,
       requiresConfirmation: !!reply.requiresConfirmation,
-      action: reply.action || null,
+      navPath: _navPathOf(reply),
       confirmed: false,
     });
+    // Persist the turn so re-opening the copilot restores it.
+    try { recordTurn({ question: text, answer: reply.answer, intent: reply.intent }); }
+    catch { /* swallow */ }
   }, [pushTurn]);
 
   const speak = useCallback((id, text) => {
@@ -157,11 +201,22 @@ export default function FarmCopilotSheet({ open, onClose }) {
     }
   }, [ask]);
 
+  // Safe NAVIGATE action — non-destructive, no confirmation needed.
+  const goTo = useCallback((path) => {
+    _emit('copilot_navigate', { path });
+    try { onClose && onClose(); } catch { /* swallow */ }
+    try { navigate(path); } catch { /* swallow */ }
+  }, [navigate, onClose]);
+
   const resolveConfirm = useCallback((id, accepted) => {
-    setMessages((prev) => prev.map((m) => (m.id === id
-      ? { ...m, requiresConfirmation: false, confirmed: accepted }
-      : m)));
-    _emit(accepted ? 'copilot_action_confirmed' : 'copilot_action_declined');
+    let intent = 'unknown';
+    setMessages((prev) => prev.map((m) => {
+      if (m.id !== id) return m;
+      intent = m.intent || 'unknown';
+      return { ...m, requiresConfirmation: false, confirmed: accepted };
+    }));
+    try { recordRecommendation({ intent, accepted }); } catch { /* swallow */ }
+    _emit(accepted ? 'copilot_action_confirmed' : 'copilot_action_declined', { intent });
     pushTurn({
       id: 'c' + Date.now(),
       role: 'copilot',
@@ -172,6 +227,12 @@ export default function FarmCopilotSheet({ open, onClose }) {
       requiresConfirmation: false,
     });
   }, [pushTurn]);
+
+  const clearHistory = useCallback(() => {
+    try { clearCopilotMemory(); } catch { /* swallow */ }
+    setMessages([]);
+    _emit('copilot_memory_cleared');
+  }, []);
 
   if (!open) return null;
 
@@ -185,9 +246,16 @@ export default function FarmCopilotSheet({ open, onClose }) {
             <div style={S.title}>{tSafe('copilot.title', 'Farm Copilot')}</div>
             <div style={S.betaTag}>{tSafe('copilot.betaTag', 'Beta')}</div>
           </div>
-          <button type="button" onClick={onClose} style={S.closeBtn} aria-label={tSafe('common.close', 'Close')}>
-            {'✕'}
-          </button>
+          <div style={S.headerActions}>
+            {messages.length > 0 && (
+              <button type="button" onClick={clearHistory} style={S.clearBtn} data-testid="farm-copilot-clear">
+                {tSafe('copilot.clear', 'Clear')}
+              </button>
+            )}
+            <button type="button" onClick={onClose} style={S.closeBtn} aria-label={tSafe('common.close', 'Close')}>
+              {'✕'}
+            </button>
+          </div>
         </div>
 
         <div style={S.history} ref={scrollRef}>
@@ -211,6 +279,16 @@ export default function FarmCopilotSheet({ open, onClose }) {
                       ? tSafe('copilot.stop', 'Stop')
                       : tSafe('copilot.play', 'Play')}
                   </button>
+                  {m.navPath && (
+                    <button
+                      type="button"
+                      style={S.openBtn}
+                      onClick={() => goTo(m.navPath)}
+                      data-testid="farm-copilot-open"
+                    >
+                      {tSafe('copilot.open', 'Open')}
+                    </button>
+                  )}
                 </div>
               )}
               {m.role === 'copilot' && m.requiresConfirmation && (
@@ -287,10 +365,17 @@ const S = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '0.9rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.07)',
   },
+  headerActions: { display: 'flex', alignItems: 'center', gap: '0.4rem' },
   title: { fontSize: '1rem', fontWeight: 800, color: '#EAF2FF' },
   betaTag: {
     fontSize: '0.625rem', fontWeight: 800, color: '#86EFAC',
     letterSpacing: '0.05em', textTransform: 'uppercase',
+  },
+  clearBtn: {
+    height: 32, padding: '0 0.7rem', borderRadius: 8,
+    border: '1px solid rgba(255,255,255,0.16)',
+    background: 'transparent', color: '#9FB3C8',
+    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
   },
   closeBtn: {
     width: 32, height: 32, borderRadius: 8, border: 'none',
@@ -318,11 +403,16 @@ const S = {
     display: 'block', marginTop: '0.35rem',
     fontSize: '0.6875rem', fontWeight: 700, color: '#F0CB7A',
   },
-  bubbleActions: { marginTop: '0.25rem' },
+  bubbleActions: { marginTop: '0.25rem', display: 'flex', gap: '0.35rem' },
   miniBtn: {
     background: 'transparent', border: '1px solid rgba(255,255,255,0.16)',
     color: '#9FB3C8', borderRadius: 8, padding: '0.2rem 0.55rem',
     fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer',
+  },
+  openBtn: {
+    background: 'rgba(31,111,84,0.22)', border: '1px solid rgba(134,239,172,0.32)',
+    color: '#86EFAC', borderRadius: 8, padding: '0.2rem 0.6rem',
+    fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer',
   },
   confirmRow: {
     display: 'flex', alignItems: 'center', gap: '0.4rem',
