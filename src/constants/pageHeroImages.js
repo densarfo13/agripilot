@@ -37,15 +37,15 @@ import { safeImage, DEFAULT_FARM_IMAGE } from '../utils/safeImage.js';
 export const PAGE_HERO_IMAGES = Object.freeze({
   home:     REALISM_ASSETS.heroes.farmDefault,
   tasks:    REALISM_ASSETS.heroes.farmSunrise,
-  myFarm:   REALISM_ASSETS.farm.generic2,
+  myFarm:   REALISM_ASSETS.farm.tomato,
   progress: REALISM_ASSETS.journal.inspection,
   scan:     REALISM_ASSETS.scan.healthy,
   funding:  REALISM_ASSETS.heroes.farmDefault,
-  sell:     REALISM_ASSETS.journal.moment1,
+  sell:     REALISM_ASSETS.journal.inspection,
   journal:  REALISM_ASSETS.journal.greenhouse,
   admin:    REALISM_ASSETS.heroes.farmDefault,
   ngo:      REALISM_ASSETS.heroes.farmSunrise,
-  buyer:    REALISM_ASSETS.journal.moment1,
+  buyer:    REALISM_ASSETS.heroes.farmIrrigation,
 });
 
 /**

@@ -50,30 +50,27 @@ import { resolveRegion } from './regions.js';
 // `Realism Asset 404 Fix` commit. The `scripts/check-realism-assets.js`
 // guard prevents this drift from re-entering at PR time.
 
+// CANONICAL-NAMING RULE (permanent — do not break):
+// Every path below MUST point at a semantically-named file
+// (`africa-sunrise-farm.jpeg`, `farm-inspection.jpeg`, …).
+// NEVER reference operator camera-roll names like `IMG_5990.jpeg`.
+// Those filenames are renamed by the asset-reorganization pipeline
+// (IMG_5990 → "Tasks.jpeg", etc.); a reference to them goes stale
+// the next time the operator re-files their uploads, producing a
+// recurring production 404. The check:assets gate
+// (scripts/check-realism-assets.mjs) fails the build on any path
+// here that is not on disk — keep this registry honest.
 const ASSETS = Object.freeze({
   heroes: {
     farmDefault:    '/assets/realism/heroes/africa-farm-atmosphere.jpeg',
     farmSunrise:    '/assets/realism/heroes/africa-sunrise-farm.jpeg',
     farmIrrigation: '/assets/realism/heroes/africa-irrigation.jpeg',
     riceField:      '/assets/realism/heroes/vietnam-misty-rice.jpeg',
-    // Operator-uploaded supplementary regional shot. Named
-    // `IMG_5982` because that's the camera-roll filename; the
-    // semantic context is unknown but it was filed under the
-    // africa regions cluster so we treat it as an additional
-    // african-region hero candidate.
-    regional1:      '/assets/realism/regions/africa/IMG_5982.jpeg',
   },
   farm: {
     cassava: '/assets/realism/farm/cassava-leaf.jpeg',
     pepper:  '/assets/realism/farm/pepper-closeup.jpeg',
     tomato:  '/assets/realism/farm/tomato-greenhouse.jpeg',
-    // Supplementary farm closeups (operator upload, semantic
-    // context not specified by the operator). Treated as
-    // generic-farm rotation candidates; the seeded picker
-    // distributes them so different farmers see different shots.
-    generic1: '/assets/realism/farm/IMG_5983.jpeg',
-    generic2: '/assets/realism/farm/IMG_5985.jpeg',
-    generic3: '/assets/realism/farm/IMG_5986.jpeg',
   },
   scan: {
     healthy: '/assets/realism/scan/healthy-leaf.jpeg',
@@ -86,22 +83,10 @@ const ASSETS = Object.freeze({
     storm:   '/assets/realism/weather/storm-farm.jpeg',
     drought: '/assets/realism/weather/drought-soil.jpeg',
     misty:   '/assets/realism/weather/misty-morning.jpeg',
-    // Supplementary weather frames (operator upload). Mapped
-    // as alternative shots; the resolver doesn't know which
-    // condition each represents, so they're additional ambient
-    // candidates the seeded picker may surface.
-    ambient1: '/assets/realism/weather/IMG_5988.jpeg',
-    ambient2: '/assets/realism/weather/IMG_5989.jpeg',
   },
   journal: {
     inspection: '/assets/realism/journal/farm-inspection.jpeg',
     greenhouse: '/assets/realism/journal/greenhouse-work.jpeg',
-    // Supplementary documentary moments (operator upload).
-    // Rotated via the journal pack — distinct farmers see
-    // different memory shots.
-    moment1: '/assets/realism/journal/IMG_5990.jpeg',
-    moment2: '/assets/realism/journal/IMG_5991.jpeg',
-    moment3: '/assets/realism/journal/IMG_5992.jpeg',
   },
 });
 
@@ -138,7 +123,6 @@ const REGION_HERO_PACK = Object.freeze({
     ASSETS.heroes.farmDefault,
     ASSETS.heroes.farmSunrise,
     ASSETS.heroes.farmIrrigation,
-    ASSETS.heroes.regional1,
   ],
   asia: [
     ASSETS.heroes.riceField,
@@ -158,25 +142,22 @@ const REGION_HERO_PACK = Object.freeze({
 const JOURNAL_PACK = Object.freeze({
   farm: [
     ASSETS.journal.inspection,
-    ASSETS.journal.moment1,
-    ASSETS.journal.moment2,
-    ASSETS.journal.moment3,
   ],
   garden: [
     ASSETS.journal.greenhouse,
-    ASSETS.journal.moment1,
-    ASSETS.journal.moment2,
   ],
 });
 
 // Generic-farm closeup rotation — when a farmer's crop doesn't
 // match cassava/pepper/tomato (the named closeups), and they're
 // in farm mode without a strong weather signal, we surface one
-// of these generic farm-detail shots from the operator upload.
+// of these named farm-detail shots. Only canonically-named,
+// guaranteed-on-disk files are used here (never IMG_* camera-roll
+// names — those are renamed by the asset-reorg pipeline and 404).
 const FARM_GENERIC_PACK = Object.freeze([
-  ASSETS.farm.generic1,
-  ASSETS.farm.generic2,
-  ASSETS.farm.generic3,
+  ASSETS.farm.cassava,
+  ASSETS.farm.pepper,
+  ASSETS.farm.tomato,
 ]);
 
 // Pick a stable photo from a regional pack. We hash the crop +
@@ -241,7 +222,7 @@ const SCAN_TO_IMAGE = Object.freeze({
  *   1. Active crop → closeup if we ship one (ownership wins)
  *   2. Weather state → adaptive environmental shot
  *   3. Regional pack (country/crop → cluster) → pack photo
- *   4. Generic-farm rotation (operator's IMG_* pool) when crop is
+ *   4. Generic-farm rotation (named farm-detail pool) when crop is
  *      set but doesn't match a named closeup
  *   5. Time-of-day fallback (hour 5-8 → sunrise)
  *   6. Final fallback → africa-farm-atmosphere
@@ -292,9 +273,9 @@ export function resolveHeroImage({
   }
 
   // 4. Generic-farm rotation — when no closeup, no weather state,
-  //    no regional pack match, we surface a generic farm-detail
-  //    photograph from the operator-uploaded pool. The seeded
-  //    picker keeps the shot stable per session.
+  //    no regional pack match, we surface a named farm-detail
+  //    photograph from the canonical pool. The seeded picker
+  //    keeps the shot stable per session.
   if (cropKey && FARM_GENERIC_PACK.length > 0) {
     const fromGeneric = _pickFromPack(FARM_GENERIC_PACK, cropKey);
     if (fromGeneric) return fromGeneric;

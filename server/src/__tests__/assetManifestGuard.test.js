@@ -139,7 +139,7 @@ describe('package.json — check:icons registered + build:safe wiring', () => {
 
 describe('Acceptance — production-flagged 404 files now exist + typo fixed', () => {
   it.each([
-    'public/assets/realism/journal/IMG_5990.jpeg',
+    'public/assets/realism/journal/farm-inspection.jpeg',
     'public/assets/realism/heroes/africa-sunrise-farm.jpeg',
     'public/icons/logo-premium.jpg',
     'public/icons/logo-premium-192.jpg',
