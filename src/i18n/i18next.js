@@ -67,6 +67,21 @@ i18n.use(initReactI18next).init({
   returnEmptyString: false,
 });
 
+// Keep <html lang> in sync with the active language. This runs at
+// boot for the saved language and again on every change below, so
+// the document attribute always reflects the real UI language
+// (accessibility / SEO, and it keeps window.__farrowayI18n.audit()'s
+// mismatch check meaningful instead of always firing).
+function syncDocumentLang(lang) {
+  try {
+    if (typeof document !== 'undefined' && document.documentElement
+        && lang && typeof lang === 'string') {
+      document.documentElement.lang = lang;
+    }
+  } catch { /* non-fatal */ }
+}
+syncDocumentLang(savedLanguage);
+
 // Keep the i18next runtime in sync when the legacy engine broadcasts
 // a language change (e.g. someone used the legacy LanguageSwitcher
 // on an auth screen).
@@ -76,7 +91,12 @@ if (typeof window !== 'undefined') {
     if (next && typeof next === 'string' && i18n.language !== next) {
       i18n.changeLanguage(next);
     }
+    if (next && typeof next === 'string') syncDocumentLang(next);
   });
 }
+
+// Whenever i18next itself swaps language (the new picker path),
+// mirror it onto <html lang> too.
+i18n.on('languageChanged', syncDocumentLang);
 
 export default i18n;

@@ -38,7 +38,11 @@ import {
 } from './missingTranslationLogger.js';
 
 export const FARROWAY_I18N_TAG = '[FARROWAY_I18N]';
-export const LANG_STORAGE_KEY  = 'farroway_language_v1';
+// Canonical UI-language storage key. This is the key the i18next
+// bootstrap (src/i18n/i18next.js) reads and setLanguageI18n writes.
+// `farroway:lang` is the legacy engine's mirror key, checked as a
+// fallback below.
+export const LANG_STORAGE_KEY  = 'farroway_language';
 
 let _installed = false;
 
@@ -50,7 +54,7 @@ function _readLang() {
   try {
     if (typeof localStorage === 'undefined') return 'en';
     return localStorage.getItem(LANG_STORAGE_KEY)
-        || localStorage.getItem('farroway_language')
+        || localStorage.getItem('farroway:lang')
         || 'en';
   } catch { return 'en'; }
 }

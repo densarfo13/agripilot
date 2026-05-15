@@ -53,8 +53,28 @@ describe('devConsoleAudit — spec-mandated constants', () => {
     expect(FARROWAY_I18N_TAG).toBe('[FARROWAY_I18N]');
   });
 
-  it('uses the versioned language storage key', () => {
-    expect(LANG_STORAGE_KEY).toBe('farroway_language_v1');
+  it('uses the canonical language storage key the app actually writes', () => {
+    // src/i18n/i18next.js reads + setLanguageI18n.js writes
+    // 'farroway_language' — the audit must report the same key.
+    expect(LANG_STORAGE_KEY).toBe('farroway_language');
+  });
+});
+
+// ─── 1b. <html lang> sync ──────────────────────────────────
+
+describe('i18next.js — keeps <html lang> in sync with the active language', () => {
+  const i18nextSrc = read('src/i18n/i18next.js');
+
+  it('sets document.documentElement.lang', () => {
+    expect(i18nextSrc).toMatch(/document\.documentElement\.lang\s*=/);
+  });
+
+  it('syncs on boot for the saved language', () => {
+    expect(i18nextSrc).toMatch(/syncDocumentLang\(savedLanguage\)/);
+  });
+
+  it('syncs on every i18next languageChanged event', () => {
+    expect(i18nextSrc).toMatch(/i18n\.on\('languageChanged'/);
   });
 });
 
