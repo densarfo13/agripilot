@@ -55,7 +55,7 @@ const SETUP_COPY = Object.freeze({
 // Each entry must include a primary CTA the user can tap.
 const RETRY_COPY = Object.freeze({
   crash:              { title: 'Camera ran into a problem',  body: 'Tap retry to try again, or upload a photo instead.' },
-  camera_unavailable: { title: 'Camera unavailable',          body: 'Tap retry to try again, or upload a photo instead.' },
+  camera_unavailable: { title: 'Camera is not ready yet',     body: 'Use a saved photo to keep scanning.' },
   permission_denied:  { title: 'Camera blocked',               body: 'Use a saved photo to keep scanning. You can re-enable the camera in browser settings later.' },
   unsupported:        { title: 'This browser can\'t open the camera', body: 'Upload a photo from your gallery to keep going.' },
   // The OLD generic "taking longer" message — kept as the

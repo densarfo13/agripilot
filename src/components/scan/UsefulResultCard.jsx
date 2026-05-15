@@ -26,7 +26,7 @@
  *   onTaskAdded    — () → void  (optional; called after task persisted)
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addScanTasks } from '../../core/scanToTask.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
@@ -40,6 +40,11 @@ import { resolveScanImage } from '../../lib/realVisuals.jsx';
 // language as the rest of the scan flow; no cartoon disease
 // graphics.
 import RealisticIcon from '../../assets/realism/icons/RealisticIcon.jsx';
+// SafeImage — one-shot fallback <img>. The scan result image must
+// NEVER render a broken-image icon: a blob: URL can be revoked, a
+// remote imageUrl can 404. SafeImage swaps to the fallback on the
+// first load failure (Final Scan Preview Fix §1).
+import SafeImage from '../common/SafeImage.jsx';
 
 // ─── Per-category guidance ────────────────────────────────────────
 // Spec-exact wording. Honest, action-framed, no certainty claims.
@@ -469,16 +474,58 @@ export default function UsefulResultCard({
   const category = (result && result.category) ? String(result.category) : 'needs_review';
   const guidance  = GUIDANCE[category] || _FALLBACK;
 
-  // Scientific macro leaf photo keyed to the scan finding. When
-  // the result already carries the user's own captured image
-  // (most common case), we keep that as primary and the macro
-  // photo lands ONLY when no captured image is available — that
-  // way we never overwrite the farmer's own evidence.
-  const userImage  = (result && (result.imageUrl || result.thumbnail)) || null;
-  const macroPhoto = useMemo(
-    () => (!userImage ? resolveScanImage(category) : null),
-    [userImage, category],
-  );
+  // ── Result image (Final Scan Preview Fix §1, §4) ──────────────
+  // The farmer's OWN captured photo is the primary evidence on the
+  // result and MUST be shown — including on a low-confidence
+  // result. result.imageUrl may be a blob: URL (live scan, can be
+  // revoked) or a remote URL (stored scan, can 404); result.thumbnail
+  // is a base64 data URL that always survives. The scientific macro
+  // leaf photo is the fallback when there is no captured photo.
+  // SafeImage renders the best source and one-shot-swaps to the
+  // fallback on any load failure — so the result NEVER shows a
+  // broken-image placeholder.
+  const uploadedImageUrl = (result && result.imageUrl)  || null;
+  const previewThumb     = (result && result.thumbnail) || null;
+  const userImage        = uploadedImageUrl || previewThumb || null;
+  const macroPhoto       = useMemo(() => resolveScanImage(category), [category]);
+  // Primary source + the fallback SafeImage swaps to on failure.
+  const displaySrc      = userImage || macroPhoto;
+  const displayFallback = previewThumb || macroPhoto;
+  const resultImageSource = uploadedImageUrl ? 'uploaded'
+    : previewThumb ? 'preview_thumbnail'
+    : 'macro_stock';
+
+  // [SCAN_PREVIEW] dev diagnostic (spec §6) — fires once per result
+  // render so a missing/broken preview is greppable in DevTools.
+  useEffect(() => {
+    try {
+      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+
+        console.log('[SCAN_PREVIEW]', {
+          hasSelectedImage:    !!userImage,
+          hasPreviewUrl:       !!previewThumb,
+          hasUploadedImageUrl: !!uploadedImageUrl,
+          resultImageSource,
+          revokedTooEarly:     false,
+        });
+      }
+    } catch { /* never throw from a diagnostic */ }
+  }, [userImage, previewThumb, uploadedImageUrl, resultImageSource]);
+
+  // Surfaces when the uploaded/blob URL failed to decode — i.e. it
+  // was revoked too early or 404'd; SafeImage has already swapped
+  // to the local preview so the user sees no breakage.
+  const handleImageFallback = useCallback(() => {
+    try {
+      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+
+        console.log('[SCAN_PREVIEW]', {
+          revokedTooEarly: true,
+          failedSource:    resultImageSource,
+        });
+      }
+    } catch { /* never throw from a diagnostic */ }
+  }, [resultImageSource]);
 
   // Escalation handler — saves the request locally and flips the
   // button to a calm acknowledgement. Future NGO/agronomist
@@ -502,29 +549,26 @@ export default function UsefulResultCard({
       data-category={category}
       data-experience={experience}
     >
-      {/* Scientific macro photo — only renders when the farmer's
-          own captured photo is not available (most common when
-          the scan flow runs without committing the image to
-          history). Maps the result category to the matching
-          leaf macro from public/assets/realism/scan/. */}
-      {macroPhoto && (
-        <img
-          src={macroPhoto}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          style={{
-            width: '100%',
-            aspectRatio: '16 / 9',
-            objectFit: 'cover',
-            borderRadius: 14,
-            display: 'block',
-            marginBottom: 12,
-            filter: 'saturate(1.05)',
-          }}
-          data-testid={`useful-result-macro-${category}`}
-        />
-      )}
+      {/* Result image — the farmer's captured photo when available
+          (preferred, shown even on a low-confidence result), else
+          the scientific macro leaf for the finding. SafeImage
+          guarantees a revoked blob: URL or a 404'd remote URL
+          swaps to the local preview / macro fallback — never a
+          broken-image icon (spec §1, §4). */}
+      <SafeImage
+        src={displaySrc}
+        fallback={displayFallback}
+        alt=""
+        lazy
+        testId={`useful-result-image-${category}`}
+        onError={handleImageFallback}
+        style={{
+          width: '100%',
+          aspectRatio: '16 / 9',
+          borderRadius: 14,
+          marginBottom: 12,
+        }}
+      />
       {/* Category chip + confidence pill (Plantix-style header) */}
       <div style={S.chipRow}>
         <span
