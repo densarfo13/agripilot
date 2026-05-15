@@ -63,9 +63,6 @@ const T = {
   'offline.tryAgain': {
     en: 'Try again', fr: 'Réessayer', sw: 'Jaribu tena', ha: 'Sake gwadawa', tw: 'San hwehwɛ', hi: 'फिर से कोशिश करें',
   },
-  'offline.retrying': {
-    en: 'Trying again…', fr: 'Nouvelle tentative…', sw: 'Inajaribu tena…', ha: 'Ana sake gwadawa…', tw: 'Yɛresan hwehwɛ…', hi: 'फिर से कोशिश की जा रही है…',
-  },
   'offline.lastSaved': {
     en: 'Last saved tasks', fr: 'Dernières tâches enregistrées', sw: 'Kazi zilizohifadhiwa mwisho', ha: 'Ayyuka na ƙarshe da aka adana', tw: 'Nnwuma a ɛtwa toɔ', hi: 'अंतिम सहेजे गए कार्य',
   },
@@ -104,9 +101,6 @@ const T = {
   },
   'status.offline': {
     en: 'Offline', fr: 'Hors ligne', sw: 'Nje ya mtandao', ha: 'Babu yanar gizo', tw: 'Wonni intanɛt', hi: 'ऑफ़लाइन',
-  },
-  'mode.simple': {
-    en: 'Simple', fr: 'Simple', sw: 'Rahisi', ha: 'Mai sauƙi', tw: 'Ɛyɛ mmerɛw', hi: 'आसान',
   },
   'mode.full': {
     en: 'Full', fr: 'Complet', sw: 'Kamili', ha: 'Cikakke', tw: 'Nyinaa', hi: 'पूर्ण',
@@ -765,9 +759,7 @@ const T = {
   'market.trust.recentActivity':     { en: 'Recently active',   hi: 'हाल ही में सक्रिय', tw: 'Ɔkura so ntɛm',  es: 'Recientemente activo', pt: 'Recentemente ativo', fr: 'Récemment actif', ar: 'نشط حديثًا', sw: 'Amekuwa hai karibuni', id: 'Baru-baru ini aktif', ha: 'An yi aiki kwanan nan' },
 
   // Notifications (also used inside NotificationsPage directly)
-  'notifications.title':             { en: 'Notifications',   hi: 'अधिसूचनाएँ',  tw: 'Amanneɛ',       es: 'Notificaciones', pt: 'Notificações', fr: 'Notifications', ar: 'الإشعارات', sw: 'Arifa',        id: 'Notifikasi', ha: 'Sanarwa' },
   'notifications.unread':            { en: '{count} new',     hi: '{count} नए',   tw: 'Foforɔ {count}', es: '{count} nuevas', pt: '{count} novas', fr: '{count} nouvelles', ar: '{count} جديدة', sw: '{count} mpya', id: '{count} baru', ha: '{count} sabon' },
-  'notifications.empty':             { en: 'No notifications yet.', hi: 'अभी कोई अधिसूचना नहीं।', tw: 'Amanneɛ biara nni hɔ.', es: 'Sin notificaciones aún.', pt: 'Sem notificações ainda.', fr: 'Aucune notification.', ar: 'لا توجد إشعارات.', sw: 'Hakuna arifa.',  id: 'Belum ada notifikasi.', ha: 'Babu sanarwa tukuna.' },
   'notifications.error':             { en: 'Could not load.', hi: 'लोड नहीं हो सका।', tw: 'Yɛantumi ankan.', es: 'No se pudo cargar.', pt: 'Não foi possível carregar.', fr: 'Chargement impossible.', ar: 'تعذر التحميل.', sw: 'Imeshindwa kupakia.', id: 'Gagal memuat.', ha: 'Ba a iya loda ba.' },
   'notification.interest.title':     { en: 'Buyer interested',      hi: 'खरीदार रुचि रखता है', tw: 'Ɔtɔfo bi wɔ akokwaa', es: 'Comprador interesado', pt: 'Comprador interessado', fr: 'Acheteur intéressé', ar: 'مشتر مهتم', sw: 'Mnunuzi anavutiwa', id: 'Pembeli tertarik', ha: 'Mai siye yana sha\'awa' },
   'notification.interest.body':      { en: 'A buyer expressed interest in your listing.', hi: 'एक खरीदार ने आपकी लिस्टिंग में रुचि दिखाई है।', tw: 'Ɔtɔfo bi ada no adi sɛ ɔwɔ wo adetɔn ho akokwaa.', es: 'Un comprador mostró interés en tu publicación.', pt: 'Um comprador demonstrou interesse na sua publicação.', fr: 'Un acheteur s\'est montré intéressé par votre annonce.', ar: 'أظهر مشترٍ اهتمامًا بإعلانك.', sw: 'Mnunuzi amevutiwa na tangazo lako.', id: 'Seorang pembeli tertarik dengan daftar Anda.', ha: 'Mai siye ya nuna sha\'awa a jerin tallacenku.' },
@@ -1065,7 +1057,6 @@ const T = {
   'location.detectedLabel':              { en: 'Detected location',              fr: 'Localisation détectée',      sw: 'Eneo lililotambuliwa',        ha: 'Wurin da aka gano',            tw: 'Baabi a yɛahwɛ',            hi: 'पता लगाया गया स्थान' },
   'location.useThis':                    { en: 'Use this location',              fr: 'Utiliser ce lieu',           sw: 'Tumia eneo hili',             ha: 'Yi amfani da wannan wurin',    tw: 'Fa eyi',                     hi: 'यह स्थान इस्तेमाल करें' },
   'location.changeLocation':             { en: 'Change',                         fr: 'Changer',                    sw: 'Badilisha',                   ha: 'Canja',                        tw: 'Sesa',                       hi: 'बदलें' },
-  'location.detecting':                  { en: 'Detecting your location…',       fr: 'Détection en cours…',         sw: 'Inatambua eneo lako…',        ha: 'Ana gano wurin ku…',           tw: 'Yɛrehwɛ wo baabi…',         hi: 'आपका स्थान पहचाना जा रहा है…' },
   'location.permissionDenied':           { en: 'Location permission denied',     fr: 'Permission refusée',         sw: 'Ruhusa imekataliwa',          ha: 'An hana izinin wuri',          tw: 'Wɔampɛ baabi',              hi: 'स्थान अनुमति अस्वीकृत' },
   'location.permissionDeniedHint':       { en: 'No problem — pick your country and state below to continue.', fr: 'Sélectionnez votre pays ci-dessous.', sw: 'Chagua nchi na jimbo hapa chini.', ha: 'Zaɓi ƙasa da jiha da ke ƙasa.', tw: 'Yi wo man wɔ aseɛ ha.', hi: 'कोई बात नहीं — नीचे देश और राज्य चुनें।' },
   'location.noDetectedLocation':         { en: 'Pick your location',             fr: 'Choisissez votre lieu',      sw: 'Chagua eneo',                 ha: 'Zaɓi wurinku',                 tw: 'Yi wo baabi',                hi: 'अपना स्थान चुनें' },
@@ -1104,11 +1095,9 @@ const T = {
   // active-tense "Planning" rather than the past-tense "Planned".
   'stage.planning':          { en: 'Planning',          fr: 'Planification', sw: 'Kupanga',        ha: 'Shirye-shirye', tw: 'Nhyehyɛeɛ',     hi: 'योजना बनाना' },
   'stage.land_preparation':  { en: 'Land preparation',  fr: 'Préparation',  sw: 'Kuandaa ardhi',   ha: 'Shirya ƙasa',   tw: 'Asase siesieɛ', hi: 'भूमि तैयारी' },
-  'stage.planting':          { en: 'Planting',          fr: 'Plantation',   sw: 'Kupanda',         ha: 'Shuki',         tw: 'Dua',           hi: 'रोपण' },
   'stage.germination':       { en: 'Germination',       fr: 'Germination',  sw: 'Kuota',           ha: 'Tsiro',         tw: 'Afifirie',      hi: 'अंकुरण' },
   'stage.early_growth':      { en: 'Early growth',      fr: 'Croissance précoce', sw: 'Ukuaji wa awali', ha: 'Girma na farko', tw: 'Nyin ahyɛaseɛ', hi: 'शुरुआती वृद्धि' },
   'stage.active_growth':     { en: 'Active growth',     fr: 'Croissance active', sw: 'Ukuaji amilifu', ha: 'Girma mai ƙarfi', tw: 'Nyin kɛseɛ', hi: 'सक्रिय वृद्धि' },
-  'stage.flowering':         { en: 'Flowering',         fr: 'Floraison',    sw: 'Kuchanua',        ha: 'Fure',          tw: 'Nhwiren',        hi: 'फूल आना' },
   'stage.harvest_ready':     { en: 'Harvest ready',     fr: 'Prêt à récolter', sw: 'Tayari kuvuna', ha: 'A shirye girbi', tw: 'Yɛtumi atwa',   hi: 'कटाई के लिए तैयार' },
   'stage.harvested':         { en: 'Harvested',         fr: 'Récolté',      sw: 'Imevunwa',        ha: 'An girbe',      tw: 'Wɔatwa',         hi: 'कटाई हो गई' },
   'stage.post_harvest':      { en: 'Post-harvest',      fr: 'Post-récolte', sw: 'Baada ya kuvuna', ha: 'Bayan girbi',   tw: 'Otwa akyi',     hi: 'कटाई के बाद' },
@@ -1132,7 +1121,6 @@ const T = {
 
   // ─── Farmer ID + copy button ───────────────────────
   'farmerId.copy':   { en: 'Copy',    fr: 'Copier',     sw: 'Nakili',      ha: 'Kwafi',         tw: 'Kɔpi',            hi: 'कॉपी करें' },
-  'farmerId.copied': { en: 'Copied',  fr: 'Copié',      sw: 'Imenakiliwa', ha: 'An kwafa',      tw: 'Yɛakɔpi',         hi: 'कॉपी किया गया' },
 
   // ─── Crop-fit trust warning ────────────────────────
   'cropFit.warning.lowFit':   { en: "This crop isn't a strong fit for your area.", fr: 'Cette culture ne convient pas à votre région.', sw: 'Zao hili halifai eneo lako.', ha: 'Wannan amfani bai dace da yankinku ba.', tw: 'Saa afudeɛ yi mfa wo man ho.', hi: 'यह फसल आपके क्षेत्र के लिए उपयुक्त नहीं है' },
@@ -1389,9 +1377,6 @@ const T = {
   'common.next': {
     en: 'Next', fr: 'Suivant', sw: 'Ifuatayo', ha: 'Na gaba', tw: 'Nea edi so',
   },
-  'common.back': {
-    en: 'Back', fr: 'Retour', sw: 'Rudi', ha: 'Koma', tw: 'San bra',
-  },
   'common.submit': {
     en: 'Submit', fr: 'Soumettre', sw: 'Wasilisha', ha: 'Aika', tw: 'Fa bra',
   },
@@ -1403,9 +1388,6 @@ const T = {
   },
   'common.skipForNow': {
     en: 'Skip for now', fr: 'Passer pour l\'instant', sw: 'Ruka kwa sasa', ha: 'Tsallake a yanzu', tw: 'Twa mu seesei',
-  },
-  'common.cancel': {
-    en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae',
   },
   'common.logout': {
     en: 'Logout', fr: 'Déconnexion', sw: 'Ondoka', ha: 'Fita', tw: 'Fi mu',
@@ -1437,32 +1419,14 @@ const T = {
   'wxChip.wind': { en: 'Windy', fr: 'Venteux', sw: 'Upepo', ha: 'Iska', tw: 'Mframa' },
   'wxChip.dry': { en: 'Dry', fr: 'Sec', sw: 'Kavu', ha: 'Bushe', tw: 'Hyew' },
   'wxChip.hot': { en: 'Hot', fr: 'Chaud', sw: 'Joto', ha: 'Zafi', tw: 'Hyew pa' },
-  'common.save': {
-    en: 'Save', fr: 'Enregistrer', sw: 'Hifadhi', ha: 'Ajiye', tw: 'Kora so',
-  },
   'common.done': {
     en: 'Done', fr: 'Terminé', sw: 'Imekamilika', ha: 'An gama', tw: 'Wie',
-  },
-  'common.yes': {
-    en: 'Yes', fr: 'Oui', sw: 'Ndiyo', ha: 'Eh', tw: 'Aane',
-  },
-  'common.no': {
-    en: 'No', fr: 'Non', sw: 'Hapana', ha: "A'a", tw: 'Daabi',
   },
   'common.ok': {
     en: 'Okay', fr: "D'accord", sw: 'Sawa', ha: 'To', tw: 'Yoo',
   },
-  'common.close': {
-    en: 'Close', fr: 'Fermer', sw: 'Funga', ha: 'Rufe', tw: 'To mu',
-  },
-  'common.help': {
-    en: 'Help', fr: 'Aide', sw: 'Msaada', ha: 'Taimako', tw: 'Mmoa',
-  },
   'common.signOut': {
     en: 'Sign Out', fr: 'Déconnexion', sw: 'Ondoka', ha: 'Fita', tw: 'Fi mu',
-  },
-  'common.listen': {
-    en: 'Listen', fr: 'Écouter', sw: 'Sikiliza', ha: 'Saurara', tw: 'Tie',
   },
   'common.listenAgain': {
     en: 'Listen again', fr: 'Réécouter', sw: 'Sikiliza tena', ha: 'Sake saurara', tw: 'San tie',
@@ -1475,9 +1439,6 @@ const T = {
   },
   'common.loading': {
     en: 'Loading...', fr: 'Chargement...', sw: 'Inapakia...', ha: 'Ana lodi...', tw: 'Ɛreload...',
-  },
-  'common.saving': {
-    en: 'Saving...', fr: 'Enregistrement...', sw: 'Inahifadhi...', ha: 'Ana ajiye...', tw: 'Ɛrekora...',
   },
   'common.creating': {
     en: 'Creating...', fr: 'Création...', sw: 'Inatengeneza...', ha: 'Ana ƙirƙira...', tw: 'Ɛreyɛ...',
@@ -1751,29 +1712,17 @@ const T = {
   //  ONBOARDING WIZARD
   // ═══════════════════════════════════════════════════════════
 
-  'onboarding.farmName': {
-    en: 'Give your farm a name', fr: 'Donnez un nom à votre ferme', sw: 'Shamba lako jina gani?', ha: 'Ba gonar ku suna', tw: 'Ma wo afuo din',
-  },
-  'onboarding.selectCrop': {
-    en: 'Select a crop', fr: 'Choisissez une culture', sw: 'Chagua mazao', ha: 'Zaɓi amfani', tw: 'Yi nnɔbae bi',
-  },
   'onboarding.searchCrops': {
     en: 'Search crops...', fr: 'Chercher...', sw: 'Tafuta mazao...', ha: 'Nemo amfani...', tw: 'Hwehwɛ nnɔbae...',
   },
   'onboarding.currentStage': {
     en: 'Current stage', fr: 'Étape actuelle', sw: 'Hatua ya sasa', ha: 'Mataki na yanzu', tw: 'Anammɔn a ɛwɔ mu seesei',
   },
-  'onboarding.other': {
-    en: 'Other', fr: 'Autre', sw: 'Nyingine', ha: 'Wani', tw: 'Afoforo',
-  },
   'onboarding.detectLocation': {
     en: 'Detect my location', fr: 'Détecter ma position', sw: 'Pata eneo langu', ha: 'Gano wurin ta', tw: 'Hwehwɛ me beae',
   },
   'onboarding.locationDetected': {
     en: 'Location detected — tap to update', fr: 'Position détectée — appuyez pour mettre à jour', sw: 'Eneo limegunduliwa — bonyeza kusasisha', ha: 'An gano wuri — matsa don sabuntawa', tw: 'Wɔahu beae no — mia na sesae',
-  },
-  'onboarding.typeLocation': {
-    en: 'Or type: e.g. Nakuru, Kenya', fr: 'Ou tapez : ex. Bamako, Mali', sw: 'Au andika: mfano: Nakuru, Kenya', ha: 'Ko rubuta: misali Kano, Nigeria', tw: 'Anaa kyerɛw: sɛ Kumasi, Ghana',
   },
   'onboarding.changePhoto': {
     en: 'Change Photo', fr: 'Changer la photo', sw: 'Badilisha Picha', ha: 'Canja Hoto', tw: 'Sesa Mfonini',
@@ -1844,15 +1793,6 @@ const T = {
   },
 
   // ── Farm size options ──
-  'onboarding.small': {
-    en: 'Small', fr: 'Petit', sw: 'Ndogo', ha: 'Ƙarami', tw: 'Nketewa',
-  },
-  'onboarding.medium': {
-    en: 'Medium', fr: 'Moyen', sw: 'Wastani', ha: 'Matsakaici', tw: 'Ntam',
-  },
-  'onboarding.large': {
-    en: 'Large', fr: 'Grand', sw: 'Kubwa', ha: 'Babba', tw: 'Kɛse',
-  },
 
   // ── Stage options ──
   'stage.planting': {
@@ -1860,9 +1800,6 @@ const T = {
   },
   'stage.growing': {
     en: 'Growing', fr: 'Croissance', sw: 'Kukua', ha: 'Girma', tw: 'Nyin', hi: 'बढ़ रहा है',
-  },
-  'stage.flowering': {
-    en: 'Flowering', fr: 'Floraison', sw: 'Kuchanua', ha: 'Fure', tw: 'Nhwiren',
   },
   'stage.harvest': {
     en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa', hi: 'कटाई',
@@ -2086,9 +2023,6 @@ const T = {
   },
   'feedback.done': {
     en: 'Done!', fr: 'Terminé !', sw: 'Imekamilika!', ha: 'An gama!', tw: 'Wie!',
-  },
-  'feedback.savedOffline': {
-    en: 'Saved offline', fr: 'Enregistré hors ligne', sw: 'Imehifadhiwa bila mtandao', ha: 'An ajiye ba tare da layi ba', tw: 'Wɔakora a intanɛt nni hɔ',
   },
   'feedback.stillWorking': {
     en: 'Still working...', fr: 'Encore en cours...', sw: 'Bado inafanya kazi...', ha: 'Har yanzu ana aiki...', tw: 'Ɛreyɛ adwuma da...',
@@ -2617,9 +2551,6 @@ const T = {
   },
 
   // ── New farmer recommendation flow ──
-  'recommend.title': {
-    en: 'Our suggestions for you', fr: 'Nos suggestions pour vous', sw: 'Mapendekezo yetu kwako', ha: 'Shawarwarinmu a gare ku', tw: 'Yɛn nkyerɛase ma wo',
-  },
   'recommend.subtitle': {
     en: 'Based on your answers, these crops may work well for you.', fr: 'Selon vos réponses, ces cultures pourraient bien fonctionner pour vous.', sw: 'Kulingana na majibu yako, mazao haya yanaweza kukufaa.', ha: 'Bisa amsoshin ku, waɗannan amfanin gona na iya dacewa da ku.', tw: 'Sɛ wo mmuaeɛ te no, nnɔbaeɛ yi bɛyɛ adwuma ama wo.',
   },
@@ -3182,9 +3113,6 @@ const T = {
   'progress.harvest': {
     en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Otwa',
   },
-  'progress.score': {
-    en: 'Score', fr: 'Score', sw: 'Alama', ha: 'Maki', tw: 'Akontaa',
-  },
   'progress.reopen': {
     en: 'Reopen', fr: 'Rouvrir', sw: 'Fungua tena', ha: 'Sake buɗewa', tw: 'Bue bio',
   },
@@ -3208,9 +3136,6 @@ const T = {
   'stage.prePlanting': {
     en: 'Pre-Planting', fr: 'Pré-plantation', sw: 'Kabla ya Kupanda', ha: 'Kafin Shuka', tw: 'Ansa Dua', hi: 'रोपण-पूर्व',
   },
-  'stage.vegetative': {
-    en: 'Vegetative', fr: 'Végétatif', sw: 'Mimea', ha: 'Girma', tw: 'Nyin', hi: 'वानस्पतिक',
-  },
   'stage.postHarvest': {
     en: 'Post-Harvest', fr: 'Post-récolte', sw: 'Baada ya Mavuno', ha: 'Bayan Girbi', tw: 'Otwa Akyi', hi: 'कटाई के बाद',
   },
@@ -3230,58 +3155,10 @@ const T = {
   },
 
   // ── Activity types ──
-  'activity.planting': {
-    en: 'Planting', fr: 'Plantation', sw: 'Kupanda', ha: 'Shuka', tw: 'Dua',
-  },
-  'activity.spraying': {
-    en: 'Spraying', fr: 'Pulvérisation', sw: 'Kunyunyizia', ha: 'Fesa', tw: 'Pete aduro',
-  },
-  'activity.fertilizing': {
-    en: 'Fertilizing', fr: 'Fertilisation', sw: 'Kuweka mbolea', ha: 'Zuba taki', tw: 'Gu nkɔsoɔ aduro',
-  },
-  'activity.irrigation': {
-    en: 'Irrigation', fr: 'Irrigation', sw: 'Umwagiliaji', ha: 'Ban ruwa', tw: 'Nsuo gu so',
-  },
-  'activity.weeding': {
-    en: 'Weeding', fr: 'Désherbage', sw: 'Kupalilia', ha: 'Cire ciyawa', tw: 'Tu wura',
-  },
-  'activity.harvesting': {
-    en: 'Harvesting', fr: 'Récolte', sw: 'Kuvuna', ha: 'Girbi', tw: 'Twa',
-  },
-  'activity.storage': {
-    en: 'Storage', fr: 'Stockage', sw: 'Uhifadhi', ha: 'Adanawa', tw: 'Sie',
-  },
-  'activity.selling': {
-    en: 'Selling', fr: 'Vente', sw: 'Kuuza', ha: 'Sayarwa', tw: 'Tɔn',
-  },
-  'activity.other': {
-    en: 'Other', fr: 'Autre', sw: 'Nyingine', ha: 'Wani', tw: 'Afoforo',
-  },
 
   // ── Image stages ──
-  'imageStage.earlyGrowth': {
-    en: 'Early Growth', fr: 'Début de croissance', sw: 'Ukuaji wa Mapema', ha: 'Farkon Girma', tw: 'Nyin Ahyɛase',
-  },
-  'imageStage.midStage': {
-    en: 'Mid Stage', fr: 'Mi-parcours', sw: 'Katikati', ha: 'Tsakiyar Mataki', tw: 'Ntam Anammɔn',
-  },
-  'imageStage.preHarvest': {
-    en: 'Pre-Harvest', fr: 'Pré-récolte', sw: 'Kabla ya Mavuno', ha: 'Kafin Girbi', tw: 'Ansa Otwa',
-  },
 
   // ── Advice options ──
-  'advice.yes': {
-    en: 'Yes', fr: 'Oui', sw: 'Ndio', ha: 'Eh', tw: 'Aane',
-  },
-  'advice.partial': {
-    en: 'Partial', fr: 'Partiel', sw: 'Nusu', ha: 'Wani ɓangare', tw: 'Fa bi',
-  },
-  'advice.no': {
-    en: 'No', fr: 'Non', sw: 'Hapana', ha: "A'a", tw: 'Daabi',
-  },
-  'advice.na': {
-    en: 'N/A', fr: 'N/A', sw: 'Haihusiki', ha: 'Babu', tw: 'Nni ho',
-  },
 
   // ── Credibility flag labels ──
   'flag.burstSubmissions': {
@@ -3648,37 +3525,19 @@ const T = {
   //  CROP STAGES — OnboardingWizard stage options
   // ═══════════════════════════════════════════════════════════
 
-  'cropStage.planting': {
-    en: 'Planting', fr: 'Plantation', sw: 'Kupanda', ha: 'Dasa', tw: 'Dua',
-  },
   'cropStage.growing': {
     en: 'Growing', fr: 'Croissance', sw: 'Kukua', ha: 'Girma', tw: 'Nyin',
-  },
-  'cropStage.flowering': {
-    en: 'Flowering', fr: 'Floraison', sw: 'Kuchanua', ha: 'Fure', tw: 'Nhwiren',
-  },
-  'cropStage.harvest': {
-    en: 'Harvest', fr: 'Récolte', sw: 'Mavuno', ha: 'Girbi', tw: 'Twabere',
   },
 
   // ═══════════════════════════════════════════════════════════
   //  TOP CROPS — crop label translations
   // ═══════════════════════════════════════════════════════════
 
-  'crop.maize': {
-    en: 'Maize', fr: 'Maïs', sw: 'Mahindi', ha: 'Masara', tw: 'Aburo',
-  },
-  'crop.rice': {
-    en: 'Rice', fr: 'Riz', sw: 'Mpunga', ha: 'Shinkafa', tw: 'Emo',
-  },
   'crop.beans': {
     en: 'Beans', fr: 'Haricots', sw: 'Maharage', ha: 'Wake', tw: 'Adua',
   },
   'crop.coffee': {
     en: 'Coffee', fr: 'Café', sw: 'Kahawa', ha: 'Kofi', tw: 'Kɔfe',
-  },
-  'crop.cassava': {
-    en: 'Cassava', fr: 'Manioc', sw: 'Muhogo', ha: 'Rogo', tw: 'Bankye',
   },
   'crop.banana': {
     en: 'Banana', fr: 'Banane', sw: 'Ndizi', ha: 'Ayaba', tw: 'Kwadu',
@@ -3688,9 +3547,6 @@ const T = {
   },
   'crop.sorghum': {
     en: 'Sorghum', fr: 'Sorgho', sw: 'Mtama', ha: 'Dawa', tw: 'Atooko-kakraba',
-  },
-  'crop.tomato': {
-    en: 'Tomato', fr: 'Tomate', sw: 'Nyanya', ha: 'Tumatir', tw: 'Ntosi',
   },
   'crop.potato': {
     en: 'Potato', fr: 'Pomme de terre', sw: 'Viazi', ha: 'Dankali', tw: 'Borɔdeɛ',
@@ -4039,15 +3895,6 @@ const T = {
   'setup.whatsNeeded': {
     en: 'What\'s still needed:', fr: 'Ce qui reste à faire :', sw: 'Kinachohitajika bado:', ha: 'Abin da ake buƙata har yanzu:', tw: 'Nea ehia da:',
   },
-  'setup.saveTimeout': {
-    en: 'Save timed out. Your data is saved locally. Try again.', fr: 'Sauvegarde expirée. Vos données sont enregistrées localement. Réessayez.', sw: 'Muda wa kuhifadhi umeisha. Data yako imehifadhiwa kwenye simu. Jaribu tena.', ha: 'Lokacin ajiye ya ƙare. An ajiye bayanan ka a wayar ka. Sake gwadawa.', tw: 'Kora no abere. Wo data no akora wɔ wo fon so. San bɔ mmɔden.',
-  },
-  'setup.gpsSlow': {
-    en: 'Location detection is slow. You can type your location instead.', fr: 'La détection de position est lente. Vous pouvez saisir votre emplacement.', sw: 'Kutambua eneo kunachelewa. Unaweza kuandika eneo lako badala yake.', ha: 'Gano wurin yana jinkiri. Za ka iya rubuta wurin ka a maimakon haka.', tw: 'Beae no hwehwɛ rekyɛ. Wobɛtumi atwerɛ wo beae no.',
-  },
-  'setup.saving': {
-    en: 'Saving...', fr: 'Enregistrement...', sw: 'Inahifadhi...', ha: 'Ana ajiye...', tw: 'Ɛrekora...',
-  },
   'setup.saved': {
     en: 'Saved successfully', fr: 'Enregistré avec succès', sw: 'Imehifadhiwa', ha: 'An ajiye cikin nasara', tw: 'Wɔakora no yie',
   },
@@ -4064,9 +3911,6 @@ const T = {
   },
   'tasks.completeFailed': {
     en: 'Could not save. Try again.', fr: 'Impossible d\'enregistrer. Réessayez.', sw: 'Haikuweza kuhifadhi. Jaribu tena.', ha: 'Ba a iya ajiyewa ba. Sake gwadawa.', tw: 'Ɛntumi ankora. San bɔ mmɔden.',
-  },
-  'tasks.setupFirst': {
-    en: 'Complete your farm setup first to unlock tasks', fr: 'Terminez d\'abord la configuration de votre ferme pour débloquer les tâches', sw: 'Kamilisha usanidi wa shamba kwanza ili kufungua kazi', ha: 'Fara kammala saita gonar ka kafin a buɗe ayyuka', tw: 'Di kan wie wo afuo nhyehyɛe na bue adwuma ahorow',
   },
   'tasks.doToday': {
     en: 'Do today', fr: 'À faire aujourd\'hui', sw: 'Fanya leo', ha: 'Yi yau', tw: 'Yɛ nnɛ',
@@ -4938,7 +4782,6 @@ const T = {
   'status.cropStage': { en: 'Crop stage', fr: 'Étape culture', sw: 'Hatua ya mazao', ha: 'Matakin amfani', tw: 'Nnɔbae anammɔn', hi: 'फसल का चरण', },
   'status.tasks': { en: 'Tasks', fr: 'Tâches', sw: 'Kazi', ha: 'Ayyuka', tw: 'Adwuma', hi: 'कार्य', },
   'status.activity': { en: 'Activity', fr: 'Activité', sw: 'Shughuli', ha: 'Aiki', tw: 'Dwumadi', hi: 'गतिविधि', },
-  'status.good': { en: 'Farm healthy', fr: 'Ferme en bonne santé', sw: 'Shamba zuri', ha: 'Gona lafiyayye', tw: 'Afuo apɔ mu yie' },
 
   // ─── Retention indicators ─────────────────────────────────
   'retention.urgent': { en: 'URGENT', fr: 'URGENT', sw: 'HARAKA', ha: 'GAGGAWA', tw: 'NTƐM' },
@@ -5227,9 +5070,6 @@ const T = {
   'weather.loading': {
     en: 'Loading local weather...', fr: 'Chargement de la météo...', sw: 'Inapakia hali ya hewa...', ha: 'Ana lodi yanayi...', tw: 'Ɛreload wim tebea...',
   },
-  'weather.unavailable': {
-    en: 'Weather data unavailable. Check your connection and try again.', fr: 'Données météo indisponibles. Vérifiez votre connexion.', sw: 'Data ya hali ya hewa haipatikani. Angalia mtandao wako.', ha: 'Bayanin yanayi ba ya samu ba. Duba haɗin ka.', tw: 'Wim tebea nsɛm nni hɔ. Hwɛ wo intanɛt.',
-  },
   'weather.usingLocation': {
     en: 'Using location:', fr: 'Position utilisée :', sw: 'Mahali:', ha: 'Wuri:', tw: 'Beae:',
   },
@@ -5449,14 +5289,8 @@ const T = {
   'farm.crop': {
     en: 'Crop:', fr: 'Culture :', sw: 'Mazao:', ha: 'Amfanin gona:', tw: 'Nnɔbae:',
   },
-  'farm.size': {
-    en: 'Size:', fr: 'Taille :', sw: 'Ukubwa:', ha: 'Girma:', tw: 'Kɛseɛ:',
-  },
   'farm.acres': {
     en: 'acres', fr: 'hectares', sw: 'ekari', ha: 'eka', tw: 'eka',
-  },
-  'farm.location': {
-    en: 'Location:', fr: 'Emplacement :', sw: 'Mahali:', ha: 'Wuri:', tw: 'Beae:',
   },
   'farm.country': {
     en: 'Country:', fr: 'Pays :', sw: 'Nchi:', ha: 'Ƙasa:', tw: 'Ɔman:',
@@ -5522,9 +5356,6 @@ const T = {
   'support.failed': {
     en: 'Failed to send request', fr: 'Échec de l\'envoi', sw: 'Imeshindikana kutuma ombi', ha: 'An kasa aika buƙata', tw: 'Entumi amfa abisadeɛ ankɔ', hi: 'अनुरोध भेजने में विफल',
   },
-  'support.subject': {
-    en: 'Subject', fr: 'Sujet', sw: 'Mada', ha: 'Batu', tw: 'Asɛm tiawa', hi: 'विषय',
-  },
   'support.describe': {
     en: 'Describe your issue...', fr: 'Décrivez votre problème...', sw: 'Eleza tatizo lako...', ha: 'Bayyana matsalar ka...', tw: 'Ka wo ɔhaw ho nsɛm...', hi: 'अपनी समस्या बताएँ...',
   },
@@ -5562,9 +5393,6 @@ const T = {
   },
   'tasks.markDone': {
     en: 'Mark Done', fr: 'Marquer terminé', sw: 'Weka imekamilika', ha: 'Alama an gama', tw: 'Hyɛ nsɔano sɛ awie',
-  },
-  'tasks.completed': {
-    en: 'Completed', fr: 'Terminé', sw: 'Imekamilika', ha: 'An gama', tw: 'Wie',
   },
   // Single-action-flow spec (Apr 2026): explicit primary
   // "Complete task" button on the current task card. The
@@ -5605,14 +5433,6 @@ const T = {
   // one-line encouragement when the streak grew or restarted.
   // {n} is interpolated by the caller via .replace('{n}', ...)
   // so the key remains a single string per language.
-  'streak.day': {
-    en: '\uD83D\uDD25 {n}-day streak',
-    fr: '\uD83D\uDD25 S\u00E9rie de {n} jours',
-    sw: '\uD83D\uDD25 Mfululizo wa siku {n}',
-    ha: '\uD83D\uDD25 Jeri na kwana {n}',
-    tw: '\uD83D\uDD25 Nna {n} mu nkonimdie',
-    hi: '\uD83D\uDD25 {n}-दिन की लकीर',
-  },
   'streak.keepGoing': {
     en: 'Keep it going!',
     fr: 'Continuez\u00A0!',
@@ -6089,14 +5909,11 @@ const T = {
   'crop.maize': { en: 'Maize', fr: 'Maïs', sw: 'Mahindi', ha: 'Masara', tw: 'Aburo' },
   'crop.cassava': { en: 'Cassava', fr: 'Manioc', sw: 'Muhogo', ha: 'Rogo', tw: 'Bankye' },
   'crop.rice': { en: 'Rice', fr: 'Riz', sw: 'Mchele', ha: 'Shinkafa', tw: 'Ɛmo' },
-  'crop.tomato': { en: 'Tomato', fr: 'Tomate', sw: 'Nyanya', ha: 'Tumatir', tw: 'Ntɔɔs' },
-  'crop.pepper': { en: 'Pepper', fr: 'Piment', sw: 'Pilipili', ha: 'Barkono', tw: 'Mako' },
   'crop.cocoa': { en: 'Cocoa', fr: 'Cacao', sw: 'Kakao', ha: 'Koko', tw: 'Kookoo' },
   'crop.yam': { en: 'Yam', fr: 'Igname', sw: 'Viazi', ha: 'Doya', tw: 'Bayerɛ' },
   'crop.plantain': { en: 'Plantain', fr: 'Plantain', sw: 'Ndizi', ha: 'Ayaba', tw: 'Brɔdɛ' },
   'crop.okra': { en: 'Okra', fr: 'Gombo', sw: 'Bamia', ha: 'Kubewa', tw: 'Nkruma' },
   'crop.ginger': { en: 'Ginger', fr: 'Gingembre', sw: 'Tangawizi', ha: 'Citta', tw: 'Akakaduro' },
-  'crop.onion': { en: 'Onion', fr: 'Oignon', sw: 'Kitunguu', ha: 'Albasa', tw: 'Gyeene' },
   'crop.chili': { en: 'Chili', fr: 'Piment', sw: 'Pilipili kali', ha: 'Barkono mai tsami', tw: 'Mako kɔkɔɔ' },
   'crop.eggplant': { en: 'Eggplant', fr: 'Aubergine', sw: 'Biringanya', ha: 'Gauta', tw: 'Ntɔɔs tuntum' },
   'crop.spinach': { en: 'Spinach', fr: 'Épinard', sw: 'Mchicha', ha: 'Alayyahu', tw: 'Efre' },
@@ -6303,10 +6120,8 @@ const T = {
   'farm.statusArchived': { en: 'Archived', fr: 'Archivé', sw: 'Imehifadhiwa', ha: 'An adana', tw: 'Wɔakora' },
   'farm.switchingFarm': { en: 'Switching farm...', fr: 'Changement de ferme...', sw: 'Inabadilisha shamba...', ha: 'Ana canza gona...', tw: 'Ɛresesa afuo...' },
   'farm.duplicateError': { en: 'A farm with the same name and location already exists.', fr: 'Une ferme avec le même nom et lieu existe déjà.', sw: 'Shamba lenye jina na mahali sawa tayari lipo.', ha: 'Gona mai wannan suna da wuri ta riga ta wanzu.', tw: 'Afuo a ne din koro ne baabi koro wɔ hɔ dada.' },
-  'common.cancel': { en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae', hi: 'रद्द करें' },
   'common.save': { en: 'Save', fr: 'Sauvegarder', sw: 'Hifadhi', ha: 'Adana', tw: 'Kora', hi: 'सहेजें' },
   'common.saving': { en: 'Saving...', fr: 'Sauvegarde...', sw: 'Inahifadhi...', ha: 'Ana adanawa...', tw: 'Ɛrekora...', hi: 'सहेज रहे हैं...' },
-  'common.back': { en: 'Back', fr: 'Retour', sw: 'Rudi', ha: 'Komawa', tw: 'San kɔ akyi', hi: 'वापस' },
 
   // ─── Farm Tasks ──────────────────────────────────────────
   'farmTasks.title': { en: 'Farm Tasks', fr: 'Tâches agricoles', sw: 'Kazi za Shamba', ha: 'Ayyukan Gona', tw: 'Afuo Adwuma' },
@@ -6564,29 +6379,17 @@ const T = {
   //  ONBOARDING — new farmer setup flow
   // ═══════════════════════════════════════════════════════════
 
-  'onboarding.newToFarming': {
-    en: 'Are you new to farming?', fr: '\u00CAtes-vous nouveau dans l\'agriculture ?', sw: 'Je, u mpya katika kilimo?', ha: 'Sabon manomi ne kai?', tw: 'Woy\u025Bokuafo\u0254 foforo\u0254?',
-  },
-  'onboarding.yesNew': {
-    en: "Yes, I'm new", fr: 'Oui, je suis nouveau', sw: 'Ndio, mimi ni mpya', ha: 'Eh, sabon zuwa ne', tw: 'Aane, mey\u025B foforo\u0254',
-  },
   'onboarding.haveExperience': {
     en: 'I have experience', fr: "J'ai de l'exp\u00E9rience", sw: 'Nina uzoefu', ha: 'Ina da \u0199warewa', tw: 'Mew\u0254 osuahu',
   },
   'onboarding.whereIsFarm': {
     en: 'Where is your farm?', fr: 'O\u00F9 se trouve votre ferme ?', sw: 'Shamba lako liko wapi?', ha: 'Ina gonar ka?', tw: 'Wo afuo no w\u0254 he?',
   },
-  'onboarding.useMyLocation': {
-    en: 'Use my location', fr: 'Utiliser ma position', sw: 'Tumia eneo langu', ha: 'Yi amfani da wurin da nake', tw: 'Fa me beae\u025B',
-  },
   'onboarding.detecting': {
     en: 'Finding your location...', fr: 'Recherche de votre position...', sw: 'Inatafuta eneo lako...', ha: 'Ana neman wurin ka...', tw: 'Rehwehw\u025B wo beae\u025B...',
   },
   'onboarding.locationFound': {
     en: 'Location found!', fr: 'Position trouv\u00E9e !', sw: 'Eneo limepatikana!', ha: 'An sami wurin!', tw: 'Y\u025Bahu beae\u025B no!',
-  },
-  'onboarding.locationFailed': {
-    en: 'Could not detect location', fr: 'Impossible de d\u00E9tecter la position', sw: 'Imeshindwa kupata eneo', ha: 'Ba a iya gano wurin ba', tw: 'Y\u025Bantumi anhu beae\u025B no',
   },
   'onboarding.typeLocation': {
     en: 'Type your location', fr: 'Tapez votre emplacement', sw: 'Andika eneo lako', ha: 'Rubuta wurin ka', tw: 'Twer\u025B wo beae\u025B',
@@ -6642,9 +6445,6 @@ const T = {
   },
   'onboarding.demographics.skip': {
     en: 'Skip for now', fr: 'Passer', sw: 'Ruka kwa sasa', ha: 'Tsallake yanzu', tw: 'Twa mu s\u025Bsei\u025B',
-  },
-  'onboarding.step': {
-    en: 'Step', fr: '\u00C9tape', sw: 'Hatua', ha: 'Mataki', tw: 'Anamm\u0254n',
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -7209,8 +7009,6 @@ const T = {
   // Standardize Navigation System §1 — Scan promoted to a
   // top-level nav tab on the unified 5-tab structure (Home /
   // My Grow / Tasks / Progress / Scan).
-  'nav.scan':     { en: 'Scan',     fr: 'Scan',    sw: 'Changanua',  ha: 'Duba',    tw: 'Hwehw\u025B', hi: 'स्कैन' },
-  'nav.sell':     { en: 'Sell',     fr: 'Vendre',  sw: 'Uza',        ha: 'Sayar',   tw: 'Tɔn',    hi: 'बेचें' },
   // Spec-named aliases (common.*) — same values, kept in sync
   // so callers using the spec key shape resolve identically.
   'common.home':     { en: 'Home',     fr: 'Accueil', sw: 'Nyumbani',  ha: 'Gida',    tw: 'Fie',    hi: 'होम' },
@@ -7357,18 +7155,15 @@ const T = {
   'progress.title': { en: 'My Progress', fr: 'Mon progrès', sw: 'Maendeleo yangu', ha: 'Ci gaba na', tw: 'Me nkɔso' },
   'progress.complete': { en: 'complete', fr: 'terminé', sw: 'kamili', ha: 'an gama', tw: 'awie' },
   'progress.remaining': { en: 'still to do', fr: 'restant', sw: 'bado', ha: 'ya rage', tw: 'aka' },
-  'progress.allDone': { en: 'All caught up!', fr: 'Tout est fait !', sw: 'Kazi zote zimekamilika!', ha: 'An gama duka!', tw: 'Wɔawie ne nyinaa!' },
   'progress.done': { en: 'Done', fr: 'Fait', sw: 'Imekamilika', ha: 'An gama', tw: 'Awie' },
   'progress.pending': { en: 'Left today', fr: 'Restant', sw: 'Bado leo', ha: 'Ya rage yau', tw: 'Aka ɛnnɛ' },
   'progress.rate': { en: 'Rate', fr: 'Taux', sw: 'Kiwango', ha: 'Adadi', tw: 'Dodow' },
-  'progress.cropProgress': { en: 'Crop progress', fr: 'Avancement culture', sw: 'Maendeleo ya mazao', ha: 'Ci gaban amfanin gona', tw: 'Nnɔbae nkɔso' },
   'progress.offlineNote': { en: 'Some data may be outdated while offline.', fr: 'Certaines données peuvent ne pas être à jour hors ligne.', sw: 'Baadhi ya data inaweza kuwa ya zamani nje ya mtandao.', ha: 'Wasu bayanan na iya zama tsoho a wajen layi.', tw: 'Data bi bɛyɛ dada bere a wo nni intanɛt.' },
   'progress.statusGood': { en: 'You\'re on track', fr: 'Vous êtes en bonne voie', sw: 'Uko njia nzuri', ha: 'Kuna kan hanya', tw: 'Wowɔ ɛkwan pa so' },
   'progress.statusGreat': { en: 'Great progress!', fr: 'Excellent progrès !', sw: 'Maendeleo mazuri!', ha: 'Ci gaba nagari!', tw: 'Nkɔso pa!' },
   'progress.statusStart': { en: 'Good start — keep going', fr: 'Bon début — continuez', sw: 'Mwanzo mzuri — endelea', ha: 'Farawa mai kyau — ci gaba', tw: 'Mfitiaseɛ pa — toa so' },
   'progress.doneToday': { en: '{count} done today', fr: '{count} fait aujourd\'hui', sw: '{count} leo', ha: '{count} yau', tw: '{count} ɛnnɛ' },
   'progress.leftToday': { en: '{count} left today', fr: '{count} restant', sw: '{count} bado leo', ha: '{count} ya rage yau', tw: '{count} aka ɛnnɛ' },
-  'progress.updatedToday': { en: 'Updated today', fr: 'Mis à jour aujourd\'hui', sw: 'Imesasishwa leo', ha: 'An sabunta yau', tw: 'Wɔafo ɛnnɛ' },
 
   // ─── Progress Engine — status bands, next best action, bridges ─
   'progress.on_track':          { en: 'On track',            fr: 'Sur la bonne voie',       sw: 'Unaendelea vizuri',           ha: 'Kuna kan hanya',              tw: 'Wowɔ ɛkwan pa so',             hi: 'सही रास्ते पर' },
@@ -7733,7 +7528,6 @@ const T = {
   'bulk.myRequest.acceptedOf':     { en: 'farmers accepted', fr: 'agriculteurs acceptés', sw: 'wakulima wamekubali', ha: 'manoma sun karɓa', tw: 'akuafoɔ agye to mu' },
   'bulk.myRequest.declined':       { en: 'declined', fr: 'refusé', sw: 'walikataa', ha: 'sun ki', tw: 'annyae' },
   'bulk.myRequest.pending':        { en: 'still deciding', fr: 'en attente', sw: 'bado wanaamua', ha: 'har yanzu ba a yanke ba', tw: 'reyɛ adwene' },
-  'common.cancel':                 { en: 'Cancel', fr: 'Annuler', sw: 'Ghairi', ha: 'Soke', tw: 'Gyae' },
   'common.back':                   { en: 'Back', fr: 'Retour', sw: 'Rudi', ha: 'Baya', tw: 'San kɔ akyi' },
 
   // ─── Organization Dashboard ───────────────────────────────────
@@ -8134,7 +7928,6 @@ const T = {
   'econ.highlight.higherValuePotential':{ en: 'Higher value potential',    fr: 'Potentiel de valeur plus élevée',         sw: 'Uwezo wa thamani kubwa',                ha: 'Damar ƙima mai yawa',                  tw: 'Boɔ kɛseɛ hokwan' },
 
   // ─── Dashboard insights ────────────────────────────────
-  'insights.title':                       { en: 'Today\u2019s Insights',                fr: 'Insights du jour',                       sw: 'Maarifa ya Leo',                          ha: 'Fahimtar Yau',                          tw: 'Ɛnnɛ nkyerɛkyerɛmu' },
   // Weather-based
   'insight.water.stress.msg':             { en: 'Water stress risk',                    fr: 'Risque de stress hydrique',              sw: 'Hatari ya mkazo wa maji',                 ha: 'Hadarin rashin ruwa',                   tw: 'Nsu a ɛnnɔɔso asiane' },
   'insight.water.stress.reason':          { en: 'Current dry conditions may slow establishment', fr: 'Les conditions sèches peuvent ralentir la croissance', sw: 'Ukavu unaweza kupunguza kustawi', ha: 'Busasshen yanayi na iya rage farawa', tw: 'Ɔpɛ tebea bɛtumi atɛ adwumayɛ no so' },
@@ -9517,12 +9310,10 @@ const T = {
   'progress.completedToday':      { en: 'Completed today',                   fr: 'Terminé aujourd\'hui',                     sw: 'Imekamilika leo',               ha: 'An kammala yau',                     tw: 'Wie nnɛ',                     hi: 'आज पूरा हुआ' },
   'progress.remainingToday':      { en: 'Remaining today',                   fr: 'Restant aujourd\'hui',                     sw: 'Iliyobaki leo',                 ha: 'Sauran yau',                         tw: 'Aka nnɛ',                     hi: 'आज शेष' },
   'progress.updatedToday':        { en: 'Updated today',                     fr: 'Mis à jour aujourd\'hui',                  sw: 'Imesasishwa leo',               ha: 'An sabunta yau',                     tw: 'Yɛasakra nnɛ',                hi: 'आज अद्यतन' },
-  'progress.allDone':             { en: 'All done',                          fr: 'Tout est fait',                            sw: 'Yote yamekamilika',             ha: 'An gama duka',                       tw: 'Ne nyinaa awie',              hi: 'सब हो गया' },
   'progress.excellent':           { en: 'Excellent',                         fr: 'Excellent',                                sw: 'Bora kabisa',                   ha: 'Mai kyau ƙwarai',                    tw: 'Eye paa',                     hi: 'उत्कृष्ट' },
   'progress.aheadThisWeek':       { en: 'Ahead this week',                   fr: 'En avance cette semaine',                  sw: 'Mbele wiki hii',                ha: 'A gaba wannan mako',                 tw: 'Anim wɔ saa nnawɔtwe yi',     hi: 'इस हफ्ते आगे' },
 
   // farm.*
-  'farm.addFarm':                 { en: 'Add farm',                          fr: 'Ajouter une ferme',                        sw: 'Ongeza shamba',                 ha: 'Ƙara gona',                          tw: 'Fa afuo ka ho',               hi: 'खेत जोड़ें' },
   'farm.changeFarm':              { en: 'Change farm',                       fr: 'Changer de ferme',                         sw: 'Badilisha shamba',              ha: 'Canza gona',                         tw: 'Sesa afuo',                   hi: 'खेत बदलें' },
   'farm.timelineTitle':           { en: 'Crop timeline',                     fr: 'Chronologie de la culture',                sw: 'Ratiba ya zao',                 ha: 'Jadawalin shuka',                    tw: 'Aduane mmerɛ',                hi: 'फसल समयरेखा' },
   'farm.estimated':               { en: 'Estimated',                         fr: 'Estimé',                                   sw: 'Inakadiriwa',                   ha: 'An kiyasta',                         tw: 'Akontaabuo',                  hi: 'अनुमानित' },
@@ -9553,7 +9344,6 @@ const T = {
   'settings.reminderTimeHelper':  { en: 'When to send reminders each day',   fr: 'Quand envoyer les rappels chaque jour',    sw: 'Wakati wa kutuma vikumbusho',   ha: 'Lokacin aika tunatarwa kowace rana', tw: 'Berɛ a yɛde nkae bɛkɔ ɛda biara', hi: 'हर दिन अनुस्मारक कब भेजें' },
 
   // support.*
-  'support.needHelp':             { en: 'Need help?',                        fr: 'Besoin d\'aide ?',                         sw: 'Unahitaji msaada?',             ha: 'Kana bukatar taimako?',              tw: 'Wohia mmoa?',                 hi: 'मदद चाहिए?' },
   'support.helpText':             { en: 'Contact our support team',          fr: 'Contactez notre équipe de support',        sw: 'Wasiliana na timu yetu',        ha: 'Tuntuɓi tawagar tallafi',            tw: 'Frɛ yɛn mmoa kuo',            hi: 'सहायता टीम से संपर्क करें' },
   'support.subject':              { en: 'Subject',                           fr: 'Sujet',                                    sw: 'Mada',                          ha: 'Batun',                              tw: 'Asɛm no',                     hi: 'विषय' },
   'support.describeProblem':      { en: 'Describe your problem',             fr: 'Décrivez votre problème',                  sw: 'Eleza tatizo lako',             ha: 'Bayyana matsalarka',                 tw: 'Ka wo haw no',                hi: 'अपनी समस्या बताएँ' },
@@ -9563,7 +9353,6 @@ const T = {
   // The existing farmerActions.* keys remain valid; these aliases
   // make the cleanup spec match call-site verbatim.
   'actions.readyToSell':          { en: 'Ready to sell',                     fr: 'Prêt à vendre',                            sw: 'Tayari kuuza',                  ha: 'Shirye don sayarwa',                 tw: 'Krado sɛ wɔbɛtɔn',            hi: 'बेचने के लिए तैयार' },
-  'actions.scanCrop':             { en: 'Scan crop',                         fr: 'Scanner la culture',                       sw: 'Skani zao',                     ha: 'Duba shuka',                         tw: 'Hwehwɛ aduane',               hi: 'फसल जाँचें' },
   'actions.recordHarvest':        { en: 'Record harvest',                    fr: 'Saisir la récolte',                        sw: 'Andika mavuno',                 ha: 'Rubuta girbi',                       tw: 'Kyerɛw nnɔbae',               hi: 'फसल दर्ज करें' },
   'actions.takePhoto':            { en: 'Take photo',                        fr: 'Prendre une photo',                        sw: 'Piga picha',                    ha: 'Ɗauki hoto',                         tw: 'Twa mfoni',                   hi: 'फोटो लें' },
   'actions.checkWeather':         { en: 'Check weather',                     fr: 'Voir la météo',                            sw: 'Angalia hali ya hewa',          ha: 'Duba yanayi',                        tw: 'Hwɛ ewiem tebea',             hi: 'मौसम देखें' },
@@ -10045,7 +9834,6 @@ const T = {
   'actions.send':                 { en: 'Send',                                fr: 'Envoyer',                             sw: 'Tuma',                         ha: 'Aika',                               tw: 'Soma',                        hi: 'भेजें' },
 
   // weather chips on the home / today surfaces
-  'weather.rain':                 { en: 'Rain',                                fr: 'Pluie',                               sw: 'Mvua',                         ha: 'Ruwan sama',                         tw: 'Nsuo',                        hi: 'बारिश' },
   'weather.mixed':                { en: 'Mixed weather',                       fr: 'Météo variable',                      sw: 'Hali ya hewa mchanganyiko',    ha: 'Yanayi mai gauraya',                 tw: 'Ewiem tebea adi afra',        hi: 'मिश्रित मौसम' },
   'weather.good':                 { en: 'Good',                                fr: 'Bonne',                               sw: 'Nzuri',                        ha: 'Mai kyau',                           tw: 'Eye',                         hi: 'अच्छा' },
   'weather.updatedJustNow':       { en: 'Updated just now',                    fr: 'Mis à jour à l\'instant',             sw: 'Imesasishwa sasa hivi',        ha: 'An sabunta yanzun nan',              tw: 'Yɛasakra no seesei ara',      hi: 'अभी अपडेट किया गया' },
@@ -10097,7 +9885,6 @@ const T = {
   'market.interested':        { en: 'I’m Interested',          fr: 'Je suis intéressé(e)',  sw: 'Nina Hamu',             ha: 'Ina Sha\'awa',           tw: 'Mepɛ',              hi: 'मुझे रुचि है' },
   'market.noProduce':         { en: 'No produce available yet.', fr: 'Aucun produit disponible pour le moment.', sw: 'Hakuna mazao yanayopatikana bado.', ha: 'Babu amfanin gona da ke akwai tukuna.', tw: 'Nnɔbae biara nni hɔ ɛnnɛ.', hi: 'अभी कोई उपज उपलब्ध नहीं है।' },
   'market.success':           { en: 'Your produce is now visible to buyers.',   fr: 'Vos produits sont maintenant visibles par les acheteurs.', sw: 'Mazao yako sasa yanaonekana kwa wanunuzi.', ha: 'Yanzu masu siyayya za su iya ganin amfaninka.', tw: 'Adetɔfoɔ tumi hu wo nnɔbae mprenpren ara.', hi: 'आपकी उपज अब खरीदारों को दिख रही है।' },
-  'market.readyToSell':       { en: 'Ready to sell?',          fr: 'Prêt à vendre ?',       sw: 'Tayari kuuza?',         ha: 'A shirye don sayarwa?',   tw: 'Wopɛ sɛ wotɔn?',     hi: 'बेचने के लिए तैयार?' },
   'market.markProduceReady':  { en: 'Mark Produce Ready',      fr: 'Marquer comme prête',   sw: 'Onyesha Mazao Tayari',  ha: 'Sanya Amfani A Shirye',  tw: 'Kyerɛ sɛ aduane no asiesie', hi: 'उपज तैयार चिह्नित करें' },
 
   // Impact — NGO funding & impact card.
@@ -10120,10 +9907,7 @@ const T = {
   // Wording is conservative per spec § 13: "may qualify",
   // "check requirements", "verified source". Never
   // "guaranteed", "approved", or "you qualify".
-  'funding.title':              { en: 'Funding & Support',                 fr: 'Financement et soutien',                  sw: 'Fedha na Msaada',                  ha: 'Tallafi da Goyon Baya',         tw: 'Sika ne Mmoa',                hi: 'फंडिंग और सहायता' },
-  'funding.subtitle':           { en: 'Programs that may support your farm.', fr: 'Programmes susceptibles de soutenir votre ferme.', sw: 'Mipango inayoweza kusaidia shamba lako.', ha: 'Shirye-shiryen da za su iya tallafa wa gonarka.', tw: 'Nhyehyɛeɛ a ɛbɛtumi aboa w\'afuo.', hi: 'कार्यक्रम जो आपके खेत को सहायता दे सकते हैं।' },
   'funding.mayQualify':         { en: 'You may qualify — confirm with the source.', fr: 'Vous pourriez être éligible — confirmez avec la source.', sw: 'Unaweza kustahiki — thibitisha na chanzo.', ha: 'Za ka iya cancanta — tabbatar da tushe.', tw: 'Wobɛtumi anya — bisa nipa a wɔde maaeɛ.', hi: 'आप योग्य हो सकते हैं — स्रोत से पुष्टि करें।' },
-  'funding.learnMore':          { en: 'Learn More',          fr: 'En savoir plus',     sw: 'Jifunze zaidi',     ha: 'Ƙarin koyo',           tw: 'Hu pii',           hi: 'और जानें' },
   'funding.deadline':           { en: 'Deadline',            fr: 'Date limite',        sw: 'Tarehe ya mwisho',  ha: 'Ƙarshen lokaci',       tw: 'Da Korkorɛɛ',      hi: 'समय सीमा' },
   'funding.deadlineRolling':    { en: 'Rolling — no deadline', fr: 'En continu — sans date limite', sw: 'Endelevu — hakuna tarehe ya mwisho', ha: 'Mai gudana — babu ƙarshen lokaci', tw: 'Bere a ɛrekɔ so — Da Korkorɛɛ biara nni hɔ', hi: 'जारी — कोई समय सीमा नहीं' },
   'funding.benefit':            { en: 'Benefit',             fr: 'Avantage',           sw: 'Faida',             ha: 'Fa\'ida',              tw: 'Mfasoɔ',           hi: 'लाभ' },
@@ -10131,7 +9915,6 @@ const T = {
   'funding.verifiedSource':     { en: 'Verified source',     fr: 'Source vérifiée',    sw: 'Chanzo kilichothibitishwa', ha: 'Tushe da aka tabbatar', tw: 'Nipa a wɔahwehwɛ mu', hi: 'सत्यापित स्रोत' },
   'funding.contactSource':      { en: 'Contact Source',      fr: 'Contacter la source', sw: 'Wasiliana na Chanzo', ha: 'Tuntuɓi Tushe',      tw: 'Frɛ Nipa No',      hi: 'स्रोत से संपर्क करें' },
   'funding.checkRequirements':  { en: 'Check requirements before applying. Always contact the source to confirm eligibility.', fr: 'Vérifiez les conditions avant de postuler. Contactez toujours la source pour confirmer votre éligibilité.', sw: 'Angalia mahitaji kabla ya kuomba. Wasiliana na chanzo daima ili kuthibitisha ustahiki.', ha: 'Duba sharudda kafin ka nemi. Koyaushe tuntuɓi tushe don tabbatar da cancanta.', tw: 'Hwehwɛ ɔhwɛhwɛ a wɔde maaeɛ ansa na woapɔ. Daa frɛ nipa a wɔde maaeɛ no na wɔahyɛ wo den.', hi: 'आवेदन करने से पहले आवश्यकताएँ जाँचें। पात्रता की पुष्टि के लिए हमेशा स्रोत से संपर्क करें।' },
-  'funding.noMatches':          { en: 'No matching opportunities yet. Check again later.', fr: 'Aucune opportunité correspondante pour l\'instant. Revenez plus tard.', sw: 'Hakuna fursa zinazolingana bado. Angalia tena baadaye.', ha: 'Babu damar da ta dace tukuna. Sake duba daga baya.', tw: 'Hokwan biara nni hɔ ɛnnɛ. San bra bio.', hi: 'अभी कोई मिलान नहीं मिला। बाद में फिर देखें।' },
   'funding.noMatchesHint':      { en: 'New programs are added regularly. Make sure your crop and region are set on your farm so we can match you.', fr: 'De nouveaux programmes sont ajoutés régulièrement. Assurez-vous que votre culture et votre région sont configurées sur votre ferme pour que nous puissions vous proposer des correspondances.', sw: 'Mipango mipya inaongezwa mara kwa mara. Hakikisha zao na eneo lako limewekwa kwenye shamba lako ili tuweze kukulinganisha.', ha: 'Ana ƙara sabbin shirye-shirye akai-akai. Tabbatar an saita amfaninka da yankinka a gonarka don mu iya daidaita ku.', tw: 'Yɛde nhyehyɛeɛ foforo bɔ ho mpɛn nyinaa. Hwɛ sɛ wo aduane ne wo mantam wɔ wo afuo so na yɛatumi apɛ ɔbi a ɔfata wo.', hi: 'नियमित रूप से नए कार्यक्रम जोड़े जाते हैं। सुनिश्चित करें कि आपके खेत पर फसल और क्षेत्र सेट हैं ताकि हम आपका मिलान कर सकें।' },
   'funding.nearbyCardTitle':    { en: 'Funding opportunity nearby', fr: 'Opportunité de financement à proximité', sw: 'Fursa ya ufadhili karibu',     ha: 'Damar tallafi kusa',    tw: 'Sika hokwan a ɛbɛn ho',  hi: 'पास में फंडिंग अवसर' },
   'funding.nearbyCardText':     { en: 'You may qualify for support based on your crop and region.', fr: 'Vous pourriez être éligible à un soutien selon votre culture et votre région.', sw: 'Unaweza kustahiki msaada kulingana na zao na eneo lako.', ha: 'Za ka iya cancanci tallafi bisa amfani da yankinka.', tw: 'Wobɛtumi anya mmoa esiane wo aduane ne wo mantam nti.', hi: 'आप अपनी फसल और क्षेत्र के आधार पर सहायता के लिए योग्य हो सकते हैं।' },
@@ -10883,7 +10666,6 @@ const T = {
   'home.upNext.label':        { en: 'Up next',     fr: 'À suivre',         sw: 'Inayofuata',        ha: 'Na gaba',           tw: 'Nea edi hɔ',            hi: 'अगला' },
 
   // onboarding.*
-  'onboarding.continue':            { en: 'Continue',          fr: 'Continuer',                 sw: 'Endelea',                  ha: 'Ci gaba',                tw: 'Toa so',                   hi: 'जारी रखें' },
   'onboarding.country':             { en: 'Country',           fr: 'Pays',                      sw: 'Nchi',                     ha: 'Ƙasa',                   tw: 'Ɔman',                     hi: 'देश' },
   'onboarding.country.placeholder': { en: 'Select country',    fr: 'Choisir un pays',           sw: 'Chagua nchi',              ha: 'Zaɓi ƙasa',              tw: 'Paw ɔman',                 hi: 'देश चुनें' },
   'onboarding.crop':                { en: 'Crop',              fr: 'Culture',                   sw: 'Zao',                      ha: 'Shuka',                  tw: 'Aduane',                   hi: 'फसल' },
@@ -10892,8 +10674,6 @@ const T = {
   'onboarding.entry.existing':      { en: 'I already farm',    fr: 'Je cultive déjà',           sw: 'Tayari ninalima',          ha: 'Ina noma a yanzu',       tw: 'Mereyɛ kuayɛ dada',        hi: 'मैं पहले से खेती करता हूँ' },
   'onboarding.entry.new':           { en: 'Yes, I\u2019m new', fr: 'Oui, je suis nouveau',      sw: 'Ndiyo, mimi ni mpya',      ha: 'Eh, sabuwa ce',          tw: 'Aane, meyɛ foforɔ',        hi: 'हाँ, मैं नया हूँ' },
   'onboarding.entry.title':         { en: 'Are you new to farming?', fr: 'Êtes-vous nouveau dans l\u2019agriculture ?', sw: 'Je, wewe ni mpya kwenye kilimo?', ha: 'Sabuwa ce ka shiga noma?', tw: 'Wofiri ase reyɛ kuayɛ?', hi: 'क्या आप खेती में नए हैं?' },
-  'onboarding.farmSize':            { en: 'Farm size',         fr: 'Taille de la ferme',        sw: 'Ukubwa wa shamba',         ha: 'Girman gona',            tw: 'Afuom kɛseyɛ',             hi: 'खेत का आकार' },
-  'onboarding.location':            { en: 'Location',          fr: 'Lieu',                      sw: 'Mahali',                   ha: 'Wuri',                   tw: 'Beaeɛ',                    hi: 'स्थान' },
   'onboarding.reco.change':         { en: 'Change',            fr: 'Modifier',                  sw: 'Badilisha',                ha: 'Canza',                  tw: 'Sesa',                     hi: 'बदलें' },
   'onboarding.reco.title':          { en: 'Recommended crop',  fr: 'Culture recommandée',       sw: 'Zao linalopendekezwa',     ha: 'Shukar da aka shawarta', tw: 'Aduane a yɛkamfo kyerɛ',   hi: 'सुझाई गई फसल' },
   'onboarding.recommend':           { en: 'Recommend for me',  fr: 'Recommander pour moi',      sw: 'Pendekeza kwangu',         ha: 'Bayar da shawara',       tw: 'Kyerɛ me deɛ ɛfata',       hi: 'मेरे लिए सुझाएँ' },
@@ -11767,15 +11547,6 @@ const T = {
     tw: 'Yɛrehwehwɛ\u2026', hi: 'पहचान रहे हैं\u2026',
     es: 'Detectando\u2026',
   },
-  'onboarding.locationFailed': {
-    en: 'We couldn\u2019t detect your location. Pick it manually below.',
-    fr: 'Nous n\u2019avons pas pu détecter votre emplacement. Sélectionnez-le manuellement.',
-    sw: 'Hatukuweza kugundua eneo lako. Lichague kwa mkono hapa chini.',
-    ha: 'Ba mu iya gano wurin ku ba. Zaɓa shi da hannu a ƙasa.',
-    tw: 'Yɛantumi anhu wo beae. Yi no wo nsa wɔ ase ha.',
-    hi: 'हम आपका स्थान नहीं पहचान पाए। नीचे मैन्युअल चुनें।',
-    es: 'No pudimos detectar su ubicación. Selecciónela manualmente abajo.',
-  },
   'onboarding.manualLocation': {
     en: 'Or enter manually', fr: 'Ou saisir manuellement',
     sw: 'Au weka kwa mkono', ha: 'Ko shigar da hannu',
@@ -12295,7 +12066,6 @@ const T = {
   'admin.funding.pilotForms':     { en: 'Forms submitted',    fr: 'Formulaires soumis',   sw: 'Fomu zilizowasilishwa',     ha: 'Fom da aka aika',      tw: 'Fom a wɔde akɔ',         hi: 'जमा फॉर्म' },
 
   // Common helpers
-  'common.close':      { en: 'Close',     fr: 'Fermer',     sw: 'Funga',     ha: 'Rufe',      tw: 'To mu',     hi: 'बंद करें' },
   'common.cancel':     { en: 'Cancel',    fr: 'Annuler',    sw: 'Ghairi',    ha: 'Soke',      tw: 'Gyae',      hi: 'रद्द करें' },
   'common.submitting': { en: 'Submitting…', fr: 'Envoi…',   sw: 'Inawasilisha…', ha: 'Ana aikawa…', tw: 'Yɛresoma…', hi: 'भेज रहे हैं…' },
 
@@ -12306,7 +12076,6 @@ const T = {
   'feedback.yes':                { en: 'Yes',                                                       fr: 'Oui',                                                  sw: 'Ndiyo',                                            ha: 'Ee',                                            tw: 'Aane',                                          hi: 'हाँ' },
   'feedback.no':                 { en: 'No',                                                        fr: 'Non',                                                  sw: 'Hapana',                                            ha: 'A\'a',                                          tw: 'Daabi',                                         hi: 'नहीं' },
   'feedback.reasonPlaceholder':  { en: 'What was wrong?',                                           fr: 'Qu\'est-ce qui n\'allait pas ?',                       sw: 'Kulikuwa na nini?',                                ha: 'Me ya faru?',                                  tw: 'Dɛn na ɛyɛɛ kyea?',                              hi: 'क्या गलत था?' },
-  'feedback.thanks':             { en: 'Thanks for your feedback',                                  fr: 'Merci pour votre retour',                              sw: 'Asante kwa maoni yako',                            ha: 'Na gode da ra\'ayinka',                        tw: 'Yɛda wo ase wɔ wo nsɛm ho',                       hi: 'आपकी प्रतिक्रिया के लिए धन्यवाद' },
   'feedback.pulse.prompt':       { en: 'How has Farroway been helping you so far?',                 fr: 'Comment Farroway vous aide-t-il jusqu\'à présent ?',   sw: 'Farroway imekusaidiaje hadi sasa?',                ha: 'Yaya Farroway yake taimaka muku ya zuwa yanzu?', tw: 'Sɛnea Farroway aboa wo deɛ ɛnnɛ?',              hi: 'अब तक Farroway ने आपकी कैसे मदद की है?' },
   'feedback.pulse.placeholder':  { en: 'Tell us in a few words...',                                 fr: 'Dites-nous en quelques mots...',                       sw: 'Tuambie kwa maneno machache...',                   ha: 'Faɗa mana cikin \'yan kalmomi...',             tw: 'Ka kyerɛ yɛn nsɛm kakra...',                    hi: 'कुछ शब्दों में बताएं...' },
 

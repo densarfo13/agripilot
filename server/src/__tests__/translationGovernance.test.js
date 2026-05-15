@@ -129,7 +129,7 @@ describe('translationReviewQueue — human review flag', () => {
 // ─── 5. Duplicate-key gate ─────────────────────────────────
 
 describe('check:translations — duplicate-key detection', () => {
-  it('passes and reports the baselined duplicate count', () => {
+  it('passes and confirms translations.js has no duplicate keys', () => {
     let stdout;
     try {
       stdout = execSync('node scripts/check-translations.mjs', {
@@ -140,6 +140,6 @@ describe('check:translations — duplicate-key detection', () => {
         + ((err.stdout || '') + (err.stderr || '')));
     }
     expect(stdout).toMatch(/\[check:translations\] PASS/);
-    expect(stdout).toMatch(/duplicate keys \(baselined/);
+    expect(stdout).toMatch(/no duplicate keys/);
   });
 });

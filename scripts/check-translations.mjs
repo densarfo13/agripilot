@@ -164,21 +164,19 @@ while ((km = keyRe.exec(transSrc)) !== null) {
   if (seenKeys.has(k)) dupKeys.add(k);
   else seenKeys.add(k);
 }
-// Duplicate baseline ratchet. translations.js has accumulated 88
-// duplicate keys — a documented governance debt (76 of them carry
-// CONFLICTING values; resolving each needs human translation
-// review, surfaced by translationReviewQueue.js). The gate FAILS
-// the build only when a NEW duplicate is introduced; the baseline
-// is ratcheted DOWN as the debt is paid. Same pattern as the Hindi
-// coverage ratchet above — prevents drift without blocking deploys
-// on a pre-existing mess.
-const DUP_BASELINE = 88;
+// translations.js must have ZERO duplicate keys. The 88 pre-existing
+// duplicates were removed by scripts/dedupe-translations.mjs — which
+// kept the last (last-wins) declaration and verified the resolved
+// map identical key-for-key, so the fix changed no runtime behaviour.
+// Any duplicate now is a hard FAIL: a repeated key silently drops the
+// earlier value.
+const DUP_BASELINE = 0;
 if (dupKeys.size > DUP_BASELINE) {
   fail(
-    `${dupKeys.size} duplicate key(s) in translations.js — `
-    + `${dupKeys.size - DUP_BASELINE} NEW beyond the governance baseline `
-    + `of ${DUP_BASELINE}. A repeated key silently drops the earlier `
-    + `value. Remove the new duplicate(s):\n  • `
+    `${dupKeys.size} duplicate key(s) in translations.js — a repeated `
+    + `key silently drops the earlier value. Run `
+    + `\`node scripts/dedupe-translations.mjs\` or remove the `
+    + `duplicate(s) by hand:\n  • `
     + [...dupKeys].slice(0, 25).join('\n  • '),
   );
 }
@@ -189,5 +187,5 @@ console.log(
   + `${activeKeys} active keys, ${REQUIRED_LANGS.join('/')} at 100%; `
   + `hi ${hiCovered}/${activeKeys} (${hiPct}%, baseline ${HI_BASELINE}); `
   + `${LOCALE_LANGS.length} locale JSON files key-identical; `
-  + `${dupKeys.size}/${DUP_BASELINE} duplicate keys (baselined, no new).`,
+  + `${dupKeys.size === 0 ? 'no duplicate keys' : dupKeys.size + ' duplicate keys'}.`,
 );
