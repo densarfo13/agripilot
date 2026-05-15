@@ -82,5 +82,33 @@ if (!/export\s+function\s+getUnifiedIntelligence\b/.test(src)) {
   fail('facade no longer exports getUnifiedIntelligence');
 }
 
+// 4. The canonical entry point — getIntelligenceSnapshot.js — must
+//    exist and expose the documented surface. This is the single
+//    import every screen / voice / copilot uses; if a getter is
+//    dropped, those call sites break silently.
+const CANONICAL = 'src/core/intelligence/getIntelligenceSnapshot.js';
+const canonicalAbs = resolve(ROOT, CANONICAL);
+if (!existsSync(canonicalAbs)) {
+  fail('missing canonical entry point: ' + CANONICAL);
+}
+const canonicalSrc = readFileSync(canonicalAbs, 'utf8');
+const CANONICAL_EXPORTS = [
+  'getIntelligenceSnapshot', 'getLocalizedCropName', 'getLocalizedTaskText',
+  'getWeatherGuidance', 'getScanGuidance', 'getTodayRecommendation',
+  'getRiskSummary',
+];
+const canonicalMissing = CANONICAL_EXPORTS.filter(
+  (name) => !new RegExp('export\\s+(?:function|const)\\s+' + name + '\\b').test(canonicalSrc),
+);
+if (canonicalMissing.length > 0) {
+  fail('getIntelligenceSnapshot.js no longer exports: ' + canonicalMissing.join(', '));
+}
+// It must NOT re-implement the snapshot — it composes the existing
+// engine. Guard against a competing implementation creeping in.
+if (!/from\s+'\.\/unifiedIntelligence\.js'/.test(canonicalSrc)) {
+  fail('getIntelligenceSnapshot.js must compose unifiedIntelligence.js, not re-implement it');
+}
+
 console.log('[check:intelligence] PASS — facade wired to '
-  + ENGINES.length + ' engines, all imports resolve, contract intact.');
+  + ENGINES.length + ' engines, all imports resolve, contract intact; '
+  + 'canonical entry point exposes ' + CANONICAL_EXPORTS.length + ' getters.');
