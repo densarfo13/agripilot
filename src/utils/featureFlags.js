@@ -39,6 +39,17 @@ const DEFAULTS = Object.freeze({
   // only for now.
   FEATURE_OPEN_ENDED_VOICE: false,
 
+  // Conversational Farm Copilot (Beta). A controlled Beta surface:
+  // a floating launcher + conversational sheet that answers ONLY
+  // from Farroway's own context engines (getUnifiedIntelligence +
+  // the deterministic voiceAssistantResponseEngine) — no open-
+  // internet LLM, no hallucination path. MUST stay OFF by default:
+  // when off, the copilot launcher + sheet never mount and the app
+  // behaves exactly as before. Flip via
+  // VITE_FEATURE_FARM_COPILOT_BETA=true (build) or the per-device
+  // localStorage key 'farroway:flag:FEATURE_FARM_COPILOT_BETA'='1'.
+  FEATURE_FARM_COPILOT_BETA: false,
+
   // Photo Intelligence (rollout v1). Guards the "Scan crop"
   // entry points + analyze flow + result card. Default on in
   // dev; production builds gate via VITE_FEATURE_PHOTO_INTELLIGENCE.

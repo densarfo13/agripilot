@@ -44,6 +44,11 @@ import SettingsDrawer from '../components/system/SettingsDrawer.jsx';
 // because those never mount ProtectedLayout. It self-hides when the
 // voice feature flags are off, and we gate it off onboarding.
 import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
+// Conversational Farm Copilot (Beta) — flag-gated floating launcher.
+// FarmCopilotLauncher returns null unless FEATURE_FARM_COPILOT_BETA
+// is enabled, so with the flag off (the default) this mount is a
+// pure no-op and the app is unchanged.
+import FarmCopilotLauncher from '../components/copilot/FarmCopilotLauncher.jsx';
 
 const InnerPageLoader = () => (
   <div style={S.innerLoader}>
@@ -310,6 +315,16 @@ export default function ProtectedLayout() {
           {!onboarding
             && (isFarmer || String(user?.role || '').toLowerCase() === 'farmer') && (
             <VoiceLauncher variant="floating" />
+          )}
+          {/* Conversational Farm Copilot (Beta). Self-gates on
+              FEATURE_FARM_COPILOT_BETA — renders nothing when the
+              flag is off, so this is a no-op for every farmer until
+              the Beta is deliberately enabled. Farmer surfaces only,
+              hidden during onboarding. The FAB stacks above the
+              voice launcher so the two never overlap. */}
+          {!onboarding
+            && (isFarmer || String(user?.role || '').toLowerCase() === 'farmer') && (
+            <FarmCopilotLauncher />
           )}
         </div>
       </ProfileGuard>

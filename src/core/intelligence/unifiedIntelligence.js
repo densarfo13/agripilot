@@ -228,6 +228,7 @@ export function getUnifiedIntelligence(options) {
       healthScore:    intel ? intel.healthScore : null,
       risks:          intel && Array.isArray(intel.risks) ? intel.risks : [],
       scanHistory:    intel && Array.isArray(intel.scanHistory) ? intel.scanHistory : [],
+      scanTasks:      intel && Array.isArray(intel.scanTasks) ? intel.scanTasks : [],
       latestScan:     latestScan || null,
       briefing:       intel ? intel.briefing : null,
       nextBestAction: intel ? intel.nextBestAction : null,
