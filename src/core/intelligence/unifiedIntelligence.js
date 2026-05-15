@@ -56,6 +56,7 @@ import { getFarmContext }            from '../../lib/farmContextEngine.js';
 import { getFarmIntelligence }       from '../../lib/farmIntelligenceSnapshot.js';
 import { computeContextIntelligence } from '../../lib/intelligence/contextEngine.js';
 import { resolveRegion }             from '../../lib/regions.js';
+import { getCropLabel, getAgricultureVocabulary } from './agricultureRegistry.js';
 
 /** Run a producer in isolation — a thrown error becomes `fallback`
  *  plus an entry in `errors`. Keeps one bad engine from sinking the
@@ -136,6 +137,7 @@ function _deriveWeather(weather) {
  *   weather: object|null,
  *   intelligence: object,
  *   context: object,
+ *   agriculture: { language: string, localizedCropName: ?string, vocabulary: ?object },
  *   connectivity: 'online'|'offline',
  *   readAt: number,
  *   errors: Array<{source:string,message:string}>
@@ -208,6 +210,16 @@ export function getUnifiedIntelligence(options) {
     }),
     null, errors);
 
+  // ── 6. AGRICULTURE VOCABULARY — localized labels for this farm.
+  //    Wires the unified agriculture registry into the snapshot so
+  //    consumers get the active crop's name + a language-bound
+  //    label resolver without threading `language` everywhere.
+  const agriculture = _isolate('agriculture', () => ({
+    language,
+    localizedCropName: crop ? getCropLabel(crop, language) : null,
+    vocabulary:        getAgricultureVocabulary(language),
+  }), { language, localizedCropName: null, vocabulary: null }, errors);
+
   return {
     geo: {
       country:       country || null,
@@ -235,6 +247,7 @@ export function getUnifiedIntelligence(options) {
       progress:       intel ? intel.progress : null,
     },
     context: context || null,
+    agriculture,
     connectivity,
     readAt: nowMs,
     errors,

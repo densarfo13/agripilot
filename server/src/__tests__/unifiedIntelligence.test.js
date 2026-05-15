@@ -147,6 +147,26 @@ describe('getUnifiedIntelligence — language resolution', () => {
   });
 });
 
+// ─── 4b. Agriculture vocabulary block (Phase 14) ───────────
+
+describe('getUnifiedIntelligence — agriculture vocabulary block', () => {
+  it('exposes an agriculture block with language + vocabulary', () => {
+    const { agriculture } = getUnifiedIntelligence();
+    expect(agriculture).toBeTruthy();
+    expect(typeof agriculture.language).toBe('string');
+    expect('localizedCropName' in agriculture).toBe(true);
+    expect(agriculture.vocabulary).toBeTruthy();
+    expect(typeof agriculture.vocabulary.cropLabel).toBe('function');
+  });
+
+  it('the bound vocabulary resolves labels in the snapshot language', () => {
+    const { agriculture } = getUnifiedIntelligence();
+    const label = agriculture.vocabulary.cropLabel('pepper');
+    expect(typeof label).toBe('string');
+    expect(label.length).toBeGreaterThan(0);
+  });
+});
+
 // ─── 5. Build guard ────────────────────────────────────────
 
 describe('check:intelligence — build-time guard', () => {
