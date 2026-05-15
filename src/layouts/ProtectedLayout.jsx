@@ -34,6 +34,16 @@ import { isFeatureEnabled as isSurfaceEnabled } from '../utils/featureFlags.js';
 // One menu button on the right opens the drawer; the visible header
 // shrinks to: online chip · notification bell · menu.
 import SettingsDrawer from '../components/system/SettingsDrawer.jsx';
+// Voice Assistant V2 placement fix — ONE global floating "Ask
+// Farroway" launcher for farmers. The launcher, the assistant
+// bottom sheet, the context response engine, and the TTS fallback
+// already exist (VoiceLauncher → VoiceAssistant → voiceAssistant
+// ResponseEngine); the gap was a consistent placement. Mounting it
+// here means it appears on every farmer surface (Home, Tasks, Scan,
+// Weather) and is automatically absent on auth/login screens
+// because those never mount ProtectedLayout. It self-hides when the
+// voice feature flags are off, and we gate it off onboarding.
+import VoiceLauncher from '../components/voice/VoiceLauncher.jsx';
 
 const InnerPageLoader = () => (
   <div style={S.innerLoader}>
@@ -288,6 +298,19 @@ export default function ProtectedLayout() {
               flag isn't already set AND we're not on a setup
               path. */}
           <UserFeedbackPromptHost />
+          {/* Voice Assistant V2 — global floating "Ask Farroway"
+              launcher. Farmer surfaces only (the response engine is
+              farm-context based; buyer/NGO get nothing useful from
+              it). Hidden during onboarding so setup stays
+              distraction-free. The FAB is bottom-right, above the
+              BottomTabNav, safe-area aware (VoiceLauncher FLOATING
+              styles). Tapping opens the existing assistant sheet —
+              no separate chatbot page, no always-listening, no
+              autoplay. */}
+          {!onboarding
+            && (isFarmer || String(user?.role || '').toLowerCase() === 'farmer') && (
+            <VoiceLauncher variant="floating" />
+          )}
         </div>
       </ProfileGuard>
     </AuthGuard>
