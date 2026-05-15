@@ -220,9 +220,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       // suppressed via firedDeniedEvent.
       if (firedDeniedEvent) return;
       firedDeniedEvent = true;
+      // Camera permission denied is an EXPECTED user state, not a
+      // bug. Spec §6 - log at info level so it doesn't surface as
+      // a yellow warning in the console; the UI surface already
+      // routes the user to the gallery flow + manual fallback.
       try {
-         
-        console.warn('[FARROWAY_SCAN] camera_permission_denied');
+        // eslint-disable-next-line no-console
+        console.info('[FARROWAY_SCAN] camera_permission_denied (info)');
       } catch { /* swallow */ }
       try {
         import('../../lib/analytics.js').then((mod) => {
