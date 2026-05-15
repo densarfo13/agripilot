@@ -43,6 +43,9 @@ import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
 // keys remain the primary write path; v1 is a fast-read slot
 // future surfaces can prefer.
 import { startFarmActiveCache } from './lib/farmActiveCache.js';
+// Browser-extension noise filter — static import so it can
+// install before any other module runs.
+import { installExtensionNoiseFilter } from './lib/console/extensionNoiseFilter.js';
 import {
   LOOP_STATE_KEYS,
   FEATURE_EVENT_SYNC,
@@ -57,6 +60,16 @@ killServiceWorkerAndCaches();
 // listens to the typed bus and writes whenever farm state
 // changes. The initial mirror runs synchronously.
 startFarmActiveCache();
+
+// Browser-extension noise filter — installs synchronously BEFORE
+// any UI mounts so cornhusk / tabs:outgoing.message.ready /
+// chrome-extension "Failed to construct URL" errors stay out of
+// the production console. Wraps console.error + console.warn +
+// the global onerror + onunhandledrejection handlers so even
+// extension-thrown unhandled promises get swallowed. It NEVER
+// hides ambiguous lines — only the locked patterns drop.
+// Idempotent; safe in dev (real Farroway errors still surface).
+try { installExtensionNoiseFilter(); } catch { /* swallow */ }
 
 // Dev-only UAT seed handle. Exposes `window.__farrowayUat` so a
 // QA operator can run `__farrowayUat.seed({ mode: 'farm_us' })`
