@@ -31,23 +31,34 @@ import { saveScanUseful } from '../../lib/scan/scanHistoryStore.js';
 import { addScanTasks } from '../../core/scanToTask.js';
 import { getFarmContext } from '../../lib/farmContextEngine.js';
 
-// id → { label, category, followUp }. The category values match
-// the scan engine's own category vocabulary (disease / pest /
-// fungal / nutrient_deficiency / needs_review) so a manual entry
-// is indistinguishable downstream from an AI one — except its
+// id → { label, category, followUp }. The eleven options are the
+// spec's symptom set (REAL Scan Analysis Upgrade §6). The category
+// values match the scan engine's own vocabulary (disease / pest /
+// fungal / nutrient_deficiency / needs_review) so a manual entry is
+// indistinguishable downstream from an AI one — except its
 // confidence is honestly recorded as 'manual'.
 const ISSUES = Object.freeze([
-  { id: 'yellow_leaves', label: 'Yellow leaves', category: 'nutrient_deficiency',
+  { id: 'yellow_leaves',  label: 'Yellow leaves',  category: 'nutrient_deficiency',
     followUp: 'Check watering and feeding for the yellowing leaves' },
-  { id: 'brown_spots',   label: 'Brown spots',   category: 'disease',
+  { id: 'holes_in_leaves', label: 'Holes in leaves', category: 'pest',
+    followUp: 'Check under the leaves for chewing insects' },
+  { id: 'brown_spots',    label: 'Brown spots',    category: 'disease',
     followUp: 'Inspect the plant for spreading brown spots' },
-  { id: 'insects',       label: 'Insects',       category: 'pest',
+  { id: 'curling_leaves', label: 'Curling leaves', category: 'pest',
+    followUp: 'Check leaf undersides for pests causing the curl' },
+  { id: 'mold',           label: 'Mold',           category: 'fungal',
+    followUp: 'Remove mouldy parts and improve airflow around the plant' },
+  { id: 'weak_growth',    label: 'Weak growth',    category: 'nutrient_deficiency',
+    followUp: 'Check soil feeding and sunlight for the weak growth' },
+  { id: 'insects',        label: 'Insects',        category: 'pest',
     followUp: 'Check under the leaves and stems for pests' },
-  { id: 'dry_soil',      label: 'Dry soil',      category: 'needs_review',
+  { id: 'wilting',        label: 'Wilting',        category: 'needs_review',
+    followUp: 'Check soil moisture and roots for the wilting plant' },
+  { id: 'dry_soil',       label: 'Dry soil',       category: 'needs_review',
     followUp: 'Water the plant and check the soil moisture' },
-  { id: 'mold_or_rot',   label: 'Mold or rot',   category: 'fungal',
-    followUp: 'Remove affected parts and improve airflow around the plant' },
-  { id: 'not_sure',      label: 'Not sure',      category: 'needs_review',
+  { id: 'root_rot',       label: 'Root rot',       category: 'fungal',
+    followUp: 'Check the roots and drainage; remove any rotted roots' },
+  { id: 'not_sure',       label: 'Not sure',       category: 'needs_review',
     followUp: 'Take a closer look at the plant in good light today' },
 ]);
 

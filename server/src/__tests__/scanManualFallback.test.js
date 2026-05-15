@@ -19,12 +19,18 @@ const read = (rel) => readFileSync(resolve(ROOT, rel), 'utf8');
 // ─── 1. The six manual issue options (spec §5) ────────────
 
 describe('ManualIssuePicker — manual issue options', () => {
-  it('offers exactly the six spec-mandated options', () => {
+  it('offers exactly the eleven spec-mandated symptom options', () => {
     const labels = MANUAL_ISSUES.map((i) => i.label);
     expect(labels).toEqual([
-      'Yellow leaves', 'Brown spots', 'Insects',
-      'Dry soil', 'Mold or rot', 'Not sure',
+      'Yellow leaves', 'Holes in leaves', 'Brown spots', 'Curling leaves',
+      'Mold', 'Weak growth', 'Insects', 'Wilting', 'Dry soil',
+      'Root rot', 'Not sure',
     ]);
+  });
+
+  it('every option id is unique', () => {
+    const ids = MANUAL_ISSUES.map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('every option maps to a known scan category + a follow-up', () => {
