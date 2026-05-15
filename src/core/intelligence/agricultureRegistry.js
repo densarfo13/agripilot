@@ -52,6 +52,7 @@ import { getLocalizedCropName } from '../../i18n/cropNames.js';
 import translations from '../../i18n/translations.js';
 import taskEngineTranslations from '../../i18n/taskEngineTranslations.js';
 import { logMissingTranslation } from '../../i18n/missingTranslationLogger.js';
+import { normalizeCropId } from '../agriculture/canonicalCropMap.js';
 
 // The six launch languages. Anything else normalises to English.
 export const SUPPORTED_LANGUAGES = Object.freeze(['en', 'fr', 'tw', 'ha', 'sw', 'hi']);
@@ -131,11 +132,14 @@ function _memo(domain, id, lang, resolve) {
 
 // ─── Public accessors ──────────────────────────────────────────
 
-/** Localized crop name. Delegates to the existing crop registry. */
+/** Localized crop name. The input is first normalised to its
+ *  canonical crop id (so 'corn', 'chilli', 'yuca' all resolve)
+ *  before the localized name is looked up. */
 export function getCropLabel(cropId, language) {
   const lang = _normLang(language);
-  return _memo('crop', String(cropId || ''), lang, () => {
-    try { return getLocalizedCropName(cropId, lang); }
+  const canonical = normalizeCropId(cropId) || String(cropId || '');
+  return _memo('crop', canonical, lang, () => {
+    try { return getLocalizedCropName(canonical, lang); }
     catch { return null; }
   });
 }
