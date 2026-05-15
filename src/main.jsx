@@ -46,6 +46,11 @@ import { startFarmActiveCache } from './lib/farmActiveCache.js';
 // Browser-extension noise filter — static import so it can
 // install before any other module runs.
 import { installExtensionNoiseFilter } from './lib/console/extensionNoiseFilter.js';
+// i18n dev-console handle — installs window.__farrowayI18n in dev
+// builds only (spec §13 of the Permanent Localization fix). Static
+// import; the install call below is gated on import.meta.env.DEV
+// so production tree-shakes the audit surface out entirely.
+import { installI18nDevHandle } from './i18n/devConsoleAudit.js';
 import {
   LOOP_STATE_KEYS,
   FEATURE_EVENT_SYNC,
@@ -70,6 +75,19 @@ startFarmActiveCache();
 // hides ambiguous lines — only the locked patterns drop.
 // Idempotent; safe in dev (real Farroway errors still surface).
 try { installExtensionNoiseFilter(); } catch { /* swallow */ }
+
+// i18n dev-console handle (spec §13). Dev-only — gives QA a
+// `window.__farrowayI18n.audit()` entry point with the
+// [FARROWAY_I18N] console prefix that consolidates the missing-
+// translation queue, active-language snapshot, and <html lang>
+// mismatch warning. Idempotent + SSR-safe + never throws.
+// Production builds skip the install entirely so the audit
+// surface never reaches real users.
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+    installI18nDevHandle();
+  }
+} catch { /* swallow */ }
 
 // Dev-only UAT seed handle. Exposes `window.__farrowayUat` so a
 // QA operator can run `__farrowayUat.seed({ mode: 'farm_us' })`
