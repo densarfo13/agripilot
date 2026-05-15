@@ -16,6 +16,7 @@
     "check:assets": "node scripts/check-realism-assets.mjs",
     "check:production-assets": "node scripts/check-production-assets.mjs",
     "check:url-construction": "node scripts/check-url-construction.mjs",
+    "check:urls": "node scripts/check-url-construction.mjs",
     "check:icons": "node scripts/check-icons.mjs",
     "check:intelligence": "node scripts/check-intelligence.mjs",
     "check:translations": "node scripts/check-translations.mjs",
