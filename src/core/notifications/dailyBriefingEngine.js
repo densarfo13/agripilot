@@ -39,6 +39,7 @@
 
 import { getPredictiveBriefing } from '../prediction/getPredictiveBriefing.js';
 import { getCropLabel } from '../intelligence/agricultureRegistry.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const _LEVEL_RANK = { high: 3, medium: 2, low: 1 };
 const _rank = (u) => _LEVEL_RANK[String(u || '').toLowerCase()] || 0;
@@ -104,6 +105,11 @@ export function generateDailyBriefingNotifications(options) {
   // ── 2. Priority task — the calm next action ───────────────────
   const task = briefing.priorityTask;
   if (task && task.title) {
+    // Localize the task line. Crop-specific tasks carry a titleKey
+    // into intelligenceTranslations.js (6 launch languages); tSafe
+    // resolves it for the active language. Generic tasks have no
+    // key — tSafe then falls back to the English title.
+    const taskText = String(tSafe(task.titleKey, task.title));
     candidates.push({
       id:       `briefing-task-${day}`,
       kind:     'task_reminder',
@@ -111,8 +117,8 @@ export function generateDailyBriefingNotifications(options) {
       mode,
       title:    mode === 'garden' ? 'Today in your garden' : 'Today on your farm',
       body:     mode === 'garden'
-        ? String(task.title)
-        : `${String(task.title)} — your ${noun} will thank you.`,
+        ? taskText
+        : `${taskText} — your ${noun} will thank you.`,
       language,
     });
   }

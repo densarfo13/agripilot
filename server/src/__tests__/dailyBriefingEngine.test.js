@@ -89,4 +89,11 @@ describe('dailyBriefingEngine — consumes getPredictiveBriefing', () => {
     expect(src).toMatch(/Today on your farm/);
     expect(src).toMatch(/Today in your garden/);
   });
+
+  it('localizes the task line via the task titleKey (spec §6)', () => {
+    // crop-specific tasks carry a titleKey into the 6-language
+    // intelligenceTranslations.js — the engine resolves it.
+    expect(src).toMatch(/import \{ tSafe \} from '\.\.\/\.\.\/i18n\/tSafe\.js'/);
+    expect(src).toMatch(/tSafe\(task\.titleKey, task\.title\)/);
+  });
 });
