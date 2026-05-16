@@ -733,14 +733,20 @@ export default function LiveCameraScanner({
       } catch { /* swallow */ }
     }
     if (!file && !dataUrl) return;
-    // Free the live stream while the user reviews — keeping the
-    // camera lit during preview wastes battery + leaves the OS
-    // indicator on for no benefit.
+    // Auto-analyze (Remove Manual Analyze Button Fix §1-§3, §7):
+    // the shutter tap IS the intent to analyze. Fire onCaptured
+    // immediately instead of parking on an "image_captured" review
+    // screen behind an "Analyze photo" button. ScanCapture runs a
+    // blur/dark preflight on the file and re-opens the camera when
+    // the photo is unusable, so the manual review gate is both
+    // redundant and banned by the spec. Freeing the stream first
+    // also drops the OS camera indicator while analysis runs.
     stopStream();
     setCapturedFile(file);
     setCapturedUrl(dataUrl);
-    setPhase('image_captured');
-  }, [stopStream]);
+    try { onCaptured && onCaptured({ file, dataUrl }); }
+    catch { /* never propagate */ }
+  }, [stopStream, onCaptured]);
 
   const retake = useCallback(() => {
     if (capturedUrl) {
