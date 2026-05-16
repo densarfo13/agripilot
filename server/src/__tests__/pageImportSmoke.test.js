@@ -26,6 +26,18 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+// Vitest's dynamic-import resolver strips `..` segments when a
+// VARIABLE path crosses the server/ project boundary into the
+// parent agripilot/src/ tree (it collapsed '../../../src/lib/x.js'
+// to '/src/lib/x.js' → "Cannot find module"). Resolving to an
+// absolute file URL first sidesteps the resolver quirk. Literal
+// import('../../../src/...') calls are unaffected — Vite transforms
+// those at load time; only variable paths need this.
+const _thisDir = dirname(fileURLToPath(import.meta.url));
+const modUrl = (rel) => pathToFileURL(resolve(_thisDir, rel)).href;
 
 // Stub the browser globals each page touches at import time.
 // vitest runs in Node, so navigator/window/localStorage are
@@ -79,7 +91,7 @@ describe('library modules — import smoke', () => {
     ['../../../src/lib/farmEventBus.js',         'default'],
     ['../../../src/services/cameraSession.js',   'startCamera'],
   ])('imports %s and exports %s', async (path, exportName) => {
-    const mod = await import(path);
+    const mod = await import(modUrl(path));
     expect(mod).toBeTruthy();
     expect(mod[exportName]).toBeDefined();
   });
@@ -97,7 +109,7 @@ describe('intelligence engines — import smoke', () => {
     ['../../../src/intelligence/recommendations/getPrimaryGuidance.ts', 'getPrimaryGuidance'],
     ['../../../src/intelligence/recommendations/fallbacks.ts',          'fallbackForMode'],
   ])('imports %s and exports %s', async (path, exportName) => {
-    const mod = await import(path);
+    const mod = await import(modUrl(path));
     expect(mod[exportName]).toBeDefined();
     expect(typeof mod[exportName] === 'function' || typeof mod[exportName] === 'object').toBe(true);
   });

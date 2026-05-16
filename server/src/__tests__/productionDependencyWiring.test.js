@@ -26,22 +26,10 @@ function read(rel) { return readFileSync(resolve(ROOT, rel), 'utf8'); }
 describe('Production dependency wiring (May 2026)', () => {
 
   describe('No fake 0° weather rendering', () => {
-    it('WeatherHeroActionCard guards temp with source + Number.isFinite + em-dash fallback', () => {
-      const src = read('src/components/WeatherHeroActionCard.jsx');
-      // The trust gate must check BOTH source === 'weather-api' AND
-      // finiteness before rendering a numeric temperature. The
-      // legacy single-`tempDisplay = (... Number.isFinite ...)`
-      // form was widened (Stabilization §1) to a `_hasRealData`
-      // memo so the same gate covers temp + condition + feelsLike.
-      expect(src).toMatch(/_hasRealData\s*=[\s\S]*?source[\s\S]*?weather-api/);
-      expect(src).toMatch(/_hasRealData\s*=[\s\S]*?Number\.isFinite/);
-      expect(src).toMatch(/tempDisplay\s*=\s*_hasRealData/);
-      // And the alternate branch must render the em-dash, not 0.
-      expect(src).toMatch(/'—°'/);
-      // No hard-coded `|| 0` on the temp display path.
-      expect(src).not.toMatch(/Number\(w\.temp\)\s*\|\|\s*0/);
-      expect(src).not.toMatch(/Math\.round\(w\.temp\s*\|\|\s*0\)/);
-    });
+    // NOTE: the WeatherHeroActionCard test was removed — that
+    // component was deleted in a later weather-card pass. The
+    // em-dash / no-fake-0° contract is still pinned below for the
+    // live WeatherHeroCard. Test debt cleanup: gone code path.
 
     it('legacy WeatherHeroCard also gates temp with the em-dash', () => {
       const src = read('src/components/WeatherHeroCard.jsx');

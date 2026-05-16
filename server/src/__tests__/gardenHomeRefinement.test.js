@@ -37,38 +37,9 @@ describe('Garden Home refinement (May 2026)', () => {
     expect(src).not.toMatch(/<p\s+style=\{S\.locationHint\}/);
   });
 
-  it('WeatherHeroActionCard renders the CTA button exactly ONCE', () => {
-    const src = read('src/components/WeatherHeroActionCard.jsx');
-    // Match the actual <button> render with the canonical
-    // testid. We expect ONE such match in the JSX.
-    const matches = src.match(/<button[\s\S]*?data-testid="weather-hero-action-cta"[\s\S]*?<\/button>/g) || [];
-    expect(matches.length).toBe(1);
-  });
-
-  it('weather card minHeight is the reduced 19rem (was 24rem)', () => {
-    const src = read('src/components/WeatherHeroActionCard.jsx');
-    // The S.section style block is the only minHeight in the
-    // file — assert it dropped to 19rem.
-    const sectionIdx = src.indexOf('section: {');
-    expect(sectionIdx).toBeGreaterThan(0);
-    const block = src.slice(sectionIdx, sectionIdx + 400);
-    expect(block).toMatch(/minHeight:\s*'19rem'/);
-    expect(block).not.toMatch(/minHeight:\s*'24rem'/);
-  });
-
-  it('legacy heavy dark-green wash is gone (handed off to phase-tuned lighting)', () => {
-    const src = read('src/components/WeatherHeroActionCard.jsx');
-    // Dynamic Realistic Weather Environment (May 2026) — the overlay
-    // is no longer a single static rgba(15,28,22,*) wash. It's
-    // produced per-phase by lighting.js inside the DynamicWeatherBackdrop
-    // (sunrise warm, midday neutral, dusk cool, etc.). Both the
-    // legacy heavy stops AND the interim 15,28,22 wash are gone
-    // from this file.
-    expect(src).not.toMatch(/rgba\(8,18,12,0\.92\)/);
-    expect(src).not.toMatch(/rgba\(8,18,12,0\.78\)/);
-    expect(src).not.toMatch(/rgba\(15,28,22,0\.32\)/);
-    // The card now imports the dynamic backdrop instead.
-    expect(src).toMatch(/DynamicWeatherBackdrop/);
-    expect(src).toMatch(/resolveScene/);
-  });
+  // NOTE: the three WeatherHeroActionCard tests (single CTA,
+  // 19rem minHeight, dark-wash removed) were removed — that
+  // component was deleted in a later weather-card pass. Test
+  // debt cleanup: the code path no longer exists. The Home
+  // location-hint regression test above remains live.
 });

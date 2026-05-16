@@ -625,7 +625,8 @@ describe('Existing multi-farm infrastructure preserved', () => {
 
   it('API still has multi-farm endpoints', () => {
     const src = read('src/lib/api.js');
-    expect(src).toContain('export function getFarms()');
+    // getFarms was made async in the Farm API 500 retry rework.
+    expect(src).toContain('export async function getFarms()');
     expect(src).toContain('export function createNewFarm(');
     expect(src).toContain('export function setDefaultFarm(');
     expect(src).toContain('export function deactivateFarm(');

@@ -249,7 +249,8 @@ describe('Frontend API — multi-farm endpoints', () => {
   const src = read('src/lib/api.js');
 
   it('exports getFarms function', () => {
-    expect(src).toContain('export function getFarms');
+    // getFarms was made async in the Farm API 500 retry rework.
+    expect(src).toContain('export async function getFarms');
     expect(src).toContain('/api/v2/farm-profile/list');
   });
 

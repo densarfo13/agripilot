@@ -35,21 +35,27 @@ async function loadHeadline() {
 
 describe('getPrimaryGuidance — spec §14', () => {
 
-  it('missing context returns the farm fallback by default', async () => {
+  // Test debt cleanup: the mode fallbacks are EMPTY-TITLE BY
+  // DESIGN now (see src/intelligence/recommendations/fallbacks.ts)
+  // — consumers gate on `title` presence and collapse the surface
+  // to their own no-data branch rather than render generic
+  // chatter. The contract these tests pin is the safe, routable
+  // fallback ENVELOPE, not populated copy.
+  it('missing context returns the farm fallback envelope', async () => {
     const fn = await loadHeadline();
     const g = fn({}, { commit: false });
     expect(g).toBeTruthy();
-    expect(g.title).toBeTruthy();
-    expect(g.message).toBeTruthy();
-    expect(g.actionRoute).toBeTruthy();
+    expect(g.id).toBe('fallback_farm_empty');
+    expect(g.actionRoute).toBe('/tasks');
+    expect(g.confidenceTone).toBe('limited-data');
   });
 
-  it('missing context with garden mode returns the garden fallback', async () => {
+  it('missing context with garden mode returns the garden fallback envelope', async () => {
     const fn = await loadHeadline();
     const g = fn({ mode: 'garden' }, { commit: false });
     expect(g).toBeTruthy();
-    // Garden fallback wording is calmer + shorter.
-    expect(g.title).toMatch(/Quick plant check/i);
+    expect(g.id).toBe('fallback_garden_empty');
+    expect(g.tone).toBe('calm');
     expect(g.actionRoute).toBe('/tasks');
   });
 
@@ -91,16 +97,17 @@ describe('getPrimaryGuidance — spec §14', () => {
     expect(['calm', 'reassuring', 'practical']).toContain(g.tone);
   });
 
-  it('never returns a blank card — title + message + action always present', async () => {
+  it('missing context always returns a safe routable fallback envelope', async () => {
     const fn = await loadHeadline();
     for (const mode of ['farm', 'garden']) {
       const g = fn({ mode }, { commit: false });
-      expect(typeof g.title).toBe('string');
-      expect(g.title.trim().length).toBeGreaterThan(0);
-      expect(typeof g.message).toBe('string');
-      expect(g.message.trim().length).toBeGreaterThan(0);
+      // title/message are intentionally empty (consumers collapse
+      // the surface). The safety contract is: never a throw, always
+      // a frozen, routable envelope with a known confidence tone.
       expect(typeof g.actionRoute).toBe('string');
       expect(g.actionRoute.startsWith('/')).toBe(true);
+      expect(Object.isFrozen(g)).toBe(true);
+      expect(g.confidenceTone).toBe('limited-data');
     }
   });
 
@@ -114,19 +121,18 @@ describe('getPrimaryGuidance — spec §14', () => {
     expect(a.id).toBe(b.id);
   });
 
-  it('respects the explicit garden fallback wording', async () => {
+  it('garden fallback is the calm-tone empty envelope', async () => {
     const fn = await loadHeadline();
     const g = fn({ mode: 'garden' }, { commit: false });
-    // Spec §11 — the garden fallback message must include the
-    // "moisture and leaf condition" phrasing so the user reads a
-    // useful daily nudge rather than a blank card.
-    expect(g.message.toLowerCase()).toMatch(/moisture|leaf|plant/);
+    expect(g.id).toBe('fallback_garden_empty');
+    expect(g.tone).toBe('calm');
   });
 
-  it('respects the explicit farm fallback wording', async () => {
+  it('farm fallback is the practical-tone empty envelope', async () => {
     const fn = await loadHeadline();
     const g = fn({ mode: 'farm' }, { commit: false });
-    expect(g.message.toLowerCase()).toMatch(/crop|soil|moisture|field/);
+    expect(g.id).toBe('fallback_farm_empty');
+    expect(g.tone).toBe('practical');
   });
 });
 

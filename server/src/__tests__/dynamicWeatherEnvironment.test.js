@@ -219,23 +219,10 @@ describe('Dynamic Realistic Weather Environment — May 2026', () => {
     });
   });
 
-  describe('WeatherHeroActionCard wired to the dynamic backdrop', () => {
-    it('imports resolveScene + DynamicWeatherBackdrop', () => {
-      const src = read('src/components/WeatherHeroActionCard.jsx');
-      expect(src).toMatch(/from\s+'\.\.\/features\/weather\/environment/);
-      expect(src).toMatch(/resolveScene/);
-      expect(src).toMatch(/DynamicWeatherBackdrop/);
-      // The static synthetic wash that used to live on the section
-      // wrapper is gone — `wrapperStyle` is no longer constructed.
-      expect(src).not.toMatch(/rgba\(15,28,22,0\.32\)\s*0%/);
-    });
-
-    it('renders the section inside the DynamicWeatherBackdrop', () => {
-      const src = read('src/components/WeatherHeroActionCard.jsx');
-      // The component returns the backdrop wrapping the section.
-      const idx = src.indexOf('<DynamicWeatherBackdrop');
-      expect(idx).toBeGreaterThan(0);
-      expect(src).toMatch(/<\/DynamicWeatherBackdrop>/);
-    });
-  });
+  // NOTE: the "WeatherHeroActionCard wired to the dynamic backdrop"
+  // describe block was removed — that component was deleted in a
+  // later weather-card pass. Test debt cleanup: the code path no
+  // longer exists. The environment engine tests above (lighting /
+  // region / season / sceneResolver / manifest / index.css) remain
+  // live and are the real regression gates for this system.
 });

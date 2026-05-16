@@ -83,12 +83,10 @@ describe('realism/photography — slot manifest', () => {
 
 // ─── Canonical surfaces — emoji removed ──────────────────────────
 describe('realism migration — canonical surfaces dropped legacy emoji', () => {
-  it('SafeCameraSurface uses RealisticIcon "camera" (no 📷 emoji)', () => {
-    const src = read('src/components/scan/SafeCameraSurface.jsx');
-    expect(src).not.toMatch(/📷/);
-    expect(src).toMatch(/RealisticIcon/);
-    expect(src).toMatch(/name="camera"/);
-  });
+  // NOTE: the SafeCameraSurface emoji-swap test was removed — the
+  // component was deleted in the canonical-home replacement pass
+  // (LiveCameraScanner owns the camera surface now). Test debt
+  // cleanup: the code path no longer exists.
 
   it('SoilScanPage placeholder uses RealisticIcon "soil" (no 📷)', () => {
     const src = read('src/pages/SoilScanPage.jsx');
