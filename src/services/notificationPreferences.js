@@ -20,6 +20,15 @@ export const DEFAULT_PREFS = Object.freeze({
   weather: true,
   critical: true,
   reminderHour: 7,
+  // Smart Notification Channel Architecture §5 — per-channel +
+  // quiet-hours preferences. All additive; existing readers that
+  // only touch daily/weather/critical/reminderHour are unaffected.
+  push: true,         // operational push notifications
+  inApp: true,        // the persistent in-app notification centre
+  email: false,       // summary / digest emails — opt-in only
+  buyerFunding: true, // buyer + funding alerts
+  quietStart: 21,     // quiet hours begin (24h local) — no push
+  quietEnd: 7,        // quiet hours end (24h local)
 });
 
 function safeRead() {

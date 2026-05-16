@@ -33,6 +33,7 @@
  */
 
 import { generateDailyBriefingNotifications } from './dailyBriefingEngine.js';
+import { routeNotifications } from './notificationOrchestrator.js';
 import { addNotification } from '../../notifications/notificationStore.js';
 import { getPreferences } from '../../services/notificationPreferences.js';
 import { isFeatureEnabled } from '../../utils/featureFlags.js';
@@ -97,9 +98,13 @@ export function runDailyBriefingOnce() {
     }
 
     const notes = generateDailyBriefingNotifications();
+    // Route onto channels — in-app is the persistent layer that
+    // receives EVERY notification (spec §2). plan.push carries the
+    // operational subset for the push-delivery layer.
+    const plan = routeNotifications(notes);
     const userId = _currentUserId();
     let delivered = 0;
-    for (const n of (Array.isArray(notes) ? notes : [])) {
+    for (const n of plan.inApp) {
       try {
         const row = addNotification({
           userId,
