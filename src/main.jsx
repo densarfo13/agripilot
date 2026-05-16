@@ -43,6 +43,11 @@ import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
 // keys remain the primary write path; v1 is a fast-read slot
 // future surfaces can prefer.
 import { startFarmActiveCache } from './lib/farmActiveCache.js';
+// Daily return-loop scheduler — fires the daily briefing into the
+// in-app notification centre, at most once per calendar day. Self-
+// gates on FEATURE_NOTIFICATIONS + the daily opt-in preference;
+// never throws, idempotent install.
+import { installReturnLoop } from './core/notifications/returnLoopScheduler.js';
 // Browser-extension noise filter — static import so it can
 // install before any other module runs.
 import { installExtensionNoiseFilter } from './lib/console/extensionNoiseFilter.js';
@@ -499,6 +504,12 @@ initSyncCoordinator();
 // is idempotent against HMR (sets _bound flag) and the streak
 // engine itself dedupes per-day, so this is safe to fire freely.
 try { initPrimaryActionDoneBridge(); }
+catch { /* never block boot */ }
+
+// Daily return loop — generate today's briefing notifications into
+// the in-app notification centre (at most once per day). Gated on
+// FEATURE_NOTIFICATIONS + the daily opt-in pref inside the module.
+try { installReturnLoop(); }
 catch { /* never block boot */ }
 
 // Final feedback-loop spec §7: auto-attach __farrowayPrintFeedback
