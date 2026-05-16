@@ -14,6 +14,7 @@ import {
   trackRetention,
   computeRetentionMetrics,
   computeScanTrustMetrics,
+  computeRetentionCohorts,
   _internal,
 } from '../../../src/core/retention/retentionEngine.js';
 import {
@@ -82,6 +83,25 @@ describe('retentionEngine — metrics views', () => {
     expect(typeof s.scanTotal).toBe('number');
     expect(typeof s.failureRate).toBe('number');
     expect(typeof s.journalSaveRate).toBe('number');
+  });
+
+  it('computeRetentionCohorts returns the day-1/3/7 cohort shape', () => {
+    const c = computeRetentionCohorts();
+    expect(typeof c.activeDays).toBe('number');
+    expect(typeof c.day1Returned).toBe('boolean');
+    expect(typeof c.day3Returned).toBe('boolean');
+    expect(typeof c.day7Returned).toBe('boolean');
+    expect(typeof c.scansPerActiveDay).toBe('number');
+    expect(typeof c.tasksPerActiveDay).toBe('number');
+    // firstActiveDay is null (no events) or a 'YYYY-MM-DD' string
+    expect(c.firstActiveDay === null || /^\d{4}-\d{2}-\d{2}$/.test(c.firstActiveDay)).toBe(true);
+  });
+
+  it('_addDays advances a calendar day and is failure-safe', () => {
+    expect(_internal._addDays('2026-05-15', 1)).toBe('2026-05-16');
+    expect(_internal._addDays('2026-05-15', 3)).toBe('2026-05-18');
+    expect(_internal._addDays('2026-05-31', 7)).toBe('2026-06-07');
+    expect(_internal._addDays('not-a-date', 1)).toBe('');
   });
 });
 

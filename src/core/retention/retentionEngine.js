@@ -155,12 +155,75 @@ export function computeScanTrustMetrics() {
   }
 }
 
-export const _internal = Object.freeze({ _scrub, BANNED_KEYS: _BANNED_KEYS });
+/** Add `n` days to a 'YYYY-MM-DD' string → 'YYYY-MM-DD' ('' on failure). */
+function _addDays(dayStr, n) {
+  try {
+    const t = Date.parse(`${dayStr}T00:00:00Z`);
+    if (!Number.isFinite(t)) return '';
+    return new Date(t + n * 86400000).toISOString().slice(0, 10);
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Retention cohort view (spec §8) — day 1 / 3 / 7 return.
+ *
+ * The "cohort" here is THIS DEVICE: the local event log is
+ * per-device, so day-1/3/7 return is a device-level proxy, not a
+ * server cohort table. Reports whether the device was active on the
+ * day 1 / 3 / 7 after its first recorded activity, plus scans/tasks
+ * per active day. Never throws.
+ *
+ * @returns {object}
+ */
+export function computeRetentionCohorts() {
+  try {
+    const events = _events();
+    const days = new Set();
+    let scanCompleted = 0;
+    let taskCompleted = 0;
+    for (const e of events) {
+      if (!e || !e.name) continue;
+      const d = _day(e.timestamp);
+      if (d) days.add(d);
+      if (e.name === 'scan_completed') scanCompleted += 1;
+      if (e.name === 'task_completed') taskCompleted += 1;
+    }
+    const sorted = [...days].sort();
+    const firstActiveDay = sorted[0] || null;
+    const activeDays = sorted.length;
+    const returned = (n) => {
+      if (!firstActiveDay) return false;
+      const target = _addDays(firstActiveDay, n);
+      return target ? days.has(target) : false;
+    };
+    const per = (n) => (activeDays > 0 ? Math.round((n / activeDays) * 10) / 10 : 0);
+    return {
+      firstActiveDay,
+      activeDays,
+      day1Returned:      returned(1),
+      day3Returned:      returned(3),
+      day7Returned:      returned(7),
+      scansPerActiveDay: per(scanCompleted),
+      tasksPerActiveDay: per(taskCompleted),
+    };
+  } catch {
+    return {
+      firstActiveDay: null, activeDays: 0,
+      day1Returned: false, day3Returned: false, day7Returned: false,
+      scansPerActiveDay: 0, tasksPerActiveDay: 0,
+    };
+  }
+}
+
+export const _internal = Object.freeze({ _scrub, _addDays, BANNED_KEYS: _BANNED_KEYS });
 
 const _module = {
   RETENTION_EVENTS,
   trackRetention,
   computeRetentionMetrics,
   computeScanTrustMetrics,
+  computeRetentionCohorts,
 };
 export default _module;
