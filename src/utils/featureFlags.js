@@ -236,6 +236,19 @@ const DEFAULTS = Object.freeze({
   KILL_NOTIFICATIONS: false,
   KILL_MARKETPLACE:   false,
   KILL_COPILOT:       false,
+
+  // ── Monetization foundation (Phase 9) — ALL OFF ─────────────
+  // Foundation only: these gate placeholder surfaces + the
+  // billing entitlement seam (core/billing/entitlements.js).
+  // No payment UI, no charging, no ads. They stay false until
+  // retention data justifies a paid tier — and even then, basic
+  // scan results + safety guidance are NEVER paywalled (see the
+  // FREE_FOREVER set in entitlements.js).
+  FEATURE_PREMIUM_INTELLIGENCE: false,
+  FEATURE_NGO_SAAS:             false,
+  FEATURE_MARKETPLACE_REVENUE:  false,
+  FEATURE_FUNDING_PARTNERS:     false,
+  FEATURE_BILLING:              false,
 });
 
 function safeWindowFlag(name) {
