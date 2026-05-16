@@ -240,13 +240,6 @@ function _GalleryIcon({ size = 22 }) {
     </svg>
   );
 }
-function _CheckIcon({ size = 22 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 13l4 4 10-10" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
 function _RetakeIcon({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -299,7 +292,9 @@ export default function LiveCameraScanner({
   // — see CAMERA_STATES constants above.
   const [errorMsg, setErrorMsg] = useState('');
   const [capturedUrl, setCapturedUrl] = useState(null);
-  const [capturedFile, setCapturedFile] = useState(null);
+  // capturedFile value is no longer read (the review screen is
+  // gone) — only the setter is kept so close()/abort can clear it.
+  const [, setCapturedFile] = useState(null);
   const [hasTorch, setHasTorch] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [canSwitch, setCanSwitch] = useState(false);
@@ -748,20 +743,9 @@ export default function LiveCameraScanner({
     catch { /* never propagate */ }
   }, [stopStream, onCaptured]);
 
-  const retake = useCallback(() => {
-    if (capturedUrl) {
-      try { URL.revokeObjectURL(capturedUrl); } catch { /* swallow */ }
-    }
-    setCapturedFile(null);
-    setCapturedUrl(null);
-    startStream(facing);
-  }, [capturedUrl, facing, startStream]);
-
-  const acceptCaptured = useCallback(() => {
-    if (!capturedFile && !capturedUrl) return;
-    try { onCaptured && onCaptured({ file: capturedFile, dataUrl: capturedUrl }); }
-    catch { /* never propagate */ }
-  }, [capturedFile, capturedUrl, onCaptured]);
+  // retake() + acceptCaptured() were removed with the post-shutter
+  // review screen — capture auto-analyzes, so there is no review
+  // state to retake from or to "accept".
 
   const close = useCallback(() => {
     // Bump seq so any in-flight start aborts before mutating
@@ -842,15 +826,6 @@ export default function LiveCameraScanner({
           />
         ) : null}
 
-        {phase === 'image_captured' && capturedUrl ? (
-          <img
-            src={capturedUrl}
-            alt=""
-            style={S.video}
-            data-testid={`${testId}-captured`}
-          />
-        ) : null}
-
         {/* Frame guide + animated scan line — only visible while
             live-streaming. The scan line sweeps top-to-bottom on
             a 2.4s loop, CSS-driven (no JS timer), and gives the
@@ -900,17 +875,6 @@ export default function LiveCameraScanner({
           <div style={S.captureFlash} aria-hidden="true" />
         )}
 
-        {/* Captured-frame confidence chip — sits above the
-            preview to set expectation BEFORE the analyze tap.
-            Calm "Ready to analyze" pill, not a fake AI score.
-            Real confidence labels are emitted by the analysis
-            engine after the analyze call completes. */}
-        {phase === 'image_captured' && capturedUrl && (
-          <div style={S.capturedBadge} aria-hidden="true">
-            <span style={S.capturedDot} />
-            <span>{tSafe('scan.camera.readyAnalyze', 'Ready to analyze')}</span>
-          </div>
-        )}
 
         {phase === 'requesting_camera' && (
           <div style={S.statusOverlay}>
@@ -963,34 +927,12 @@ export default function LiveCameraScanner({
       </div>
 
       {/* ─── Bottom control bar ────────────────────────────── */}
+      {/* The post-shutter review screen (Retake / "Analyze photo")
+          was removed in the Remove Manual Analyze Button Fix —
+          capture auto-analyzes, so the bar only ever shows the
+          live-camera controls. */}
       <div style={S.bottomBar}>
-        {phase === 'image_captured' ? (
-          <>
-            <button
-              type="button"
-              onClick={retake}
-              style={S.bottomBtnGhost}
-              data-testid={`${testId}-retake`}
-            >
-              <_RetakeIcon size={20} />
-              <span style={S.bottomBtnLabel}>
-                {tSafe('scan.camera.retake', 'Retake')}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={acceptCaptured}
-              style={S.bottomBtnPrimary}
-              data-testid={`${testId}-analyze`}
-            >
-              <_CheckIcon size={26} />
-              <span style={S.bottomBtnLabelPrimary}>
-                {tSafe('scan.camera.analyze', 'Analyze photo')}
-              </span>
-            </button>
-            <span style={S.bottomSpacer} aria-hidden="true" />
-          </>
-        ) : (
+        {(
           <>
             <button
               type="button"
