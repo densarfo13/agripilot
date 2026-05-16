@@ -23,6 +23,10 @@
  */
 
 import { isFeatureEnabled } from '../config/features.js';
+// Connected Intelligence Loop — task creation / completion publish
+// on the typed bus so the intelligence loop can react. publish()
+// never throws and the bus caps re-entrancy.
+import { publish, FarmEvents } from '../lib/farmEventBus.js';
 
 const STORAGE_KEY = 'farroway_scan_tasks';
 const MAX_KEPT = 50;
@@ -193,6 +197,16 @@ export function addScanTasks(suggestedTasks, context = {}) {
   if (candidates.length === 0) return [];
   list.push(...candidates);
   _writeList(list);
+
+  // Feed the intelligence loop — new follow-up tasks exist.
+  try {
+    publish(FarmEvents.TASK_CREATED, {
+      count:  candidates.length,
+      scanId: candidates[0] ? candidates[0].scanId : null,
+      source: 'scan',
+    });
+  } catch { /* fire-and-forget */ }
+
   return candidates;
 }
 
@@ -228,6 +242,17 @@ export function completeScanTask(id) {
   if (idx === -1) return false;
   list[idx] = { ...list[idx], completed: true, completedAt: new Date().toISOString() };
   _writeList(list);
+
+  // Feed the intelligence loop — a task was completed (task →
+  // learning loop, spec §6).
+  try {
+    publish(FarmEvents.TASK_COMPLETED, {
+      id,
+      scanId: list[idx].scanId || null,
+      source: 'scan',
+    });
+  } catch { /* fire-and-forget */ }
+
   return true;
 }
 

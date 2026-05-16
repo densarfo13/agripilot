@@ -64,6 +64,7 @@ export const FarmEvents = Object.freeze({
   USER_LOCATION_CHANGED:   'user.location_changed',
   FOLLOW_UP_DUE:           'followup.due',
   PRODUCE_LISTED:          'produce.listed',
+  JOURNAL_ENTRY_CREATED:   'journal.entry_created',
 
   // Internal observability events the bus publishes about itself.
   HANDLER_FAILED:          'bus.handler_failed',

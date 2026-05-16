@@ -33,6 +33,13 @@
  *   • SSR-safe (localStorage guard).
  */
 
+// Connected Intelligence Loop — saving a scan publishes SCAN_COMPLETED
+// + JOURNAL_ENTRY_CREATED on the typed bus so the intelligence loop
+// (memory, recommendations, copilot) can react. publish() never
+// throws and the bus caps re-entrancy, so this can't destabilise the
+// store's write path.
+import { publish, FarmEvents } from '../farmEventBus.js';
+
 export const SCAN_HISTORY_KEY = 'farroway_scan_history_v1';
 // May 2026 final stabilization brief §14: cap the local history
 // at 30 entries (down from 50) so an overflowing localStorage
@@ -191,6 +198,24 @@ export function saveScanUseful(result, ctx = {}) {
 
   list.push(entry);
   _write(list);
+
+  // Feed the intelligence loop — the scan is now journalled. Both
+  // events carry only summary fields (no image bytes, no PII).
+  try {
+    publish(FarmEvents.SCAN_COMPLETED, {
+      scanId:   entry.scanId,
+      category: entry.category,
+      severity: entry.severity,
+      crop:     entry.crop,
+      source:   _str(safeResult.source) || 'scan',
+    });
+    publish(FarmEvents.JOURNAL_ENTRY_CREATED, {
+      id:       entry.id,
+      kind:     'scan',
+      category: entry.category,
+    });
+  } catch { /* bus is fire-and-forget — never affect the save */ }
+
   return entry;
 }
 
