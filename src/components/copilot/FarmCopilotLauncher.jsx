@@ -20,7 +20,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { isFeatureEnabled } from '../../utils/featureFlags.js';
+import { isFeatureEnabled, isKilled } from '../../utils/featureFlags.js';
 import { tSafe } from '../../i18n/tSafe.js';
 
 // Lazy — the Beta sheet (and its engine graph) is only fetched the
@@ -30,8 +30,9 @@ const FarmCopilotSheet = React.lazy(() => import('./FarmCopilotSheet.jsx'));
 export default function FarmCopilotLauncher() {
   const [open, setOpen] = React.useState(false);
 
-  // Hard gate — Beta flag off ⇒ nothing renders.
-  if (!isFeatureEnabled('FEATURE_FARM_COPILOT_BETA')) return null;
+  // Hard gate — Beta flag off, OR the emergency kill switch is
+  // on, ⇒ nothing renders.
+  if (!isFeatureEnabled('FEATURE_FARM_COPILOT_BETA') || isKilled('copilot')) return null;
 
   const label = tSafe('copilot.launch', 'Farm Copilot Beta');
 

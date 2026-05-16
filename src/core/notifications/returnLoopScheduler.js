@@ -36,7 +36,7 @@ import { generateDailyBriefingNotifications } from './dailyBriefingEngine.js';
 import { routeNotifications } from './notificationOrchestrator.js';
 import { addNotification } from '../../notifications/notificationStore.js';
 import { getPreferences } from '../../services/notificationPreferences.js';
-import { isFeatureEnabled } from '../../utils/featureFlags.js';
+import { isFeatureEnabled, isKilled } from '../../utils/featureFlags.js';
 
 const LAST_RUN_KEY = 'farroway_daily_briefing_last_run_v1';
 
@@ -81,6 +81,12 @@ export function runDailyBriefingOnce() {
   try {
     if (typeof localStorage === 'undefined') return { ran: false, reason: 'no_storage' };
     if (_ranToday()) return { ran: false, reason: 'already_ran' };
+
+    // Emergency kill switch — operator can stop the daily loop
+    // with no deploy (Pilot Operations §5).
+    try {
+      if (isKilled('notifications')) return { ran: false, reason: 'killed' };
+    } catch { /* never block on the kill-switch read */ }
 
     // Feature gate — when notifications are off, nothing fires.
     try {

@@ -219,6 +219,23 @@ const DEFAULTS = Object.freeze({
   // Permission prompt is user-triggered only — never fires on mount.
   // Off → block hidden, helpers are safe no-ops, no localStorage writes.
   FEATURE_PUSH_PREP: true,  // Preparation only — 2026-05-07
+
+  // ── Pilot-ops granular scan gates + emergency kill switches ──
+  // (Production Hardening + Pilot Operations Fix §5.)
+  // Granular scan-channel flags — disable ONE capture path
+  // without taking the whole Scan surface down.
+  FEATURE_GALLERY_SCAN_ENABLED: true,
+  FEATURE_CAMERA_SCAN_ENABLED:  true,
+
+  // Emergency kill switches — default OFF (= not killed). A pilot
+  // operator flips one ON (window.__FARROWAY_FLAGS__, the
+  // localStorage 'farroway:flag:KILL_*' key, or a VITE_KILL_* env)
+  // to take a misbehaving subsystem down INSTANTLY — no deploy.
+  // Checked via isKilled(subsystem) below.
+  KILL_SCAN:          false,
+  KILL_NOTIFICATIONS: false,
+  KILL_MARKETPLACE:   false,
+  KILL_COPILOT:       false,
 });
 
 function safeWindowFlag(name) {
@@ -276,6 +293,34 @@ export function isFeatureEnabled(name) {
   const env = safeEnvFlag(name);
   if (env !== undefined) return env;
   return !!DEFAULTS[name];
+}
+
+// Subsystem name → its KILL_* flag. The one place the mapping
+// lives so callers pass a plain name, not the flag string.
+const _KILL_MAP = Object.freeze({
+  scan:          'KILL_SCAN',
+  notifications: 'KILL_NOTIFICATIONS',
+  marketplace:   'KILL_MARKETPLACE',
+  copilot:       'KILL_COPILOT',
+});
+
+/**
+ * isKilled — emergency kill-switch check for a pilot subsystem.
+ *
+ *   isKilled('scan' | 'notifications' | 'marketplace' | 'copilot')
+ *
+ * Returns true when the matching KILL_* switch is ON. A subsystem
+ * calls this at its entry point and stands down when true, so a
+ * pilot operator can disable a misbehaving subsystem with NO
+ * deploy. Unknown subsystem names are never "killed". Never throws.
+ */
+export function isKilled(subsystem) {
+  try {
+    const flag = _KILL_MAP[String(subsystem || '').toLowerCase()];
+    return flag ? isFeatureEnabled(flag) : false;
+  } catch {
+    return false;
+  }
 }
 
 /**
