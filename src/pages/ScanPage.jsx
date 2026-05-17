@@ -2,7 +2,8 @@
  * ScanPage — the new /scan flow entry point.
  *
  * State machine
- *   capture   → user picks/takes a photo + taps Analyze
+ *   capture   → user picks/takes a photo (analysis auto-starts;
+ *               there is no manual "Analyze" button)
  *   analyzing → engine runs (rule-based or API)
  *   result    → ScanResultCard renders the outcome
  *   error     → fallback rendered with retry
@@ -185,7 +186,7 @@ export default function ScanPage() {
   // history slot.
   const [pendingThumbnail, setPendingThumbnail] = useState(null);
 
-  // Photo URL captured at the moment the user tapped Analyze —
+  // Photo URL captured at the moment analysis auto-started —
   // shown in the premium ScanAnalyzing surface so the analysis
   // sequence is visually anchored to the actual photo, not a
   // black rectangle. Cleared when phase moves back to capture.
@@ -362,7 +363,7 @@ export default function ScanPage() {
 
   // Scan Hardening §6 — duplicate-scan prevention. A simple ref
   // guard prevents a second analyzeScan from kicking off while one
-  // is already in flight. Rapid double-taps on Analyze (common on
+  // is already in flight. A re-fired capture event (common on
   // touch devices with imprecise hit detection) previously created
   // parallel requests that fought for setResult — now the second
   // tap is a no-op until the first call returns.
