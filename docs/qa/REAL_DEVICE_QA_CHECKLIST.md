@@ -42,6 +42,19 @@ touch input. Tick every row on every device column.
 | N5 | Reconnect — queued scan/task/journal sync once (no duplicates) | ☐ |
 | N6 | No data loss after offline → reconnect → refresh | ☐ |
 
+## Low-end Android pass (run on a 2–3 GB RAM device)
+
+Most pilot farmers will not have flagship phones. Run the core
+flow on a genuinely low-end Android.
+
+| # | Check | Pass |
+|---|-------|:---:|
+| L1 | App opens within ~8 s — no crash, no white screen | ☐ |
+| L2 | Camera scan completes without the tab being killed | ☐ |
+| L3 | Gallery scan of a large photo does not run out of memory | ☐ |
+| L4 | Scrolling Home / Tasks stays usable (no frozen UI) | ☐ |
+| L5 | App survives being backgrounded then reopened | ☐ |
+
 ## Emergency kill-switch drill (verify, then revert)
 
 Pilot ops can disable a subsystem with no deploy via
