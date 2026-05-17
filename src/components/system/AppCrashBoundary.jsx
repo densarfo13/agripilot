@@ -143,6 +143,13 @@ export class AppCrashBoundary extends Component {
         .then((m) => { try { m.safeTrackEvent?.('app_error', payload); } catch { /* ignore */ } })
         .catch(() => { /* analytics must never re-throw into a crashed boundary */ });
 
+      // Operational monitoring (§8) — tally the runtime error.
+      // Dynamic import so a tracker fault cannot re-throw into the
+      // crashed boundary; recordObservation is itself fully guarded.
+      import('../../core/observability/observabilityTracker.js')
+        .then((m) => { try { m.recordObservation?.(m.OBSERVABILITY?.RUNTIME_ERROR); } catch { /* ignore */ } })
+        .catch(() => { /* never re-throw into a crashed boundary */ });
+
       // Also POST to error service (best-effort).
       import('../../api/client.js')
         .then((m) => {

@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { generateUUID } from '../utils/generateId.js';
 import { enqueueStepUpRetry } from '../core/auth/stepUpRetryQueue.js';
+import { recordObservation, OBSERVABILITY } from '../core/observability/observabilityTracker.js';
 
 // Detect native platform: Capacitor injects window.Capacitor on native
 // isNativePlatform can be a function (returns bool) or a boolean depending on version
@@ -157,6 +158,15 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
+
+    // Operational monitoring (§8) — tally the failure class.
+    // recordObservation is fully guarded; this can never affect
+    // the request path.
+    try {
+      const st = error.response?.status;
+      if (st >= 500) recordObservation(OBSERVABILITY.API_500);
+      else if (st === 401 || st === 403) recordObservation(OBSERVABILITY.AUTH_FAILURE);
+    } catch { /* observability must never affect the request path */ }
 
     if (error.response?.status === 401) {
       const code = error.response?.data?.code;
