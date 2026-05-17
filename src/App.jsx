@@ -234,6 +234,8 @@ const FundingHub     = lazy(() => import('./pages/FundingHub.jsx'));
 const ContactPage    = lazy(() => import('./pages/ContactPage.jsx'));
 const PrivacyPolicy  = lazy(() => import('./pages/PrivacyPolicy.jsx'));
 const Terms          = lazy(() => import('./pages/Terms.jsx'));
+const GuidanceDisclaimer = lazy(() => import('./pages/GuidanceDisclaimer.jsx'));
+const DataConsent    = lazy(() => import('./pages/DataConsent.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1201,6 +1203,8 @@ export default function App() {
           <Route path="/support/contact"  element={<SupportContactPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms"   element={<Terms />} />
+          <Route path="/disclaimer"   element={<GuidanceDisclaimer />} />
+          <Route path="/data-consent" element={<DataConsent />} />
           <Route element={<V2ProtectedLayout />}>
             {/* Frictionless welcome screen - the new first-time
                 destination. Legacy /onboarding + /onboarding/fast
