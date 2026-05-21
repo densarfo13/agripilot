@@ -25,8 +25,9 @@ if (typeof globalThis.localStorage === 'undefined') {
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  WATERING_ACTION, WATERING_TIME, RISK,
+  WATERING_ACTION, WATERING_TIME, RISK, URGENCY,
   computeWateringRecommendation, wateringNotificationFor,
+  localizeWateringMessage,
 } from '../../../src/core/watering/wateringEngine.js';
 import {
   SCHEDULE_SCOPE, REPEAT, TIME_OF_DAY,
@@ -101,6 +102,141 @@ describe('wateringEngine — weather-aware recommendation', () => {
   it('never throws on garbage input', () => {
     expect(() => computeWateringRecommendation(null)).not.toThrow();
     expect(computeWateringRecommendation('x').recommendation).toBe(WATERING_ACTION.MONITOR);
+  });
+});
+
+// ─── v2 — adaptive output contract ─────────────────────────
+
+describe('wateringEngine v2 — adaptive output contract', () => {
+  it('every result carries shouldWaterToday + urgency + risk + localizedMessage', () => {
+    const r = computeWateringRecommendation({
+      crop: 'maize', mode: 'farmer',
+      weather: { temperatureC: 32, daysSinceRain: 10 },
+      nowMs: TUE_8AM,
+    });
+    expect(r.shouldWaterToday).toBe(true);
+    expect(r.urgency).toBe(URGENCY.HIGH);
+    expect(r.risk).toBe(RISK.HIGH);
+    expect(r.bestTime).toBe(WATERING_TIME.MORNING);
+    expect(r.localizedMessage.key).toMatch(/^watering\.msg\./);
+    expect(typeof r.localizedMessage.fallback).toBe('string');
+  });
+
+  it('shouldWaterToday is false for skip and monitor', () => {
+    const rainy = computeWateringRecommendation({
+      weather: { rainProbability24hPct: 90 }, nowMs: TUE_8AM,
+    });
+    const humid = computeWateringRecommendation({
+      weather: { humidityPct: 92, daysSinceRain: 1 }, nowMs: TUE_8AM,
+    });
+    expect(rainy.shouldWaterToday).toBe(false);
+    expect(humid.shouldWaterToday).toBe(false);
+  });
+});
+
+// ─── v2 — disease-aware scan adjustment ────────────────────
+
+describe('wateringEngine v2 — scan-aware adjustment', () => {
+  it('fungal scan stress reduces watering to monitor + base-only', () => {
+    const r = computeWateringRecommendation({
+      crop: 'tomato', mode: 'gardener',
+      stress: { category: 'fungal' },
+      weather: { temperatureC: 28 },
+      nowMs: TUE_8AM,
+    });
+    expect(r.recommendation).toBe(WATERING_ACTION.MONITOR);
+    expect(r.overwateringRisk).toBe(RISK.HIGH);
+    expect(r.localizedMessage.fallback).toMatch(/leaves/i);
+  });
+
+  it('mold / rot also reduce watering', () => {
+    for (const cat of ['mold', 'rot', 'mildew']) {
+      const r = computeWateringRecommendation({
+        crop: 'pepper', stress: { category: cat }, nowMs: TUE_8AM,
+      });
+      expect(r.recommendation).toBe(WATERING_ACTION.MONITOR);
+    }
+  });
+
+  it('wilting drought stress still escalates to water (dry, not wet, disease)', () => {
+    const r = computeWateringRecommendation({
+      crop: 'maize', mode: 'farmer',
+      stress: { wilting: true, scanStress: 'high' },
+      weather: { temperatureC: 30 },
+      nowMs: TUE_8AM,
+    });
+    expect(r.recommendation).toBe(WATERING_ACTION.WATER);
+    expect(r.urgency).toBe(URGENCY.HIGH);
+  });
+});
+
+// ─── v2 — snapshot input (getIntelligenceSnapshot integration) ─
+
+describe('wateringEngine v2 — snapshot input', () => {
+  it('reads weather + crop + mode from a snapshot when not passed directly', () => {
+    const r = computeWateringRecommendation({
+      snapshot: {
+        mode: 'gardener', crop: 'basil',
+        weather: { rainProbability24hPct: 85 },
+      },
+      nowMs: TUE_8AM,
+    });
+    expect(r.recommendation).toBe(WATERING_ACTION.SKIP);
+  });
+
+  it('explicit fields override snapshot values', () => {
+    const r = computeWateringRecommendation({
+      crop: 'pepper',
+      snapshot: { crop: 'basil', weather: { temperatureC: 22 } },
+      weather: { temperatureC: 32, daysSinceRain: 9 },
+      nowMs: TUE_8AM,
+    });
+    expect(r.recommendation).toBe(WATERING_ACTION.WATER);
+    expect(r.droughtRisk).toBe(RISK.HIGH);
+  });
+});
+
+// ─── v2 — localization seam ────────────────────────────────
+
+describe('localizeWateringMessage — translator + param substitution', () => {
+  it('falls back to English when no translator is supplied', () => {
+    const r = computeWateringRecommendation({
+      crop: 'peppers', mode: 'gardener',
+      weather: { temperatureC: 24 }, nowMs: TUE_8AM,
+    });
+    const text = localizeWateringMessage(r.localizedMessage);
+    expect(text).toMatch(/peppers/i);
+  });
+
+  it('uses the translator and substitutes {crop}', () => {
+    const r = computeWateringRecommendation({
+      crop: 'tomato', mode: 'gardener',
+      weather: { temperatureC: 24 }, nowMs: TUE_8AM,
+    });
+    const fakeT = (key, fallback) =>
+      key === r.localizedMessage.key ? 'Arrosez {crop} ce matin.' : fallback;
+    expect(localizeWateringMessage(r.localizedMessage, fakeT))
+      .toBe('Arrosez tomato ce matin.');
+  });
+
+  it('never throws on garbage input', () => {
+    expect(() => localizeWateringMessage(null)).not.toThrow();
+    expect(localizeWateringMessage(null)).toBe('');
+  });
+
+  it('no hardcoded English on watering fallback paths — every result has a translation key', () => {
+    const cases = [
+      { weather: { rainfallTodayMm: 12 } },
+      { weather: { rainProbability24hPct: 80 } },
+      { weather: { temperatureC: 22 } },
+      { weather: { humidityPct: 92, daysSinceRain: 1 } },
+      { stress: { category: 'fungal' } },
+      { weather: { daysSinceRain: 10 } },
+    ];
+    for (const c of cases) {
+      const r = computeWateringRecommendation({ ...c, crop: 'maize', nowMs: TUE_8AM });
+      expect(r.localizedMessage.key).toMatch(/^watering\.msg\./);
+    }
   });
 });
 

@@ -37,14 +37,39 @@ export const WATERING_TIME = Object.freeze({
 
 export const RISK = Object.freeze({ LOW: 'low', MEDIUM: 'medium', HIGH: 'high' });
 
+export const URGENCY = Object.freeze({ LOW: 'low', NORMAL: 'normal', HIGH: 'high' });
+
+// Localization seam — every user-visible string has a translation
+// key + English fallback. No hardcoded English on the UI side.
+const MSG = Object.freeze({
+  WATER_NOW:       { key: 'watering.msg.water_now',       fallback: 'Water {crop} this morning.' },
+  WATER_FARMER:    { key: 'watering.msg.water_farmer',    fallback: 'Irrigate {crop} this morning.' },
+  WATER_EVENING:   { key: 'watering.msg.water_evening',   fallback: 'Water {crop} in the evening.' },
+  WATER_DROUGHT:   { key: 'watering.msg.water_drought',   fallback: 'Soil may be dry — water {crop} this morning.' },
+  SKIP_RAIN_PAST:  { key: 'watering.msg.skip_rain_past',  fallback: 'It already rained today. You may skip watering.' },
+  SKIP_RAIN_SOON:  { key: 'watering.msg.skip_rain_soon',  fallback: 'Rain is likely later today. You may skip watering.' },
+  SKIP_RECENT:     { key: 'watering.msg.skip_recent',     fallback: 'You watered recently. Wait before adding more.' },
+  MONITOR_HUMID:   { key: 'watering.msg.monitor_humid',   fallback: 'Humidity is high — check the soil before watering.' },
+  MONITOR_FUNGAL:  { key: 'watering.msg.monitor_fungal',  fallback: 'Possible fungal issue — check the soil and water at the base, not on the leaves.' },
+  MONITOR_UNKNOWN: { key: 'watering.msg.monitor_unknown', fallback: 'Check the soil before deciding.' },
+});
+
+// Scan categories that mean "do not push more water onto leaves".
+const WET_DISEASE_CATEGORIES = new Set(['fungal', 'mold', 'rot', 'mildew']);
+
 const FALLBACK = Object.freeze({
-  recommendation:   WATERING_ACTION.MONITOR,
-  idealTime:        WATERING_TIME.MORNING,
-  skipReason:       '',
-  droughtRisk:      RISK.LOW,
-  overwateringRisk: RISK.LOW,
-  why:              'Check the soil before deciding.',
-  next:             'Check soil moisture',
+  recommendation:    WATERING_ACTION.MONITOR,
+  shouldWaterToday:  false,
+  idealTime:         WATERING_TIME.MORNING,
+  bestTime:          WATERING_TIME.MORNING,
+  skipReason:        '',
+  urgency:           URGENCY.LOW,
+  droughtRisk:       RISK.LOW,
+  overwateringRisk:  RISK.LOW,
+  risk:              RISK.LOW,
+  why:               'Check the soil before deciding.',
+  next:              'Check soil moisture',
+  localizedMessage:  { ...MSG.MONITOR_UNKNOWN, params: {} },
 });
 
 /** Hours since `iso`, or null when unknown/invalid (we never had a
@@ -86,6 +111,54 @@ function _taskLine(action, crop, mode) {
     : `Water ${name} this morning`;
 }
 
+/** Combine drought + overwatering risk into a single signal. */
+function _combinedRisk(drought, overwater) {
+  if (drought === RISK.HIGH || overwater === RISK.HIGH) return RISK.HIGH;
+  if (drought === RISK.MEDIUM || overwater === RISK.MEDIUM) return RISK.MEDIUM;
+  return RISK.LOW;
+}
+
+/** Urgency reflects how much the user should care RIGHT NOW. */
+function _urgencyOf(action, droughtRisk, hasWetDisease) {
+  if (hasWetDisease) return URGENCY.NORMAL;          // act, but not "urgent push"
+  if (action === WATERING_ACTION.WATER && droughtRisk === RISK.HIGH) return URGENCY.HIGH;
+  if (action === WATERING_ACTION.SKIP) return URGENCY.LOW;
+  if (action === WATERING_ACTION.MONITOR) return URGENCY.LOW;
+  return URGENCY.NORMAL;
+}
+
+/** Build a { key, fallback, params } localized-message envelope. */
+function _msg(template, params) {
+  const p = params && typeof params === 'object' ? params : {};
+  return { key: template.key, fallback: template.fallback, params: { ...p } };
+}
+
+/**
+ * Localize a `localizedMessage` envelope with a tSafe-style
+ * translator `t(key, fallback)`. Substitutes `{paramName}` in the
+ * translated/fallback string with values from `params`.
+ *
+ * @param {{ key, fallback, params? }} msg
+ * @param {(key:string, fallback:string)=>string} [t]
+ * @returns {string}
+ */
+export function localizeWateringMessage(msg, t) {
+  try {
+    if (!msg || typeof msg !== 'object') return '';
+    const translator = typeof t === 'function' ? t : (_k, fb) => fb;
+    let text = translator(msg.key, msg.fallback) || '';
+    const params = msg.params && typeof msg.params === 'object' ? msg.params : {};
+    text = String(text).replace(/\{(\w+)\}/g, (_m, name) => {
+      const v = params[name];
+      return v == null ? '' : String(v);
+    });
+    // Collapse leftover whitespace from empty {crop} substitutions.
+    return text.replace(/\s+/g, ' ').trim();
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Compute a watering recommendation.
  *
@@ -105,10 +178,19 @@ function _taskLine(action, crop, mode) {
 export function computeWateringRecommendation(input) {
   try {
     const s = (input && typeof input === 'object') ? input : {};
-    const mode    = _str(s.mode) === 'farmer' ? 'farmer' : 'gardener';
-    const crop    = s.crop;
-    const w       = (s.weather && typeof s.weather === 'object') ? s.weather : {};
-    const stress  = (s.stress && typeof s.stress === 'object') ? s.stress : {};
+    // Accept a `snapshot` (from getIntelligenceSnapshot()) and pull
+    // its weather / stress / mode / crop / region when the caller
+    // hasn't passed them explicitly. Explicit fields ALWAYS win.
+    const snap = (s.snapshot && typeof s.snapshot === 'object') ? s.snapshot : {};
+
+    const mode    = _str(s.mode || snap.mode) === 'farmer' ? 'farmer' : 'gardener';
+    const crop    = s.crop || snap.crop || null;
+    const w       = (s.weather && typeof s.weather === 'object')
+      ? s.weather
+      : (snap.weather && typeof snap.weather === 'object' ? snap.weather : {});
+    const stress  = (s.stress && typeof s.stress === 'object')
+      ? s.stress
+      : (snap.scanStress && typeof snap.scanStress === 'object' ? snap.scanStress : {});
     const hist    = (s.taskHistory && typeof s.taskHistory === 'object') ? s.taskHistory : {};
     const nowMs   = Number.isFinite(s.nowMs) ? s.nowMs : Date.now();
 
@@ -139,6 +221,7 @@ export function computeWateringRecommendation(input) {
         droughtRisk: RISK.LOW,
         overwateringRisk: rainToday >= 15 ? RISK.HIGH : RISK.MEDIUM,
         why: 'Rain has soaked the soil — extra water risks waterlogging.',
+        message: MSG.SKIP_RAIN_PAST,
       }, crop, mode);
     }
     if (rainProb >= 70) {
@@ -147,6 +230,24 @@ export function computeWateringRecommendation(input) {
         droughtRisk: RISK.LOW,
         overwateringRisk: RISK.MEDIUM,
         why: 'Rain is likely later today — wait and save the water.',
+        message: MSG.SKIP_RAIN_SOON,
+      }, crop, mode);
+    }
+
+    // ── Scan-aware adjustment (§4) ───────────────────────────
+    // Fungal / mold / rot → REDUCE watering and avoid wetting
+    // leaves. Honest wording: "check the soil first" — never
+    // claim moisture without sensor support (§11).
+    const scanCategory = _str(stress.category || stress.issueCategory);
+    const hasWetDisease = WET_DISEASE_CATEGORIES.has(scanCategory);
+    if (hasWetDisease) {
+      return _result(WATERING_ACTION.MONITOR, _pickTime(nowMs), {
+        skipReason: '',
+        droughtRisk: RISK.LOW,
+        overwateringRisk: RISK.HIGH,
+        why: 'Possible fungal stress — check the soil and water at the base, not on the leaves.',
+        message: MSG.MONITOR_FUNGAL,
+        hasWetDisease: true,
       }, crop, mode);
     }
 
@@ -159,6 +260,7 @@ export function computeWateringRecommendation(input) {
         droughtRisk: RISK.LOW,
         overwateringRisk: humidity != null && humidity >= 85 ? RISK.HIGH : RISK.MEDIUM,
         why: 'The soil should still be moist from the last watering.',
+        message: MSG.SKIP_RECENT,
       }, crop, mode);
     }
 
@@ -188,6 +290,7 @@ export function computeWateringRecommendation(input) {
           skipReason: '',
           droughtRisk, overwateringRisk,
           why: 'Humidity is high — check the soil before adding more water.',
+          message: MSG.MONITOR_HUMID,
         }, crop, mode);
       }
     }
@@ -198,8 +301,12 @@ export function computeWateringRecommendation(input) {
       : (tempC != null && tempC >= 30
           ? 'Warm day expected — water early so less is lost to heat.'
           : 'Routine watering keeps growth steady.');
+    const defaultMsg = droughtRisk === RISK.HIGH
+      ? MSG.WATER_DROUGHT
+      : (mode === 'farmer' ? MSG.WATER_FARMER
+          : (idealTime === WATERING_TIME.EVENING ? MSG.WATER_EVENING : MSG.WATER_NOW));
     return _result(WATERING_ACTION.WATER, idealTime, {
-      skipReason: '', droughtRisk, overwateringRisk, why,
+      skipReason: '', droughtRisk, overwateringRisk, why, message: defaultMsg,
     }, crop, mode);
   } catch {
     return { ...FALLBACK };
@@ -207,14 +314,31 @@ export function computeWateringRecommendation(input) {
 }
 
 function _result(action, idealTime, extras, crop, mode) {
+  const droughtRisk      = extras.droughtRisk || RISK.LOW;
+  const overwateringRisk = extras.overwateringRisk || RISK.LOW;
+  const hasWetDisease    = !!extras.hasWetDisease;
+  const cropName         = String(crop || '').trim();
+  // Pick the right template if the caller didn't pass one explicitly.
+  const template = extras.message || (
+    action === WATERING_ACTION.WATER
+      ? (mode === 'farmer' ? MSG.WATER_FARMER
+          : (droughtRisk === RISK.HIGH ? MSG.WATER_DROUGHT : MSG.WATER_NOW))
+      : (action === WATERING_ACTION.SKIP ? MSG.SKIP_RAIN_PAST : MSG.MONITOR_UNKNOWN)
+  );
+  const params = { ...(extras.params || {}), crop: cropName || (mode === 'farmer' ? 'the crop' : 'your plants') };
   return {
-    recommendation:   action,
+    recommendation:    action,
+    shouldWaterToday:  action === WATERING_ACTION.WATER,
     idealTime,
-    skipReason:       extras.skipReason || '',
-    droughtRisk:      extras.droughtRisk || RISK.LOW,
-    overwateringRisk: extras.overwateringRisk || RISK.LOW,
-    why:              extras.why || '',
-    next:             _taskLine(action, crop, mode),
+    bestTime:          idealTime,
+    skipReason:        extras.skipReason || '',
+    urgency:           _urgencyOf(action, droughtRisk, hasWetDisease),
+    droughtRisk,
+    overwateringRisk,
+    risk:              _combinedRisk(droughtRisk, overwateringRisk),
+    why:               extras.why || '',
+    next:              _taskLine(action, crop, mode),
+    localizedMessage:  _msg(template, params),
   };
 }
 
@@ -263,7 +387,9 @@ const _module = {
   WATERING_ACTION,
   WATERING_TIME,
   RISK,
+  URGENCY,
   computeWateringRecommendation,
   wateringNotificationFor,
+  localizeWateringMessage,
 };
 export default _module;
