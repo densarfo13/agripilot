@@ -25,7 +25,10 @@ import {
 
 import { runSweepOnce } from '../queue/farmProcessingCron.js';
 
-const NOW = new Date(2026, 3, 20, 12, 0, 0).getTime();
+// Use real now-relative offsets so the window-filter math stays
+// stable as the calendar moves forward. Previously hardcoded to
+// April 20 2026, which broke once "today" advanced past that date.
+const NOW = Date.now();
 const DAY = 24 * 3600 * 1000;
 
 beforeEach(() => {
