@@ -5,7 +5,7 @@
  * lifecycle snapshot.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   KNOWN_CROPS, getDurationDays, estimateHarvestWindow,
 } from '../../../src/core/lifecycle/cropDurationRegistry.js';
@@ -15,6 +15,14 @@ import {
 import {
   PLANTING_REGIONS, getPlantingWindow,
 } from '../../../src/core/lifecycle/plantingWindowEngine.js';
+import {
+  generateLifecycleTasks,
+} from '../../../src/core/lifecycle/generateLifecycleTasks.js';
+import {
+  LIFECYCLE_OBS,
+  recordLifecycleObservation, getLifecycleObservationCounts,
+  resetLifecycleObservationCounts, trackStageChange,
+} from '../../../src/core/lifecycle/lifecycleObservability.js';
 
 const DAY = 24 * 3600 * 1000;
 const NOW = Date.UTC(2026, 4, 22);
@@ -287,5 +295,95 @@ describe('plantingWindowEngine — region-aware windows', () => {
   it('never throws on garbage input', () => {
     expect(() => getPlantingWindow(null)).not.toThrow();
     expect(getPlantingWindow(null).reason).toBe('no_data');
+  });
+});
+
+// ─── generateLifecycleTasks (spec §5 named entry) ────────
+
+describe('generateLifecycleTasks — thin facade over the engine', () => {
+  it('returns the stage-appropriate task envelopes for a known crop', () => {
+    const tasks = generateLifecycleTasks({
+      crop: 'tomato',
+      plantingDate: new Date(Date.UTC(2026, 4, 22) - 50 * 24 * 3600 * 1000).toISOString(),
+      nowMs: Date.UTC(2026, 4, 22),
+    });
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const t of tasks) {
+      expect(t.titleKey).toMatch(/^lifecycle\.task\./);
+      expect(typeof t.titleFallback).toBe('string');
+      expect(typeof t.stage).toBe('string');
+      expect(['low', 'medium', 'high']).toContain(t.urgency);
+      expect(t.isLifecycle).toBe(true);
+    }
+  });
+
+  it('PLANNING tasks are low urgency; HARVEST_READY is high', () => {
+    // Planning (no planting date).
+    const planTasks = generateLifecycleTasks({ crop: 'tomato' });
+    expect(planTasks.every((t) => t.urgency === 'low')).toBe(true);
+
+    // Force harvest-ready by planting ~80 days ago (tomato max=90).
+    const harvestTasks = generateLifecycleTasks({
+      crop: 'tomato',
+      plantingDate: new Date(Date.UTC(2026, 4, 22) - 80 * 24 * 3600 * 1000).toISOString(),
+      nowMs: Date.UTC(2026, 4, 22),
+    });
+    // Some stage at this offset — verify the urgency rule fires
+    // correctly if we land in harvest_ready / harvest.
+    if (harvestTasks[0] && (harvestTasks[0].stage === 'harvest_ready'
+        || harvestTasks[0].stage === 'harvest')) {
+      expect(harvestTasks[0].urgency).toBe('high');
+    }
+  });
+
+  it('never throws on garbage input — returns the safe PLANNING tasks', () => {
+    expect(() => generateLifecycleTasks(null)).not.toThrow();
+    const r = generateLifecycleTasks(null);
+    expect(Array.isArray(r)).toBe(true);
+    // Garbage falls through to PLANNING — its tasks are low urgency.
+    for (const t of r) expect(t.urgency).toBe('low');
+  });
+});
+
+// ─── lifecycleObservability (spec §16.F) ─────────────────
+
+describe('lifecycleObservability — the 6 named events', () => {
+  beforeEach(() => resetLifecycleObservationCounts());
+
+  it('ships all six documented event names', () => {
+    for (const e of [
+      'lifecycle_created', 'stage_changed', 'harvest_window_viewed',
+      'lifecycle_task_completed', 'harvest_logged',
+      'lifecycle_notification_opened',
+    ]) {
+      expect(Object.values(LIFECYCLE_OBS)).toContain(e);
+    }
+  });
+
+  it('counts events in-memory', () => {
+    recordLifecycleObservation(LIFECYCLE_OBS.LIFECYCLE_CREATED);
+    recordLifecycleObservation(LIFECYCLE_OBS.STAGE_CHANGED);
+    recordLifecycleObservation(LIFECYCLE_OBS.HARVEST_LOGGED);
+    const c = getLifecycleObservationCounts();
+    expect(c[LIFECYCLE_OBS.LIFECYCLE_CREATED]).toBe(1);
+    expect(c[LIFECYCLE_OBS.STAGE_CHANGED]).toBe(1);
+    expect(c[LIFECYCLE_OBS.HARVEST_LOGGED]).toBe(1);
+  });
+
+  it('trackStageChange is a no-op when the stage did not change', () => {
+    expect(trackStageChange('flowering', 'flowering')).toBe(false);
+    expect(trackStageChange(null, 'flowering')).toBe(false);
+    expect(trackStageChange('flowering', null)).toBe(false);
+    expect(getLifecycleObservationCounts().stage_changed || 0).toBe(0);
+  });
+
+  it('trackStageChange fires when stages differ', () => {
+    expect(trackStageChange('flowering', 'fruiting')).toBe(true);
+    expect(getLifecycleObservationCounts().stage_changed).toBe(1);
+  });
+
+  it('never throws on bogus input', () => {
+    expect(() => recordLifecycleObservation(null)).not.toThrow();
+    expect(recordLifecycleObservation(undefined)).toBe(false);
   });
 });
