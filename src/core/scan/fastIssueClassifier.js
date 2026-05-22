@@ -474,10 +474,91 @@ export function resetScanFlowCounts() {
   for (const k of Object.keys(_flowCounts)) delete _flowCounts[k];
 }
 
+// ── analyze() — image-aware entry point (spec §6) ────────────
+//
+// The Scan flow's preferred entry: validates the image FIRST. If
+// the image is missing / wrong-mime / empty / not-loaded, returns
+// `{ ok: false, error, userMessage }` so the surface shows
+//   "Photo could not be loaded. Please choose the photo again."
+// instead of a faked low-confidence verdict.
+
+const _INVALID_IMAGE_MESSAGE = Object.freeze({
+  key:      'scan.error.image_invalid',
+  fallback: 'Photo could not be loaded. Please choose the photo again.',
+});
+
+function _imageMetaValid(imageMeta, imageBlob, imageFile) {
+  try {
+    const blob = imageBlob || imageFile;
+    if (!blob && !imageMeta) return { ok: false, reason: 'no_image' };
+
+    const meta = imageMeta || {};
+    const mime = String(meta.mimeType || (blob && blob.type) || '').toLowerCase();
+    if (!mime.startsWith('image/')) return { ok: false, reason: 'bad_mime' };
+
+    const size = Number(meta.size != null ? meta.size : (blob && blob.size));
+    if (!(Number.isFinite(size) && size > 0)) return { ok: false, reason: 'empty_blob' };
+
+    const w = Number(meta.width);
+    const h = Number(meta.height);
+    if (!(Number.isFinite(w) && w > 0) || !(Number.isFinite(h) && h > 0)) {
+      return { ok: false, reason: 'not_loaded' };
+    }
+    return { ok: true, reason: '' };
+  } catch {
+    return { ok: false, reason: 'exception' };
+  }
+}
+
+/**
+ * Image-aware scan entry. Validates the real image before any
+ * classification, so a missing / revoked / empty / not-yet-loaded
+ * blob NEVER produces a faked low-confidence diagnosis.
+ *
+ * @param {object} args
+ * @param {File|Blob} [args.imageFile]
+ * @param {Blob}      [args.imageBlob]
+ * @param {object}    [args.imageMeta]    { mimeType, size, width, height }
+ * @param {object}    [args.intelligenceSnapshot]
+ * @param {object}    [args.scanSignals]  signals from analyzeImageSafe /
+ *                                        hybridScanEngine
+ * @param {string}    [args.crop]
+ * @returns {{ ok:boolean, error?:string, userMessage?:object, result?:object }}
+ */
+export function analyze(args) {
+  try {
+    const a = (args && typeof args === 'object') ? args : {};
+    const validity = _imageMetaValid(a.imageMeta, a.imageBlob, a.imageFile);
+    if (!validity.ok) {
+      try { recordObservation(OBSERVABILITY.SCAN_FAILURE); } catch { /* ignore */ }
+      return Object.freeze({
+        ok:          false,
+        error:       validity.reason,
+        userMessage: { ..._INVALID_IMAGE_MESSAGE },
+        result:      null,
+      });
+    }
+    const result = classifyScan({
+      scanSignals: a.scanSignals,
+      snapshot:    a.intelligenceSnapshot,
+      crop:        a.crop,
+    });
+    return Object.freeze({ ok: true, error: '', userMessage: null, result });
+  } catch {
+    return Object.freeze({
+      ok:          false,
+      error:       'exception',
+      userMessage: { ..._INVALID_IMAGE_MESSAGE },
+      result:      null,
+    });
+  }
+}
+
 const _module = {
   SUBJECT_TYPE, ISSUE_CATEGORY, MANUAL_SYMPTOMS, SCAN_PROGRESS,
   SCAN_FLOW_OBS,
   classifyScan,
+  analyze,
   recordScanFlowObservation, getScanFlowCounts, resetScanFlowCounts,
 };
 export default _module;
