@@ -550,25 +550,58 @@ export default function UsefulResultCard({
       data-experience={experience}
     >
       {/* Result image — the farmer's captured photo when available
-          (preferred, shown even on a low-confidence result), else
-          the scientific macro leaf for the finding. SafeImage
-          guarantees a revoked blob: URL or a 404'd remote URL
-          swaps to the local preview / macro fallback — never a
-          broken-image icon (spec §1, §4). */}
-      <SafeImage
-        src={displaySrc}
-        fallback={displayFallback}
-        alt=""
-        lazy
-        testId={`useful-result-image-${category}`}
-        onError={handleImageFallback}
-        style={{
-          width: '100%',
-          aspectRatio: '16 / 9',
-          borderRadius: 14,
-          marginBottom: 12,
-        }}
-      />
+          (preferred, shown even on a low-confidence result). When
+          NEITHER the captured photo NOR the local thumbnail is
+          available, we render a CONTROLLED recovery banner instead
+          of falling through to the macro stock photo — that path
+          is what produced the "wrong / broken image" reports from
+          the field. SafeImage covers the remaining case (revoked
+          blob: URL or 404'd remote) — never a broken-image icon. */}
+      {(uploadedImageUrl || previewThumb) ? (
+        <SafeImage
+          src={displaySrc}
+          fallback={displayFallback}
+          alt=""
+          lazy
+          testId={`useful-result-image-${category}`}
+          onError={handleImageFallback}
+          style={{
+            width: '100%',
+            aspectRatio: '16 / 9',
+            borderRadius: 14,
+            marginBottom: 12,
+          }}
+        />
+      ) : (
+        <div
+          data-testid="useful-result-image-recovery"
+          role="status"
+          style={{
+            width: '100%',
+            aspectRatio: '16 / 9',
+            borderRadius: 14,
+            marginBottom: 12,
+            background: 'rgba(248, 240, 226, 0.6)',
+            border: '1px dashed rgba(200, 148, 77, 0.45)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px 16px',
+            textAlign: 'center',
+            color: 'rgba(45, 32, 16, 0.7)',
+            fontSize: '0.95rem',
+            lineHeight: 1.4,
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>
+            {tSafe('scan.recovery.title', 'Photo could not be loaded.')}
+          </div>
+          <div style={{ fontSize: '0.85rem' }}>
+            {tSafe('scan.recovery.body', 'Please choose the photo again.')}
+          </div>
+        </div>
+      )}
       {/* Category chip + confidence pill (Plantix-style header) */}
       <div style={S.chipRow}>
         <span
