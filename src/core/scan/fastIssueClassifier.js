@@ -31,6 +31,36 @@
  */
 
 import { confidenceWord } from '../agronomy/confidenceLanguage.js';
+import { recordObservation, OBSERVABILITY } from '../observability/observabilityTracker.js';
+
+// Categories where a "consult a local expert before chemicals"
+// note is appropriate — anywhere a farmer might reach for a
+// spray. Drought / nutrient / sunburn / wilting are NOT in this
+// set: the answer there is water / shade / monitoring.
+const _CHEMICAL_RISK_CATEGORIES = new Set([
+  'fungal_risk', 'pest_damage', 'fruit_rot', 'leaf_spot',
+]);
+
+const SAFETY_NOTE = Object.freeze({
+  key:      'scan.safety.consult_local',
+  fallback: 'Consult a local agricultural expert before applying any chemical treatment.',
+});
+
+// Per-category short label envelopes for the `possibleIssue` field
+// (the spec's "human label" companion to the taxonomy `issueCategory`).
+const ISSUE_LABEL = Object.freeze({
+  leaf_spot:                  { key: 'scan.issue_label.leaf_spot',    fallback: 'Possible leaf spot' },
+  yellowing:                  { key: 'scan.issue_label.yellowing',    fallback: 'Possible yellowing leaves' },
+  wilting:                    { key: 'scan.issue_label.wilting',      fallback: 'Possible wilting' },
+  pest_damage:                { key: 'scan.issue_label.pest_damage',  fallback: 'Possible pest damage' },
+  fungal_risk:                { key: 'scan.issue_label.fungal_risk',  fallback: 'Possible fungal stress' },
+  fruit_rot:                  { key: 'scan.issue_label.fruit_rot',    fallback: 'Possible fruit rot' },
+  sunburn:                    { key: 'scan.issue_label.sunburn',      fallback: 'Possible heat / sun stress' },
+  water_stress:               { key: 'scan.issue_label.water_stress', fallback: 'Possible water stress' },
+  overwatering:               { key: 'scan.issue_label.overwatering', fallback: 'Possible overwatering signs' },
+  nutrient_stress:            { key: 'scan.issue_label.nutrient',     fallback: 'Possible nutrient stress' },
+  unknown_needs_clearer_photo:{ key: 'scan.issue_label.unknown',      fallback: 'Needs a clearer photo' },
+});
 
 // ── Taxonomy ─────────────────────────────────────────────────
 export const SUBJECT_TYPE = Object.freeze({
@@ -322,15 +352,31 @@ export function classifyScan(input) {
     const manualOptions = isLowConfidence ? MANUAL_SYMPTOMS.slice() : [];
     const retakeGuidance = isLowConfidence ? _msg(MSG.CHECK_RETAKE) : null;
 
+    // Spec contract additions:
+    const issueLabelTemplate = ISSUE_LABEL[category] || ISSUE_LABEL.unknown_needs_clearer_photo;
+    const possibleIssueLabel = _msg(issueLabelTemplate, { crop: crop || 'the plant' });
+    const confidenceLabel = (category === ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO)
+      ? 'needs_review'
+      : tier;
+    const safetyNote = _CHEMICAL_RISK_CATEGORIES.has(category) ? _msg(SAFETY_NOTE) : null;
+    const nextBestAction = recommendedAction[0] || null;
+
     return {
       subjectType,
-      possibleIssue:    category,
-      confidence,         // 'likely' | 'possible' | 'needs review'
+      // Spec wants BOTH:
+      //   • issueCategory — the taxonomy key
+      //   • possibleIssue — a localizable human label envelope
+      issueCategory:    category,
+      possibleIssue:    possibleIssueLabel,
+      confidence,         // hedged word: likely / possible / needs review
+      confidenceLabel,    // 'high' | 'medium' | 'low' | 'needs_review'
       confidenceTier:   tier,
       evidence,
       whatWeNoticed,
       whatToCheckNext,
       recommendedAction,  // array of message envelopes
+      safetyNote,         // envelope OR null
+      nextBestAction,     // single envelope (= recommendedAction[0]) OR null
       followUpTask,
       journalSummary,
       isLowConfidence,
@@ -344,25 +390,94 @@ export function classifyScan(input) {
 
 function _safeFallback(input) {
   const crop = (input && input.crop) || null;
+  const category = ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO;
+  const monitor = _msg(MSG.ACTION_MONITOR);
   return {
     subjectType:        SUBJECT_TYPE.UNKNOWN,
-    possibleIssue:      ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO,
+    issueCategory:      category,
+    possibleIssue:      _msg(ISSUE_LABEL.unknown_needs_clearer_photo, { crop: crop || 'the plant' }),
     confidence:         confidenceWord('low'),
+    confidenceLabel:    'needs_review',
     confidenceTier:     'low',
     evidence:           [],
     whatWeNoticed:      _msg(MSG.NOTICED_UNKNOWN, { crop: crop || 'the plant' }),
     whatToCheckNext:    _msg(MSG.CHECK_RETAKE),
-    recommendedAction:  [_msg(MSG.ACTION_MONITOR)],
-    followUpTask:       _followUpTaskFor(ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO, crop),
-    journalSummary:     _journalSummary(ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO, crop),
+    recommendedAction:  [monitor],
+    safetyNote:         null,
+    nextBestAction:     monitor,
+    followUpTask:       _followUpTaskFor(category, crop),
+    journalSummary:     _journalSummary(category, crop),
     isLowConfidence:    true,
     manualOptions:      MANUAL_SYMPTOMS.slice(),
     retakeGuidance:     _msg(MSG.CHECK_RETAKE),
   };
 }
 
+// ── Observability adapter (spec §10) ─────────────────────────
+//
+// Specific event names the dashboard reads. Error events forward
+// to observabilityTracker.SCAN_FAILURE; the rest are counter-only.
+export const SCAN_FLOW_OBS = Object.freeze({
+  SCAN_STARTED:              'scan_started',
+  SCAN_SUBJECT_DETECTED:     'scan_subject_detected',
+  SCAN_ISSUE_DETECTED:       'scan_issue_detected',
+  SCAN_LOW_CONFIDENCE:       'scan_low_confidence',
+  SCAN_MANUAL_FALLBACK_USED: 'scan_manual_fallback_used',
+  SCAN_JOURNAL_SAVED:        'scan_journal_saved',
+  SCAN_FOLLOW_UP_CREATED:    'scan_follow_up_created',
+  SCAN_FAILED:               'scan_failed',
+  SCAN_COMPLETED:            'scan_completed',
+});
+
+const _FLOW_TO_CATEGORY = Object.freeze({
+  [SCAN_FLOW_OBS.SCAN_FAILED]:               OBSERVABILITY.SCAN_FAILURE,
+  [SCAN_FLOW_OBS.SCAN_LOW_CONFIDENCE]:       null,
+  [SCAN_FLOW_OBS.SCAN_MANUAL_FALLBACK_USED]: null,
+  [SCAN_FLOW_OBS.SCAN_STARTED]:              null,
+  [SCAN_FLOW_OBS.SCAN_SUBJECT_DETECTED]:     null,
+  [SCAN_FLOW_OBS.SCAN_ISSUE_DETECTED]:       null,
+  [SCAN_FLOW_OBS.SCAN_JOURNAL_SAVED]:        null,
+  [SCAN_FLOW_OBS.SCAN_FOLLOW_UP_CREATED]:    null,
+  [SCAN_FLOW_OBS.SCAN_COMPLETED]:            null,
+});
+
+const _flowCounts = {};
+
+/**
+ * Record a scan-flow event. Never throws — observability is never
+ * load-bearing on the scan path. NO raw image data + NO PII flow
+ * through this adapter; it only counts named events.
+ *
+ * @param {string} event one of SCAN_FLOW_OBS
+ */
+export function recordScanFlowObservation(event) {
+  try {
+    if (!event) return false;
+    _flowCounts[event] = (_flowCounts[event] || 0) + 1;
+    const category = _FLOW_TO_CATEGORY[event];
+    if (category) {
+      try { recordObservation(category); } catch { /* ignore */ }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Read-only snapshot of scan-flow counters. */
+export function getScanFlowCounts() {
+  return { ..._flowCounts };
+}
+
+/** Reset scan-flow counters (test hook). */
+export function resetScanFlowCounts() {
+  for (const k of Object.keys(_flowCounts)) delete _flowCounts[k];
+}
+
 const _module = {
   SUBJECT_TYPE, ISSUE_CATEGORY, MANUAL_SYMPTOMS, SCAN_PROGRESS,
+  SCAN_FLOW_OBS,
   classifyScan,
+  recordScanFlowObservation, getScanFlowCounts, resetScanFlowCounts,
 };
 export default _module;

@@ -5,11 +5,13 @@
  * journal/task loop output.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   classifyScan,
   SUBJECT_TYPE, ISSUE_CATEGORY,
   MANUAL_SYMPTOMS, SCAN_PROGRESS,
+  SCAN_FLOW_OBS,
+  recordScanFlowObservation, getScanFlowCounts, resetScanFlowCounts,
 } from '../../../src/core/scan/fastIssueClassifier.js';
 
 // ─── Subject detection ────────────────────────────────────
@@ -43,25 +45,25 @@ describe('classifyScan — subject detection', () => {
 describe('classifyScan — issue mapping per category', () => {
   it('spots → LEAF_SPOT', () => {
     const r = classifyScan({ scanSignals: { spots: true }, crop: 'tomato' });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.LEAF_SPOT);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.LEAF_SPOT);
     expect(r.whatWeNoticed.fallback).toMatch(/leaf spots/i);
   });
 
   it('mold → FUNGAL_RISK with base-water action', () => {
     const r = classifyScan({ scanSignals: { mold: true } });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.FUNGAL_RISK);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.FUNGAL_RISK);
     const actions = r.recommendedAction.map((a) => a.fallback).join(' | ');
     expect(actions).toMatch(/at the base/i);
   });
 
   it('fruitRot → FRUIT_ROT', () => {
     const r = classifyScan({ scanSignals: { fruitRot: true } });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.FRUIT_ROT);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.FRUIT_ROT);
   });
 
   it('holes → PEST_DAMAGE', () => {
     const r = classifyScan({ scanSignals: { holes: true, insects: true } });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.PEST_DAMAGE);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.PEST_DAMAGE);
     expect(r.evidence).toContain('insect_visible');
   });
 
@@ -70,7 +72,7 @@ describe('classifyScan — issue mapping per category', () => {
       scanSignals: { wilting: true },
       snapshot: { weather: { temperatureC: 36 } },
     });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.SUNBURN);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.SUNBURN);
   });
 
   it('wilting + long dry spell → WATER_STRESS', () => {
@@ -78,24 +80,24 @@ describe('classifyScan — issue mapping per category', () => {
       scanSignals: { wilting: true },
       snapshot: { weather: { daysSinceRain: 8 } },
     });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.WATER_STRESS);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.WATER_STRESS);
   });
 
   it('yellowing + wet soil / humidity → OVERWATERING', () => {
     const r = classifyScan({
       scanSignals: { yellowing: true, soilWet: true },
     });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.OVERWATERING);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.OVERWATERING);
   });
 
   it('yellowing alone → NUTRIENT_STRESS', () => {
     const r = classifyScan({ scanSignals: { yellowing: true } });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.NUTRIENT_STRESS);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.NUTRIENT_STRESS);
   });
 
   it('no signals → UNKNOWN_NEEDS_CLEARER_PHOTO + low confidence', () => {
     const r = classifyScan({ scanSignals: {} });
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO);
     expect(r.isLowConfidence).toBe(true);
   });
 });
@@ -192,7 +194,86 @@ describe('classifyScan — never throws', () => {
   it('garbage input returns the safe fallback shape', () => {
     expect(() => classifyScan(null)).not.toThrow();
     const r = classifyScan(null);
-    expect(r.possibleIssue).toBe(ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO);
+    expect(r.issueCategory).toBe(ISSUE_CATEGORY.UNKNOWN_NEEDS_CLEARER_PHOTO);
     expect(r.isLowConfidence).toBe(true);
+  });
+});
+
+// ─── v2 spec contract — added fields ──────────────────────
+
+describe('classifyScan — extended result contract', () => {
+  it('possibleIssue is now a localizable label envelope (not the enum)', () => {
+    const r = classifyScan({ scanSignals: { spots: true }, crop: 'tomato' });
+    expect(typeof r.possibleIssue).toBe('object');
+    expect(r.possibleIssue.key).toMatch(/^scan\.issue_label\./);
+    expect(typeof r.possibleIssue.fallback).toBe('string');
+  });
+
+  it('confidenceLabel is one of high|medium|low|needs_review', () => {
+    const known = ['high', 'medium', 'low', 'needs_review'];
+    expect(known).toContain(classifyScan({ scanSignals: { spots: true } }).confidenceLabel);
+    expect(classifyScan({ scanSignals: {} }).confidenceLabel).toBe('needs_review');
+  });
+
+  it('safetyNote appears for chemical-risk categories ONLY', () => {
+    expect(classifyScan({ scanSignals: { mold: true } }).safetyNote).not.toBe(null);
+    expect(classifyScan({ scanSignals: { spots: true } }).safetyNote).not.toBe(null);
+    expect(classifyScan({ scanSignals: { holes: true } }).safetyNote).not.toBe(null);
+    expect(classifyScan({
+      scanSignals: { wilting: true },
+      snapshot: { weather: { temperatureC: 36 } },
+    }).safetyNote).toBe(null);
+    expect(classifyScan({ scanSignals: { yellowing: true } }).safetyNote).toBe(null);
+  });
+
+  it('safetyNote uses the "consult a local expert" wording', () => {
+    const r = classifyScan({ scanSignals: { mold: true } });
+    expect(r.safetyNote.fallback).toMatch(/local agricultural expert/i);
+  });
+
+  it('nextBestAction is the first recommendedAction (single envelope)', () => {
+    const r = classifyScan({ scanSignals: { spots: true }, crop: 'tomato' });
+    expect(r.nextBestAction).toBe(r.recommendedAction[0]);
+    expect(typeof r.nextBestAction.fallback).toBe('string');
+  });
+
+  it('garbage input safe fallback also has the v2 fields filled', () => {
+    const r = classifyScan(null);
+    expect(r.confidenceLabel).toBe('needs_review');
+    expect(r.safetyNote).toBe(null);
+    expect(r.nextBestAction).toBeTruthy();
+    expect(typeof r.possibleIssue.key).toBe('string');
+  });
+});
+
+// ─── §10 — observability adapter ─────────────────────────
+
+describe('recordScanFlowObservation — counts + forwards failures', () => {
+  beforeEach(() => resetScanFlowCounts());
+
+  it('exposes the documented event names', () => {
+    for (const name of [
+      'scan_started', 'scan_subject_detected', 'scan_issue_detected',
+      'scan_low_confidence', 'scan_manual_fallback_used',
+      'scan_journal_saved', 'scan_follow_up_created',
+      'scan_failed', 'scan_completed',
+    ]) {
+      expect(Object.values(SCAN_FLOW_OBS)).toContain(name);
+    }
+  });
+
+  it('counts events in-memory', () => {
+    recordScanFlowObservation(SCAN_FLOW_OBS.SCAN_STARTED);
+    recordScanFlowObservation(SCAN_FLOW_OBS.SCAN_COMPLETED);
+    recordScanFlowObservation(SCAN_FLOW_OBS.SCAN_FAILED);
+    const c = getScanFlowCounts();
+    expect(c[SCAN_FLOW_OBS.SCAN_STARTED]).toBe(1);
+    expect(c[SCAN_FLOW_OBS.SCAN_COMPLETED]).toBe(1);
+    expect(c[SCAN_FLOW_OBS.SCAN_FAILED]).toBe(1);
+  });
+
+  it('never throws on bogus input', () => {
+    expect(() => recordScanFlowObservation(null)).not.toThrow();
+    expect(recordScanFlowObservation(undefined)).toBe(false);
   });
 });
