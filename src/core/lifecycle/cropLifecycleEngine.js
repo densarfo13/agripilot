@@ -31,6 +31,10 @@ import { estimateHarvestWindow, getDurationDays } from './cropDurationRegistry.j
 export const LIFECYCLE_STAGE = Object.freeze({
   PLANNING:           'planning',
   PLANTING:           'planting',
+  GERMINATION:        'germination',
+  SEEDLING:           'seedling',
+  // EARLY_GROWTH is kept as an alias for legacy callers — newer
+  // surfaces should use GERMINATION / SEEDLING explicitly.
   EARLY_GROWTH:       'early_growth',
   VEGETATIVE_GROWTH:  'vegetative_growth',
   FLOWERING:          'flowering',
@@ -40,13 +44,14 @@ export const LIFECYCLE_STAGE = Object.freeze({
   POST_HARVEST:       'post_harvest',
 });
 
-// Map cropStageEstimator's vocabulary → the spec's 9 stages.
+// Map cropStageEstimator's vocabulary → the spec's stages.
 const _STAGE_REMAP = Object.freeze({
   planning:          LIFECYCLE_STAGE.PLANNING,
   land_preparation:  LIFECYCLE_STAGE.PLANNING,
   planting:          LIFECYCLE_STAGE.PLANTING,
-  germination:       LIFECYCLE_STAGE.EARLY_GROWTH,
-  early_growth:      LIFECYCLE_STAGE.EARLY_GROWTH,
+  germination:       LIFECYCLE_STAGE.GERMINATION,
+  seedling:          LIFECYCLE_STAGE.SEEDLING,
+  early_growth:      LIFECYCLE_STAGE.SEEDLING,
   vegetative:        LIFECYCLE_STAGE.VEGETATIVE_GROWTH,
   vegetative_growth: LIFECYCLE_STAGE.VEGETATIVE_GROWTH,
   flowering:         LIFECYCLE_STAGE.FLOWERING,
@@ -76,6 +81,16 @@ const STAGE_TASKS = Object.freeze({
     { key: 'lifecycle.task.water_after_plant',fallback:'Water {crop} gently after planting.',                  actionType: 'water' },
     { key: 'lifecycle.task.protect_seedling',fallback: 'Protect young {crop} from strong sun and wind.',      actionType: 'inspect' },
   ],
+  germination: [
+    { key: 'lifecycle.task.keep_moist',      fallback: 'Keep the soil moist — but not soaked — while {crop} germinates.', actionType: 'water' },
+    { key: 'lifecycle.task.shade_seeds',     fallback: 'Shade or cover {crop} seeds during very hot afternoons.',        actionType: 'inspect' },
+  ],
+  seedling: [
+    { key: 'lifecycle.task.watch_seedlings', fallback: 'Watch {crop} seedlings daily for signs of stress.',   actionType: 'inspect' },
+    { key: 'lifecycle.task.gentle_watering', fallback: 'Keep watering steady — {crop} roots are still small.',actionType: 'water' },
+  ],
+  // Legacy alias — kept so older callers using EARLY_GROWTH still
+  // see tasks.
   early_growth: [
     { key: 'lifecycle.task.watch_seedlings', fallback: 'Watch {crop} seedlings daily for signs of stress.',   actionType: 'inspect' },
     { key: 'lifecycle.task.gentle_watering', fallback: 'Keep watering steady — {crop} roots are still small.',actionType: 'water' },
@@ -110,7 +125,9 @@ const STAGE_TASKS = Object.freeze({
 
 const NEXT_HINT = Object.freeze({
   planning:           { key: 'lifecycle.hint.planting',           fallback: 'Next: planting day — prepare soil and seeds.' },
-  planting:           { key: 'lifecycle.hint.early_growth',       fallback: 'Next: early growth — watch seedlings closely.' },
+  planting:           { key: 'lifecycle.hint.germination',        fallback: 'Next: germination — keep soil moist, shade from heat.' },
+  germination:        { key: 'lifecycle.hint.seedling',           fallback: 'Next: seedling — watch seedlings closely.' },
+  seedling:           { key: 'lifecycle.hint.vegetative',         fallback: 'Next: vegetative growth — feed lightly, prune.' },
   early_growth:       { key: 'lifecycle.hint.vegetative',         fallback: 'Next: vegetative growth — feed lightly, prune.' },
   vegetative_growth:  { key: 'lifecycle.hint.flowering',          fallback: 'Next: flowering — keep water steady.' },
   flowering:          { key: 'lifecycle.hint.fruiting',           fallback: 'Next: fruiting — support heavy fruit.' },

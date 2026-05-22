@@ -12,6 +12,9 @@ import {
 import {
   LIFECYCLE_STAGE, computeLifecycleSnapshot,
 } from '../../../src/core/lifecycle/cropLifecycleEngine.js';
+import {
+  PLANTING_REGIONS, getPlantingWindow,
+} from '../../../src/core/lifecycle/plantingWindowEngine.js';
 
 const DAY = 24 * 3600 * 1000;
 const NOW = Date.UTC(2026, 4, 22);
@@ -194,5 +197,95 @@ describe('computeLifecycleSnapshot — honesty + robustness', () => {
     // engine never threw + the disclaimer is present.
     expect(Array.isArray(r.stageTasks)).toBe(true);
     expect(typeof r.disclaimer).toBe('string');
+  });
+});
+
+// ─── Registry extension — additional crops ────────────────
+
+describe('cropDurationRegistry — extension crops', () => {
+  it('covers cucumber / carrot / potato / banana / mango / avocado / citrus / herbs', () => {
+    for (const c of ['cucumber','carrot','potato','banana','mango','avocado','citrus','herbs']) {
+      const d = getDurationDays(c);
+      expect(d).toBeTruthy();
+      expect(d.cropKey).toBe(c);
+    }
+  });
+
+  it('aliases plantain → banana and citrus species + non-basil herbs', () => {
+    // basil has its own entry; mint / cilantro / thyme fall back
+    // through the herbs catch-all.
+    expect(getDurationDays('mint').cropKey).toBe('herbs');
+    expect(getDurationDays('plantain').cropKey).toBe('banana');
+    expect(getDurationDays('orange').cropKey).toBe('citrus');
+    expect(getDurationDays('lemon').cropKey).toBe('citrus');
+  });
+});
+
+// ─── Lifecycle engine — germination + seedling stages ────
+
+describe('LIFECYCLE_STAGE — germination + seedling added', () => {
+  it('includes both new stages', () => {
+    expect(LIFECYCLE_STAGE.GERMINATION).toBe('germination');
+    expect(LIFECYCLE_STAGE.SEEDLING).toBe('seedling');
+  });
+});
+
+// ─── plantingWindowEngine ────────────────────────────────
+
+describe('plantingWindowEngine — region-aware windows', () => {
+  it('returns USA tomato window in April–June', () => {
+    const w = getPlantingWindow({ country: 'usa', crop: 'tomato', nowMs: Date.UTC(2026, 4, 15) });
+    expect(w.ok).toBe(true);
+    expect(w.startMonth).toBe(4);
+    expect(w.endMonth).toBe(6);
+    expect(w.inWindow).toBe(true);
+    expect(w.why.fallback).toMatch(/frost|young|cold/i);
+  });
+
+  it('returns Ghana tomato window that wraps the new year (cool dry months)', () => {
+    const w = getPlantingWindow({ country: 'Ghana', crop: 'tomato', nowMs: Date.UTC(2026, 0, 15) });
+    expect(w.ok).toBe(true);
+    expect(w.startMonth).toBe(9);
+    expect(w.endMonth).toBe(2);
+    expect(w.inWindow).toBe(true);
+  });
+
+  it('returns Kenya maize window in March–May (long rains)', () => {
+    const w = getPlantingWindow({ country: 'kenya', crop: 'maize', nowMs: Date.UTC(2026, 3, 15) });
+    expect(w.ok).toBe(true);
+    expect(w.inWindow).toBe(true);
+    expect(w.why.fallback).toMatch(/rains/i);
+  });
+
+  it('returns India rice window (kharif paddy)', () => {
+    const w = getPlantingWindow({ country: 'India', crop: 'rice' });
+    expect(w.ok).toBe(true);
+    expect(w.why.fallback).toMatch(/paddy|kharif|rains/i);
+  });
+
+  it('honours crop aliases (corn → maize)', () => {
+    const w = getPlantingWindow({ country: 'usa', crop: 'corn' });
+    expect(w.ok).toBe(true);
+    expect(w.cropKey).toBe('maize');
+  });
+
+  it('falls back to no_data instead of guessing on unknown pairs', () => {
+    expect(getPlantingWindow({ country: 'usa', crop: 'cassava' }).reason).toBe('no_data');
+    expect(getPlantingWindow({ country: 'xyz', crop: 'tomato' }).reason).toBe('no_data');
+  });
+
+  it('exposes the 4 supported regions', () => {
+    expect(PLANTING_REGIONS).toEqual(['usa', 'ghana', 'kenya', 'india']);
+  });
+
+  it('every result carries isEstimate + disclaimer (no hard date promise)', () => {
+    const w = getPlantingWindow({ country: 'usa', crop: 'tomato' });
+    expect(w.isEstimate).toBe(true);
+    expect(w.disclaimer).toMatch(/local weather|may shift|few weeks/i);
+  });
+
+  it('never throws on garbage input', () => {
+    expect(() => getPlantingWindow(null)).not.toThrow();
+    expect(getPlantingWindow(null).reason).toBe('no_data');
   });
 });

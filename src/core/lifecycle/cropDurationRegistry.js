@@ -43,6 +43,14 @@ const REGISTRY = Object.freeze({
   groundnut: Object.freeze({ min: 100, max: 150 }),
   sorghum:   Object.freeze({ min: 95, max: 125 }),
   millet:    Object.freeze({ min: 70, max: 110 }),
+  cucumber:  Object.freeze({ min: 50, max: 75 }),
+  carrot:    Object.freeze({ min: 70, max: 100 }),
+  potato:    Object.freeze({ min: 80, max: 130 }),
+  banana:    Object.freeze({ min: 270, max: 365 }),
+  mango:     Object.freeze({ min: 1095, max: 1825 }),  // 3–5 years to first fruit
+  avocado:   Object.freeze({ min: 1095, max: 2555 }),  // 3–7 years
+  citrus:    Object.freeze({ min: 1095, max: 1825 }),  // 3–5 years
+  herbs:     Object.freeze({ min: 30, max: 80 }),
 });
 
 export const KNOWN_CROPS = Object.freeze(Object.keys(REGISTRY));
@@ -78,6 +86,14 @@ function _normalizeCrop(cropOrId) {
   if (s.includes('yam')) return 'yam';
   if (s.includes('rice')) return 'rice';
   if (s.includes('bean')) return 'beans';
+  if (s.includes('cucumber')) return 'cucumber';
+  if (s.includes('carrot')) return 'carrot';
+  if (s.includes('potato') && !s.includes('sweet')) return 'potato';
+  if (s.includes('banana') || s.includes('plantain')) return 'banana';
+  if (s.includes('mango')) return 'mango';
+  if (s.includes('avocado') || s.includes('pear')) return 'avocado';
+  if (s.includes('orange') || s.includes('lemon') || s.includes('lime') || s.includes('citrus')) return 'citrus';
+  if (s.includes('basil') || s.includes('mint') || s.includes('parsley') || s.includes('cilantro') || s.includes('coriander') || s.includes('thyme')) return 'herbs';
   return '';
 }
 
