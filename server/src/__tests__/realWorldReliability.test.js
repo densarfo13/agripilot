@@ -99,6 +99,29 @@ describe('recommendationRankingEngine — v3 extensions', () => {
     ]);
     expect(top.type).toBe('urgent_scan_followup');
   });
+
+  it('harvest_readiness is its own tier above routine_check', () => {
+    expect(RECOMMENDATION_PRIORITY.harvest_readiness).toBeLessThan(RECOMMENDATION_PRIORITY.routine_check);
+    expect(RECOMMENDATION_PRIORITY.harvest_readiness).toBeLessThanOrEqual(RECOMMENDATION_PRIORITY.crop_stage_task);
+  });
+
+  it('withExplanation populates a sensible default bestTime per type', () => {
+    const r = rankRecommendations([
+      { type: 'urgent_scan_followup', id: 's' },
+      { type: 'market_opportunity', id: 'm' },
+    ], { withExplanation: true });
+    const scan = r.find((x) => x.type === 'urgent_scan_followup');
+    const market = r.find((x) => x.type === 'market_opportunity');
+    expect(scan.bestTime).toBe('morning');
+    expect(market.bestTime).toBe('this_week');
+  });
+
+  it('caller-supplied bestTime wins over the default', () => {
+    const r = rankRecommendations([
+      { type: 'watering', id: 'w', bestTime: 'evening' },
+    ], { withExplanation: true });
+    expect(r[0].bestTime).toBe('evening');
+  });
 });
 
 // ─── §3 — regional guidance review seam ────────────────────

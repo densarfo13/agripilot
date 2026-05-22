@@ -37,6 +37,11 @@ export const RECOMMENDATION_PRIORITY = Object.freeze({
   overdue_task:         3,
   watering:             4,
   watering_need:        4,
+  // harvest_readiness is its own tier — picking late spoils crops,
+  // so it beats routine stage work but stays below urgent scan +
+  // weather safety alerts (frost / heat).
+  harvest_readiness:    5,
+  harvest_ready:        5,
   crop_stage_task:      5,
   crop_task:            5,
   routine_check:        6,
@@ -54,6 +59,8 @@ const EXPLANATION = Object.freeze({
   overdue_task:         'A task on your list is past its best time.',
   watering:             'Soil and weather suggest watering soon.',
   watering_need:        'Soil and weather suggest watering soon.',
+  harvest_readiness:    'Your crop may be ready to harvest — picking late costs yield.',
+  harvest_ready:        'Your crop may be ready to harvest — picking late costs yield.',
   crop_stage_task:      'Your crop has reached a stage worth acting on.',
   crop_task:            'Your crop has reached a stage worth acting on.',
   routine_check:        'A quick routine check keeps things on track.',
@@ -104,6 +111,36 @@ export function explainRecommendation(rec) {
   }
 }
 
+// Sensible default "best time" per recommendation type. Callers
+// that emit their own `bestTime` field win — this is only a
+// fallback so the ranker can always tell the UI when to act.
+const DEFAULT_BEST_TIME = Object.freeze({
+  urgent_scan_followup: 'morning',
+  scan_followup:        'morning',
+  weather_risk:         'today',
+  weather_alert:        'today',
+  overdue_task:         'today',
+  watering:             'morning',
+  watering_need:        'morning',
+  harvest_readiness:    'morning',
+  harvest_ready:        'morning',
+  crop_stage_task:      'today',
+  crop_task:            'today',
+  routine_check:        'today',
+  market_opportunity:   'this_week',
+  funding_opportunity:  'this_week',
+});
+
+/** Default "best time" for a recommendation type. */
+export function bestTimeFor(rec) {
+  try {
+    const type = String((rec && rec.type) || '').toLowerCase();
+    return DEFAULT_BEST_TIME[type] || 'today';
+  } catch {
+    return 'today';
+  }
+}
+
 /**
  * Urgency score in [0, 1] — higher = more urgent. Derived from the
  * priority rank: rank 1 → ~1.0, rank 7 → ~0.0. Useful when a UI
@@ -145,6 +182,11 @@ export function rankRecommendations(candidates, opts) {
       if (o.withExplanation) {
         enriched.score = scoreRecommendation(rec);
         enriched.explanation = explainRecommendation(rec);
+        // Only set bestTime when the caller didn't already supply
+        // one — engine outputs (watering, dailyDecision) win.
+        if (enriched.bestTime == null) {
+          enriched.bestTime = bestTimeFor(rec);
+        }
       }
       deduped.push(enriched);
     }
@@ -177,5 +219,6 @@ const _module = {
   isStaleRecommendation,
   explainRecommendation,
   scoreRecommendation,
+  bestTimeFor,
 };
 export default _module;
