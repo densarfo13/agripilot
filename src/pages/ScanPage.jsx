@@ -456,6 +456,12 @@ export default function ScanPage() {
             });
             setResult({
               scanId:             'scan_fb_' + Date.now().toString(36),
+              // Pass the captured photo into the result so the
+              // result card renders the user's image, not a blank
+              // / macro fallback. analyzingImageUrl is the base64
+              // thumbnail (always safe) or the Object URL.
+              imageUrl:           analyzingImageUrl || null,
+              thumbnail:          pendingThumbnail || analyzingImageUrl || null,
               possibleIssue:      fallbackHybrid.possibleIssue,
               confidence:         fallbackHybrid.confidence,
               recommendedActions: fallbackHybrid.recommendedActions,
@@ -609,7 +615,17 @@ export default function ScanPage() {
         } catch { /* analyzeImageSafe should not throw, but guard */ }
       }
 
-      setResult(refinedOut);
+      // Ensure the user's captured photo always survives onto the
+      // result card. The analyzer's `imageUrl` (if present) wins;
+      // otherwise we attach the cached analyzingImageUrl. Same for
+      // thumbnail. Without this thread-through, UsefulResultCard
+      // saw `result.imageUrl === undefined` and rendered the macro
+      // stock photo — the "broken/wrong preview" bug.
+      setResult({
+        ...refinedOut,
+        imageUrl:  refinedOut.imageUrl  || analyzingImageUrl || null,
+        thumbnail: refinedOut.thumbnail || pendingThumbnail  || analyzingImageUrl || null,
+      });
       setPhase('result');
       try { trackEvent('scan_analyzed', { experience, source: out?.meta?.source, confidence: out?.confidence }); }
       catch { /* ignore */ }
@@ -674,6 +690,11 @@ export default function ScanPage() {
         try {
           setResult({
             scanId:             'scan_mlf_' + Date.now().toString(36),
+            // Always thread the captured photo through to the
+            // result card so a needs-review verdict still shows
+            // the photo the user actually took.
+            imageUrl:           analyzingImageUrl || null,
+            thumbnail:          pendingThumbnail || analyzingImageUrl || null,
             possibleIssue:      'Needs Review',
             category:           ML_CATEGORIES.NEEDS_REVIEW,
             mlStatus:           ML_CATEGORIES.NEEDS_REVIEW,
