@@ -63,6 +63,20 @@ function _readEnvironment() {
 }
 
 function _readRelease() {
+  // Prefer the per-build identifier the Sentry vite-plugin uploads
+  // source maps under (set at build time in vite.config.js from
+  // RAILWAY_GIT_COMMIT_SHA / SENTRY_RELEASE / etc.). When the
+  // bundle was built without those env vars, fall back to the
+  // human-readable build version so events still carry a usable
+  // release tag — they just won't line up with map uploads for
+  // that build (debug-id resolution still handles symbolication
+  // via per-bundle UUIDs).
+  try {
+    const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
+    if (typeof env.VITE_BUILD_ID === 'string' && env.VITE_BUILD_ID) {
+      return String(env.VITE_BUILD_ID);
+    }
+  } catch { /* swallow */ }
   try {
     if (typeof window !== 'undefined' && window.__FARROWAY_BUILD_VERSION) {
       return String(window.__FARROWAY_BUILD_VERSION);
