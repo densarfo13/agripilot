@@ -95,7 +95,14 @@ function _isMobileSafari() {
 // 8–10s on a cold app launch; on Android Chrome it's typically
 // under 2s. Pick the deadline per platform so the retry surface
 // doesn't kick in before iOS has had a fair chance.
-const CAMERA_READY_DEADLINE_MS_IOS     = 12000;
+// Scan Emergency Root Fix — iPhone Safari cold-start is reliably
+// 5–10 s, and a slow device + auto-focus + low light can push past
+// the previous 12 s deadline. The fallback was firing on healthy
+// streams that simply hadn't painted their first frame yet — the
+// "Camera fallback still appears on iPhone Safari" report.
+// Raise the iOS deadline to 20 s; gallery fallback remains one
+// tap away the whole time. Non-iOS unchanged.
+const CAMERA_READY_DEADLINE_MS_IOS     = 20000;
 const CAMERA_READY_DEADLINE_MS_DEFAULT = 8000;  // Spec §2.7 — 8s default.
 
 // ─── Canonical camera state machine ─────────────────────────────

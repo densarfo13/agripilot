@@ -382,18 +382,34 @@ export default function ScanPage() {
     }
     _scanInflightRef.current = true;
     setError('');
+
+    // Scan Emergency Root Fix — REFUSE to advance into the analyze
+    // phase with only an Object URL. ScanCapture's useEffect
+    // cleanup revokes its preview URL the instant ScanCapture
+    // unmounts (which happens immediately when setPhase('analyzing')
+    // fires). If we kept that Object URL as analyzingImageUrl, the
+    // result card would render a revoked / broken URL — the exact
+    // "broken ? preview" the field has been reporting.
+    //
+    // Self-contained dataURLs (thumbnail / imageBase64) survive
+    // revocation. We use ONLY those. If both are missing, we show
+    // the controlled recovery banner instead of analysing on a
+    // doomed Object URL.
+    const safeImageUrl = thumbnail || imageBase64 || null;
+    if (!safeImageUrl) {
+      _scanInflightRef.current = false;
+      setError(tSafe(
+        'scan.error.image_invalid',
+        'Photo could not be loaded. Please choose the photo again.',
+      ));
+      setPhase('error');
+      try { trackEvent('scan_failed', { reason: 'no_safe_image_url' }); }
+      catch { /* swallow */ }
+      return;
+    }
     setPhase('analyzing');
     setPendingThumbnail(thumbnail || null);
-    // Scan Pipeline Audit §2 + §3 — prefer self-contained dataURL
-    // (thumbnail or base64) over the Object URL. Object URLs are
-    // tied to the source Blob's lifetime and the source File may
-    // be GC'd after ScanCapture unmounts, leaving the result
-    // screen with a broken-image placeholder. The thumbnail (small,
-    // canvas-derived dataURL) is the cheapest option; if thumbnail
-    // creation failed (no canvas, decode error), the full
-    // FileReader base64 dataURL is the next-best self-contained
-    // option. The raw imageUrl (Object URL) is the last resort.
-    setAnalyzingImageUrl(thumbnail || imageBase64 || imageUrl || null);
+    setAnalyzingImageUrl(safeImageUrl);
     // §7 — production pipeline trace. Dev-only via _devLog
     // would tree-shake; we keep this production-visible for ops
     // diagnostics. Fires once per scan.
