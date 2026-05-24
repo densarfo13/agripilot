@@ -18,6 +18,8 @@ import prisma from '../../config/database.js';
 import { checkUploadDirHealth } from '../../utils/uploadHealth.js';
 import { getRecentEvents, getCounters, getMonitoringSummary } from '../../utils/eventStore.js';
 import { isEmailConfigured, isSmsConfigured } from '../notifications/deliveryService.js';
+import { validateEnv, summariseEnv, SEVERITY } from '../../config/envSchema.js';
+import { resolveBuildVersion } from '../../config/productionRuntime.js';
 
 const router = Router();
 router.use(authenticate);
@@ -136,6 +138,70 @@ router.get('/errors', asyncHandler(async (req, res) => {
     },
     lifetimeCounters: counters,
     events,
+  });
+}));
+
+// ─── GET /api/system/status ──────────────────────────────────
+// Admin diagnostics: enabled feature flags, missing env vars,
+// disabled intelligence providers, version stamp, uptime.
+//
+// Spec: Operator-Config Hardening §6. Super-admin only — surfaces
+// no secrets, only structural metadata + var NAMES.
+router.get('/status', asyncHandler(async (_req, res) => {
+  const env = validateEnv();
+  const envSummary = summariseEnv();
+
+  // Phase 2 feature flags — read from VITE_* env so the surface
+  // matches what the frontend would resolve. The default for
+  // every Phase 2 flag is OFF; presence of a 'true' env flips it.
+  const PHASE2 = [
+    'ENABLE_SUPPLIER_INTELLIGENCE',
+    'ENABLE_MARKETPLACE_INTELLIGENCE',
+    'ENABLE_SOIL_INTELLIGENCE',
+    'ENABLE_SATELLITE_INTELLIGENCE',
+    'ENABLE_YIELD_PREDICTION',
+    'ENABLE_NGO_ANALYTICS',
+  ];
+  const featureFlags = {};
+  for (const flag of PHASE2) {
+    const v = process.env['VITE_' + flag];
+    featureFlags[flag] = v === 'true' || v === true;
+  }
+
+  // Intelligence providers — boolean of "is this engine class
+  // wired with a real upstream key?" Distinct from the feature
+  // flags above (which gate UI surface adoption).
+  const providers = {
+    scanAI:     !!(process.env.PLANT_ID_API_KEY || process.env.PLANTNET_API_KEY
+                  || process.env.SCAN_API_KEY  || process.env.OPENAI_API_KEY),
+    weather:    !!(process.env.WEATHER_API_KEY || process.env.VITE_WEATHER_API_KEY),
+    maps:       !!(process.env.MAPS_API_KEY || process.env.MAPBOX_TOKEN
+                  || process.env.GOOGLE_MAPS_API_KEY),
+    cloudinary: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY
+                  && process.env.CLOUDINARY_API_SECRET),
+    redis:      !!process.env.REDIS_URL,
+    twilioSms:  !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+    sendgrid:   !!process.env.SENDGRID_API_KEY,
+    sentry:     !!process.env.SENTRY_DSN,
+    satellite:  false, // architecture-only — no provider supported yet
+  };
+
+  res.json({
+    status:    env.ok ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    version:   resolveBuildVersion(),
+    env: {
+      ok:                   env.ok,
+      missingCritical:      env.missingCritical,
+      missingOptional:      env.missingOptional,
+      missingObservability: env.missingObservability,
+      totalTracked:         envSummary.totalTracked,
+      setCount:             envSummary.set.length,
+      unsetCount:           envSummary.unset.length,
+    },
+    featureFlags,
+    providers,
+    severities: SEVERITY,
   });
 }));
 
