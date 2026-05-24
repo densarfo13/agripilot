@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..', '..');
 
@@ -253,7 +254,7 @@ describe('User Mode — ModeSwitcher', () => {
 
 // ─── 8. Translations — mode labels ─────────────────────────
 describe('User Mode — translations', () => {
-  const src = readFile('src/i18n/translations.js');
+  const src = TRANSLATIONS_SOURCE_TEXT;
 
   it('has mode.basic in all 5 languages', () => {
     expect(src).toContain("'mode.basic'");

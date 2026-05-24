@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -535,7 +536,7 @@ describe('FarmTasksCard — harvestNote rendering', () => {
 // 13. i18n — harvest keys
 // ═══════════════════════════════════════════════════════════
 describe('i18n — harvest keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'harvest.title',

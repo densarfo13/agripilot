@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
@@ -449,7 +450,7 @@ describe('Layout nav — Intelligence section', () => {
 // ─── 13. Translation completeness — intelligence keys ───────────────
 
 describe('Translations — intelligence keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const pestKeys = [
     'pest.title', 'pest.subtitle', 'pest.step1', 'pest.step2', 'pest.step3', 'pest.step4',

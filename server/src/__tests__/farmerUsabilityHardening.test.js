@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..', '..');
 
@@ -300,7 +301,7 @@ describe('Complexity Prevention — basic mode', () => {
 
 // ─── 11. Localization for new labels/messages ───────────────
 describe('Localization — new translation keys', () => {
-  const src = readFile('src/i18n/translations.js');
+  const src = TRANSLATIONS_SOURCE_TEXT;
 
   it('has feedback.saved in 5 languages', () => {
     expect(src).toContain("'feedback.saved'");

@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -447,7 +448,7 @@ describe('PrimaryFarmActionCard — farm-scoped season start', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — farm keys', () => {
-  const src = read('src/i18n/translations.js');
+  const src = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'farm.activeFarm',

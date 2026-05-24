@@ -16,6 +16,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -249,7 +250,7 @@ describe('Save flow — redirect and error handling', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — validation message keys', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const validationKeys = [
     'setup.selectCountry',

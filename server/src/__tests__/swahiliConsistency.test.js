@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -24,7 +25,7 @@ function read(rel) {
 // ═══════════════════════════════════════════════════════════
 
 describe('Swahili — location labels', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('setup.location sw is "Mahali pa shamba"', () => {
     const match = translations.match(/'setup\.location':\s*\{[^}]*sw:\s*'([^']*)'/);
@@ -50,7 +51,7 @@ describe('Swahili — location labels', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('Swahili — GPS section labels', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('setup.gpsOptional sw does not start with "Ongeza GPS"', () => {
     const match = translations.match(/'setup\.gpsOptional':\s*\{[^}]*sw:\s*'([^']*)'/);
@@ -79,7 +80,7 @@ describe('Swahili — GPS section labels', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('Swahili — "mfano:" colon consistency', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('no sw values have "mfano " without colon', () => {
     // Extract all sw: '...' values and check none have "mfano " without colon

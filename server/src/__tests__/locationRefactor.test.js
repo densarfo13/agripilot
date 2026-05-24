@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -175,7 +176,7 @@ describe('API — location mapping unchanged', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — location translation keys', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('has setup.location key', () => {
     expect(translations).toContain("'setup.location'");

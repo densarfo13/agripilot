@@ -140,6 +140,11 @@ describe('check:translations — duplicate-key detection', () => {
         + ((err.stdout || '') + (err.stderr || '')));
     }
     expect(stdout).toMatch(/\[check:translations\] PASS/);
-    expect(stdout).toMatch(/no duplicate keys/);
+    // Post column-split: the duplicate-keys check is replaced by an
+    // orphan-keys check (a key in a non-en column with no English
+    // value). Column files are JSON-shaped so JS-side duplicates are
+    // structurally impossible; the orphan check covers the same
+    // "translation drift" risk surface.
+    expect(stdout).toMatch(/no orphan keys/);
   });
 });

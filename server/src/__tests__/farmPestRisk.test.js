@@ -39,6 +39,7 @@ import {
   getAllRiskRules,
 } from '../../lib/pestRiskEngine.js';
 import { generateTasksForFarm } from '../../lib/farmTaskEngine.js';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 function readFile(relativePath) {
   return fs.readFileSync(path.resolve(process.cwd(), '..', relativePath), 'utf-8');
@@ -658,7 +659,7 @@ describe('App route registration', () => {
 // 17. i18n — pest risk keys
 // ═══════════════════════════════════════════════════════════
 describe('i18n — pest risk keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'pestRisk.title',

@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const rootDir = path.resolve(import.meta.dirname, '..', '..', '..');
 
@@ -297,7 +298,7 @@ describe('Farmer UI — My Farm Page', () => {
 
 // ─── 7. Localization still works ───────────────────────────
 describe('Farmer UI — Localization', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('has onboarding translation keys', () => {
     expect(translations).toContain("'onboarding.newToFarming'");

@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -356,7 +357,7 @@ describe('Data integrity — coordinates preserved', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — location display keys', () => {
-  const src = read('src/i18n/translations.js');
+  const src = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'location.farmLocation',

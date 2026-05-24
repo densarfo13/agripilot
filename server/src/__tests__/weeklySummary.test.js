@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -730,7 +731,7 @@ describe('Weekly summary — dashboard wiring', () => {
 //  8. i18n — all 5 languages
 // ═══════════════════════════════════════════════════════════
 describe('Weekly summary — i18n', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const keys = [
     'weekly.title',

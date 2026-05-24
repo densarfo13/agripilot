@@ -16,6 +16,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1129,7 +1130,7 @@ describe('Pesticide compliance — trust layer', () => {
   });
 
   it('compliance translations exist for farmer-facing labels', () => {
-    const i18n = readFile('src/i18n/translations.js');
+    const i18n = TRANSLATIONS_SOURCE_TEXT;
     expect(i18n).toContain('compliance.safeToHarvest');
     expect(i18n).toContain('compliance.checkDetails');
     expect(i18n).toContain('compliance.waitBeforeHarvesting');

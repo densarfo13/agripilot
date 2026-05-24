@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
@@ -302,7 +303,7 @@ describe('API Helpers', () => {
 // ─── 7. Translations ───────────────────────────────────────────
 
 describe('i18n Translations', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('has boundary translation keys in all 5 languages', () => {
     expect(translations).toContain('boundary.title');

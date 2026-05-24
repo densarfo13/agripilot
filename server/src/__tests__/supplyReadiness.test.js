@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
@@ -306,7 +307,7 @@ describe('Layout Nav — Supply Readiness', () => {
 // ─── 9. i18n Translations ───────────────────────────────────────
 
 describe('i18n — Supply Readiness Keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('has supply readiness translation keys', () => {
     expect(translations).toContain("'supply.title'");
