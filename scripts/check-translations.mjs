@@ -7,25 +7,33 @@
  * a French screen shows one English string. This gate fails the
  * build before that can ship.
  *
- * THREE checks:
+ * Post column-split refactor: the canonical translation data lives
+ * one file per locale under src/i18n/columns/T-{locale}.js. This
+ * gate reads those column files directly (NOT translations.js,
+ * which is/becomes a thin shim that eagerly imports only T-en.js).
  *
- *   1. translations.js value parity — every "active" key (a key
- *      whose `en` value is a non-blank string) MUST have a non-blank
- *      value in all five launch-complete languages:
+ * FOUR checks:
+ *
+ *   1. Column parity — every key present in T-en.js with a
+ *      non-blank value (the "active" key set) MUST also have a
+ *      non-blank value in every required language column:
  *         en, fr, sw, ha, tw
- *      Any gap is a hard FAIL. Keys whose `en` is blank (intentional
- *      placeholders like `helpers.generic`) are skipped — a key
- *      blank in every language cannot cause a mixed screen.
+ *      Any gap is a hard FAIL. Keys whose en value is blank
+ *      (intentional placeholders like helpers.generic = ' ') are
+ *      skipped — a key blank in every language cannot cause a
+ *      mixed screen.
  *
  *   2. Hindi (hi) coverage ratchet — Hindi is mid-translation.
- *      Rather than block the build on ~2.9k un-authored keys (real
- *      Hindi translation is human work — fabricating it would show
- *      wrong text to farmers), the gate ratchets: Hindi active-key
- *      coverage must never drop below HI_BASELINE. It prints the
- *      live number so the baseline can be raised as Hindi fills in.
+ *      Rather than block the build on un-authored keys, the gate
+ *      ratchets: Hindi coverage must never drop below HI_BASELINE.
  *
- *   3. locales/*.json key parity — the react-i18next JSON system.
- *      All eight files must carry the exact same key set as en.json.
+ *   3. locales/*.json key parity — the parallel react-i18next JSON
+ *      overlay system. All eight files must share en.json's key set.
+ *
+ *   4. Orphan-key detection — every key in a non-en column MUST
+ *      also appear in T-en.js (the full key set, blanks included).
+ *      An orphan means English coverage regressed under us; the
+ *      build fails before that ships.
  *
  * Pure source inspection. Exit 1 on any failure with a readable
  * reason; exit 0 prints a one-line PASS.
@@ -33,8 +41,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -43,7 +50,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REQUIRED_LANGS = ['en', 'fr', 'sw', 'ha', 'tw'];
 
 // Hindi no-regression baseline. Raise this as Hindi gets translated.
-// Current measured coverage at the time this gate landed: 3486.
+// Current measured coverage at the time the column-split landed: 3486.
 const HI_BASELINE = 3486;
 
 // The eight react-i18next locale files that must stay key-identical.
@@ -56,33 +63,35 @@ function fail(msg) {
 
 const _blank = (v) => typeof v !== 'string' || v.trim() === '';
 
-// ── 1 + 2. translations.js value parity ──────────────────────
-const transPath = resolve(ROOT, 'src/i18n/translations.js');
-if (!existsSync(transPath)) fail('missing src/i18n/translations.js');
+// ── 1. + 2. + 4. Column-file parity ──────────────────────────
+const COL_DIR = resolve(ROOT, 'src/i18n/columns');
+const columns = {};
+for (const lang of [...REQUIRED_LANGS, 'hi']) {
+  const p = resolve(COL_DIR, `T-${lang}.js`);
+  if (!existsSync(p)) fail(`missing column file ${p}`);
+  const mod = await import(pathToFileURL(p).href);
+  const dict = mod.default || mod;
+  if (!dict || typeof dict !== 'object') fail(`column T-${lang}.js has no usable default export`);
+  columns[lang] = dict;
+}
 
-const mod = await import(pathToFileURL(transPath).href);
-const T = mod.default || mod.T || mod;
-if (!T || typeof T !== 'object') fail('translations.js has no usable export');
+// "Active" keys = those with a non-blank English value. Keys whose
+// en value is empty / whitespace (e.g. helpers.generic = ' ') are
+// intentional placeholders that exist to keep the key registered;
+// they cannot cause a mixed-language screen because every locale
+// resolves to the same blank string. Skip them in parity checks.
+const enKeysAll = Object.keys(columns.en);
+if (enKeysAll.length < 100) fail(`T-en.js only carries ${enKeysAll.length} keys — column file looks empty/corrupt`);
+const enKeys = enKeysAll.filter((k) => !_blank(columns.en[k]));
+const activeKeys = enKeys.length;
 
-const keys = Object.keys(T);
-const requiredGaps = [];   // [{ key, lang }]
-let activeKeys = 0;
-let hiCovered  = 0;
-
-for (const k of keys) {
-  const v = T[k];
-  if (!v || typeof v !== 'object') {
-    requiredGaps.push({ key: k, lang: '(bad shape — not an object)' });
-    continue;
+const requiredGaps = [];
+for (const lang of REQUIRED_LANGS) {
+  if (lang === 'en') continue;
+  const c = columns[lang];
+  for (const k of enKeys) {
+    if (_blank(c[k])) requiredGaps.push({ key: k, lang });
   }
-  // A key is "active" only when English carries a real string.
-  if (_blank(v.en)) continue;
-  activeKeys += 1;
-
-  for (const lang of REQUIRED_LANGS) {
-    if (_blank(v[lang])) requiredGaps.push({ key: k, lang });
-  }
-  if (!_blank(v.hi)) hiCovered += 1;
 }
 
 if (requiredGaps.length > 0) {
@@ -93,17 +102,45 @@ if (requiredGaps.length > 0) {
   fail(
     `${requiredGaps.length} translation gap(s) in launch-complete `
     + `languages (${REQUIRED_LANGS.join('/')}).\n`
-    + 'Every active key MUST have a non-blank value in all five.\n'
+    + 'Every active key MUST have a non-blank value in all five columns.\n'
     + lines.join('\n') + more,
   );
 }
 
+let hiCovered = 0;
+for (const k of enKeys) if (!_blank(columns.hi[k])) hiCovered += 1;
+
 if (hiCovered < HI_BASELINE) {
   fail(
     `Hindi (hi) coverage regressed: ${hiCovered} active keys translated, `
-    + `baseline is ${HI_BASELINE}. A key was removed from hi or blanked.\n`
+    + `baseline is ${HI_BASELINE}. A key was removed from T-hi.js or blanked.\n`
     + 'Restore the missing Hindi value(s), or lower HI_BASELINE only '
     + 'with an explicit reason.',
+  );
+}
+
+// Orphan-key detection: a key present in a non-en column but
+// missing from T-en.js means the English column lost a key the
+// other columns still reference. Treat as a hard fail so the
+// regression surfaces immediately rather than as a runtime gap.
+// Use the FULL en key set here — keys with blank en values are
+// still "defined" in en, just intentionally empty.
+const enSet = new Set(enKeysAll);
+const orphans = [];
+for (const lang of [...REQUIRED_LANGS, 'hi']) {
+  if (lang === 'en') continue;
+  for (const k of Object.keys(columns[lang])) {
+    if (!enSet.has(k)) orphans.push({ key: k, lang });
+  }
+}
+if (orphans.length > 0) {
+  const lines = orphans.slice(0, 25).map((o) => `  • ${o.lang}: ${o.key}`);
+  const more = orphans.length > 25 ? `\n  …and ${orphans.length - 25} more` : '';
+  fail(
+    `${orphans.length} orphan key(s) in non-en columns — every key in a `
+    + `locale column MUST also be defined in T-en.js (the canonical key set).\n`
+    + 'Either add the missing English value, or remove the orphan key.\n'
+    + lines.join('\n') + more,
   );
 }
 
@@ -127,7 +164,7 @@ const enLocalePath = resolve(localeDir, 'en.json');
 if (!existsSync(enLocalePath)) fail('missing src/i18n/locales/en.json');
 
 const enLocaleKeys = leafKeys(JSON.parse(readFileSync(enLocalePath, 'utf8'))).sort();
-const enSet = new Set(enLocaleKeys);
+const enJsonSet = new Set(enLocaleKeys);
 const localeProblems = [];
 
 for (const lang of LOCALE_LANGS) {
@@ -137,7 +174,7 @@ for (const lang of LOCALE_LANGS) {
   const k = leafKeys(JSON.parse(readFileSync(p, 'utf8')));
   const kSet = new Set(k);
   const missing = enLocaleKeys.filter((x) => !kSet.has(x));
-  const extra   = k.filter((x) => !enSet.has(x));
+  const extra   = k.filter((x) => !enJsonSet.has(x));
   if (missing.length || extra.length) {
     localeProblems.push(
       `${lang}.json — missing ${missing.length}, extra ${extra.length}`
@@ -150,42 +187,11 @@ if (localeProblems.length > 0) {
   fail('locales/*.json key-set drift:\n  • ' + localeProblems.join('\n  • '));
 }
 
-// ── 4. translations.js — no duplicate keys ───────────────────
-// translations.js is a flat object literal. A key declared twice
-// is a SILENT last-wins drift bug — the earlier (often correct)
-// value is dropped with no error. Scan the source for repeats.
-const transSrc = readFileSync(transPath, 'utf8');
-const keyRe = /^\s{1,8}(['"])([\w.-]+)\1\s*:\s*\{/gm;
-const seenKeys = new Set();
-const dupKeys = new Set();
-let km;
-while ((km = keyRe.exec(transSrc)) !== null) {
-  const k = km[2];
-  if (seenKeys.has(k)) dupKeys.add(k);
-  else seenKeys.add(k);
-}
-// translations.js must have ZERO duplicate keys. The 88 pre-existing
-// duplicates were removed by scripts/dedupe-translations.mjs — which
-// kept the last (last-wins) declaration and verified the resolved
-// map identical key-for-key, so the fix changed no runtime behaviour.
-// Any duplicate now is a hard FAIL: a repeated key silently drops the
-// earlier value.
-const DUP_BASELINE = 0;
-if (dupKeys.size > DUP_BASELINE) {
-  fail(
-    `${dupKeys.size} duplicate key(s) in translations.js — a repeated `
-    + `key silently drops the earlier value. Run `
-    + `\`node scripts/dedupe-translations.mjs\` or remove the `
-    + `duplicate(s) by hand:\n  • `
-    + [...dupKeys].slice(0, 25).join('\n  • '),
-  );
-}
-
 const hiPct = ((hiCovered / activeKeys) * 100).toFixed(1);
 console.log(
   '[check:translations] PASS — '
   + `${activeKeys} active keys, ${REQUIRED_LANGS.join('/')} at 100%; `
   + `hi ${hiCovered}/${activeKeys} (${hiPct}%, baseline ${HI_BASELINE}); `
   + `${LOCALE_LANGS.length} locale JSON files key-identical; `
-  + `${dupKeys.size === 0 ? 'no duplicate keys' : dupKeys.size + ' duplicate keys'}.`,
+  + 'no orphan keys.',
 );
