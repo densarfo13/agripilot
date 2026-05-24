@@ -38,21 +38,51 @@ let _emitted = false;
 
 // Read the repo's package.json once at module load so we can use
 // its semver as a last-resort version when no commit-id env var is
-// present. We try server/package.json first (this file lives in
-// server/src/config/) and fall back to the repo-root package.json.
-// Either is acceptable as a build identifier; both ship a stable
-// semver.
+// present.
+//
+// Two resolution strategies, tried in order:
+//   1. `import.meta.url`-anchored — works in local dev + most
+//      Docker containers.
+//   2. `process.cwd()`-anchored — works when (1) fails because the
+//      bundler / container puts the runtime file somewhere the
+//      relative climb can't find. Railway / Nixpacks falls into
+//      this bucket on some plan tiers.
+//
+// We try several candidate paths from each anchor and take the
+// first one that parses to a non-empty semver. Caches the value
+// at module load so the cost is paid once.
 const _PACKAGE_VERSION = (() => {
+  const tryRead = (abs) => {
+    try {
+      const raw = readFileSync(abs, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.version === 'string' && parsed.version.trim()) {
+        return parsed.version.trim();
+      }
+    } catch { /* not here */ }
+    return null;
+  };
+  // Strategy 1 — anchored at this module's own location.
   try {
     const here = dirname(fileURLToPath(import.meta.url));
-    for (const rel of ['../../package.json', '../../../package.json']) {
-      try {
-        const raw = readFileSync(pathResolve(here, rel), 'utf8');
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed.version === 'string' && parsed.version.trim()) {
-          return parsed.version.trim();
-        }
-      } catch { /* try next candidate */ }
+    for (const rel of ['../../package.json', '../../../package.json',
+                       '../../../../package.json']) {
+      const v = tryRead(pathResolve(here, rel));
+      if (v) return v;
+    }
+  } catch { /* fall through */ }
+  // Strategy 2 — anchored at process.cwd(). On Railway / Nixpacks
+  // the working directory is usually /app, which contains the root
+  // package.json. The server subdir also gets a copy from the
+  // build step.
+  try {
+    const cwd = (typeof process !== 'undefined' && process.cwd && process.cwd()) || '';
+    if (cwd) {
+      for (const rel of ['package.json', 'server/package.json',
+                         '../package.json']) {
+        const v = tryRead(pathResolve(cwd, rel));
+        if (v) return v;
+      }
     }
   } catch { /* swallow */ }
   return null;
