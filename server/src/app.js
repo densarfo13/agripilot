@@ -453,6 +453,31 @@ const scanLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: _rlStore('scan'),
+  handler: _onRateLimited('scan'),
+});
+// Soft-launch hardening: per-USER scan cap. The IP-keyed
+// scanLimiter above protects against floods from a single
+// network egress, but a shared NAT (school / NGO office /
+// public WiFi) could exhaust 30/min/IP across many legit
+// users. This second limiter, mounted AFTER authenticate so
+// req.user is populated, caps each authenticated caller
+// independently at 60/min — generous for human use but a
+// hard ceiling against a runaway client loop or a stolen
+// token replaying scans against the AI-cost path.
+const scanUserLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,                          // 60 scans/min/USER
+  message: { error: 'Too many scan requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: _rlStore('scan-user'),
+  handler: _onRateLimited('scan-user'),
+  keyGenerator: (req) => {
+    // Prefer authenticated userId; fall back to IP so the
+    // middleware is still safe to mount before authenticate.
+    const u = req.user && (req.user.sub || req.user.id);
+    return u ? `u:${u}` : `ip:${req.ip}`;
+  },
 });
 const fundingLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -536,7 +561,7 @@ app.get('/health',     _healthHandler);
 //     → save user feedback for future ML training
 // Both endpoints are auth-only — the global /api limiter +
 // scanLimiter (regex-matched) cap volume.
-app.post('/api/scan/analyze', authenticate, async (req, res) => {
+app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) => {
   try {
     const {
       imageBase64, imageUrl,
@@ -812,7 +837,7 @@ app.post('/api/scan/analyze', authenticate, async (req, res) => {
   }
 });
 
-app.post('/api/scan/feedback', authenticate, async (req, res) => {
+app.post('/api/scan/feedback', authenticate, scanUserLimiter, async (req, res) => {
   try {
     const {
       scanId, userFeedback, correctedIssue,

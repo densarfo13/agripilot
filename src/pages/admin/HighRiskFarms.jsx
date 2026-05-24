@@ -31,7 +31,14 @@ export default function HighRiskFarms() {
   const [localCrop, setLocalCrop] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const farmList = Array.isArray(farms) ? farms : [];
+  // Memoize so downstream useMemos don't thrash on every render
+  // (Array.isArray returning [] would be a fresh reference each
+  // time → cropTypes/filtered would recompute even when farms
+  // didn't change). Soft-launch hardening sweep.
+  const farmList = useMemo(
+    () => (Array.isArray(farms) ? farms : []),
+    [farms],
+  );
 
   // ── Crop types derived from data ──
   const cropTypes = useMemo(() => {

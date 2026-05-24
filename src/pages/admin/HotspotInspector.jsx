@@ -44,7 +44,12 @@ export default function HotspotInspector() {
   const [expandedId, setExpandedId] = useState(null);
   const [actionLoading, setActionLoading] = useState(null); // "id:status"
 
-  const list = Array.isArray(hotspots) ? hotspots : [];
+  // Memoize so the filtered useMemo below doesn't thrash on
+  // every render. Soft-launch hardening sweep.
+  const list = useMemo(
+    () => (Array.isArray(hotspots) ? hotspots : []),
+    [hotspots],
+  );
 
   // ── Filtered ──
   const filtered = useMemo(() => {

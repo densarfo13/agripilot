@@ -55,7 +55,12 @@ export default function AlertControlCenter() {
   const [suppressReason, setSuppressReason] = useState('');
   const [suppressConfirmId, setSuppressConfirmId] = useState(null);
 
-  const alertList = Array.isArray(alerts) ? alerts : [];
+  // Memoize so the filtered useMemo below doesn't thrash on
+  // every render. Soft-launch hardening sweep.
+  const alertList = useMemo(
+    () => (Array.isArray(alerts) ? alerts : []),
+    [alerts],
+  );
 
   // ── Client-side filtering ──
   const filtered = useMemo(() => {

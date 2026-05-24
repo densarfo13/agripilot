@@ -153,6 +153,10 @@ export default function CreateProgram() {
     }
   }
 
+  // `recent.length` is the recompute TRIGGER — programPerformanceSummary
+  // reads from the same underlying store but isn't referenced directly
+  // inside the memo body, so lint mis-flags this as unnecessary.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const perfRows = useMemo(() => programPerformanceSummary().slice(0, 5),
                            [recent.length]);
 

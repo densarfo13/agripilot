@@ -90,6 +90,10 @@ export default function FundingAdmin() {
 
   // Interest tab state — refreshed via interestTick.
   const [interestTick, setInterestTick] = useState(0);
+  // `interestTick` is the recompute TRIGGER, not a value the memo
+  // body reads — bumping it forces a re-fetch of the in-memory
+  // interests store. Lint mis-flags this as unnecessary.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const interests = useMemo(() => getFundingInterests(), [interestTick]);
   const opportunitiesById = useMemo(() => {
     const m = new Map();

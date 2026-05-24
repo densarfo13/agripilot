@@ -8,7 +8,14 @@ export default defineConfig({
     // never hunt the wrong directory. Matches the Vite default;
     // pinned here per the cache-bust playbook.
     outDir: 'dist',
-    chunkSizeWarningLimit: 600,
+    // Soft-launch hardening: the i18n-core chunk is 1.4 MB
+    // (translations.js is a 13.6k-line flat map with all 6
+    // locales inline — splitting per-locale requires a real
+    // refactor, tracked separately). Lifted from 600 to 1500
+    // so the chunk warnings stop polluting CI logs without
+    // hiding genuinely-too-big chunks (vendor-recharts 290 KB,
+    // vendor-leaflet 152 KB are well under the new ceiling).
+    chunkSizeWarningLimit: 1500,
     // Bump the heap ceiling for the minify step. The previous
     // single-bundle output was a 1.9 MB chunk that blew past
     // the default Node heap on the deploy daemon (build daemon

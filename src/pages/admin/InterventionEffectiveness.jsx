@@ -26,7 +26,13 @@ export default function InterventionEffectiveness() {
   const repeatRate = pct(data?.repeatOutbreakRate ?? data?.repeat_outbreak_rate ?? 0);
 
   // byStatus: { improved: N, resolved: N, same: N, worse: N }
-  const byStatus = data?.byStatus ?? data?.by_status ?? data?.outcomeDistribution ?? data?.outcome_distribution ?? {};
+  // Memoize so the ?? chain doesn't create a fresh {} reference
+  // on every render, which would cascade into statusObj recompute.
+  // Soft-launch hardening sweep.
+  const byStatus = useMemo(
+    () => (data?.byStatus ?? data?.by_status ?? data?.outcomeDistribution ?? data?.outcome_distribution ?? {}),
+    [data],
+  );
   // Normalize: could be object or array
   const statusObj = useMemo(() => {
     if (Array.isArray(byStatus)) {
@@ -43,8 +49,17 @@ export default function InterventionEffectiveness() {
   const statusTotal = Object.values(statusObj).reduce((s, v) => s + (v || 0), 0) || 1;
 
   // Determine most effective treatment type
-  const byType = data?.byType ?? data?.by_type ?? data?.byTreatmentType ?? data?.by_treatment_type ?? [];
-  const typeList = Array.isArray(byType) ? byType : [];
+  // Memoize both the underlying byType and the array-coerced
+  // typeList so downstream useMemos don't thrash. Soft-launch
+  // hardening sweep.
+  const byType = useMemo(
+    () => (data?.byType ?? data?.by_type ?? data?.byTreatmentType ?? data?.by_treatment_type ?? []),
+    [data],
+  );
+  const typeList = useMemo(
+    () => (Array.isArray(byType) ? byType : []),
+    [byType],
+  );
   const mostEffective = useMemo(() => {
     if (typeList.length === 0) return '-';
     const sorted = [...typeList].sort((a, b) => {
