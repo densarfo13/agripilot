@@ -30,7 +30,33 @@
  *     `grep '^\[Farroway\]' railway.log` returns the boot summary.
  */
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve as pathResolve } from 'node:path';
+
 let _emitted = false;
+
+// Read the repo's package.json once at module load so we can use
+// its semver as a last-resort version when no commit-id env var is
+// present. We try server/package.json first (this file lives in
+// server/src/config/) and fall back to the repo-root package.json.
+// Either is acceptable as a build identifier; both ship a stable
+// semver.
+const _PACKAGE_VERSION = (() => {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    for (const rel of ['../../package.json', '../../../package.json']) {
+      try {
+        const raw = readFileSync(pathResolve(here, rel), 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.version === 'string' && parsed.version.trim()) {
+          return parsed.version.trim();
+        }
+      } catch { /* try next candidate */ }
+    }
+  } catch { /* swallow */ }
+  return null;
+})();
 
 const REQUIRED_BACKEND = Object.freeze([
   { name: 'DATABASE_URL', aliases: [] },
@@ -169,8 +195,14 @@ export function resolveBuildVersion() {
       // `npm_package_version` is set by npm when the process is
       // launched via `npm start` / `npm run <script>`. It carries
       // the semver from package.json, which is a sensible fallback
-      // when no commit-id env is present.
+      // when no commit-id env is present. NOTE: a `cd <dir> && node
+      // <script>` chain inside the npm script CAN lose this var,
+      // which is why we also read package.json from disk below.
       env.npm_package_version,
+      // Final fallback — semver read from disk at module load.
+      // This survives any `cd && node` chain because we resolve
+      // the file via `import.meta.url` rather than $PWD.
+      _PACKAGE_VERSION,
     ];
     for (const v of candidates) {
       if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 64);
