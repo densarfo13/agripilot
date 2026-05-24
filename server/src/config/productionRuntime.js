@@ -209,7 +209,28 @@ function _isTest() {
  *
  *   Output: short string, ≤ 64 chars, never empty.
  */
+// ── Temporary diagnostic ── one-shot at first resolver call.
+// Confirms which fallback the production container is hitting.
+// Will be removed once the version stamp is verified resolving.
+let _versionDebugEmitted = false;
+function _emitVersionDebug() {
+  if (_versionDebugEmitted) return;
+  _versionDebugEmitted = true;
+  try {
+    const env = (typeof process !== 'undefined' && process.env) || {};
+    // eslint-disable-next-line no-console
+    console.log('[VERSION-DEBUG]', JSON.stringify({
+      cwd: (typeof process !== 'undefined' && process.cwd && process.cwd()) || null,
+      packageVersion: _PACKAGE_VERSION,
+      npm_package_version: env.npm_package_version || null,
+      RAILWAY_GIT_COMMIT_SHA: env.RAILWAY_GIT_COMMIT_SHA || null,
+      RAILWAY_DEPLOYMENT_ID: env.RAILWAY_DEPLOYMENT_ID || null,
+    }));
+  } catch { /* swallow */ }
+}
+
 export function resolveBuildVersion() {
+  _emitVersionDebug();
   try {
     const env = (typeof process !== 'undefined' && process.env) || {};
     const candidates = [
