@@ -30,63 +30,7 @@
  *     `grep '^\[Farroway\]' railway.log` returns the boot summary.
  */
 
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve as pathResolve } from 'node:path';
-
 let _emitted = false;
-
-// Read the repo's package.json once at module load so we can use
-// its semver as a last-resort version when no commit-id env var is
-// present.
-//
-// Two resolution strategies, tried in order:
-//   1. `import.meta.url`-anchored — works in local dev + most
-//      Docker containers.
-//   2. `process.cwd()`-anchored — works when (1) fails because the
-//      bundler / container puts the runtime file somewhere the
-//      relative climb can't find. Railway / Nixpacks falls into
-//      this bucket on some plan tiers.
-//
-// We try several candidate paths from each anchor and take the
-// first one that parses to a non-empty semver. Caches the value
-// at module load so the cost is paid once.
-const _PACKAGE_VERSION = (() => {
-  const tryRead = (abs) => {
-    try {
-      const raw = readFileSync(abs, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.version === 'string' && parsed.version.trim()) {
-        return parsed.version.trim();
-      }
-    } catch { /* not here */ }
-    return null;
-  };
-  // Strategy 1 — anchored at this module's own location.
-  try {
-    const here = dirname(fileURLToPath(import.meta.url));
-    for (const rel of ['../../package.json', '../../../package.json',
-                       '../../../../package.json']) {
-      const v = tryRead(pathResolve(here, rel));
-      if (v) return v;
-    }
-  } catch { /* fall through */ }
-  // Strategy 2 — anchored at process.cwd(). On Railway / Nixpacks
-  // the working directory is usually /app, which contains the root
-  // package.json. The server subdir also gets a copy from the
-  // build step.
-  try {
-    const cwd = (typeof process !== 'undefined' && process.cwd && process.cwd()) || '';
-    if (cwd) {
-      for (const rel of ['package.json', 'server/package.json',
-                         '../package.json']) {
-        const v = tryRead(pathResolve(cwd, rel));
-        if (v) return v;
-      }
-    }
-  } catch { /* swallow */ }
-  return null;
-})();
 
 const REQUIRED_BACKEND = Object.freeze([
   { name: 'DATABASE_URL', aliases: [] },
@@ -209,28 +153,7 @@ function _isTest() {
  *
  *   Output: short string, ≤ 64 chars, never empty.
  */
-// ── Temporary diagnostic ── one-shot at first resolver call.
-// Confirms which fallback the production container is hitting.
-// Will be removed once the version stamp is verified resolving.
-let _versionDebugEmitted = false;
-function _emitVersionDebug() {
-  if (_versionDebugEmitted) return;
-  _versionDebugEmitted = true;
-  try {
-    const env = (typeof process !== 'undefined' && process.env) || {};
-    // eslint-disable-next-line no-console
-    console.log('[VERSION-DEBUG]', JSON.stringify({
-      cwd: (typeof process !== 'undefined' && process.cwd && process.cwd()) || null,
-      packageVersion: _PACKAGE_VERSION,
-      npm_package_version: env.npm_package_version || null,
-      RAILWAY_GIT_COMMIT_SHA: env.RAILWAY_GIT_COMMIT_SHA || null,
-      RAILWAY_DEPLOYMENT_ID: env.RAILWAY_DEPLOYMENT_ID || null,
-    }));
-  } catch { /* swallow */ }
-}
-
 export function resolveBuildVersion() {
-  _emitVersionDebug();
   try {
     const env = (typeof process !== 'undefined' && process.env) || {};
     const candidates = [
@@ -246,14 +169,8 @@ export function resolveBuildVersion() {
       // `npm_package_version` is set by npm when the process is
       // launched via `npm start` / `npm run <script>`. It carries
       // the semver from package.json, which is a sensible fallback
-      // when no commit-id env is present. NOTE: a `cd <dir> && node
-      // <script>` chain inside the npm script CAN lose this var,
-      // which is why we also read package.json from disk below.
+      // when no commit-id env is present.
       env.npm_package_version,
-      // Final fallback — semver read from disk at module load.
-      // This survives any `cd && node` chain because we resolve
-      // the file via `import.meta.url` rather than $PWD.
-      _PACKAGE_VERSION,
     ];
     for (const v of candidates) {
       if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 64);

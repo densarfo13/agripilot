@@ -59,10 +59,7 @@ describe('productionRuntime — Railway ops banner', () => {
     delete process.env.BUILD_ID;
     delete process.env.APP_VERSION;
     delete process.env.npm_package_version;
-    // With every env candidate cleared, the resolver falls back to
-    // the package.json semver read at module load — a sensible
-    // non-empty value that beats the legacy '0.0.0-local' literal.
-    expect(mod.resolveBuildVersion()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(mod.resolveBuildVersion()).toBe('0.0.0-local');
 
     process.env.APP_VERSION = '1.2.3';
     expect(mod.resolveBuildVersion()).toBe('1.2.3');
