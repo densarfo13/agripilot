@@ -249,6 +249,11 @@ const DEFAULTS = Object.freeze({
   FEATURE_MARKETPLACE_REVENUE:  false,
   FEATURE_FUNDING_PARTNERS:     false,
   FEATURE_BILLING:              false,
+  // Community surfaces (local grower tips / regional issue reports
+  // / moderated discussions / expert notes). Prepared architecture
+  // only — surfaces stay dark behind this flag until moderation +
+  // expert staffing are in place.
+  FEATURE_GROWER_COMMUNITY:     false,
 });
 
 function safeWindowFlag(name) {
