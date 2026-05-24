@@ -33,6 +33,7 @@ import { computeLifecycleSnapshot, LIFECYCLE_STAGE } from './cropLifecycleEngine
 import { interpretWeather, WEATHER_INSIGHT, SEVERITY } from '../weather/weatherOperationalInterpreter.js';
 import { computeWateringRecommendation, WATERING_ACTION } from '../watering/wateringEngine.js';
 import { pickPrimaryRecommendation } from '../recommendations/recommendationRankingEngine.js';
+import { getExperienceLevel } from '../experience/experiencePreferenceStore.js';
 
 export const EXPERIENCE_LEVEL = Object.freeze({
   NEW:         'new',
@@ -327,8 +328,32 @@ function _noActionDecision(experience, cropLabel) {
   });
 }
 
+/**
+ * Convenience wrapper that auto-reads the experience level from
+ * the persisted preference store when the caller hasn't passed
+ * one. Keeps `computeDailyDecision(args)` pure and explicit while
+ * letting Home call this without threading the preference through
+ * every state hop.
+ *
+ * @param {object} args same shape as computeDailyDecision
+ * @returns {object}
+ */
+export function computeDailyDecisionForCurrentUser(args) {
+  try {
+    const a = (args && typeof args === 'object') ? args : {};
+    if (a.experienceLevel) return computeDailyDecision(a);
+    let level;
+    try { level = getExperienceLevel(); }
+    catch { level = EXPERIENCE_LEVEL.NEW; }
+    return computeDailyDecision({ ...a, experienceLevel: level });
+  } catch {
+    return computeDailyDecision(args);
+  }
+}
+
 const _module = {
   EXPERIENCE_LEVEL, CONFIDENCE_TONE,
   computeDailyDecision,
+  computeDailyDecisionForCurrentUser,
 };
 export default _module;
