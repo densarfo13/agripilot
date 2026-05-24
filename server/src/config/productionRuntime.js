@@ -130,11 +130,26 @@ function _isTest() {
  * stamp surfaced via /health.
  *
  *   Priority order:
- *     1. RAILWAY_GIT_COMMIT_SHA   (Railway-injected)
- *     2. VITE_BUILD_ID            (CI-injected)
- *     3. BUILD_ID                 (generic CI override)
- *     4. APP_VERSION              (manually pinned)
- *     5. fallback string '0.0.0-local'
+ *     1. RAILWAY_GIT_COMMIT_SHA   (Railway-injected on PR + main builds)
+ *     2. RAILWAY_DEPLOYMENT_ID    (Railway-injected even when SHA omitted)
+ *     3. RENDER_GIT_COMMIT        (Render compatibility)
+ *     4. VERCEL_GIT_COMMIT_SHA    (Vercel compatibility)
+ *     5. SOURCE_COMMIT            (Heroku, generic CI)
+ *     6. FARROWAY_COMMIT_SHA      (manual override)
+ *     7. VITE_BUILD_ID            (frontend CI injection)
+ *     8. BUILD_ID                 (generic CI override)
+ *     9. APP_VERSION              (manually pinned)
+ *    10. SEMVER_FROM_PACKAGE_JSON  (resolved via `process.env.npm_package_version`
+ *                                   when the process was started via `npm start`)
+ *    11. fallback string '0.0.0-local'
+ *
+ *   Soft-launch hardening note: before this expansion `/api/health`
+ *   always returned `0.0.0-local` on the Railway deploy because the
+ *   Railway service did not have `RAILWAY_GIT_COMMIT_SHA` injected
+ *   (it's not on by default for some plans). The version stamp is
+ *   the anchor for the rollback runbook, so we extend the alias
+ *   list to cover Render / Vercel / Heroku / generic CI conventions
+ *   plus `npm_package_version` which `npm start` populates for free.
  *
  *   Output: short string, ≤ 64 chars, never empty.
  */
@@ -143,9 +158,19 @@ export function resolveBuildVersion() {
     const env = (typeof process !== 'undefined' && process.env) || {};
     const candidates = [
       env.RAILWAY_GIT_COMMIT_SHA,
+      env.RAILWAY_DEPLOYMENT_ID,
+      env.RENDER_GIT_COMMIT,
+      env.VERCEL_GIT_COMMIT_SHA,
+      env.SOURCE_COMMIT,
+      env.FARROWAY_COMMIT_SHA,
       env.VITE_BUILD_ID,
       env.BUILD_ID,
       env.APP_VERSION,
+      // `npm_package_version` is set by npm when the process is
+      // launched via `npm start` / `npm run <script>`. It carries
+      // the semver from package.json, which is a sensible fallback
+      // when no commit-id env is present.
+      env.npm_package_version,
     ];
     for (const v of candidates) {
       if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 64);

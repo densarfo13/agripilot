@@ -46,10 +46,19 @@ describe('productionRuntime — Railway ops banner', () => {
     const mod = await import(MODULE);
     mod._resetForTests();
 
+    // Clear EVERY alias the resolver checks. `npm_package_version`
+    // is set automatically when vitest is launched via `npm test`,
+    // so it must be cleared too or the fallback branch is unreachable.
     delete process.env.RAILWAY_GIT_COMMIT_SHA;
+    delete process.env.RAILWAY_DEPLOYMENT_ID;
+    delete process.env.RENDER_GIT_COMMIT;
+    delete process.env.VERCEL_GIT_COMMIT_SHA;
+    delete process.env.SOURCE_COMMIT;
+    delete process.env.FARROWAY_COMMIT_SHA;
     delete process.env.VITE_BUILD_ID;
     delete process.env.BUILD_ID;
     delete process.env.APP_VERSION;
+    delete process.env.npm_package_version;
     expect(mod.resolveBuildVersion()).toBe('0.0.0-local');
 
     process.env.APP_VERSION = '1.2.3';
@@ -72,10 +81,19 @@ describe('productionRuntime — Railway ops banner', () => {
     process.env.RAILWAY_GIT_COMMIT_SHA = 'x'.repeat(200);
     expect(mod.resolveBuildVersion().length).toBe(64);
 
+    // Clear EVERY alias the resolver checks. `npm_package_version`
+    // is set automatically when vitest is launched via `npm test`,
+    // so it must be cleared too or the fallback branch is unreachable.
     delete process.env.RAILWAY_GIT_COMMIT_SHA;
+    delete process.env.RAILWAY_DEPLOYMENT_ID;
+    delete process.env.RENDER_GIT_COMMIT;
+    delete process.env.VERCEL_GIT_COMMIT_SHA;
+    delete process.env.SOURCE_COMMIT;
+    delete process.env.FARROWAY_COMMIT_SHA;
     delete process.env.VITE_BUILD_ID;
     delete process.env.BUILD_ID;
     delete process.env.APP_VERSION;
+    delete process.env.npm_package_version;
     expect(mod.resolveBuildVersion()).toBe('0.0.0-local');
 
     restoreEnv();
