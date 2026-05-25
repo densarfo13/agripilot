@@ -8,6 +8,133 @@ Companions: `docs/ops/DEPLOYMENT_RUNBOOK.md`,
 
 ---
 
+## 0. Pre-deploy rollback anchor (Pass 2 — May 2026)
+
+**Tag every production-bound merge BEFORE it ships.** A tag is a
+no-cost rollback anchor — it costs nothing to create and means
+the on-call engineer never has to dig through `git reflog` looking
+for the last-known-good SHA.
+
+```bash
+# Right after the GitHub UI shows the PR merged:
+git fetch origin master
+git tag pre-<descriptive-name>  <pre-merge-sha>       # immutable rollback target
+git tag post-<descriptive-name> <merge-commit-sha>    # marks the deploy
+git push origin pre-<descriptive-name> post-<descriptive-name>
+```
+
+Example from the i18n column-split rollout:
+
+```
+git tag pre-i18n-cutover  8e9c02c2   # master tip before the merge
+git tag post-i18n-cutover 1468242f   # the merge commit
+git push origin pre-i18n-cutover post-i18n-cutover
+```
+
+Both tags are now visible at `https://github.com/<org>/<repo>/tags`
+and stay regardless of any future force-push, garbage-collection,
+or branch deletion.
+
+---
+
+## 0a. SHA-drift detection
+
+If `/api/health.gitSha` does NOT match `git rev-parse origin/master`,
+production is serving a stale build. Detect with:
+
+```bash
+npm run verify:deployment
+```
+
+Exit code 3 = SHA mismatch. The on-call engineer should
+**investigate before rolling back** — most common cause is an
+operator bypassing `scripts/deploy/deploy-railway.mjs` and running
+`railway up` from a checkout that wasn't on master tip. The fix
+is usually "re-run the canonical deploy script" not "roll back".
+
+---
+
+## 0b. Rollback via the canonical deploy script (preferred)
+
+If a rollback IS the right call, do it through the same script
+that ships forward deploys — guarantees the rolled-back container
+reports the rollback SHA in `/api/health.gitSha` so the
+verification chain stays honest.
+
+```bash
+# 1. Reset a worktree to the known-good SHA (or tag).
+git worktree add /tmp/rollback pre-i18n-cutover
+cd /tmp/rollback
+
+# 2. Link Railway in the worktree.
+railway link --project <id> --service <name>
+
+# 3. Deploy (--allow-non-master because we're on detached HEAD).
+node scripts/deploy/deploy-railway.mjs --allow-non-master \
+  --no-sha-check  # origin/master ≠ rollback target by design
+
+# 4. Verify the new deploy reports the rollback SHA.
+curl https://farroway.app/api/health | jq .gitSha
+# → should print the pre-<tag> SHA
+
+# 5. Clean up.
+cd ~/agripilot && git worktree remove /tmp/rollback --force
+```
+
+`--no-sha-check` is required: the rollback intentionally ships a
+SHA that doesn't match `origin/master`. The deploy script's
+default behaviour assumes you're shipping forward.
+
+---
+
+## 0c. Rollback via Railway dashboard (fastest)
+
+If the canonical script is unavailable (operator at airport with
+phone-only access, or the script itself is broken):
+
+1. Go to https://railway.com/project/<project-id>
+2. Navigate: agripilot service → Deployments tab
+3. Find the last `SUCCESS` deployment with the desired SHA
+4. Click the three-dot menu → "Roll back to this deployment"
+5. Confirm
+
+Railway reuses the existing build artifact — no rebuild — so
+this is faster than the script path (~30s vs ~5 min). The
+trade-off is no automatic `/api/health` SHA verification; after
+the rollback completes, manually run `npm run verify:deployment
+--expect-sha <rollback-sha>` to confirm.
+
+---
+
+## 0d. Post-rollback validation checklist
+
+Run all of these after ANY rollback:
+
+```bash
+# 1. /api/health reports rolled-back SHA.
+npm run verify:deployment -- --expect-sha <rollback-sha>
+
+# 2. Frontend bundle hash matches the rolled-back build.
+curl -sL https://farroway.app/ | grep -oE 'i18n-core-[A-Za-z0-9_]+\.js'
+# → cross-reference with the dist/ output from a local
+#    `git checkout <rollback-sha> && npm run build` if you need
+#    100% certainty.
+
+# 3. No 5xx in the last 5 minutes of Railway logs.
+railway logs -d | tail -100 | grep -E '500|502|503'
+
+# 4. Database integrity — Prisma migrations haven't gone backwards.
+#    The rolled-back container will REFUSE TO START if it has
+#    fewer migrations than the DB; this is intentional. If the
+#    rollback target is older than the most-recent migration,
+#    follow docs/ops/MIGRATION_ROLLBACK.md instead.
+```
+
+If any check fails: STOP. Page the lead engineer. Do not retry
+the rollback blindly.
+
+---
+
 ## 1. Decision tree
 
 ```

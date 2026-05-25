@@ -11,6 +11,105 @@ Companions: `docs/ops/ROLLBACK_PLAN.md`,
 
 ---
 
+## 0. Hardened deploy flow (Pass 2 — May 2026)
+
+**This is now the canonical path for production deploys.** All the
+historical sections below remain for context + emergency fallback,
+but every routine deploy should go through the script.
+
+### 0a. One-line deploy
+
+```bash
+npm run deploy:railway
+```
+
+That runs `scripts/deploy/deploy-railway.mjs --auto-pull` which:
+
+1. Verifies `railway` CLI is present + authenticated.
+2. Asserts you're on `master` (use `--allow-non-master` for hotfix
+   branches).
+3. Asserts the working tree is clean (catches uncommitted changes
+   that would pollute the build context — the exact pattern that
+   caused the May 2026 stale-deploy incident).
+4. `git fetch && git merge --ff-only origin/master` so the local
+   tree exactly matches what's on the remote.
+5. Writes `BUILD_SHA` and `BUILD_TIMESTAMP` files at the repo root.
+   The Dockerfile copies them into the image so `/api/health` can
+   report the deployed commit's SHA.
+6. `railway up --detach --message "<sha> <commit-subject>"`.
+7. Polls Railway deployment status until terminal (SUCCESS /
+   FAILED / CRASHED).
+8. After SUCCESS: `GET /api/health`, asserts `body.gitSha` matches
+   the SHA we just deployed. **Fails non-zero on mismatch — never
+   auto-rolls-back.**
+
+Exit codes:
+- `0` — deployed + verified
+- `1` — pre-flight failure (dirty tree, branch wrong, SHA drift)
+- `2` — `railway up` failed
+- `3` — deployment finished non-SUCCESS
+- `4` — post-deploy `/api/health` integrity check failed
+
+### 0b. Dry-run before a risky deploy
+
+```bash
+npm run deploy:dry-run
+```
+
+Runs every pre-flight gate, writes the build-metadata files,
+prints the deploy summary, then exits without uploading. Useful
+for confirming local state lines up with what the script will
+actually ship.
+
+### 0c. Standalone post-deploy verification
+
+```bash
+npm run verify:deployment
+```
+
+Hits `https://farroway.app/api/health`, asserts `status=ok`,
+`db=ok`, `gitSha` matches `origin/master`, and
+`environment=production`. Returns a non-zero exit on any failure.
+Safe to wire into an external uptime monitor — it'll catch
+SHA drift between `/api/health` and the GitHub tip without
+needing Railway API access.
+
+### 0d. What `/api/health` reports now
+
+```json
+{
+  "status":         "ok",
+  "db":             "ok",
+  "uptime":         123,
+  "timestamp":      "2026-05-25T01:23:45.678Z",
+  "version":        "<40-char SHA, was the Railway deployment ID before Pass 2>",
+  "gitSha":         "<40-char SHA — the deployed commit>",
+  "deploymentId":   "<Railway deployment UUID>",
+  "deployedAt":     "<ISO 8601 — when BUILD_SHA was written, before railway up>",
+  "environment":    "production",
+  "releaseVersion": "<SENTRY_RELEASE or npm_package_version>",
+  "serverStartedAt": "<ISO 8601 — container boot time>"
+}
+```
+
+`gitSha` SHOULD match the tip of `origin/master`. If they
+disagree, the production build is stale — the deploy script
+caught it but somehow shipped anyway (most likely cause:
+operator bypassed the script and ran `railway up` from a
+checkout that wasn't on master tip).
+
+### 0e. Source-of-truth: Dockerfile
+
+Builds run via the Dockerfile at the repo root. `railway.toml`
+documents this — its `[build]` block is intentionally empty.
+
+`scripts/ci/check-deployment-sources.mjs` (run in
+`build:safe`) FAILS the build if both a Dockerfile AND a
+nixpacks builder declaration coexist — closing the documented-
+vs-actual drift that caused the May 2026 debugging session.
+
+---
+
 ## 1. Standard deploy
 
 ### 1a. Pre-flight (run from `agripilot/`)

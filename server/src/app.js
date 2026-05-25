@@ -15,7 +15,14 @@ import { authenticate, requireApprovedFarmer } from './middleware/auth.js';
 import { extractOrganization } from './middleware/orgScope.js';
 import prisma from './config/database.js';
 import { checkUploadDirHealth, listDiskFiles } from './utils/uploadHealth.js';
-import { resolveBuildVersion } from './config/productionRuntime.js';
+import {
+  resolveBuildVersion,
+  resolveGitSha,
+  resolveBuildTimestamp,
+  resolveDeploymentId,
+  resolveEnvironment,
+  resolveReleaseVersion,
+} from './config/productionRuntime.js';
 
 // Route imports
 import authRoutes from './modules/auth/routes.js';
@@ -529,6 +536,30 @@ const _resolvedBuildVersion = (() => {
   try { return resolveBuildVersion(); }
   catch { return '0.0.0-local'; }
 })();
+// Hardening Pass 2 — observability metadata. Resolved once at module
+// load (productionRuntime helpers are pure + side-effect-free) so the
+// /health response stays cheap. Any field that can't be resolved
+// resolves to null; consumers MUST tolerate null for forward-compat.
+const _deployMetadata = (() => {
+  try {
+    return Object.freeze({
+      gitSha:         resolveGitSha(),
+      deploymentId:   resolveDeploymentId(),
+      deployedAt:     resolveBuildTimestamp(),
+      environment:    resolveEnvironment(),
+      releaseVersion: resolveReleaseVersion(),
+      // serverStartedAt is module-load time — useful to distinguish
+      // a long-running container from a fresh restart.
+      serverStartedAt: new Date(_serverStartedAt).toISOString(),
+    });
+  } catch {
+    return Object.freeze({
+      gitSha: null, deploymentId: null, deployedAt: null,
+      environment: 'unknown', releaseVersion: null,
+      serverStartedAt: new Date(_serverStartedAt).toISOString(),
+    });
+  }
+})();
 async function _healthHandler(_req, res) {
   let dbStatus = 'down';
   try {
@@ -536,12 +567,26 @@ async function _healthHandler(_req, res) {
     dbStatus = 'ok';
   } catch { dbStatus = 'down'; }
   const uptime = Math.floor((Date.now() - _serverStartedAt) / 1000);
+  // BACKWARD-COMPAT: every pre-hardening field stays exactly where
+  // it was — { status, db, uptime, timestamp, version }. New
+  // observability fields are ADDED, never removed or renamed.
+  // Existing consumers (the load balancer, the rollback runbook
+  // grep, external uptime checks) keep working unchanged.
   const body = {
-    status:    dbStatus === 'ok' ? 'ok' : 'degraded',
-    db:        dbStatus,
+    status:         dbStatus === 'ok' ? 'ok' : 'degraded',
+    db:             dbStatus,
     uptime,
-    timestamp: new Date().toISOString(),
-    version:   _resolvedBuildVersion,
+    timestamp:      new Date().toISOString(),
+    version:        _resolvedBuildVersion,
+    // Hardening Pass 2 — deployment metadata. Any subset may be
+    // null when the deploy didn't write the BUILD_SHA file (e.g.
+    // local docker build, or a pre-hardening deploy still serving).
+    gitSha:         _deployMetadata.gitSha,
+    deploymentId:   _deployMetadata.deploymentId,
+    deployedAt:     _deployMetadata.deployedAt,
+    environment:    _deployMetadata.environment,
+    releaseVersion: _deployMetadata.releaseVersion,
+    serverStartedAt: _deployMetadata.serverStartedAt,
   };
   res.status(dbStatus === 'ok' ? 200 : 503).json(body);
 }
