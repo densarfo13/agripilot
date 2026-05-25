@@ -903,6 +903,27 @@ button:disabled { transform: none; }
 .mic-hint--unsupported { color: rgba(245,158,11,0.85); }
 .mic-hint--error       { color: rgba(239,68,68,0.85); }
 
+/* ─── Floating-launcher safe zone ──────────────────────────────────
+   When a page mounts the VoiceLauncher (variant="floating") OR any
+   other position:fixed bottom-anchored FAB, content under the FAB
+   gets visually clipped — the FAB sits at bottom:96px (above the
+   bottom nav), so the last 144 px of scrollable content slides
+   under the launcher and is unreachable on mobile.
+
+   Apply `.has-floating-launcher` to the page's outermost scroll
+   wrapper to add the right amount of safe padding. Stack budget
+   accounts for: bottom-nav (~56px) + FAB clear zone (~96px) +
+   FAB size (~48px) + safe area.
+
+       <div className="has-floating-launcher">
+         …page content…
+       </div>
+
+   Idempotent — applying twice is a no-op. */
+.has-floating-launcher {
+  padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
+}
+
 .icon-action-card {
   background: var(--card, rgba(255,255,255,0.04));
   border: 1px solid rgba(255,255,255,0.08);

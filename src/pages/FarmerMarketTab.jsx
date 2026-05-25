@@ -6,10 +6,11 @@ import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import SellReadinessInput from '../components/SellReadinessInput.jsx';
 
 export default function FarmerMarketTab() {
-  const { lang } = useTranslation();
+  const { t, lang } = useTranslation();
   const { farmerId, farmer } = useFarmerContext();
   const country = farmer?.countryCode || DEFAULT_COUNTRY_CODE;
   const [prices, setPrices] = useState([]);
@@ -38,7 +39,7 @@ export default function FarmerMarketTab() {
       setPrices(pRes.data?.crops || pRes.data || []);
       setBuyerTypes(bRes.data?.buyerTypes || bRes.data || []);
       setInterests(iRes.data || []);
-    }).catch(() => setLoadError('Failed to load market data'))
+    }).catch(() => setLoadError(tSafe(t, 'market.errorLoadFailed', 'Failed to load market data')))
       .finally(() => setLoading(false));
   };
 
@@ -73,7 +74,7 @@ export default function FarmerMarketTab() {
       const iRes = await api.get(`/buyer-interest/farmer/${farmerId}`);
       setInterests(iRes.data || []);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to express interest');
+      setError(err.response?.data?.error || tSafe(t, 'market.errorExpressFailed', 'Failed to express interest'));
     } finally {
       submitGuardRef.current = false;
       setSubmitting(false);
@@ -85,18 +86,18 @@ export default function FarmerMarketTab() {
       await api.patch(`/buyer-interest/${id}/withdraw`);
       setInterests(prev => prev.map(i => i.id === id ? { ...i, status: 'withdrawn' } : i));
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to withdraw interest');
+      setError(err.response?.data?.error || tSafe(t, 'market.errorWithdrawFailed', 'Failed to withdraw interest'));
     }
   };
 
-  if (loading) return <div className="loading">Loading market data...</div>;
+  if (loading) return <div className="loading">{tSafe(t, 'market.loadingPrices', 'Loading market data...')}</div>;
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
-      {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadData}>Retry</button></div>}
+      {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadData}>{tSafe(t, 'common.retry', 'Retry')}</button></div>}
       {/* Advisory disclaimer */}
       <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#F59E0B' }}>
-        <strong>Advisory only:</strong> Prices shown are estimated ranges for general guidance. They are not live market prices. Always verify current prices with local buyers before making selling decisions.
+        <strong>{tSafe(t, 'market.advisoryLabel', 'Advisory only:')}</strong> {tSafe(t, 'market.advisoryBody', 'Prices shown are estimated ranges for general guidance. They are not live market prices. Always verify current prices with local buyers before making selling decisions.')}
       </div>
 
       {/* Ready to sell — buyer-matching signal. Mounts the existing
@@ -112,19 +113,19 @@ export default function FarmerMarketTab() {
 
       {/* Market prices */}
       <div className="card" style={{ marginBottom: '1.25rem' }}>
-        <div className="card-header">Estimated Price Ranges ({country})</div>
+        <div className="card-header">{tSafe(t, 'market.priceRangesHeader', 'Estimated Price Ranges')} ({country})</div>
         <div className="card-body" style={{ padding: 0 }}>
           {Array.isArray(prices) && prices.length > 0 ? (
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Crop</th>
-                    <th>Min Price</th>
-                    <th>Max Price</th>
-                    <th>Unit</th>
-                    <th>Season Advice</th>
-                    <th>Tips</th>
+                    <th>{tSafe(t, 'market.tableCropHeader', 'Crop')}</th>
+                    <th>{tSafe(t, 'market.tableMinPriceHeader', 'Min Price')}</th>
+                    <th>{tSafe(t, 'market.tableMaxPriceHeader', 'Max Price')}</th>
+                    <th>{tSafe(t, 'market.tableUnitHeader', 'Unit')}</th>
+                    <th>{tSafe(t, 'market.tableSeasonAdviceHeader', 'Season Advice')}</th>
+                    <th>{tSafe(t, 'market.tableTipsHeader', 'Tips')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,11 +136,11 @@ export default function FarmerMarketTab() {
                       <td style={{ fontWeight: 500 }}>{getCropLabelSafe(p.crop, lang) || p.crop}</td>
                       <td>{p.currency || 'KES'} {p.minPrice?.toLocaleString()}</td>
                       <td>{p.currency || 'KES'} {p.maxPrice?.toLocaleString()}</td>
-                      <td>{p.unit || 'per kg'}</td>
+                      <td>{p.unit || tSafe(t, 'market.perKg', 'per kg')}</td>
                       <td className="text-sm">{p.seasonAdvice || '-'}</td>
                       <td>
                         <button className="btn btn-outline btn-sm" onClick={() => loadTips(p.crop)}>
-                          View Tips
+                          {tSafe(t, 'market.viewTipsCta', 'View Tips')}
                         </button>
                       </td>
                     </tr>
@@ -148,7 +149,7 @@ export default function FarmerMarketTab() {
               </table>
             </div>
           ) : (
-            <EmptyState icon="📊" title="No price data available" message="Market prices will appear here when available for your region." compact />
+            <EmptyState icon="📊" title={tSafe(t, 'market.noPriceDataTitle', 'No price data available')} message={tSafe(t, 'market.noPriceDataMessage', 'Market prices will appear here when available for your region.')} compact />
           )}
         </div>
       </div>
@@ -157,8 +158,8 @@ export default function FarmerMarketTab() {
       {tips && selectedCrop && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            Selling Tips: {getCropLabelSafe(tips.cropType || selectedCrop, lang)}
-            <button className="btn btn-outline btn-sm" onClick={() => { setTips(null); setSelectedCrop(''); }}>Close</button>
+            {tSafe(t, 'market.sellingTipsLabel', 'Selling Tips:')} {getCropLabelSafe(tips.cropType || selectedCrop, lang)}
+            <button className="btn btn-outline btn-sm" onClick={() => { setTips(null); setSelectedCrop(''); }}>{tSafe(t, 'common.close', 'Close')}</button>
           </div>
           <div className="card-body">
             {tips.tips?.length > 0 ? (
@@ -166,7 +167,7 @@ export default function FarmerMarketTab() {
                 {tips.tips.map((tip, i) => <li key={i} style={{ marginBottom: '0.35rem' }}>{tip}</li>)}
               </ul>
             ) : (
-              <p className="text-muted">No specific tips available for this crop.</p>
+              <p className="text-muted">{tSafe(t, 'market.noSpecificTips', 'No specific tips available for this crop.')}</p>
             )}
           </div>
         </div>
@@ -175,14 +176,14 @@ export default function FarmerMarketTab() {
       {/* Buyer types */}
       {Array.isArray(buyerTypes) && buyerTypes.length > 0 && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
-          <div className="card-header">Buyer Types</div>
+          <div className="card-header">{tSafe(t, 'market.buyerTypesHeader', 'Buyer Types')}</div>
           <div className="card-body">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
               {buyerTypes.map((bt, i) => (
                 <div key={i} style={{ padding: '0.75rem 1rem', background: '#1E293B', border: '1px solid #243041', borderRadius: 8, minWidth: 180 }}>
                   <strong>{bt.type || bt.name}</strong>
                   {bt.description && <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#A1A1AA' }}>{bt.description}</p>}
-                  {bt.suitableFor && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#C8944D' }}>Best for: {Array.isArray(bt.suitableFor) ? bt.suitableFor.join(', ') : bt.suitableFor}</p>}
+                  {bt.suitableFor && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#C8944D' }}>{tSafe(t, 'market.bestForLabel', 'Best for:')} {Array.isArray(bt.suitableFor) ? bt.suitableFor.join(', ') : bt.suitableFor}</p>}
                 </div>
               ))}
             </div>
@@ -193,10 +194,10 @@ export default function FarmerMarketTab() {
       {/* Buyer interest section */}
       <div className="card" style={{ marginBottom: '1.25rem' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-          My Selling Interests
-          <span style={{ fontSize: '0.8rem', color: '#A1A1AA', fontWeight: 400 }}>Tracked for demand analysis — not a marketplace</span>
+          {tSafe(t, 'market.mySellingInterestsHeader', 'My Selling Interests')}
+          <span style={{ fontSize: '0.8rem', color: '#A1A1AA', fontWeight: 400 }}>{tSafe(t, 'market.trackingNote', 'Tracked for demand analysis — not a marketplace')}</span>
           <button className="btn btn-primary btn-sm" onClick={() => setShowInterest(!showInterest)}>
-            {showInterest ? 'Cancel' : '+ Express Interest'}
+            {showInterest ? tSafe(t, 'common.cancel', 'Cancel') : tSafe(t, 'market.expressInterestCta', '+ Express Interest')}
           </button>
         </div>
         <div className="card-body" style={{ padding: showInterest || interests.length > 0 ? undefined : undefined }}>
@@ -205,35 +206,35 @@ export default function FarmerMarketTab() {
               {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label className="form-label">Crop Type *</label>
+                  <label className="form-label">{tSafe(t, 'market.cropTypeLabelRequired', 'Crop Type *')}</label>
                   <CropSelect
                     value={interestForm.cropType}
                     onChange={(v) => setInterestForm({ ...interestForm, cropType: v })}
                     countryCode={farmer?.countryCode}
                     required
-                    placeholder="Search crops..."
+                    placeholder={tSafe(t, 'market.searchCropsPlaceholder', 'Search crops...')}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Quantity (kg)</label>
+                  <label className="form-label">{tSafe(t, 'market.quantityKgLabel', 'Quantity (kg)')}</label>
                   <input className="form-input" type="number" step="0.1" value={interestForm.quantityKg} onChange={e => setInterestForm({ ...interestForm, quantityKg: e.target.value })} />
                 </div>
                 <div>
-                  <label className="form-label">Price Expectation</label>
-                  <input className="form-input" type="number" step="0.01" value={interestForm.priceExpectation} onChange={e => setInterestForm({ ...interestForm, priceExpectation: e.target.value })} placeholder="per kg" />
+                  <label className="form-label">{tSafe(t, 'market.priceExpectationLabel', 'Price Expectation')}</label>
+                  <input className="form-input" type="number" step="0.01" value={interestForm.priceExpectation} onChange={e => setInterestForm({ ...interestForm, priceExpectation: e.target.value })} placeholder={tSafe(t, 'market.perKg', 'per kg')} />
                 </div>
                 <div>
-                  <label className="form-label">Preferred Buyer Type</label>
-                  <input className="form-input" value={interestForm.preferredBuyerType} onChange={e => setInterestForm({ ...interestForm, preferredBuyerType: e.target.value })} placeholder="e.g. cooperative, export" />
+                  <label className="form-label">{tSafe(t, 'market.preferredBuyerTypeLabel', 'Preferred Buyer Type')}</label>
+                  <input className="form-input" value={interestForm.preferredBuyerType} onChange={e => setInterestForm({ ...interestForm, preferredBuyerType: e.target.value })} placeholder={tSafe(t, 'market.preferredBuyerTypePlaceholder', 'e.g. cooperative, export')} />
                 </div>
                 <div style={{ gridColumn: '2 / -1' }}>
-                  <label className="form-label">Notes</label>
-                  <input className="form-input" value={interestForm.notes} onChange={e => setInterestForm({ ...interestForm, notes: e.target.value })} placeholder="Any additional information" />
+                  <label className="form-label">{tSafe(t, 'market.notesLabel', 'Notes')}</label>
+                  <input className="form-input" value={interestForm.notes} onChange={e => setInterestForm({ ...interestForm, notes: e.target.value })} placeholder={tSafe(t, 'market.notesPlaceholder', 'Any additional information')} />
                 </div>
               </div>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setShowInterest(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Submitting...' : 'Express Interest'}</button>
+                <button type="button" className="btn btn-outline" onClick={() => setShowInterest(false)}>{tSafe(t, 'common.cancel', 'Cancel')}</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? tSafe(t, 'market.submittingCta', 'Submitting...') : tSafe(t, 'market.expressInterestSubmitCta', 'Express Interest')}</button>
               </div>
             </form>
           )}
@@ -243,13 +244,13 @@ export default function FarmerMarketTab() {
               <table>
                 <thead>
                   <tr>
-                    <th>Crop</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Buyer Type</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Action</th>
+                    <th>{tSafe(t, 'market.tableCropHeader', 'Crop')}</th>
+                    <th>{tSafe(t, 'market.tableQuantityHeader', 'Quantity')}</th>
+                    <th>{tSafe(t, 'market.tablePriceHeader', 'Price')}</th>
+                    <th>{tSafe(t, 'market.tableBuyerTypeHeader', 'Buyer Type')}</th>
+                    <th>{tSafe(t, 'market.tableStatusHeader', 'Status')}</th>
+                    <th>{tSafe(t, 'market.tableDateHeader', 'Date')}</th>
+                    <th>{tSafe(t, 'market.tableActionHeader', 'Action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -266,14 +267,14 @@ export default function FarmerMarketTab() {
                           background: interest.status === 'expressed' ? 'rgba(200,148,77,0.1)' : interest.status === 'matched' ? 'rgba(22,163,106,0.1)' : '#1E293B',
                           border: `1px solid ${interest.status === 'expressed' ? 'rgba(200,148,77,0.3)' : interest.status === 'matched' ? 'rgba(200,148,77,0.3)' : '#243041'}`,
                         }}>
-                          {interest.status}
+                          {tSafe(t, `market.status.${interest.status}`, interest.status)}
                         </span>
                       </td>
                       <td className="text-sm text-muted">{new Date(interest.createdAt).toLocaleDateString()}</td>
                       <td>
                         {interest.status === 'expressed' && (
                           <button className="btn btn-outline-danger btn-sm" onClick={() => withdrawInterest(interest.id)}>
-                            Withdraw
+                            {tSafe(t, 'market.withdrawCta', 'Withdraw')}
                           </button>
                         )}
                       </td>
@@ -283,7 +284,7 @@ export default function FarmerMarketTab() {
               </table>
             </div>
           ) : (
-            !showInterest && <EmptyState icon="🤝" title="No selling interests yet" message="Express interest to connect with buyers for your crops." compact />
+            !showInterest && <EmptyState icon="🤝" title={tSafe(t, 'market.noInterestsTitle', 'No selling interests yet')} message={tSafe(t, 'market.noInterestsMessage', 'Express interest to connect with buyers for your crops.')} compact />
           )}
         </div>
       </div>

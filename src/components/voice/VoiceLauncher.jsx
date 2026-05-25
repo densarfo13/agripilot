@@ -78,17 +78,26 @@ const CHIP = {
 };
 
 // Optimize First Action Completion (CRITICAL) §5 — floating
-// launcher made smaller + lower so it never visually competes
-// with the FirstActionGate's Done CTA. 56 → 48 px is still
-// well above Apple's 44px minimum tap target; bottom offset
-// dropped from 74 → 64 px so the chip sits closer to the
-// nav bar where it reads as a quiet utility, not a primary
-// affordance.
+// launcher sits ABOVE the bottom nav bar AND the FAB clear-zone.
+//
+// Bottom-stack vertical budget (mobile, iPhone safe area assumed):
+//   0px             → safe-area bottom
+//   0-56px          → BottomTabNav (5-6 icon tabs)
+//   56-96px         → CTA clear zone (Done buttons, primary action)
+//   96-144px        → floating launcher zone (this component)
+//   ↑ pages SHOULD pad their scroll containers by 96+ px to avoid
+//     content sliding under the launcher. The shared utility class
+//     `.has-floating-launcher` in src/index.css does exactly that;
+//     apply it to the page wrapper.
+//
+// The previous 64px value put the launcher inside the CTA clear
+// zone — it visually overlapped Done buttons on flows where the
+// user's primary action was bottom-aligned.
 const FLOATING = {
   btn: {
     position: 'fixed',
     right: '1rem',
-    bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+    bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))',
     width: 48,
     height: 48,
     borderRadius: 999,
