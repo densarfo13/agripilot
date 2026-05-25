@@ -521,11 +521,52 @@ export function createT(lang) {
 // ── React hook — live language state + bound t() ──
 let _listeners = [];
 
+// Dev-only console diagnostic so the locale-loading lifecycle is
+// visible in the browser console. No-op in production builds because
+// import.meta.env.DEV is folded to `false` by Vite at build time and
+// the entire branch dead-code-eliminates.
+function _devLog(...args) {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug('[i18n]', ...args);
+    }
+  } catch { /* SSR / locked-down — swallow */ }
+}
+
 export function useTranslation() {
   const [lang, _setLang] = useState(getLanguage);
+  // RUNTIME FIX (May 2026): the column-sparse boot dispatches
+  // `farroway:langchange` TWICE on a fresh language switch:
+  //   1. synchronously, the moment setLanguage(code) runs — fires
+  //      with detail=code; useTranslation's _setLang(code) updates
+  //      the lang state and React re-renders. Result: components
+  //      render with the new lang but T[key][code] is still undefined
+  //      (the column hasn't arrived), so t() falls back to English.
+  //   2. asynchronously, ~100ms-1s later, when columnLoader.loadColumn
+  //      resolves and merges T[key][code]. dispatches farroway:langchange
+  //      AGAIN with the same detail=code. _setLang(code) is a no-op
+  //      because React's useState sees the value didn't change — NO
+  //      re-render fires. UI is permanently stuck on the
+  //      English-fallback render from step 1.
+  //
+  // Fix: keep a monotonic version counter that increments on every
+  // farroway:langchange dispatch. Including it in useState forces a
+  // re-render even when lang is unchanged, so the post-column-load
+  // dispatch successfully refreshes the UI to the now-fully-loaded
+  // translations. Backward-compatible: existing consumers see lang
+  // as before; _version is internal.
+  const [, _bumpVersion] = useState(0);
 
   useEffect(() => {
-    const handler = (e) => _setLang(e.detail || getLanguage());
+    const handler = (e) => {
+      const newLang = e.detail || getLanguage();
+      _devLog('langchange event', { detail: e.detail, resolved: newLang });
+      _setLang(newLang);
+      // Force re-render even when newLang === previous lang — covers
+      // the post-column-load case (see comment above).
+      _bumpVersion((v) => v + 1);
+    };
     window.addEventListener('farroway:langchange', handler);
     return () => window.removeEventListener('farroway:langchange', handler);
   }, []);
