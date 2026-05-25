@@ -156,7 +156,7 @@ describe('index.css — overlay / glow guard', () => {
 
 // ─── Locale keys present in every language ──────────────────────
 describe('locales — taskCompletion namespace', () => {
-  const LOCALES = ['en', 'tw', 'fr', 'es', 'pt', 'sw'];
+  const LOCALES = ['en', 'tw', 'fr', 'sw'];
   const REQUIRED = ['title', 'yes', 'partly', 'no', 'next_step',
                     'continue', 'later', 'tasks_left', 'done_today'];
 

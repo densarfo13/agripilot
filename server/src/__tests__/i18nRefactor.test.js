@@ -25,7 +25,7 @@ function readFile(rel) {
 function readJson(rel) { return JSON.parse(readFile(rel)); }
 
 // ─── Locale files ────────────────────────────────────────────────
-const LOCALES = ['en', 'tw', 'fr', 'es', 'pt', 'sw'];
+const LOCALES = ['en', 'tw', 'fr', 'sw'];
 const REQUIRED_NAMESPACES = [
   'nav', 'dashboard', 'tasks', 'farm', 'settings',
   'tips', 'reminders', 'market', 'status', 'stages', 'crops', 'common',

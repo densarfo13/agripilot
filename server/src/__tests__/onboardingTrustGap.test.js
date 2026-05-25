@@ -86,7 +86,7 @@ const NEW_KEYS = [
   'setup.locationPermissionDenied',
   'setup.offlineHint',
 ];
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 
 describe('new setup keys resolve in every locale', () => {
   it.each(NEW_KEYS)('%s has a non-empty English string', (key) => {

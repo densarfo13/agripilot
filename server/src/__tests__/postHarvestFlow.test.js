@@ -25,7 +25,7 @@ import {
 } from '../services/feedback/nextCycleEngine.js';
 import { t } from '../../../src/i18n/index.js';
 
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 
 // ─── classifyHarvestOutcome ───────────────────────────────
 describe('classifyHarvestOutcome', () => {

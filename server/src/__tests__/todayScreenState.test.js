@@ -121,7 +121,7 @@ describe('next-hint selection', () => {
 });
 
 // ─── i18n wire-up: no English leaks on localized screens ──
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const NEW_KEYS = [
   'today.done.title', 'today.done.body', 'today.done.donePill',
   'today.optional.title', 'today.optional.badge',

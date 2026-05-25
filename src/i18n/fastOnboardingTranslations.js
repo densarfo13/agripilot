@@ -223,6 +223,18 @@ export const FAST_ONBOARDING_TRANSLATIONS = Object.freeze({
     'fast_onboarding.task.prepare_land.title': 'Siapkan lahan Anda',
     'fast_onboarding.home.mark_done':       'Tandai selesai',
   }),
+
+  ha: core({
+    'fast_onboarding.intro.title':    'Barka da zuwa Farroway',
+    'fast_onboarding.intro.cta':      'Ci gaba',
+    'fast_onboarding.farmer_type.new':      'Sabon manomi ne ni',
+    'fast_onboarding.farmer_type.existing': 'Na riga na yi noma',
+    'fast_onboarding.first_time.cta':      'Nemo amfanin gona mafi kyau a wajena',
+    'fast_onboarding.recommendation.title':'Amfanin gona mafi kyau ga yankinku',
+    'fast_onboarding.recommendation.start_with': 'Fara da {crop}',
+    'fast_onboarding.task.prepare_land.title': 'Shirya gonarku',
+    'fast_onboarding.home.mark_done':       'Yi alama gama',
+  }),
 });
 
 export function applyFastOnboardingOverlay(translations) {

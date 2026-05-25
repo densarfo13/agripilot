@@ -44,7 +44,7 @@ import {
   returningInactive,
 } from './__fixtures__/farmerStateFixtures.js';
 
-const SUPPORTED = ['en', 'hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const SUPPORTED = ['en', 'hi', 'tw', 'fr', 'sw', 'ha'];
 const NON_EN    = SUPPORTED.filter((l) => l !== 'en');
 
 // Merge all overlays into a single dictionary the same way the

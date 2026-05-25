@@ -315,6 +315,22 @@ export const ONBOARDING_V2_TRANSLATIONS = Object.freeze({
     'onboardingV2.first_value.cta.go_to_today':'Buka Hari Ini',
     'onboardingV2.progress.step':       'Langkah {n} dari {total}',
   }),
+
+  ha: coreLocale({
+    'onboardingV2.welcome.promise':     'Muna gaya muku abin da za ku yi a gona kowace rana.',
+    'onboardingV2.welcome.cta':         'Fara',
+    'onboardingV2.location.title':      'Yi amfani da wurinku',
+    'onboardingV2.location.helper':     'Wannan yana taimaka mana mu ba da shawarar amfanin gona da ayyukan daidai.',
+    'onboardingV2.location.detectCta':  'Gano wurina',
+    'onboardingV2.location.confirmYes': 'I, yi amfani da wannan',
+    'onboardingV2.growingType.title':   'Wanne ne ya fi siffanta wurin shukar ku?',
+    'onboardingV2.experience.title':    'Yaya yawan kwarewar noma ke da ku?',
+    'onboardingV2.recommendations.title':'Amfanin gona mafi kyau ga wurinku',
+    'onboardingV2.cropConfirm.startBtn':'Fara shirina',
+    'onboardingV2.first_value.task_title':'Aikinku na farko ya shirya',
+    'onboardingV2.first_value.cta.go_to_today':'Bude Yau',
+    'onboardingV2.progress.step':       'Mataki {n} daga {total}',
+  }),
 });
 
 /**

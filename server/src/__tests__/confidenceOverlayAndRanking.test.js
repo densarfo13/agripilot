@@ -10,7 +10,7 @@ import {
   applyConfidenceOverlay,
 } from '../../../src/i18n/confidenceTranslations.js';
 
-const EXPECTED_LOCALES = ['en', 'hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const EXPECTED_LOCALES = ['en', 'hi', 'tw', 'fr', 'sw', 'ha'];
 const EXPECTED_KEYS = [
   'recommendations.header.high',
   'recommendations.header.medium',

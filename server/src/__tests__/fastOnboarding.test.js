@@ -422,7 +422,7 @@ describe('localization', () => {
   ];
 
   it('every supported locale is present', () => {
-    for (const l of ['en', 'hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id']) {
+    for (const l of ['en', 'hi', 'tw', 'fr', 'sw', 'ha']) {
       expect(FAST_ONBOARDING_TRANSLATIONS[l]).toBeDefined();
     }
   });

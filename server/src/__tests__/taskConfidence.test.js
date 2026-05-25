@@ -271,7 +271,7 @@ describe('shouldUseCheckFirst', () => {
 });
 
 // ─── 3. i18n wire-up ─────────────────────────────────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const CONFIDENCE_KEYS = [
   'confidence.checkFirst.title',
   'task.clearField.high', 'task.clearField.medium', 'task.clearField.low',

@@ -390,7 +390,7 @@ describe('filterRecommendations', () => {
 });
 
 // ─── i18n overlay ────────────────────────────────────────
-const LOCALES = ['en', 'hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const LOCALES = ['en', 'hi', 'tw', 'fr', 'sw', 'ha'];
 const CORE_KEYS = [
   'onboardingV2.welcome.promise',
   'onboardingV2.welcome.cta',

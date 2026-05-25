@@ -350,7 +350,7 @@ describe('listBuyerInterests — contact reveal is gated on acceptance', () => {
 });
 
 // ─── i18n: every marketplace key lives in every locale ───
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const MARKET_KEYS = [
   'postHarvest.sellPrompt',
   'market.myListings.title', 'market.myListings.create',

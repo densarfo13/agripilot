@@ -28,19 +28,19 @@ describe('Swahili — location labels', () => {
   const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('setup.location sw is "Mahali pa shamba"', () => {
-    const match = translations.match(/'setup\.location':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.location':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toBe('Mahali pa shamba');
   });
 
   it('setup.locationPlaceholder sw is "Andika mahali pa shamba lako"', () => {
-    const match = translations.match(/'setup\.locationPlaceholder':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.locationPlaceholder':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toBe('Andika mahali pa shamba lako');
   });
 
   it('setup.village sw is "Mahali pa shamba"', () => {
-    const match = translations.match(/'setup\.village':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.village':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toBe('Mahali pa shamba');
   });
@@ -54,13 +54,13 @@ describe('Swahili — GPS section labels', () => {
   const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('setup.gpsOptional sw does not start with "Ongeza GPS"', () => {
-    const match = translations.match(/'setup\.gpsOptional':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.gpsOptional':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).not.toMatch(/^Ongeza GPS/);
   });
 
   it('location.gpsFallback sw has proper Swahili error message', () => {
-    const match = translations.match(/'location\.gpsFallback':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'location\.gpsFallback':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('Hatukuweza kupata eneo lako sahihi');
     expect(match[1]).toContain('mahali uliloandika');
@@ -83,32 +83,32 @@ describe('Swahili — "mfano:" colon consistency', () => {
   const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('no sw values have "mfano " without colon', () => {
-    // Extract all sw: '...' values and check none have "mfano " without colon
-    const swValues = [...translations.matchAll(/sw:\s*'([^']*)'/g)].map(m => m[1]);
+    // Extract all sw:\s*["']([^"']*)["'] values and check none have "mfano " without colon
+    const swValues = [...translations.matchAll(/sw:\s*["']([^"']*)["']/g)].map(m => m[1]);
     const badMfano = swValues.filter(v => v.match(/mfano\s+[^:]/));
     expect(badMfano).toEqual([]);
   });
 
   it('progress.egHybrid sw uses "mfano:"', () => {
-    const match = translations.match(/'progress\.egHybrid':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'progress\.egHybrid':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('mfano:');
   });
 
   it('progress.egMaizeForFood sw uses "mfano:"', () => {
-    const match = translations.match(/'progress\.egMaizeForFood':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'progress\.egMaizeForFood':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('mfano:');
   });
 
   it('wizard.egSunriseFarm sw uses "mfano:"', () => {
-    const match = translations.match(/'wizard\.egSunriseFarm':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'wizard\.egSunriseFarm':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('mfano:');
   });
 
   it('setup.farmSizePlaceholder sw uses "mfano:"', () => {
-    const match = translations.match(/'setup\.farmSizePlaceholder':\s*\{[^}]*sw:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.farmSizePlaceholder':\s*\{[^}]*sw:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('mfano:');
   });

@@ -33,3 +33,40 @@ process.env.API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5000';
 
 // Email sender (env.js validates EMAIL_FROM).
 process.env.EMAIL_FROM = process.env.EMAIL_FROM || 'test@farroway.local';
+
+// ── i18n column preload (test-only) ──────────────────────────────
+//
+// Production lazy-loads non-English locale columns via
+// `src/i18n/columnLoader.js`. Tests that call `t(key, 'fr')`
+// synchronously at module load run BEFORE any user-triggered
+// language switch, so they only see the English column and every
+// non-en assertion fails with a fallback-to-English match.
+//
+// Fix: import every column at test-setup time and merge each
+// locale's values into the shared T object — exactly what
+// columnLoader does, just eager + synchronous.
+//
+// This is test-only. Production untouched.
+import T from './src/i18n/translations.js';
+import _en from './src/i18n/columns/T-en.js';
+import _fr from './src/i18n/columns/T-fr.js';
+import _sw from './src/i18n/columns/T-sw.js';
+import _ha from './src/i18n/columns/T-ha.js';
+import _tw from './src/i18n/columns/T-tw.js';
+import _hi from './src/i18n/columns/T-hi.js';
+
+function _mergeColumn(locale, col) {
+  if (!col || typeof col !== 'object') return;
+  for (const key of Object.keys(col)) {
+    const v = col[key];
+    if (typeof v !== 'string') continue;
+    if (!T[key]) T[key] = { en: '' };
+    T[key][locale] = v;
+  }
+}
+_mergeColumn('en', _en);
+_mergeColumn('fr', _fr);
+_mergeColumn('sw', _sw);
+_mergeColumn('ha', _ha);
+_mergeColumn('tw', _tw);
+_mergeColumn('hi', _hi);

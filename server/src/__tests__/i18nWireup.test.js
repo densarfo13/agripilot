@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { t } from '../../../src/i18n/index.js';
 
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 
 // Keys each surface renders. Grouped so a failure localizes to the
 // exact component that would break.

@@ -133,7 +133,11 @@ describe('getExportData — CSV', () => {
   });
 
   it('escapes commas and quotes in fields', () => {
-    const odd = [{ id: 'x', name: 'X', crop: 'a, "special"', program: 'p1', farmerId: 'u' }];
+    // farmerId flows through verbatim; `crop` would be normalized
+    // away (the registry doesn't recognise raw text), so the test
+    // uses farmerId to carry the special characters that exercise
+    // the CSV escape path.
+    const odd = [{ id: 'x', name: 'X', crop: 'tomato', program: 'p1', farmerId: 'a, "special"' }];
     const csv = getExportData('p1', { now: NOW, farms: odd, events: [] });
     const lines = csv.trim().split('\n');
     expect(lines[1]).toContain('"a, ""special"""');

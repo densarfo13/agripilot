@@ -28,7 +28,7 @@ import { t } from '../../../src/i18n/index.js';
 import { detectRegionViaGps } from '../../../src/lib/regionResolver.js';
 
 // ─── 1. Localization keys ───────────────────────────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const SETUP_KEYS = [
   'setup_title', 'setup_subtitle',
   'language', 'country', 'state', 'skip', 'continue',

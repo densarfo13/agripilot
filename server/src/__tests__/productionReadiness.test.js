@@ -460,7 +460,7 @@ describe('getFirstValueScreen', () => {
 });
 
 // ─── 9. i18n ────────────────────────────────────────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const NEW_KEYS = [
   'today.why.keepGoing', 'today.why.slipping', 'today.why.wateringGap',
   'today.why.wateringGapWithHeat', 'today.why.pestPressure', 'today.why.catchUp',

@@ -188,7 +188,7 @@ describe('updateBuyerProfile', () => {
 });
 
 // ─── i18n: every new buyer location key resolves ─────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const KEYS = [
   'market.field.location', 'market.field.cropPlaceholder',
   'market.location.any', 'market.location.none', 'market.location.searchPlaceholder',

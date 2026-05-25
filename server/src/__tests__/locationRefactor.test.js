@@ -190,21 +190,23 @@ describe('i18n — location translation keys', () => {
     expect(translations).toContain("'setup.gpsOptional'");
   });
 
+  // Post column-split the reconstructed source uses JSON-style
+  // double quotes for values; the regex accepts either quote style.
   it('setup.location says "Enter your location" (not Village/Region)', () => {
-    const match = translations.match(/'setup\.location':\s*\{[^}]*en:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.location':\s*\{[^}]*en:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toBe('Enter your location');
   });
 
   it('placeholder includes example cities', () => {
-    const match = translations.match(/'setup\.locationPlaceholder':\s*\{[^}]*en:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.locationPlaceholder':\s*\{[^}]*en:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('Accra');
     expect(match[1]).toContain('Kumasi');
   });
 
   it('gpsOptional label mentions optional', () => {
-    const match = translations.match(/'setup\.gpsOptional':\s*\{[^}]*en:\s*'([^']*)'/);
+    const match = translations.match(/'setup\.gpsOptional':\s*\{[^}]*en:\s*["']([^"']*)["']/);
     expect(match).toBeTruthy();
     expect(match[1]).toContain('optional');
   });

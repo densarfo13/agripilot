@@ -164,6 +164,22 @@ export const GREETING_TRANSLATIONS = Object.freeze({
     'greeting.post_harvest.title':           'Panen selesai 👏',
     'greeting.post_harvest.subtitle':        'Mari rencanakan tanaman berikutnya',
   },
+  ha: {
+    'greeting.time.morning':                 'Barka da safiya 👋',
+    'greeting.time.afternoon':               'Barka da rana 👋',
+    'greeting.time.evening':                 'Barka da yamma 👋',
+    'greeting.first_use.title':              'Barka da zuwa 👋',
+    'greeting.first_use.subtitle':           'Ga abin da za ka fara da shi',
+    'greeting.active_day.subtitle_with_crop':'Mu kula da {crop}‍‍nku yau',
+    'greeting.active_day.subtitle_generic':  'Mu gama aikin gona na yau',
+    'greeting.done.title':                   'Aiki nagari 👍',
+    'greeting.done.subtitle':                'Ka gama na yau',
+    'greeting.inactive_return.title':        'Barka da dawowa 👋',
+    'greeting.inactive_return.subtitle':     'Mu koma kan turba',
+    'greeting.inactive_return.subtitle_many':'Ka rasa wasu kwanaki — fara daga nan',
+    'greeting.post_harvest.title':           'Girbi ya kammala 👏',
+    'greeting.post_harvest.subtitle':        'Mu shirya amfanin gona na gaba',
+  },
 });
 
 /**

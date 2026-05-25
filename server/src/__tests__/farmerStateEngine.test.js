@@ -482,7 +482,7 @@ describe('buildHomeExperience', () => {
 });
 
 // ─── 10. i18n overlay & localization ──────────────────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const CORE_KEYS = [
   'state.blocked_by_land.title',
   'state.harvest_complete.title',

@@ -108,6 +108,11 @@ export const FARMER_STATE_REGIONAL_TRANSLATIONS = Object.freeze({
     'state.blocked_by_land.why.monsoon_mixed':
       'Ladang Anda perlu persiapan sebelum musim hujan',
   },
+
+  ha: {
+    'state.blocked_by_land.why.tropical_manual':
+      'Gonarku tana buƙatar shiri da hannu kafin shuka',
+  },
 });
 
 /**
@@ -207,6 +212,16 @@ export const CORE_BRIDGES_BY_LOCALE = Object.freeze({
       'Sambungkan lagi untuk memperbarui panduan Anda',
     'state.next.check_today_task':
       'Periksa tugas hari ini untuk kembali ke jalurnya',
+  },
+  ha: {
+    'state.next.prepare_field_for_next_cycle':
+      'Shirya gona don zagayen na gaba',
+    'state.next.review_next_crop':
+      'Duba amfanin gona na gaba',
+    'state.next.reconnect_to_refresh':
+      'Sake haɗawa don sabunta shiriyarku',
+    'state.next.check_today_task':
+      'Duba aikin yau don komawa kan turba',
   },
 });
 

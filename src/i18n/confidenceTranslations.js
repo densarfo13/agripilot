@@ -145,6 +145,20 @@ export const CONFIDENCE_TRANSLATIONS = Object.freeze({
     'listing.freshness.medium':      'Terbaru',
     'listing.freshness.low':         'Mungkin kedaluwarsa',
   },
+  ha: {
+    'recommendations.header.high':   'Amfanin gona mafi kyau ga yankinku',
+    'recommendations.header.medium': 'Amfanin gona da aka ba da shawara ga yankinku',
+    'recommendations.header.low':    'Shawarwari sun yi kaɗan a yankinku',
+    'recommendations.sub.high':      'An zaɓa daga amfanin gona da ke yin sa\'a a wajenku',
+    'recommendations.sub.medium':    'Jeri na farko — gyara shi gwargwadon gonarku',
+    'recommendations.sub.low':       'Bayanan yankinku sun yi kaɗan — sake duba a hankali',
+    'location.confidence.high':      'Ana amfani da wurin da aka gano',
+    'location.confidence.medium':    'Tabbatar wannan ita ce gonarku',
+    'location.confidence.low':       'Ba mu da tabbas — da fatan zaɓi yankinku',
+    'listing.freshness.high':        'Jerin sabon',
+    'listing.freshness.medium':      'Na kwanan nan',
+    'listing.freshness.low':         'Yana iya zama tsoho',
+  },
 });
 
 /**

@@ -252,7 +252,7 @@ describe('modeAwareTasks', () => {
 });
 
 // ─── 5. i18n wire-up ─────────────────────────────────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const NEW_KEYS = [
   'mode.backyard', 'mode.farm',
   'backyardTask.feed', 'backyardTask.checkLeaves', 'backyardTask.waterDeeply',

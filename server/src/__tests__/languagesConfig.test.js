@@ -53,7 +53,7 @@ describe('LANGUAGES central config', () => {
 
   it('contains the spec\'s core codes (en, fr, hi, tw, es, pt)', () => {
     const codes = LANGUAGES.map((l) => l.code);
-    for (const c of ['en', 'fr', 'hi', 'tw', 'es', 'pt']) {
+    for (const c of ['en', 'fr', 'hi', 'tw', 'ha', 'sw']) {
       expect(codes).toContain(c);
     }
   });

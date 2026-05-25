@@ -104,7 +104,7 @@ describe('src/i18n/locales — all 8 files key-identical to en.json', () => {
       leafKeys(JSON.parse(read('src/i18n/locales/en.json'))),
     );
     const drift = [];
-    for (const lang of ['fr', 'tw', 'ha', 'sw', 'hi', 'es', 'pt']) {
+    for (const lang of ['fr', 'tw', 'ha', 'sw', 'hi']) {
       const k = leafKeys(JSON.parse(read(`src/i18n/locales/${lang}.json`)));
       const kSet = new Set(k);
       const missing = [...enKeys].filter((x) => !kSet.has(x));

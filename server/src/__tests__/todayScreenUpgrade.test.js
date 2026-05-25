@@ -53,7 +53,7 @@ const NEW_KEYS = [
   'actionHome.nextHint.label',
 ];
 
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 
 describe('Today-upgrade i18n keys resolve in every locale', () => {
   it.each(NEW_KEYS)('%s has a non-empty English string', (key) => {

@@ -328,6 +328,27 @@ export const FARMER_STATE_TRANSLATIONS = Object.freeze({
     'state.soft.based_on_last_update':     'Berdasarkan pembaruan terakhir Anda',
     'state.cta.open_today':                'Buka hari ini',
   }),
+
+  ha: minimalLocale({
+    'state.camera_issue.title':            'Duba abin da kamarar ta gano',
+    'state.stale_offline.title':           'Bisa sabuntawar ku ta ƙarshe',
+    'state.blocked_by_land.title':         'Jira kafin ka shuka',
+    'state.blocked_by_land.title.low':     'Gonarku ƙila tana buƙatar ƙarin shiri',
+    'state.field_reset.title':             'Gama tsabtace gona',
+    'state.harvest_complete.title':        'Girbi ya kammala 🌾',
+    'state.harvest_complete.title.low':    'Girbinku ƙila ya kammala',
+    'state.harvest_complete.title.medium': 'Girbi ƙila ya kammala',
+    'state.post_harvest.title':            'Bincike bayan girbi',
+    'state.weather_sensitive.title':       'Yanayi na iya canza shirinku na yau',
+    'state.first_use.title':               'Barka da zuwa — mu fara',
+    'state.returning_inactive.title':      'Mu koma kan turba',
+    'state.active_cycle.title':            'Yau a gonarku',
+    'state.off_season.title':              'Waje lokacin shuka',
+    'state.safe_fallback.title':           'Bude shiriya na yau',
+    'state.next.prepare_field_for_next_cycle': 'Shirya gona don zagayen na gaba',
+    'state.soft.based_on_last_update':     'Bisa sabuntawar ku ta ƙarshe',
+    'state.cta.open_today':                'Bude na yau',
+  }),
 });
 
 /**

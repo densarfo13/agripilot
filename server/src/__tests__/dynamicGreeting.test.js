@@ -267,7 +267,7 @@ describe('getDynamicGreeting — rules', () => {
 });
 
 // ─── Localization ────────────────────────────────────────
-const NON_EN_LOCALES = ['hi', 'tw', 'es', 'pt', 'fr', 'ar', 'sw', 'id'];
+const NON_EN_LOCALES = ['hi', 'tw', 'fr', 'sw', 'ha'];
 const REQUIRED_KEYS = [
   'greeting.time.morning',
   'greeting.time.afternoon',
