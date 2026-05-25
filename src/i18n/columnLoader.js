@@ -57,6 +57,19 @@ function _warn(memoKey, ...args) {
   catch { /* never propagate */ }
 }
 
+// Dev-only verbose log. Surfaces the lazy-load lifecycle so an
+// operator debugging "language switch shows English" can see
+// exactly which import() resolved, how long it took, and how many
+// keys were merged. No-op in production (Vite folds the env check).
+function _debug(...args) {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug('[i18n columnLoader]', ...args);
+    }
+  } catch { /* swallow */ }
+}
+
 /**
  * Static-import switch so Vite can statically resolve each
  * specifier and emit a separate chunk per locale.
@@ -123,9 +136,17 @@ export function loadColumn(locale) {
     _warn('unsupported:' + code, 'unsupported locale', code, '— falling back to English');
     return Promise.resolve(false);
   }
-  if (_loaded.has(code)) return Promise.resolve(true);
-  if (_inflight.has(code)) return _inflight.get(code);
+  if (_loaded.has(code)) {
+    _debug('loadColumn cache hit:', code);
+    return Promise.resolve(true);
+  }
+  if (_inflight.has(code)) {
+    _debug('loadColumn in-flight join:', code);
+    return _inflight.get(code);
+  }
 
+  const startedAt = Date.now();
+  _debug('loadColumn START:', code, '→ import("./columns/T-' + code + '.js")');
   const promise = _importColumn(code)
     .then((mod) => {
       const dict = mod && (mod.default || mod);
@@ -133,19 +154,24 @@ export function loadColumn(locale) {
         // English column is already inlined into translations.js
         // post-cutover; mark loaded and return success without merging.
         _loaded.add(code);
+        _debug('loadColumn en NOOP (eager)');
         return true;
       }
       if (!dict || typeof dict !== 'object') {
         _warn('badshape:' + code, 'column', code, 'has no usable default export');
         return false;
       }
-      _mergeColumn(code, dict);
+      const mergedCount = _mergeColumn(code, dict);
       _loaded.add(code);
+      _debug('loadColumn SUCCESS:', code,
+        '|', mergedCount, 'keys merged',
+        '|', (Date.now() - startedAt) + 'ms');
       return true;
     })
     .catch((err) => {
       _warn('importfail:' + code, 'column', code, 'failed to load:',
         err && err.message ? err.message : err);
+      _debug('loadColumn FAIL:', code, '|', (Date.now() - startedAt) + 'ms', err);
       return false;
     })
     .finally(() => { _inflight.delete(code); });
