@@ -99,14 +99,12 @@ const SKIP_FILE_RE = /\.(test|spec|stories)\.(js|jsx|ts|tsx)$/;
 // Re-measure after a migration batch:
 //   node scripts/ci/check-hardcoded-strings.mjs --update
 // 2026-05-25 — ratcheted DOWN 2125 → 2087 (-38). FarmerMarketTab.jsx
-// (the farmer-facing Sell page) fully migrated: 38 hardcoded JSX
-// literals replaced with tSafe(t, 'market.*', '…fallback') calls;
-// 46 new keys added to all 5 launch-complete column files
-// (en/fr/sw/ha/tw) — non-en columns use English text as
-// translator-fill placeholders. Hindi T-hi.js unchanged (baseline
-// gate handles).
+// (Sell page) fully migrated under the 'market.*' namespace.
+//
+// 2026-05-25 — ratcheted DOWN 2087 → 2056 (-31). FarmerStorageTab.jsx
+// fully migrated under the 'storage.*' namespace + reused common.save.
 const BASELINE = Number(process.env.HARDCODED_STRINGS_BASELINE)
-  || 2087;
+  || 2056;
 
 const GROWTH_TOLERANCE = 0;
 
