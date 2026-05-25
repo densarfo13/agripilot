@@ -41,11 +41,22 @@ export const FEATURE = Object.freeze({
   SATELLITE_INTELLIGENCE:   'ENABLE_SATELLITE_INTELLIGENCE',
   YIELD_PREDICTION:         'ENABLE_YIELD_PREDICTION',
   NGO_ANALYTICS:            'ENABLE_NGO_ANALYTICS',
+  // Scan v4/v5 — visible contextual diagnosis (v4) vs. invisible
+  // adaptive learning (v5). v4 can be ON by default for the
+  // pilot cohort; v5 stays OFF until cohort-level outcome data
+  // is large enough to learn from without overfitting.
+  SCAN_V4:                  'ENABLE_SCAN_V4',
+  SCAN_V5_INVISIBLE:        'ENABLE_SCAN_V5_INVISIBLE',
+  SCAN_REGIONAL_RISK:       'ENABLE_SCAN_REGIONAL_RISK',
+  SCAN_YIELD_IMPACT:        'ENABLE_SCAN_YIELD_IMPACT',
+  SCAN_OUTCOME_LEARNING:    'ENABLE_SCAN_OUTCOME_LEARNING',
 });
 
-// Every feature defaults to OFF. Production rolls them on per
-// the spec's Phase 1/2/3 sequence by flipping env vars or
-// flipping the per-user localStorage override.
+// Every feature defaults to OFF except SCAN_V4 — v4 is the
+// visible composer that wraps existing engines into the unified
+// shape; OFF would mean surfaces have to query each sub-engine
+// individually, which is the pre-v4 behaviour we want to retire.
+// All other flags stay OFF until cohort rollout flips them.
 const _DEFAULTS = Object.freeze({
   [FEATURE.SUPPLIER_INTELLIGENCE]:    false,
   [FEATURE.MARKETPLACE_INTELLIGENCE]: false,
@@ -53,6 +64,11 @@ const _DEFAULTS = Object.freeze({
   [FEATURE.SATELLITE_INTELLIGENCE]:   false,
   [FEATURE.YIELD_PREDICTION]:         false,
   [FEATURE.NGO_ANALYTICS]:            false,
+  [FEATURE.SCAN_V4]:                  true,
+  [FEATURE.SCAN_V5_INVISIBLE]:        false,
+  [FEATURE.SCAN_REGIONAL_RISK]:       false,
+  [FEATURE.SCAN_YIELD_IMPACT]:        false,
+  [FEATURE.SCAN_OUTCOME_LEARNING]:    false,
 });
 
 const _LS_PREFIX = 'farroway_feature_';

@@ -94,7 +94,19 @@ describe('featureFlags', () => {
   beforeEach(() => _s.clear());
 
   it('every Phase 2 flag defaults to OFF', () => {
-    for (const flag of Object.values(FEATURE)) {
+    // Phase 2 = the six engines this test file ships for.
+    // SCAN_V4 (added in scan v4/v5 rollout) defaults to ON
+    // because v4 is the visible composer that replaces the
+    // pre-v4 per-engine call pattern. Exclude it explicitly.
+    const PHASE2 = [
+      FEATURE.SUPPLIER_INTELLIGENCE,
+      FEATURE.MARKETPLACE_INTELLIGENCE,
+      FEATURE.SOIL_INTELLIGENCE,
+      FEATURE.SATELLITE_INTELLIGENCE,
+      FEATURE.YIELD_PREDICTION,
+      FEATURE.NGO_ANALYTICS,
+    ];
+    for (const flag of PHASE2) {
       expect(isFeatureEnabled(flag)).toBe(false);
     }
   });
