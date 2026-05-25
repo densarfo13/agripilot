@@ -69,8 +69,10 @@ const SKIP_FILE_RE = /\.(test|spec|stories)\.(js|jsx|ts|tsx)$/;
 // Initial baseline captured 2026-05-25 against origin/master tip
 // = 76ea512a (post deployment-hardening merge).
 //
-// Leak distribution at baseline:
-//   313 files have leaks, 2497 leaks total
+// Leak distribution at baseline (after the tightened-heuristic pass
+// that eliminated 372 false positives from JSX boolean-guard fragments
+// like `0 && step` that leaked between `>` and `<`):
+//   177 files have leaks, 2125 leaks total
 //   Top offenders:
 //     150 src/pages/FarmerDetailPage.jsx       (admin / NGO ops)
 //     137 src/pages/ApplicationDetailPage.jsx  (admin)
@@ -97,7 +99,7 @@ const SKIP_FILE_RE = /\.(test|spec|stories)\.(js|jsx|ts|tsx)$/;
 // Re-measure after a migration batch:
 //   node scripts/ci/check-hardcoded-strings.mjs --update
 const BASELINE = Number(process.env.HARDCODED_STRINGS_BASELINE)
-  || 2497;
+  || 2125;
 
 const GROWTH_TOLERANCE = 0;
 
@@ -115,6 +117,16 @@ function looksVisible(s) {
   if (t.length < 3) return false;
   if (!/[a-zA-Z]/.test(t)) return false;
   if (!/[aeiouAEIOU]/.test(t)) return false;     // filters btn, csv, hr, etc.
+  // Filter JSX boolean-guard fragments. JSX expressions like
+  // `{step >= 0 && step < n && <Foo>}` leak the text between `>` and
+  // the embedded `<` to our scanner as e.g. `"= 0 && step"` or
+  // `"0 && step"`. Reject anything starting with comparator/operator
+  // residue or containing `&&` / `||` — those are never real UI
+  // strings (no user-facing copy contains JS boolean operators in
+  // plain text).
+  if (/&&|\|\|/.test(t)) return false;
+  if (/^[=!<>?:]\s/.test(t)) return false;
+  if (/^[0-9]/.test(t) && !/\s/.test(t)) return false; // bare number tokens
   if (/^[A-Z][A-Z0-9_]+$/.test(t)) return false; // enum code
   if (/^[a-z][a-z0-9-]+$/.test(t) && !t.includes(' ')) return false; // single-word kebab id
   if (/^(https?|tel|mailto|data):/.test(t)) return false; // URLs
@@ -123,6 +135,10 @@ function looksVisible(s) {
     return false; // file paths / assets
   if (/^\/[\w./?=&-]+$/.test(t)) return false; // url paths
   if (/^[A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*$/.test(t)) return false; // dotted ids
+  // Require AT LEAST ONE letter sequence of 3+ chars surrounded by
+  // word boundaries — a "real word". Filters miscellaneous JS
+  // residue like "= 0 &" that survives the above.
+  if (!/\b[A-Za-z]{3,}\b/.test(t)) return false;
   return true;
 }
 
