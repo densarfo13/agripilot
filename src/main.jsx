@@ -56,6 +56,13 @@ import { installExtensionNoiseFilter } from './lib/console/extensionNoiseFilter.
 // import; the install call below is gated on import.meta.env.DEV
 // so production tree-shakes the audit surface out entirely.
 import { installI18nDevHandle } from './i18n/devConsoleAudit.js';
+// i18n mixed-language mismatch detector — DEV-ONLY runtime probe
+// that walks the rendered DOM and warns when a non-English locale
+// is active but a known-English string from T-en is showing. The
+// module's entire body dead-strips in production via the
+// `if (!DEV) return;` guard at the top of installMismatchDetector
+// + Vite's import.meta.env.DEV constant folding.
+import { installMismatchDetector } from './i18n/devMismatchDetector.js';
 import {
   LOOP_STATE_KEYS,
   FEATURE_EVENT_SYNC,
@@ -91,6 +98,11 @@ try { installExtensionNoiseFilter(); } catch { /* swallow */ }
 try {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
     installI18nDevHandle();
+    // Mixed-language detector — surfaces every English literal that
+    // renders in the DOM while a non-English locale is active.
+    // Logs once per (text, selector) tuple so steady-state console
+    // stays quiet after the initial sweep.
+    installMismatchDetector();
   }
 } catch { /* swallow */ }
 
