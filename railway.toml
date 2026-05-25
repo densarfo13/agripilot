@@ -1,50 +1,55 @@
 # ──────────────────────────────────────────────────────────────
-# Railway deployment configuration
+# Railway deployment configuration — SOURCE OF TRUTH
 # ──────────────────────────────────────────────────────────────
-# May 2026 build-fail diagnosis: previous buildCommand was
-#   `npm ci && cd server && npm ci && npx prisma generate
-#    && cd .. && npx vite build`
-# which SKIPPED the TypeScript compile step for
-# server/intelligence/. server/src/app.js + server.js both
-# import from `../intelligence/dist/index.js`, so a fresh
-# Railway build that didn't ship pre-committed dist files
-# would crash on boot with `Cannot find module
-# '../intelligence/dist/index.js'`.
 #
-# Fix: delegate to the canonical `npm run build` script, which
-# already chains `vite build && cd server && npx prisma generate
-# && npx tsc -p intelligence/tsconfig.json` in the right order.
-# This way the buildCommand stays in sync with what every dev
-# runs locally — no drift possible.
+# Build pipeline: DOCKERFILE (NOT nixpacks).
+#
+# Railway auto-detects the Dockerfile in the repo root and uses
+# it as the build source. The `builder = "nixpacks"` setting that
+# previously lived here was a no-op — Railway prioritises Dockerfile
+# detection over nixpacks config, and the May 2026 audit confirmed
+# the live builds were Dockerfile-based despite this file saying
+# otherwise. The contradiction was the root cause of an operator
+# debugging session: anyone reading railway.toml expected nixpacks
+# semantics (auto-installed deps + standard start command) but the
+# actual build ran the Dockerfile's RUN steps which install + build
+# explicitly. Removed for clarity.
+#
+# If you want to switch back to nixpacks: DELETE the Dockerfile at
+# the repo root AND replace this file's [build] block with:
+#     [build]
+#     builder = "nixpacks"
+#     buildCommand = "npm ci && cd server && npm ci && cd .. && npm run build:safe"
+# Don't leave both in place — the deployment-sources guard
+# (scripts/ci/check-deployment-sources.mjs) fails the build if
+# both a Dockerfile AND a nixpacks builder declaration coexist.
+#
+# Deploy path: scripts/deploy/deploy-railway.mjs
+#   That script is the SINGLE supported entrypoint for production
+#   deploys. It auto-fast-forwards local master, writes BUILD_SHA
+#   + BUILD_TIMESTAMP files (Dockerfile copies them into the image
+#   so /api/health can report the deployed commit), then runs
+#   `railway up` and verifies the deployment SHA matches what was
+#   uploaded. See docs/ops/DEPLOYMENT_RUNBOOK.md.
 
 [build]
-builder = "nixpacks"
-# `npm run build:safe` chains:
-#   1. npm run check:assets            — fails if realVisuals.jsx references
-#                                        any path that doesn't exist on disk
-#                                        OR contains a .webp.jpeg double-ext
-#                                        OR has a hardcoded /assets/realism/
-#                                        literal outside the registry.
-#   2. npm run check:production-assets — fails if any of the 11 canonical
-#                                        files (realism trio in both .jpeg
-#                                        + .webp + brand icons) is missing
-#                                        from public/.
-#   3. npm run build                   — vite build + prisma generate +
-#                                        intelligence tsc.
-# Failing either guard at build time means the deploy never ships a
-# broken public/ tree — the same files the realism-fallback middleware
-# in server/src/app.js relies on are verified BEFORE the container boots.
-buildCommand = "npm ci && cd server && npm ci && cd .. && npm run build:safe"
+# Empty [build] block intentional — Railway uses the Dockerfile.
+# Dockerfile lives at the repo root; see also .dockerignore for
+# the build-context filter list.
 
 [deploy]
 # `npm start` resolves to:
 #   node scripts/prisma-deploy-with-baseline.mjs
 #     && cd server && node scripts/init-admin.mjs && node src/server.js
-# which is safe (prisma-deploy-with-baseline.mjs is non-destructive
-# and the server boots on $PORT).
+# Non-destructive on every run; safe to restart at any time.
 startCommand = "npm start"
+
+# Restart policy: bounded retries so a true crashloop (config bug,
+# missing env var) surfaces in Railway's UI instead of silently
+# absorbing the failure.
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
 [service]
+# Internal container port. Railway maps the public domain to this.
 internalPort = 4000
