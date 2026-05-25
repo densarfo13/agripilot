@@ -130,34 +130,47 @@ if (status && !ALLOW_DIRTY) {
 }
 log('  clean');
 
-// ─── Pre-flight 4: sync with origin ─────────────────────────
-log('Pre-flight 4/5: syncing with origin');
-try { run('git fetch origin master'); }
+// ─── Pre-flight 4: sync with upstream ───────────────────────
+// For master deploys, upstream is origin/master. For --allow-non-master
+// flows (hotfix branches), upstream is origin/<currentBranch>. Both
+// must match the local HEAD before we ship — otherwise the build
+// context wouldn't reflect what's on the remote anyone else can review.
+const upstreamBranch = (branch === 'master' || !ALLOW_NON_MASTER)
+  ? 'master'
+  : branch;
+const upstreamRef = `origin/${upstreamBranch}`;
+log(`Pre-flight 4/5: syncing with ${upstreamRef}`);
+try { run(`git fetch origin ${upstreamBranch}`); }
 catch (err) { fail(1, `git fetch failed: ${err.message}`); }
 
 const localHead = run('git rev-parse HEAD');
-const originHead = run('git rev-parse origin/master');
+let originHead;
+try { originHead = run(`git rev-parse ${upstreamRef}`); }
+catch {
+  fail(1, `upstream ${upstreamRef} not found on origin — push the branch first.`);
+}
 log(`  local HEAD       : ${localHead}`);
-log(`  origin/master    : ${originHead}`);
+log(`  ${upstreamRef.padEnd(16)} : ${originHead}`);
 
 if (localHead !== originHead) {
   // Local is behind (or ahead, or diverged).
-  const behind = run(`git rev-list --count HEAD..origin/master`);
-  const ahead  = run(`git rev-list --count origin/master..HEAD`);
+  const behind = run(`git rev-list --count HEAD..${upstreamRef}`);
+  const ahead  = run(`git rev-list --count ${upstreamRef}..HEAD`);
   if (Number(behind) > 0 && Number(ahead) === 0) {
     // Fast-forward possible.
     if (!AUTO_PULL) {
       fail(1,
-        `local master is behind origin/master by ${behind} commit(s).\n`
+        `local ${branch} is behind ${upstreamRef} by ${behind} commit(s).\n`
         + 'Re-run with --auto-pull to fast-forward, or pull manually:\n'
-        + '  git pull --ff-only origin master');
+        + `  git pull --ff-only origin ${upstreamBranch}`);
     }
-    log(`  fast-forwarding local master (${behind} commits behind)`);
-    run('git merge --ff-only origin/master');
+    log(`  fast-forwarding local ${branch} (${behind} commits behind)`);
+    run(`git merge --ff-only ${upstreamRef}`);
   } else {
     fail(1,
-      `local master has diverged from origin/master `
-      + `(${ahead} ahead, ${behind} behind). Resolve manually before deploying.`);
+      `local ${branch} has diverged from ${upstreamRef} `
+      + `(${ahead} ahead, ${behind} behind). Resolve manually before deploying.\n`
+      + 'For hotfix branches: push your local branch first, then re-run.');
   }
 }
 
