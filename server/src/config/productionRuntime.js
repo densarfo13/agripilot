@@ -30,6 +30,8 @@
  *     `grep '^\[Farroway\]' railway.log` returns the boot summary.
  */
 
+import { readFileSync, existsSync } from 'node:fs';
+
 let _emitted = false;
 
 const REQUIRED_BACKEND = Object.freeze([
@@ -153,9 +155,139 @@ function _isTest() {
  *
  *   Output: short string, ≤ 64 chars, never empty.
  */
+/**
+ * _readFile — synchronous file read with a single-shot in-process
+ * cache. Resolves the file once per process so a /api/health handler
+ * called thousands of times doesn't hit the filesystem each call.
+ * Returns trimmed contents or null on any error.
+ */
+const _fileCache = new Map();
+function _readFile(path) {
+  if (!path) return null;
+  if (_fileCache.has(path)) return _fileCache.get(path);
+  let val = null;
+  try {
+    if (existsSync(path)) {
+      const raw = readFileSync(path, 'utf8').trim();
+      if (raw && raw !== 'unknown') val = raw;
+    }
+  } catch { /* swallow */ }
+  _fileCache.set(path, val);
+  return val;
+}
+
+/**
+ * resolveGitSha — the deployed commit SHA. Hardening Pass 2 added
+ * a deploy-time file write (scripts/deploy/deploy-railway.mjs writes
+ * BUILD_SHA at repo root before `railway up`, Dockerfile copies it
+ * into the image at /app/BUILD_SHA). The runtime reads that file
+ * first, then falls back to whatever env vars the host injects.
+ *
+ * Priority:
+ *   1. FARROWAY_BUILD_SHA_FILE  — path written by Dockerfile ENV
+ *      (the canonical hardened path — guarantees the SHA matches
+ *      what the deploy script uploaded)
+ *   2. RAILWAY_GIT_COMMIT_SHA   — Railway-injected when available
+ *   3. RENDER_GIT_COMMIT        — Render compatibility
+ *   4. VERCEL_GIT_COMMIT_SHA    — Vercel compatibility
+ *   5. SOURCE_COMMIT            — Heroku / generic CI
+ *   6. FARROWAY_COMMIT_SHA      — manual override
+ *   7. null                     — unknown
+ *
+ * Returns a 40-char hex SHA, a short form, or null.
+ */
+export function resolveGitSha() {
+  try {
+    const env = (typeof process !== 'undefined' && process.env) || {};
+    const fromFile = _readFile(env.FARROWAY_BUILD_SHA_FILE);
+    if (fromFile) return fromFile.slice(0, 64);
+    const candidates = [
+      env.RAILWAY_GIT_COMMIT_SHA,
+      env.RENDER_GIT_COMMIT,
+      env.VERCEL_GIT_COMMIT_SHA,
+      env.SOURCE_COMMIT,
+      env.FARROWAY_COMMIT_SHA,
+    ];
+    for (const v of candidates) {
+      if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 64);
+    }
+  } catch { /* swallow */ }
+  return null;
+}
+
+/**
+ * resolveBuildTimestamp — when the deploy script wrote BUILD_TIMESTAMP
+ * (an ISO 8601 string). Falls back to null if the file is missing
+ * or has the placeholder value the Dockerfile shim writes for local
+ * `docker build` runs.
+ */
+export function resolveBuildTimestamp() {
+  try {
+    const env = (typeof process !== 'undefined' && process.env) || {};
+    const fromFile = _readFile(env.FARROWAY_BUILD_TIMESTAMP_FILE);
+    if (fromFile) return fromFile;
+    if (env.FARROWAY_BUILD_TIMESTAMP) return String(env.FARROWAY_BUILD_TIMESTAMP);
+  } catch { /* swallow */ }
+  return null;
+}
+
+/**
+ * resolveDeploymentId — Railway's per-deploy UUID. Useful to
+ * correlate /api/health responses with a specific Railway build
+ * in the dashboard. Falls back to null when not on Railway.
+ */
+export function resolveDeploymentId() {
+  try {
+    const env = (typeof process !== 'undefined' && process.env) || {};
+    return env.RAILWAY_DEPLOYMENT_ID
+        || env.RENDER_INSTANCE_ID
+        || null;
+  } catch { return null; }
+}
+
+/**
+ * resolveEnvironment — the deploy target name. 'production',
+ * 'staging', 'preview', etc. Falls back to NODE_ENV when no
+ * platform-specific var is set.
+ */
+export function resolveEnvironment() {
+  try {
+    const env = (typeof process !== 'undefined' && process.env) || {};
+    return env.RAILWAY_ENVIRONMENT_NAME
+        || env.RAILWAY_ENVIRONMENT
+        || env.RENDER_SERVICE_TYPE
+        || env.NODE_ENV
+        || 'unknown';
+  } catch { return 'unknown'; }
+}
+
+/**
+ * resolveReleaseVersion — the human-meaningful release name. Falls
+ * through to the semver from package.json when no SENTRY_RELEASE /
+ * APP_VERSION is wired. Distinct from resolveGitSha (40-char hex)
+ * and resolveBuildVersion (backward-compat field that may be either
+ * a SHA or a semver depending on which env var won).
+ */
+export function resolveReleaseVersion() {
+  try {
+    const env = (typeof process !== 'undefined' && process.env) || {};
+    return env.SENTRY_RELEASE
+        || env.APP_VERSION
+        || env.npm_package_version
+        || null;
+  } catch { return null; }
+}
+
 export function resolveBuildVersion() {
   try {
     const env = (typeof process !== 'undefined' && process.env) || {};
+    // Hardening Pass 2: prefer the file written by the deploy script
+    // — guarantees the version stamp matches what `railway up` actually
+    // uploaded, closing the May 2026 stale-deploy gap where Railway
+    // injected its own deployment ID for a build that did not reflect
+    // origin/master.
+    const fromFile = _readFile(env.FARROWAY_BUILD_SHA_FILE);
+    if (fromFile) return fromFile.slice(0, 64);
     const candidates = [
       env.RAILWAY_GIT_COMMIT_SHA,
       env.RAILWAY_DEPLOYMENT_ID,

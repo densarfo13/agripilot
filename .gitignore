@@ -14,3 +14,10 @@ website/
 docs/
 .DS_Store
 Thumbs.db
+
+# Deploy-time build metadata — written by scripts/deploy/deploy-railway.mjs
+# before `railway up` so the Dockerfile can bake the deployed commit's SHA
+# into the running container. The deploy script cleans these up on exit;
+# we ignore them here so an interrupted deploy can't commit stale metadata.
+/BUILD_SHA
+/BUILD_TIMESTAMP

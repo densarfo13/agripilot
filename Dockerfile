@@ -12,6 +12,23 @@ RUN cd server && npm install --omit=dev
 # Copy all source
 COPY . .
 
+# ─── Build-metadata fallback ─────────────────────────────────
+# scripts/deploy/deploy-railway.mjs writes BUILD_SHA + BUILD_TIMESTAMP
+# at the repo root before `railway up`, so when the `COPY . .` above
+# runs they land at /app/BUILD_SHA and /app/BUILD_TIMESTAMP and the
+# runtime resolver in server/src/config/productionRuntime.js reads
+# them via FARROWAY_BUILD_SHA_FILE / FARROWAY_BUILD_TIMESTAMP_FILE.
+#
+# Fallback shim: if a developer or CI runs `docker build` directly
+# (bypassing the deploy script), the files are missing. Write
+# placeholder values so the runtime can still report "unknown"
+# instead of failing. The placeholder is "unknown" not a fake SHA
+# so /api/health makes the absence visible to operators.
+RUN if [ ! -f /app/BUILD_SHA ]; then echo "unknown" > /app/BUILD_SHA; fi && \
+    if [ ! -f /app/BUILD_TIMESTAMP ]; then date -u +"%Y-%m-%dT%H:%M:%SZ" > /app/BUILD_TIMESTAMP; fi
+ENV FARROWAY_BUILD_SHA_FILE=/app/BUILD_SHA
+ENV FARROWAY_BUILD_TIMESTAMP_FILE=/app/BUILD_TIMESTAMP
+
 # Generate Prisma client + build intelligence TS + build frontend
 RUN cd server && npx prisma generate
 RUN cd server/intelligence && npx tsc --project tsconfig.json && cp -r lib dist/lib
