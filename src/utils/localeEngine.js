@@ -180,10 +180,21 @@ export function saveFarmLanguage(
  * country isn't in the map.
  */
 export function getLanguageOptionsForCountry(country) {
-  if (!country) return ['en'];
-  const row = LOCATION_LANGUAGE_MAP[country];
-  if (row && Array.isArray(row.options)) return row.options.slice();
-  return ['en'];
+  // Country known + mapped → return the curated short list for that
+  // country (en + the local languages most likely to be useful).
+  if (country) {
+    const row = LOCATION_LANGUAGE_MAP[country];
+    if (row && Array.isArray(row.options) && row.options.length > 0) {
+      return row.options.slice();
+    }
+  }
+  // Country unknown OR not in the map → fall through to the FULL
+  // supported-languages list so the farmer can still pick any of
+  // the shipped locales. Previous behaviour returned ['en'] which
+  // silently hid every non-English option for users outside the
+  // 6 hardcoded countries (Ghana/Nigeria/India/US/France/Spain) —
+  // the reported "I only see English" symptom.
+  return Object.keys(SUPPORTED_LANGUAGES);
 }
 
 // ── 7. shouldShowLanguageSuggestion ───────────────────────────

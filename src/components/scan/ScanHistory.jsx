@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { getScanHistory } from '../../data/scanHistory.js';
+import SafeImage from '../common/SafeImage.jsx';
 
 const STYLES = {
   wrap: {
@@ -136,7 +137,17 @@ export default function ScanHistory({ limit = 6 }) {
                 data-testid={`scan-history-row-${entry.id}`}
               >
                 {entry.thumbnail ? (
-                  <img src={entry.thumbnail} alt="" style={STYLES.thumb} />
+                  // SafeImage swaps to a calm fallback when the
+                  // stored thumbnail is a stale blob URL or
+                  // malformed base64 \u2014 prevents the broken-"?"
+                  // icon the field reports when an older scan's
+                  // image URL has expired.
+                  <SafeImage
+                    src={entry.thumbnail}
+                    alt=""
+                    style={STYLES.thumb}
+                    testId={`scan-history-thumb-${entry.id}`}
+                  />
                 ) : (
                   <div style={STYLES.thumbPlaceholder} aria-hidden="true">{'\uD83C\uDF31'}</div>
                 )}
