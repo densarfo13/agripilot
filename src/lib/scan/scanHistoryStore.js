@@ -117,7 +117,33 @@ function _makeId() {
  */
 export function saveScanUseful(result, ctx = {}) {
   const safeResult = (result && typeof result === 'object') ? result : {};
-  const id = String(safeResult.scanId || ctx.id || _makeId());
+  // Allow null/undefined ctx — defensively coerce to {} so the
+  // gate below never throws on its property reads.
+  const safeCtx = (ctx && typeof ctx === 'object') ? ctx : {};
+  const id = String(safeResult.scanId || safeCtx.id || _makeId());
+
+  // Scan Trust Layer gate — reject entries that carry NEITHER
+  // an image NOR a diagnosis (an empty shell that would render
+  // as a broken card in history). Either alone is enough:
+  //   • image-only is rare but valid (user saved a photo before
+  //     analysis completed offline)
+  //   • diagnosis-only is the manual-symptom-fallback path (user
+  //     typed in notes when the camera failed)
+  //   • the empty case is what we reject — no image, no decision,
+  //     no possibleIssue, no category → there's nothing to render
+  //     and nothing to follow up on
+  const hasImage = !!(
+       safeCtx.thumbnail || safeCtx.imageUrl
+    || safeResult.imageUrl || safeResult.thumbnail
+  );
+  const hasDiagnosis = !!(
+       safeResult.category
+    || safeResult.possibleIssue
+    || (safeResult.decision && typeof safeResult.decision === 'object')
+  );
+  if (!hasImage && !hasDiagnosis) {
+    return null;
+  }
 
   // Idempotency: if this scanId already in history, return it.
   const list = _read();
