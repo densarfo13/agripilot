@@ -11,12 +11,13 @@ import React from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { getCropLabel } from '../utils/crops.js';
 
+import { normalizeCrop } from '../config/crops.js';
 export default function FarmSnapshotCard({ profile, onEdit }) {
   const { t, lang } = useTranslation();
 
   if (!profile) return null;
 
-  const cropName = getCropLabel(profile.crop || profile.cropType || '', lang);
+  const cropName = getCropLabel(normalizeCrop(profile) || '', lang);
 
   // GPS presence flag — used for checkmark display
   const hasGps = !!(profile?.latitude && profile?.longitude);

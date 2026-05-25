@@ -35,6 +35,7 @@
 
 import { getBaseYieldKgPerHa } from './cropBaseYields.js';
 
+import { normalizeCrop } from '../../config/crops.js';
 const SCORE_FLOOR  = 0.5;
 const SCORE_CEILING = 1.2;
 const SCORE_RANGE  = SCORE_CEILING - SCORE_FLOOR; // 0.7
@@ -86,7 +87,7 @@ export function estimateYield({ crop, landHa, score } = {}) {
  */
 export function estimateForRow(row) {
   if (!row || typeof row !== 'object') return estimateYield({});
-  const crop = row.crop || row.cropType || row?.farm?.crop || '';
+  const crop = normalizeCrop(row) || row?.farm?.crop || '';
   const landHa =
     row.landHa
     ?? row.landSize
@@ -124,7 +125,7 @@ export function estimateTotalYield(rows) {
       counted += 1;
       continue;
     }
-    const crop = row.crop || row.cropType || row?.farm?.crop || '';
+    const crop = normalizeCrop(row) || row?.farm?.crop || '';
     if (!crop) { skipped += 1; continue; }
     const { kg } = estimateForRow(row);
     if (kg > 0) {

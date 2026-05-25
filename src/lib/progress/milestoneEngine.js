@@ -16,6 +16,8 @@
  * not gamification. No XP bars, no confetti per-task.
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 function countFirstCompletion(completions) {
   if (!Array.isArray(completions)) return 0;
   return completions.filter((c) => c && (c.completed || c.status === 'complete')).length;
@@ -36,7 +38,9 @@ function uniqueCompletionDays(completions) {
 
 function farmIsSetUp(farm) {
   if (!farm || typeof farm !== 'object') return false;
-  const crop  = farm.crop || farm.cropType;
+  // normalizeCrop returns '' for missing/blank either field. The
+  // truthy check covers the "has a crop been picked" semantic.
+  const crop  = normalizeCrop(farm);
   const size  = farm.normalizedAreaSqm || farm.size;
   const stage = farm.cropStage || farm.stage;
   const country = farm.countryCode || farm.country;

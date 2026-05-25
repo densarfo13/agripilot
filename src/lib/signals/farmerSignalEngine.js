@@ -40,6 +40,7 @@
 
 import { triageFarmHealthIssue, CATEGORY_LABELS, NEXT_STEPS } from '../issues/healthTriageEngine.js';
 
+import { normalizeCrop } from '../../config/crops.js';
 // ─── Scoring constants ───────────────────────────────────────────
 export const SCORE_WEIGHTS = Object.freeze({
   SYMPTOM_PRESENT:        20,   // farmer took the time to describe a problem
@@ -274,7 +275,7 @@ export function getFarmerSignals({
   let baseConfidence = 'low';
   if (symptomReport && typeof symptomReport === 'object') {
     triage = triageFarmHealthIssue({
-      crop:              (farm && (farm.crop || farm.cropType)) || symptomReport.crop || null,
+      crop:              (farm && (normalizeCrop(farm))) || symptomReport.crop || null,
       region:            (farm && (farm.location || farm.stateCode)) || null,
       symptoms:          symptomReport.symptoms || [],
       affectedPart:      symptomReport.affectedPart || null,

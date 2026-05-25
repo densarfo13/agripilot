@@ -42,6 +42,7 @@
 
 import { buildFarmActionPlan } from './farmActionPlan.js';
 import { estimateYield }       from './yieldEngine.js';
+import { normalizeCrop } from '../../config/crops.js';
 import {
   matchCropRiskPatterns,
   normalizeCropKey,
@@ -365,7 +366,7 @@ export function computeFarrowayScore(ctx = {}) {
   const dateStr = ymd(ctx.date);
   const nowTs = (ctx.date instanceof Date ? ctx.date : new Date(dateStr)).getTime();
 
-  const canonicalCrop = normalizeCropKey(farm.crop || farm.cropType);
+  const canonicalCrop = normalizeCropKey(normalizeCrop(farm));
   const stageKey = farm.cropStage ? String(farm.cropStage).toLowerCase() : null;
 
   const plan = ctx.plan || buildFarmActionPlan({

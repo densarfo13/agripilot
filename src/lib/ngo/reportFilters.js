@@ -20,6 +20,8 @@
  * CSV, and printable report stay consistent.
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 const DAY_MS = 24 * 3600 * 1000;
 
 function toMs(x) {
@@ -69,7 +71,9 @@ export function filterFarms(farms, {
     if (!f) return false;
 
     if (cropKey) {
-      const c = String(f.crop || f.cropType || '').toLowerCase();
+      // normalizeCrop returns canonical lowercase keys; cropKey must
+      // already be in canonical form for the comparison to land.
+      const c = normalizeCrop(f);
       if (c !== cropKey) return false;
     }
     if (regionKey) {
@@ -121,7 +125,12 @@ export function aggregateReport({
   for (const f of farms || []) {
     if (!f) continue;
 
-    const crop = String(f.crop || f.cropType || '').toLowerCase() || 'unknown';
+    // normalizeCrop collapses synonyms (corn → maize, peanut →
+    // groundnut, etc.) into a single bucket — desirable for
+    // analytics where "all maize-equivalents" should aggregate
+    // together. Unknown / unrecognized crops fall through to
+    // 'unknown' as before.
+    const crop = normalizeCrop(f) || 'unknown';
     byCrop.set(crop, (byCrop.get(crop) || 0) + 1);
 
     const region = String(f.state || f.stateCode || f.country || '').toUpperCase() || 'UNKNOWN';

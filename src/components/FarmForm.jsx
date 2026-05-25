@@ -55,6 +55,7 @@ import { createNewFarm, updateFarm } from '../lib/api.js';
 import { formatApiError } from '../api/client.js';
 import { tSafe } from '../i18n/tSafe.js';
 
+import { normalizeCrop } from '../config/crops.js';
 const DEFAULT_FORM = Object.freeze({
   farmName:            '',
   crop:                '',     // stored as canonical lowercase (pepper, cassava, 'OTHER:Teff')
@@ -81,7 +82,7 @@ function buildInitialForm(initialData) {
 
   // Crop: accept old display strings ("Cassava", "Pepper / chili")
   // + new canonical codes. parseCropValue handles "OTHER:Teff".
-  const parsedCrop = parseCropValue(initialData.crop || initialData.cropType);
+  const parsedCrop = parseCropValue(normalizeCrop(initialData));
   let cropCanon = '';
   let otherName = initialData.otherCropName || '';
   if (parsedCrop) {

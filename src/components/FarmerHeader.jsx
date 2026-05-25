@@ -11,6 +11,7 @@ import { useCropLabel } from '../utils/crops.js';
 import { getAvatar } from '../utils/avatarStorage.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 
+import { normalizeCrop } from '../config/crops.js';
 export default function FarmerHeader({ user, profile, t, weatherDecision, onRefreshWeather }) {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function FarmerHeader({ user, profile, t, weatherDecision, onRefr
 
   const name = user?.fullName || profile?.farmerName || '';
   const displayName = name || t('dashboard.welcome');
-  const rawCrop = profile?.cropType || profile?.crop || '';
+  const rawCrop = normalizeCrop(profile) || '';
   // Hook auto-re-renders when the UI language changes — chip updates
   // from "Cassava" to "कसावा" without page reload.
   const cropDisplay = useCropLabel(rawCrop);

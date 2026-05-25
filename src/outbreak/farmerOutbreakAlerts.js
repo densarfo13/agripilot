@@ -23,6 +23,7 @@
 
 import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
 
+import { normalizeCrop } from '../config/crops.js';
 function _norm(s) {
   if (s == null) return '';
   return String(s).trim().toLowerCase();
@@ -44,7 +45,7 @@ export function getAlertsForFarm(farm, clusters) {
 
   const country = normaliseCountry(farm.country);
   const region  = normaliseRegion(farm.region || farm.stateCode, country);
-  const crop    = _norm(farm.crop || farm.cropType);
+  const crop    = _norm(normalizeCrop(farm));
   if (!country || !region || !crop) return [];
 
   const matched = [];

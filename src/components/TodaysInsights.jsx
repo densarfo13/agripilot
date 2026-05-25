@@ -23,6 +23,7 @@ import { useMemo } from 'react';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { buildFarmInsights } from '../lib/intelligence/insightEngine.js';
 
+import { normalizeCrop } from '../config/crops.js';
 const ICONS = {
   warning:  '\u26A0\uFE0F',   // ⚠️
   action:   '\uD83C\uDF31',   // 🌱
@@ -51,7 +52,7 @@ export default function TodaysInsights({
   const { t } = useTranslation();
 
   const insights = useMemo(() => buildFarmInsights({
-    cropId:  farm && (farm.cropType || farm.crop || farm.cropId),
+    cropId:  farm && (normalizeCrop(farm) || farm.cropId),
     stage:   farm && (farm.cropStage || farm.stage),
     farmType: farm && farm.farmType,
     location: {

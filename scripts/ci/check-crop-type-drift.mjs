@@ -86,7 +86,24 @@ const SKIP_FILE_PATTERNS = [
 // render raw cropType to UI. No Phase 7E file introduced any
 // new cropType reference. Captures current count so the gate
 // passes; ratchet DOWN as migration continues.
-const BASELINE = 284;
+//
+// 2026-05-24 ratcheted DOWN by 7 (284 → 277). Reason: the
+// crop-defensive-read migration sweep collapsed 30+ defensive
+// `record.crop || record.cropType` patterns to the canonical
+// `normalizeCrop(record)` call across ~25 files. The
+// normalizeCrop helper in src/config/crops.js was extended to
+// accept record-shape input (overload: object → reads
+// .crop || .cropType, then runs the value through the existing
+// alias / canonicalization chain). Backward compat preserved:
+// localStorage, persisted farms, onboarding drafts, marketplace,
+// NGO analytics, scan results, and offline cache all continue
+// to work because the helper handles BOTH field names. Form
+// state, API contract field names, and validation pipelines
+// (ProfileSetup, NewFarmScreen, EditFarmScreen, editFarmMapper,
+// FarmerStorageTab, PestRiskCheck) are intentionally NOT
+// migrated in this pass — they need a coordinated server-side
+// rename which is tracked separately.
+const BASELINE = 277;
 
 // Maximum growth tolerated per PR when you legitimately extend a
 // bridge module during the migration. Set to 0 to be strict.

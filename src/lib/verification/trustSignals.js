@@ -46,6 +46,8 @@
  *   photoUploaded     15   farmer.profileImageUrl OR farm photo evidence
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 const WEIGHTS = Object.freeze({
   profileComplete:  20,
   phoneVerified:    15,
@@ -154,14 +156,17 @@ function checkLocationCaptured({ farm, farmer }) {
 
 function checkCropSelected({ farm }) {
   const f = farm || {};
-  const passed = nonEmptyString(f.crop || f.cropType);
+  // normalizeCrop returns '' when neither crop nor cropType is set,
+  // so the truthy check is the "has the farmer picked a crop" gate.
+  const cropKey = normalizeCrop(f);
+  const passed  = !!cropKey;
   return {
     id: 'cropSelected',
     label: 'Crop selected',
     weight: WEIGHTS.cropSelected,
     passed,
     explanation: passed
-      ? `Primary crop is set (${String(f.crop || f.cropType)}).`
+      ? `Primary crop is set (${cropKey}).`
       : 'Select the primary crop so guidance is crop-specific.',
   };
 }

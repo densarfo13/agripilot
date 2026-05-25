@@ -25,6 +25,7 @@ import { getFarmerVerificationSignals } from './verificationSignals.js';
 import { getFarmerTrustProfile } from '../trust/trustProfile.js';
 import { aggregateTrustProfiles } from '../trust/trustAggregate.js';
 
+import { normalizeCrop } from '../../config/crops.js';
 const DAY_MS = 24 * 3600 * 1000;
 
 function toNowTs(now) {
@@ -110,7 +111,7 @@ function buildFarmFacts(farm, { now, events, completions, windowDays = 7 } = {})
     farmId,
     farmerId:         farm.farmerId || null,
     farmName:         farm.name || '',
-    crop:             farm.crop || farm.cropType || '',
+    crop:             normalizeCrop(farm) || '',
     program:          farm.program || null,
     progressScore:    snap.progressScore,
     status:           snap.status,

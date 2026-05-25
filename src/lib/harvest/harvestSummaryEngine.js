@@ -44,7 +44,7 @@ function amountToKg(amount, unit) {
 export function getHarvestSummary({ record = null, farm = null } = {}) {
   if (!record || typeof record !== 'object') return null;
   const amountInKg = amountToKg(record.harvestedAmount, record.harvestedUnit);
-  const crop = normalizeCrop(record.crop || (farm && (farm.crop || farm.cropType)));
+  const crop = normalizeCrop(record.crop || (farm && (normalizeCrop(farm))));
 
   // Build a synthetic yield estimate so valueEngine can produce a
   // ± band around the recorded amount (±15%).

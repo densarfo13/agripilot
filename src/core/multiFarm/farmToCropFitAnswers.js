@@ -22,6 +22,8 @@ function sizeToLandBucket(size, unit) {
   return 'large';
 }
 
+import { normalizeCrop } from '../../config/crops.js';
+
 /**
  * buildCropFitAnswersFromFarm — minimum-viable answers built
  * purely from farm state. Missing fields get conservative
@@ -43,11 +45,11 @@ export function buildCropFitAnswersFromFarm(farm = {}) {
     budget:        f.budget       || 'low',
     experience:    f.experience   || 'some',
     goal:          f.goal         || 'home_food',
-    preferredCrop: (f.cropType || f.crop || '').toString().toLowerCase() || null,
+    preferredCrop: (normalizeCrop(f) || '').toString().toLowerCase() || null,
     country:       country.toUpperCase() || null,
     // Keep originals available for callers that want to render
     // "Current crop" badges or "Switch this farm" CTAs.
-    _currentCrop:  (f.cropType || f.crop || '').toString().toLowerCase() || null,
+    _currentCrop:  (normalizeCrop(f) || '').toString().toLowerCase() || null,
   });
 }
 

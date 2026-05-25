@@ -32,6 +32,7 @@ import { getActiveScanTasks } from './scanToTask.js';
 // Pure helper; never throws; offline-safe.
 import { landIntelligenceEngine } from './landIntelligenceEngine.js';
 
+import { normalizeCrop } from '../config/crops.js';
 /**
  * @typedef {{
  *   farmId: string,
@@ -193,7 +194,7 @@ export function generateDailyPlan({
     };
   }
 
-  const cropId = farm.crop || farm.cropType || null;
+  const cropId = normalizeCrop(farm) || null;
   const plantingDate = farm.plantingDate || farm.plantedAt || null;
   const country = farm.country || farm.countryCode || null;
 

@@ -37,6 +37,7 @@ import { TEMPLATES, GENERIC_FALLBACK, ALLOW_BY_FARM_TYPE }
 import { getCropTimeline }       from '../timeline/cropTimelineEngine.js';
 import { estimateYield }         from './yieldEngine.js';
 import { normalizeStageKey }     from '../../config/cropLifecycles.js';
+import { normalizeCrop } from '../../config/crops.js';
 import {
   normalizeCropKey,
   matchCropRiskPatterns,
@@ -293,7 +294,7 @@ export function buildFarmActionPlan(ctx = {}) {
   const farm = ctx.farm || null;
   if (!farm) return null;
 
-  const canonicalCrop = normalizeCropKey(farm.crop || farm.cropType);
+  const canonicalCrop = normalizeCropKey(normalizeCrop(farm));
   // Compute the stored fallback first; we prefer the timeline's
   // computed stage below, but fall back to the stored value when
   // the timeline can't resolve (no plantingDate + no lifecycle).

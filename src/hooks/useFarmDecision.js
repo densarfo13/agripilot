@@ -21,6 +21,7 @@ import { buildFarmerTaskViewModel } from '../domain/tasks/index.js';
 import { useUserMode } from '../context/UserModeContext.jsx';
 import { useForecast } from '../context/ForecastContext.jsx';
 
+import { normalizeCrop } from '../config/crops.js';
 /**
  * Build a lightweight fingerprint of decision-relevant fields.
  * Only re-run the engine when these actually change.
@@ -96,7 +97,7 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
 
   // Weather decision — display-ready chip + action + timestamp + override
   const weatherDecision = useMemo(() => {
-    const crop = profile?.cropType || profile?.crop || '';
+    const crop = normalizeCrop(profile) || '';
     const stage = profile?.cropStage || '';
     return getWeatherDecision({
       weather: enrichedWeather,
@@ -123,7 +124,7 @@ export function useFarmDecision({ profile, primaryTask, taskCount, completedCoun
       cropStage,
       weather,
       rainfall,
-      crop: profile?.cropType || profile?.crop || null,
+      crop: normalizeCrop(profile) || null,
     });
   }, [decision, primaryTask, lang, t, isBasic, profile, weather, rainfall]);
 

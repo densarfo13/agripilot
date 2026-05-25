@@ -32,6 +32,7 @@ import { getSuccessTextKey } from '../engine/autopilot/textKeys.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { logActivity } from '../services/activityLogger.js';
 import { markTaskCompleted } from '../services/taskRepetitionMemory.js';
+import { normalizeCrop } from '../config/crops.js';
 import { saveVerification, ACTION_TYPES }
   from '../verification/verificationStore.js';
 
@@ -97,7 +98,7 @@ export function useFarmerLoop() {
   const autopilot = useMemo(() => {
     if (!primaryTask) return null;
     const cropStage = profile?.cropStage || '';
-    const crop = profile?.cropType || profile?.crop || '';
+    const crop = normalizeCrop(profile) || '';
     return getAutopilotDecision({
       farm: profile,
       crop,
@@ -150,7 +151,7 @@ export function useFarmerLoop() {
       });
       // Autopilot tracking: task generated
       const cropStageLocal = profile?.cropStage || '';
-      const cropLocal = profile?.cropType || profile?.crop || '';
+      const cropLocal = normalizeCrop(profile) || '';
       const ap = getAutopilotDecision({
         farm: profile, crop: cropLocal, cropStage: cropStageLocal,
         weather, primaryTask: result.task,
