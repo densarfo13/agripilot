@@ -806,15 +806,17 @@ export default function Home() {
             {FEATURE_DAILY_HABIT && habit.streak >= 1 && (
               <span
                 style={S.streakPill}
-                title={`${habit.streak}-day streak`}
+                title={tSafe('home.streakDayCount', '{n}-day streak').replace('{n}', habit.streak)}
                 data-testid="home-streak"
               >
-                {habit.streak}-day streak
+                {tSafe('home.streakDayCount', '{n}-day streak').replace('{n}', habit.streak)}
               </span>
             )}
             <span style={S.statusPill}>
               <span style={S.statusDot} />
-              <span>{weatherLoading ? 'Updating…' : 'Live'}</span>
+              <span>{weatherLoading
+                ? tSafe('home.weatherStatusUpdating', 'Updating…')
+                : tSafe('home.weatherStatusLive', 'Live')}</span>
             </span>
           </div>
         </header>
@@ -987,7 +989,11 @@ const S = {
       'linear-gradient(180deg, #08111A 0%, #0B1A28 35%, #0E1F2C 75%, #1A2026 100%)',
     ].join(', '),
     color:      C.ink,
-    padding:    '1.5rem 1rem 4rem',
+    // Bottom padding tightened 4rem → 2rem. The bottom nav (~56px)
+    // plus the floating-launcher safe zone (when applicable) already
+    // protect bottom content; 4rem made the visual "blank space below
+    // the cards" complaint from the screenshot review.
+    padding:    '1.25rem 1rem 2rem',
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   shell: {
@@ -995,7 +1001,10 @@ const S = {
     margin:        '0 auto',
     display:       'flex',
     flexDirection: 'column',
-    gap:           '1rem',
+    // Card-to-card gap tightened 1rem → 0.75rem. With 5 visible
+    // cards in the stack this saves ~16px of accumulated vertical
+    // space and makes the layout feel less airy on small phones.
+    gap:           '0.75rem',
   },
   header: {
     display:        'flex',
