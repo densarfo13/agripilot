@@ -40,6 +40,7 @@ import {
   getCropSeasonalGuidance,
 } from '../../config/crops/index.js';
 import { getCropTimeline }     from '../timeline/cropTimelineEngine.js';
+import { normalizeCrop } from '../../config/crops.js';
 import { RULES as RECOMMENDATION_RULES }
   from '../../config/cropRecommendationRules.js';
 
@@ -337,7 +338,7 @@ export function generateSmartAlerts(ctx = {}) {
   const nowDate = ctx.date instanceof Date ? ctx.date : new Date(dateStr);
   const month = nowDate.getMonth() + 1;
 
-  const canonicalCrop = normalizeCropKey(farm.crop || farm.cropType);
+  const canonicalCrop = normalizeCropKey(normalizeCrop(farm));
   const stageKey = farm.cropStage ? String(farm.cropStage).toLowerCase() : null;
   const climate = ctx.climate || null;
   const season  = ctx.season  || null;

@@ -10,6 +10,7 @@
 
 import { estimateYield } from '../../lib/farmer/yieldEstimate.js';
 
+import { normalizeCrop } from '../../config/crops.js';
 const CONF_STYLES = Object.freeze({
   low:    { bg: 'rgba(239,68,68,0.12)',  fg: '#FCA5A5' },
   medium: { bg: 'rgba(245,158,11,0.12)', fg: '#FDE68A' },
@@ -25,7 +26,7 @@ export default function YieldBadge({
 }) {
   const args = farm
     ? {
-        crop:           farm.crop || farm.cropType || crop,
+        crop:           normalizeCrop(farm) || crop,
         areaHectares:   farm.landSizeHectares
                           ?? (farm.normalizedAreaSqm != null ? farm.normalizedAreaSqm / 10000 : null)
                           ?? farm.areaHectares

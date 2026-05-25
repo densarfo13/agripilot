@@ -269,6 +269,35 @@ const CROP_LABELS_BY_LANG = Object.freeze({
  */
 export function normalizeCrop(value) {
   if (value == null) return '';
+  // Record-shape overload — accept a farm-like object and read the
+  // canonical crop via the legacy/canonical field-coexistence rule:
+  //
+  //   record.crop  (canonical, wins when present)
+  //   record.cropType  (legacy, used as fallback)
+  //
+  // Existing string callers are unaffected — the typeof guard runs
+  // first and falls through to the existing string normalization
+  // chain below. The record overload exists so the cropType ->
+  // crop migration can collapse defensive-read sites like:
+  //
+  //   const crop = farm.crop || farm.cropType;   // 1 cropType ref
+  //   const crop = normalizeCrop(farm);          // 0 cropType refs
+  //
+  // Both also alias-collapse via the same normalization chain, so
+  // legacy DB values like 'SWEET_POTATO' or 'corn' still resolve
+  // to the canonical 'sweet-potato' / 'maize'. Idempotent — calling
+  // normalizeCrop(record) twice gives the same result the second
+  // time.
+  //
+  // Arrays bypass this overload (no field semantics) and fall
+  // through to String(value) — which produces 'array,literal'
+  // and almost certainly returns '' via the alias miss. That's
+  // the existing behaviour for non-string non-null inputs.
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const fromRecord = value.crop != null ? value.crop : value.cropType;
+    if (fromRecord == null) return '';
+    return normalizeCrop(fromRecord);
+  }
   const raw = String(value).trim().toLowerCase();
   if (!raw) return '';
   if (CODES.has(raw)) return raw;

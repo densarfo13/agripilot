@@ -28,6 +28,8 @@
  * debugging / analytics / the dev panel. Never throws.
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 const DAY_MS = 24 * 3600 * 1000;
 const ACTIVE_MAX_DAYS = 210;     // ~7 months; beyond that we assume harvest
 
@@ -66,9 +68,14 @@ export function deriveJourneyState({
     || (activeFarm && activeFarm.id)
     || (profile && profile.id)
     || null;
-  const crop = (activeCycle && activeCycle.cropType)
-    || (activeFarm && activeFarm.crop)
-    || (profile && (profile.cropType || profile.crop))
+  // Crop precedence: active cycle wins (most current), then active
+  // farm, then profile. normalizeCrop accepts records and reads
+  // crop/cropType with canonical-first preference, returning ''
+  // when neither field is set. Empty-string sentinel for "no crop
+  // anywhere"; downstream code treats null/empty equivalently.
+  const crop = normalizeCrop(activeCycle)
+    || normalizeCrop(activeFarm)
+    || normalizeCrop(profile)
     || null;
   const plantedAt = toMs(
     (activeCycle && (activeCycle.plantedAt || activeCycle.startedAt))

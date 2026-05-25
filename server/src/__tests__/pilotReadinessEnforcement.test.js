@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../../..');
@@ -32,7 +33,7 @@ describe('farmScore — pilot-readiness fixes', () => {
 // ─── 2. Translation completeness — setup.* keys ─────────────────
 
 describe('Translations — setup.* keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const setupKeys = [
     'setup.loading', 'setup.title', 'setup.subtitle', 'setup.voiceWelcome',
@@ -68,7 +69,7 @@ describe('Translations — setup.* keys', () => {
 // ─── 3. Translation completeness — auth.* keys ──────────────────
 
 describe('Translations — auth.* keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const authKeys = [
     'auth.welcomeBack', 'auth.signInPrompt', 'auth.email', 'auth.password',
@@ -87,7 +88,7 @@ describe('Translations — auth.* keys', () => {
 // ─── 4. Translation completeness — dashboard/component keys ─────
 
 describe('Translations — dashboard + component keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const keys = [
     'dashboard.loading', 'dashboard.welcome', 'dashboard.hint',

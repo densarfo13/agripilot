@@ -25,6 +25,7 @@ import { getCropLabelSafe } from '../../utils/crops.js';
 import { saveOutbreakReport } from '../../outbreak/outbreakStore.js';
 import { compressImageFile } from '../../outbreak/photoCompress.js';
 
+import { normalizeCrop } from '../../config/crops.js';
 const ISSUES = [
   { id: 'pest',    icon: '\uD83D\uDC1B', key: 'outbreak.issuePest'    },
   { id: 'disease', icon: '\uD83C\uDF42', key: 'outbreak.issueDisease' },
@@ -109,7 +110,7 @@ export default function OutbreakReportModal({
       const record = await saveOutbreakReport({
         farmId:    farm && farm.id ? farm.id : null,
         farmerId,
-        crop:      farm && (farm.crop || farm.cropType) ? (farm.crop || farm.cropType) : null,
+        crop:      farm && (normalizeCrop(farm)) ? (normalizeCrop(farm)) : null,
         issueType: issue || 'unknown',
         severity:  severity || 'low',
         symptoms,

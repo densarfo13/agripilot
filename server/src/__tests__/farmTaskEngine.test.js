@@ -17,6 +17,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -406,7 +407,7 @@ describe('FarmTasksCard — standalone and AllTasksPage integration', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — farm task keys', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'farmTasks.title',

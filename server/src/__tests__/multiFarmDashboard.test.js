@@ -17,6 +17,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -561,7 +562,7 @@ describe('ProfileSetup — newFarm mode', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — multi-farm dashboard keys', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'farm.yourFarm',

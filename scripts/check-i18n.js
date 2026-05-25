@@ -12,13 +12,11 @@
  * defined for each launch language?" Plus: "which keys are defined
  * but never used?"
  *
- * Why a separate file (not extend the CI guard)
- *   • The CI guard is wired to `npm run guards`, runs on every push,
- *     and fails the build at 95%. It must stay narrow + fast.
- *   • This script is a developer / launch-gate tool that reports
- *     coverage and orphans across the WHOLE call-site graph; it
- *     warns at <95% but does not fail the build (per spec #7) —
- *     it's a status snapshot, not a gate.
+ * Post column-split refactor: translation data is sourced from
+ * src/i18n/columns/T-{locale}.js (the canonical column files)
+ * plus the legacy single-locale pack src/i18n/hi.js and the 35
+ * locale-first overlay files (*Translations.js) that mergePacks
+ * still composes at runtime.
  *
  * Active launch languages (mirrors check-i18n-coverage.mjs):
  *   en, tw, hi
@@ -32,13 +30,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 
-const SRC_DIRS  = ['src'];
-const TRANSLATIONS_FILE = path.join(ROOT, 'src/i18n/translations.js');
+const SRC_DIRS = ['src'];
+const COL_DIR  = path.join(ROOT, 'src/i18n/columns');
 const HI_FILE  = path.join(ROOT, 'src/i18n/hi.js');
 const I18N_DIR = path.join(ROOT, 'src/i18n');
 
@@ -47,10 +45,7 @@ const LAUNCH_LANGUAGES = ['en', 'tw', 'hi'];
 
 // Locale-overlay convention: every file matching this pattern in
 // the i18n/ directory is merged into the runtime dictionary by
-// `mergeManyOverlays` in src/i18n/index.js. Reading them here keeps
-// this status report aligned with what the app actually renders;
-// otherwise overlays land at runtime but this script reports them
-// as missing forever.
+// `mergeManyOverlays` in src/i18n/index.js.
 function listOverlayFiles() {
   const out = [];
   try {
@@ -85,32 +80,19 @@ function walkSrc(dir, out) {
   }
 }
 
-// `t('foo.bar')` / `t("foo.bar")` / `tShort('sms.x')` / `useTranslation()...t('k')` / `useCropLabel()` is ignored.
-// We accept the function names that bind to the central `t()` helper.
 const T_CALL_RE = /\b(?:t|tShort|tPlural)\s*\(\s*['"]([a-zA-Z_][\w.]+)['"]/g;
 
-// Skip false-positive matches we know are not real call sites:
-//   1. Dynamic-prefix keys constructed via `t('status.' + value, fb)`
-//      — the regex captures the bare prefix `status.` which can never
-//      be a real leaf key. Trailing `.` is the tell.
-//   2. Generic doc-comment keys (`'key'`, `'some.key'`) used in
-//      JSDoc usage examples in tSafe.js / useStrictTranslation.js.
-//   3. SMS template doc-comment keys (`'sms.flood_risk'` etc.)
-//      shown inside the JSDoc block of tShort() — the actual
-//      runtime call uses a real key from SMS_SHORT, not these.
 function isFalsePositiveKey(key, line) {
   if (!key) return true;
   if (key.endsWith('.')) return true;
   if (key === 'key' || key === 'some.key') return true;
-  // JSDoc / line comment context — `*` at start (after whitespace)
-  // or `//` before the match means the call lives in a comment.
   const trimmed = line.trimStart();
   if (trimmed.startsWith('*') || trimmed.startsWith('//')) return true;
   return false;
 }
 
 function collectUsedKeys(files) {
-  const used = new Map(); // key → first file:line
+  const used = new Map();
   for (const f of files) {
     let text;
     try { text = fs.readFileSync(f, 'utf8'); } catch { continue; }
@@ -132,7 +114,25 @@ function collectUsedKeys(files) {
 
 // ─── Step 2: extract DEFINED keys per language ──────────────
 
-function extractKeys(text) {
+/**
+ * Dynamic-import a column file and return its key set.
+ * Column files are JS modules `export default { 'k': 'v', ... }`.
+ */
+async function loadColumnKeys(lang) {
+  const p = path.join(COL_DIR, `T-${lang}.js`);
+  if (!fs.existsSync(p)) return new Set();
+  try {
+    const mod = await import(pathToFileURL(p).href);
+    const dict = mod.default || mod;
+    if (!dict || typeof dict !== 'object') return new Set();
+    return new Set(Object.keys(dict));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Legacy flat-pack parser — used for hi.js. */
+function extractKeysFromFlatPack(text) {
   const set = new Set();
   const re = /^\s*'([a-zA-Z][\w.]+)'\s*:/gm;
   let m;
@@ -140,17 +140,11 @@ function extractKeys(text) {
   return set;
 }
 
-// Locale-first overlay shape:
-//
-//   export const FOO_TRANSLATIONS = Object.freeze({
-//     en: { 'home.greet': 'Hello' },
-//     fr: { 'home.greet': 'Bonjour' },
-//   });
-//
-// extractKeysInLangBlock returns the set of `'key'` literals nested
-// inside the given top-level locale block (`en:` / `fr:` / etc.).
-// We match the literal `lang:` token followed by `{` and balance
-// braces to find the block end.
+/**
+ * Locale-first overlay shape:
+ *   export const FOO = Object.freeze({ en: { 'k': 'v' }, fr: {...} });
+ * Returns the set of `'key'` literals nested inside the named locale block.
+ */
 function extractKeysInLangBlock(text, lang) {
   const out = new Set();
   const headerRe = new RegExp(`(?:^|[\\s,])${lang}\\s*:\\s*\\{`, 'g');
@@ -172,27 +166,6 @@ function extractKeysInLangBlock(text, lang) {
   return out;
 }
 
-function extractKeysWithLangSlot(text, lang) {
-  const set = new Set();
-  const keyRe = /^\s*'([a-zA-Z][\w.]+)'\s*:\s*\{/gm;
-  const slotRe = new RegExp(`\\b${lang}\\s*:\\s*['\`"]([^'\`"]+)['\`"]`);
-  let m;
-  while ((m = keyRe.exec(text))) {
-    const startIdx = m.index + m[0].length;
-    let depth = 1;
-    let i = startIdx;
-    while (i < text.length && depth > 0) {
-      const ch = text[i];
-      if (ch === '{') depth += 1;
-      else if (ch === '}') depth -= 1;
-      i += 1;
-    }
-    const block = text.slice(startIdx, i - 1);
-    if (slotRe.test(block)) set.add(m[1]);
-  }
-  return set;
-}
-
 // ─── Step 3: report ─────────────────────────────────────────
 
 function pctStr(n, d) {
@@ -200,41 +173,29 @@ function pctStr(n, d) {
   return ((n / d) * 100).toFixed(1) + '%';
 }
 
-function main() {
+async function main() {
   const files = [];
   for (const d of SRC_DIRS) walkSrc(path.join(ROOT, d), files);
 
   const used = collectUsedKeys(files);
   const usedKeys = [...used.keys()];
 
-  if (!fs.existsSync(TRANSLATIONS_FILE) || !fs.existsSync(HI_FILE)) {
-    console.error('check-i18n: missing translation file(s)');
-    process.exit(0); // soft script
+  const enDefined = await loadColumnKeys('en');
+  const twDefined = await loadColumnKeys('tw');
+  const hiDefined = await loadColumnKeys('hi');
+
+  if (fs.existsSync(HI_FILE)) {
+    const extra = extractKeysFromFlatPack(fs.readFileSync(HI_FILE, 'utf8'));
+    for (const k of extra) hiDefined.add(k);
   }
-  const enText = fs.readFileSync(TRANSLATIONS_FILE, 'utf8');
-  const hiText = fs.readFileSync(HI_FILE, 'utf8');
 
-  // English keys = every key declared in translations.js (the
-  // source language always has an `en:` slot in each entry).
-  const enDefined = extractKeys(enText);
-  const hiDefined = extractKeys(hiText);
-  const twDefined = extractKeysWithLangSlot(enText, 'tw');
-
-  // Overlay files (locale-first shape: `{en: {...}, fr: {...}}`)
-  // are merged at runtime by mergeManyOverlays. Walk them here so
-  // this script reports what the user actually renders, not what's
-  // physically in translations.js. Missing slots are still surfaced
-  // because each overlay block is parsed per-language.
   for (const overlayPath of listOverlayFiles()) {
     let txt;
     try { txt = fs.readFileSync(overlayPath, 'utf8'); }
     catch { continue; }
-    const enKeys = extractKeysInLangBlock(txt, 'en');
-    for (const k of enKeys) enDefined.add(k);
-    const twKeys = extractKeysInLangBlock(txt, 'tw');
-    for (const k of twKeys) twDefined.add(k);
-    const hiKeys = extractKeysInLangBlock(txt, 'hi');
-    for (const k of hiKeys) hiDefined.add(k);
+    for (const k of extractKeysInLangBlock(txt, 'en')) enDefined.add(k);
+    for (const k of extractKeysInLangBlock(txt, 'tw')) twDefined.add(k);
+    for (const k of extractKeysInLangBlock(txt, 'hi')) hiDefined.add(k);
   }
 
   const definedByLang = { en: enDefined, tw: twDefined, hi: hiDefined };
@@ -250,10 +211,9 @@ function main() {
     const present = usedKeys.filter((k) => defined.has(k)).length;
     const total   = usedKeys.length;
     const ratio   = total === 0 ? 1 : present / total;
-    const tag     = ratio >= WARN_BELOW ? '\u2713' : '\u26A0';
+    const tag     = ratio >= WARN_BELOW ? '✓' : '⚠';
     console.log(`${tag} ${lang}: ${present}/${total} used keys defined (${pctStr(present, total)})`);
     if (ratio < WARN_BELOW) anyWarn = true;
-    // Top 20 missing.
     const missing = usedKeys.filter((k) => !defined.has(k));
     if (missing.length > 0) {
       console.log(`    missing (${missing.length}, showing first 20):`);
@@ -263,9 +223,6 @@ function main() {
     }
   }
 
-  // Unused — defined keys never referenced in source. This is a
-  // signal not a gate: stale keys accumulate as features are
-  // refactored, and pruning them is a periodic cleanup task.
   console.log('');
   const allDefined = new Set([...enDefined, ...hiDefined, ...twDefined]);
   const unused = [...allDefined].filter((k) => !used.has(k));
@@ -280,7 +237,10 @@ function main() {
     console.warn('             Per spec, this is a warning, not a build failure. Run');
     console.warn('             `npm run guard:i18n` for the strict CI gate on high-risk domains.');
   } else {
-    console.log('check-i18n: all launch languages \u2265 95% coverage on used keys.');
+    console.log('check-i18n: all launch languages ≥ 95% coverage on used keys.');
   }
 }
-main();
+main().catch((err) => {
+  console.error('check-i18n: unexpected error:', err && err.message);
+  process.exit(0); // soft script — never fail the build
+});

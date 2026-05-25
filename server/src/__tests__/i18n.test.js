@@ -21,8 +21,13 @@ function readFile(relPath) {
 describe('Translation map — structure and completeness', () => {
   let T;
   beforeEach(async () => {
-    const mod = await import('../../../src/i18n/translations.js');
-    T = mod.default;
+    // Post column-split: the runtime translations.js shim has only the
+    // English column populated at boot. For structural-completeness
+    // assertions (every key has all 5 launch languages) we need the
+    // fully-merged view — load it from the helper that reconstructs
+    // T from all 6 column files.
+    const { TRANSLATIONS_FULL_T } = await import('./_helpers/legacyTranslationsText.js');
+    T = TRANSLATIONS_FULL_T;
   });
 
   it('exports an object with translation keys', () => {

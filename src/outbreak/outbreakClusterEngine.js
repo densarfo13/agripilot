@@ -31,6 +31,7 @@
 import { normaliseRegion, normaliseCountry } from './regionNormaliser.js';
 import { distanceKm, centroid } from '../utils/geo.js';
 
+import { normalizeCrop } from '../config/crops.js';
 export const CLUSTER_TUNING = Object.freeze({
   WINDOW_DAYS:        7,
   MIN_REPORTS_ACTIVE: 3,
@@ -99,7 +100,7 @@ function _affectedFarms(farms, key) {
     if (!f || typeof f !== 'object') continue;
     const country = normaliseCountry(f.country);
     const region  = normaliseRegion(f.region || f.stateCode, country);
-    const crop    = _norm(f.crop || f.cropType);
+    const crop    = _norm(normalizeCrop(f));
     const matches =
       country === key.country &&
       region  === key.region  &&

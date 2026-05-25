@@ -7,6 +7,8 @@
  * and the "Complete Profile" CTA on the dashboard.
  */
 
+import { normalizeCrop } from '../config/crops.js';
+
 /**
  * @param {object} profile - Farm profile (from farmStore or API)
  * @param {object} [opts] - { countryCode } from farmer record
@@ -23,7 +25,7 @@ export function calculateFarmScore(profile, opts = {}) {
   if (opts.countryCode || profile.countryCode || profile.country) score += 10;
   if (profile.locationName || profile.location) score += 15;
   if ((profile.landSizeValue && profile.landSizeValue > 0) || (profile.farmSizeAcres && profile.farmSizeAcres > 0) || (profile.size && profile.size > 0)) score += 15;
-  if (profile.crop || profile.cropType) score += 15;
+  if (normalizeCrop(profile)) score += 15;
   if (profile.latitude != null || profile.gpsLat != null) score += 12.5;
   if (profile.longitude != null || profile.gpsLng != null) score += 12.5;
 
@@ -52,7 +54,7 @@ export function getMissingProfileItems(profile, opts = {}) {
   if (!(profile.locationName || profile.location)) missing.push('Add farm location');
   const hasSize = (profile.landSizeValue && profile.landSizeValue > 0) || (profile.farmSizeAcres && profile.farmSizeAcres > 0) || (profile.size && profile.size > 0);
   if (!hasSize) missing.push('Add farm size');
-  if (!(profile.crop || profile.cropType)) missing.push('Select crop type');
+  if (!normalizeCrop(profile)) missing.push('Select crop type');
   if (profile.latitude == null && profile.gpsLat == null) missing.push('Add GPS coordinates');
 
   return missing;

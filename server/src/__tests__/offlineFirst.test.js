@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 // Resolve project paths relative to the repository root, not
 // process.cwd() — the test runner is invoked with cwd=server/,
@@ -157,7 +158,7 @@ describe('SyncStatus — mounted globally', () => {
 });
 
 describe('Sync translation keys exist', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
   const keys = ['sync.offline', 'sync.pendingOne', 'sync.pendingMany', 'sync.syncNow', 'sync.syncing', 'sync.syncedOne', 'sync.failedOne'];
 
   for (const key of keys) {
@@ -332,7 +333,7 @@ describe('FarmerDashboardPage — offline rendering', () => {
 });
 
 describe('home.showingCached translation key', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   it('exists in all 5 languages', () => {
     expect(translations).toContain("'home.showingCached'");

@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -685,7 +686,7 @@ describe('Dashboard — benchmark card wiring', () => {
 // 13. i18n — benchmark keys
 // ═══════════════════════════════════════════════════════════
 describe('i18n — benchmark keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'benchmark.title',

@@ -15,6 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const root = join(import.meta.dirname, '..', '..', '..');
 
@@ -264,7 +265,7 @@ describe('Zod validation schema', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('i18n — farmer type and starter guide keys', () => {
-  const translations = read('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'farmerType.question',

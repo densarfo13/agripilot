@@ -4,6 +4,7 @@
 // at startup rather than silently sending requests to same-origin.
 import { resolveApiBase } from './api/assertApiBaseUrl.js';
 import { isLoggedIn } from '../utils/session.js';
+import { normalizeCrop } from '../config/crops.js';
 const API_BASE = resolveApiBase();
 
 // Dev-only one-shot diagnostic per the runtime-stabilization spec
@@ -504,7 +505,7 @@ export function saveFarmProfile(payload, { headers } = {}) {
   // to spamming the server + ErrorBoundary. Throws a structured
   // client error so the caller's existing catch handler can react
   // (show a "pick a crop first" message, etc.).
-  const cropValue = body && (body.crop || body.cropType);
+  const cropValue = body && (normalizeCrop(body));
   if (!cropValue || (typeof cropValue === 'string' && !cropValue.trim())) {
     const err = new Error('Crop type is required');
     err.status = 400;

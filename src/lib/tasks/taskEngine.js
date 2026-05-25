@@ -29,6 +29,8 @@
  * stated in the spec.
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 // ─── Stage templates (spec §2) ────────────────────────────────────
 // Every template has a stable `id` (used for completion dedup), a
 // titleKey + whyKey for i18n, and a starting priority that crop /
@@ -258,8 +260,11 @@ export function generateTasks({
   const resolvedStage = stage
     || (farm && (farm.cropStage || farm.stage))
     || null;
-  const resolvedCrop = (crop || (farm && (farm.cropType || farm.crop)) || '')
-    .toString().toLowerCase() || null;
+  // Explicit `crop` arg wins; fall through to whatever the farm
+  // record carries (canonical or legacy). normalizeCrop handles the
+  // record-shape lookup + alias collapse so 'corn'/'maize' resolve
+  // to the same canonical key the stage templates expect.
+  const resolvedCrop = (crop ? normalizeCrop(crop) : normalizeCrop(farm)) || null;
 
   const base = STAGE_TEMPLATES[resolvedStage] || [];
   // Clone + tag with stage so downstream callers know context.

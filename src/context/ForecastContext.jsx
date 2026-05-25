@@ -18,6 +18,7 @@ import { useNetwork } from './NetworkContext.jsx';
 import { fetchForecast } from '../services/weatherForecastService.js';
 import { analyzeRainfall, getTopAlert } from '../engine/rainfallEngine.js';
 
+import { normalizeCrop } from '../config/crops.js';
 const ForecastContext = createContext(null);
 
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
@@ -73,7 +74,7 @@ export function ForecastProvider({ children }) {
 
           // Run rainfall analysis
           const cropStage = profile?.cropStage || '';
-          const crop = profile?.cropType || profile?.crop || '';
+          const crop = normalizeCrop(profile) || '';
           const analysis = analyzeRainfall({
             days: data.days,
             cropStage,
@@ -129,7 +130,7 @@ export function ForecastProvider({ children }) {
   useEffect(() => {
     if (!forecast?.days) return;
     const cropStage = profile?.cropStage || '';
-    const crop = profile?.cropType || profile?.crop || '';
+    const crop = normalizeCrop(profile) || '';
     const analysis = analyzeRainfall({
       days: forecast.days,
       cropStage,

@@ -22,6 +22,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateTasksForFarm } from '../../lib/farmTaskEngine.js';
 import { CROP_STAGES, resolveStage, LEGACY_STAGE_MAP, ALL_ACCEPTED_STAGES, STAGE_LABELS } from '../../lib/cropStages.js';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 // ─── Helper: read file as string ───────────────────────
 // Resolve project paths relative to the repository root, not
@@ -400,7 +401,7 @@ describe('Dashboard — CropStageModal wiring', () => {
 //  12. i18n translations — crop stage keys
 // ═══════════════════════════════════════════════════════════
 describe('i18n — crop stage translations', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'cropStage.title',
@@ -629,7 +630,7 @@ describe('FarmTasksCard — missing stage prompt', () => {
   });
 
   it('i18n file has prompt translations', () => {
-    const translations = readFile('src/i18n/translations.js');
+    const translations = TRANSLATIONS_SOURCE_TEXT;
     expect(translations).toContain("'farmTasks.setStagePrompt'");
     expect(translations).toContain("'farmTasks.setStageHint'");
   });

@@ -64,8 +64,11 @@ describe('check:translations — registered + wired into build:safe', () => {
 
 describe('translations.js — every key carries all 6 launch languages', () => {
   it('the 5 launch-complete languages have a non-blank value for every active key', async () => {
-    const mod = await import('../../../src/i18n/translations.js');
-    const T = mod.default || mod;
+    // Post column-split: the runtime translations.js shim has only the
+    // English column at boot. For "every key has all 5 launch languages"
+    // we need the fully-merged T reconstructed from the 6 column files.
+    const { TRANSLATIONS_FULL_T } = await import('./_helpers/legacyTranslationsText.js');
+    const T = TRANSLATIONS_FULL_T;
     const REQUIRED = ['en', 'fr', 'sw', 'ha', 'tw'];
     const blank = (v) => typeof v !== 'string' || v.trim() === '';
     const gaps = [];

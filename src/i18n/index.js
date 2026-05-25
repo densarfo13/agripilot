@@ -17,6 +17,12 @@ import HI from './hi.js';
 import TW from './tw.js';
 import { resolveLanguage, confirmLanguage } from '../lib/languageResolver.js';
 import { mergeManyOverlays } from './mergeOverlays.js';
+// Lazy per-locale column loader. translations.js now ships only the
+// English column eagerly; other locales are code-split chunks loaded
+// on demand. The loader merges the result into the same T reference
+// imported above so existing consumers (t(), tSafe, tStrict, the 35
+// overlay merges) see translations appear in place after each load.
+import { loadColumn } from './columnLoader.js';
 
 // ─── Translation overlays ─────────────────────────────────
 // Each overlay is shaped `{ locale: { key: value } }` and
@@ -283,6 +289,31 @@ function applyHtmlLang(code) {
 }
 
 /**
+ * Fire-and-forget: kick off the lazy column load for `code` (if not
+ * already loaded) and re-dispatch `farroway:langchange` once the
+ * column is merged into T. Components subscribed via useTranslation
+ * re-render twice on a fresh language switch: once synchronously on
+ * the initial dispatch (showing overlay coverage + English fallback
+ * for un-overlaid keys), then again post-load with full canonical
+ * coverage. The second pass is what fills in keys that only exist
+ * in translations.js' canonical columns.
+ *
+ * Non-throwing — a failed column load is logged once by the loader
+ * itself and degrades silently to English. Callers never need to
+ * await this; setLanguage stays synchronous.
+ */
+function _ensureLocaleColumn(code) {
+  try {
+    if (!code) return;
+    loadColumn(code).then((ok) => {
+      if (!ok) return;
+      try { window.dispatchEvent(new CustomEvent('farroway:langchange', { detail: code })); }
+      catch { /* SSR / locked-down contexts */ }
+    }).catch(() => { /* swallowed in loader */ });
+  } catch { /* ignore */ }
+}
+
+/**
  * Persist language using the resolver so manual, profile, and legacy
  * slots stay in sync (VoiceBar + server-side locale still read from
  * the legacy keys). Broadcasts a change event for every subscriber.
@@ -290,6 +321,12 @@ function applyHtmlLang(code) {
 export function setLanguage(code) {
   confirmLanguage(code);
   applyHtmlLang(code);
+  // Trigger the lazy column load for the new locale so its native
+  // translations appear in T as soon as the chunk arrives. The
+  // immediate dispatch below makes the UI react synchronously; the
+  // post-load dispatch (inside _ensureLocaleColumn) refreshes with
+  // full coverage once the column is merged.
+  _ensureLocaleColumn(code);
   // Mirror the change into all three storage slots so every consumer
   // (voice system, legacy server-side locale, and the new unified key)
   // stays in sync without needing to know which reader uses which key.
@@ -329,8 +366,16 @@ export function setLanguage(code) {
 
 // On module load, mirror the persisted language onto <html lang> so
 // even the first paint on reload gets the right font stack / locale.
+// Also kick off the lazy column load for non-English persisted users
+// so their canonical translations arrive in parallel with the rest
+// of the boot work — the column fetch overlaps with hydration rather
+// than waiting for the user to switch language.
 if (typeof window !== 'undefined') {
-  try { applyHtmlLang(getLanguage()); } catch { /* ignore */ }
+  try {
+    const _bootLang = getLanguage();
+    applyHtmlLang(_bootLang);
+    if (_bootLang && _bootLang !== 'en') _ensureLocaleColumn(_bootLang);
+  } catch { /* ignore */ }
 }
 
 /**
@@ -455,7 +500,16 @@ export function auditMissingForLang(lang = 'hi') {
 
 if (typeof window !== 'undefined') {
   try {
-    window.__i18nAuditHindi = () => auditMissingForLang('hi');
+    // Async wrapper so devtools callers await the Hindi column load
+    // before the audit runs. Without this, a fresh `__i18nAuditHindi()`
+    // call pre-load would report EVERY active key as missing — the
+    // column-sparse boot leaves T[key].hi unset until the lazy chunk
+    // arrives. Awaiting loadColumn first restores the original
+    // semantic: "report keys with no Hindi value in the merged T".
+    window.__i18nAuditHindi = async () => {
+      try { await loadColumn('hi'); } catch { /* swallow */ }
+      return auditMissingForLang('hi');
+    };
   } catch { /* SSR / locked-down contexts — ignore */ }
 }
 

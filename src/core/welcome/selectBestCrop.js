@@ -17,6 +17,8 @@
  * No ML, no network.
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 /**
  * STARTER_CROPS — hand-curated fallback list when we have zero
  * farm context beyond "new user". Pre-ranked so the first element
@@ -103,7 +105,7 @@ export function selectBestCrop({
 
   // 1) Existing-user shortcut — if the profile already names a crop,
   //    treat it as "best" and show the starter list as alternatives.
-  const profileCrop = profile && (profile.cropType || profile.crop);
+  const profileCrop = profile && normalizeCrop(profile);
   if (profileCrop) {
     const code = String(profileCrop).toLowerCase();
     const match = STARTER_CROPS.find((c) => c.code === code);

@@ -24,11 +24,19 @@
  * WeatherContext if they already have it. Engines should treat
  * it as optional.
  */
+
+import { normalizeCrop } from '../../config/crops.js';
+
 export function buildRecommendationContext(farm = {}, extras = {}) {
   const f = (farm && typeof farm === 'object') ? farm : {};
   const countryCode = (f.countryCode || f.country || '').toString().trim() || null;
   const stateCode   = (f.stateCode   || f.state   || '').toString().trim() || null;
-  const cropId      = (f.cropId      || f.cropType || f.crop || '').toString().trim().toLowerCase() || null;
+  // Precedence: explicit cropId (registry row) wins; otherwise fall
+  // through to the canonical/legacy fields. normalizeCrop handles
+  // both fields + alias collapse, so external callers can send any
+  // shape ('SWEET_POTATO', 'sweet potato', etc.) and we still land
+  // on the registry key.
+  const cropId      = (f.cropId ? String(f.cropId).trim().toLowerCase() : normalizeCrop(f)) || null;
   const stage       = (f.stage       || f.cropStage || '').toString().trim() || null;
   const farmSize    = f.size != null ? Number(f.size) : (f.farmSize != null ? Number(f.farmSize) : null);
 

@@ -25,6 +25,8 @@
  * Pure — no IO, no throws. Callers feed whatever subset they have.
  */
 
+import { normalizeCrop } from '../../config/crops.js';
+
 const DEFAULT_WINDOW_DAYS = 7;
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -48,7 +50,10 @@ export function getFarmerVerificationSignals({
   const cutoff = nowTs - Math.max(0, activityWindowDays) * DAY_MS;
   const farmId = farm && farm.id ? String(farm.id) : null;
 
-  const cropSelected = !!(farm && (farm.crop || farm.cropType) && String(farm.crop || farm.cropType).trim().length > 0);
+  // normalizeCrop returns '' for null/empty/unrecognized — perfect
+  // for the "has the farmer picked a crop" check. Trim/length is
+  // implicit because normalizeCrop trims internally.
+  const cropSelected = !!(farm && normalizeCrop(farm));
   const country      = farm && (farm.country || farm.countryCode) || null;
   const hasState     = !!(farm && (farm.state || farm.stateCode));
   const hasCoords    = !!(farm && Number.isFinite(Number(farm.latitude))

@@ -38,6 +38,7 @@ import {
   getAllInputRules,
 } from '../../lib/inputTimingEngine.js';
 import { generateTasksForFarm } from '../../lib/farmTaskEngine.js';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 function readFile(relativePath) {
   return fs.readFileSync(path.resolve(process.cwd(), '..', relativePath), 'utf-8');
@@ -647,7 +648,7 @@ describe('App route registration', () => {
 // 17. i18n — input timing keys
 // ═══════════════════════════════════════════════════════════
 describe('i18n — input timing keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const requiredKeys = [
     'inputTiming.title',

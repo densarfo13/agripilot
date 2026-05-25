@@ -15,6 +15,7 @@ import {
   SEASONAL_FIELDS, MONTH_LABELS, MONTH_SHORT,
 } from '../../lib/seasonalTiming.js';
 import { generateTasksForFarm } from '../../lib/farmTaskEngine.js';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 // Resolve project paths relative to the repository root, not
 // process.cwd() — the test runner is invoked with cwd=server/,
@@ -512,7 +513,7 @@ describe('FarmTasksCard — seasonal notes', () => {
 //  14. i18n translations
 // ═══════════════════════════════════════════════════════════
 describe('i18n — seasonal timing keys', () => {
-  const translations = readFile('src/i18n/translations.js');
+  const translations = TRANSLATIONS_SOURCE_TEXT;
 
   const keys = [
     'seasonal.title', 'seasonal.subtitle', 'seasonal.season',

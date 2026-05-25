@@ -26,6 +26,7 @@ import { getWeatherGuidance, getWeatherTaskAdjustment, applyWeatherOverride } fr
 import { getLocalizedTaskTitle, getLocalizedTaskDescription, shortenDescription } from '../utils/taskTranslations.js';
 import { getCurrentLang } from '../utils/i18n.js';
 
+import { normalizeCrop } from '../config/crops.js';
 /**
  * Resolve the primary action for the farmer.
  *
@@ -37,7 +38,7 @@ export function resolveDecision(input, t) {
   const { profile, setupComplete, primaryTask, taskCount, completedCount, weather } = input;
 
   // Weather intelligence — runs alongside task resolution
-  const crop = profile?.cropType || profile?.crop || '';
+  const crop = normalizeCrop(profile) || '';
   const stage = getStage(profile);
   const weatherGuidance = getWeatherGuidance({ weather, crop, stage });
 
@@ -53,7 +54,7 @@ export function resolveDecision(input, t) {
 
 // ─── Contextual crop name helper ─────────────────────────────
 function cropName(profile) {
-  const raw = profile?.cropType || profile?.crop || '';
+  const raw = normalizeCrop(profile) || '';
   if (!raw) return '';
   // Strip "OTHER:" prefix, capitalize
   const name = raw.startsWith('OTHER:') ? raw.slice(6).trim() : raw;

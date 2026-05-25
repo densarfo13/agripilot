@@ -17,6 +17,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { TRANSLATIONS_SOURCE_TEXT } from './_helpers/legacyTranslationsText.js';
 
 const readFile = (rel) =>
   fs.readFileSync(path.resolve(__dirname, '../../..', rel), 'utf-8');
@@ -27,7 +28,7 @@ const todayTask = readFile('src/components/TodayTaskCard.jsx');
 const weatherCard = readFile('src/components/WeatherStatusCard.jsx');
 const quickActions = readFile('src/components/QuickActionsRow.jsx');
 const weeklyProgress = readFile('src/components/WeeklyProgressCard.jsx');
-const translations = readFile('src/i18n/translations.js');
+const translations = TRANSLATIONS_SOURCE_TEXT;
 
 // ═══════════════════════════════════════════════════════════
 //  1. Farmer home shows only one primary task
