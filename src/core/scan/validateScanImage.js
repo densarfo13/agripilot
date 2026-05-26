@@ -42,7 +42,38 @@ export const INVALID_REASON = Object.freeze({
   UNSUPPORTED_MIME: 'unsupported_mime',
   REVOKED_URL:      'revoked_url',
   BAD_DIMENSIONS:   'bad_dimensions',
+  TOO_LARGE:        'too_large',
 });
+
+// Spec V5 §12 — hard upper limit; iPhone HEIC originals can hit
+// ~6 MB before we re-encode, so 12 MB gives a healthy margin.
+export const MAX_VALIDATION_BYTES = 12_000_000;
+
+// User-facing hints keyed by reason. Surfaces use these as fallback
+// copy when no localized translation is available. The strings
+// stay deliberately concrete — "Photo could not be loaded" was
+// removed from the bag because it was too generic to be actionable.
+export const FRIENDLY_HINTS = Object.freeze({
+  no_record:           'No photo selected yet. Tap the camera to capture or upload one.',
+  not_object:          'That photo couldn’t be read. Try a different one.',
+  no_survival_channel: 'We lost the photo before we could analyze it. Please retake the photo.',
+  empty_bytes:         'That photo file is empty. Please retake the photo.',
+  unsupported_mime:    'Use a JPEG, PNG, WebP, or HEIC photo.',
+  revoked_url:         'The photo preview expired. Please retake the photo.',
+  bad_dimensions:      'That photo has an invalid size. Please retake.',
+  too_large:           'That photo is too large. Try a smaller one (under 12 MB).',
+});
+
+/**
+ * Map a validate-result `reason` to an actionable user hint. Returns
+ * a fallback string when the reason is unknown. Strings here are
+ * fallbacks ONLY — surfaces should prefer the matching `scan.error.*`
+ * translation key when available.
+ */
+export function friendlyHintFor(reason) {
+  if (typeof reason !== 'string') return FRIENDLY_HINTS.not_object;
+  return FRIENDLY_HINTS[reason] || FRIENDLY_HINTS.not_object;
+}
 
 const _ALLOWED_MIMES = new Set([
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
@@ -81,6 +112,9 @@ export function validateScanImage(record) {
     const size = Number(record.size) || 0;
     if (size <= 0 && !hasFile) {
       return { valid: false, reason: INVALID_REASON.EMPTY_BYTES };
+    }
+    if (size > MAX_VALIDATION_BYTES) {
+      return { valid: false, reason: INVALID_REASON.TOO_LARGE, size };
     }
     const mime = String(record.mimeType || record.type || '').toLowerCase();
     if (mime && !_ALLOWED_MIMES.has(mime)) {
@@ -125,5 +159,8 @@ export function assertValidScanInput(record) {
   return validateScanImage(record);
 }
 
-const _module = { INVALID_REASON, validateScanImage, assertValidScanInput };
+const _module = {
+  INVALID_REASON, MAX_VALIDATION_BYTES, FRIENDLY_HINTS,
+  validateScanImage, assertValidScanInput, friendlyHintFor,
+};
 export default _module;

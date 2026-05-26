@@ -38,6 +38,9 @@
 
 import { getActiveScanSessionId } from './scanSessionId.js';
 import { validateScanImage } from './validateScanImage.js';
+import {
+  getActiveSession, getScanHistory,
+} from './scanSessionManager.js';
 
 function _isDev() {
   try {
@@ -61,13 +64,35 @@ export function buildScanDebugSnapshot(ctx) {
     const c = (ctx && typeof ctx === 'object') ? ctx : {};
     const sessionId = getActiveScanSessionId();
     const imageVerdict = c.image ? validateScanImage(c.image) : { valid: false, reason: 'no_image' };
+    // V5 stability spec — pull the wide session record so DevTools
+    // shows the full pipeline view in one snapshot.
+    const session = (function () {
+      try { return getActiveSession() || null; } catch { return null; }
+    })();
     const rows = [
       { key: 'sessionId',          value: sessionId || '(none)' },
       { key: 'fsmState',           value: c.state || '(unknown)' },
+      { key: 'lifecycle',          value: session && session.lifecycle ? session.lifecycle : '(idle)' },
+      { key: 'source',             value: session ? session.source : '(none)' },
       { key: 'imageValid',         value: imageVerdict.valid ? 'true' : 'false' },
       { key: 'imageReason',        value: imageVerdict.reason || '-' },
       { key: 'imageMime',          value: imageVerdict.mime || '-' },
       { key: 'imageSize',          value: imageVerdict.size != null ? String(imageVerdict.size) : '-' },
+      { key: 'localUri',           value: session && session.localUri ? '(present, ' + session.localUri.length + ' chars)' : '(none)' },
+      { key: 'normalizedUri',      value: session && session.normalizedUri ? '(present)' : '(none)' },
+      { key: 'uploadedUrl',        value: session && session.uploadedUrl ? session.uploadedUrl.slice(0, 80) : '(none)' },
+      { key: 'aiStatus',           value: session ? session.aiStatus : '(idle)' },
+      { key: 'previewStatus',      value: session ? session.previewStatus : '(idle)' },
+      { key: 'renderStatus',       value: session ? session.renderStatus : '(idle)' },
+      { key: 'cropPrediction',     value: session && session.cropPrediction ? String(session.cropPrediction) : '(none)' },
+      { key: 'diseasePrediction',  value: session && session.diseasePrediction ? String(session.diseasePrediction) : '(none)' },
+      { key: 'confidence',         value: session && session.confidence != null ? String(session.confidence) : '-' },
+      { key: 'retryCount',         value: session ? String(session.retryCount) : '0' },
+      { key: 'inferenceLatencyMs', value: session && session.inferenceLatencyMs != null ? String(session.inferenceLatencyMs) : '-' },
+      { key: 'failedStage',        value: session && session.failedStage ? session.failedStage : '(none)' },
+      { key: 'locale',             value: session ? session.locale : '(unknown)' },
+      { key: 'device',             value: session ? session.device : '(unknown)' },
+      { key: 'browser',            value: session ? session.browser : '(unknown)' },
       { key: 'classifierInputVerified',
         value: (c.result && c.result.classifierInputVerified) ? 'true' : 'false' },
       { key: 'persisted',
@@ -88,20 +113,32 @@ export function buildScanDebugSnapshot(ctx) {
  */
 export function installScanDebugHook() {
   try {
-    if (!_isDev()) return false;
+    // V5 stability spec — production diagnostics are now allowed
+    // because the snapshot carries no PII (just structural state
+    // rows). The hook is small and lets field operators dump scan
+    // state without needing a dev build. The original DEV gate
+    // stays available for surfaces that prefer to dead-strip the
+    // install in production builds.
     if (typeof window === 'undefined') return false;
-    if (window.__scanDebug) return true;
+    if (window.__scanDebug && window.__scanHistory) return true;
     // Surfaces are responsible for handing the latest context to
     // the hook via `window.__scanDebugContext = { state, image, result }`.
-    window.__scanDebug = function () {
-      const ctx = (typeof window !== 'undefined' && window.__scanDebugContext) || {};
-      const snap = buildScanDebugSnapshot(ctx);
-      try {
-        // eslint-disable-next-line no-console
-        console.table(snap.rows);
-      } catch { /* swallow */ }
-      return snap;
-    };
+    if (!window.__scanDebug) {
+      window.__scanDebug = function () {
+        const ctx = (typeof window !== 'undefined' && window.__scanDebugContext) || {};
+        const snap = buildScanDebugSnapshot(ctx);
+        try { console.table(snap.rows); } catch { /* swallow */ }
+        return snap;
+      };
+    }
+    if (!window.__scanHistory) {
+      window.__scanHistory = function () {
+        let history = [];
+        try { history = getScanHistory(); } catch { history = []; }
+        try { console.table(history); } catch { /* swallow */ }
+        return history;
+      };
+    }
     return true;
   } catch { return false; }
 }

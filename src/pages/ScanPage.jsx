@@ -97,6 +97,20 @@ import {
   endScanSession,
   isStaleScanSession,
 } from '../core/scan/scanSessionId.js';
+// V5 stability pass — wide session manager. Composes with the
+// existing race-guard above (createScanSession internally bumps
+// the same id) and adds the persistent {sessionId, lifecycle,
+// localUri, normalizedUri, uploadedUrl, aiStatus, retryCount, …}
+// shape the V5 spec asks for. Every async-publish path below
+// calls updateSession alongside its setResult so the debug
+// overlay + offline-restore + __scanHistory all stay accurate.
+import {
+  createScanSession,
+  updateSession,
+  endSession as endScanSessionV5,
+  getActiveSession,
+} from '../core/scan/scanSessionManager.js';
+import { LIFECYCLE_STATE } from '../core/scan/scanLifecycleStateMachine.js';
 // Farm-intelligence loop §10 — minimum-viable offline scan queue.
 // When the network call fails AND we have a usable base64 image,
 // stash the scan locally so an online retry can run it through
@@ -397,27 +411,34 @@ export default function ScanPage() {
       return;
     }
     _scanInflightRef.current = true;
-    // Start a fresh scan session — every result publication below
-    // checks this id before applying, so a late fallback timer or
-    // out-of-order analyze response from a previous attempt can't
-    // overwrite the current result.
-    _sessionRef.current = startScanSession();
+    // V5 stability — create a fresh scan session via the session
+    // manager. Internally bumps the same race-guard id every async
+    // callback below checks, and seeds the wide session record
+    // (localUri / lifecycle / source / device) for the debug
+    // overlay + offline restore. Returns the frozen record so we
+    // can pluck the id without a second read.
+    const sessionRec = createScanSession({ source: file ? 'live_camera_or_gallery' : 'unknown' });
+    _sessionRef.current = sessionRec ? sessionRec.sessionId : startScanSession();
     const _localSessionId = _sessionRef.current;
     setError('');
 
-    // Scan Emergency Root Fix — REFUSE to advance into the analyze
-    // phase with only an Object URL. ScanCapture's useEffect
-    // cleanup revokes its preview URL the instant ScanCapture
-    // unmounts (which happens immediately when setPhase('analyzing')
-    // fires). If we kept that Object URL as analyzingImageUrl, the
-    // result card would render a revoked / broken URL — the exact
-    // "broken ? preview" the field has been reporting.
+    // Scan V5 Stability — survive ObjectURL revocation by ALWAYS
+    // preferring a dataURL. ScanCapture's unmount cleanup revokes
+    // its objectURL the instant the page advances to 'analyzing',
+    // so a revoked URL would render the "broken ? preview" bug.
     //
-    // Self-contained dataURLs (thumbnail / imageBase64) survive
-    // revocation. We use ONLY those. If both are missing, we show
-    // the controlled recovery banner instead of analysing on a
-    // doomed Object URL.
-    const safeImageUrl = thumbnail || imageBase64 || null;
+    // Priority change (V5): imageBase64 wins over thumbnail. After
+    // the imageNormalization pass landed in acceptCapturedFile,
+    // imageBase64 is the 2048-px normalized JPEG (~300-800 KB) —
+    // the SAME bytes the AI receives. Rendering THAT in the result
+    // card means the user sees the exact photo that was analyzed,
+    // not a 96-px pixelated thumbnail.
+    //
+    // If both are missing (a rare path where FileReader failed AND
+    // canvas thumbnailing failed) we still try the objectURL as a
+    // last resort — that URL may have been revoked but the
+    // <img> error event will catch and the recovery surface fires.
+    const safeImageUrl = imageBase64 || thumbnail || imageUrl || null;
     if (!safeImageUrl) {
       _scanInflightRef.current = false;
       setError(tSafe(
@@ -432,6 +453,17 @@ export default function ScanPage() {
     setPhase('analyzing');
     setPendingThumbnail(thumbnail || null);
     setAnalyzingImageUrl(safeImageUrl);
+    // V5 — mirror the preview into the session manager so the
+    // debug overlay shows `previewStatus: ready` + `localUri`.
+    try {
+      updateSession(_localSessionId, {
+        lifecycle:     LIFECYCLE_STATE.AI_PROCESSING,
+        localUri:      safeImageUrl,
+        normalizedUri: imageBase64 || '',
+        previewStatus: 'ready',
+        aiStatus:      'processing',
+      });
+    } catch { /* never block analysis on bookkeeping */ }
     // §7 — production pipeline trace. Dev-only via _devLog
     // would tree-shake; we keep this production-visible for ops
     // diagnostics. Fires once per scan.
@@ -791,8 +823,10 @@ export default function ScanPage() {
     // End the active scan session so any in-flight async result
     // from the previous attempt fails its isStaleScanSession check
     // and gets dropped. Starting a fresh capture in onContinue
-    // bumps the session id again.
-    endScanSession();
+    // bumps the session id again. V5 — endSession() also wipes the
+    // persisted session record + bumps the wide race guard.
+    try { endScanSessionV5(); } catch { /* swallow */ }
+    try { endScanSession(); } catch { /* swallow */ }
     _sessionRef.current = null;
     setError('');
     setResult(null);

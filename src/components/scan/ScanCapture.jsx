@@ -47,8 +47,15 @@ import LiveCameraScanner from './LiveCameraScanner.jsx';
 // when document/Image are unavailable it returns ok=true so legacy
 // callers keep working unchanged.
 import { scoreImageQuality } from '../../lib/imageQualityPreflight.js';
+// V5 stability pass — HEIC detection + JPEG re-encode + EXIF
+// orientation. Pure async, never throws. Returns the original
+// file's signature when normalization fails so the existing
+// fallback path keeps working.
+import {
+  normalizeScanImage, isHeicFile,
+} from '../../core/scan/imageNormalization.js';
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8MB
+const MAX_BYTES = 12 * 1024 * 1024; // 12MB — bumped to honor V5 spec §12.
 
 // Soft Ochre / Beige unified system — replaces the legacy white-on-
 // dark inline tokens so the in-page capture surface visually
@@ -282,17 +289,63 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       setError(tStrict('scan.error.tooLarge', 'That photo is too large. Try a smaller one.'));
       return false;
     }
-    const ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
-    if (!ALLOWED_TYPES.has(String(next.type || '').toLowerCase())) {
-      setError(tStrict('scan.error.badType', 'Please use a JPEG, PNG, or WebP photo.'));
+    // V5 stability pass — HEIC + extended-mime acceptance.
+    // iPhone Safari + the Photos picker often hands back HEIC
+    // (Apple's default capture format). The previous gate rejected
+    // those outright. Now we accept and route HEIC through the
+    // normalizer which decodes + re-encodes to JPEG so the
+    // downstream pipeline only ever sees JPEG bytes.
+    const ALLOWED_TYPES = new Set([
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+      'image/heic', 'image/heif',
+    ]);
+    const mime = String(next.type || '').toLowerCase();
+    const heicByExt = await isHeicFile(next);
+    const mimeOk = ALLOWED_TYPES.has(mime) || heicByExt;
+    if (!mimeOk) {
+      setError(tStrict('scan.error.badType',
+        'Please use a JPEG, PNG, WebP, or HEIC photo.'));
       return false;
     }
+    // V5 stability §3 — normalize BEFORE quality scoring so the
+    // canvas-based luminance probe runs on the JPEG'd version
+    // (matches what the AI sees). For non-HEIC inputs normalization
+    // is still cheap (downscale + EXIF rotate + re-encode) — we
+    // always want the AI to receive a stable JPEG.
+    let workingFile = next;
+    let normalizedDataUrl = '';
+    try {
+      const norm = await normalizeScanImage(next, { maxDim: 2048, quality: 0.82, maxBytes: MAX_BYTES });
+      if (norm && norm.ok && norm.normalizedBlob) {
+        // Use a deterministic filename so the upload path can derive
+        // a stable scan id without re-hashing the bytes.
+        const fname = (next.name && String(next.name).replace(/\.(heic|heif)$/i, '.jpg')) || 'scan.jpg';
+        try {
+          // Create a File so downstream code that probes `.name` /
+          // `.lastModified` still works. Falls back to the blob if
+          // the File constructor is unavailable.
+          workingFile = new File([norm.normalizedBlob], fname, { type: 'image/jpeg' });
+        } catch {
+          workingFile = norm.normalizedBlob;
+        }
+        normalizedDataUrl = norm.normalizedDataUrl || '';
+      } else if (norm && norm.reason === 'heic_decode_unsupported') {
+        // Safari < 17 / non-Apple browsers can't decode HEIC. Show
+        // a concrete hint instead of silently failing.
+        setError(tStrict('scan.error.heicUnsupported',
+          'HEIC photos aren’t supported on this device. Please share as JPEG.'));
+        return false;
+      }
+      // Any other normalization failure falls through to the
+      // pre-V5 path — better to attempt analysis on the raw file
+      // than to block the user on a transient canvas hiccup.
+    } catch { /* normalization is best-effort */ }
     // Stage 1 preflight — block blurry / dark / washed-out photos
     // BEFORE the scan API call. Returns ok=true on any environment
     // it can't measure (SSR, missing canvas) so legacy paths keep
     // working unchanged.
     try {
-      const report = await scoreImageQuality(next);
+      const report = await scoreImageQuality(workingFile);
       if (report && report.ok === false && report.hint) {
         setError(report.hint);
         return false;
@@ -302,10 +355,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
     }
     let url = '';
-    try { url = URL.createObjectURL(next); }
+    try { url = URL.createObjectURL(workingFile); }
     catch { /* fall through */ }
-    setPreview(url);
-    setFile(next);
+    // Prefer the normalized dataURL as the preview — it survives
+    // unmount + revoke and is what the AI will see, so the
+    // analyze surface and the result card render the SAME bytes.
+    setPreview(normalizedDataUrl || url);
+    setFile(workingFile);
     setError('');
     return true;
   }, [preview]);
@@ -447,10 +503,17 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     setBusy(true);
     setError('');
     try {
-      // Encode to base64 for the engine. If encoding fails we
-      // still hand off the URL so the engine can run the
-      // rule-based fallback.
-      const b64 = await _readAsBase64(fileToUse).catch(() => null);
+      // V5 stability §3 — `preview` already holds the normalized
+      // dataURL (or an objectURL fallback) set during
+      // acceptCapturedFile. We prefer that as the wire-side
+      // imageBase64 because it survives the unmount-revoke cycle
+      // and is the SAME bytes the AI receives. The FileReader
+      // re-encode below is the legacy safety net for cases where
+      // normalization didn't produce a dataURL.
+      const cachedDataUrl = (typeof preview === 'string' && preview.startsWith('data:image/'))
+        ? preview : '';
+      const b64 = cachedDataUrl
+        || (await _readAsBase64(fileToUse).catch(() => null));
       // Downscale to a small dataURL for the history thumbnail.
       // Best-effort — if canvas isn't available the consumer
       // simply falls back to the placeholder emoji.
