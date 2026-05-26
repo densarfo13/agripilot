@@ -60,6 +60,18 @@ const REQUIRED_KEYS = [
   'myFarm.scan.label',
   'myFarm.scan.sub',
   'myFarm.scan.aria',
+  // Sell page empty state (fourth round of on-device screenshots)
+  'sell.empty.title',
+  'sell.empty.body',
+  'sell.empty.cta',
+  // Home page scan-row + task eyebrow + location button
+  'home.scan',
+  'home.checkHealth',
+  'home.todayTask.label',
+  'weather.useMyLocation',
+  'hero.yourArea',
+  'hero.defaultFarm',
+  'hero.defaultGarden',
 ];
 
 describe('productionGapTranslations — overlay coverage', () => {

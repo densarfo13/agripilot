@@ -420,6 +420,95 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Scan afude apɔwmuden — hwɛ nhaban anaa afude no mfonini',
     hi: 'फसल स्वास्थ्य स्कैन करें — पत्तियाँ या फसल की तस्वीर देखें',
   },
+
+  // ─── Sell empty state (src/components/activation/SellEmptyPrompt.jsx) ─
+  // On-device screenshot showed these three strings in English on a
+  // Swahili device. The component had hardcoded literals (not even
+  // wrapped in tSafe) — the wrap-in-tSafe edit is in the same drop.
+  'sell.empty.title': {
+    en: 'No produce listed yet.',
+    fr: 'Aucun produit listé pour le moment.',
+    sw: 'Hakuna mazao yaliyoorodheshwa bado.',
+    ha: 'Babu amfani da aka jera tukuna.',
+    tw: 'Wonkyerɛw nnɔbae biara nkyerɛ.',
+    hi: 'अभी तक कोई उपज सूचीबद्ध नहीं है।',
+  },
+  'sell.empty.body': {
+    en: 'When your crop is ready, list it so buyers can find it.',
+    fr: 'Quand votre récolte est prête, listez-la pour que les acheteurs la trouvent.',
+    sw: 'Mavuno yako yakiwa tayari, yaorodheshe ili wanunuzi wayapate.',
+    ha: 'Lokacin da amfaninka ya shirya, jera shi don masu siye su same shi.',
+    tw: 'Sɛ wo nnɔbae ayɛ krado a, kyerɛ no na adetɔfoɔ ahunu.',
+    hi: 'जब आपकी फसल तैयार हो, तो उसे सूचीबद्ध करें ताकि खरीदार उसे ढूँढ सकें।',
+  },
+  'sell.empty.cta': {
+    en: 'List produce',
+    fr: 'Lister un produit',
+    sw: 'Orodhesha zao',
+    ha: 'Jera amfani',
+    tw: 'Kyerɛ nnɔbae',
+    hi: 'उपज सूचीबद्ध करें',
+  },
+
+  // ─── Home page scan-row + task eyebrow + location button ──────
+  // Screenshots showed these surfaces leaking English when the
+  // active locale was French / Swahili.
+  'home.scan': {
+    en: 'Scan',
+    fr: 'Scanner',
+    sw: 'Changanua',
+    ha: 'Sikan',
+    tw: 'Scan',
+    hi: 'स्कैन',
+  },
+  'home.checkHealth': {
+    en: 'Check crop or plant health',
+    fr: 'Vérifier la santé des cultures ou plantes',
+    sw: 'Angalia afya ya zao au mmea',
+    ha: 'Duba lafiyar amfani ko shuka',
+    tw: 'Hwɛ afude anaa dua apɔwmuden',
+    hi: 'फसल या पौधे का स्वास्थ्य देखें',
+  },
+  'home.todayTask.label': {
+    en: "Today's task",
+    fr: 'Tâche du jour',
+    sw: 'Kazi ya leo',
+    ha: 'Aikin yau',
+    tw: 'Ɛnnɛ adwuma',
+    hi: 'आज का कार्य',
+  },
+  'weather.useMyLocation': {
+    en: 'Use my location',
+    fr: 'Utiliser ma position',
+    sw: 'Tumia mahali pangu',
+    ha: 'Yi amfani da wurina',
+    tw: 'Fa me bea no di dwuma',
+    hi: 'मेरा स्थान उपयोग करें',
+  },
+  'hero.yourArea': {
+    en: 'Your area',
+    fr: 'Votre région',
+    sw: 'Eneo lako',
+    ha: 'Yankinku',
+    tw: 'Wo mpɔtam',
+    hi: 'आपका क्षेत्र',
+  },
+  'hero.defaultFarm': {
+    en: 'Your farm',
+    fr: 'Votre ferme',
+    sw: 'Shamba lako',
+    ha: 'Gonarka',
+    tw: 'Wo afuo',
+    hi: 'आपका खेत',
+  },
+  'hero.defaultGarden': {
+    en: 'Your garden',
+    fr: 'Votre jardin',
+    sw: 'Bustani yako',
+    ha: 'Lambunka',
+    tw: 'Wo turo',
+    hi: 'आपका बगीचा',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };

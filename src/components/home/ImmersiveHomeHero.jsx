@@ -246,9 +246,31 @@ export default function ImmersiveHomeHero({
   const accurateAsOf = _formatTime(w.fetchedAt || w.updatedAt || w.timestamp);
 
   const farmName = (() => {
+    // V5 production fix — detect the default-placeholder names that
+    // `tSafe('farm.newFarm.defaultName', 'My New Farm')` stamped at
+    // farm creation time. Those names get persisted in English when
+    // the user signed up in English, then leak through to French /
+    // Swahili / etc. screens forever. By treating any case-insensitive
+    // variant of those defaults as "no real name", we fall through to
+    // the localized 'hero.defaultFarm' / 'hero.defaultGarden' label
+    // — which IS resolved per-render and stays in the active locale.
+    const _PLACEHOLDERS = new Set([
+      'my new farm', 'my new garden',
+      'ma nouvelle ferme', 'mon nouveau jardin',
+      'shamba langu jipya', 'bustani yangu mpya',
+      'sabuwar gonata', 'sabuwar lambuna',
+      "m'afuo foforɔ", 'me afuo foforɔ', 'me turo foforɔ',
+      'मेरा नया खेत', 'मेरा नया बगीचा',
+    ]);
+    const _isPlaceholder = (s) => {
+      const v = String(s || '').trim().toLowerCase();
+      return v.length === 0 || _PLACEHOLDERS.has(v);
+    };
     if (entity && typeof entity === 'object') {
       const candidates = [entity.name, entity.farmName, entity.label, entity.title];
-      for (const c of candidates) if (typeof c === 'string' && c.trim()) return c.trim();
+      for (const c of candidates) {
+        if (typeof c === 'string' && c.trim() && !_isPlaceholder(c)) return c.trim();
+      }
     }
     return isGarden
       ? tSafe('hero.defaultGarden', 'Your garden')

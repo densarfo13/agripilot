@@ -19,6 +19,7 @@
 
 import { useCallback } from 'react';
 import { WheatGlyph } from '../icons/InlineGlyphs.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const S = {
   wrap: {
@@ -70,9 +71,10 @@ export default function SellEmptyPrompt({ onListProduceClick }) {
   return (
     <div style={S.wrap} data-testid="sell-empty-prompt">
       <span aria-hidden="true" style={S.icon}><WheatGlyph size={24} /></span>
-      <h2 style={S.headline}>No produce listed yet.</h2>
+      <h2 style={S.headline}>{tSafe('sell.empty.title', 'No produce listed yet.')}</h2>
       <p style={S.body}>
-        When your crop is ready, list it so buyers can find it.
+        {tSafe('sell.empty.body',
+          'When your crop is ready, list it so buyers can find it.')}
       </p>
       <button
         type="button"
@@ -80,7 +82,7 @@ export default function SellEmptyPrompt({ onListProduceClick }) {
         data-testid="sell-empty-prompt-cta"
         onClick={handleClick}
       >
-        List produce
+        {tSafe('sell.empty.cta', 'List produce')}
       </button>
     </div>
   );
