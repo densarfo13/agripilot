@@ -113,6 +113,17 @@ const REQUIRED_KEYS = [
   'scan.outcome.worsened',
   'scan.outcome.escalated',
   'scan.outcome.wrong_diagnosis',
+  // Phase 14 memory-driven guidance
+  'memory.recurring.issue',
+  'memory.trend.worsening',
+  'memory.wins.recent',
+  'memory.lastScan.longGap',
+  'memory.seasonal.pattern',
+  'recommendation.learning.usuallyHelpful',
+  'recommendation.learning.oftenIgnored',
+  'ngo.analytics.effectiveness.header',
+  'ngo.analytics.engagement.header',
+  'ngo.analytics.regionalStress.header',
 ];
 
 describe('productionGapTranslations — overlay coverage', () => {

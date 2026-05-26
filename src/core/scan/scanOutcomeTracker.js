@@ -102,6 +102,11 @@ export function recordScanOutcome(scanId, outcome, meta) {
       severity:      typeof safeMeta.severity === 'string' ? safeMeta.severity : null,
       confidence:    typeof safeMeta.confidence === 'string' ? safeMeta.confidence : null,
       daysSinceScan: Number.isFinite(safeMeta.daysSinceScan) ? safeMeta.daysSinceScan : null,
+      // Phase 14 — `linkedTaskKey` lets the recommendation-learning
+      // engine credit the right task when this outcome resolved.
+      // Without it the learning engine falls back to (crop, region)
+      // wildcard matching, which is less precise but still useful.
+      linkedTaskKey: typeof safeMeta.linkedTaskKey === 'string' ? safeMeta.linkedTaskKey : null,
       userNotes:     (typeof safeMeta.userNotes === 'string' && safeMeta.userNotes)
                        ? safeMeta.userNotes.slice(0, 240) : null,
     });

@@ -831,6 +831,91 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Yare a yɛkae no nyɛ nokorɛ',
     hi: 'निदान गलत था',
   },
+
+  // ─── Phase 14 memory-driven guidance ──────────────────────
+  // Emitted by farmMemorySnapshot.deriveMemoryGuidance + the
+  // recommendation-learning surface. Hedged + calm — surfaces
+  // weave these in subtly, never as a giant dashboard.
+  'memory.recurring.issue': {
+    en: 'You’ve scanned this same issue {count} times — let’s try a different approach.',
+    fr: 'Vous avez scanné ce même problème {count} fois — essayons une approche différente.',
+    sw: 'Umechanganua tatizo hili mara {count} — hebu tujaribu njia tofauti.',
+    ha: 'Ka sikan wannan matsala sau {count} — bari mu gwada wani hanya.',
+    tw: 'W’ascan saa asɛm yi mpɛn {count} — ma yɛn nsɔ kwan foforɔ nhwɛ.',
+    hi: 'आपने यह समस्या {count} बार स्कैन की है — चलिए कोई अलग तरीका आज़माएँ।',
+  },
+  'memory.trend.worsening': {
+    en: 'Recent scans suggest this is getting worse — act sooner rather than later.',
+    fr: 'Les scans récents suggèrent que cela empire — agissez plus tôt que tard.',
+    sw: 'Uchanganuzi wa hivi karibuni unaonyesha hili linazidi kuwa baya — chukua hatua mapema.',
+    ha: 'Sikan na baya-bayan nan suna nuna wannan yana ƙara tabarbare — yi aiki da wuri.',
+    tw: 'Scan a yɛyɛɛ nnansa yi kyerɛ sɛ ɛrekɔ bɔne so — yɛ biribi ntɛm.',
+    hi: 'हाल के स्कैन बताते हैं कि यह बिगड़ रहा है — जल्द ही कार्रवाई करें।',
+  },
+  'memory.wins.recent': {
+    en: 'Your care has resolved {count} issues recently. Keep the routine going.',
+    fr: 'Vos soins ont résolu {count} problèmes récemment. Continuez la routine.',
+    sw: 'Utunzaji wako umesuluhisha matatizo {count} hivi karibuni. Endeleza ratiba hiyo.',
+    ha: 'Kulawarka ta warware matsaloli {count} kwanan nan. Ci gaba da aikin.',
+    tw: 'Wo dwumadi awie nsɛm {count} nnansa yi. Toa adwuma no so.',
+    hi: 'आपकी देखभाल से हाल ही में {count} समस्याएँ हल हुई हैं। यह दिनचर्या जारी रखें।',
+  },
+  'memory.lastScan.longGap': {
+    en: 'It has been {days} days since your last scan. A quick check helps catch issues early.',
+    fr: 'Cela fait {days} jours depuis votre dernier scan. Une vérification rapide aide à détecter tôt.',
+    sw: 'Imepita siku {days} tangu uchanganuzi wako wa mwisho. Ukaguzi wa haraka husaidia kupata matatizo mapema.',
+    ha: 'An shafe kwanaki {days} tun bayan sikan ɗinka na ƙarshe. Bincike na sauri yana taimakawa wajen gano matsaloli da wuri.',
+    tw: 'Nna {days} atwam fi wo scan a etwa toɔ akyi. Hwɛyie ntɛm boa ma yehunu nsɛm ntɛm.',
+    hi: 'आपके अंतिम स्कैन को {days} दिन हो गए हैं। त्वरित जाँच जल्दी समस्याओं को पकड़ने में मदद करती है।',
+  },
+  'memory.seasonal.pattern': {
+    en: 'This issue tends to show up around this time of year on your farm.',
+    fr: 'Ce problème a tendance à apparaître à cette période de l’année sur votre ferme.',
+    sw: 'Tatizo hili huwa linatokea wakati huu wa mwaka kwenye shamba lako.',
+    ha: 'Wannan matsala tana saba bayyana a wannan lokacin shekara a gonarka.',
+    tw: 'Saa asɛm yi taa pue bere a ɛtenase mu yi mu wɔ wo afuo so.',
+    hi: 'यह समस्या आपके खेत पर साल के इस समय के आसपास होती रहती है।',
+  },
+  'recommendation.learning.usuallyHelpful': {
+    en: 'This usually works for you',
+    fr: 'Cela fonctionne généralement pour vous',
+    sw: 'Hii kwa kawaida hukufanyia kazi',
+    ha: 'Wannan yawanci yana aiki a gareka',
+    tw: 'Eyi taa boa wo',
+    hi: 'यह आमतौर पर आपके लिए काम करता है',
+  },
+  'recommendation.learning.oftenIgnored': {
+    en: 'You usually skip this — keep what works',
+    fr: 'Vous ignorez généralement cela — gardez ce qui fonctionne',
+    sw: 'Kwa kawaida unaruka hii — endelea na kinachofanya kazi',
+    ha: 'Yawanci kana watsi da wannan — riƙe abin da ke aiki',
+    tw: 'Wotaa di eyi akyi — kɔ so yɛ deɛ ɛyɛ adwuma',
+    hi: 'आप आमतौर पर इसे छोड़ते हैं — जो काम करता है उसे जारी रखें',
+  },
+  'ngo.analytics.effectiveness.header': {
+    en: 'Intervention effectiveness',
+    fr: 'Efficacité des interventions',
+    sw: 'Ufanisi wa hatua',
+    ha: 'Tasirin shiga tsakani',
+    tw: 'Adwumayɛ a ɛboa',
+    hi: 'हस्तक्षेप की प्रभावशीलता',
+  },
+  'ngo.analytics.engagement.header': {
+    en: 'Farmer engagement',
+    fr: 'Engagement des agriculteurs',
+    sw: 'Ushiriki wa mkulima',
+    ha: 'Shigar manomi',
+    tw: 'Okuafoɔ a ɔde ne ho ahyɛ mu',
+    hi: 'किसान सहभागिता',
+  },
+  'ngo.analytics.regionalStress.header': {
+    en: 'Regional crop stress',
+    fr: 'Stress des cultures par région',
+    sw: 'Mfadhaiko wa zao wa kikanda',
+    ha: 'Damuwar amfani na yanki',
+    tw: 'Mantam mu afude haw',
+    hi: 'क्षेत्रीय फसल तनाव',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };
