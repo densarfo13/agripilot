@@ -636,6 +636,60 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Hwɛyie a wɔyɛ no daa boa ma yehunu nsɛm ntɛm.',
     hi: 'नियमित जाँच से समस्याओं को जल्दी पकड़ने में मदद मिलती है।',
   },
+
+  // ─── Phase 11 leaf-focus guidance chips ────────────────────
+  // Rendered by src/components/scan/LeafFocusGuidance.jsx during
+  // scan analysis. Self-suppressing — users only see them when
+  // the engine has something to correct (move closer, dark
+  // lighting, multiple leaves, etc.).
+  'scan.focus.guidance.moveCloser': {
+    en: 'Move closer to the leaf',
+    fr: 'Rapprochez-vous de la feuille',
+    sw: 'Sogea karibu na jani',
+    ha: 'Matsa kusa da ganye',
+    tw: 'Bɛn aba no',
+    hi: 'पत्ते के पास जाएँ',
+  },
+  'scan.focus.guidance.leafNotCentered': {
+    en: 'Center the leaf in the frame',
+    fr: 'Centrez la feuille dans le cadre',
+    sw: 'Weka jani katikati ya fremu',
+    ha: 'Sa ganye a tsakiyar firam',
+    tw: 'Fa aba no si fa-ɔha',
+    hi: 'पत्ते को फ्रेम के बीच में रखें',
+  },
+  'scan.focus.guidance.multipleLeaves': {
+    en: 'Multiple leaves detected — pick one',
+    fr: 'Plusieurs feuilles détectées — choisissez-en une',
+    sw: 'Majani mengi yameonekana — chagua moja',
+    ha: 'An gano ganye da yawa — zaɓi ɗaya',
+    tw: 'Yɛahunu nhaban pii — yi baako',
+    hi: 'कई पत्ते मिले — एक चुनें',
+  },
+  'scan.focus.guidance.lightingDark': {
+    en: 'Lighting is too dark — move into brighter light',
+    fr: 'L’éclairage est trop sombre — déplacez-vous vers une lumière plus vive',
+    sw: 'Mwanga ni hafifu — hama mahali penye mwanga zaidi',
+    ha: 'Hasken yana da duhu — koma wuri mai haske',
+    tw: 'Hann no asum dodo — kɔ baabi a hann wɔ',
+    hi: 'रोशनी बहुत कम है — उजली जगह जाएँ',
+  },
+  'scan.focus.guidance.lightingBright': {
+    en: 'Glare detected — angle the camera away from light',
+    fr: 'Reflet détecté — orientez la caméra à l’écart de la lumière',
+    sw: 'Mng’aro umeonekana — geuza kamera mbali na mwanga',
+    ha: 'An gano hasken — juya kamara daga hasken',
+    tw: 'Hann reka — dane camera fi hann no ho',
+    hi: 'चमक का पता चला — कैमरा रोशनी से दूर मोड़ें',
+  },
+  'scan.focus.guidance.noLeafDetected': {
+    en: 'No leaf detected — point camera at a leaf',
+    fr: 'Aucune feuille détectée — pointez la caméra vers une feuille',
+    sw: 'Hakuna jani lililoonekana — elekeza kamera kwenye jani',
+    ha: 'Ba a gano ganye ba — nuna kamara zuwa ganye',
+    tw: 'Wonhunuu aba biara — kyerɛ camera no aba ho',
+    hi: 'कोई पत्ता नहीं मिला — कैमरा पत्ते की ओर रखें',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };

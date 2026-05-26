@@ -32,6 +32,11 @@ import React, { useEffect, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import { LeafGlyph } from '../icons/InlineGlyphs.jsx';
+// Phase 11 — leaf focus guidance chip row. Renders the live
+// guidance flags ("move closer", "lighting too dark", "multiple
+// leaves") from the leafFocusEngine. Self-suppresses when no
+// flags are active so the perfect-scan path stays minimal.
+import LeafFocusGuidance from './LeafFocusGuidance.jsx';
 // Scan Hardening §1 — every <img> on the scan flow renders through
 // SafeImagePreview which probes the URL with a hidden Image() decode
 // BEFORE rendering, so the browser's broken-image icon never appears
@@ -72,6 +77,12 @@ export default function ScanAnalyzing({
   // null            → default step copy
   // 'still_checking' → "Still checking your crop" (after 5s)
   escalation = null,
+  // Phase 11 — leaf focus context. When supplied, the analyzing
+  // surface renders the bbox overlay (shows the user where the
+  // engine isolated the leaf) and a guidance chip row below the
+  // headline. Both self-suppress when focusContext is null /
+  // not-ok / no flags set, so the calm-path UX is unchanged.
+  focusContext = null,
 }) {
   useStrictTranslation();
 
@@ -131,9 +142,13 @@ export default function ScanAnalyzing({
           validateImageUrl() gate eliminates obviously-malformed
           inputs without firing the Image() probe at all. */}
       <div style={S.frame} data-testid="scan-analyzing-frame">
-        {validateImageUrl(imageUrl) ? (
+        {/* Phase 11 — prefer the focus overlay (original + leaf
+            bbox drawn) when the engine succeeded. Shows the user
+            where the AI is looking. Falls through to the raw
+            imageUrl when isolation failed / surface unavailable. */}
+        {validateImageUrl(_pickPreviewSrc(focusContext, imageUrl)) ? (
           <SafeImagePreview
-            src={imageUrl}
+            src={_pickPreviewSrc(focusContext, imageUrl)}
             alt={tSafe('scan.preview.alt', 'Plant photo')}
             style={S.image}
             testId="scan-analyzing-image"
@@ -161,6 +176,10 @@ export default function ScanAnalyzing({
             />
           ))}
         </div>
+        {/* Phase 11 — guidance chips. Self-suppresses when no flag
+            is active so the calm-path UX is unchanged for a
+            well-framed scan. */}
+        <LeafFocusGuidance guidance={focusContext && focusContext.guidance} />
         <p style={S.note}>
           {tSafe('scan.analyzing.note', 'Your photo stays on this device.')}
         </p>
@@ -296,4 +315,21 @@ const S = {
   },
 };
 
-export const _internal = Object.freeze({ STEPS, SAFETY_MS });
+/**
+ * Phase 11 — prefer the leaf-focus overlay (original + bbox)
+ * over the raw capture URL when the engine succeeded. Falls
+ * through cleanly when focusContext is missing or isolation
+ * failed so the legacy preview path stays intact.
+ */
+function _pickPreviewSrc(focusContext, fallback) {
+  try {
+    if (focusContext && focusContext.ok
+        && typeof focusContext.focusOverlayDataUrl === 'string'
+        && focusContext.focusOverlayDataUrl) {
+      return focusContext.focusOverlayDataUrl;
+    }
+  } catch { /* swallow */ }
+  return fallback;
+}
+
+export const _internal = Object.freeze({ STEPS, SAFETY_MS, _pickPreviewSrc });

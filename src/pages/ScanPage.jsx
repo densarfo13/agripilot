@@ -225,6 +225,12 @@ export default function ScanPage() {
   // 'still_checking' → escalated "Still checking your crop" copy
   //                    (set after 5s of pending analysis)
   const [analyzingEscalation, setAnalyzingEscalation] = useState(null);
+  // Phase 11 — focus context captured by ScanCapture's
+  // leafFocusEngine. ScanAnalyzing reads this to render the
+  // bbox-overlay preview + the live guidance chips ("move closer",
+  // "lighting too dark", "multiple leaves"). Cleared on retake so
+  // the next scan starts with a clean slate.
+  const [analyzingFocusContext, setAnalyzingFocusContext] = useState(null);
 
   // Read profile defensively — the page must work in a logged-out
   // / no-active-farm state.
@@ -472,6 +478,7 @@ export default function ScanPage() {
     setPhase('analyzing');
     setPendingThumbnail(thumbnail || null);
     setAnalyzingImageUrl(safeImageUrl);
+    setAnalyzingFocusContext(focusContext || null);
     // V5 — mirror the preview into the session manager so the
     // debug overlay shows `previewStatus: ready` + `localUri`.
     try {
@@ -906,6 +913,7 @@ export default function ScanPage() {
     setTasksAdded(false);
     setPendingThumbnail(null);
     setAnalyzingImageUrl(null);
+    setAnalyzingFocusContext(null);
     setPhase('capture');
   }, []);
 
@@ -1108,6 +1116,7 @@ export default function ScanPage() {
           imageUrl={analyzingImageUrl}
           experience={experience}
           escalation={analyzingEscalation}
+          focusContext={analyzingFocusContext}
           onCancel={onRetake}
         />
       ) : null}

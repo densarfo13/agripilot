@@ -88,6 +88,13 @@ const REQUIRED_KEYS = [
   'home.weatherTask.dry.reason',
   'home.weatherTask.inspect.title',
   'home.weatherTask.inspect.reason',
+  // Phase 11 — leaf focus guidance chips
+  'scan.focus.guidance.moveCloser',
+  'scan.focus.guidance.leafNotCentered',
+  'scan.focus.guidance.multipleLeaves',
+  'scan.focus.guidance.lightingDark',
+  'scan.focus.guidance.lightingBright',
+  'scan.focus.guidance.noLeafDetected',
 ];
 
 describe('productionGapTranslations — overlay coverage', () => {
