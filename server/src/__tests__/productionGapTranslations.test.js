@@ -95,6 +95,24 @@ const REQUIRED_KEYS = [
   'scan.focus.guidance.lightingDark',
   'scan.focus.guidance.lightingBright',
   'scan.focus.guidance.noLeafDetected',
+  // Phase 12 — context diagnosis UX
+  'scan.diagnosis.whatNoticed.header',
+  'scan.diagnosis.likelyIssue.header',
+  'scan.diagnosis.whyWeThinkThis.header',
+  'scan.diagnosis.whatToDoNow.header',
+  'scan.diagnosis.prevention.header',
+  'scan.diagnosis.alternatives.header',
+  'scan.diagnosis.monitor.window',
+  'scan.diagnosis.severity.mild',
+  'scan.diagnosis.severity.moderate',
+  'scan.diagnosis.severity.serious',
+  'scan.outcome.prompt',
+  'scan.outcome.resolved',
+  'scan.outcome.improved',
+  'scan.outcome.no_change',
+  'scan.outcome.worsened',
+  'scan.outcome.escalated',
+  'scan.outcome.wrong_diagnosis',
 ];
 
 describe('productionGapTranslations — overlay coverage', () => {
