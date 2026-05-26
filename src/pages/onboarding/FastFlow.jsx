@@ -57,6 +57,10 @@ import { isOnboardingComplete } from '../../utils/onboarding.js';
 // sync, and `farroway:langchange` fires for live re-render).
 import { setLanguage as i18nSetLanguage } from '../../i18n/index.js';
 import { SUPPORTED_LOCALES } from '../../i18n/supportedLocales.ts';
+// Production-rebuild Phase 7: atomic switch preloads the locale
+// column before flipping the UI, killing the partial-English window
+// the onboarding language picker used to show on cold cache.
+import { setLanguageAtomic } from '../../i18n/atomicLocaleSwitch.js';
 // Progress bar lives in its own leaf module so the QuickGarden /
 // QuickFarm setup forms can import it without dragging the
 // FastFlow import tree along with them (which previously pulled
@@ -172,7 +176,26 @@ export default function FastFlow() {
   }, [step]);
 
   function pickLanguage(code) {
-    try { i18nSetLanguage(code); } catch { /* swallow */ }
+    // Atomic switch preloads the locale chunk before the UI flips —
+    // an onboarding picker is the WORST place for a partial-English
+    // frame because it's the user's first impression. Falls back to
+    // the synchronous legacy path on any failure.
+    try {
+      const p = setLanguageAtomic(code);
+      if (p && typeof p.then === 'function') {
+        p.then((r) => {
+          if (!r || r.ok === false) {
+            try { i18nSetLanguage(code); } catch { /* swallow */ }
+          }
+        }).catch(() => {
+          try { i18nSetLanguage(code); } catch { /* swallow */ }
+        });
+      } else {
+        i18nSetLanguage(code);
+      }
+    } catch {
+      try { i18nSetLanguage(code); } catch { /* swallow */ }
+    }
     try { saveData(STORE_KEY, { ...state, step: 1, language: code }); }
     catch { /* swallow */ }
     try {

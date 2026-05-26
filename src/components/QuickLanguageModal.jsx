@@ -28,6 +28,11 @@ import React, { useEffect } from 'react';
 import { setLanguage } from '../i18n/index.js';
 import { setSavedLanguage } from '../utils/onboarding.js';
 import { SUPPORTED_LOCALES } from '../i18n/supportedLocales.ts';
+// Production-rebuild Phase 7: atomic locale switch preloads the
+// target column before flipping the UI so we never render a half-
+// translated frame. Legacy setLanguage is kept as the fallback
+// path inside pick() so a fetch failure doesn't strand the user.
+import { setLanguageAtomic } from '../i18n/atomicLocaleSwitch.js';
 
 // Projected from the centralized registry. The local shape keeps
 // the `label` (English name) + `native` (script name) split this
@@ -57,8 +62,27 @@ export default function QuickLanguageModal({ open = false, onClose = null, onPic
   if (!open) return null;
 
   function pick(code) {
-    try { setLanguage(code); }       catch { /* ignore */ }
-    try { setSavedLanguage(code); }  catch { /* ignore */ }
+    // Fire-and-forget atomic switch — awaits the column chunk
+    // before flipping; falls back to the legacy synchronous path
+    // on any failure. Either way the modal closes immediately
+    // so the user feels instant feedback.
+    try {
+      const p = setLanguageAtomic(code);
+      if (p && typeof p.then === 'function') {
+        p.then((r) => {
+          if (!r || r.ok === false) {
+            try { setLanguage(code); } catch { /* swallow */ }
+          }
+        }).catch(() => {
+          try { setLanguage(code); } catch { /* swallow */ }
+        });
+      } else {
+        setLanguage(code);
+      }
+    } catch {
+      try { setLanguage(code); } catch { /* swallow */ }
+    }
+    try { setSavedLanguage(code); } catch { /* ignore */ }
     if (typeof onPick === 'function') {
       try { onPick(code); }
       catch { /* never propagate from a click handler */ }

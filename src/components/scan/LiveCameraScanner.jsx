@@ -51,6 +51,16 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { tSafe } from '../../i18n/tSafe.js';
+// Production-rebuild Phase 2: mobile camera lifecycle. Layered on
+// top of this component's existing visibilitychange handler — adds
+// `pagehide`/`pageshow` (Safari bfcache), stream-freeze detection,
+// and `track.readyState` watchdog. Without this layer the user
+// report "preview freezes after app-switch" persisted because iOS
+// killed the MediaStream silently during the hide window.
+import {
+  installMobileCameraLifecycle,
+  uninstallMobileCameraLifecycle,
+} from '../../core/scan/mobileCameraLifecycle.js';
 
 const PREFERRED_CONSTRAINTS = (facing) => ({
   audio: false,
@@ -636,6 +646,56 @@ export default function LiveCameraScanner({
     try { document.addEventListener('visibilitychange', onVis); } catch { /* swallow */ }
     return () => {
       try { document.removeEventListener('visibilitychange', onVis); } catch { /* swallow */ }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, phase, facing]);
+
+  // Mobile camera lifecycle layer (Production-Rebuild Phase 2).
+  // Pairs with the visibilitychange handler above; catches the
+  // failure modes that handler can't see:
+  //   • Safari bfcache eviction (pageshow with persisted=true)
+  //   • track.readyState 'ended' without an 'ended' event
+  //   • Frozen stream (currentTime stuck across watchdog ticks)
+  //   • Stale srcObject after foregrounding
+  // The lifecycle is installed only while the camera surface is
+  // open AND we're past 'image_captured' so the watchdog doesn't
+  // false-positive on the still-frame review state.
+  useEffect(() => {
+    if (!open) return undefined;
+    if (phase === 'image_captured') return undefined;
+    const handle = installMobileCameraLifecycle({
+      videoElRef:    () => videoRef.current,
+      restartCamera: async () => {
+        try {
+          await startStream(facing);
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, reason: (err && err.message) || 'restart_failed' };
+        }
+      },
+      stopCamera:    () => { try { stopStream(); } catch { /* swallow */ } },
+      onFreeze:      () => {
+        // Stream froze mid-capture — most often a Safari background
+        // killed the track. Reuse the same restart path the
+        // visibility handler uses so we don't end up with two
+        // overlapping getUserMedia calls.
+        try {
+          stopStream();
+          startStream(facing);
+        } catch { /* swallow */ }
+      },
+      onStaleStream: () => {
+        try {
+          stopStream();
+          startStream(facing);
+        } catch { /* swallow */ }
+      },
+    });
+    return () => {
+      try { handle.uninstall && handle.uninstall(); }
+      catch { /* swallow */ }
+      try { uninstallMobileCameraLifecycle(); }
+      catch { /* swallow */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, phase, facing]);
