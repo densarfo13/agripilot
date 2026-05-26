@@ -35,6 +35,33 @@ try {
     window.__FARROWAY_COMMIT_SHA    = FARROWAY_COMMIT_SHA;
   }
 } catch { /* swallow */ }
+
+// Scan Pipeline Enforcement — install boot hooks.
+//   • window.__SCAN_BUILD_SHA__  — operator confirms a fresh deploy
+//     reached the browser by reading this from DevTools.
+//   • window.__scanDebug()       — dev-only state inspector that
+//     prints the live scan-pipeline snapshot to the console.
+//   • setDevThrowMode(import.meta.env.DEV)  — makes integrity
+//     violations halt the page during local QA. Production never
+//     throws (the integrity assertion returns { ok: false } and
+//     the surface branches on it).
+try {
+  // Dynamic-imported so a boot-time error in any of these
+  // installers can never crash the app shell — each one is its
+  // own try/catch internally.
+  import('./core/scan/scanBuildStamp.js').then((m) => {
+    try { m.installScanBuildStamp(); } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
+  import('./core/scan/scanDebugOverlay.js').then((m) => {
+    try { m.installScanDebugHook(); } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
+  import('./core/scan/scanPipelineIntegrity.js').then((m) => {
+    try {
+      const isDev = !!(typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV);
+      m.setDevThrowMode(isDev);
+    } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
+} catch { /* never block boot */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
 // Farm State Synchronization Audit — non-destructive mirror of

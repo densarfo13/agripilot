@@ -86,6 +86,17 @@ import { FEATURE_SCAN_USEFULNESS } from '../lib/pilotFlags.js';
 import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
 import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
 import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
+// Scan Pipeline Enforcement — race-condition guard. Each onContinue
+// call starts a fresh scan session; result publications inside
+// async callbacks (15s fallback, analyze response, ML-failure
+// fallback) check isStaleScanSession() and silently drop if the
+// user has already retaken / cancelled. Closes the "stale
+// diagnosis leaks into new attempt" class of bug.
+import {
+  startScanSession,
+  endScanSession,
+  isStaleScanSession,
+} from '../core/scan/scanSessionId.js';
 // Farm-intelligence loop §10 — minimum-viable offline scan queue.
 // When the network call fails AND we have a usable base64 image,
 // stash the scan locally so an online retry can run it through
@@ -368,6 +379,11 @@ export default function ScanPage() {
   // parallel requests that fought for setResult — now the second
   // tap is a no-op until the first call returns.
   const _scanInflightRef = useRef(false);
+  // Per-call scan session id. Set at the start of onContinue;
+  // every setResult below checks `isStaleScanSession(_sessionRef.current)`
+  // before publishing so a fallback timer / late analyze response
+  // can never overwrite a fresher attempt.
+  const _sessionRef = useRef(null);
 
   const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file }) => {
     // §6 — inflight guard. Bail silently if a scan is already
@@ -381,6 +397,12 @@ export default function ScanPage() {
       return;
     }
     _scanInflightRef.current = true;
+    // Start a fresh scan session — every result publication below
+    // checks this id before applying, so a late fallback timer or
+    // out-of-order analyze response from a previous attempt can't
+    // overwrite the current result.
+    _sessionRef.current = startScanSession();
+    const _localSessionId = _sessionRef.current;
     setError('');
 
     // Scan Emergency Root Fix — REFUSE to advance into the analyze
@@ -470,6 +492,9 @@ export default function ScanPage() {
               sizeSqFt:         profile?.landSizeSqFt || profile?.farmSize || null,
               growingSetup:     profile?.growingSetup || null,
             });
+            // Scan Pipeline Enforcement — drop if the user has
+            // already moved on (retake / cancel / new scan).
+            if (isStaleScanSession(_localSessionId)) return;
             setResult({
               scanId:             'scan_fb_' + Date.now().toString(36),
               // Pass the captured photo into the result so the
@@ -637,6 +662,10 @@ export default function ScanPage() {
       // thumbnail. Without this thread-through, UsefulResultCard
       // saw `result.imageUrl === undefined` and rendered the macro
       // stock photo — the "broken/wrong preview" bug.
+      //
+      // Scan Pipeline Enforcement — drop if the user has already
+      // moved on while we were awaiting the classifier.
+      if (isStaleScanSession(_localSessionId)) return;
       setResult({
         ...refinedOut,
         imageUrl:  refinedOut.imageUrl  || analyzingImageUrl || null,
@@ -704,6 +733,9 @@ export default function ScanPage() {
       // photo can still be saved to history.
       if (mlScanOn) {
         try {
+          // Scan Pipeline Enforcement — drop if the user has
+          // already moved on while we were on the ML-failure path.
+          if (isStaleScanSession(_localSessionId)) return;
           setResult({
             scanId:             'scan_mlf_' + Date.now().toString(36),
             // Always thread the captured photo through to the
@@ -756,6 +788,12 @@ export default function ScanPage() {
   }, [experience, activeExperience, profile]);
 
   const onRetake = useCallback(() => {
+    // End the active scan session so any in-flight async result
+    // from the previous attempt fails its isStaleScanSession check
+    // and gets dropped. Starting a fresh capture in onContinue
+    // bumps the session id again.
+    endScanSession();
+    _sessionRef.current = null;
     setError('');
     setResult(null);
     setSavedEntryId(null);
