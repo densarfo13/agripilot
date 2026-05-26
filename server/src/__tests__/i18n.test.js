@@ -394,12 +394,19 @@ describe('Voice and text use same language source', () => {
   });
 
   it('VOICE_LANGUAGES and i18n LANGUAGES match', () => {
-    const voiceSrc = readFile('src/utils/voiceGuide.js');
-    const i18nSrc = readFile('src/i18n/index.js');
-    // Both should have en, fr, sw, ha, tw
+    // After the permanent-locales refactor, the i18n LANGUAGES
+    // table is PROJECTED from src/i18n/supportedLocales.ts
+    // rather than re-declared inline. Look there for the codes.
+    const voiceSrc  = readFile('src/utils/voiceGuide.js');
+    const i18nSrc   = readFile('src/i18n/index.js');
+    const localesSrc = readFile('src/i18n/supportedLocales.ts');
+    // i18n/index.js must STILL re-export LANGUAGES (legacy
+    // contract for 100+ existing imports).
+    expect(i18nSrc).toContain('export const LANGUAGES');
+    // The actual code list lives in supportedLocales.ts.
     for (const code of ['en', 'fr', 'sw', 'ha', 'tw']) {
       expect(voiceSrc).toContain(`code: '${code}'`);
-      expect(i18nSrc).toContain(`code: '${code}'`);
+      expect(localesSrc).toContain(`code: '${code}'`);
     }
   });
 });

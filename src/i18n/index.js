@@ -245,16 +245,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
 
 // ── Language list (matches VOICE_LANGUAGES in voiceGuide.js) ──
 // Kept in sync with SUPPORTED_LANGUAGES in i18n/languageConfig.js.
-// Six locales for the global rollout: English, French, Kiswahili,
-// Hausa, Twi, Hindi.
-export const LANGUAGES = [
-  { code: 'en', label: 'English',   short: 'EN' },
-  { code: 'fr', label: 'Français',  short: 'FR' },
-  { code: 'sw', label: 'Kiswahili', short: 'SW' },
-  { code: 'ha', label: 'Hausa',     short: 'HA' },
-  { code: 'tw', label: 'Twi',       short: 'TW' },
-  { code: 'hi', label: 'हिन्दी',       short: 'HI' },
-];
+//
+// Single source of truth is now `src/i18n/supportedLocales.ts` —
+// LANGUAGES is projected from it so every picker, header, settings
+// page, and onboarding screen renders the same locale list. The
+// `short` field is derived (uppercased code) since none of the
+// surfaces use a label longer than 2 chars.
+import { SUPPORTED_LOCALES } from './supportedLocales.ts';
+export const LANGUAGES = SUPPORTED_LOCALES.map((l) => ({
+  code:  l.code,
+  label: l.nativeName,
+  short: l.code.toUpperCase(),
+}));
 
 const STORAGE_KEY = 'farroway:lang';
 // Legacy key used by the old voice-only system — keep in sync

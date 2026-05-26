@@ -27,18 +27,18 @@
 import React, { useEffect } from 'react';
 import { setLanguage } from '../i18n/index.js';
 import { setSavedLanguage } from '../utils/onboarding.js';
+import { SUPPORTED_LOCALES } from '../i18n/supportedLocales.ts';
 
-// Full list of locales the app ships translation columns for.
-// Mirrors `LANGUAGES` in src/i18n/index.js. Adding a locale here
-// must be paired with a new src/i18n/columns/T-<code>.js column.
-const LANGS = Object.freeze([
-  { code: 'en', label: 'English',    native: 'English'    },
-  { code: 'fr', label: 'French',     native: 'Fran\u00E7ais' },
-  { code: 'sw', label: 'Kiswahili',  native: 'Kiswahili'  },
-  { code: 'ha', label: 'Hausa',      native: 'Hausa'      },
-  { code: 'tw', label: 'Twi',        native: 'Twi'        },
-  { code: 'hi', label: 'Hindi',      native: '\u0939\u093F\u0928\u094D\u0926\u0940' },
-]);
+// Projected from the centralized registry. The local shape keeps
+// the `label` (English name) + `native` (script name) split this
+// modal already rendered, so JSX further down didn't have to change.
+const LANGS = Object.freeze(
+  SUPPORTED_LOCALES.map((l) => Object.freeze({
+    code:   l.code,
+    label:  l.englishName,
+    native: l.nativeName,
+  })),
+);
 
 export default function QuickLanguageModal({ open = false, onClose = null, onPick = null, currentLang = '' }) {
   useEffect(() => {

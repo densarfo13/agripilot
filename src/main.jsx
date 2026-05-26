@@ -61,6 +61,18 @@ try {
       m.setDevThrowMode(isDev);
     } catch { /* swallow */ }
   }).catch(() => { /* swallow */ });
+  // Permanent i18n + crop localization dev hooks. These run in
+  // both dev and prod — the snapshots carry no PII, and a field
+  // operator needs them just as much in production when chasing
+  // "why is my picker stuck on English?" or "why is the crop name
+  // English on a Twi device?". Each installer is internally
+  // try/catched and idempotent.
+  import('./i18n/i18nStateDevHook.js').then((m) => {
+    try { m.installI18nStateHook(); } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
+  import('./core/crops/languageCropAuditDevTool.js').then((m) => {
+    try { m.installLanguageCropAuditHook(); } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
 } catch { /* never block boot */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';

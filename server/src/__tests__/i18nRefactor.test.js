@@ -199,10 +199,18 @@ describe('i18next bootstrap', () => {
 describe('setLanguageI18n', () => {
   const src = readFile('src/i18n/setLanguageI18n.js');
 
-  it('exports SUPPORTED_LANGUAGES with 6 codes', () => {
+  it('exports SUPPORTED_LANGUAGES with 6 codes', async () => {
+    // After the permanent-locales refactor (Farroway Permanent
+    // Language Picker fix), SUPPORTED_LANGUAGES is projected from
+    // src/i18n/supportedLocales.ts rather than declared inline.
+    // Verify the runtime export carries every required code.
     expect(src).toMatch(/SUPPORTED_LANGUAGES/);
+    expect(src).toMatch(/supportedLocales/);
+    const mod = await import('../../../src/i18n/setLanguageI18n.js');
+    expect(Array.isArray(mod.SUPPORTED_LANGUAGES)).toBe(true);
+    const codes = mod.SUPPORTED_LANGUAGES.map((l) => l.code);
     for (const l of LOCALES) {
-      expect(src).toMatch(new RegExp(`code:\\s*['"]${l}['"]`));
+      expect(codes).toContain(l);
     }
   });
 

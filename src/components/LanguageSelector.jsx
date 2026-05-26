@@ -1,4 +1,4 @@
-import { LANGUAGES } from '../i18n/index.js';
+import { SUPPORTED_LOCALES } from '../i18n/supportedLocales.ts';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 
 /**
@@ -73,7 +73,13 @@ const _LEGACY_REQUIRED_KEYS_REFERENCE = Object.freeze([
 
 export default function LanguageSelector() {
   const { language, setLanguage } = useAppPrefs();
-  const supported = LANGUAGES;
+  // Locales come straight from the centralized registry. No
+  // filter, no overlay-table-walk; the column loader handles
+  // missing-key fallback at lookup time.
+  const supported = SUPPORTED_LOCALES.map((l) => ({
+    code:  l.code,
+    label: l.nativeName,
+  }));
 
   return (
     // F21 follow-up: id + name added so DevTools accessibility

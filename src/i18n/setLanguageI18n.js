@@ -15,15 +15,18 @@
 
 import i18n from './i18next.js';
 import { setLanguage as setLegacyLanguage } from './index.js';
+import { SUPPORTED_LOCALES } from './supportedLocales.ts';
 
-export const SUPPORTED_LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'tw', label: 'Twi' },
-  { code: 'fr', label: 'Français' },
-  { code: 'es', label: 'Español' },
-  { code: 'pt', label: 'Português' },
-  { code: 'sw', label: 'Swahili' },
-];
+// Re-export the canonical registry under the SUPPORTED_LANGUAGES
+// name this module historically used. Existing callers stay
+// source-compatible; the actual list now matches the rest of the
+// app (en/fr/sw/ha/tw/hi). Pre-refactor the list shipped es/pt,
+// which have no translation columns — they were silently
+// falling back to English on every key.
+export const SUPPORTED_LANGUAGES = SUPPORTED_LOCALES.map((l) => ({
+  code:  l.code,
+  label: l.englishName,
+}));
 
 export function setLanguage(lang) {
   if (!lang) return;

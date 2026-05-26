@@ -56,6 +56,7 @@ import { isOnboardingComplete } from '../../utils/onboarding.js';
 // other surface (the existing LanguageSelector dropdown stays in
 // sync, and `farroway:langchange` fires for live re-render).
 import { setLanguage as i18nSetLanguage } from '../../i18n/index.js';
+import { SUPPORTED_LOCALES } from '../../i18n/supportedLocales.ts';
 // Progress bar lives in its own leaf module so the QuickGarden /
 // QuickFarm setup forms can import it without dragging the
 // FastFlow import tree along with them (which previously pulled
@@ -248,18 +249,14 @@ export default function FastFlow() {
 // onboarding spec mandates a complete-language guarantee per
 // screen. Spanish IS included \u2014 guard:i18n-parity confirms
 // 96/96 keys translated.
-// Shipped translation columns: en / fr / sw / ha / tw / hi. Adding
-// a new code here MUST be paired with a src/i18n/columns/T-<code>.js
-// file or the runtime fallback chain returns English. Mirrors the
-// canonical `LANGUAGES` table in src/i18n/index.js.
-const LANGUAGE_OPTIONS = [
-  { code: 'en', label: 'English'   },
-  { code: 'fr', label: 'Fran\u00E7ais' },
-  { code: 'sw', label: 'Kiswahili' },
-  { code: 'ha', label: 'Hausa'     },
-  { code: 'tw', label: 'Twi'       },
-  { code: 'hi', label: '\u0939\u093F\u0928\u094D\u0926\u0940'    },
-];
+// Projected from src/i18n/supportedLocales.ts \u2014 single source of
+// truth for the locale list. Adding a locale there MUST be paired
+// with a new src/i18n/columns/T-<code>.js column file or the
+// runtime fallback chain silently returns English.
+const LANGUAGE_OPTIONS = SUPPORTED_LOCALES.map((l) => ({
+  code:  l.code,
+  label: l.nativeName,
+}));
 
 function ScreenLanguage({ onPick }) {
   return (
