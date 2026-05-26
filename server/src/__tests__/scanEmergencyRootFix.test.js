@@ -47,6 +47,30 @@ describe('ScanPage — refuses analyze without a safe (data:) image URL', () => 
     expect(src).toMatch(/setAnalyzingImageUrl\(safeImageUrl\)/);
     expect(src).not.toMatch(/setAnalyzingImageUrl\(thumbnail \|\| imageBase64 \|\| imageUrl/);
   });
+
+  it('setResult publish paths use LOCAL safeImageUrl/thumbnail, never the stale React state', () => {
+    // The on-device "Photo could not be loaded" recovery banner
+    // came from a stale closure: the React state vars
+    // analyzingImageUrl + pendingThumbnail were captured at
+    // callback creation (initial null) and stayed null inside the
+    // same invocation that set them. EVERY setResult/setResult-
+    // like publish path must read from the function-scope locals
+    // (safeImageUrl + thumbnail) — those are computed per-call
+    // and are always fresh.
+    const setResultBlocks = src.match(/setResult\(\{[\s\S]*?\}\)/g) || [];
+    expect(setResultBlocks.length).toBeGreaterThan(0);
+    for (const block of setResultBlocks) {
+      // If a publish block references imageUrl/thumbnail, it MUST
+      // reference safeImageUrl as a fallback — not the React state.
+      const referencesImageUrl = /imageUrl:/.test(block);
+      const referencesAnalyzingState = /analyzingImageUrl|pendingThumbnail/.test(block);
+      if (referencesImageUrl) {
+        // Either the block uses safeImageUrl/thumbnail (correct) OR
+        // it references the React state values (stale-closure bug).
+        expect(referencesAnalyzingState).toBe(false);
+      }
+    }
+  });
 });
 
 describe('LiveCameraScanner — iOS deadline is generous enough for cold Safari', () => {

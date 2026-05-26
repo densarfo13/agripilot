@@ -544,12 +544,14 @@ export default function ScanPage() {
             if (isStaleScanSession(_localSessionId)) return;
             setResult({
               scanId:             'scan_fb_' + Date.now().toString(36),
-              // Pass the captured photo into the result so the
-              // result card renders the user's image, not a blank
-              // / macro fallback. analyzingImageUrl is the base64
-              // thumbnail (always safe) or the Object URL.
-              imageUrl:           analyzingImageUrl || null,
-              thumbnail:          pendingThumbnail || analyzingImageUrl || null,
+              // Stale-closure fix — see the main publish path
+              // comment below. Use the LOCAL safeImageUrl +
+              // thumbnail (closed over by this setTimeout but
+              // computed fresh PER onContinue call), not the
+              // React state vars that were null at closure
+              // creation time.
+              imageUrl:           safeImageUrl || null,
+              thumbnail:          thumbnail || safeImageUrl || null,
               possibleIssue:      fallbackHybrid.possibleIssue,
               confidence:         fallbackHybrid.confidence,
               recommendedActions: fallbackHybrid.recommendedActions,
@@ -718,10 +720,20 @@ export default function ScanPage() {
         confidence: refinedOut?.confidence || null,
         source: out?.meta?.source || null,
       }); } catch { /* swallow */ }
+      // CRITICAL: read from the LOCAL `safeImageUrl` + `thumbnail`
+      // (function-scope) — not from the React state vars. The
+      // onContinue callback's dep array is [experience,
+      // activeExperience, profile], so it captures the INITIAL
+      // null values of analyzingImageUrl + pendingThumbnail and
+      // never sees the post-setAnalyzingImageUrl values within
+      // the same call. That's the "preview disappears but
+      // result still renders" bug the user reported — every
+      // first-scan path produced `result.imageUrl = null` and
+      // UsefulResultCard's recovery banner fired.
       setResult({
         ...refinedOut,
-        imageUrl:  refinedOut.imageUrl  || analyzingImageUrl || null,
-        thumbnail: refinedOut.thumbnail || pendingThumbnail  || analyzingImageUrl || null,
+        imageUrl:  refinedOut.imageUrl  || safeImageUrl || null,
+        thumbnail: refinedOut.thumbnail || thumbnail    || safeImageUrl || null,
       });
       setPhase('result');
       try { emitScanEvent(SCAN_EVENTS.RESULT_RENDERED, {
@@ -798,11 +810,13 @@ export default function ScanPage() {
           if (isStaleScanSession(_localSessionId)) return;
           setResult({
             scanId:             'scan_mlf_' + Date.now().toString(36),
-            // Always thread the captured photo through to the
-            // result card so a needs-review verdict still shows
-            // the photo the user actually took.
-            imageUrl:           analyzingImageUrl || null,
-            thumbnail:          pendingThumbnail || analyzingImageUrl || null,
+            // Stale-closure fix — same root cause as the main
+            // publish path. Use the LOCAL safeImageUrl/thumbnail
+            // (function-scope, always fresh) instead of React state.
+            // This is the screenshot the user reported: ML failure
+            // → Needs Review verdict → empty preview rectangle.
+            imageUrl:           safeImageUrl || null,
+            thumbnail:          thumbnail || safeImageUrl || null,
             possibleIssue:      'Needs Review',
             category:           ML_CATEGORIES.NEEDS_REVIEW,
             mlStatus:           ML_CATEGORIES.NEEDS_REVIEW,
