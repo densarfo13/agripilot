@@ -28,11 +28,16 @@ import React, { useEffect } from 'react';
 import { setLanguage } from '../i18n/index.js';
 import { setSavedLanguage } from '../utils/onboarding.js';
 
+// Full list of locales the app ships translation columns for.
+// Mirrors `LANGUAGES` in src/i18n/index.js. Adding a locale here
+// must be paired with a new src/i18n/columns/T-<code>.js column.
 const LANGS = Object.freeze([
   { code: 'en', label: 'English',    native: 'English'    },
-  { code: 'tw', label: 'Twi',        native: 'Twi'        },
+  { code: 'fr', label: 'French',     native: 'Fran\u00E7ais' },
+  { code: 'sw', label: 'Kiswahili',  native: 'Kiswahili'  },
   { code: 'ha', label: 'Hausa',      native: 'Hausa'      },
-  { code: 'fr', label: 'Français',   native: 'Fran\u00E7ais' },
+  { code: 'tw', label: 'Twi',        native: 'Twi'        },
+  { code: 'hi', label: 'Hindi',      native: '\u0939\u093F\u0928\u094D\u0926\u0940' },
 ]);
 
 export default function QuickLanguageModal({ open = false, onClose = null, onPick = null, currentLang = '' }) {

@@ -1,5 +1,4 @@
 import { LANGUAGES } from '../i18n/index.js';
-import T from '../i18n/translations.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 
 /**
@@ -52,22 +51,29 @@ const REQUIRED_KEYS = Object.freeze([
   'garden.growingSetup.unknown',
 ]);
 
-function _isLanguageSupported(code) {
-  if (!code) return false;
-  // English is the source language and always supported.
-  if (code === 'en') return true;
-  try {
-    for (const k of REQUIRED_KEYS) {
-      const row = T[k];
-      if (!row || !row[code]) return false;
-    }
-    return true;
-  } catch { return false; }
-}
+// Post column-split: the prior `_isLanguageSupported(code)` filter
+// checked `T[key][code]` for a sample of canonical keys to hide
+// half-translated locales. After the lazy column-split refactor,
+// non-English columns load on demand — so `T[key][code]` is
+// undefined at picker render time and the filter hid EVERY non-
+// English locale, even fully-translated ones. Coverage is now
+// enforced by `npm run check:translations` (build-time) and
+// `window.__i18nAudit()` (runtime QA) instead.
+//
+// REQUIRED_KEYS retained as a reference for the keys CI verifies.
+const _LEGACY_REQUIRED_KEYS_REFERENCE = Object.freeze([
+  'recovery.repair', 'nav.scan', 'common.back',
+  'onboarding.chooseLanguage', 'onboarding.whatAreYouGrowing',
+  'onboarding.backyardGarden', 'onboarding.farm',
+  'onboarding.saveGarden', 'onboarding.saveFarm',
+  'garden.growingSetup.title', 'garden.growingSetup.container',
+  'garden.growingSetup.bed', 'garden.growingSetup.ground',
+  'garden.growingSetup.unknown',
+]);
 
 export default function LanguageSelector() {
   const { language, setLanguage } = useAppPrefs();
-  const supported = LANGUAGES.filter((l) => _isLanguageSupported(l.code));
+  const supported = LANGUAGES;
 
   return (
     // F21 follow-up: id + name added so DevTools accessibility

@@ -248,12 +248,16 @@ export default function FastFlow() {
 // onboarding spec mandates a complete-language guarantee per
 // screen. Spanish IS included \u2014 guard:i18n-parity confirms
 // 96/96 keys translated.
+// Shipped translation columns: en / fr / sw / ha / tw / hi. Adding
+// a new code here MUST be paired with a src/i18n/columns/T-<code>.js
+// file or the runtime fallback chain returns English. Mirrors the
+// canonical `LANGUAGES` table in src/i18n/index.js.
 const LANGUAGE_OPTIONS = [
   { code: 'en', label: 'English'   },
-  { code: 'es', label: 'Espa\u00F1ol'  },
   { code: 'fr', label: 'Fran\u00E7ais' },
   { code: 'sw', label: 'Kiswahili' },
   { code: 'ha', label: 'Hausa'     },
+  { code: 'tw', label: 'Twi'       },
   { code: 'hi', label: '\u0939\u093F\u0928\u094D\u0926\u0940'    },
 ];
 
