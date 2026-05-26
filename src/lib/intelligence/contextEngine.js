@@ -41,12 +41,20 @@
 
 // ─── Fallback constants ───────────────────────────────────────────
 
+// Engine outputs now carry stable i18n keys alongside English
+// strings. Surfaces render via tSafe(task.titleKey, task.title)
+// so non-English UIs get localized text. Branches that haven't
+// been migrated yet keep the legacy bare-string shape; Home.jsx
+// gracefully falls through to the literal when titleKey is absent.
 const FALLBACK_TASK = Object.freeze({
-  title:    'Walk your field and check crop health',
-  reason:   'Look for dry soil, weak leaves, pests, or unusual spots.',
-  urgency:  'medium',
-  cta:      'Mark as done',
-  category: 'crop-care',
+  titleKey:  'contextEngine.fallback.title',
+  title:     'Walk your field and check crop health',
+  reasonKey: 'contextEngine.fallback.reason',
+  reason:    'Look for dry soil, weak leaves, pests, or unusual spots.',
+  urgency:   'medium',
+  ctaKey:    'home.task.markDone',
+  cta:       'Mark as done',
+  category:  'crop-care',
 });
 
 const FALLBACK_RECOMMENDATION = Object.freeze({
@@ -528,8 +536,16 @@ function _farmTask(ctx) {
     };
   }
 
-  // 5. Fallback
-  return { ...FALLBACK_TASK, title: `Check soil moisture around your ${name}` };
+  // 5. Fallback — keep the title locale-aware via the canonical
+  // 'contextEngine.fallback.title.crop' key with {crop} param so
+  // Home.jsx can render "Check soil moisture around your pepper"
+  // localized to the active language without losing the crop name.
+  return {
+    ...FALLBACK_TASK,
+    titleKey:    'contextEngine.fallback.title.crop',
+    titleParams: { crop: name },
+    title:       `Check soil moisture around your ${name}`,
+  };
 }
 
 // ─── Garden task rules ────────────────────────────────────────────

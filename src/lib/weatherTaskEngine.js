@@ -22,10 +22,18 @@
  *   • Safe to call before weather has loaded (returns branch 1).
  */
 
+// Engine outputs now carry both a STABLE i18n key AND an English
+// fallback. Surfaces render via tSafe(task.titleKey, task.title)
+// so a French / Swahili / Hindi user sees the localized text.
+// The CTA always uses the same key (home.task.markDone) which is
+// already covered in every locale column.
 const FALLBACK_TASK = Object.freeze({
-  title:  'Walk your field and check crop health',
-  reason: 'Water only if soil feels dry.',
-  cta:    'Mark as done',
+  titleKey:  'home.weatherTask.fallback.title',
+  title:     'Walk your field and check crop health',
+  reasonKey: 'home.weatherTask.fallback.reason',
+  reason:    'Water only if soil feels dry.',
+  ctaKey:    'home.task.markDone',
+  cta:       'Mark as done',
 });
 
 /**
@@ -58,44 +66,59 @@ export function getWeatherTask(weather) {
   // Branch 2 — heavy rain expected
   if (rain >= 60) {
     return Object.freeze({
-      title:  'Check drainage around your crop',
-      reason: 'Heavy rain expected. Ensure water doesn\u2019t pool.',
-      cta:    'Mark as done',
+      titleKey:  'home.weatherTask.rain.title',
+      title:     'Check drainage around your crop',
+      reasonKey: 'home.weatherTask.rain.reason',
+      reason:    'Heavy rain expected. Ensure water doesn\u2019t pool.',
+      ctaKey:    'home.task.markDone',
+      cta:       'Mark as done',
     });
   }
 
   // Branch 3 — high heat
   if (temp >= 32) {
     return Object.freeze({
-      title:  'Water crops early morning or late evening',
-      reason: 'High heat can stress plants during midday.',
-      cta:    'Mark as done',
+      titleKey:  'home.weatherTask.heat.title',
+      title:     'Water crops early morning or late evening',
+      reasonKey: 'home.weatherTask.heat.reason',
+      reason:    'High heat can stress plants during midday.',
+      ctaKey:    'home.task.markDone',
+      cta:       'Mark as done',
     });
   }
 
   // Branch 4 — strong wind
   if (wind >= 25) {
     return Object.freeze({
-      title:  'Support weak plants',
-      reason: 'Strong winds can damage crops.',
-      cta:    'Mark as done',
+      titleKey:  'home.weatherTask.wind.title',
+      title:     'Support weak plants',
+      reasonKey: 'home.weatherTask.wind.reason',
+      reason:    'Strong winds can damage crops.',
+      ctaKey:    'home.task.markDone',
+      cta:       'Mark as done',
     });
   }
 
   // Branch 5 — dry conditions
   if (rain <= 20) {
     return Object.freeze({
-      title:  'Check soil moisture',
-      reason: 'Dry conditions may require watering.',
-      cta:    'Mark as done',
+      titleKey:  'home.weatherTask.dry.title',
+      title:     'Check soil moisture',
+      reasonKey: 'home.weatherTask.dry.reason',
+      reason:    'Dry conditions may require watering.',
+      ctaKey:    'home.task.markDone',
+      cta:       'Mark as done',
     });
   }
 
   // Branch 6 — mild / unknown
   return Object.freeze({
-    title:  'Inspect your crops',
-    reason: 'Regular checks help catch issues early.',
-    cta:    'Mark as done',
+    titleKey:  'home.weatherTask.inspect.title',
+    title:     'Inspect your crops',
+    reasonKey: 'home.weatherTask.inspect.reason',
+    reason:    'Regular checks help catch issues early.',
+    ctaKey:    'home.task.markDone',
+    cta:       'Mark as done',
   });
 }
 

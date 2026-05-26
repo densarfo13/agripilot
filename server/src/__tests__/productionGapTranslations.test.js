@@ -72,6 +72,22 @@ const REQUIRED_KEYS = [
   'hero.yourArea',
   'hero.defaultFarm',
   'hero.defaultGarden',
+  // contextEngine + weatherTaskEngine outputs (round 3)
+  'contextEngine.fallback.title',
+  'contextEngine.fallback.title.crop',
+  'contextEngine.fallback.reason',
+  'home.weatherTask.fallback.title',
+  'home.weatherTask.fallback.reason',
+  'home.weatherTask.rain.title',
+  'home.weatherTask.rain.reason',
+  'home.weatherTask.heat.title',
+  'home.weatherTask.heat.reason',
+  'home.weatherTask.wind.title',
+  'home.weatherTask.wind.reason',
+  'home.weatherTask.dry.title',
+  'home.weatherTask.dry.reason',
+  'home.weatherTask.inspect.title',
+  'home.weatherTask.inspect.reason',
 ];
 
 describe('productionGapTranslations — overlay coverage', () => {

@@ -509,6 +509,133 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Wo turo',
     hi: 'आपका बगीचा',
   },
+
+  // ─── contextEngine.js + weatherTaskEngine.js task outputs ────
+  // These were emitted as bare English strings by the intelligence
+  // engines. They now ship `titleKey` / `reasonKey` alongside the
+  // English fallback so the Home.jsx task card localizes properly.
+  // Branches not yet migrated keep the legacy bare-string shape;
+  // Home.jsx degrades to the literal when no key is present.
+  'contextEngine.fallback.title': {
+    en: 'Walk your field and check crop health',
+    fr: 'Parcourez votre champ et vérifiez la santé des cultures',
+    sw: 'Tembea kwenye shamba lako na uangalie afya ya mazao',
+    ha: 'Yi yawo a gonarka ka duba lafiyar amfani',
+    tw: 'Nantew wo afuo no mu na hwɛ afude apɔwmuden',
+    hi: 'अपने खेत में टहलें और फसल का स्वास्थ्य जाँचें',
+  },
+  'contextEngine.fallback.title.crop': {
+    en: 'Check soil moisture around your {crop}',
+    fr: 'Vérifiez l’humidité du sol autour de votre {crop}',
+    sw: 'Angalia unyevu wa udongo karibu na {crop} wako',
+    ha: 'Duba danshin ƙasa kewaye da {crop} naka',
+    tw: 'Hwɛ wo {crop} ho dɔteɛ no fɔwa',
+    hi: 'अपनी {crop} के आस-पास मिट्टी की नमी जाँचें',
+  },
+  'contextEngine.fallback.reason': {
+    en: 'Look for dry soil, weak leaves, pests, or unusual spots.',
+    fr: 'Recherchez sol sec, feuilles faibles, parasites ou taches inhabituelles.',
+    sw: 'Tafuta udongo mkavu, majani dhaifu, wadudu, au madoa yasiyo ya kawaida.',
+    ha: 'Nemi busasshen ƙasa, raunanan ganye, kwari, ko alamu marasa kyau.',
+    tw: 'Hwɛ asaase a awo, nhaban a ɛnyɛ den, mmoawa, anaa nsensanee a ɛnyɛ kwan.',
+    hi: 'सूखी मिट्टी, कमज़ोर पत्तियाँ, कीट, या असामान्य धब्बे देखें।',
+  },
+  'home.weatherTask.fallback.title': {
+    en: 'Walk your field and check crop health',
+    fr: 'Parcourez votre champ et vérifiez la santé des cultures',
+    sw: 'Tembea kwenye shamba lako na uangalie afya ya mazao',
+    ha: 'Yi yawo a gonarka ka duba lafiyar amfani',
+    tw: 'Nantew wo afuo no mu na hwɛ afude apɔwmuden',
+    hi: 'अपने खेत में टहलें और फसल का स्वास्थ्य जाँचें',
+  },
+  'home.weatherTask.fallback.reason': {
+    en: 'Water only if soil feels dry.',
+    fr: 'N’arrosez que si le sol semble sec.',
+    sw: 'Mwagilia maji tu kama udongo unaonekana mkavu.',
+    ha: 'Bashe ruwa kawai idan ƙasa ta bushe.',
+    tw: 'Gugu nsu nko ara sɛ asaase no awo.',
+    hi: 'मिट्टी सूखी लगे तभी पानी दें।',
+  },
+  'home.weatherTask.rain.title': {
+    en: 'Check drainage around your crop',
+    fr: 'Vérifiez le drainage autour de votre culture',
+    sw: 'Angalia mifereji ya maji karibu na zao lako',
+    ha: 'Duba magudanar ruwa kewaye da amfaninka',
+    tw: 'Hwɛ nsu kwan a ɛda wo afude no ho',
+    hi: 'अपनी फसल के चारों ओर जल निकासी जाँचें',
+  },
+  'home.weatherTask.rain.reason': {
+    en: 'Heavy rain expected. Ensure water doesn’t pool.',
+    fr: 'Forte pluie prévue. Assurez-vous que l’eau ne s’accumule pas.',
+    sw: 'Mvua kubwa inatarajiwa. Hakikisha maji hayajai.',
+    ha: 'Ana sa ran ruwan sama mai yawa. Tabbatar ruwa baya tarawa.',
+    tw: 'Nsutɔ kɛse reba. Hwɛ na nsuo nntɔtɔ.',
+    hi: 'भारी वर्षा की संभावना है। पानी जमा न होने दें।',
+  },
+  'home.weatherTask.heat.title': {
+    en: 'Water crops early morning or late evening',
+    fr: 'Arrosez les cultures tôt le matin ou en fin de soirée',
+    sw: 'Mwagilia mazao asubuhi mapema au jioni',
+    ha: 'Bashe amfani da safe ko da maraice',
+    tw: 'Gugu afude nsu anɔpa anaa anwummerɛ',
+    hi: 'सुबह जल्दी या देर शाम फसलों को पानी दें',
+  },
+  'home.weatherTask.heat.reason': {
+    en: 'High heat can stress plants during midday.',
+    fr: 'Une forte chaleur peut stresser les plantes en milieu de journée.',
+    sw: 'Joto kali linaweza kusumbua mimea wakati wa mchana.',
+    ha: 'Zafi mai yawa zai iya damun shuke-shuke da rana.',
+    tw: 'Ɔhyew kɛse betumi ha nnua awia.',
+    hi: 'अधिक गर्मी दोपहर में पौधों पर तनाव डाल सकती है।',
+  },
+  'home.weatherTask.wind.title': {
+    en: 'Support weak plants',
+    fr: 'Soutenez les plantes fragiles',
+    sw: 'Saidia mimea dhaifu',
+    ha: 'Tallafa wa raunanan shuke-shuke',
+    tw: 'Boa nnua a ɛnyɛ den',
+    hi: 'कमज़ोर पौधों को सहारा दें',
+  },
+  'home.weatherTask.wind.reason': {
+    en: 'Strong winds can damage crops.',
+    fr: 'Des vents forts peuvent endommager les cultures.',
+    sw: 'Upepo mkali unaweza kuharibu mazao.',
+    ha: 'Iska mai ƙarfi zai iya lalata amfani.',
+    tw: 'Mframa a ano yɛ den betumi asɛe afude.',
+    hi: 'तेज़ हवाएँ फसलों को नुकसान पहुँचा सकती हैं।',
+  },
+  'home.weatherTask.dry.title': {
+    en: 'Check soil moisture',
+    fr: 'Vérifiez l’humidité du sol',
+    sw: 'Angalia unyevu wa udongo',
+    ha: 'Duba danshin ƙasa',
+    tw: 'Hwɛ asaase no fɔwa',
+    hi: 'मिट्टी की नमी जाँचें',
+  },
+  'home.weatherTask.dry.reason': {
+    en: 'Dry conditions may require watering.',
+    fr: 'Les conditions sèches peuvent nécessiter un arrosage.',
+    sw: 'Hali kavu inaweza kuhitaji kumwagiliwa maji.',
+    ha: 'Bushewar yanayi na iya buƙatar bashe ruwa.',
+    tw: 'Tebea a awo no betumi ahia nsugu.',
+    hi: 'सूखी स्थिति में सिंचाई की आवश्यकता हो सकती है।',
+  },
+  'home.weatherTask.inspect.title': {
+    en: 'Inspect your crops',
+    fr: 'Inspectez vos cultures',
+    sw: 'Kagua mazao yako',
+    ha: 'Bincika amfaninka',
+    tw: 'Hwɛ wo afude',
+    hi: 'अपनी फसलों का निरीक्षण करें',
+  },
+  'home.weatherTask.inspect.reason': {
+    en: 'Regular checks help catch issues early.',
+    fr: 'Des vérifications régulières aident à détecter les problèmes tôt.',
+    sw: 'Ukaguzi wa mara kwa mara husaidia kupata matatizo mapema.',
+    ha: 'Bincike akai-akai yana taimakawa wajen gano matsaloli da wuri.',
+    tw: 'Hwɛyie a wɔyɛ no daa boa ma yehunu nsɛm ntɛm.',
+    hi: 'नियमित जाँच से समस्याओं को जल्दी पकड़ने में मदद मिलती है।',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };
