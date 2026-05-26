@@ -101,6 +101,13 @@ try {
       }
     } catch { /* swallow */ }
   }).catch(() => { /* swallow */ });
+  // Production-rebuild Phase 9: bridge scan telemetry + camera
+  // lifecycle heartbeats into Sentry breadcrumbs + structured
+  // [SCAN_TELEMETRY] console logs. Best-effort; no-ops cleanly
+  // when @sentry/browser isn't loaded (DSN unset).
+  import('./core/scan/scanDiagnosticsBridge.js').then((m) => {
+    try { m.installScanDiagnosticsBridge(); } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
 } catch { /* never block boot */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';

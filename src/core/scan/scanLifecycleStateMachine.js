@@ -45,6 +45,43 @@ export const LIFECYCLE_STATE = Object.freeze({
   FAILED:             'failed',
 });
 
+/**
+ * Spec-aligned aliases (Scan V5 production-rebuild spec §1).
+ *
+ *   IDLE              ← LIFECYCLE_STATE.IDLE
+ *   OPENING_CAMERA    ← LIFECYCLE_STATE.CAPTURING (camera open
+ *                       phase before a frame is grabbed)
+ *   CAMERA_READY      ← LIFECYCLE_STATE.CAPTURING (still in
+ *                       capturing; the live preview is rendering)
+ *   CAPTURING         ← LIFECYCLE_STATE.CAPTURING (shutter tap)
+ *   IMAGE_READY       ← LIFECYCLE_STATE.PREVIEW_READY (normalized
+ *                       JPEG is ready for AI)
+ *   PREPROCESSING     ← LIFECYCLE_STATE.NORMALIZING
+ *   ANALYZING         ← LIFECYCLE_STATE.AI_PROCESSING
+ *   SUCCESS           ← LIFECYCLE_STATE.AI_COMPLETE
+ *   LOW_CONFIDENCE    ← LIFECYCLE_STATE.LOW_CONFIDENCE
+ *   RECOVERABLE_ERROR ← LIFECYCLE_STATE.RECOVERABLE_ERROR
+ *   FATAL_ERROR       ← LIFECYCLE_STATE.FAILED
+ *
+ * Provided so the production-rebuild spec's identifiers compile
+ * 1:1 with the existing FSM. Surfaces can subscribe to whichever
+ * vocabulary they prefer — both resolve to the same underlying
+ * state via toSpecState() / fromSpecState().
+ */
+export const LIFECYCLE_STATE_SPEC = Object.freeze({
+  IDLE:              LIFECYCLE_STATE.IDLE,
+  OPENING_CAMERA:    LIFECYCLE_STATE.CAPTURING,
+  CAMERA_READY:      LIFECYCLE_STATE.CAPTURING,
+  CAPTURING:         LIFECYCLE_STATE.CAPTURING,
+  IMAGE_READY:       LIFECYCLE_STATE.PREVIEW_READY,
+  PREPROCESSING:     LIFECYCLE_STATE.NORMALIZING,
+  ANALYZING:         LIFECYCLE_STATE.AI_PROCESSING,
+  SUCCESS:           LIFECYCLE_STATE.AI_COMPLETE,
+  LOW_CONFIDENCE:    LIFECYCLE_STATE.LOW_CONFIDENCE,
+  RECOVERABLE_ERROR: LIFECYCLE_STATE.RECOVERABLE_ERROR,
+  FATAL_ERROR:       LIFECYCLE_STATE.FAILED,
+});
+
 export const LIFECYCLE_EVENT = Object.freeze({
   CAPTURE_START:        'capture_start',
   CAPTURE_OK:           'capture_ok',
@@ -196,8 +233,38 @@ export function shouldKeepPreview(state) {
   }
 }
 
+/**
+ * toSpecState(state) — translate the canonical underlying state
+ * into the spec's display vocabulary. Use this when reporting
+ * state to the production-rebuild dashboard or to surfaces that
+ * want the "OPENING_CAMERA" / "ANALYZING" / "SUCCESS" labels.
+ */
+export function toSpecState(state) {
+  switch (state) {
+    case LIFECYCLE_STATE.IDLE:              return 'IDLE';
+    case LIFECYCLE_STATE.CAPTURING:         return 'CAPTURING';
+    case LIFECYCLE_STATE.NORMALIZING:       return 'PREPROCESSING';
+    case LIFECYCLE_STATE.PREVIEW_READY:     return 'IMAGE_READY';
+    case LIFECYCLE_STATE.UPLOADING:         return 'PREPROCESSING';
+    case LIFECYCLE_STATE.UPLOADED:          return 'IMAGE_READY';
+    case LIFECYCLE_STATE.AI_PROCESSING:     return 'ANALYZING';
+    case LIFECYCLE_STATE.AI_COMPLETE:       return 'SUCCESS';
+    case LIFECYCLE_STATE.LOW_CONFIDENCE:    return 'LOW_CONFIDENCE';
+    case LIFECYCLE_STATE.RECOVERABLE_ERROR: return 'RECOVERABLE_ERROR';
+    case LIFECYCLE_STATE.FAILED:            return 'FATAL_ERROR';
+    default:                                return 'IDLE';
+  }
+}
+
+/** Inverse — accept a spec label, return the underlying state. */
+export function fromSpecState(label) {
+  if (typeof label !== 'string') return LIFECYCLE_STATE.IDLE;
+  return LIFECYCLE_STATE_SPEC[label.toUpperCase()] || LIFECYCLE_STATE.IDLE;
+}
+
 const _module = {
-  LIFECYCLE_STATE, LIFECYCLE_EVENT,
-  nextLifecycleState, canPublishResult, isTerminal, isInFlight, shouldKeepPreview,
+  LIFECYCLE_STATE, LIFECYCLE_EVENT, LIFECYCLE_STATE_SPEC,
+  nextLifecycleState, canPublishResult, isTerminal, isInFlight,
+  shouldKeepPreview, toSpecState, fromSpecState,
 };
 export default _module;
