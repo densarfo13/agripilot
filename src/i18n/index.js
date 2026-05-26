@@ -90,6 +90,11 @@ import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslation
 // because of these gaps. Same `{key:{locale:value}}` shape as
 // PLANT_COMPANION_TRANSLATIONS; same merge contract.
 import { PRODUCTION_GAP_TRANSLATIONS }         from './productionGapTranslations.js';
+// Context Intelligence Engine overlay (May 2026 production-incident
+// gap fix). Covers every task / alert string the contextEngine
+// emits — scan-followup, farm weather/stage, garden, shared CTAs,
+// alert banners. Same `{key:{locale:value}}` shape, empty-slot fill.
+import { CONTEXT_ENGINE_TRANSLATIONS }         from './contextEngineTranslations.js';
 // Garden Share overlay — encouragement captions, modal chrome,
 // toast statuses, safety footer. Consumed by ShareCardModal.
 import { SHARE_TRANSLATIONS }                  from './shareTranslations.js';
@@ -180,6 +185,20 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //      values (if they're added later) keep winning.
   for (const key of Object.keys(PRODUCTION_GAP_TRANSLATIONS)) {
     const row = PRODUCTION_GAP_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e3. Context Engine overlay — covers scan-followup, farm
+  //      weather/stage, garden, shared CTAs, alerts. Empty-slot
+  //      fill so per-crop intelligenceTranslations.js still wins
+  //      when their narrower keys are present.
+  for (const key of Object.keys(CONTEXT_ENGINE_TRANSLATIONS)) {
+    const row = CONTEXT_ENGINE_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {

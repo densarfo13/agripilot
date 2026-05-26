@@ -100,72 +100,100 @@ function _scanFollowup(category, name, mode) {
 
   if (c.includes('yellow')) {
     return {
-      title:    `Check moisture and light for ${label}`,
-      reason:   'Yellowing leaves can mean over-watering, under-watering, or low light. Check each.',
-      urgency:  'high',
-      cta:      'Inspect now',
-      category: 'scan-followup',
+      title:       `Check moisture and light for ${label}`,
+      titleKey:    'intel.scanFollowup.yellow.title',
+      titleParams: { crop: label },
+      reason:      'Yellowing leaves can mean over-watering, under-watering, or low light. Check each.',
+      reasonKey:   'intel.scanFollowup.yellow.reason',
+      urgency:     'high',
+      cta:         'Inspect now',
+      ctaKey:      'contextEngine.cta.inspectNow',
+      category:    'scan-followup',
     };
   }
 
   if (c.includes('pest') || c.includes('hole') || c.includes('insect')) {
     return {
-      title:    `Inspect ${label} carefully for pest damage`,
-      reason:   'A recent scan flagged possible pests. Check under leaves and near the stem.',
-      urgency:  'high',
-      cta:      'Inspect',
-      category: 'pest-check',
+      title:       `Inspect ${label} carefully for pest damage`,
+      titleKey:    'intel.scanFollowup.pest.title',
+      titleParams: { crop: label },
+      reason:      'A recent scan flagged possible pests. Check under leaves and near the stem.',
+      reasonKey:   'intel.scanFollowup.pest.reason',
+      urgency:     'high',
+      cta:         'Inspect',
+      ctaKey:      'contextEngine.cta.inspect',
+      category:    'pest-check',
     };
   }
 
   if (c.includes('disease') || c.includes('blight') || c.includes('spot')) {
     return {
-      title:    `Check ${label} for signs of disease spread`,
-      reason:   'A recent scan flagged a possible disease concern. Remove affected leaves and check drainage.',
-      urgency:  'high',
-      cta:      'Inspect',
-      category: 'disease-check',
+      title:       `Check ${label} for signs of disease spread`,
+      titleKey:    'intel.scanFollowup.disease.title',
+      titleParams: { crop: label },
+      reason:      'A recent scan flagged a possible disease concern. Remove affected leaves and check drainage.',
+      reasonKey:   'intel.scanFollowup.disease.reason',
+      urgency:     'high',
+      cta:         'Inspect',
+      ctaKey:      'contextEngine.cta.inspect',
+      category:    'disease-check',
     };
   }
 
   if (c.includes('wilt')) {
     return {
-      title:    `Water ${label} and check root health`,
-      reason:   'Wilting can mean under-watering or root rot. Check soil moisture first.',
-      urgency:  'high',
-      cta:      'Check root',
-      category: 'scan-followup',
+      title:       `Water ${label} and check root health`,
+      titleKey:    'intel.scanFollowup.wilt.title',
+      titleParams: { crop: label },
+      reason:      'Wilting can mean under-watering or root rot. Check soil moisture first.',
+      reasonKey:   'intel.scanFollowup.wilt.reason',
+      urgency:     'high',
+      cta:         'Check root',
+      ctaKey:      'contextEngine.cta.checkRoot',
+      category:    'scan-followup',
     };
   }
 
   if (c.includes('nutrient') || c.includes('deficien')) {
     return {
-      title:    `Consider light feeding for ${label}`,
-      reason:   'A recent scan flagged a possible nutrient issue. Add a balanced fertiliser if soil is dry.',
-      urgency:  'medium',
-      cta:      'Check plant',
-      category: 'nutrition',
+      title:       `Consider light feeding for ${label}`,
+      titleKey:    'intel.scanFollowup.nutrient.title',
+      titleParams: { crop: label },
+      reason:      'A recent scan flagged a possible nutrient issue. Add a balanced fertiliser if soil is dry.',
+      reasonKey:   'intel.scanFollowup.nutrient.reason',
+      urgency:     'medium',
+      cta:         'Check plant',
+      ctaKey:      'contextEngine.cta.checkPlant',
+      category:    'nutrition',
     };
   }
 
   if (c === 'healthy') {
     // Positive scan — gentle encouragement, not an alarm.
     return {
-      title:    `Keep up the good care for ${label}`,
-      reason:   'Your recent scan shows the plant looks healthy. Keep watering and monitoring regularly.',
-      urgency:  'low',
-      cta:      'Mark as done',
-      category: 'scan-followup',
+      title:       `Keep up the good care for ${label}`,
+      titleKey:    'intel.scanFollowup.healthy.title',
+      titleParams: { crop: label },
+      reason:      'Your recent scan shows the plant looks healthy. Keep watering and monitoring regularly.',
+      reasonKey:   'intel.scanFollowup.healthy.reason',
+      urgency:     'low',
+      cta:         'Mark as done',
+      ctaKey:      'home.task.markDone',
+      category:    'scan-followup',
     };
   }
 
   if (c === 'needs_review') {
     return {
-      title:    `Take a closer look at ${label} today`,
-      reason:   'Your recent scan flagged something to review. Inspect leaves, stem, and soil.',
-      urgency:  'medium',
-      cta:      'Inspect',
-      category: 'scan-followup',
+      title:       `Take a closer look at ${label} today`,
+      titleKey:    'intel.scanFollowup.needsReview.title',
+      titleParams: { crop: label },
+      reason:      'Your recent scan flagged something to review. Inspect leaves, stem, and soil.',
+      reasonKey:   'intel.scanFollowup.needsReview.reason',
+      urgency:     'medium',
+      cta:         'Inspect',
+      ctaKey:      'contextEngine.cta.inspect',
+      category:    'scan-followup',
     };
   }
 
@@ -213,6 +241,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.tomato.leafSpot.reason',
         urgency:      'high',
         cta:          'Inspect leaves',
+        ctaKey:       'contextEngine.cta.inspectLeaves',
         category:     'pest-check',
         cropSpecific: 'tomato',
       };
@@ -225,6 +254,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.tomato.heat.reason',
         urgency:      'medium',
         cta:          'Mark as done',
+        ctaKey:       'home.task.markDone',
         category:     'watering',
         cropSpecific: 'tomato',
       };
@@ -241,6 +271,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.pepper.heat.reason',
         urgency:      'high',
         cta:          'Inspect leaves',
+        ctaKey:       'contextEngine.cta.inspectLeaves',
         category:     'pest-check',
         cropSpecific: 'pepper',
       };
@@ -253,6 +284,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.pepper.flowering.reason',
         urgency:      'medium',
         cta:          'Mark as done',
+        ctaKey:       'home.task.markDone',
         category:     'flowering',
         cropSpecific: 'pepper',
       };
@@ -269,6 +301,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.maize.wind.reason',
         urgency:      'high',
         cta:          'Check stalks',
+        ctaKey:       'contextEngine.cta.checkStalks',
         category:     'wind',
         cropSpecific: 'maize',
       };
@@ -281,6 +314,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.maize.vegDry.reason',
         urgency:      'high',
         cta:          'Check soil',
+        ctaKey:       'contextEngine.cta.checkSoil',
         category:     'watering',
         cropSpecific: 'maize',
       };
@@ -297,6 +331,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.rice.rain.reason',
         urgency:      'high',
         cta:          'Check field',
+        ctaKey:       'contextEngine.cta.checkField',
         category:     'drainage',
         cropSpecific: 'rice',
       };
@@ -309,6 +344,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.rice.dry.reason',
         urgency:      'high',
         cta:          'Check water',
+        ctaKey:       'contextEngine.cta.checkWater',
         category:     'water-level',
         cropSpecific: 'rice',
       };
@@ -325,6 +361,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.okra.pest.reason',
         urgency:      'medium',
         cta:          'Inspect',
+        ctaKey:       'contextEngine.cta.inspect',
         category:     'pest-check',
         cropSpecific: 'okra',
       };
@@ -341,6 +378,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.cassava.rain.reason',
         urgency:      'high',
         cta:          'Check soil',
+        ctaKey:       'contextEngine.cta.checkSoil',
         category:     'drainage',
         cropSpecific: 'cassava',
       };
@@ -352,6 +390,7 @@ function _cropSpecific(ctx, mode) {
       reasonKey:    'intel.crop.cassava.general.reason',
       urgency:      'medium',
       cta:          'Inspect',
+      ctaKey:       'contextEngine.cta.inspect',
       category:     'pest-check',
       cropSpecific: 'cassava',
     };
@@ -368,6 +407,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.leafy.heat.reason',
         urgency:      'high',
         cta:          'Water now',
+        ctaKey:       'contextEngine.cta.waterNow',
         category:     'watering',
         cropSpecific: 'leafy',
       };
@@ -379,6 +419,7 @@ function _cropSpecific(ctx, mode) {
       reasonKey:    'intel.crop.leafy.pest.reason',
       urgency:      'medium',
       cta:          'Inspect',
+      ctaKey:       'contextEngine.cta.inspect',
       category:     'pest-check',
       cropSpecific: 'leafy',
     };
@@ -394,6 +435,7 @@ function _cropSpecific(ctx, mode) {
         reasonKey:    'intel.crop.onion.rain.reason',
         urgency:      'high',
         cta:          'Check soil',
+        ctaKey:       'contextEngine.cta.checkSoil',
         category:     'drainage',
         cropSpecific: 'onion',
       };
@@ -405,6 +447,7 @@ function _cropSpecific(ctx, mode) {
       reasonKey:    'intel.crop.onion.general.reason',
       urgency:      'medium',
       cta:          'Inspect',
+      ctaKey:       'contextEngine.cta.inspect',
       category:     'pest-check',
       cropSpecific: 'onion',
     };
@@ -445,11 +488,15 @@ function _farmTask(ctx) {
   // 2. Harvest / fruiting — market-facing nudge (spec: "harvest stage → Ready to sell?")
   if (stage.includes('harvest') || stage.includes('fruit')) {
     return {
-      title:    `Check ${name} harvest readiness`,
-      reason:   'Harvest timing affects quality and market price. Look for mature colour, size, and firmness.',
-      urgency:  'high',
-      cta:      'Check crop',
-      category: 'harvest',
+      title:       `Check ${name} harvest readiness`,
+      titleKey:    'intel.farmTask.harvest.title',
+      titleParams: { crop: name },
+      reason:      'Harvest timing affects quality and market price. Look for mature colour, size, and firmness.',
+      reasonKey:   'intel.farmTask.harvest.reason',
+      urgency:     'high',
+      cta:         'Check crop',
+      ctaKey:      'contextEngine.cta.checkCrop',
+      category:    'harvest',
     };
   }
 
@@ -463,11 +510,15 @@ function _farmTask(ctx) {
 
   if (isRain) {
     return {
-      title:    `Check drainage around your ${name}`,
-      reason:   'Rain is expected — make sure water does not pool around the roots.',
-      urgency:  'medium',
-      cta:      'Mark as done',
-      category: 'weather',
+      title:       `Check drainage around your ${name}`,
+      titleKey:    'intel.farmTask.rain.title',
+      titleParams: { crop: name },
+      reason:      'Rain is expected — make sure water does not pool around the roots.',
+      reasonKey:   'intel.farmTask.rain.reason',
+      urgency:     'medium',
+      cta:         'Mark as done',
+      ctaKey:      'home.task.markDone',
+      category:    'weather',
     };
   }
 
@@ -477,62 +528,86 @@ function _farmTask(ctx) {
 
   if (isDry) {
     return {
-      title:    `Irrigate your ${name} early morning`,
-      reason:   'Hot, dry weather dries soil fast. Water early to protect roots from heat stress.',
-      urgency:  'high',
-      cta:      'Mark as done',
-      category: 'watering',
+      title:       `Irrigate your ${name} early morning`,
+      titleKey:    'intel.farmTask.dry.title',
+      titleParams: { crop: name },
+      reason:      'Hot, dry weather dries soil fast. Water early to protect roots from heat stress.',
+      reasonKey:   'intel.farmTask.dry.reason',
+      urgency:     'high',
+      cta:         'Mark as done',
+      ctaKey:      'home.task.markDone',
+      category:    'watering',
     };
   }
 
   if (weatherType === 'wind') {
     return {
-      title:    `Check ${name} plants for wind damage`,
-      reason:   'Strong wind can uproot or bend young plants. Inspect and stake if needed.',
-      urgency:  'medium',
-      cta:      'Mark as done',
-      category: 'wind',
+      title:       `Check ${name} plants for wind damage`,
+      titleKey:    'intel.farmTask.wind.title',
+      titleParams: { crop: name },
+      reason:      'Strong wind can uproot or bend young plants. Inspect and stake if needed.',
+      reasonKey:   'intel.farmTask.wind.reason',
+      urgency:     'medium',
+      cta:         'Mark as done',
+      ctaKey:      'home.task.markDone',
+      category:    'wind',
     };
   }
 
   if (weatherType === 'cloudy') {
     return {
-      title:    `Inspect ${name} for pests or disease`,
-      reason:   'Overcast weather raises humidity and pest pressure. A quick check protects the crop.',
-      urgency:  'medium',
-      cta:      'Inspect',
-      category: 'pest-check',
+      title:       `Inspect ${name} for pests or disease`,
+      titleKey:    'intel.farmTask.cloudy.title',
+      titleParams: { crop: name },
+      reason:      'Overcast weather raises humidity and pest pressure. A quick check protects the crop.',
+      reasonKey:   'intel.farmTask.cloudy.reason',
+      urgency:     'medium',
+      cta:         'Inspect',
+      ctaKey:      'contextEngine.cta.inspect',
+      category:    'pest-check',
     };
   }
 
   // 4. Crop stage
   if (stage.includes('flower')) {
     return {
-      title:    `Inspect ${name} flowers and leaves`,
-      reason:   'Flowering is sensitive. Check for pests, yellowing, or water stress now.',
-      urgency:  'high',
-      cta:      'Inspect',
-      category: 'flowering',
+      title:       `Inspect ${name} flowers and leaves`,
+      titleKey:    'intel.farmTask.flower.title',
+      titleParams: { crop: name },
+      reason:      'Flowering is sensitive. Check for pests, yellowing, or water stress now.',
+      reasonKey:   'intel.farmTask.flower.reason',
+      urgency:     'high',
+      cta:         'Inspect',
+      ctaKey:      'contextEngine.cta.inspect',
+      category:    'flowering',
     };
   }
 
   if (stage.includes('vegetative') || stage.includes('growth')) {
     return {
-      title:    `Remove weeds around your ${name}`,
-      reason:   'Weeds compete for water and nutrients. Clear them early.',
-      urgency:  'medium',
-      cta:      'Mark as done',
-      category: 'weeding',
+      title:       `Remove weeds around your ${name}`,
+      titleKey:    'intel.farmTask.veg.title',
+      titleParams: { crop: name },
+      reason:      'Weeds compete for water and nutrients. Clear them early.',
+      reasonKey:   'intel.farmTask.veg.reason',
+      urgency:     'medium',
+      cta:         'Mark as done',
+      ctaKey:      'home.task.markDone',
+      category:    'weeding',
     };
   }
 
   if (stage.includes('seed') || stage.includes('germinat')) {
     return {
-      title:    `Keep ${name} seed area lightly moist`,
-      reason:   'Seeds need gentle moisture to germinate. Do not overwater.',
-      urgency:  'medium',
-      cta:      'Mark as done',
-      category: 'germination',
+      title:       `Keep ${name} seed area lightly moist`,
+      titleKey:    'intel.farmTask.seed.title',
+      titleParams: { crop: name },
+      reason:      'Seeds need gentle moisture to germinate. Do not overwater.',
+      reasonKey:   'intel.farmTask.seed.reason',
+      urgency:     'medium',
+      cta:         'Mark as done',
+      ctaKey:      'home.task.markDone',
+      category:    'germination',
     };
   }
 
@@ -587,11 +662,15 @@ function _gardenTask(ctx) {
   // 2. Indoor + low / no direct light (spec: "indoor + low light → sunlight reminder")
   if (isIndoor && (weatherType === 'cloudy' || weatherType === 'unknown')) {
     return {
-      title:    `Rotate ${name} toward the window`,
-      reason:   'Indoor plants need 4-6 hours of good light. Rotate so all sides get sun.',
-      urgency:  'medium',
-      cta:      'Check light',
-      category: 'light',
+      title:       `Rotate ${name} toward the window`,
+      titleKey:    'intel.gardenTask.indoorLowLight.title',
+      titleParams: { crop: name },
+      reason:      'Indoor plants need 4-6 hours of good light. Rotate so all sides get sun.',
+      reasonKey:   'intel.gardenTask.indoorLowLight.reason',
+      urgency:     'medium',
+      cta:         'Check light',
+      ctaKey:      'contextEngine.cta.checkLight',
+      category:    'light',
     };
   }
 
@@ -601,86 +680,118 @@ function _gardenTask(ctx) {
 
   if (isHot && isSmall) {
     return {
-      title:    `Water ${name} before 9 am today`,
-      reason:   'Small containers dry out quickly in heat. Watering early keeps roots cool.',
-      urgency:  'high',
-      cta:      'Water now',
-      category: 'watering',
+      title:       `Water ${name} before 9 am today`,
+      titleKey:    'intel.gardenTask.hotSmall.title',
+      titleParams: { crop: name },
+      reason:      'Small containers dry out quickly in heat. Watering early keeps roots cool.',
+      reasonKey:   'intel.gardenTask.hotSmall.reason',
+      urgency:     'high',
+      cta:         'Water now',
+      ctaKey:      'contextEngine.cta.waterNow',
+      category:    'watering',
     };
   }
 
   // 4. Rain → pot drainage (spec: garden rain → drainage)
   if (weatherType === 'rain') {
     return {
-      title:    `Check ${name} container drainage`,
-      reason:   'Rain can waterlog containers without drainage holes. Empty saucers if needed.',
-      urgency:  'medium',
-      cta:      'Check drainage',
-      category: 'drainage',
+      title:       `Check ${name} container drainage`,
+      titleKey:    'intel.gardenTask.rain.title',
+      titleParams: { crop: name },
+      reason:      'Rain can waterlog containers without drainage holes. Empty saucers if needed.',
+      reasonKey:   'intel.gardenTask.rain.reason',
+      urgency:     'medium',
+      cta:         'Check drainage',
+      ctaKey:      'contextEngine.cta.checkDrainage',
+      category:    'drainage',
     };
   }
 
   // 5. Heat / dry
   if (isHot || weatherType === 'dry') {
     return {
-      title:    `Water ${name} early or late today`,
-      reason:   'Avoid watering in the hottest part of the day — evaporation wastes water and can scorch leaves.',
-      urgency:  'high',
-      cta:      'Water now',
-      category: 'watering',
+      title:       `Water ${name} early or late today`,
+      titleKey:    'intel.gardenTask.heat.title',
+      titleParams: { crop: name },
+      reason:      'Avoid watering in the hottest part of the day — evaporation wastes water and can scorch leaves.',
+      reasonKey:   'intel.gardenTask.heat.reason',
+      urgency:     'high',
+      cta:         'Water now',
+      ctaKey:      'contextEngine.cta.waterNow',
+      category:    'watering',
     };
   }
 
   // 6. Wind (outdoor garden only — indoor plants don't face wind)
   if (weatherType === 'wind' && !isIndoor) {
     return {
-      title:    `Move ${name} to a sheltered spot`,
-      reason:   'Strong wind can snap fragile stems or knock over containers. Shelter or stake now.',
-      urgency:  'medium',
-      cta:      'Check plant',
-      category: 'wind',
+      title:       `Move ${name} to a sheltered spot`,
+      titleKey:    'intel.gardenTask.wind.title',
+      titleParams: { crop: name },
+      reason:      'Strong wind can snap fragile stems or knock over containers. Shelter or stake now.',
+      reasonKey:   'intel.gardenTask.wind.reason',
+      urgency:     'medium',
+      cta:         'Check plant',
+      ctaKey:      'contextEngine.cta.checkPlant',
+      category:    'wind',
     };
   }
 
   // 7. Sunny outdoor — opportunistic check
   if (weatherType === 'sunny' && !isIndoor) {
     return {
-      title:    `Give ${name} a quick check-over`,
-      reason:   'Good light conditions today — a brief inspection helps catch early problems.',
-      urgency:  'low',
-      cta:      'Check plant',
-      category: 'crop-care',
+      title:       `Give ${name} a quick check-over`,
+      titleKey:    'intel.gardenTask.sunny.title',
+      titleParams: { crop: name },
+      reason:      'Good light conditions today — a brief inspection helps catch early problems.',
+      reasonKey:   'intel.gardenTask.sunny.reason',
+      urgency:     'low',
+      cta:         'Check plant',
+      ctaKey:      'contextEngine.cta.checkPlant',
+      category:    'crop-care',
     };
   }
 
   // 8. Crop stage
   if (stage.includes('harvest') || stage.includes('fruit')) {
     return {
-      title:    `Your ${name} may be ready to harvest`,
-      reason:   'Ripe fruit left too long can drop or over-ripen. Harvest when colour and size look right.',
-      urgency:  'high',
-      cta:      'Check plant',
-      category: 'harvest',
+      title:       `Your ${name} may be ready to harvest`,
+      titleKey:    'intel.gardenTask.harvest.title',
+      titleParams: { crop: name },
+      reason:      'Ripe fruit left too long can drop or over-ripen. Harvest when colour and size look right.',
+      reasonKey:   'intel.gardenTask.harvest.reason',
+      urgency:     'high',
+      cta:         'Check plant',
+      ctaKey:      'contextEngine.cta.checkPlant',
+      category:    'harvest',
     };
   }
 
   if (stage.includes('flower')) {
     return {
-      title:    `Inspect ${name} flowers`,
-      reason:   'Flowering is a critical window. Check for pests, yellowing, or wilting.',
-      urgency:  'medium',
-      cta:      'Inspect',
-      category: 'flowering',
+      title:       `Inspect ${name} flowers`,
+      titleKey:    'intel.gardenTask.flower.title',
+      titleParams: { crop: name },
+      reason:      'Flowering is a critical window. Check for pests, yellowing, or wilting.',
+      reasonKey:   'intel.gardenTask.flower.reason',
+      urgency:     'medium',
+      cta:         'Inspect',
+      ctaKey:      'contextEngine.cta.inspect',
+      category:    'flowering',
     };
   }
 
   if (stage.includes('seed') || stage.includes('germinat')) {
     return {
-      title:    `Keep ${name} container lightly moist`,
-      reason:   'Seedlings need gentle moisture. Use a spray bottle if available.',
-      urgency:  'medium',
-      cta:      'Check moisture',
-      category: 'germination',
+      title:       `Keep ${name} container lightly moist`,
+      titleKey:    'intel.gardenTask.seed.title',
+      titleParams: { crop: name },
+      reason:      'Seedlings need gentle moisture. Use a spray bottle if available.',
+      reasonKey:   'intel.gardenTask.seed.reason',
+      urgency:     'medium',
+      cta:         'Check moisture',
+      ctaKey:      'contextEngine.cta.checkMoisture',
+      category:    'germination',
     };
   }
 
@@ -692,6 +803,7 @@ function _gardenTask(ctx) {
     reason:   '',
     urgency:  'medium',
     cta:      'Mark as done',
+    ctaKey:   'home.task.markDone',
     category: 'crop-care',
   };
 }
@@ -711,38 +823,46 @@ function _buildAlert(ctx) {
   // Extreme heat
   if (weatherType === 'heat' || (_n(temp) !== null && temp >= 35)) {
     return {
-      id:       'ctx.heat',
-      title:    'Heat alert',
-      message:  mode === 'garden'
+      id:        'ctx.heat',
+      title:     'Heat alert',
+      titleKey:  'intel.alert.heat.title',
+      message:   mode === 'garden'
         ? 'High heat today. Water containers early and move sensitive plants to shade.'
         : 'High heat can stress your crop. Irrigate early morning and check soil moisture.',
-      priority: 'warning',
+      messageKey: mode === 'garden'
+        ? 'intel.alert.heat.message.garden'
+        : 'intel.alert.heat.message.farm',
+      priority:  'warning',
     };
   }
 
   // Heavy rain / high chance
   if (weatherType === 'rain' || (_n(rainChance) !== null && rainChance >= 70)) {
     return {
-      id:       'ctx.rain',
-      title:    'Rain expected',
-      message:  mode === 'garden'
+      id:         'ctx.rain',
+      title:      'Rain expected',
+      titleKey:   'intel.alert.rain.title',
+      message:    mode === 'garden'
         ? 'Rain today — check that containers have clear drainage holes and empty saucers.'
         : 'Rain expected — delay watering and clear any drainage channels.',
-      priority: 'info',
+      messageKey: 'intel.alert.rain.message',
+      priority:   'info',
     };
   }
 
   // Strong wind
   if (weatherType === 'wind') {
     return {
-      id:       'ctx.wind',
-      title:    'Strong wind',
-      message:  mode === 'garden'
+      id:         'ctx.wind',
+      title:      'Strong wind',
+      titleKey:   'intel.alert.wind.title',
+      message:    mode === 'garden'
         ? isIndoor
           ? 'Keep windows closed to protect indoor plants from draught today.'
           : 'Move fragile containers to a sheltered spot before the wind picks up.'
         : 'Avoid spraying today — wind carries product off the crop.',
-      priority: 'warning',
+      messageKey: 'intel.alert.wind.message',
+      priority:   'warning',
     };
   }
 
