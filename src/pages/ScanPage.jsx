@@ -403,7 +403,7 @@ export default function ScanPage() {
   // can never overwrite a fresher attempt.
   const _sessionRef = useRef(null);
 
-  const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file }) => {
+  const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file, focusContext }) => {
     // §6 — inflight guard. Bail silently if a scan is already
     // running; the in-progress analyzing surface is its own UI
     // feedback that the request is live.
@@ -430,6 +430,15 @@ export default function ScanPage() {
       hasBase64: !!imageBase64,
       hasThumbnail: !!thumbnail,
       hasFile: !!file,
+      // Phase 11 — leaf-focus telemetry. The full crops are way
+      // too large for the event log, so we strip them here and
+      // keep just the metrics + guidance flags. Restorable from
+      // the session manager when the bridge needs the visual.
+      focusOk:         !!(focusContext && focusContext.ok),
+      focusReason:     (focusContext && focusContext.reason) || null,
+      focusGuidance:   (focusContext && focusContext.guidance) || null,
+      focusCoveragePct: (focusContext && focusContext.metrics
+        && focusContext.metrics.leafCoveragePct) || null,
     }); } catch { /* never block analysis on telemetry */ }
 
     // Scan V5 Stability — survive ObjectURL revocation by ALWAYS
@@ -585,8 +594,18 @@ export default function ScanPage() {
         }
       } catch { /* swallow — backend treats null as no-weather */ }
 
+      // Phase 11 — when leaf isolation succeeded, prefer the
+      // isolated-leaf crop as the AI input. Backgrounds bias the
+      // classifier toward "low confidence / hard to read"; an
+      // isolated leaf cuts that noise. Falls through to the
+      // normalized base64 when isolation failed.
+      const aiImageBase64 = (focusContext && focusContext.ok
+        && focusContext.isolatedLeafDataUrl)
+        ? focusContext.isolatedLeafDataUrl
+        : imageBase64;
+
       const out = await analyzeScan({
-        imageBase64,
+        imageBase64:      aiImageBase64,
         imageUrl,
         cropId:           profile?.crop || profile?.cropId || null,
         cropName:         profile?.crop || profile?.cropId || null,
@@ -596,6 +615,11 @@ export default function ScanPage() {
         experience,
         activeExperience: activeExperience,
         weather:          weatherForBackend,
+        // Phase 11 attach-throughs — backend / hybrid layer can
+        // ignore these or use them to refine confidence.
+        focusContext:     focusContext || null,
+        originalBase64:   imageBase64,
+        lesionCropBase64: (focusContext && focusContext.lesionCropDataUrl) || null,
       });
       // Real result back — cancel the fallback timer if it
       // hasn't fired yet. If it HAS, the refinedOut below

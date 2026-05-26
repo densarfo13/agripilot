@@ -55,6 +55,12 @@ import {
   normalizeScanImage, isHeicFile,
 } from '../../core/scan/imageNormalization.js';
 import { emitScanEvent, SCAN_EVENTS } from '../../core/scan/scanTelemetry.js';
+// Production-rebuild Phase 11: leaf isolation + lesion focus.
+// Pure canvas — never throws, gracefully falls back when canvas /
+// image decode isn't available. We hand the AI three crops
+// (original, isolated leaf, lesion) so the classifier can rank
+// disease probabilities against a tight, background-free target.
+import { analyzeLeafFocus } from '../../core/scan/leafFocusEngine.js';
 
 const MAX_BYTES = 12 * 1024 * 1024; // 12MB — bumped to honor V5 spec §12.
 
@@ -530,6 +536,16 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
       // Best-effort — if canvas isn't available the consumer
       // simply falls back to the placeholder emoji.
       const thumbnail = await _makeThumbnail(fileToUse).catch(() => null);
+      // V5 + Phase 11: leaf focus analysis. Pure canvas, never
+      // throws. Returns the original / isolated-leaf / lesion-crop
+      // dataURLs + metrics + guidance flags. On any failure we
+      // pass a null focusContext through — analyzeScan + the UI
+      // both degrade gracefully (no isolated crop, no guidance).
+      const focusContext = await analyzeLeafFocus(fileToUse, {
+        workingMaxDim: 320,
+        cropMaxDim:    1024,
+        jpegQuality:   0.85,
+      }).catch(() => null);
       if (typeof onContinue === 'function') {
         try {
           await onContinue({
@@ -537,6 +553,7 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
             imageUrl:    previewOverride || preview,
             thumbnail,
             file: fileToUse,
+            focusContext,
           });
         } catch { /* never propagate */ }
       }
