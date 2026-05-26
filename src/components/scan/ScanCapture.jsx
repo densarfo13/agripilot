@@ -54,6 +54,7 @@ import { scoreImageQuality } from '../../lib/imageQualityPreflight.js';
 import {
   normalizeScanImage, isHeicFile,
 } from '../../core/scan/imageNormalization.js';
+import { emitScanEvent, SCAN_EVENTS } from '../../core/scan/scanTelemetry.js';
 
 const MAX_BYTES = 12 * 1024 * 1024; // 12MB — bumped to honor V5 spec §12.
 
@@ -307,6 +308,11 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         'Please use a JPEG, PNG, WebP, or HEIC photo.'));
       return false;
     }
+    try {
+      emitScanEvent(SCAN_EVENTS.IMAGE_CAPTURED, {
+        mime, size: next.size, name: next.name || null, heic: heicByExt,
+      });
+    } catch { /* swallow */ }
     // V5 stability §3 — normalize BEFORE quality scoring so the
     // canvas-based luminance probe runs on the JPEG'd version
     // (matches what the AI sees). For non-HEIC inputs normalization
@@ -329,6 +335,12 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
           workingFile = norm.normalizedBlob;
         }
         normalizedDataUrl = norm.normalizedDataUrl || '';
+        try {
+          emitScanEvent(SCAN_EVENTS.IMAGE_NORMALIZED, {
+            isHeic: !!norm.isHeic, exifRotated: !!norm.exifRotated,
+            w: norm.width, h: norm.height, mime: norm.mimeType,
+          });
+        } catch { /* swallow */ }
       } else if (norm && norm.reason === 'heic_decode_unsupported') {
         // Safari < 17 / non-Apple browsers can't decode HEIC. Show
         // a concrete hint instead of silently failing.

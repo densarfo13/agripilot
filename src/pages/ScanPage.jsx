@@ -111,6 +111,10 @@ import {
   getActiveSession,
 } from '../core/scan/scanSessionManager.js';
 import { LIFECYCLE_STATE } from '../core/scan/scanLifecycleStateMachine.js';
+// V5 stability + production incident pass: append-only event log
+// so a field operator can reconstruct the failure chain after the
+// fact. Persisted to localStorage, surfaced via __scanTelemetry().
+import { emitScanEvent, SCAN_EVENTS } from '../core/scan/scanTelemetry.js';
 // Farm-intelligence loop §10 — minimum-viable offline scan queue.
 // When the network call fails AND we have a usable base64 image,
 // stash the scan locally so an online retry can run it through
@@ -421,6 +425,12 @@ export default function ScanPage() {
     _sessionRef.current = sessionRec ? sessionRec.sessionId : startScanSession();
     const _localSessionId = _sessionRef.current;
     setError('');
+    try { emitScanEvent(SCAN_EVENTS.SCAN_START, {
+      sessionId: _localSessionId,
+      hasBase64: !!imageBase64,
+      hasThumbnail: !!thumbnail,
+      hasFile: !!file,
+    }); } catch { /* never block analysis on telemetry */ }
 
     // Scan V5 Stability — survive ObjectURL revocation by ALWAYS
     // preferring a dataURL. ScanCapture's unmount cleanup revokes
@@ -464,6 +474,11 @@ export default function ScanPage() {
         aiStatus:      'processing',
       });
     } catch { /* never block analysis on bookkeeping */ }
+    try {
+      emitScanEvent(SCAN_EVENTS.PREVIEW_READY, { sessionId: _localSessionId,
+        previewLen: safeImageUrl ? safeImageUrl.length : 0 });
+      emitScanEvent(SCAN_EVENTS.AI_REQUEST_STARTED, { sessionId: _localSessionId });
+    } catch { /* swallow */ }
     // §7 — production pipeline trace. Dev-only via _devLog
     // would tree-shake; we keep this production-visible for ops
     // diagnostics. Fires once per scan.
@@ -698,12 +713,21 @@ export default function ScanPage() {
       // Scan Pipeline Enforcement — drop if the user has already
       // moved on while we were awaiting the classifier.
       if (isStaleScanSession(_localSessionId)) return;
+      try { emitScanEvent(SCAN_EVENTS.AI_RESPONSE_RECEIVED, {
+        sessionId: _localSessionId,
+        confidence: refinedOut?.confidence || null,
+        source: out?.meta?.source || null,
+      }); } catch { /* swallow */ }
       setResult({
         ...refinedOut,
         imageUrl:  refinedOut.imageUrl  || analyzingImageUrl || null,
         thumbnail: refinedOut.thumbnail || pendingThumbnail  || analyzingImageUrl || null,
       });
       setPhase('result');
+      try { emitScanEvent(SCAN_EVENTS.RESULT_RENDERED, {
+        sessionId: _localSessionId,
+        confidence: refinedOut?.confidence || null,
+      }); } catch { /* swallow */ }
       try { trackEvent('scan_analyzed', { experience, source: out?.meta?.source, confidence: out?.confidence }); }
       catch { /* ignore */ }
       // Data Moat Layer \u00a78 \u2014 spec-shaped scan_completed event.
@@ -731,6 +755,10 @@ export default function ScanPage() {
         }
       } catch { /* ignore */ }
     } catch (err) {
+      try { emitScanEvent(SCAN_EVENTS.AI_REQUEST_FAILED, {
+        sessionId: _localSessionId,
+        reason: (err && err.message) ? String(err.message).slice(0, 200) : 'exception',
+      }); } catch { /* swallow */ }
       // §10 offline-first: when we have the captured image AND the
       // failure looks plausibly network-related (or we're explicitly
       // offline), stash the scan so a future retry can run it
@@ -825,6 +853,12 @@ export default function ScanPage() {
     // and gets dropped. Starting a fresh capture in onContinue
     // bumps the session id again. V5 — endSession() also wipes the
     // persisted session record + bumps the wide race guard.
+    try {
+      emitScanEvent(SCAN_EVENTS.SCAN_CANCELLED, {
+        sessionId: _sessionRef.current || null,
+        reason: 'retake',
+      });
+    } catch { /* swallow */ }
     try { endScanSessionV5(); } catch { /* swallow */ }
     try { endScanSession(); } catch { /* swallow */ }
     _sessionRef.current = null;

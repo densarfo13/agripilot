@@ -73,6 +73,34 @@ try {
   import('./core/crops/languageCropAuditDevTool.js').then((m) => {
     try { m.installLanguageCropAuditHook(); } catch { /* swallow */ }
   }).catch(() => { /* swallow */ });
+  // Production incident pass: unified diagnostic + recovery hook
+  // surface. Installs window.__farrowayBuild / __languageTrace /
+  // __scanTelemetry / __forceLocaleReload / __clearScanSession /
+  // __rebuildPreview / __forceAssetRefresh / __clearSWCaches.
+  // Field operators can paste these into DevTools on any device
+  // without us shipping a separate debug build.
+  import('./lib/productionDiagnostics.js').then((m) => {
+    try { m.installProductionDiagnostics(); } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
+  // Restore any persisted scan session that survived a refresh.
+  // Best-effort — failure is silent; the user just retakes.
+  import('./core/scan/scanSessionManager.js').then((m) => {
+    try {
+      const rec = m && typeof m.restorePersistedSession === 'function'
+        ? m.restorePersistedSession() : null;
+      if (rec && rec._restored) {
+        try {
+          const t = require('./core/scan/scanTelemetry.js');
+          if (t && typeof t.emitScanEvent === 'function') {
+            t.emitScanEvent(t.SCAN_EVENTS.SESSION_RECOVERED, {
+              sessionId: rec.sessionId,
+              lifecycle: rec.lifecycle,
+            });
+          }
+        } catch { /* swallow */ }
+      }
+    } catch { /* swallow */ }
+  }).catch(() => { /* swallow */ });
 } catch { /* never block boot */ }
 import { runStateMigration } from './lib/stateMigration.js';
 import { enforceTaskApiOnly } from './lib/taskCacheInvalidator.js';
