@@ -43,6 +43,7 @@
 
 import React, { useCallback, useRef } from 'react';
 import ManualIssuePicker from './ManualIssuePicker.jsx';
+import { tSafe } from '../../i18n/tSafe.js';
 
 // Reasons where the camera itself failed or is not ready. For
 // these, "Use a saved photo" becomes the PRIMARY action and the
@@ -60,8 +61,10 @@ const MANUAL_PICKER_REASONS = Object.freeze([
 ]);
 
 const SETUP_COPY = Object.freeze({
-  title: 'Add your crop first',
-  body:  'Farroway needs a crop or plant on your farm before we can scan it. Set up your farm and the scan will work.',
+  titleKey: 'scan.fallback.setup.title',
+  bodyKey:  'scan.fallback.setup.body',
+  title:    'Add your crop first',
+  body:     'Farroway needs a crop or plant on your farm before we can scan it. Set up your farm and the scan will work.',
 });
 
 // State-specific retry copy (Scan + Asset Final Blocker Fix §7).
@@ -97,6 +100,19 @@ export default function ScanFallback({
   }
 
   const copy = RETRY_COPY[reason] || RETRY_COPY.crash;
+  // V5 localization fix — resolve title/body via tSafe so the
+  // fallback panel renders in the active locale. The 'timeout'
+  // reason maps onto scan.camera.takingMoment.* (the exact strings
+  // the user saw in the on-device screenshot); other reasons fall
+  // back to scan.fallback.<reason>.title/body keys.
+  const _titleKey = reason === 'timeout'
+    ? 'scan.camera.takingMoment.title'
+    : 'scan.fallback.' + reason + '.title';
+  const _bodyKey  = reason === 'timeout'
+    ? 'scan.camera.takingMoment.body'
+    : 'scan.fallback.' + reason + '.body';
+  const localizedTitle = tSafe(_titleKey, copy.title);
+  const localizedBody  = tSafe(_bodyKey,  copy.body);
   const fileInputRef = useRef(null);
   const galleryFirst    = CAMERA_FAIL_REASONS.includes(reason);
   const showManualPicker = MANUAL_PICKER_REASONS.includes(reason);
@@ -126,8 +142,8 @@ export default function ScanFallback({
   return (
     <main style={S.page} data-testid="scan-fallback" data-reason={reason}>
       <div style={S.card}>
-        <h2 style={S.title}>{copy.title}</h2>
-        <p style={S.body}>{copy.body}</p>
+        <h2 style={S.title}>{localizedTitle}</h2>
+        <p style={S.body}>{localizedBody}</p>
         <div style={S.row}>
           {galleryFirst ? (
             <>
@@ -139,7 +155,7 @@ export default function ScanFallback({
                 style={S.primaryBtn}
                 data-testid="scan-fallback-upload"
               >
-                Use a saved photo
+                {tSafe('scan.camera.useSaved', 'Use a saved photo')}
               </button>
               <button
                 type="button"
@@ -147,7 +163,7 @@ export default function ScanFallback({
                 style={S.secondaryBtn}
                 data-testid="scan-fallback-retry"
               >
-                Retry camera
+                {tSafe('scan.camera.retry', 'Retry camera')}
               </button>
             </>
           ) : (
@@ -158,7 +174,7 @@ export default function ScanFallback({
                 style={S.primaryBtn}
                 data-testid="scan-fallback-retry"
               >
-                Retry
+                {tSafe('common.retry', 'Retry')}
               </button>
               <button
                 type="button"
@@ -166,7 +182,7 @@ export default function ScanFallback({
                 style={S.secondaryBtn}
                 data-testid="scan-fallback-upload"
               >
-                Upload from gallery
+                {tSafe('scan.gallery.upload', 'Upload from gallery')}
               </button>
             </>
           )}
@@ -205,15 +221,15 @@ function SetupRequiredCard({ onSetup }) {
   return (
     <main style={S.page} data-testid="scan-fallback" data-reason="setup_required">
       <div style={S.card}>
-        <h2 style={S.title}>{SETUP_COPY.title}</h2>
-        <p style={S.body}>{SETUP_COPY.body}</p>
+        <h2 style={S.title}>{tSafe(SETUP_COPY.titleKey, SETUP_COPY.title)}</h2>
+        <p style={S.body}>{tSafe(SETUP_COPY.bodyKey,  SETUP_COPY.body)}</p>
         <button
           type="button"
           onClick={handleSetup}
           style={S.primaryBtn}
           data-testid="scan-fallback-setup"
         >
-          Set up my farm
+          {tSafe('scan.fallback.setup.cta', 'Set up my farm')}
         </button>
       </div>
     </main>

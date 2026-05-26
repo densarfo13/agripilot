@@ -83,6 +83,13 @@ import { GARDEN_MODE_TRANSLATIONS }            from './gardenModeTranslations.js
 // recovery, delight, and beginner guidance. Consumed by the
 // reassurance engine + plant timeline UI.
 import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslations.js';
+// Production-incident gap overlay (May 2026) — fills the
+// JournalPage / ImmersiveHomeHero / LiveCameraScanner keys that
+// were wrapped in tSafe() but had no entries in any locale column.
+// On-device screenshots showed "three languages on one screen"
+// because of these gaps. Same `{key:{locale:value}}` shape as
+// PLANT_COMPANION_TRANSLATIONS; same merge contract.
+import { PRODUCTION_GAP_TRANSLATIONS }         from './productionGapTranslations.js';
 // Garden Share overlay — encouragement captions, modal chrome,
 // toast statuses, safety footer. Consumed by ShareCardModal.
 import { SHARE_TRANSLATIONS }                  from './shareTranslations.js';
@@ -160,6 +167,19 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     / beginner. Same shape, same merge contract.
   for (const key of Object.keys(PLANT_COMPANION_TRANSLATIONS)) {
     const row = PLANT_COMPANION_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e2. Production-incident gap overlay (May 2026). Same merge
+  //      contract — only fills empty slots so canonical column
+  //      values (if they're added later) keep winning.
+  for (const key of Object.keys(PRODUCTION_GAP_TRANSLATIONS)) {
+    const row = PRODUCTION_GAP_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {

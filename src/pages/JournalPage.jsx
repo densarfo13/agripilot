@@ -295,13 +295,36 @@ export default function JournalPage() {
                 <span style={S.rowEmoji} aria-hidden="true">{entry.emoji}</span>
                 <div style={S.rowText}>
                   <span style={S.rowMessage}>
-                    {tSafe(
-                      entry.messageKey,
-                      entry.params && entry.params.nickname
-                        ? String(entry.params.nickname)
-                        : entry.messageKey,
-                      entry.params,
-                    )}
+                    {(() => {
+                      // V5 production fix — older entries persisted
+                      // their LOCALIZED message string as
+                      // `messageKey` (e.g. "Kazi ya utunzaji
+                      // imekamilika") instead of the dotted key.
+                      // When the user later switches language, that
+                      // literal string leaks Swahili / French / etc.
+                      // through to the active locale.
+                      //
+                      // Detect "looks like a key" (must contain at
+                      // least one dot AND no spaces) and translate
+                      // accordingly. Anything else routes through
+                      // the canonical 'plant.timeline.generic' key
+                      // so the entry renders in the active locale.
+                      const raw = entry && typeof entry.messageKey === 'string'
+                        ? entry.messageKey : '';
+                      const looksLikeKey = raw.includes('.') && !/\s/.test(raw);
+                      if (looksLikeKey) {
+                        return tSafe(
+                          raw,
+                          entry.params && entry.params.nickname
+                            ? String(entry.params.nickname)
+                            : raw,
+                          entry.params,
+                        );
+                      }
+                      // Legacy literal payload — surface the canonical
+                      // "Care moment" copy in the active locale.
+                      return tSafe('plant.timeline.generic', 'Care moment');
+                    })()}
                   </span>
                   <span style={S.rowDate}>
                     {_formatDate(entry.createdAt)}
