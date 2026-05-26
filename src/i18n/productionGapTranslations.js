@@ -916,6 +916,118 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Mantam mu afude haw',
     hi: 'क्षेत्रीय फसल तनाव',
   },
+
+  // ─── Decision Priority Engine v1 ─────────────────────────
+  // The engine emits `{key, fallback, params}` envelopes; the
+  // surface routes through tSafe. Only the most commonly-rendered
+  // shared phrases live in this overlay — branch-specific copy
+  // (e.g. decision.action.cropSurvival.frost) ships its English
+  // fallback via the engine itself + can be localised in a future
+  // overlay extension without changing the engine.
+  'decision.bestTime.today': {
+    en: 'Today',
+    fr: 'Aujourd’hui',
+    sw: 'Leo',
+    ha: 'Yau',
+    tw: 'Ɛnnɛ',
+    hi: 'आज',
+  },
+  'decision.bestTime.morning': {
+    en: 'This morning',
+    fr: 'Ce matin',
+    sw: 'Asubuhi hii',
+    ha: 'Wannan safiya',
+    tw: 'Anɔpa yi',
+    hi: 'आज सुबह',
+  },
+  'decision.bestTime.evening': {
+    en: 'This evening',
+    fr: 'Ce soir',
+    sw: 'Jioni hii',
+    ha: 'Wannan yamma',
+    tw: 'Anwummerɛ yi',
+    hi: 'आज शाम',
+  },
+  'decision.bestTime.coolerHours': {
+    en: 'Cooler hours',
+    fr: 'Heures plus fraîches',
+    sw: 'Saa za baridi',
+    ha: 'Sa’o’i masu sanyi',
+    tw: 'Mmere a awɔ',
+    hi: 'ठंडे घंटे',
+  },
+  'decision.bestTime.beforeRain': {
+    en: 'Before the rain starts',
+    fr: 'Avant le début de la pluie',
+    sw: 'Kabla ya mvua kuanza',
+    ha: 'Kafin ruwan sama ya fara',
+    tw: 'Ansa na nsuo bɛtɔ',
+    hi: 'बारिश शुरू होने से पहले',
+  },
+  'decision.bestTime.beforeWind': {
+    en: 'Before the wind picks up',
+    fr: 'Avant que le vent ne se lève',
+    sw: 'Kabla ya upepo kuongezeka',
+    ha: 'Kafin iska ta tashi',
+    tw: 'Ansa na mframa atu',
+    hi: 'हवा तेज़ होने से पहले',
+  },
+  'decision.urgency.high': {
+    en: 'High',
+    fr: 'Élevée',
+    sw: 'Juu',
+    ha: 'Mai girma',
+    tw: 'Ɛyɛ den',
+    hi: 'उच्च',
+  },
+  'decision.urgency.medium': {
+    en: 'Medium',
+    fr: 'Moyenne',
+    sw: 'Wastani',
+    ha: 'Matsakaici',
+    tw: 'Mfinimfini',
+    hi: 'मध्यम',
+  },
+  'decision.urgency.low': {
+    en: 'Low',
+    fr: 'Faible',
+    sw: 'Chini',
+    ha: 'Ƙarami',
+    tw: 'Ɛnyɛ den',
+    hi: 'कम',
+  },
+  'decision.suppressed.rankedLower': {
+    en: 'A higher-priority action is showing first.',
+    fr: 'Une action plus prioritaire est affichée en premier.',
+    sw: 'Hatua ya kipaumbele zaidi inaonyeshwa kwanza.',
+    ha: 'Wani aiki mai fifiko ya fi gabatarwa.',
+    tw: 'Adwuma a ɛho hia kɛse na ɛda adi kan.',
+    hi: 'पहले उच्च-प्राथमिकता वाली कार्रवाई दिखाई जा रही है।',
+  },
+  'decision.suppressed.headerCount': {
+    en: '{count} other suggestions',
+    fr: '{count} autres suggestions',
+    sw: 'Mapendekezo mengine {count}',
+    ha: 'Wasu shawarwari {count}',
+    tw: 'Afotuo afoforɔ {count}',
+    hi: '{count} अन्य सुझाव',
+  },
+  'decision.reason.calm': {
+    en: 'No urgent signals today.',
+    fr: 'Aucun signal urgent aujourd’hui.',
+    sw: 'Hakuna ishara ya dharura leo.',
+    ha: 'Babu alamun gaggawa yau.',
+    tw: 'Nsɛnkyerɛnneɛ a ɛho hia biara nni hɔ ɛnnɛ.',
+    hi: 'आज कोई जरूरी संकेत नहीं।',
+  },
+  'decision.action.calm': {
+    en: 'Walk your field and check crop health.',
+    fr: 'Parcourez votre champ et vérifiez la santé des cultures.',
+    sw: 'Tembea kwenye shamba lako na uangalie afya ya mazao.',
+    ha: 'Yi yawo a gonarka ka duba lafiyar amfani.',
+    tw: 'Nantew wo afuo no mu na hwɛ afude apɔwmuden.',
+    hi: 'अपने खेत में टहलें और फसल का स्वास्थ्य जाँचें।',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };

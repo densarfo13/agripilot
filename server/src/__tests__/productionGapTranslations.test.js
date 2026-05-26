@@ -124,6 +124,20 @@ const REQUIRED_KEYS = [
   'ngo.analytics.effectiveness.header',
   'ngo.analytics.engagement.header',
   'ngo.analytics.regionalStress.header',
+  // Decision Priority Engine v1
+  'decision.bestTime.today',
+  'decision.bestTime.morning',
+  'decision.bestTime.evening',
+  'decision.bestTime.coolerHours',
+  'decision.bestTime.beforeRain',
+  'decision.bestTime.beforeWind',
+  'decision.urgency.high',
+  'decision.urgency.medium',
+  'decision.urgency.low',
+  'decision.suppressed.rankedLower',
+  'decision.suppressed.headerCount',
+  'decision.reason.calm',
+  'decision.action.calm',
 ];
 
 describe('productionGapTranslations — overlay coverage', () => {
