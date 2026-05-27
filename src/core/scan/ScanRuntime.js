@@ -303,13 +303,18 @@ export function createScanRuntime(cfg) {
     }
     _emit('image_validated', { sessionId: mySession });
 
-    // Build a preview URL — defer to URL.createObjectURL if a blob.
+    // Build a preview URL. Prefer a caller-supplied dataUrl when
+    // present — surfaces that already ran image normalization (e.g.
+    // HEIC → JPEG re-encode in ScanCapture) pass the normalized
+    // dataUrl so the URL the AI receives is the SAME bytes the user
+    // sees, surviving unmount + ObjectURL revocation. Fall back to
+    // URL.createObjectURL when no dataUrl was supplied.
     let previewUrl = '';
-    if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-      previewUrl = _safe(() => URL.createObjectURL(file), '');
-    }
-    if (!previewUrl && typeof file.dataUrl === 'string') {
+    if (typeof file.dataUrl === 'string' && file.dataUrl) {
       previewUrl = file.dataUrl;
+    } else if (typeof URL !== 'undefined'
+               && typeof URL.createObjectURL === 'function') {
+      previewUrl = _safe(() => URL.createObjectURL(file), '');
     }
     if (!_isActiveSession(mySession)) return { ok: false, reason: 'stale_session' };
     _previewUrl = previewUrl || null;

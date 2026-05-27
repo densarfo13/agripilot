@@ -55,6 +55,11 @@ import {
   normalizeScanImage, isHeicFile,
 } from '../../core/scan/imageNormalization.js';
 import { emitScanEvent, SCAN_EVENTS } from '../../core/scan/scanTelemetry.js';
+// Final Scan Consumer Migration — ScanCapture is now a PURE
+// subscriber to the canonical ScanRuntime. Local previewUrl
+// useState ownership is REMOVED. Runtime owns the preview
+// lifecycle (creation, persistence, revocation on unmount).
+import { useScanRuntime } from '../../hooks/useScanRuntime.js';
 // Production-rebuild Phase 11: leaf isolation + lesion focus.
 // Pure canvas — never throws, gracefully falls back when canvas /
 // image decode isn't available. We hand the AI three crops
@@ -200,7 +205,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
   // intermediate UI (iOS Safari opens a wrapper page) which is the
   // anti-pattern the iPhone-style scan pass explicitly forbids.
   const galleryInputRef = useRef(null);
-  const [preview, setPreview] = useState(null);   // ObjectURL
+  // Final Scan Consumer Migration — preview is now owned by
+  // the canonical ScanRuntime. ScanCapture subscribes to its
+  // snapshot for display; setPreview/local URL revocation is
+  // gone. The runtime auto-registers with window.__scanSession()
+  // so diagnostics reflect live state.
+  const _scanRuntime = useScanRuntime({ autoRegisterDiagnostic: true });
+  const preview = _scanRuntime.preview; // mirror — runtime is the truth
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -273,12 +284,10 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     return () => { cancelled = true; };
   }, []);
 
-  // Revoke ObjectURL on unmount + when preview changes.
-  useEffect(() => () => {
-    if (preview) {
-      try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
-    }
-  }, [preview]);
+  // ObjectURL revocation is now owned by the canonical ScanRuntime
+  // (destroySession() releases every blob URL it created). The
+  // useScanRuntime hook calls destroySession on unmount, so the
+  // prior local revoke effect is removed.
 
   // ─── Live-camera handoff ─────────────────────────────────
   // Validates a captured/uploaded file and stages it as if it had
@@ -369,20 +378,22 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         return false;
       }
     } catch { /* preflight is best-effort — never block on it */ }
-    if (preview) {
-      try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
-    }
-    let url = '';
-    try { url = URL.createObjectURL(workingFile); }
-    catch { /* fall through */ }
-    // Prefer the normalized dataURL as the preview — it survives
-    // unmount + revoke and is what the AI will see, so the
-    // analyze surface and the result card render the SAME bytes.
-    setPreview(normalizedDataUrl || url);
+    // Hand off to the canonical runtime. Runtime owns:
+    //   • preview URL creation (prefers our normalized dataUrl
+    //     for "AI sees the same bytes")
+    //   • ObjectURL revocation on session destroy
+    //   • the IMAGE_READY state transition that gates analysis
+    await _scanRuntime.choosePhoto({
+      size:    workingFile.size,
+      type:    workingFile.type,
+      dataUrl: normalizedDataUrl || null,
+      _id:     workingFile.name || ('cap_' + Date.now()),
+    });
     setFile(workingFile);
     setError('');
     return true;
-  }, [preview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // triggerPicker removed (May 2026 iPhone-style scan pass). The
   // only path that ever called it was the now-deleted hidden button
@@ -478,14 +489,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
         return;
       }
     } catch { /* best-effort */ }
-    // Revoke any previous preview URL.
-    if (preview) {
-      try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
-    }
-    let url = '';
-    try { url = URL.createObjectURL(next); }
-    catch { /* fall through — preview will stay empty */ }
-    setPreview(url);
+    // Hand off to the canonical runtime — it creates the preview
+    // URL, persists it, and emits IMAGE_READY when ready.
+    await _scanRuntime.choosePhoto({
+      size:    next.size,
+      type:    next.type,
+      _id:     next.name || ('gallery_' + Date.now()),
+    });
     setFile(next);
     setError('');
     // Auto-fire analysis — the fallback-panel "Upload a photo"
@@ -500,15 +510,16 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
 
   const reset = useCallback(() => {
     setError('');
-    if (preview) {
-      try { URL.revokeObjectURL(preview); } catch { /* ignore */ }
-    }
-    setPreview(null);
+    // Destroy the runtime session — runtime releases every blob
+    // URL it created + resets to IDLE. The next photo handoff
+    // starts a fresh session.
+    _scanRuntime.destroySession();
     setFile(null);
     if (galleryInputRef.current) {
       try { galleryInputRef.current.value = ''; } catch { /* ignore */ }
     }
-  }, [preview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const continueAnalysis = useCallback(async (fileOverride, previewOverride) => {
     // fileOverride lets in-overlay handlers (capture / gallery)

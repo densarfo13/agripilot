@@ -1,0 +1,15 @@
+{
+  "src/components/scan/LiveCameraScanner.jsx": {
+    "relPath": "src/components/scan/LiveCameraScanner.jsx",
+    "found": true,
+    "violations": {
+      "direct_revokeObjectURL": 2,
+      "direct_createObjectURL": 1
+    }
+  },
+  "src/pages/ScanPage.jsx": {
+    "relPath": "src/pages/ScanPage.jsx",
+    "found": true,
+    "violations": {}
+  }
+}
