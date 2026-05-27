@@ -50,6 +50,13 @@ export const FLAG = Object.freeze({
   NGO_ANALYTICS:           'ngo_analytics',
   SATELLITE_READINESS:     'satellite_readiness',
   SCAN_V5_INVISIBLE:       'scan_v5_invisible_intelligence',
+  // Invisible Intelligence Phase 2 (default OFF). Allow dev/test
+  // override via VITE_FF_<FLAG>=on or by setting the env to "true".
+  ENABLE_ML_RANKING:                    'enable_ml_ranking',
+  ENABLE_DISEASE_CONFIDENCE_CALIBRATION:'enable_disease_confidence_calibration',
+  ENABLE_PREDICTIVE_YIELD:              'enable_predictive_yield',
+  ENABLE_SATELLITE_ENRICHMENT:          'enable_satellite_enrichment',
+  ENABLE_NGO_INTELLIGENCE:              'enable_ngo_intelligence',
 });
 
 // Spec §13 safe defaults — core ON, advanced OFF.
@@ -66,6 +73,12 @@ const _FLAG_DEFAULTS = Object.freeze({
   [FLAG.NGO_ANALYTICS]:            false,
   [FLAG.SATELLITE_READINESS]:      false,
   [FLAG.SCAN_V5_INVISIBLE]:        false,
+  // Invisible Intelligence Phase 2 — all OFF by default.
+  [FLAG.ENABLE_ML_RANKING]:                    false,
+  [FLAG.ENABLE_DISEASE_CONFIDENCE_CALIBRATION]:false,
+  [FLAG.ENABLE_PREDICTIVE_YIELD]:              false,
+  [FLAG.ENABLE_SATELLITE_ENRICHMENT]:          false,
+  [FLAG.ENABLE_NGO_INTELLIGENCE]:              false,
 });
 
 export const KILL_SWITCH = Object.freeze({

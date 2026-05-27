@@ -169,10 +169,45 @@ export function installWeatherAndLanguageDiagnostics() {
         return snap;
       };
     }
+    if (!window.__invisibleIntelligenceHealth) {
+      window.__invisibleIntelligenceHealth = function () {
+        const snap = _invisibleIntelSnapshot();
+        try { console.log('[Farroway · Invisible Intelligence Health]', snap); } catch { /* swallow */ }
+        return snap;
+      };
+    }
 
     _installed = true;
     return true;
   }, false);
+}
+
+// ─── Invisible Intelligence Phase 2 diagnostic ───────────────
+
+function _invisibleIntelSnapshot() {
+  return _safe(() => {
+    // Lazy-import to keep the diagnostics file lightweight even if
+    // the Phase 2 engines never get used.
+    const flagsModule = _safe(() =>
+      require('../core/deployment/deploymentGovernance.js'), null);
+    const flagSnapshot = flagsModule && flagsModule.FLAG ? {
+      ml_ranking:           flagsModule.isFeatureFlagOn(flagsModule.FLAG.ENABLE_ML_RANKING),
+      disease_calibration:  flagsModule.isFeatureFlagOn(flagsModule.FLAG.ENABLE_DISEASE_CONFIDENCE_CALIBRATION),
+      predictive_yield:     flagsModule.isFeatureFlagOn(flagsModule.FLAG.ENABLE_PREDICTIVE_YIELD),
+      satellite_enrichment: flagsModule.isFeatureFlagOn(flagsModule.FLAG.ENABLE_SATELLITE_ENRICHMENT),
+      ngo_intelligence:     flagsModule.isFeatureFlagOn(flagsModule.FLAG.ENABLE_NGO_INTELLIGENCE),
+    } : null;
+    return Object.freeze({
+      phase:        'invisible-intelligence-v2',
+      flagSnapshot: flagSnapshot ? Object.freeze(flagSnapshot) : null,
+      anyOn:        flagSnapshot ? Object.values(flagSnapshot).some(Boolean) : false,
+      generatedAt:  new Date().toISOString(),
+    });
+  }, Object.freeze({
+    phase: 'invisible-intelligence-v2',
+    flagSnapshot: null, anyOn: false,
+    generatedAt: new Date().toISOString(),
+  }));
 }
 
 // ─── Offline diagnostic ──────────────────────────────────────
