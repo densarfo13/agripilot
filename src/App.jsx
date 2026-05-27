@@ -710,6 +710,21 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Spec §2 + §15 — boot-time sweep of the 13 legacy farm storage
+    // keys into the canonical zustand key, and pin diagnostic globals
+    // so `window.__farmAudit()` + `window.__hardResetFarroway()` are
+    // reachable from any device DevTools.
+    (async () => {
+      try {
+        const { migrateLegacyFarmState } = await import('./bootstrap/migrateLegacyFarmState.js');
+        migrateLegacyFarmState();
+      } catch { /* never block app boot */ }
+      try {
+        const { installFarmAuditDiagnostics } = await import('./lib/farmAuditDiagnostics.js');
+        installFarmAuditDiagnostics();
+      } catch { /* never block app boot */ }
+    })();
+
     loadTranslations(getCurrentLang())
       .then(() => setI18nReady(true))
       .catch(() => setI18nReady(true)); // proceed even if translations fail — fallbacks work
