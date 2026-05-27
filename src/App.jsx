@@ -739,6 +739,11 @@ export default function App() {
           await import('./lib/weatherAndLanguageDiagnostics.js');
         installWeatherAndLanguageDiagnostics();
       } catch { /* never block app boot */ }
+      try {
+        const { installLocationDiagnostics } =
+          await import('./core/location/locationIntelligenceEngine.js');
+        installLocationDiagnostics();
+      } catch { /* never block app boot */ }
     })();
 
     loadTranslations(getCurrentLang())
