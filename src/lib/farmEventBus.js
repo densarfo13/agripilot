@@ -55,6 +55,12 @@ export const FarmEvents = Object.freeze({
   FARM_UPDATED:            'farm.updated',
   LOCATION_UPDATED:        'farm.location_updated',
   CROP_ADDED:              'farm.crop_added',
+  // Production hardening §4 — canonical events the page-level
+  // subscribers (Home / Tasks / Progress / Journal) react to so
+  // cross-screen continuity stays in lock-step with the Zustand
+  // canonical farm store.
+  CROP_UPDATED:            'farm.crop_updated',
+  LANGUAGE_CHANGED:        'app.language_changed',
   DISEASE_DETECTED:        'disease.detected',
   OUTBREAK_DETECTED:       'outbreak.detected',
   SOIL_UPDATED:            'soil.updated',

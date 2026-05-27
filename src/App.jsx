@@ -714,6 +714,9 @@ export default function App() {
     // keys into the canonical zustand key, and pin diagnostic globals
     // so `window.__farmAudit()` + `window.__hardResetFarroway()` are
     // reachable from any device DevTools.
+    // Production hardening §1, §3, §5, §6 — install the runtime
+    // health monitor + scan-to-farm continuity bridge so screens
+    // stay in lock-step with the canonical store.
     (async () => {
       try {
         const { migrateLegacyFarmState } = await import('./bootstrap/migrateLegacyFarmState.js');
@@ -722,6 +725,14 @@ export default function App() {
       try {
         const { installFarmAuditDiagnostics } = await import('./lib/farmAuditDiagnostics.js');
         installFarmAuditDiagnostics();
+      } catch { /* never block app boot */ }
+      try {
+        const { installFarmRuntimeHealth } = await import('./lib/farmRuntimeHealth.js');
+        installFarmRuntimeHealth();
+      } catch { /* never block app boot */ }
+      try {
+        const { installScanContinuityBridge } = await import('./lib/scanContinuityBridge.js');
+        installScanContinuityBridge();
       } catch { /* never block app boot */ }
     })();
 
