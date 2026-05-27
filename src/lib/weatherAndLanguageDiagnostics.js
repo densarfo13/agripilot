@@ -50,6 +50,8 @@ import {
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 const _isObj = (v) => v != null && typeof v === 'object';
+const _num   = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const _str   = (v) => (typeof v === 'string' ? v : '');
 
 let _installed = false;
 
@@ -176,10 +178,80 @@ export function installWeatherAndLanguageDiagnostics() {
         return snap;
       };
     }
+    if (!window.__farmContinuityHealth) {
+      window.__farmContinuityHealth = function () {
+        const snap = _farmContinuitySnapshot();
+        try { console.log('[Farroway · Farm Continuity Health]', snap); } catch { /* swallow */ }
+        return snap;
+      };
+    }
 
     _installed = true;
     return true;
   }, false);
+}
+
+// ─── Farm continuity diagnostic ──────────────────────────────
+
+function _farmContinuitySnapshot() {
+  return _safe(() => {
+    const cont = _safe(() =>
+      require('../core/location/farmContinuityLocationEngine.js'), null);
+    const loc  = _safe(() =>
+      require('../core/location/locationIntelligenceEngine.js'), null);
+    const sat  = _safe(() =>
+      require('../core/satellite/satelliteEnrichmentAdapter.js'), null);
+    const bnd  = _safe(() =>
+      require('../core/location/farmBoundaryReadiness.js'), null);
+
+    const farmCached = loc && loc.getCachedFarmLocation
+      ? loc.getCachedFarmLocation() : null;
+    const deviceCached = loc && loc.getCachedDeviceLocation
+      ? loc.getCachedDeviceLocation() : null;
+
+    const farmState = useCanonicalFarmStore.getState
+      ? useCanonicalFarmStore.getState() : null;
+    const farm = farmState && farmState.activeFarm;
+
+    const explicit = farm && _num(farm.lat) != null && _num(farm.lng) != null
+      ? { lat: farm.lat, lng: farm.lng, label: _str(farm.location) } : null;
+
+    const active = cont && cont.resolveActiveLocation ? cont.resolveActiveLocation({
+      explicitFarmCoordinates:    explicit,
+      cachedFarmCoordinates:      farmCached,
+      deviceLocation:             deviceCached,
+    }) : null;
+
+    const boundary = bnd && bnd.assessFarmBoundary ? bnd.assessFarmBoundary({
+      lat: explicit && explicit.lat,
+      lng: explicit && explicit.lng,
+      sizeAcres: farm && _num(farm.size),
+      sizeUnit:  farm && _str(farm.sizeUnit),
+      satelliteProviderAvailable: sat && sat.isSatelliteProviderAvailable
+        ? sat.isSatelliteProviderAvailable() : false,
+    }) : null;
+
+    return Object.freeze({
+      farmLocationExists:    !!(explicit || farmCached),
+      deviceLocationExists:  !!deviceCached,
+      weatherConfidence:     active && active.confidence,
+      distanceFromFarm:      active && active.distanceFromFarm,
+      activeLocationSource:  active && active.locationSource,
+      driftSuppressed:       null, // populated by surfaces that run the suppressor
+      awayState:             !!(active && active.isAwayFromFarm),
+      boundaryReady:         !!(boundary && boundary.boundaryReady),
+      satelliteReady:        !!(boundary && boundary.satelliteReady),
+      offlineCacheHealthy:   !!farmCached,
+      generatedAt:           new Date().toISOString(),
+    });
+  }, Object.freeze({
+    farmLocationExists: false, deviceLocationExists: false,
+    weatherConfidence: null, distanceFromFarm: null,
+    activeLocationSource: null, driftSuppressed: null,
+    awayState: false, boundaryReady: false, satelliteReady: false,
+    offlineCacheHealthy: false,
+    generatedAt: new Date().toISOString(),
+  }));
 }
 
 // ─── Invisible Intelligence Phase 2 diagnostic ───────────────

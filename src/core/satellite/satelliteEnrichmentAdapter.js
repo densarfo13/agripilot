@@ -66,6 +66,46 @@ export function registerSatelliteProvider(provider) {
   return _provider != null;
 }
 
+/** Is a provider currently registered? Used by farm-boundary readiness. */
+export function isSatelliteProviderAvailable() {
+  return _provider != null;
+}
+
+/**
+ * Readiness probe — returns the structural flags the caller (e.g.
+ * farmContinuityHealth diagnostic) reports without firing any
+ * network call. Compose with `assessFarmBoundary` upstream.
+ *
+ *   { farmBoundaryReady, satelliteEligibility, ndviReady,
+ *     moistureSignalReady, provider }
+ */
+export function probeSatelliteReadiness(input) {
+  return _safe(() => {
+    const safe = _isObj(input) ? input : {};
+    const farmBoundaryReady = !!safe.farmBoundaryReady;
+    const flagOn = isFeatureFlagOn(FLAG.ENABLE_SATELLITE_ENRICHMENT);
+    const providerAvailable = isSatelliteProviderAvailable();
+    const eligible = flagOn && providerAvailable && farmBoundaryReady;
+    return Object.freeze({
+      farmBoundaryReady,
+      satelliteEligibility: eligible,
+      ndviReady:            eligible,
+      moistureSignalReady:  eligible,
+      provider:             providerAvailable ? 'registered' : null,
+      flagOn,
+      generatedAt:          Date.now(),
+    });
+  }, Object.freeze({
+    farmBoundaryReady:    false,
+    satelliteEligibility: false,
+    ndviReady:            false,
+    moistureSignalReady:  false,
+    provider:             null,
+    flagOn:               false,
+    generatedAt:          Date.now(),
+  }));
+}
+
 function _vegetationTrendEnvelope(trend) {
   if (trend === 'rising') return Object.freeze({
     key: 'satEnrich.vegetation.rising',
@@ -168,6 +208,8 @@ export const _internal = Object.freeze({
 });
 
 const _module = {
-  fetchSatelliteEnrichment, registerSatelliteProvider, _internal,
+  fetchSatelliteEnrichment, registerSatelliteProvider,
+  isSatelliteProviderAvailable, probeSatelliteReadiness,
+  _internal,
 };
 export default _module;
