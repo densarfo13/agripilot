@@ -31,6 +31,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+// Single Source of Truth Migration — canonical Zustand farm store.
+// Subscribed alongside the legacy profile/farm context so visible
+// crop / name renders prefer the canonical activeFarm when set.
+import { useActiveFarm } from '../hooks/useActiveFarm.js';
+import { resolveCropName } from '../utils/resolveCropName.js';
 // Single source of truth for the support email. Replaces the
 // previous hardcoded 'mailto:support@farroway.app' literals so
 // renaming the inbox is a one-file change.
@@ -152,6 +157,12 @@ export default function MyFarmPage() {
     profile, farms, currentFarmId, loading: profileLoading,
   } = useProfile();
   const { t, lang } = useTranslation();
+  // Canonical activeFarm — called unconditionally at the top so
+  // rules-of-hooks stays satisfied through every early-return branch.
+  const { activeFarm: canonicalFarm } = useActiveFarm();
+  const canonicalHasCrop = !!(canonicalFarm && canonicalFarm.crop);
+  const canonicalCropDisplay = canonicalHasCrop
+    ? resolveCropName(canonicalFarm) : null;
   // Scan Plant entry point — only farmers (role='farmer'|''|agent),
   // never admins / buyers / NGO. Checked via useAuth so the gate
   // works even if an admin somehow visits /my-grow directly.
@@ -297,6 +308,9 @@ export default function MyFarmPage() {
     || farms?.[0]
     || null;
 
+  // (canonical activeFarm subscribed at the top of the component
+  // before any early return — see the useActiveFarm() call above.)
+
   // isGardenMode — the explicit user toggle (highest priority).
   // Always reflects the persisted farroway_active_grow_mode value,
   // so the UI adapts even when the user has no garden entity yet.
@@ -343,9 +357,15 @@ export default function MyFarmPage() {
   // the negative "Not selected" placeholder with the inviting
   // "Choose your main crop" copy so the row reads as an
   // opportunity, not a missing field.
+  // Prefer the legacy farm crop if present; otherwise fall back to
+  // the canonical activeFarm crop BEFORE rendering the "Choose your
+  // main crop" prompt — fixes the cross-screen mismatch where Home
+  // saw pepper but My Farm rendered the placeholder.
   const cropValue = farm.crop
     ? getCropLabelSafe(farm.crop, lang)
-    : tSafe('farm.chooseCrop', 'Choose your main crop');
+    : (canonicalHasCrop
+        ? canonicalCropDisplay
+        : tSafe('farm.chooseCrop', 'Choose your main crop'));
 
   // Crop image tile — circular variant for the farm identity card
   const cropTile = (farm.cropType || farm.crop) ? (
@@ -576,7 +596,10 @@ export default function MyFarmPage() {
               </span>
               <div style={S_PLANT.headText}>
                 <p style={S_PLANT.headTitle}>
-                  {_plantIdentity.plant?.nickname || tSafe('plant.fallback.nickname', 'My Plant')}
+                  {_plantIdentity.plant?.nickname
+                    || (canonicalFarm && canonicalFarm.name)
+                    || canonicalCropDisplay
+                    || tSafe('plant.fallback.nickname', 'My Plant')}
                 </p>
                 {_plantIdentity.plant?.plantType ? (
                   <p style={S_PLANT.headMeta}>
@@ -789,7 +812,7 @@ export default function MyFarmPage() {
           the rest of the page. */}
       {setupIncomplete && (
         <div style={S.missingHint} data-testid="my-farm-missing-hint">
-          {!farm.crop && (
+          {!farm.crop && !canonicalHasCrop && (
             <div style={S.missingRow}>
               <span style={S.missingField}>
                 {t('myFarm.crop')}:&nbsp;

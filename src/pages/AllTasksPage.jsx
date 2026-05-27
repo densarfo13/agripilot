@@ -14,6 +14,10 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
+// Single Source of Truth Migration — canonical Zustand farm store.
+import { useActiveFarm } from '../hooks/useActiveFarm.js';
+ 
+import { resolveCropName } from '../utils/resolveCropName.js';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
@@ -72,6 +76,12 @@ export default function AllTasksPage() {
   const { isOnline } = useNetwork();
   const { isBasic } = useUserMode();
   const { weather } = useWeather();
+
+  // Canonical activeFarm — authoritative crop/name/location.
+  // Subscribed so any change made on Home / My Farm / Onboarding
+  // propagates here without a remount.
+   
+  const { activeFarm: canonicalFarm } = useActiveFarm();
 
   const [tasks, setTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);

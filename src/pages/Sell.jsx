@@ -34,6 +34,9 @@ import { useProfile } from '../context/ProfileContext.jsx';
 // context so Sell stays in sync when farms are added/switched
 // on other surfaces (Home, My Farm).
 import useFarmContext from '../hooks/useFarmContext.js';
+// Single Source of Truth Migration — canonical Zustand farm store.
+import { useActiveFarm } from '../hooks/useActiveFarm.js';
+import { resolveCropName } from '../utils/resolveCropName.js';
 // Visual Header Consistency Fix — canonical realism photo for the
 // Sell hero. Replaces the flat page-hero SVG illustration.
 import { getPageHeroImage } from '../constants/pageHeroImages.js';
@@ -86,6 +89,14 @@ export default function Sell() {
   // farms[0] heuristic so multi-farm households see the SAME
   // active farm on Sell that Home and My Farm show.
   const farmCtx = useFarmContext();
+
+  // Single Source of Truth — canonical Zustand activeFarm.
+  // Subscribed alongside the legacy chain so the visible "your crop"
+  // subtitle resolves to the actual crop when the canonical store
+  // knows it.
+  const { activeFarm: canonicalFarm } = useActiveFarm();
+  const canonicalCropDisplay = canonicalFarm && canonicalFarm.crop
+    ? resolveCropName(canonicalFarm) : null;
 
   // Pick the active farm. Priority order:
   //   1. canonical farmContextEngine.activeFarm (respects
@@ -414,7 +425,10 @@ export default function Sell() {
         mode="farm"
         eyebrow={tSafe('premium.eyebrow.sell', 'Sell')}
         title={tSafe('sell.title', 'Sell your produce')}
-        subtitle={tSafe('sell.subtitle', 'Let nearby buyers know when your crop is ready.')}
+        subtitle={canonicalCropDisplay
+          ? tSafe('sell.subtitleWithCrop', 'Let nearby buyers know when your {crop} is ready.',
+              { crop: canonicalCropDisplay })
+          : tSafe('sell.subtitle', 'Let nearby buyers know when your crop is ready.')}
         bgImage={getPageHeroImage('sell')}
         accent="green"
         testId="sell-hero"
@@ -566,8 +580,12 @@ export default function Sell() {
           {tSafe('market.sellTitle', 'Sell your produce')}
         </h1>
         <p style={S.lead}>
-          {tSafe('market.sellSubtitle',
-            'Let buyers know when your crop is ready.')}
+          {canonicalCropDisplay
+            ? tSafe('market.sellSubtitleWithCrop',
+                'Let buyers know when your {crop} is ready.',
+                { crop: canonicalCropDisplay })
+            : tSafe('market.sellSubtitle',
+                'Let buyers know when your crop is ready.')}
         </p>
 
         {/* Phase 7B: seller trust badge — advisory indicator.

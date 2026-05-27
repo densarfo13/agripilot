@@ -91,6 +91,12 @@ import useExperience             from '../hooks/useExperience.js';
 // _resolveFarm helper so adding/switching a farm propagates to
 // Home without a refresh.
 import useFarmContext             from '../hooks/useFarmContext.js';
+// Single Source of Truth Migration — canonical Zustand farm store.
+// Subscribed alongside the legacy useFarmContext so the Home tile
+// + scan row stay in lock-step with My Farm / Tasks / Progress.
+import { useActiveFarm }          from '../hooks/useActiveFarm.js';
+ 
+import { resolveCropName }        from '../utils/resolveCropName.js';
 // Emergency Active Farm Hydration Fix — read ProfileContext's
 // `loading` so the FarmGardenProfileCard can suppress its
 // empty-state copy while backend /api/farms is in flight.
@@ -252,6 +258,14 @@ export default function Home() {
 
   const navigate = useNavigate();
   const [now] = useState(() => new Date());
+
+  // Canonical activeFarm subscription — establishes the cross-screen
+  // single source of truth. Other Home-internal heuristics (profile,
+  // farms[0], experience context) still feed auxiliary data such as
+  // lat/lng + region; the canonical store is the authoritative
+  // answer to "what crop?" / "what farm name?".
+   
+  const { activeFarm: canonicalFarm } = useActiveFarm();
 
   // ─── Daily habit hook (always called — rules-of-hooks) ──────
   // Provides streak, completedToday, markDone backed by localStorage.

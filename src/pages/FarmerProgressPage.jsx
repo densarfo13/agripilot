@@ -14,6 +14,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
+// Single Source of Truth Migration — canonical Zustand farm store.
+import { useActiveFarm } from '../hooks/useActiveFarm.js';
+ 
+import { resolveCropName } from '../utils/resolveCropName.js';
 // Strict no-English-leak alias — every t() call here returns ''
 // instead of an English fallback when a key is missing in the
 // active language. Reversible by swapping back to '../i18n/index.js'.
@@ -53,6 +57,10 @@ export default function FarmerProgressPage() {
   const { currentFarmId, profile } = useProfile();
   const { t, lang } = useTranslation();
   const { isOnline } = useNetwork();
+
+  // Canonical activeFarm subscription — authoritative crop / region.
+   
+  const { activeFarm: canonicalFarm } = useActiveFarm();
   // Define Tab Tap Behavior §4 — useNavigate for the farmer-
   // only Funding/Sell shortcuts. Called unconditionally at
   // component top so React's hook counter stays in sync

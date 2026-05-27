@@ -28,6 +28,9 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
+// Single Source of Truth Migration — canonical Zustand farm store.
+import { useActiveFarm } from '../hooks/useActiveFarm.js';
+import { resolveCropName } from '../utils/resolveCropName.js';
 import { useStrictTranslation } from '../i18n/useStrictTranslation.js';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 // Documentary farming moment for the Journal hero. Garden mode
@@ -79,6 +82,12 @@ export default function JournalPage() {
   const { entries, count, hasFirstScan, hasFirstFlower, hasFirstFruit } =
     usePlantTimeline(100);
   const { plant, hasPlant } = usePlantIdentity();
+  // Canonical activeFarm — fallback source for the plant identity
+  // strip so Journal stops showing "My Plant" when the canonical
+  // store already knows the crop.
+  const { activeFarm: canonicalFarm } = useActiveFarm();
+  const canonicalCropDisplay = canonicalFarm && canonicalFarm.crop
+    ? resolveCropName(canonicalFarm) : null;
   // Live weather is read defensively — useLiveWeather accepts a
   // null location and returns its FALLBACK_WEATHER shape, so the
   // observation falls through to the stage / streak branches when
@@ -186,12 +195,16 @@ export default function JournalPage() {
           <div style={S.identityText}>
             <span style={S.identityName}>
               {(plant && plant.nickname) ||
+                (canonicalFarm && canonicalFarm.name) ||
+                canonicalCropDisplay ||
                 tSafe('plant.fallback.nickname', 'My Plant')}
             </span>
             <span style={S.identityMeta}>
               {hasPlant && plant && plant.plantType
                 ? tSafe('crop.' + plant.plantType, plant.plantType)
-                : tSafe('journal.identity.tap', 'Tap to set up your plant')}
+                : (canonicalCropDisplay
+                    ? canonicalCropDisplay
+                    : tSafe('journal.identity.tap', 'Tap to set up your plant'))}
             </span>
           </div>
         </div>

@@ -41,6 +41,9 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { tStrict } from '../i18n/strictT.js';
+// Single Source of Truth Migration — canonical Zustand farm store.
+import { useActiveFarm } from '../hooks/useActiveFarm.js';
+import { resolveCropName } from '../utils/resolveCropName.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { resolveRegionUX } from '../core/regionUXEngine.js';
 import {
@@ -499,9 +502,18 @@ export default function FundingHub() {
   const recommendedCards = filteredRecs.slice(0, 5);
   const ctx = { country, userRole, experience: ux.experience };
 
+  // Single Source of Truth — canonical activeFarm. Used as a fallback
+  // signal source so Funding stays consistent with Home / My Farm
+  // when the legacy profile is empty but the canonical store has
+  // crop / region.
+  const { activeFarm: canonicalFarm } = useActiveFarm();
+  const canonicalCropDisplay = canonicalFarm && canonicalFarm.crop
+    ? resolveCropName(canonicalFarm) : null;
+
   // FEATURE_ACTIVATION_POLISH: eligibility nudge signals.
-  const hasCrop   = !!(cropId);
-  const hasRegion = !!(region || country);
+  const hasCrop   = !!(cropId) || !!(canonicalFarm && canonicalFarm.crop);
+  const hasRegion = !!(region || country)
+    || !!(canonicalFarm && (canonicalFarm.region || canonicalFarm.country));
 
   return (
     <PremiumPage mode="farm" testId="funding-hub" maxWidth="46rem" bottomPad="2rem">
@@ -659,10 +671,16 @@ export default function FundingHub() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={STYLES.empty}>
-                  {tStrict(
-                    'funding.hub.emptyRecommended',
-                    'Funding options will appear based on your crop and region.'
-                  )}
+                  {canonicalCropDisplay
+                    ? tStrict(
+                        'funding.hub.emptyRecommendedWithCrop',
+                        'Funding options for {crop} will appear here as we discover them.',
+                        { crop: canonicalCropDisplay },
+                      )
+                    : tStrict(
+                        'funding.hub.emptyRecommended',
+                        'Funding options will appear based on your crop and region.'
+                      )}
                 </div>
                 {/* FEATURE_ACTIVATION_POLISH: nudge farmer to add region
                     when they have a crop but no location on record. */}
