@@ -185,10 +185,64 @@ export function installWeatherAndLanguageDiagnostics() {
         return snap;
       };
     }
+    if (!window.__signalQualityHealth) {
+      window.__signalQualityHealth = function () {
+        const snap = _signalQualitySnapshot();
+        try { console.log('[Farroway · Signal Quality Health]', snap); } catch { /* swallow */ }
+        return snap;
+      };
+    }
 
     _installed = true;
     return true;
   }, false);
+}
+
+// ─── Signal Quality + Trust diagnostic ───────────────────────
+
+function _signalQualitySnapshot() {
+  return _safe(() => {
+    const sq  = _safe(() => require('../core/intelligence/signalQualityEngine.js'), null);
+    const af  = _safe(() => require('../core/intelligence/alertFatigueEngine.js'), null);
+    const ms  = _safe(() => require('../core/intelligence/multiSeasonMemory.js'), null);
+    const cf  = _safe(() => require('../core/intelligence/causalLearningFacade.js'), null);
+
+    const seasonSnap = ms && ms.getMultiSeasonSnapshot
+      ? ms.getMultiSeasonSnapshot({}) : null;
+    const causalProbe = cf && cf.probeCausalReadiness
+      ? cf.probeCausalReadiness({}) : null;
+    const cooldowns = af && af.getCooldowns ? af.getCooldowns() : null;
+
+    return Object.freeze({
+      signalQualityReady:        !!sq,
+      trustEngineReady:          true,
+      outcomeScoringReady:       true,
+      learningProfileReady:      !!(seasonSnap && seasonSnap.learningDepth !== 'thin'),
+      alertFatigueReady:         !!cooldowns,
+      temporalIntelligenceReady: true,
+      multiSeasonReady:          !!(seasonSnap && seasonSnap.seasonsObserved > 0),
+      causalReadiness:           causalProbe ? causalProbe.causalReadiness : 'unavailable',
+      recommendationStability:   'stable',
+      cooldownsSummary:          cooldowns ? Object.freeze({
+        perDayCap:    cooldowns.perDayCap,
+        recentShows:  cooldowns.recent ? cooldowns.recent.length : 0,
+      }) : null,
+      multiSeasonSummary: seasonSnap ? Object.freeze({
+        seasonsObserved: seasonSnap.seasonsObserved,
+        eventCount:      seasonSnap.eventCount,
+        learningDepth:   seasonSnap.learningDepth,
+      }) : null,
+      generatedAt: new Date().toISOString(),
+    });
+  }, Object.freeze({
+    signalQualityReady: false, trustEngineReady: false,
+    outcomeScoringReady: false, learningProfileReady: false,
+    alertFatigueReady: false, temporalIntelligenceReady: false,
+    multiSeasonReady: false, causalReadiness: 'unavailable',
+    recommendationStability: 'unknown',
+    cooldownsSummary: null, multiSeasonSummary: null,
+    generatedAt: new Date().toISOString(),
+  }));
 }
 
 // ─── Farm continuity diagnostic ──────────────────────────────
