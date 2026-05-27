@@ -41,6 +41,12 @@ import {
 } from '../i18n/localeStorageBridge.js';
 import { useLanguageStore } from '../store/languageStore.js';
 import { useCanonicalFarmStore } from '../store/canonicalFarmStore.js';
+import {
+  getLearningSnapshot,
+} from '../core/intelligence/recommendationLearning.js';
+import {
+  getLoopEvents, summariseLoopHealth,
+} from '../core/trust/confidenceLoopEngine.js';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 const _isObj = (v) => v != null && typeof v === 'object';
@@ -149,10 +155,83 @@ export function installWeatherAndLanguageDiagnostics() {
         return snap;
       };
     }
+    if (!window.__offlineHealth) {
+      window.__offlineHealth = function () {
+        const snap = _offlineSnapshot();
+        try { console.log('[Farroway · Offline Health]', snap); } catch { /* swallow */ }
+        return snap;
+      };
+    }
+    if (!window.__learningLoopAudit) {
+      window.__learningLoopAudit = function () {
+        const snap = _learningLoopSnapshot();
+        try { console.log('[Farroway · Learning Loop Audit]', snap); } catch { /* swallow */ }
+        return snap;
+      };
+    }
 
     _installed = true;
     return true;
   }, false);
+}
+
+// ─── Offline diagnostic ──────────────────────────────────────
+
+function _offlineSnapshot() {
+  return _safe(() => {
+    const win = _hasWindow() ? window : {};
+    const online = typeof navigator !== 'undefined'
+      ? !!navigator.onLine : null;
+    // Read the canonical offline queue if it's exposed; otherwise
+    // report what we can see.
+    const queueLength = _safe(() => {
+      if (typeof win.__offlineQueueLength === 'function') {
+        return win.__offlineQueueLength();
+      }
+      // Defensive: walk localStorage for the standard offline-queue key.
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('farroway:offlineQueue');
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed.length;
+          } catch { /* swallow */ }
+        }
+      }
+      return null;
+    }, null);
+    return Object.freeze({
+      online,
+      queueLength,
+      hasNavigator: typeof navigator !== 'undefined',
+      generatedAt:  new Date().toISOString(),
+    });
+  }, Object.freeze({
+    online: null, queueLength: null,
+    hasNavigator: false, generatedAt: new Date().toISOString(),
+  }));
+}
+
+// ─── Learning loop diagnostic ────────────────────────────────
+
+function _learningLoopSnapshot() {
+  return _safe(() => {
+    const learning = _safe(getLearningSnapshot,
+      { adjustmentCount: 0, averageBoost: 0 });
+    const events = _safe(getLoopEvents, []);
+    const health = _safe(summariseLoopHealth, null);
+    return Object.freeze({
+      learning,
+      loopEventCount:        Array.isArray(events) ? events.length : 0,
+      loopHealth:            health,
+      recentLoopEvents:      Array.isArray(events) ? events.slice(-10) : [],
+      generatedAt:           new Date().toISOString(),
+    });
+  }, Object.freeze({
+    learning: { adjustmentCount: 0, averageBoost: 0 },
+    loopEventCount: 0, loopHealth: null, recentLoopEvents: [],
+    generatedAt: new Date().toISOString(),
+  }));
 }
 
 export function _resetWeatherAndLanguageDiagnosticsForTests() {
