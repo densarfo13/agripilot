@@ -219,16 +219,11 @@ export default function FarmerProgressPage() {
     }
   })();
 
-  // Crop label resolved once for the GrowthJourneyCard. Reads
-  // from the canonical `crop` field on the profile so the
-  // existing crop-type drift gate stays at baseline.
-  const _cropDisplayLabel = (() => {
-    try {
-      const c = (profile && (profile.crop || profile.cropName)) || '';
-      if (c) return getCropLabelSafe(c, lang);
-    } catch { /* swallow */ }
-    return '';
-  })();
+  // Crop label resolved once for the GrowthJourneyCard. Single
+  // Source of Truth — renders via resolveCropName(canonicalFarm)
+  // only. Replaces the legacy `profile.crop || profile.cropName`
+  // chain that drifted after the canonical store updated.
+  const _cropDisplayLabel = resolveCropName(canonicalFarm);
 
   if (!profile) return null;
 
@@ -387,7 +382,12 @@ export default function FarmerProgressPage() {
                 <span style={S.sectionLabel}>{t('progress.cropProgress')}</span>
               </div>
               <div style={S.cropRow}>
-                <span style={S.cropName}>{getCropLabelSafe(cropType, lang)}</span>
+                {/* Single Source of Truth — render crop name via the
+                    canonical activeFarm only. Replaces the legacy
+                    `getCropLabelSafe(cropType, lang)` read from
+                    profile.cropType which was rendering stale text
+                    after the canonical store updated. */}
+                <span style={S.cropName}>{resolveCropName(canonicalFarm)}</span>
                 {cropStage && (
                   <span style={S.stageBadge}>
                     {STAGE_EMOJIS[cropStage] || SECTION_ICONS.growth}{' '}
