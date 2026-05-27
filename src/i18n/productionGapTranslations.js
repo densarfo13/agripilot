@@ -2542,6 +2542,72 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Wobetumi nso de mfonini bi aba',
     hi: 'आप तस्वीर अपलोड भी कर सकते हैं',
   },
+
+  // ─── Scan Runtime status messages (spec §18) ────────────────
+  'scan.image.invalid': {
+    en: 'Photo could not be loaded. Please choose the photo again.',
+    fr: 'La photo n’a pas pu être chargée. Veuillez choisir à nouveau la photo.',
+    sw: 'Picha haikuweza kupakiwa. Tafadhali chagua picha tena.',
+    ha: 'Hoton bai loda ba. Don Allah sake zaɓar hoton.',
+    tw: 'Mfonini no antumi anso. Yɛsrɛ wo, san paw mfonini no bio.',
+    hi: 'फ़ोटो लोड नहीं हो सकी। कृपया फिर से चुनें।',
+  },
+  'scan.runtime.fatal': {
+    en: 'Something went wrong. Please choose a photo to continue.',
+    fr: 'Une erreur s’est produite. Veuillez choisir une photo pour continuer.',
+    sw: 'Hitilafu imetokea. Tafadhali chagua picha ili kuendelea.',
+    ha: 'Wani abu ya yi kuskure. Don Allah zaɓi hoto don ci gaba.',
+    tw: 'Biribi ankɔ so yiye. Yɛsrɛ wo, paw mfonini bi na yɛkɔ so.',
+    hi: 'कुछ गलत हुआ। आगे बढ़ने के लिए एक फ़ोटो चुनें।',
+  },
+  'scan.runtime.offlineQueued': {
+    en: 'Saved for sync when you reconnect.',
+    fr: 'Enregistré pour synchroniser lors de la reconnexion.',
+    sw: 'Imehifadhiwa kwa kusawazisha utakapounganishwa tena.',
+    ha: 'An adana don aiki sa\'ad da ka sake haɗawa.',
+    tw: 'Wɔakora so akɔsi sɛ wobɛsan ahyia.',
+    hi: 'पुनः कनेक्ट होने पर सिंक के लिए सहेजा गया।',
+  },
+  'scan.runtime.analyzing': {
+    en: 'Checking your photo.',
+    fr: 'Analyse de votre photo.',
+    sw: 'Inaangalia picha yako.',
+    ha: 'Ana duba hotonka.',
+    tw: 'Yɛrehwɛ wo mfonini.',
+    hi: 'आपकी फ़ोटो की जाँच हो रही है।',
+  },
+  'scan.runtime.preprocessing': {
+    en: 'Preparing photo.',
+    fr: 'Préparation de la photo.',
+    sw: 'Inaandaa picha.',
+    ha: 'Ana shirya hoton.',
+    tw: 'Yɛresiesie mfonini no.',
+    hi: 'फ़ोटो तैयार हो रही है।',
+  },
+  'scan.runtime.resultReady': {
+    en: 'Result ready.',
+    fr: 'Résultat prêt.',
+    sw: 'Matokeo yako tayari.',
+    ha: 'Sakamako a shirye.',
+    tw: 'Asɛm no ayɛ krado.',
+    hi: 'परिणाम तैयार।',
+  },
+  'scan.runtime.lowConfidence': {
+    en: 'Result needs review.',
+    fr: 'Le résultat doit être vérifié.',
+    sw: 'Matokeo yanahitaji ukaguzi.',
+    ha: 'Sakamako yana bukatar dubawa.',
+    tw: 'Asɛm no hia nhwehwɛmu.',
+    hi: 'परिणाम की जाँच ज़रूरी।',
+  },
+  'scan.runtime.saved': {
+    en: 'Saved to your journal.',
+    fr: 'Enregistré dans votre journal.',
+    sw: 'Imehifadhiwa kwenye shajara yako.',
+    ha: 'An adana a tarihinka.',
+    tw: 'Wɔakora wɔ wo shajara mu.',
+    hi: 'आपकी पत्रिका में सहेजा गया।',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };

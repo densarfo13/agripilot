@@ -192,6 +192,34 @@ export function installWeatherAndLanguageDiagnostics() {
         return snap;
       };
     }
+    // Spec §21 — surfaces register their active ScanRuntime here
+    // by calling `window.__registerScanRuntime(rt)`. The runtime
+    // health hook then reflects the live state. No-op if nothing
+    // registered yet.
+    if (!window.__registerScanRuntime) {
+      window.__registerScanRuntime = function (rt) {
+        window.__activeScanRuntime = rt || null;
+      };
+    }
+    if (!window.__scanSession) {
+      window.__scanSession = function () {
+        const rt = window.__activeScanRuntime;
+        const snap = rt && typeof rt.getSnapshot === 'function'
+          ? rt.getSnapshot() : null;
+        try { console.log('[Farroway · Scan Session]', snap); } catch { /* swallow */ }
+        return snap;
+      };
+    }
+    if (!window.__clearScanSession) {
+      window.__clearScanSession = function () {
+        const rt = window.__activeScanRuntime;
+        if (rt && typeof rt.destroySession === 'function') {
+          rt.destroySession();
+          return true;
+        }
+        return false;
+      };
+    }
 
     _installed = true;
     return true;
