@@ -153,13 +153,25 @@ export function orchestrateIntelligence(args) {
       ? 'limited_scan_trust'
       : (primary && primary.urgency === 'high' ? 'firm' : 'gentle');
 
+    // Confidence tone — production stabilization §11 names this
+    // `confidenceTone`. `confidence` stays as the legacy alias so
+    // existing consumers don't break.
+    const confidenceTone = confidence === 'limited_scan_trust' ? 'needs_review'
+                         : confidence === 'firm' ? 'high_confidence'
+                         : 'medium_confidence';
+
     return Object.freeze({
       ok:                          true,
+      // Spec §11 names — canonical going forward.
+      oneBestAction:               primary,
+      confidenceTone,
+      // Legacy aliases — preserved for compose-only safety with the
+      // dozens of existing consumers.
       primaryAction:               primary,
+      confidence,
       supportingInsight,
       suppressedRecommendations:   suppressed,
       urgency:                     primary ? primary.urgency : 'low',
-      confidence,
       reason:                      primary ? primary.why : null,
       bestTime,
       nextStep:                    primary && primary.explanation
@@ -172,11 +184,15 @@ export function orchestrateIntelligence(args) {
   } catch {
     return Object.freeze({
       ok:                        false,
+      // Spec §11 names.
+      oneBestAction:             null,
+      confidenceTone:            'needs_review',
+      // Legacy aliases.
       primaryAction:             null,
+      confidence:                'gentle',
       supportingInsight:         null,
       suppressedRecommendations: [],
       urgency:                   'low',
-      confidence:                'gentle',
       reason:                    null,
       bestTime:                  'today',
       nextStep:                  null,
