@@ -734,6 +734,11 @@ export default function App() {
         const { installScanContinuityBridge } = await import('./lib/scanContinuityBridge.js');
         installScanContinuityBridge();
       } catch { /* never block app boot */ }
+      try {
+        const { installWeatherAndLanguageDiagnostics } =
+          await import('./lib/weatherAndLanguageDiagnostics.js');
+        installWeatherAndLanguageDiagnostics();
+      } catch { /* never block app boot */ }
     })();
 
     loadTranslations(getCurrentLang())
