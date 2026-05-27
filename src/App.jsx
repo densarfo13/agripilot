@@ -744,6 +744,11 @@ export default function App() {
           await import('./core/location/locationIntelligenceEngine.js');
         installLocationDiagnostics();
       } catch { /* never block app boot */ }
+      try {
+        const { installCameraDiagnostics } =
+          await import('./core/camera/cameraHealthEngine.js');
+        installCameraDiagnostics();
+      } catch { /* never block app boot */ }
     })();
 
     loadTranslations(getCurrentLang())

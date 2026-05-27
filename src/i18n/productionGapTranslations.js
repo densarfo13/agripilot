@@ -2508,6 +2508,40 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Wo afuo no wɔ {stage} mu. Hwɛsoɔ nketewa da biara si fapem.',
     hi: 'आपका खेत {stage} में है। रोज़ की छोटी देखभाल नींव बनाती है।',
   },
+
+  // ─── Camera Runtime Stability — calm startup wording (§14) ─
+  'camera.startup.preparing': {
+    en: 'Preparing camera',
+    fr: 'Préparation de la caméra',
+    sw: 'Inaandaa kamera',
+    ha: 'Ana shirya kyamara',
+    tw: 'Yɛresiesie mfonisini',
+    hi: 'कैमरा तैयार हो रहा है',
+  },
+  'camera.startup.recovering': {
+    en: 'Recovering camera',
+    fr: 'Récupération de la caméra',
+    sw: 'Inarejesha kamera',
+    ha: 'Ana farfaɗo da kyamara',
+    tw: 'Yɛresan ma mfonisini ayɛ den',
+    hi: 'कैमरा फिर सक्रिय हो रहा है',
+  },
+  'camera.startup.ready': {
+    en: 'Camera ready',
+    fr: 'Caméra prête',
+    sw: 'Kamera tayari',
+    ha: 'Kyamara a shirye',
+    tw: 'Mfonisini ayɛ krado',
+    hi: 'कैमरा तैयार',
+  },
+  'camera.startup.uploadFallback': {
+    en: 'You can also upload a photo',
+    fr: 'Vous pouvez aussi téléverser une photo',
+    sw: 'Pia unaweza kupakia picha',
+    ha: 'Hakanan zaka iya loda hoto',
+    tw: 'Wobetumi nso de mfonini bi aba',
+    hi: 'आप तस्वीर अपलोड भी कर सकते हैं',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };
