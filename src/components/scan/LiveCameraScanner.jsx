@@ -61,6 +61,13 @@ import {
   installMobileCameraLifecycle,
   uninstallMobileCameraLifecycle,
 } from '../../core/scan/mobileCameraLifecycle.js';
+// Canonical Camera Runtime Manager — owns the single active
+// MediaStream. Replaces the in-component getUserMedia + retry
+// + stopStream legacy path so every scan surface goes through
+// the same lifecycle owner.
+import {
+  initializeCamera, stopCamera, getActiveStream,
+} from '../../core/camera/cameraRuntimeManager.js';
 
 const PREFERRED_CONSTRAINTS = (facing) => ({
   audio: false,
@@ -334,27 +341,19 @@ export default function LiveCameraScanner({
   // stale in-flight starts so two rapid toggles can't both
   // attach a stream to the same <video>.
 
+  // Canonical Camera Runtime Manager delegation — single-stream
+  // teardown owned by src/core/camera/cameraRuntimeManager.js.
+  // Replaces the in-component track-stopping + srcObject-clearing
+  // path so every Scan surface goes through the same lifecycle.
   const stopStream = useCallback(() => {
-    const s = streamRef.current;
-    if (!s) {
-      // Still clear srcObject defensively — covers the case
-      // where the stream was nulled but the video element still
-      // holds a reference (iOS Safari leak).
-      const v = videoRef.current;
-      if (v) { try { v.srcObject = null; } catch { /* swallow */ } }
-      setTorchOn(false);
-      setHasTorch(false);
-      return;
-    }
-    try {
-      s.getTracks().forEach((t) => { try { t.stop(); } catch { /* swallow */ } });
-    } catch { /* swallow */ }
+    stopCamera('scan_stop');
     streamRef.current = null;
+    // Defensive — pause + reset the video element after the
+    // manager has detached the srcObject. Covers any caller that
+    // bypassed the manager but still owns the <video>.
     const v = videoRef.current;
     if (v) {
       try { v.srcObject = null; } catch { /* swallow */ }
-      // iOS Safari sometimes keeps the camera light on if we
-      // don't also pause + clear the readyState. Defensive.
       try { v.pause(); } catch { /* swallow */ }
     }
     setTorchOn(false);
@@ -481,47 +480,65 @@ export default function LiveCameraScanner({
       facing: facingToUse, isIos, isMobileSafari, preflight,
     });
 
+    // Canonical Camera Runtime Manager — single-stream open.
+    // Replaces the two-tier in-component getUserMedia retry path.
+    // The manager:
+    //   • releases any prior stream before opening a new one
+    //     (enforces "one active stream globally")
+    //   • applies iOS Safari attrs (playsInline / muted / autoplay)
+    //     when a video element is supplied
+    //   • races an 8s timeout per the runtime contract
+    //   • re-validates on visibilitychange and pagehide
     let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(PREFERRED_CONSTRAINTS(facingToUse));
-    } catch (e1) {
-      // Re-try with the lenient constraints. Some Android browsers
-      // reject the ideal-resolution hints; the bare facingMode
-      // call usually succeeds.
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(MIN_CONSTRAINTS(facingToUse));
-      } catch (e2) {
-        if (isStale()) {
-          // A newer startStream call superseded us. Don't
-          // touch state — the newer call owns it now.
+    let openErrName = null;
+    const _videoElForOpen = videoRef.current;
+    {
+      const r1 = await initializeCamera({
+        videoEl:     _videoElForOpen,
+        constraints: PREFERRED_CONSTRAINTS(facingToUse),
+      });
+      if (r1 && r1.ok) {
+        stream = r1.stream;
+      } else {
+        // Second attempt with lenient constraints. Some Android
+        // browsers reject the ideal-resolution hints; the bare
+        // facingMode call usually succeeds.
+        openErrName = (r1 && r1.reason) || 'init_failed';
+        const r2 = await initializeCamera({
+          videoEl:     _videoElForOpen,
+          constraints: MIN_CONSTRAINTS(facingToUse),
+        });
+        if (r2 && r2.ok) {
+          stream = r2.stream;
+          openErrName = null;
+        } else {
+          if (isStale()) return;
+          const reason = (r2 && r2.reason) || openErrName || 'init_failed';
+          const denied = reason === 'init_timeout_or_denied'
+            || /NotAllowed|denied|Security/i.test(String(reason));
+          setPhase(denied ? 'permission_denied' : 'error');
+          setErrorMsg(
+            denied
+              ? tSafe(
+                  'scan.camera.denied',
+                  'Camera access was denied. Tap "Use a saved photo" to continue.',
+                )
+              : tSafe(
+                  'scan.camera.failed',
+                  "Couldn't open the camera. Tap retry or upload a photo.",
+                ),
+          );
+          _cameraLog(denied ? 'permission_denied' : 'permission_error', {
+            r1: r1 && r1.reason,
+            r2: r2 && r2.reason,
+          });
           return;
         }
-        const denied = (e2 && (e2.name === 'NotAllowedError' || e2.name === 'SecurityError'))
-                    || (e1 && (e1.name === 'NotAllowedError' || e1.name === 'SecurityError'));
-        setPhase(denied ? 'permission_denied' : 'error');
-        setErrorMsg(
-          denied
-            ? tSafe(
-                'scan.camera.denied',
-                'Camera access was denied. Tap "Use a saved photo" to continue.',
-              )
-            : tSafe(
-                'scan.camera.failed',
-                "Couldn't open the camera. Tap retry or upload a photo.",
-              ),
-        );
-        _cameraLog(denied ? 'permission_denied' : 'permission_error', {
-          e1: e1 && e1.name,
-          e2: e2 && e2.name,
-        });
-        return;
       }
     }
     if (isStale()) {
-      // Newer start superseded us between gUM resolution and
-      // here. Drop the just-acquired stream so we don't leak.
-      try { stream.getTracks().forEach((t) => { try { t.stop(); } catch { /* swallow */ } }); }
-      catch { /* swallow */ }
+      // Newer start superseded us — runtime manager owns cleanup.
+      stopCamera('stale_start_discarded');
       _cameraLog('stale_start_discarded');
       return;
     }
@@ -530,16 +547,19 @@ export default function LiveCameraScanner({
     streamRef.current = stream;
     const v = videoRef.current;
     if (!v) {
-      // Video element unmounted between gUM and attach. Tear
-      // down the stream we just got so we don't leak.
-      try { stream.getTracks().forEach((t) => { try { t.stop(); } catch { /* swallow */ } }); }
-      catch { /* swallow */ }
+      // Video element unmounted between manager open and attach.
+      // Delegate teardown to the runtime manager.
+      stopCamera('no_video_element');
       streamRef.current = null;
       _cameraLog('no_video_element');
       return;
     }
     try {
-      v.srcObject = stream;
+      // initializeCamera already bound srcObject when videoEl was
+      // supplied above; this reassignment is defensive only for
+      // the case where the element changed identity between open
+      // and attach (rare during fast re-mounts).
+      if (v.srcObject !== stream) v.srcObject = stream;
       // iOS Safari + Android Chrome both need an explicit play()
       // call. The `muted` + `playsInline` attributes on the
       // <video> element let play() succeed without an active
