@@ -1904,6 +1904,32 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Asɛm bi a aba nnansa yi rekɔ akyiri.',
     hi: 'हाल की एक समस्या बिगड़ती दिख रही है।',
   },
+
+  // ─── Recommendation Governance Engine v1 ───────────────────
+  'rec.calm.holdoff': {
+    en: 'Nothing urgent right now — we will check in again later.',
+    fr: 'Rien d’urgent pour le moment — nous vous recontacterons plus tard.',
+    sw: 'Hakuna jambo la dharura sasa — tutaangalia tena baadaye.',
+    ha: 'Babu wani abu na gaggawa yanzu — za mu sake duba daga baya.',
+    tw: 'Biribiara nni hɔ a ɛho hia seesei — yɛbɛsan ahwɛ akyiri yi.',
+    hi: 'अभी कुछ ज़रूरी नहीं — हम बाद में फिर देखेंगे।',
+  },
+  'rec.suppressed.trust.calm': {
+    en: 'We are listening more before recommending again.',
+    fr: 'Nous écoutons davantage avant de recommander à nouveau.',
+    sw: 'Tunasikiliza zaidi kabla ya kupendekeza tena.',
+    ha: 'Muna saurara fiye da kafin sake ba da shawara.',
+    tw: 'Yɛretie kakra ansa na yɛasan ama afotuo bio.',
+    hi: 'फिर से सुझाव देने से पहले हम और सुन रहे हैं।',
+  },
+  'rec.followUp.generic': {
+    en: 'Check back in a few days to confirm the result.',
+    fr: 'Revenez dans quelques jours pour confirmer le résultat.',
+    sw: 'Rudi baada ya siku chache kuthibitisha matokeo.',
+    ha: 'Dawo nan da kwanaki kaɗan don tabbatar da sakamako.',
+    tw: 'San bra nnansa kakra mu na hwɛ deɛ aba.',
+    hi: 'परिणाम पुष्टि करने कुछ दिन में फिर देखें।',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };
