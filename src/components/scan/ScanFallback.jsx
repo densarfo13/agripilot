@@ -81,6 +81,11 @@ const RETRY_COPY = Object.freeze({
   // last-resort label but with calmer copy + a clearer next
   // action. Surface-specific failures below should be preferred.
   timeout:            { title: 'Camera is taking a moment', body: 'Tap retry, or use a saved photo to keep scanning now.' },
+  // Deep Deploy Audit fix — the page-mount stall (Scan code chunk
+  // failed to render within the 15s safety ceiling) is NOT a
+  // camera failure. Use accurate wording so the farmer knows
+  // to retry the page load, not blame the camera.
+  page_loading:       { title: 'Scan is taking a moment',     body: 'Tap retry to reload, or use a saved photo to keep scanning now.' },
   // Spec §7 — surface-specific outcomes the FSM emits.
   upload_failed:      { title: 'Upload failed',               body: 'Try a smaller photo, or check your connection and retry.' },
   analysis_delayed:   { title: 'Analysis is delayed',          body: 'Your photo was saved for retry — you can keep using the app.' },

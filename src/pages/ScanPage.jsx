@@ -1031,8 +1031,13 @@ export default function ScanPage() {
   // mount path stalls beyond the safety ceiling. Retry button
   // reloads (giving the lazy chunks another chance); Upload
   // photo opens a system file picker as a last-resort path.
+  //
+  // Deep Deploy Audit fix — use the accurate `page_loading`
+  // reason instead of the camera-blaming `timeout`. The mount
+  // stall is NOT a camera failure; it's a chunk-load / React
+  // boot stall. Wording reflects that honestly.
   if (loadTimedOut) {
-    return <ScanFallback reason="timeout" />;
+    return <ScanFallback reason="page_loading" />;
   }
 
   // Initial-mount loading state — "Preparing camera…" so the

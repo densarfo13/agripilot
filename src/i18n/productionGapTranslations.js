@@ -2608,6 +2608,27 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Wɔakora wɔ wo shajara mu.',
     hi: 'आपकी पत्रिका में सहेजा गया।',
   },
+
+  // ─── Page-mount stall fallback (Deep Deploy Audit) ────────
+  // Distinct from camera timeout — this surface fires when the
+  // Scan page chunk fails to render within 15s. Accurate wording
+  // routes the farmer to retry the PAGE, not blame the camera.
+  'scan.fallback.page_loading.title': {
+    en: 'Scan is taking a moment',
+    fr: 'Le scan prend un instant',
+    sw: 'Skani inachukua muda kidogo',
+    ha: 'Binciken yana ɗaukar lokaci kaɗan',
+    tw: 'Nsusunsusu no rebɔ berɛ kakra',
+    hi: 'स्कैन में थोड़ा समय लग रहा है',
+  },
+  'scan.fallback.page_loading.body': {
+    en: 'Tap retry to reload, or use a saved photo to keep scanning now.',
+    fr: 'Appuyez sur réessayer pour recharger, ou utilisez une photo enregistrée pour continuer.',
+    sw: 'Gusa jaribu tena kupakia upya, au tumia picha iliyohifadhiwa kuendelea kuskani.',
+    ha: 'Danna sake gwadawa don sake loda, ko yi amfani da hoton da aka adana don ci gaba.',
+    tw: 'Mia "san hwɛ" na ɛyɛ bio, anaa fa mfonini a wode asie di dwuma.',
+    hi: 'पुनः लोड करने के लिए पुनः प्रयास करें, या जारी रखने के लिए सहेजी गई तस्वीर इस्तेमाल करें।',
+  },
 });
 
 const _module = { PRODUCTION_GAP_TRANSLATIONS };
