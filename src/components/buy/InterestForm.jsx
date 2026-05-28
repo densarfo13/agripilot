@@ -35,9 +35,9 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
-import { saveBuyerInterest } from '../../market/marketStore.js';
-import { buildBuyerToFarmerMessage } from '../../market/marketTransaction.js';
-import { addCropPreference } from '../../market/buyerPreferences.js';
+import { saveBuyerInterest } from '../../runtime/market/marketStore.js';
+import { buildBuyerToFarmerMessage } from '../../runtime/market/marketTransaction.js';
+import { addCropPreference } from '../../runtime/market/buyerPreferences.js';
 import RepeatPromptCard from '../marketplace/RepeatPromptCard.jsx';
 import RecurringOrderToggle from '../marketplace/RecurringOrderToggle.jsx';
 

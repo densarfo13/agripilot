@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
-import { getFarmRisks } from '../lib/api.js';
+import { getFarmRisks } from '../runtime/auth.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 
 const SEVERITY_COLORS = {

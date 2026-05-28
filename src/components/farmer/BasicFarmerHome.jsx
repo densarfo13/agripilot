@@ -27,7 +27,7 @@ import { useAppPrefs } from '../../context/AppPrefsContext.jsx';
 import { useNetwork } from '../../context/NetworkContext.jsx';
 import { speakText, languageToVoiceCode } from '../../lib/voice.js';
 import { SECTION_ICONS } from '../../lib/farmerIcons.js';
-import { LOOP_STATE } from '../../services/farmerLoopService.js';
+import { LOOP_STATE } from '../../runtime/services/farmerLoopService.js';
 import { getTaskIcon, getTaskVoiceKey, getTaskLabelKey } from '../../lib/taskPresentation.js';
 import VoicePromptButton from '../VoicePromptButton.jsx';
 import CompletionCard from './CompletionCard.jsx';

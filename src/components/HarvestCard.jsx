@@ -18,7 +18,7 @@ import { getHarvestSummary } from '../lib/harvest/harvestSummaryEngine.js';
 import {
   recordHarvest, getLatestHarvest, HARVEST_UNITS,
 } from '../lib/harvest/harvestRecordStore.js';
-import { updateFarm } from '../lib/api.js';
+import { updateFarm } from '../runtime/auth.js';
 import { safeAction } from '../offline/syncManager.js';
 
 function normaliseFarm(farm) {

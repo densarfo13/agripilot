@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getBuyers, createBuyer, updateBuyer } from '../lib/api.js';
+import { getBuyers, createBuyer, updateBuyer } from '../runtime/auth.js';
 
 export default function BuyerManagementPage() {
   const [buyers, setBuyers] = useState([]);

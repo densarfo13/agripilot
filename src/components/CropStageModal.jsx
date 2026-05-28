@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
-import { updateCropStage } from '../lib/api.js';
+import { updateCropStage } from '../runtime/auth.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 
 // Stages defined inline with value + icon for visual clarity

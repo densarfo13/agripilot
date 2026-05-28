@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ALL_CROPS, OTHER_CROP, CATEGORY_LABELS, getCropByCode, getCropLabel, getCropIcon, parseCropValue, buildOtherCropValue, getCropLabelSafe } from '../utils/crops.js';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { recommendCrops } from '../utils/cropRecommendations.js';
-import { getLocalizedCropList } from '../data/cropRegionCatalog.js';
+import { getLocalizedCropList } from '../runtime/data/cropRegionCatalog.js';
 import { SeedlingGlyph } from './icons/InlineGlyphs.jsx';
 import { fetchCropSuggestions, saveLastCrop, getLastCrop } from '../utils/cropSuggestionCache.js';
 

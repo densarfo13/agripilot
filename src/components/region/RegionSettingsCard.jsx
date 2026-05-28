@@ -25,7 +25,7 @@ import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useStrictTranslation } from '../../i18n/useStrictTranslation.js';
 import useRegionPreference from '../../hooks/useRegionPreference.js';
-import { getAllProfiles, UNKNOWN } from '../../intelligence/region/regionProfiles.js';
+import { getAllProfiles, UNKNOWN } from '../../runtime/intelligence/regionProfiles.js';
 import { getUnits } from '../../i18n/units.js';
 
 // ─── Component ────────────────────────────────────────────────────

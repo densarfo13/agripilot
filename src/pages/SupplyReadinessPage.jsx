@@ -3,7 +3,7 @@ import {
   getAdminSupplyList, exportSupplyCSV,
   getBuyers, createBuyer, createBuyerLink, updateBuyerLink,
   exportBuyerLinksCSV,
-} from '../lib/api.js';
+} from '../runtime/auth.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
 

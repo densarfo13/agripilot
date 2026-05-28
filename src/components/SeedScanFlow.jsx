@@ -20,7 +20,7 @@
 
 import { useRef, useState } from 'react';
 import { t } from '../lib/i18n.js';
-import { saveSeedScan } from '../lib/api.js';
+import { saveSeedScan } from '../runtime/auth.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { useNetwork } from '../context/NetworkContext.jsx';

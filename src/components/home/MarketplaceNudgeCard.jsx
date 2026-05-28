@@ -31,9 +31,9 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
-import { getDemandForCrop } from '../../market/marketDemand.js';
+import { getDemandForCrop } from '../../runtime/market/marketDemand.js';
 import { getReferencePrice } from '../../lib/pricing/priceEngine.js';
-import { getActiveListings } from '../../market/marketStore.js';
+import { getActiveListings } from '../../runtime/market/marketStore.js';
 // Runtime Authority Cleanup — canonical Zustand farm subscription.
 import { useActiveFarm } from '../../hooks/useActiveFarm.js';
 

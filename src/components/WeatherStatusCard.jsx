@@ -12,7 +12,7 @@
  * Consumes pre-computed WeatherGuidance from the decision engine.
  */
 import VoicePromptButton from './VoicePromptButton.jsx';
-import { resolvePromptId } from '../services/voicePrompts.js';
+import { resolvePromptId } from '../runtime/services/voicePrompts.js';
 
 // Section title key for i18n — "Today on your farm"
 // Used as the card heading per the spec.

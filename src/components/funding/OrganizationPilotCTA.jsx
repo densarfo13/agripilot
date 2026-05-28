@@ -30,7 +30,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
-import { submitPilotLead } from '../../services/fundingService.js';
+import { submitPilotLead } from '../../runtime/services/fundingService.js';
 import { trackFundingEvent } from '../../analytics/fundingAnalytics.js';
 
 const STYLES = {

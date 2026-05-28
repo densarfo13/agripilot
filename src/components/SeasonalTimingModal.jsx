@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { updateSeasonalTiming } from '../lib/api.js';
+import { updateSeasonalTiming } from '../runtime/auth.js';
 
 const MONTHS = [
   { value: '', label: '—' },

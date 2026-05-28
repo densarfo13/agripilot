@@ -29,7 +29,7 @@ import { tSafe } from '../../i18n/tSafe.js';
 import {
   saveLabel, markPromptedToday,
   LABEL_KIND, LABEL_VALUE, CONFIDENCE,
-} from '../../data/labels.js';
+} from '../../runtime/data/labels.js';
 
 const PEST_OPTIONS = [
   { id: LABEL_VALUE.PEST_YES, icon: '\uD83D\uDC1B', tone: 'danger',  key: 'label.pest.yes',    fb: 'Yes'      },

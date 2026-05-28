@@ -6,7 +6,7 @@
  * return. Tracked by the May 2026 React #300 stability spec.
  */
 import { useState } from 'react';
-import voiceService from '../services/voiceService.js';
+import voiceService from '../runtime/services/voiceService.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 import { isAdminContext } from '../lib/voice/adminGuard.js';
 

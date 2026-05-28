@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { t } from '../lib/i18n.js';
-import { saveLandBoundary } from '../lib/api.js';
+import { saveLandBoundary } from '../runtime/auth.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { useNetwork } from '../context/NetworkContext.jsx';

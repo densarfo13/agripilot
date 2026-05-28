@@ -13,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
-import { getHarvestRecords, createHarvestRecord } from '../lib/api.js';
+import { getHarvestRecords, createHarvestRecord } from '../runtime/auth.js';
 
 const QUANTITY_UNITS = ['kg', 'bags', 'tonnes', 'crates', 'bundles'];
 const QUALITY_GRADES = ['A', 'B', 'C', 'poor', 'good', 'excellent'];

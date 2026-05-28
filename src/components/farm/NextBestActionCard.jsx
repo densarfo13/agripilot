@@ -36,7 +36,7 @@ import { getEffectiveStreak } from '../../lib/loop/dailyLoop.js';
 import { useWeather } from '../../context/WeatherContext.jsx';
 import {
   mapWeatherToSpec, extractForecastDays,
-} from '../../services/weatherService.js';
+} from '../../runtime/services/weatherService.js';
 import {
   adaptTaskForWeather,
 } from '../../logic/taskEngine.js';
@@ -46,7 +46,7 @@ import {
 // today" when the forecast is missing (spec §6).
 import {
   getBestActionWindow, formatActionWindowLine,
-} from '../../intelligence/actionWindow.js';
+} from '../../runtime/intelligence/actionWindow.js';
 import { CheckCircle, AlertTriangle, Sprout, ArrowRight } from '../icons/lucide.jsx';
 
 // Slugify the action-window's CTA wording into a stable i18n key

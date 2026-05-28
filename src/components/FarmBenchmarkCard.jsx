@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
-import { getFarmBenchmarks } from '../lib/api.js';
+import { getFarmBenchmarks } from '../runtime/auth.js';
 import { ChartGlyph } from './icons/InlineGlyphs.jsx';
 
 const TREND_ICONS = { up: '\u25B2', down: '\u25BC', flat: '\u25CF', no_data: '\u2014' };

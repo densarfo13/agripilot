@@ -34,23 +34,23 @@ import { useWeather } from '../context/WeatherContext.jsx';
 // at the bottom of the Tasks list. The Scan tab in the bottom
 // nav owns those actions exclusively now — no FAB clutter on the
 // task surface.
-import { getFarmTasks, completeTask } from '../lib/api.js';
+import { getFarmTasks, completeTask } from '../runtime/auth.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 // Structured event log for the NGO impact dashboard. logEvent
 // writes to localStorage under `farroway_events`, the same
 // canonical store impactMetrics.js + ngo aggregations read.
 // safeTrackEvent (above) ships to the backend analytics
 // endpoint; the two are complementary, not redundant.
-import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
+import { logEvent, EVENT_TYPES } from '../runtime/data/eventLogger.js';
 import { buildTaskListViewModels } from '../domain/tasks/index.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
 import { NAV_ICONS, getTaskActionIcon } from '../lib/farmerIcons.js';
 import CompletionCard from '../components/farmer/CompletionCard.jsx';
-import { loadTasksSafe, getFallbackTodayAction } from '../services/loadTasksSafe.js';
+import { loadTasksSafe, getFallbackTodayAction } from '../runtime/services/loadTasksSafe.js';
 import { formatRelativeUpdate } from '../lib/relativeTime.js';
-import { isReallyOnline } from '../services/isReallyOnline.js';
-import { offlineEvents } from '../services/offlineLogger.js';
+import { isReallyOnline } from '../runtime/services/isReallyOnline.js';
+import { offlineEvents } from '../runtime/services/offlineLogger.js';
 import VoiceButton from '../components/VoiceButton.jsx';
 // Quick-onboarding voice-first hook. Plays the day's task once
 // per session for users who came through the new QuickStart

@@ -11,7 +11,7 @@
  *   - Accessible voice button with aria-label
  */
 import { useEffect, useRef, useState } from 'react';
-import voiceService from '../services/voiceService.js';
+import voiceService from '../runtime/services/voiceService.js';
 
 function speak(text) {
   voiceService.speakText(text, 'tw');

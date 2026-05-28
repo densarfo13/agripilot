@@ -27,7 +27,7 @@ import { mailtoSupport } from '../config/support.js';
 // import / lazy reference / future re-wire never reintroduces
 // the legacy palette. Resolves to the locked olive-earth tone.
 import { PREMIUM_TOKENS as T } from '../components/premium/tokens.js';
-import { completeTask, getLandBoundaries, getSeedScans, getFarmTasks } from '../lib/api.js';
+import { completeTask, getLandBoundaries, getSeedScans, getFarmTasks } from '../runtime/auth.js';
 import ModeIndicator from '../components/ModeIndicator.jsx';
 import SeasonalTimingModal from '../components/SeasonalTimingModal.jsx';
 import FarmEditModal from '../components/FarmEditModal.jsx';
@@ -41,12 +41,12 @@ import { useUserMode } from '../context/UserModeContext.jsx';
 import { useFarmerLoop } from '../hooks/useFarmerLoop.js';
 import { useDailyNotifications } from '../hooks/useDailyNotifications.js';
 import { useForecast } from '../context/ForecastContext.jsx';
-import { LOOP_STATE } from '../services/farmerLoopService.js';
-import { getActiveCameraTask, completeTemporaryTask, addTemporaryTask } from '../services/temporaryTasks.js';
+import { LOOP_STATE } from '../runtime/services/farmerLoopService.js';
+import { getActiveCameraTask, completeTemporaryTask, addTemporaryTask } from '../runtime/services/temporaryTasks.js';
 import {
   startUndoWindow, clearUndoWindow, canUndo, getActiveUndo, recordCorrection,
   CORRECTION_REASON, statusForReason,
-} from '../services/taskCorrection.js';
+} from '../runtime/services/taskCorrection.js';
 import TaskCorrectionModal from '../components/farmer/TaskCorrectionModal.jsx';
 
 import FarmerHeader from '../components/FarmerHeader.jsx';

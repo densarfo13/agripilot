@@ -30,7 +30,7 @@ import {
 import {
   routeVoiceIntent, answerForIntent, getSuggestedQuestions,
 } from '../../utils/voiceIntents.js';
-import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
+import { logEvent, EVENT_TYPES } from '../../runtime/data/eventLogger.js';
 import { isFeatureEnabled } from '../../utils/featureFlags.js';
 import {
   generateDailyPlan, getDailyPlanVoiceSummary,

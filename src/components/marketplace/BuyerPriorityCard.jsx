@@ -28,7 +28,7 @@ import {
   isBuyerPriority,
   setBuyerPriority,
   PRIORITY_CHANGED_EVENT,
-} from '../../market/buyerPriority.js';
+} from '../../runtime/market/buyerPriority.js';
 
 const S = {
   card: {

@@ -34,7 +34,7 @@ import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
 // returns the 8-field summary the Farmer Engagement section
 // renders. engagementToCsv produces the per-farmer roll-up
 // for the "Download Engagement Report" button.
-import { getEvents } from '../data/eventLogger.js';
+import { getEvents } from '../runtime/data/eventLogger.js';
 import {
   computeNgoEngagementSummary, engagementToCsv,
 } from '../metrics/impactMetrics.js';

@@ -25,7 +25,7 @@
 
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { marketSummary } from '../../market/marketStore.js';
+import { marketSummary } from '../../runtime/market/marketStore.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useTranslation } from '../../i18n/index.js';
 import { cropLabel } from '../../utils/cropLabel.js';

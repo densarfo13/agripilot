@@ -31,7 +31,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { resetPassword, verifyResetToken } from '../lib/api';
+import { resetPassword, verifyResetToken } from '../runtime/auth.js';
 import { useTranslation } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';
 import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';

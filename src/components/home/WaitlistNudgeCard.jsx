@@ -35,8 +35,8 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
-import { getDemandForCrop } from '../../market/marketDemand.js';
-import { getActiveListings } from '../../market/marketStore.js';
+import { getDemandForCrop } from '../../runtime/market/marketDemand.js';
+import { getActiveListings } from '../../runtime/market/marketStore.js';
 
 const WATCH_KEY = 'farroway_demand_watchlist';
 const DISMISS_KEY = 'farroway_waitlist_nudge_dismissed';

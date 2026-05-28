@@ -106,7 +106,7 @@ import { useProfileOrNull }       from '../context/ProfileContext.jsx';
 // (garden drops commercial surfaces + softens wording) and the
 // spec-exact fallback. Memory cooldowns inside the orchestrator
 // suppress repeat surfacing across reloads.
-import { getPrimaryGuidance } from '../intelligence/recommendations/getPrimaryGuidance.js';
+import { getPrimaryGuidance } from '../runtime/intelligence/getPrimaryGuidance.js';
 
 // Module-level once-per-page-load guard for the [FARROWAY_HOME]
 // mount log. Without this, HMR + Suspense remounts replay the

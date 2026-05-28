@@ -23,8 +23,8 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
-import { requestAssist } from '../../market/assistStore.js';
-import { getAssistPrice } from '../../market/pricingVariants.js';
+import { requestAssist } from '../../runtime/market/assistStore.js';
+import { getAssistPrice } from '../../runtime/market/pricingVariants.js';
 
 const S = {
   wrap: { display: 'flex', flexDirection: 'column', gap: 8 },

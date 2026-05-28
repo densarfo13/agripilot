@@ -51,7 +51,7 @@ import {
   normalizeUnit, getDefaultUnit, getAllowedUnits, getAreaUnitLabel,
 } from '../lib/units/areaConversion.js';
 import { normalizeCropKey as normalizeI18nCropKey } from '../utils/localization.js';
-import { createNewFarm, updateFarm } from '../lib/api.js';
+import { createNewFarm, updateFarm } from '../runtime/auth.js';
 import { formatApiError } from '../runtime/apiRuntime.js';
 import { tSafe } from '../i18n/tSafe.js';
 

@@ -9,7 +9,7 @@
  */
 import { getTaskIcon, getTaskIconBg, getTaskVoiceKey } from '../lib/taskPresentation.js';
 import VoicePromptButton from './VoicePromptButton.jsx';
-import { getPromptText } from '../services/voicePrompts.js';
+import { getPromptText } from '../runtime/services/voicePrompts.js';
 
 // Priority badge color helper — used by priorityBadge style derivation.
 function getPriorityColors(priority) {

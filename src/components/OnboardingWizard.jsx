@@ -9,7 +9,7 @@ import { compressImage } from '../utils/imageCompress.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, computeLandSizeFields } from '../utils/landSize.js';
 import { getCountryRecommendedCodes } from '../utils/cropRecommendations.js';
-import { getLocalizedCropList } from '../data/cropRegionCatalog.js';
+import { getLocalizedCropList } from '../runtime/data/cropRegionCatalog.js';
 import { speak, stopSpeech, isVoiceAvailable, VOICE_LANGUAGES } from '../utils/voiceGuide.js';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';

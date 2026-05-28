@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
-import { getWeeklySummary } from '../lib/api.js';
+import { getWeeklySummary } from '../runtime/auth.js';
 
 // Priority color mapping
 const PRIORITY_COLORS = {

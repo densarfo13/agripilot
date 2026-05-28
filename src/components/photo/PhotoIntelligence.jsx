@@ -23,10 +23,10 @@ import { tSafe } from '../../i18n/tSafe.js';
 import PhotoCapture from './PhotoCapture.jsx';
 import ScanResultCard from './ScanResultCard.jsx';
 import { PHOTO_QUESTIONS } from '../../utils/photoAnalysisEngine.js';
-import { analyzePhotoRequest } from '../../services/photoAnalysisService.js';
+import { analyzePhotoRequest } from '../../runtime/services/photoAnalysisService.js';
 import { appendScan } from '../../lib/photo/scanHistory.js';
 import { stopSpeaking } from '../../utils/voiceEngine.js';
-import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
+import { logEvent, EVENT_TYPES } from '../../runtime/data/eventLogger.js';
 
 const STEP = {
   CAPTURE:  'capture',

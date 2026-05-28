@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { t } from '../lib/i18n.js';
-import { getMySupplyReadiness, saveSupplyReadiness } from '../lib/api.js';
+import { getMySupplyReadiness, saveSupplyReadiness } from '../runtime/auth.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 

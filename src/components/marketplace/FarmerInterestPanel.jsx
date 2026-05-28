@@ -27,13 +27,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { getBuyerInterests, markListingSold } from '../../market/marketStore.js';
+import { getBuyerInterests, markListingSold } from '../../runtime/market/marketStore.js';
 import {
   transitionInterest,
   statusTone,
   statusLabel,
   getStaleInterests,
-} from '../../market/marketTransaction.js';
+} from '../../runtime/market/marketTransaction.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { FEATURE_ACTIVATION_POLISH } from '../../lib/pilotFlags.js';
 import BuyerStatusPill from '../activation/BuyerStatusPill.jsx';

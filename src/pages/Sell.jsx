@@ -44,8 +44,8 @@ import { useAuth }    from '../context/AuthContext.jsx';
 import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 import {
   saveListing, getActiveListings, getBuyerInterests,
-} from '../market/marketStore.js';
-import { syncListing } from '../market/marketSync.js';
+} from '../runtime/market/marketStore.js';
+import { syncListing } from '../runtime/market/marketSync.js';
 import { useTranslation } from '../i18n/index.js';
 import { cropLabel } from '../utils/cropLabel.js';
 import {

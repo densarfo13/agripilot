@@ -30,7 +30,7 @@ import React, { useMemo } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { PREMIUM_TOKENS as T } from '../premium/tokens.js';
 import HelpfulToolsCard from '../tools/HelpfulToolsCard.jsx';
-import { recommendTools } from '../../intelligence/tools/toolRecommendationEngine.js';
+import { recommendTools } from '../../runtime/intelligence/toolRecommendationEngine.js';
 
 const STATUS_TONE = {
   moist:        { bg: 'rgba(94,142,94,0.12)',   border: 'rgba(94,142,94,0.36)',   ink: '#3F6A3F' },

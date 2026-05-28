@@ -39,10 +39,10 @@ import { speak } from '../core/farroway/voice.js';
 import {
   saveLabel, markPromptedToday,
   LABEL_KIND, LABEL_VALUE, CONFIDENCE,
-} from '../data/labels.js';
+} from '../runtime/data/labels.js';
 import { compressImageFile } from '../outbreak/photoCompress.js';
 // Event-tracking layer (data foundation v2)
-import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
+import { logEvent, EVENT_TYPES } from '../runtime/data/eventLogger.js';
 
 const CHOICES = [
   { id: 'pest',    icon: '\uD83D\uDC1B', tone: 'danger',  key: 'labelPrompt.pest',     fb: 'Pests'      },

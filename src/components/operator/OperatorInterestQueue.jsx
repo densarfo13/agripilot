@@ -26,8 +26,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { getCropLabel } from '../../utils/crops.js';
-import { transitionInterest } from '../../market/marketTransaction.js';
-import { markListingSold } from '../../market/marketStore.js';
+import { transitionInterest } from '../../runtime/market/marketTransaction.js';
+import { markListingSold } from '../../runtime/market/marketStore.js';
 import { trackMarketEvent } from '../../markets/marketAnalytics.js';
 import { getPendingInterestsForMarket } from '../../operator/operatorMetrics.js';
 

@@ -27,8 +27,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { hasPromptedToday } from '../../data/labels.js';
-import { LABEL_KIND } from '../../data/labels.js';
+import { hasPromptedToday } from '../../runtime/data/labels.js';
+import { LABEL_KIND } from '../../runtime/data/labels.js';
 
 function _utcDay() {
   const d = new Date();

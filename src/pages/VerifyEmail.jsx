@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { verifyEmail } from '../lib/api';
+import { verifyEmail } from '../runtime/auth.js';
 
 /**
  * VerifyEmail — landing page for the link emailed after signup.

@@ -30,7 +30,7 @@ import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 // see, so we don't subscribe to WeatherContext twice.
 import { useDynamicGreeting } from '../../hooks/useDynamicGreeting.js';
 import useFarmContext from '../../hooks/useFarmContext.js';
-import { deriveWeatherRisk } from '../../intelligence/weatherRiskModel.js';
+import { deriveWeatherRisk } from '../../runtime/intelligence/weatherRiskModel.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { CloudRain, AlertTriangle } from '../../components/icons/lucide.jsx';
 import { getTodayFeed, completeCycleTask, skipCycleTask, reportCycleIssue, submitCycleHarvest, listCropCycles } from '../../hooks/useCropCycles.js';

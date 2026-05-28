@@ -16,7 +16,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { SeedlingGlyph, WheatGlyph } from '../components/icons/InlineGlyphs.jsx';
-import { saveFarmerType as apiFarmerType } from '../lib/api.js';
+import { saveFarmerType as apiFarmerType } from '../runtime/auth.js';
 
 export default function FarmerType() {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createSupportRequest } from '../lib/api.js';
+import { createSupportRequest } from '../runtime/auth.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 

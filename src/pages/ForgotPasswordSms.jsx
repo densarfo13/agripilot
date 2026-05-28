@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { smsStartVerification, smsCheckVerification } from '../lib/api';
+import { smsStartVerification, smsCheckVerification } from '../runtime/auth.js';
 import { useTranslation } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';
 import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';

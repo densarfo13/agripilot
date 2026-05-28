@@ -91,7 +91,7 @@ import {
   formatFarmSize,
   normalizeFarmSizeBucket,
 } from '../../utils/formatDisplay.js';
-import { logEvent, EVENT_TYPES } from '../../data/eventLogger.js';
+import { logEvent, EVENT_TYPES } from '../../runtime/data/eventLogger.js';
 
 const URGENCY_TONE = {
   high:   { background: 'rgba(239,68,68,0.10)', borderColor: 'rgba(239,68,68,0.32)',  pill: '#FCA5A5' },

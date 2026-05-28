@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { isBoosted, BOOST_CHANGED_EVENT } from '../../market/boostStore.js';
+import { isBoosted, BOOST_CHANGED_EVENT } from '../../runtime/market/boostStore.js';
 
 const S = {
   chip: {

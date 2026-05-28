@@ -27,7 +27,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import {
   saveRecurringOrder,
   isCropOnRecurring,
-} from '../../market/recurringOrders.js';
+} from '../../runtime/market/recurringOrders.js';
 
 const S = {
   panel: {

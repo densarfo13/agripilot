@@ -48,7 +48,7 @@ import { followUpTaskFor, sanitizeScanText } from '../core/scanResultPolicy.js';
 // funneled through scanPersistenceBridge. The legacy direct
 // imports (saveScanEntry / addScanTasks) stay accessible to other
 // callers but ScanPage uses the bridge below.
-import { saveScanEntry } from '../data/scanHistory.js';
+import { saveScanEntry } from '../runtime/data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import {
   persistScanToJournal, persistScanUseful,

@@ -18,7 +18,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { computeSellerReputation } from '../../market/sellerReputation.js';
+import { computeSellerReputation } from '../../runtime/market/sellerReputation.js';
 
 const TONES = {
   active:        { color: '#86EFAC', bg: 'rgba(200,148,77,0.10)',  border: 'rgba(200,148,77,0.32)' },

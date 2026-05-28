@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api, { formatApiError } from '../runtime/apiRuntime.js';
 import { useAuthStore } from '../store/authStore.js';
 import CountrySelect from '../components/CountrySelect.jsx';
-import { getRegionForCountry, REGIONS } from '../data/cropRegionCatalog.js';
+import { getRegionForCountry, REGIONS } from '../runtime/data/cropRegionCatalog.js';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },

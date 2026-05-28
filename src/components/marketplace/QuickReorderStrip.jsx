@@ -35,11 +35,11 @@ import {
   getBuyerPreferences,
   removeCropPreference,
   PREFS_CHANGED_EVENT,
-} from '../../market/buyerPreferences.js';
+} from '../../runtime/market/buyerPreferences.js';
 import {
   getRecurringOrdersForBuyer,
   RECURRING_CHANGED_EVENT,
-} from '../../market/recurringOrders.js';
+} from '../../runtime/market/recurringOrders.js';
 
 const S = {
   wrap: {

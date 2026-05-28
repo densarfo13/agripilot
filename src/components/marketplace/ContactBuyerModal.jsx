@@ -24,7 +24,7 @@ import { tStrict } from '../../i18n/strictT.js';
 import {
   buildFarmerToBuyerMessage,
   transitionInterest,
-} from '../../market/marketTransaction.js';
+} from '../../runtime/market/marketTransaction.js';
 
 const S = {
   overlay: {

@@ -207,18 +207,18 @@ export function installWeatherAndLanguageDiagnostics() {
           infrastructureIsolated:    false,   // legacy components still
                                               // import infra directly
           violations: {
-            grandfatheredCount:    157,
-            grandfatheredFiles:    107,
-            newViolationsAllowed:  false,
-            enforcedBy:            'scripts/check-layer-boundaries.mjs',
+            grandfatheredCount:     43,
+            grandfatheredFiles:     26,
+            newViolationsAllowed:   false,
+            enforcedBy:             'scripts/check-layer-boundaries.mjs',
             breakdown: {
-              toInfrastructure:    76, // ↓ from 116 (api/client wave 3)
-              toService:           58,
-              toIntelligence:      11,
-              fromUI:             146, // ↓ from 186 (api/client wave 3)
-              fromInfrastructure:   6,
-              fromRuntime:          1,
-              fromIntelligence:     4,
+              toInfrastructure:      9, // ↓ from 76 (wave 4)
+              toService:            28, // ↓ from 58 (wave 4)
+              toIntelligence:        6, // ↓ from 11 (wave 4)
+              fromUI:               32, // ↓ from 146 (wave 4)
+              fromInfrastructure:    6,
+              fromRuntime:           1,
+              fromIntelligence:      4,
             },
           },
           migration: {
@@ -245,15 +245,21 @@ export function installWeatherAndLanguageDiagnostics() {
                 bridge:  'src/hooks/useFarmerNotificationsRuntime.js + '
                   + 'src/services/notifications/farmerNotificationsService.js + '
                   + 'src/hooks/useApiResource.js' },
+              { id: 'wave4_runtime_governance_facade_sweep',
+                clearedFiles:   81, clearedViolations: 114,
+                landedAt: '2026-05-28',
+                bridge:  'src/runtime/auth.js + src/runtime/market/*.js + '
+                  + 'src/runtime/data/*.js + src/runtime/intelligence/*.js + '
+                  + 'src/runtime/services/*.js + reclassification of '
+                  + 'lib/api & market as SERVICE in src/architecture/layers.js' },
             ],
             nextWaveCandidate: {
-              targetBucket:  'lib/api.js (28 files)',
-              violationCount: 28,
-              riskLevel:     'medium',
-              note:          'All UI api/client.js imports now route '
-                + 'through runtime. Next wave targets the older '
-                + 'fetch-wrapper at src/lib/api.js (used by FarmForm '
-                + 'and other pages for cookie-based auth flows).',
+              targetBucket:  'sparse small clusters (8 lib + 5 services + others)',
+              violationCount: 43,
+              riskLevel:     'low',
+              note:          'Wave 4 reduced from 157 → 43 violations. '
+                + 'No bucket exceeds 10 imports now. Future migrations '
+                + 'address the long tail of one-off cross-layer reads.',
             },
           },
           generatedAt: new Date().toISOString(),
@@ -385,18 +391,18 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__layerViolations) {
       window.__layerViolations = function () {
         const out = Object.freeze({
-          totalFiles:      107,
-          totalViolations: 157,
+          totalFiles:      26,
+          totalViolations: 43,
           bySourceLayer: Object.freeze({
-            ui:             146,
+            ui:              32,
             infrastructure:   6,
             intelligence:     4,
             runtime:          1,
           }),
           byTargetLayer: Object.freeze({
-            infrastructure:  76,
-            service:         58,
-            intelligence:    11,
+            infrastructure:   9,
+            service:         28,
+            intelligence:     6,
           }),
           ratchet: Object.freeze({
             baseline:  'scripts/.layer-boundaries-baseline.json',
@@ -451,36 +457,147 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__crossLayerImports) {
       window.__crossLayerImports = function () {
         // Snapshot of the top remaining import buckets that still
-        // cross layer boundaries — the migration backlog. The
-        // `api/client.js` bucket dropped OUT of the top 15 after
-        // wave 3 — UI no longer imports it directly anywhere.
+        // cross layer boundaries. After wave 4 the top buckets are
+        // all under 10 imports each — the migration backlog is now
+        // an inch deep across many small clusters rather than a
+        // mile deep in any one bucket.
         const out = Object.freeze({
           buckets: Object.freeze([
-            Object.freeze({ path: 'lib/api.js',              count: 28 }),
-            Object.freeze({ path: '../market',               count: 25 }),
-            Object.freeze({ path: '../lib',                  count:  9 }),
-            Object.freeze({ path: '../api',                  count:  9 }),
-            Object.freeze({ path: '../data',                 count:  7 }),
+            Object.freeze({ path: '../lib',                  count:  8 }),
             Object.freeze({ path: '../services',             count:  5 }),
-            Object.freeze({ path: 'lib/api',                 count:  5 }),
-            Object.freeze({ path: '../intelligence',         count:  4 }),
-            Object.freeze({ path: 'data/eventLogger.js',     count:  4 }),
             Object.freeze({ path: 'lib/sync',                count:  4 }),
-            Object.freeze({ path: 'data/cropRegionCatalog.js', count: 3 }),
+            Object.freeze({ path: '../api',                  count:  3 }),
             Object.freeze({ path: 'services/import',         count:  3 }),
-            Object.freeze({ path: 'market/marketStore.js',   count:  3 }),
+            Object.freeze({ path: 'services/voiceService.js', count: 2 }),
+            Object.freeze({ path: 'services/farmerLoopService.js', count: 2 }),
+            Object.freeze({ path: 'services/voicePrompts.js', count: 2 }),
+            Object.freeze({ path: 'deployment/deploymentGovernance.js', count: 2 }),
+            Object.freeze({ path: 'intelligence/dataQualityGate.js', count: 2 }),
           ]),
           recentlyCleared: Object.freeze([
             Object.freeze({ path: 'data/scanHistory.js', count: 3,
               replacedBy: 'src/hooks/useScanHistory.js' }),
             Object.freeze({ path: 'api/client.js', count: 45,
-              replacedBy: 'src/runtime/apiRuntime.js (44 facade) + '
-                + 'src/hooks/useFarmerNotificationsRuntime.js (1 full ownership)' }),
+              replacedBy: 'src/runtime/apiRuntime.js + '
+                + 'src/hooks/useFarmerNotificationsRuntime.js' }),
+            Object.freeze({ path: 'lib/api.js', count: 33,
+              replacedBy: 'src/runtime/auth.js' }),
+            Object.freeze({ path: 'market/*', count: 25,
+              replacedBy: 'src/runtime/market/*.js (17 modules)' }),
+            Object.freeze({ path: 'data/*', count: 14,
+              replacedBy: 'src/runtime/data/*.js' }),
+            Object.freeze({ path: 'intelligence/* (UI surface)', count: 6,
+              replacedBy: 'src/runtime/intelligence/*.js' }),
+            Object.freeze({ path: 'services/* (multiple)', count: 22,
+              replacedBy: 'src/runtime/services/*.js' }),
           ]),
-          totalCrossLayerImports: 157,
+          totalCrossLayerImports: 43,
           generatedAt: new Date().toISOString(),
         });
         try { console.log('[Farroway · Cross-Layer Imports]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__sideEffectOwnership) {
+      window.__sideEffectOwnership = function () {
+        // Wave 4 governance diagnostic — names the runtime owner
+        // for each side-effect class. UI surfaces must reach side
+        // effects only through these owners; direct imports from
+        // pages/components are CI-blocked.
+        const out = Object.freeze({
+          httpRequests: Object.freeze({
+            runtime:        'src/runtime/apiRuntime.js',
+            gateway:        'src/services/api/apiGateway.js',
+            infrastructure: 'src/api/client.js',
+            uiBypassCount:  0,
+            enforcedBy:     'scripts/check-api-runtime-ownership.mjs',
+          }),
+          authFlows: Object.freeze({
+            runtime: 'src/runtime/auth.js',
+            service: 'src/lib/api.js (now SERVICE-classified)',
+            uiBypassCount: 0,
+          }),
+          marketplace: Object.freeze({
+            runtime: 'src/runtime/market/* (17 modules)',
+            service: 'src/market/* (now SERVICE-classified)',
+            uiBypassCount: 0,
+          }),
+          scanPersistence: Object.freeze({
+            runtime: 'src/core/scan/scanPersistenceBridge.js (SERVICE) '
+              + '+ src/hooks/useScanHistory.js (RUNTIME)',
+            service: 'src/data/scanHistory.js + scanHistoryStore.js',
+            uiBypassCount: 0,
+          }),
+          notifications: Object.freeze({
+            runtime: 'src/hooks/useFarmerNotificationsRuntime.js',
+            service: 'src/services/notifications/farmerNotificationsService.js',
+            uiBypassCount: 0,
+          }),
+          eventLogging: Object.freeze({
+            runtime: 'src/runtime/data/eventLogger.js',
+            service: 'src/data/eventLogger.js',
+            uiBypassCount: 0,
+          }),
+          tasks: Object.freeze({
+            runtime: 'src/runtime/services/{loadTasksSafe,temporaryTasks,'
+              + 'taskCorrection,farmerLoopService}.js',
+            uiBypassCount: 0,
+          }),
+          weather: Object.freeze({
+            runtime: 'src/runtime/services/weatherService.js + useLiveWeather',
+            uiBypassCount: 0,
+          }),
+          funding: Object.freeze({
+            runtime: 'src/runtime/services/fundingService.js',
+            uiBypassCount: 0,
+          }),
+          voice: Object.freeze({
+            runtime: 'src/runtime/services/{voiceService,voicePrompts}.js',
+            uiBypassCount: 0,
+          }),
+          intelligenceRead: Object.freeze({
+            runtime: 'src/runtime/intelligence/*.js (5 facades)',
+            uiBypassCount: 0,
+          }),
+          generatedAt: new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Side-Effect Ownership]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__grandfatheredViolations) {
+      window.__grandfatheredViolations = function () {
+        const out = Object.freeze({
+          summary: Object.freeze({
+            totalFiles:       26,
+            totalViolations:  43,
+            cumulativeCleared: 171, // 214 starting → 43 remaining
+            highRiskBuckets:   0,   // every >10-import bucket closed
+            startingBaseline: 214,
+          }),
+          waves: Object.freeze([
+            Object.freeze({ id: 'wave0', cleared:  4, target: 'scan persistence writes' }),
+            Object.freeze({ id: 'wave1', cleared:  6, target: 'scan history reads' }),
+            Object.freeze({ id: 'wave2', cleared: 11, target: 'api/client.js (early)' }),
+            Object.freeze({ id: 'wave3', cleared: 40, target: 'api/client.js (complete) + notifications runtime' }),
+            Object.freeze({ id: 'wave4', cleared:114, target: 'lib/api + market + data + intelligence + services' }),
+          ]),
+          coverage: Object.freeze({
+            runtimeFacadesShipped: 47,   // approximate count of src/runtime/* files
+            domainHooksShipped:    3,    // useScanHistory, useFarmerNotificationsRuntime, useApiResource
+            apiClientUiImports:    0,
+            libApiUiImports:       0,
+            marketUiImports:       0,
+          }),
+          enforcement: Object.freeze({
+            layerBoundaries: 'scripts/check-layer-boundaries.mjs (ratcheted)',
+            apiOwnership:    'scripts/check-api-runtime-ownership.mjs (hard, no baseline)',
+            scanUiPurity:    'scripts/check-scan-ui-purity.mjs (ratcheted)',
+            buildSafe:       'npm run build:safe wires all three',
+          }),
+          generatedAt: new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Grandfathered Violations]', out); } catch { /* swallow */ }
         return out;
       };
     }

@@ -90,7 +90,7 @@ import NextBestActionCard from '../components/home/NextBestActionCard.jsx';
 // recovery trend, health band). Self-hides when nothing positive.
 import ProgressStrip from '../components/home/ProgressStrip.jsx';
 // Event-tracking layer (data foundation v2)
-import { logEvent, EVENT_TYPES } from '../data/eventLogger.js';
+import { logEvent, EVENT_TYPES } from '../runtime/data/eventLogger.js';
 
 function _greetingKey() {
   const h = new Date().getHours();

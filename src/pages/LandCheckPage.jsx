@@ -22,9 +22,9 @@ import {
   saveFieldProfile, getActiveFieldProfile,
   saveLandCheckDraft, loadLandCheckDraft, clearLandCheckDraft,
   SOIL_MOISTURE, SLOPE, DRAINAGE, AREA_UNIT,
-} from '../services/landProfile.js';
+} from '../runtime/services/landProfile.js';
 import { resolveLandTask } from '../engine/landAwareRules.js';
-import { addTemporaryTask } from '../services/temporaryTasks.js';
+import { addTemporaryTask } from '../runtime/services/temporaryTasks.js';
 
 const PHASE = { ENTRY: 'entry', STEPS: 'steps', RESULT: 'result' };
 

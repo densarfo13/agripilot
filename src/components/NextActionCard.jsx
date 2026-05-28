@@ -18,7 +18,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { useSeason } from '../context/SeasonContext.jsx';
 import { getNextAction } from '../utils/nextActionEngine.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { LOOP_STATE } from '../services/farmerLoopService.js';
+import { LOOP_STATE } from '../runtime/services/farmerLoopService.js';
 import TaskCard from './farmer/TaskCard.jsx';
 import CompletionCard from './farmer/CompletionCard.jsx';
 

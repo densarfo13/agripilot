@@ -23,7 +23,7 @@ import { resolveCropName } from '../utils/resolveCropName.js';
 // active language. Reversible by swapping back to '../i18n/index.js'.
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
-import { getFarmTasks } from '../lib/api.js';
+import { getFarmTasks } from '../runtime/auth.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';

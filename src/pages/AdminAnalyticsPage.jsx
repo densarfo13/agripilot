@@ -17,7 +17,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from '../i18n/index.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
-import { getFullDashboard, getNewFarmersByDay } from '../services/activityAggregator.js';
+import { getFullDashboard, getNewFarmersByDay } from '../runtime/services/activityAggregator.js';
 // Phase 7D: device-local market metrics for the admin analytics panel.
 // Pure local reads — no network call, safe when offline.
 import { getListingsCreated, getInterestsReceived } from '../lib/farmerAnalytics.js';

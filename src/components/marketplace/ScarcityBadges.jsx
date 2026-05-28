@@ -19,7 +19,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { getScarcity } from '../../market/scarcityIndicators.js';
+import { getScarcity } from '../../runtime/market/scarcityIndicators.js';
 
 const TONES = {
   limited:    { color: '#FCA5A5', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.32)' },

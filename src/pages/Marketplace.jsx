@@ -21,10 +21,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getActiveListings, saveBuyerInterest, MARKET_EVENTS,
-} from '../market/marketStore.js';
+} from '../runtime/market/marketStore.js';
 import {
   syncBuyerInterest, refreshListingsFromServer,
-} from '../market/marketSync.js';
+} from '../runtime/market/marketSync.js';
 import { safeTrackEvent } from '../lib/analytics.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { useTranslation } from '../i18n/index.js';

@@ -22,7 +22,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { forgotPassword, getRecoveryMethods } from '../lib/api';
+import { forgotPassword, getRecoveryMethods } from '../runtime/auth.js';
 import { useTranslation } from '../i18n/index.js';
 import AuthFormMessage from '../components/auth/AuthFormMessage.jsx';
 import LoadingButton from '../components/auth/LoadingButton.jsx';

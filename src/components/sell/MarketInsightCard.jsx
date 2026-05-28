@@ -24,7 +24,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { getDemandForCrop } from '../../market/marketDemand.js';
+import { getDemandForCrop } from '../../runtime/market/marketDemand.js';
 import useAutoPriceSuggestion from '../../hooks/useAutoPriceSuggestion.js';
 
 const TONES = {

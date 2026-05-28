@@ -12,7 +12,7 @@
  * Kept deliberately short and farmer-friendly. No free-form editing.
  */
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
-import { CORRECTION_REASON } from '../../services/taskCorrection.js';
+import { CORRECTION_REASON } from '../../runtime/services/taskCorrection.js';
 
 const REASONS = [
   { value: CORRECTION_REASON.DIDNT_DO,       labelKey: 'correction.reason.didntDo' },

@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
-import { getFarmHarvest } from '../lib/api.js';
+import { getFarmHarvest } from '../runtime/auth.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 
 const PRIORITY_COLORS = {

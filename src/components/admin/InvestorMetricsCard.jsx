@@ -25,7 +25,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { getAdminSupplyList } from '../../lib/api.js';
+import { getAdminSupplyList } from '../../runtime/auth.js';
 import { useTranslation } from '../../i18n/index.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { getCropLabelSafe } from '../../utils/crops.js';

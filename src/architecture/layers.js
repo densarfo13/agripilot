@@ -114,13 +114,23 @@ export const LAYER_PREFIXES = Object.freeze([
   ['src/core/networkEffects/',     LAYER.INTELLIGENCE],
   ['src/intelligence/',            LAYER.INTELLIGENCE],
 
+  // ─── Wave 4 reclassification ────────────────────────────────
+  // src/lib/api.js  is a fetch wrapper + auth-refresh orchestrator
+  //                 — a side-effect owner, not an external integration.
+  //                 Architecturally SERVICE, not INFRASTRUCTURE.
+  // src/market/*    are mostly local-persistence stores (boost,
+  //                 buyer-identity, listings) with marketSync.js
+  //                 the only HTTP module. Service-level domain.
+  //                 INFRASTRUCTURE was a misclassification corrected
+  //                 in wave 4.
+  ['src/lib/api',                  LAYER.SERVICE],
+  ['src/market/',                  LAYER.SERVICE],
+
   // ─── Infrastructure (external integrations) ─────────────────
   ['src/core/weather/',            LAYER.INFRASTRUCTURE],
   ['src/core/satellite/',          LAYER.INFRASTRUCTURE],
   ['src/core/ngo/',                LAYER.INFRASTRUCTURE],
   ['src/api/',                     LAYER.INFRASTRUCTURE],
-  ['src/lib/api',                  LAYER.INFRASTRUCTURE],
-  ['src/market/',                  LAYER.INFRASTRUCTURE],
 ]);
 
 /**

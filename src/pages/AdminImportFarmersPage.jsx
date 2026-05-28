@@ -16,9 +16,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { previewFarmerImport } from '../services/import/previewFarmerImport.js';
-import { executeFarmerImport, IMPORT_MODES } from '../services/import/executeFarmerImport.js';
-import { downloadTemplate, downloadErrorsCsv } from '../services/import/importTemplate.js';
+import { previewFarmerImport } from '../runtime/services/importFarmers.js';
+import { executeFarmerImport, IMPORT_MODES } from '../runtime/services/importFarmers.js';
+import { downloadTemplate, downloadErrorsCsv } from '../runtime/services/importFarmers.js';
 import api from '../runtime/apiRuntime.js';
 
 const PHASE = { ENTRY: 'entry', VALIDATING: 'validating', PREVIEW: 'preview', CONFIRMING: 'confirming', RESULT: 'result' };

@@ -9,7 +9,7 @@ import {
 } from '../lib/organizations.js';
 import TrustBadge from '../components/TrustBadge.jsx';
 import { trustColor } from '../lib/verification/trustSignals.js';
-import { withTimeout } from '../lib/api/withTimeout.js';
+import { withTimeout } from '../runtime/auth/withTimeout.js';
 import { getCropLabelSafe } from '../utils/crops.js';
 
 /**

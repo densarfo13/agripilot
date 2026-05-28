@@ -22,7 +22,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { summariseFundingEvents } from '../../analytics/fundingAnalytics.js';
-import { getNgoPilotLeadCount } from '../../data/ngoPilotLeads.js';
+import { getNgoPilotLeadCount } from '../../runtime/data/ngoPilotLeads.js';
 
 const STYLES = {
   section: { marginTop: '1.25rem' },

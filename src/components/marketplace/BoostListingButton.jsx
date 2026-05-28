@@ -31,8 +31,8 @@ import {
   boostListing,
   isBoosted,
   BOOST_CHANGED_EVENT,
-} from '../../market/boostStore.js';
-import { getBoostPrice } from '../../market/pricingVariants.js';
+} from '../../runtime/market/boostStore.js';
+import { getBoostPrice } from '../../runtime/market/pricingVariants.js';
 
 const S = {
   cta: {

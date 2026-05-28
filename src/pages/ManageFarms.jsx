@@ -34,7 +34,7 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import { tSafe } from '../i18n/tSafe.js';
 import { getCropLabelSafe } from '../utils/crops.js';
 import { STAGE_KEYS } from '../utils/cropStages.js';
-import { archiveFarm } from '../lib/api.js';
+import { archiveFarm } from '../runtime/auth.js';
 import AddFarmEmpty from '../components/farm/AddFarmEmpty.jsx';
 // Garden-visibility spec — gardens (backyard / home rows) live in
 // /manage-gardens; this page must list ONLY farms. The classifier
