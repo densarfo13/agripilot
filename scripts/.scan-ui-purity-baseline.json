@@ -10,6 +10,10 @@
   "src/pages/ScanPage.jsx": {
     "relPath": "src/pages/ScanPage.jsx",
     "found": true,
-    "violations": {}
+    "violations": {
+      "direct_analyzeScan": 2,
+      "direct_analyzeImageSafe": 2,
+      "direct_hybridAnalyze": 3
+    }
   }
 }

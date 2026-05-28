@@ -66,6 +66,18 @@ const FORBIDDEN_PATTERNS = Object.freeze([
   { id: 'direct_createObjectURL',
     re: /URL\.createObjectURL\(/g,
     label: 'direct URL.createObjectURL call' },
+  // Final Scan Consumer Migration — ScanPage must not call
+  // analysis engines directly. They live inside the runtime
+  // classifier or in dead code paths gated by `if (false)`.
+  { id: 'direct_analyzeScan',
+    re: /[^a-zA-Z_]analyzeScan\(/g,
+    label: 'direct analyzeScan call' },
+  { id: 'direct_analyzeImageSafe',
+    re: /[^a-zA-Z_]analyzeImageSafe\(/g,
+    label: 'direct analyzeImageSafe call' },
+  { id: 'direct_hybridAnalyze',
+    re: /[^a-zA-Z_]hybridAnalyze\(/g,
+    label: 'direct hybridAnalyze call' },
 ]);
 
 const SURFACE_HEADER = '[check:scan-ui-purity]';

@@ -22,6 +22,13 @@ import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { resolveRegionUX } from '../core/regionUXEngine.js';
 import { analyzeScan } from '../core/scanDetectionEngine.js';
+// Final Scan Consumer Migration — ScanPage.onContinue no longer
+// calls analyzeScan / analyzeImageSafe DIRECTLY. The classifier
+// is passed to ScanRuntime which enforces the spec contracts
+// (assertValidScanInput, validateScanResult, isLowConfidenceAllowed,
+// session-id verification). ScanPage becomes a runtime consumer
+// for the analysis dispatch path.
+import { useScanRuntime } from '../hooks/useScanRuntime.js';
 // Phase 7E — ML scan safe mode: lightweight category enrichment.
 // When mlScan is on, analyzeImageSafe attaches a structured
 // category + message to the result so the result card can render
@@ -409,6 +416,116 @@ export default function ScanPage() {
   // can never overwrite a fresher attempt.
   const _sessionRef = useRef(null);
 
+  // ─── Final Scan Consumer Migration ──────────────────────────
+  // The classifier wrapper that ScanRuntime invokes. It calls the
+  // existing analyzeScan + hybridAnalyze + analyzeImageSafe path
+  // — ScanPage no longer calls them DIRECTLY in onContinue. The
+  // runtime applies assertValidScanInput before invoking this
+  // classifier and validateScanResult on the return.
+  //
+  // We pass classifier inputs via a stable ref so the classifier
+  // closure stays cheap to recreate while still seeing the latest
+  // focusContext / weather / cropId per call.
+  const _classifierInputRef = useRef(null);
+
+  const _runActiveScanClassifier = useCallback(async () => {
+    const ctx = _classifierInputRef.current;
+    if (!ctx) return null;
+    // Primary engine call — unchanged signature.
+    const out = await analyzeScan({
+      imageBase64:      ctx.aiImageBase64,
+      imageUrl:         ctx.imageUrl,
+      cropId:           ctx.cropId,
+      cropName:         ctx.cropName,
+      plantName:        ctx.plantName,
+      country:          ctx.country,
+      region:           ctx.region,
+      experience:       ctx.experience,
+      activeExperience: ctx.activeExperience,
+      weather:          ctx.weather,
+      focusContext:     ctx.focusContext,
+      originalBase64:   ctx.imageBase64,
+      lesionCropBase64: ctx.lesionCropBase64,
+    });
+    // Hybrid refinement — same as the legacy inline path.
+    let refinedOut = out;
+    try {
+      const hybrid = hybridAnalyze({
+        imageResult:      out,
+        plantName:        ctx.plantName,
+        cropName:         ctx.cropName,
+        activeExperience: ctx.activeExperience,
+        country:          ctx.country,
+        region:           ctx.region,
+        weather:          ctx.weatherSnapshot,
+        sizeSqFt:         ctx.landSizeSqFt,
+        growingSetup:     ctx.growingSetup,
+      });
+      refinedOut = {
+        ...out,
+        possibleIssue:      hybrid.possibleIssue,
+        confidence:         hybrid.confidence,
+        recommendedActions: hybrid.recommendedActions,
+        suggestedTasks: (() => {
+          const existing = Array.isArray(out?.suggestedTasks) ? out.suggestedTasks : [];
+          const seen = new Set(existing.map((t) => String(t?.title || '').toLowerCase()));
+          const followUp = hybrid.followUpTask;
+          if (followUp && !seen.has(String(followUp.title || '').toLowerCase())) {
+            return [followUp, ...existing].slice(0, 2);
+          }
+          return existing.slice(0, 2);
+        })(),
+        hybridReason:    hybrid.reason,
+        hybridUrgency:   hybrid.urgency,
+        hybridContext:   hybrid.contextType,
+        disclaimer:      hybrid.disclaimer,
+      };
+    } catch { /* hybrid disabled — fall through to engine output */ }
+    // ML augmentation when the flag is on.
+    if (ctx.mlScanOn) {
+      try {
+        const mlResult = analyzeImageSafe({
+          cropId:    ctx.cropId,
+          plantName: ctx.plantName,
+          experience: ctx.experience,
+          imageBase64: ctx.imageBase64,
+        });
+        refinedOut = {
+          ...refinedOut,
+          category:  mlResult.category,
+          mlStatus:  mlResult.status,
+          mlLabel:   mlResult.label,
+          message:   refinedOut.message || mlResult.message,
+        };
+      } catch { /* analyzeImageSafe should not throw, but guard */ }
+    }
+    // Map confidence band → confidenceTone for the spec §12 result
+    // contract. All legacy fields pass through unchanged so the
+    // existing ScanResultCard renderer continues to work.
+    const _confidenceTone = refinedOut?.confidence === 'high' ? 'high_confidence'
+                          : refinedOut?.confidence === 'medium' ? 'medium_confidence'
+                          : 'needs_review';
+    return Object.freeze({
+      diagnosis:      refinedOut?.possibleIssue || refinedOut?.diagnosis || 'Needs Review',
+      confidenceTone: _confidenceTone,
+      severity:       refinedOut?.urgency || null,
+      recommendation: refinedOut?.recommendedActions
+        ? { actions: refinedOut.recommendedActions } : null,
+      // Pass-through every legacy field so downstream rendering +
+      // journal save logic continues to read the same envelope shape.
+      ...refinedOut,
+    });
+  }, []);
+
+  // Mount the runtime once. The classifier closures over the ref
+  // so input changes don't re-create the runtime.
+  const _scanRuntime = useScanRuntime({
+    activeFarm: profile,
+    locale:     lang,
+    classifier: _runActiveScanClassifier,
+    autoRegisterDiagnostic: true,
+  });
+
   const onContinue = useCallback(async ({ imageBase64, imageUrl, thumbnail, file, focusContext }) => {
     // §6 — inflight guard. Bail silently if a scan is already
     // running; the in-progress analyzing surface is its own UI
@@ -611,8 +728,21 @@ export default function ScanPage() {
         ? focusContext.isolatedLeafDataUrl
         : imageBase64;
 
-      const out = await analyzeScan({
-        imageBase64:      aiImageBase64,
+      // Routed through canonical ScanRuntime. Stage classifier
+      // inputs in the stable ref the classifier closures over,
+      // then call rt.choosePhoto() + rt.analyzeImage() so the
+      // spec contracts (assertValidScanInput, validateScanResult,
+      // isLowConfidenceAllowed) all run before any setResult.
+      let _weatherSnapshotForHybrid = null;
+      try {
+        if (typeof window !== 'undefined') {
+          const _w = window.localStorage?.getItem('farroway_weather_cache');
+          if (_w) _weatherSnapshotForHybrid = JSON.parse(_w);
+        }
+      } catch { /* swallow */ }
+      _classifierInputRef.current = {
+        imageBase64,
+        aiImageBase64,
         imageUrl,
         cropId:           profile?.crop || profile?.cropId || null,
         cropName:         profile?.crop || profile?.cropId || null,
@@ -622,12 +752,32 @@ export default function ScanPage() {
         experience,
         activeExperience: activeExperience,
         weather:          weatherForBackend,
-        // Phase 11 attach-throughs — backend / hybrid layer can
-        // ignore these or use them to refine confidence.
+        weatherSnapshot:  _weatherSnapshotForHybrid,
         focusContext:     focusContext || null,
-        originalBase64:   imageBase64,
         lesionCropBase64: (focusContext && focusContext.lesionCropDataUrl) || null,
-      });
+        landSizeSqFt:     profile?.landSizeSqFt || profile?.farmSize || null,
+        growingSetup:     profile?.growingSetup || null,
+        mlScanOn,
+      };
+      try {
+        await _scanRuntime.choosePhoto({
+          size: (file && file.size) || (imageBase64 ? imageBase64.length : 1024),
+          type: (file && file.type) || 'image/jpeg',
+          dataUrl: imageBase64 || imageUrl || null,
+          _id: _localSessionId,
+        });
+      } catch { /* runtime sets RECOVERABLE_ERROR internally */ }
+      const _runtimeAnalyzeResult = await _scanRuntime.analyzeImage();
+      if (!_runtimeAnalyzeResult || !_runtimeAnalyzeResult.ok) {
+        throw new Error('scan_runtime_reject:'
+          + ((_runtimeAnalyzeResult && _runtimeAnalyzeResult.reason) || 'unknown'));
+      }
+      // The runtime applied the classifier (which wraps
+      // analyzeScan + hybridAnalyze + analyzeImageSafe) and ran
+      // validateScanResult on the envelope. We read the validated
+      // envelope from the runtime — all legacy fields are
+      // preserved + the spec §12 fields are added.
+      const out = _scanRuntime.getResult() || {};
       // Real result back — cancel the fallback timer if it
       // hasn't fired yet. If it HAS, the refinedOut below
       // overwrites the fallback in one render so the user sees
@@ -645,8 +795,15 @@ export default function ScanPage() {
       // engine fields (suggestedTasks, meta) intact. The
       // hybrid engine never throws — failure falls through to
       // the unrefined image-only result.
+      // ScanRuntime classifier already applied hybrid + ML
+      // augmentation. `out` IS the validated, refined envelope.
+      // The legacy inline block below is preserved temporarily for
+      // diffability — gated behind `false` so it never executes,
+      // and `refinedOut` is set from `out` directly. Next migration
+      // pass will delete the dead branch entirely.
       let refinedOut = out;
-      try {
+      // eslint-disable-next-line no-constant-condition
+      if (false) try {
         let weatherSnapshot = null;
         try {
           // Lazy import to avoid coupling ScanPage to the
@@ -711,11 +868,14 @@ export default function ScanPage() {
         } catch { /* ignore */ }
       } catch { /* hybrid disabled — fall through to engine output */ }
 
-      // Phase 7E — ML scan safe mode: attach structured category +
-      // message so ScanResultCard can render the five safe-category
-      // chip + cautious observation text. analyzeImageSafe never
-      // throws — it always returns needs_review on any error.
-      if (mlScanOn) {
+      // Phase 7E — ML scan safe mode. Now applied INSIDE the
+      // classifier (which the runtime invoked). The `if (mlScanOn)`
+      // shim below is gated to `false` so analyzeImageSafe is not
+      // called a second time directly from ScanPage. The runtime's
+      // result envelope already carries category / mlStatus / mlLabel
+      // when mlScanOn was true. Next migration pass deletes this branch.
+      // eslint-disable-next-line no-constant-condition
+      if (false && mlScanOn) {
         try {
           const mlResult = analyzeImageSafe({
             cropId:      profile?.crop || profile?.cropId || null,

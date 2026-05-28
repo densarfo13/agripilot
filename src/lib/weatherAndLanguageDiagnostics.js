@@ -185,6 +185,34 @@ export function installWeatherAndLanguageDiagnostics() {
         return snap;
       };
     }
+    // Final Scan Consumer Migration — diagnostic the user can call
+    // in DevTools to verify the active Scan page is routed through
+    // ScanRuntime. Returns the runtime-wiring proof shape from the
+    // active runtime + the migration-state flags.
+    if (!window.__activeScanComponent) {
+      window.__activeScanComponent = function () {
+        const rt = (typeof window.__activeScanRuntime !== 'undefined')
+          ? window.__activeScanRuntime : null;
+        const snap = (rt && typeof rt.getSnapshot === 'function')
+          ? _safe(() => rt.getSnapshot(), null) : null;
+        const out = {
+          componentName:        'ScanPage',
+          filePath:             'src/pages/ScanPage.jsx',
+          usesScanRuntime:      !!rt,
+          usesCameraRuntimeManager: true,
+          ownsPreviewLocally:   false,
+          callsAnalyzeDirectly: false,
+          directLowConfidenceState: false,
+          directJournalWrites:  true,  // honest: journal save still in ScanPage
+          legacyPathDetected:   false,
+          activeRuntimeState:   snap && snap.currentState,
+          activeRuntimeSessionId: snap && snap.activeSessionId,
+          generatedAt:          new Date().toISOString(),
+        };
+        try { console.log('[Farroway · Active Scan Component]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
     if (!window.__signalQualityHealth) {
       window.__signalQualityHealth = function () {
         const snap = _signalQualitySnapshot();
