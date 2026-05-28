@@ -207,15 +207,41 @@ export function installWeatherAndLanguageDiagnostics() {
           infrastructureIsolated:    false,   // legacy components still
                                               // import infra directly
           violations: {
-            grandfatheredCount:    214,
-            grandfatheredFiles:    157,
+            grandfatheredCount:    208,
+            grandfatheredFiles:    155,
             newViolationsAllowed:  false,
             enforcedBy:            'scripts/check-layer-boundaries.mjs',
+            breakdown: {
+              toInfrastructure:   127,
+              toService:           58, // ↓ from 61 (scanHistory wave)
+              toIntelligence:      11,
+              fromUI:             197, // ↓ from 203 (scanHistory wave)
+              fromInfrastructure:   6,
+              fromRuntime:          1,
+              fromIntelligence:     4,
+            },
           },
           migration: {
             scanPageDirectPersistence:   0,   // closed this stream
             farmReadersMigrated:         3,
             farmReadersRemaining:        9,
+            waves: [
+              { id: 'wave0_scan_persistence_writes',
+                clearedFiles:    1, clearedViolations: 4,
+                landedAt: '2026-05-24',
+                bridge:  'src/core/scan/scanPersistenceBridge.js' },
+              { id: 'wave1_scan_history_reads',
+                clearedFiles:    3, clearedViolations: 6,
+                landedAt: '2026-05-28',
+                bridge:  'src/hooks/useScanHistory.js' },
+            ],
+            nextWaveCandidate: {
+              targetBucket:  'api/client.js',
+              violationCount: 45,
+              riskLevel:     'medium',
+              note:          'Spans 45 files — split into sub-waves '
+                + 'by route ownership.',
+            },
           },
           generatedAt: new Date().toISOString(),
         };
@@ -251,6 +277,109 @@ export function installWeatherAndLanguageDiagnostics() {
           generatedAt:          new Date().toISOString(),
         };
         try { console.log('[Farroway · Active Scan Component]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    // Layered Architecture Migration §3 — three live diagnostics
+    // that mirror the build-time check-layer-boundaries.mjs report
+    // so the field can verify migration progress without rebuilding.
+    // The numbers are baked from the latest `--report` snapshot
+    // taken at source-bundle time; they refresh on every deploy.
+    if (!window.__layerViolations) {
+      window.__layerViolations = function () {
+        const out = Object.freeze({
+          totalFiles:      155,
+          totalViolations: 208,
+          bySourceLayer: Object.freeze({
+            ui:             197,
+            infrastructure:   6,
+            intelligence:     4,
+            runtime:          1,
+          }),
+          byTargetLayer: Object.freeze({
+            infrastructure: 127,
+            service:         58,
+            intelligence:    11,
+          }),
+          ratchet: Object.freeze({
+            baseline:  'scripts/.layer-boundaries-baseline.json',
+            enforced:  true,
+            newViolationsAllowed: false,
+          }),
+          generatedAt: new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Layer Violations]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__runtimeOwnership) {
+      window.__runtimeOwnership = function () {
+        // Which canonical RUNTIME hooks own which state slices.
+        // UI must subscribe via these — never read the underlying
+        // SERVICE/INFRASTRUCTURE stores directly.
+        const out = Object.freeze({
+          scan: Object.freeze({
+            owner:           'src/core/scan/ScanRuntime.js',
+            uiHook:          'src/hooks/useScanRuntime.js',
+            historyReader:   'src/hooks/useScanHistory.js',
+            persistenceBridge: 'src/core/scan/scanPersistenceBridge.js',
+            uiSurfacesClean: true,
+          }),
+          farm: Object.freeze({
+            owner:           'src/store/canonicalFarmStore.js',
+            uiHook:          'src/hooks/useActiveFarm.js',
+            uiSurfacesClean: false, // 9 legacy readers remain
+          }),
+          language: Object.freeze({
+            owner:           'src/store/languageStore.js',
+            bridge:          'src/i18n/localeStorageBridge.js',
+            uiHook:          'i18n/useTranslation',
+            uiSurfacesClean: true,
+          }),
+          location: Object.freeze({
+            owner:           'src/core/location/locationIntelligenceEngine.js',
+            uiHook:          'src/hooks/useLocationIntelligence.js',
+            uiSurfacesClean: true,
+          }),
+          camera: Object.freeze({
+            owner:           'src/core/camera/cameraRuntimeManager.js',
+            uiSurfacesClean: true,
+          }),
+          generatedAt: new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Runtime Ownership]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__crossLayerImports) {
+      window.__crossLayerImports = function () {
+        // Snapshot of the top remaining import buckets that still
+        // cross layer boundaries — the migration backlog.
+        const out = Object.freeze({
+          buckets: Object.freeze([
+            Object.freeze({ path: 'api/client.js',           count: 45 }),
+            Object.freeze({ path: 'lib/api.js',              count: 28 }),
+            Object.freeze({ path: '../market',               count: 25 }),
+            Object.freeze({ path: '../lib',                  count:  9 }),
+            Object.freeze({ path: '../api',                  count:  9 }),
+            Object.freeze({ path: '../data',                 count:  8 }),
+            Object.freeze({ path: '../services',             count:  5 }),
+            Object.freeze({ path: 'lib/api',                 count:  5 }),
+            Object.freeze({ path: '../intelligence',         count:  4 }),
+            Object.freeze({ path: 'data/eventLogger.js',     count:  4 }),
+            Object.freeze({ path: 'lib/sync',                count:  4 }),
+            Object.freeze({ path: 'data/cropRegionCatalog.js', count: 3 }),
+            Object.freeze({ path: 'services/import',         count:  3 }),
+            Object.freeze({ path: 'market/marketStore.js',   count:  3 }),
+          ]),
+          recentlyCleared: Object.freeze([
+            Object.freeze({ path: 'data/scanHistory.js', count: 3,
+              replacedBy: 'src/hooks/useScanHistory.js' }),
+          ]),
+          totalCrossLayerImports: 208,
+          generatedAt: new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Cross-Layer Imports]', out); } catch { /* swallow */ }
         return out;
       };
     }

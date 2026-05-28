@@ -191,15 +191,76 @@ function _diff(current, baseline) {
   return { newViolations, cleared };
 }
 
+function _categorize(byFile) {
+  // Group violations into actionable migration buckets.
+  const byTargetLayer    = {};
+  const byImportPath     = {};
+  const bySourceLayer    = {};
+  const topFiles         = {};
+  for (const [file, rec] of Object.entries(byFile)) {
+    bySourceLayer[rec.sourceLayer] = (bySourceLayer[rec.sourceLayer] || 0)
+      + rec.violations.length;
+    topFiles[file] = rec.violations.length;
+    for (const v of rec.violations) {
+      if (v.kind === 'cross_layer_import') {
+        byTargetLayer[v.targetLayer] = (byTargetLayer[v.targetLayer] || 0) + 1;
+        // Normalize the import path into a wave bucket
+        const parts = v.import.replace(/^\.\.+\//g, '').split('/').slice(0, 2);
+        const bucket = parts.join('/');
+        if (!byImportPath[bucket]) byImportPath[bucket] = { count: 0, files: new Set() };
+        byImportPath[bucket].count += 1;
+        byImportPath[bucket].files.add(file);
+      }
+    }
+  }
+  return {
+    bySourceLayer,
+    byTargetLayer,
+    byImportPath: Object.fromEntries(
+      Object.entries(byImportPath)
+        .map(([k, v]) => [k, { count: v.count, files: Array.from(v.files).sort() }])
+        .sort((a, b) => b[1].count - a[1].count),
+    ),
+    topFilesByCount: Object.fromEntries(
+      Object.entries(topFiles).sort((a, b) => b[1] - a[1]).slice(0, 20),
+    ),
+  };
+}
+
 function main() {
   const args = process.argv.slice(2);
   const tighten = args.includes('--tighten') || args.includes('--write');
+  const report  = args.includes('--report');
 
   const files = _walk(SRC_ROOT, []);
   const byFile = {};
   for (const f of files) {
     const r = _scanFile(f);
     if (r) byFile[r.relPath] = r;
+  }
+
+  if (report) {
+    const cat = _categorize(byFile);
+    const out = {
+      totalFiles:      Object.keys(byFile).length,
+      totalViolations: Object.values(byFile).reduce((a, r) => a + r.violations.length, 0),
+      bySourceLayer:   cat.bySourceLayer,
+      byTargetLayer:   cat.byTargetLayer,
+      topImportBuckets: Object.entries(cat.byImportPath).slice(0, 15).reduce(
+        (a, [k, v]) => { a[k] = { count: v.count, fileCount: v.files.length }; return a; },
+        {},
+      ),
+      topFiles: cat.topFilesByCount,
+      migrationWaves: {
+        wave1_api_client:    cat.byImportPath['api/client.js']     || { count: 0 },
+        wave2_lib_api:       cat.byImportPath['lib/api.js']        || { count: 0 },
+        wave3_market:        cat.byImportPath['market']            || { count: 0 },
+        wave4_data:          cat.byImportPath['data']              || { count: 0 },
+        wave5_services:      cat.byImportPath['services']          || { count: 0 },
+      },
+    };
+    console.log(JSON.stringify(out, null, 2));
+    process.exit(0);
   }
 
   const currentBaseline = _toBaseline(byFile);

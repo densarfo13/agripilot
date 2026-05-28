@@ -355,13 +355,6 @@
       "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js"
     ]
   },
-  "src/components/scan/ScanHistory.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→service:../../data/scanHistory.js",
-      "forbidden_pattern:ui_imports_scanHistory"
-    ]
-  },
   "src/components/scan/ScanResultCard.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
@@ -828,13 +821,6 @@
       "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
-  "src/pages/JournalPage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→service:../data/scanHistory.js",
-      "forbidden_pattern:ui_imports_scanHistory"
-    ]
-  },
   "src/pages/LandCheckPage.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
@@ -956,8 +942,6 @@
   "src/pages/ScanResultPage.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
-      "cross_layer_import:ui→service:../data/scanHistory.js",
-      "forbidden_pattern:ui_imports_scanHistory",
       "forbidden_pattern:ui_imports_scanToTask"
     ]
   },

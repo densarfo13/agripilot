@@ -9,11 +9,10 @@
  * whether to show an empty state above this.
  */
 
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
-import { getScanHistory } from '../../data/scanHistory.js';
+import { useScanHistory } from '../../hooks/useScanHistory.js';
 import SafeImage from '../common/SafeImage.jsx';
 
 const STYLES = {
@@ -99,21 +98,10 @@ export default function ScanHistory({ limit = 6 }) {
   useTranslation();
   const navigate = useNavigate();
 
-  const [entries, setEntries] = useState(() => {
-    try { return getScanHistory(); } catch { return []; }
-  });
-
-  // Refresh when another tab writes a new scan.
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const onStorage = (e) => {
-      if (e?.key === 'farroway_scan_history') {
-        try { setEntries(getScanHistory()); } catch { /* ignore */ }
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  // Runtime-governed scan history subscription. The hook owns the
+  // cross-tab `storage` refresh + SSR-safe init; this component is
+  // a pure renderer.
+  const { entries } = useScanHistory();
 
   const visible = Array.isArray(entries) ? entries.slice(-limit).reverse() : [];
 

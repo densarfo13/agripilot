@@ -49,8 +49,9 @@ import {
 import { useLiveWeather } from '../hooks/useLiveWeather.js';
 // Polish §8 — photo evolution timeline. Pulls thumbnails from the
 // scan history slot; merged with the active plant photo as the
-// most recent frame. Pure read; never throws.
-import { getScanHistory } from '../data/scanHistory.js';
+// most recent frame. Pure read; never throws. RUNTIME-governed —
+// see src/hooks/useScanHistory.js.
+import { useScanHistory } from '../hooks/useScanHistory.js';
 // Gardener-tone substitution. Pure / never throws. Applied to the
 // observation line so any farm-style wording that slips in via
 // future engine changes still reads in the calm garden register.
@@ -93,6 +94,9 @@ export default function JournalPage() {
   // observation falls through to the stage / streak branches when
   // no coords are set.
   const { weather } = useLiveWeather(null);
+  // Runtime-governed scan history feed for the photo strip below.
+  // Hook owns the cross-tab refresh + SSR-safe init.
+  const { entries: scanEntries } = useScanHistory();
 
   const milestoneCount =
     (hasFirstScan ? 1 : 0) + (hasFirstFlower ? 1 : 0) + (hasFirstFruit ? 1 : 0);
@@ -126,7 +130,7 @@ export default function JournalPage() {
       }
     } catch { /* swallow */ }
     try {
-      const scans = getScanHistory() || [];
+      const scans = Array.isArray(scanEntries) ? scanEntries : [];
       // Newest first; cap at 5.
       const recent = scans
         .filter((s) => s && s.thumbnail)
@@ -141,7 +145,7 @@ export default function JournalPage() {
       }
     } catch { /* swallow */ }
     return out;
-  }, [plant, entries]);
+  }, [plant, entries, scanEntries]);
 
   // Polish §2 + §3 — subtle seasonal/time-of-day accent on the
   // hero. We don't change the page background (that would feel

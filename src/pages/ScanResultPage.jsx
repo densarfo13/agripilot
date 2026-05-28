@@ -19,7 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
-import { getScanEntry } from '../data/scanHistory.js';
+import { useScanHistory } from '../hooks/useScanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
@@ -84,9 +84,13 @@ export default function ScanResultPage() {
   const flagOn = isFeatureEnabled('scanDetection');
 
   const scanId = params?.scanId || '';
+  // Runtime-governed scan history reader. The hook owns the
+  // cross-tab refresh + falls back to the store on a miss so the
+  // deep-link detail view stays consistent.
+  const { getEntry } = useScanHistory();
   const entry = useMemo(() => {
-    try { return getScanEntry(scanId); } catch { return null; }
-  }, [scanId]);
+    try { return getEntry(scanId); } catch { return null; }
+  }, [scanId, getEntry]);
 
   const [tasksAdded, setTasksAdded] = useState(false);
 
