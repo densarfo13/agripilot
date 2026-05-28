@@ -502,6 +502,94 @@ export function installWeatherAndLanguageDiagnostics() {
     // persistence registry, sync orchestration, and event log.
     // Each function lazy-loads its source module so the diagnostic
     // install path stays cheap.
+    // Wave 7 offline reliability diagnostics — lazy-loaded so the
+    // install path stays cheap. Each diagnostic returns a degraded
+    // envelope when the offline runtime hasn't been installed yet.
+    if (!window.__queueHealth) {
+      window.__queueHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/offline/queueRegistry.js'), null);
+          if (!mod || typeof mod.getRegistrySnapshot !== 'function') return null;
+          // Async API; return the Promise so callers can `await` it.
+          // For a synchronous console snapshot we still log when
+          // the Promise resolves.
+          const promise = mod.getRegistrySnapshot();
+          if (promise && typeof promise.then === 'function') {
+            promise.then((s) => {
+              try { console.log('[Farroway · Queue Health (resolved)]', s); }
+              catch { /* swallow */ }
+            }).catch(() => { /* swallow */ });
+          }
+          return promise;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'queue-registry-v1',
+          reason:         'offline_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Queue Health (pending)]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__replayHealth) {
+      window.__replayHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/offline/reconcileReconnect.js'), null);
+          if (!mod || typeof mod.getReconciliationSnapshot !== 'function') return null;
+          const promise = mod.getReconciliationSnapshot();
+          if (promise && typeof promise.then === 'function') {
+            promise.then((s) => {
+              try { console.log('[Farroway · Replay Health (resolved)]', s); }
+              catch { /* swallow */ }
+            }).catch(() => { /* swallow */ });
+          }
+          return promise;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'reconcile-reconnect-v1',
+          reason:         'offline_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Replay Health (pending)]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__deviceResilience) {
+      // Bonus diagnostic — exposes listener counts + trigger history.
+      window.__deviceResilience = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/offline/deviceResilience.js'), null);
+          return mod && typeof mod.getResilienceSnapshot === 'function'
+            ? mod.getResilienceSnapshot() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'device-resilience-v1',
+          reason:         'offline_runtime_not_installed',
+        });
+        try { console.log('[Farroway · Device Resilience]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__activeContextRestore) {
+      // Bonus diagnostic — exposes the most recent restoration.
+      window.__activeContextRestore = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/continuity/continuityRestoration.js'), null);
+          return mod && typeof mod.getRestorationSnapshot === 'function'
+            ? mod.getRestorationSnapshot() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'continuity-restoration-v1',
+          reason:         'restoration_runtime_not_installed',
+        });
+        try { console.log('[Farroway · Active Context Restoration]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
     // Wave 6 intelligence diagnostics — lazy-loaded so the install
     // path stays cheap. Each diagnostic returns a degraded envelope
     // when the runtime hasn't been installed yet.

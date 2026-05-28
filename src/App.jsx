@@ -752,6 +752,15 @@ export default function App() {
         installIntelligenceRuntime();
       } catch { /* never block app boot */ }
       try {
+        // Wave 7 — offline runtime registers all 5 queue adapters
+        // with the queueRegistry + installs device resilience hooks
+        // (visibilitychange, pageshow, online) + fires an initial
+        // restoration snapshot. Idempotent.
+        const { installOfflineRuntime } =
+          await import('./runtime/offline/offlineRuntime.js');
+        installOfflineRuntime();
+      } catch { /* never block app boot */ }
+      try {
         const { installWeatherAndLanguageDiagnostics } =
           await import('./lib/weatherAndLanguageDiagnostics.js');
         installWeatherAndLanguageDiagnostics();
