@@ -89,7 +89,6 @@ describe('library modules — import smoke', () => {
     ['../../../src/lib/imageCompression.js',     'compressImage'],
     ['../../../src/lib/offlineScanQueue.js',     'enqueueScan'],
     ['../../../src/lib/farmEventBus.js',         'default'],
-    ['../../../src/services/cameraSession.js',   'startCamera'],
   ])('imports %s and exports %s', async (path, exportName) => {
     const mod = await import(modUrl(path));
     expect(mod).toBeTruthy();
@@ -205,24 +204,10 @@ describe('intelligence engines — sanity execution', () => {
 });
 
 // ─── Camera session lifecycle ─────────────────────────────────
-
-describe('cameraSession — sanity execution', () => {
-  it('exposes the 9-state machine', async () => {
-    const { CAMERA_SESSION_STATES } = await import('../../../src/services/cameraSession.js');
-    expect(CAMERA_SESSION_STATES.IDLE).toBe('idle');
-    expect(CAMERA_SESSION_STATES.CAMERA_READY).toBe('camera_ready');
-    expect(CAMERA_SESSION_STATES.FAILED).toBe('failed');
-  });
-
-  it('startCamera fails cleanly when no mediaDevices', async () => {
-    // navigator.mediaDevices is undefined on Node (no stub needed).
-    const { startCamera, _resetCameraSession } = await import('../../../src/services/cameraSession.js');
-    _resetCameraSession();
-    const result = await startCamera({});
-    expect(result.ok).toBe(false);
-    expect(result.reason).toBe('unsupported');
-  });
-});
+// (Removed: src/services/cameraSession.js was dead code with zero
+//  importers and has been deleted. The canonical camera owner is
+//  src/core/camera/cameraRuntimeManager.js, covered by
+//  cameraRuntimeStability.test.js.)
 
 // ─── Offline queue ────────────────────────────────────────────
 

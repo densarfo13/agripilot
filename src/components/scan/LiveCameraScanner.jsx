@@ -66,7 +66,7 @@ import {
 // + stopStream legacy path so every scan surface goes through
 // the same lifecycle owner.
 import {
-  initializeCamera, stopCamera, getActiveStream,
+  initializeCamera, stopCamera, getActiveStream, releaseBlobUrl,
 } from '../../core/camera/cameraRuntimeManager.js';
 
 const PREFERRED_CONSTRAINTS = (facing) => ({
@@ -631,7 +631,7 @@ export default function LiveCameraScanner({
       // Reset captured state so a re-open shows the live preview,
       // not the previously frozen frame.
       if (capturedUrl) {
-        try { URL.revokeObjectURL(capturedUrl); } catch { /* swallow */ }
+        releaseBlobUrl(capturedUrl);
       }
       setCapturedUrl(null);
       setCapturedFile(null);
@@ -801,6 +801,9 @@ export default function LiveCameraScanner({
           0.92,
         );
       });
+      // Captured frame ObjectURL — created here, released via the
+      // canonical cameraRuntimeManager.releaseBlobUrl when the
+      // captured surface unmounts or a new frame replaces it.
       dataUrl = URL.createObjectURL(blob);
       file = new File([blob], `scan-${Date.now()}.jpg`, { type: 'image/jpeg' });
     } catch {
@@ -840,7 +843,7 @@ export default function LiveCameraScanner({
     startSeqRef.current += 1;
     stopStream();
     if (capturedUrl) {
-      try { URL.revokeObjectURL(capturedUrl); } catch { /* swallow */ }
+      releaseBlobUrl(capturedUrl);
     }
     setCapturedUrl(null);
     setCapturedFile(null);
