@@ -270,6 +270,8 @@ import { SafeRouteShell } from './components/system/SafeRouteShell.jsx';
 // render a calm placeholder instead of mounting an unstable
 // surface. Falls open (renders children) on flag-system error.
 import FeatureGated from './components/system/FeatureGated.jsx';
+import RC1RouteGate from './components/system/RC1RouteGate.jsx';
+import OfflineQueueBanner from './components/system/OfflineQueueBanner.jsx';
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -1158,6 +1160,9 @@ export default function App() {
           the user navigates to a new route (routeKey = pathname). */}
       <AppCrashBoundaryWithLocation>
       <AuthLoadingGate>
+      {/* RC1 — global persistent offline-pending banner. Self-hides
+          when the queue is empty. Reads via wave-7 queueRegistry. */}
+      <OfflineQueueBanner />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Marketing landing page (farroway.app homepage).
@@ -1488,22 +1493,28 @@ export default function App() {
                 always live + safe (no 404 on stray nav taps).
                 Coexists with /marketplace + /market/browse. */}
             <Route path="/buy" element={
-              <SafeRouteShell routeName="buy">
-                {/* Garden Mode Refactor §3 — buy surface is
-                    commercial; garden mode gets the calm empty-state. */}
-                <BackyardGuard surface="sell"><Buy /></BackyardGuard>
-              </SafeRouteShell>
+              <RC1RouteGate flag="buyMarketplace">
+                <SafeRouteShell routeName="buy">
+                  {/* Garden Mode Refactor §3 — buy surface is
+                      commercial; garden mode gets the calm empty-state. */}
+                  <BackyardGuard surface="sell"><Buy /></BackyardGuard>
+                </SafeRouteShell>
+              </RC1RouteGate>
             } />
-            {/* /operator — marketplace operator dashboard. The page
-                checks the `operatorTools` flag and renders a "coming
-                soon" notice when off, so the route is always live +
-                safe. Coexists with /admin/funding and /ngo/impact. */}
-            <Route path="/operator"           element={<OperatorDashboard />} />
-            {/* /internal/metrics — investor-facing growth + funnel
-                snapshot. Page checks the `investorMetrics` flag
-                and renders an "internal only" notice when off, so
-                the route is always live + safe. */}
-            <Route path="/internal/metrics"   element={<MetricsDashboard />} />
+            {/* /operator — RC1 gated; redirects to /home when
+                operatorTools flag is off. Page stays in codebase. */}
+            <Route path="/operator" element={
+              <RC1RouteGate flag="operatorTools">
+                <OperatorDashboard />
+              </RC1RouteGate>
+            } />
+            {/* /internal/metrics — RC1 gated; redirects to /home
+                when investorMetrics flag is off. */}
+            <Route path="/internal/metrics" element={
+              <RC1RouteGate flag="investorMetrics">
+                <MetricsDashboard />
+              </RC1RouteGate>
+            } />
             {/* /start — minimal onboarding entry. The page checks
                 the `onboardingV2` flag and renders a "coming soon"
                 notice when off. Returning users (with farm or

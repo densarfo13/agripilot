@@ -1,4 +1,5 @@
-import { SUPPORTED_LOCALES } from '../i18n/supportedLocales.ts';
+import { SUPPORTED_LOCALES, getLaunchLocales } from '../i18n/supportedLocales.ts';
+import { isFeatureEnabled } from '../config/features.js';
 import { useAppPrefs } from '../context/AppPrefsContext.jsx';
 
 /**
@@ -76,7 +77,9 @@ export default function LanguageSelector() {
   // Locales come straight from the centralized registry. No
   // filter, no overlay-table-walk; the column loader handles
   // missing-key fallback at lookup time.
-  const supported = SUPPORTED_LOCALES.map((l) => ({
+  const supported = getLaunchLocales({
+    enableHindi: isFeatureEnabled('enableHindiLocale'),
+  }).map((l) => ({
     code:  l.code,
     label: l.nativeName,
   }));

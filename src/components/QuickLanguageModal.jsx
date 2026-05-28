@@ -27,7 +27,8 @@
 import React, { useEffect } from 'react';
 import { setLanguage } from '../i18n/index.js';
 import { setSavedLanguage } from '../utils/onboarding.js';
-import { SUPPORTED_LOCALES } from '../i18n/supportedLocales.ts';
+import { SUPPORTED_LOCALES, getLaunchLocales } from '../i18n/supportedLocales.ts';
+import { isFeatureEnabled as _qlmIsFeatureEnabled } from '../config/features.js';
 // Production-rebuild Phase 7: atomic locale switch preloads the
 // target column before flipping the UI so we never render a half-
 // translated frame. Legacy setLanguage is kept as the fallback
@@ -38,7 +39,8 @@ import { setLanguageAtomic } from '../i18n/atomicLocaleSwitch.js';
 // the `label` (English name) + `native` (script name) split this
 // modal already rendered, so JSX further down didn't have to change.
 const LANGS = Object.freeze(
-  SUPPORTED_LOCALES.map((l) => Object.freeze({
+  getLaunchLocales({ enableHindi: _qlmIsFeatureEnabled('enableHindiLocale') })
+    .map((l) => Object.freeze({
     code:   l.code,
     label:  l.englishName,
     native: l.nativeName,

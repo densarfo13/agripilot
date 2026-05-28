@@ -85,7 +85,8 @@ export function setActiveLocale(locale) {
 
 /**
  * Install. Idempotent. Reads the active locale from the existing
- * locale bridge if available.
+ * locale bridge AND registers reportTSafeOutcome as tSafe's
+ * coverage reporter so every translation lookup feeds the meter.
  */
 export function installLanguageCoverage() {
   if (_state.installed) {
@@ -100,6 +101,16 @@ export function installLanguageCoverage() {
     if (key && SUPPORTED_LOCALES.includes(key.slice(0, 2))) {
       _state.activeLocale = key.slice(0, 2);
     }
+  }, null);
+  // RC1 — register coverage reporter on tSafe via dynamic import
+  // so the language runtime doesn't pull tSafe into its own module
+  // graph at load time (avoids any circular-import surprise).
+  _safe(() => {
+    import('../../i18n/tSafe.js').then((mod) => {
+      if (mod && typeof mod.setCoverageReporter === 'function') {
+        mod.setCoverageReporter(reportTSafeOutcome);
+      }
+    }).catch(() => { /* never block install */ });
   }, null);
   _state.installed = true;
   _state.installedAt = _now();

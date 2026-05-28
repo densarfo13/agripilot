@@ -62,12 +62,21 @@ const DEFAULTS = Object.freeze({
   // ScanCapture/Result/History components + scanDetectionEngine
   // fallback. Coexists with the existing /scan-crop surface;
   // VoiceAssistant's "scan" command still routes to /scan-crop.
-  scanDetection: true,  // Phase 4 restore — 2026-05-04; scanApiEnabled stays false (rule-based fallback)
+  scanDetection: true,  // Phase 4 restore — 2026-05-04
   // Scan API enabled: when off, `scanDetectionEngine` returns the
-  // rule-based safe fallback without hitting any backend. Flip to
-  // true once `/api/scan/analyze` lands on the server. Independent
-  // of `scanDetection` so the UI can ship before the API.
-  scanApiEnabled: false,
+  // rule-based safe fallback without hitting any backend. When on,
+  // ScanRuntime calls `/api/scan/analyze`. Independent of
+  // `scanDetection` so the UI can ship before the API.
+  // RC1 flip — server endpoint (server/src/app.js:609) is live;
+  // realClassifierAvailable still depends on PLANT_ID_API_KEY env
+  // being set on Railway prod. classifierAvailability runtime
+  // reports honestly via __scanRuntimeHealthV8().
+  scanApiEnabled: true,
+  // RC1 — Hindi gate. Hindi launch-locale exposure depends on this
+  // flag. Coverage is 54.3% per check:translations; locale stays
+  // available in supportedLocales for testing but pickers honor
+  // this flag for the public launch.
+  enableHindiLocale: false,
   // Scan-to-task: enables the "Add to Today's Plan" button on
   // the result card and creates follow-up tasks from a scan.
   // Enabled with FEATURE_SCAN_USEFULNESS (2026-05-07) — the

@@ -216,6 +216,12 @@ export function tSafe(arg1, arg2, arg3, arg4) {
     || isHumanizeFallback;
 
   if (looksMissing) {
+    // RC1 — report coverage miss to the language runtime so
+    // __languageHealth() can report a live hit rate. Lazy-loaded
+    // + try/catch so this hook never breaks translation lookup.
+    try {
+      _reportCoverage(key, 'miss');
+    } catch { /* never break i18n */ }
     if (_isDev()) {
       const memoKey = `dev:${key}`;
       if (!_warnedKeys.has(memoKey)) {
@@ -232,9 +238,22 @@ export function tSafe(arg1, arg2, arg3, arg4) {
     }
     return typeof fallback === 'string' ? fallback : '';
   }
+  // RC1 — coverage hit.
+  try { _reportCoverage(key, 'hit'); } catch { /* never break i18n */ }
   // STABILITY HOTFIX: coerce to string in case some upstream code
   // path returns a non-string. tSafe contract: always return string.
   return typeof value === 'string' ? value : String(value || '');
+}
+
+// RC1 coverage probe — setter pattern so we don't introduce a
+// circular import. The language runtime calls `setCoverageReporter`
+// during install to inject its `reportTSafeOutcome(key, kind)` fn.
+let _coverageFn = null;
+export function setCoverageReporter(fn) {
+  _coverageFn = typeof fn === 'function' ? fn : null;
+}
+function _reportCoverage(key, kind) {
+  if (_coverageFn) _coverageFn(key, kind);
 }
 
 export default tSafe;

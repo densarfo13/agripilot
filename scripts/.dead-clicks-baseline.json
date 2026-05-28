@@ -1,0 +1,13 @@
+{
+  "src/pages/admin/AlertControlCenter.jsx": 1,
+  "src/pages/admin/HighRiskFarms.jsx": 1,
+  "src/pages/buyer/BrowseListingsPage.jsx": 1,
+  "src/pages/Landing.jsx": 1,
+  "src/pages/SafeHomeFallback.jsx": 1,
+  "src/components/admin/AdminState.jsx": 2,
+  "src/components/auth/LoadingButton.jsx": 1,
+  "src/components/home/FirstTimeHomeGuard.jsx": 1,
+  "src/components/PasswordInput.jsx": 1,
+  "src/components/system/AppCrashBoundary.jsx": 1,
+  "src/components/ui/StatusCard.jsx": 1
+}

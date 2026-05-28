@@ -47,6 +47,9 @@ export interface SupportedLocale {
 // The order here IS the order pickers render. English first
 // (source language); the rest follow the pilot-region priority
 // the partner agronomy team agreed on (FR / SW / HA / TW / HI).
+// RC1 — Hindi remains in the supported set so existing users who
+// have it selected don't break; pickers consult getLaunchLocales()
+// below to decide which codes to surface in the chooser.
 export const SUPPORTED_LOCALES: readonly SupportedLocale[] = Object.freeze([
   Object.freeze({ code: 'en', englishName: 'English',   nativeName: 'English'    }),
   Object.freeze({ code: 'fr', englishName: 'French',    nativeName: 'Français' }),
@@ -55,6 +58,29 @@ export const SUPPORTED_LOCALES: readonly SupportedLocale[] = Object.freeze([
   Object.freeze({ code: 'tw', englishName: 'Twi',       nativeName: 'Twi'        }),
   Object.freeze({ code: 'hi', englishName: 'Hindi',     nativeName: 'हिन्दी' }),
 ]) as readonly SupportedLocale[];
+
+/**
+ * RC1 launch-locale gate. Hindi is hidden from the public picker
+ * because translation coverage is at 54.3% (see check:translations).
+ * Returns the subset of SUPPORTED_LOCALES that should be shown in
+ * UI pickers for the current build.
+ *
+ *   • Hindi is included when `enableHindiLocale` feature flag is
+ *     ON (set in src/config/features.js)
+ *   • All other 5 locales are always shown
+ *
+ * Existing-Hindi users keep their selection — `isSupportedLocale`
+ * still recognizes 'hi' as valid; only the chooser hides it.
+ */
+export function getLaunchLocales(opts?: {
+  enableHindi?: boolean
+}): readonly SupportedLocale[] {
+  const enableHindi = !!(opts && opts.enableHindi);
+  if (enableHindi) return SUPPORTED_LOCALES;
+  return Object.freeze(
+    SUPPORTED_LOCALES.filter((l) => l.code !== 'hi'),
+  ) as readonly SupportedLocale[];
+}
 
 export const LOCALE_CODES: readonly LocaleCode[] = Object.freeze(
   SUPPORTED_LOCALES.map((l) => l.code),

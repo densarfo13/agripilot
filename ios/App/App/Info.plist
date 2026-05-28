@@ -48,9 +48,17 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Farroway uses your location to provide accurate local weather and farming guidance for your farm.</string>
+	<string>Farroway uses your location to provide local weather, crop guidance, and region-specific farming recommendations.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Farroway uses your location to provide accurate local weather and farming guidance for your farm.</string>
+	<string>Farroway uses your location to provide local weather, crop guidance, and region-specific farming recommendations.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Farroway uses your camera to scan crops, leaves, pests, and farm conditions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Farroway lets you choose crop and farm photos for scan analysis and progress records.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Farroway saves scan and progress photos to your library when you ask.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Farroway sends reminders for farm tasks, scan follow-ups, and important crop alerts.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

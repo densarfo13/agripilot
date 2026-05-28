@@ -83,11 +83,18 @@ export function getFarrowayBuild() {
       || window.__FARROWAY_BUILD_VERSION
       || null;
   }, null);
+  let appStoreMode = false;
+  try {
+    const safety = _safe(() => getAppStoreSafetySnapshot(), null);
+    appStoreMode = !!(safety && safety.appStoreMode);
+  } catch { /* swallow */ }
   return Object.freeze({
     runtimeVersion: RUNTIME_VERSION,
     sha:            env.sha || winSha || 'unknown',
-    timestamp:      env.timestamp,
+    builtAt:        env.timestamp || null,
+    timestamp:      env.timestamp || null,   // legacy alias
     mode:           env.mode,
+    appStoreMode,
     isProduction:   env.isProduction,
     detectedAt:     _now(),
   });
@@ -124,6 +131,19 @@ export async function installAppStoreReadinessRuntime(opts) {
 
 /**
  * Composite readiness verdict.
+ *
+ *   {
+ *     verdict: 'APP_STORE_READY' | 'NOT_READY',
+ *     blockers: string[],
+ *     warnings: string[],
+ *     checks: {
+ *       scanApiEnabled, realClassifierAvailable,
+ *       privacyUrlPresent, termsUrlPresent,
+ *       nativeModeDetected, hiddenRoutesSafe,
+ *       translationsPass, offlineRuntimeReady,
+ *       queueRegistered,
+ *     }
+ *   }
  */
 export async function getAppStoreReadiness() {
   const scan = _safe(() => getScanHealthSnapshot(), null);
@@ -133,31 +153,77 @@ export async function getAppStoreReadiness() {
   const lang = _safe(() => getLanguageCoverageSnapshot(), null);
   const build = _safe(() => getFarrowayBuild(), null);
 
-  // Scoring — true = pass, false = needs work, null = unknown.
-  const gates = {
-    safetyModeApplied: safety && safety.appStoreMode === true,
-    classifierHonest:  scan && scan.realClassifierAvailable !== null,
-    notifTransportOk:  notif && notif.transport !== 'none',
-    notifOptIn:        notif && notif.permission === 'granted',
-    languageCoverage:  lang && (lang.hitRate == null || lang.hitRate >= 0.80),
-    hasBuildSha:       build && build.sha && build.sha !== 'unknown',
-  };
-  const criticalGates = ['safetyModeApplied', 'classifierHonest'];
-  const deviceGates   = ['notifTransportOk', 'notifOptIn'];
-  const criticalOk = criticalGates.every((g) => gates[g] === true || gates[g] === null);
-  const criticalFail = criticalGates.some((g) => gates[g] === false);
-  const deviceWork = deviceGates.some((g) => gates[g] === false);
+  // Detect document-side privacy/terms meta tags so the runtime
+  // verdict reflects what App Store reviewers will see in HTML.
+  let privacyUrlPresent = null;
+  let termsUrlPresent = null;
+  _safe(() => {
+    if (typeof document === 'undefined') return;
+    const head = document.head;
+    if (!head) return;
+    privacyUrlPresent = !!(
+      head.querySelector('link[rel="privacy"]')
+      || head.querySelector('meta[name="privacy-policy"]')
+    );
+    termsUrlPresent = !!head.querySelector('meta[name="terms-of-service"]');
+  }, null);
 
-  let verdict;
-  if (criticalFail) verdict = 'BLOCKED';
-  else if (deviceWork) verdict = 'NEEDS_DEVICE_QA';
-  else if (criticalOk) verdict = 'APP_STORE_READY';
-  else verdict = 'NEEDS_DEVICE_QA';
+  const queueRegistered = await _safeAsync(async () => {
+    const dyn = new Function('s', 'return import(s)');
+    const mod = await dyn('../offline/queueRegistry.js');
+    if (!mod || typeof mod.getRegistrySnapshot !== 'function') return null;
+    const snap = await mod.getRegistrySnapshot();
+    return snap && snap.registered >= 5;
+  }, null);
+
+  const checks = Object.freeze({
+    scanApiEnabled:          _safe(() => isFeatureEnabled('scanApiEnabled'), null),
+    realClassifierAvailable: scan ? !!scan.realClassifierAvailable : null,
+    privacyUrlPresent,
+    termsUrlPresent,
+    nativeModeDetected:      safety ? !!safety.nativeShell : null,
+    hiddenRoutesSafe:        flags
+      ? !flags.flags.buyMarketplace?.applied
+        && !flags.flags.marketTransactionFlow?.applied
+        && !flags.flags.marketScale?.applied
+        && !flags.flags.multiMarket?.applied
+      : null,
+    translationsPass:        lang
+      ? (lang.hitRate == null ? null : lang.hitRate >= 0.80)
+      : null,
+    offlineRuntimeReady:     queueRegistered,
+    queueRegistered,
+  });
+
+  const blockers = [];
+  const warnings = [];
+
+  // Blockers — must be true for App Store ready.
+  if (checks.scanApiEnabled === false) blockers.push('scan_api_disabled');
+  if (checks.privacyUrlPresent === false) blockers.push('privacy_url_missing');
+  if (checks.termsUrlPresent === false) blockers.push('terms_url_missing');
+  if (checks.hiddenRoutesSafe === false) blockers.push('flagged_routes_exposed');
+
+  // Warnings — non-blocking but flag for QA.
+  if (checks.realClassifierAvailable === false) warnings.push('classifier_will_use_fallback');
+  if (checks.translationsPass === false) warnings.push('translation_coverage_below_80');
+  if (checks.translationsPass == null) warnings.push('translation_coverage_unknown');
+  if (checks.offlineRuntimeReady === false) warnings.push('offline_runtime_not_ready');
+  if (checks.nativeModeDetected === false) warnings.push('not_running_in_native_shell');
+  if (!build || !build.sha || build.sha === 'unknown') warnings.push('build_sha_unknown');
+  if (notif && notif.transport === 'none') warnings.push('notification_transport_none');
+  if (notif && notif.permission !== 'granted') warnings.push('notification_permission_not_granted');
+
+  const verdict = blockers.length === 0
+    ? 'APP_STORE_READY'
+    : 'NOT_READY';
 
   return Object.freeze({
     runtimeVersion: RUNTIME_VERSION,
     verdict,
-    gates,
+    blockers: Object.freeze(blockers),
+    warnings: Object.freeze(warnings),
+    checks,
     detail: Object.freeze({
       safetyMode:    safety,
       scan:          scan,

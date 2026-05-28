@@ -56,7 +56,8 @@ import { isOnboardingComplete } from '../../utils/onboarding.js';
 // other surface (the existing LanguageSelector dropdown stays in
 // sync, and `farroway:langchange` fires for live re-render).
 import { setLanguage as i18nSetLanguage } from '../../i18n/index.js';
-import { SUPPORTED_LOCALES } from '../../i18n/supportedLocales.ts';
+import { SUPPORTED_LOCALES, getLaunchLocales } from '../../i18n/supportedLocales.ts';
+import { isFeatureEnabled as _ffIsFeatureEnabled } from '../../config/features.js';
 // Production-rebuild Phase 7: atomic switch preloads the locale
 // column before flipping the UI, killing the partial-English window
 // the onboarding language picker used to show on cold cache.
@@ -276,7 +277,9 @@ export default function FastFlow() {
 // truth for the locale list. Adding a locale there MUST be paired
 // with a new src/i18n/columns/T-<code>.js column file or the
 // runtime fallback chain silently returns English.
-const LANGUAGE_OPTIONS = SUPPORTED_LOCALES.map((l) => ({
+const LANGUAGE_OPTIONS = getLaunchLocales({
+  enableHindi: _ffIsFeatureEnabled('enableHindiLocale'),
+}).map((l) => ({
   code:  l.code,
   label: l.nativeName,
 }));
