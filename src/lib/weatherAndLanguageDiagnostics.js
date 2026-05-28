@@ -502,6 +502,96 @@ export function installWeatherAndLanguageDiagnostics() {
     // persistence registry, sync orchestration, and event log.
     // Each function lazy-loads its source module so the diagnostic
     // install path stays cheap.
+    // Wave 6 intelligence diagnostics — lazy-loaded so the install
+    // path stays cheap. Each diagnostic returns a degraded envelope
+    // when the runtime hasn't been installed yet.
+    if (!window.__intelligenceHealth) {
+      window.__intelligenceHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/intelligence/intelligenceRuntime.js'), null);
+          return mod && typeof mod.getIntelligenceHealth === 'function'
+            ? mod.getIntelligenceHealth() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'intelligence-runtime-v1',
+          reason:         'intelligence_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Intelligence Health]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__recommendationTrace) {
+      window.__recommendationTrace = function (limit) {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/intelligence/intelligenceRuntime.js'), null);
+          return mod && typeof mod.getRecommendationTrace === 'function'
+            ? mod.getRecommendationTrace(
+                typeof limit === 'number' ? limit : 50) : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'intelligence-runtime-v1',
+          reason:         'intelligence_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Recommendation Trace]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__confidenceCalibration) {
+      window.__confidenceCalibration = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/intelligence/intelligenceRuntime.js'), null);
+          return mod
+            && typeof mod.getConfidenceCalibrationSnapshot === 'function'
+            ? mod.getConfidenceCalibrationSnapshot() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'confidence-calibration-v1',
+          reason:         'intelligence_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Confidence Calibration]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__learningHealth) {
+      window.__learningHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/intelligence/intelligenceRuntime.js'), null);
+          return mod && typeof mod.getLearningHealth === 'function'
+            ? mod.getLearningHealth() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'intelligence-runtime-v1',
+          reason:         'intelligence_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Learning Health]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__continuitySignals) {
+      window.__continuitySignals = function (ctx) {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/intelligence/intelligenceRuntime.js'), null);
+          return mod && typeof mod.getContinuitySignals === 'function'
+            ? mod.getContinuitySignals(ctx || {}) : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'intelligence-runtime-v1',
+          reason:         'intelligence_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Continuity Signals]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
     if (!window.__stateOwnership) {
       window.__stateOwnership = function () {
         const snap = _safe(() => {

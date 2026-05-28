@@ -744,6 +744,14 @@ export default function App() {
         installContinuityRuntime();
       } catch { /* never block app boot */ }
       try {
+        // Wave 6 — intelligence runtime registers itself with the
+        // wave-5 persistence registry for RECOMMENDATION_LOG and
+        // OUTCOME_MEMORY. Idempotent; must mount AFTER continuity.
+        const { installIntelligenceRuntime } =
+          await import('./runtime/intelligence/intelligenceRuntime.js');
+        installIntelligenceRuntime();
+      } catch { /* never block app boot */ }
+      try {
         const { installWeatherAndLanguageDiagnostics } =
           await import('./lib/weatherAndLanguageDiagnostics.js');
         installWeatherAndLanguageDiagnostics();

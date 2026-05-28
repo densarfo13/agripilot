@@ -86,6 +86,7 @@ export const LAYER_PREFIXES = Object.freeze([
   ['src/hooks/useApiClient',                  LAYER.RUNTIME],
   ['src/hooks/useFarmerNotificationsRuntime', LAYER.RUNTIME],
   ['src/hooks/useApiResource',                LAYER.RUNTIME],
+  ['src/hooks/useIntelligenceRuntime',        LAYER.RUNTIME],
   ['src/runtime/apiRuntime',                  LAYER.RUNTIME],
   ['src/runtime/',                            LAYER.RUNTIME],
   ['src/i18n/localeStorageBridge',            LAYER.RUNTIME],
