@@ -761,6 +761,14 @@ export default function App() {
         installOfflineRuntime();
       } catch { /* never block app boot */ }
       try {
+        // Wave 8 — app store readiness composite. Probes classifier
+        // availability, installs safety-mode flag overrides, detects
+        // notification transport, reads locale state. Idempotent.
+        const { installAppStoreReadinessRuntime } =
+          await import('./runtime/appStore/appStoreReadinessRuntime.js');
+        await installAppStoreReadinessRuntime();
+      } catch { /* never block app boot */ }
+      try {
         const { installWeatherAndLanguageDiagnostics } =
           await import('./lib/weatherAndLanguageDiagnostics.js');
         installWeatherAndLanguageDiagnostics();

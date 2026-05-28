@@ -502,6 +502,103 @@ export function installWeatherAndLanguageDiagnostics() {
     // persistence registry, sync orchestration, and event log.
     // Each function lazy-loads its source module so the diagnostic
     // install path stays cheap.
+    // Wave 8 App Store readiness diagnostics — lazy-loaded so the
+    // install path stays cheap.
+    if (!window.__appStoreReadiness) {
+      window.__appStoreReadiness = function () {
+        const promise = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/appStore/appStoreReadinessRuntime.js'), null);
+          return mod && typeof mod.getAppStoreReadiness === 'function'
+            ? mod.getAppStoreReadiness() : null;
+        }, null);
+        if (promise && typeof promise.then === 'function') {
+          promise.then((s) => {
+            try { console.log('[Farroway · App Store Readiness]', s); }
+            catch { /* swallow */ }
+          }).catch(() => { /* swallow */ });
+        }
+        return promise || Object.freeze({
+          runtimeVersion: 'app-store-readiness-runtime-v1',
+          reason:         'readiness_runtime_not_installed',
+        });
+      };
+    }
+    if (!window.__notificationHealth) {
+      window.__notificationHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/notifications/notificationRuntime.js'), null);
+          return mod && typeof mod.getNotificationHealth === 'function'
+            ? mod.getNotificationHealth() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'notification-runtime-v1',
+          reason:         'notification_runtime_not_installed',
+        });
+        try { console.log('[Farroway · Notification Health]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__featureFlags) {
+      window.__featureFlags = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/appStore/appStoreSafetyMode.js'), null);
+          return mod && typeof mod.getSafeFeatureFlags === 'function'
+            ? mod.getSafeFeatureFlags() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'app-store-safety-mode-v1',
+          reason:         'safety_mode_not_installed',
+        });
+        try { console.log('[Farroway · Feature Flags]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__farrowayBuild) {
+      window.__farrowayBuild = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/appStore/appStoreReadinessRuntime.js'), null);
+          return mod && typeof mod.getFarrowayBuild === 'function'
+            ? mod.getFarrowayBuild() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'app-store-readiness-runtime-v1',
+          sha:            'unknown',
+        });
+        try { console.log('[Farroway · Build]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__scanRuntimeHealthV8) {
+      // Wave 8 extension — the existing __scanRuntimeHealth (from
+      // farmRuntimeHealth.js) reports the state machine; this v8
+      // variant reports the classifier-honesty fields the wave-8
+      // spec requires: realClassifierAvailable / classifierExecuted
+      // / fallbackUsed / imageValidated / resultValid.
+      window.__scanRuntimeHealthV8 = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/scan/classifierAvailability.js'), null);
+          return mod && typeof mod.getScanHealthSnapshot === 'function'
+            ? mod.getScanHealthSnapshot() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'classifier-availability-v1',
+          realClassifierAvailable: false,
+          classifierExecuted: false,
+          fallbackUsed: false,
+          imageValidated: false,
+          resultValid: false,
+          reason: 'classifier_runtime_not_installed',
+        });
+        try { console.log('[Farroway · Scan Runtime Health (v8)]', out); }
+        catch { /* swallow */ }
+        return out;
+      };
+    }
     // Wave 7 offline reliability diagnostics — lazy-loaded so the
     // install path stays cheap. Each diagnostic returns a degraded
     // envelope when the offline runtime hasn't been installed yet.
