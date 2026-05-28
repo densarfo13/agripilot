@@ -12,7 +12,65 @@
     "violations": {
       "direct_analyzeScan": 2,
       "direct_analyzeImageSafe": 2,
-      "direct_hybridAnalyze": 3
+      "direct_hybridAnalyze": 3,
+      "direct_farmStorageRead": 1
     }
+  },
+  "src/components/activation/HarvestReadyPrompt.jsx": {
+    "relPath": "src/components/activation/HarvestReadyPrompt.jsx",
+    "found": true,
+    "violations": {
+      "direct_farmStorageRead": 1
+    }
+  },
+  "src/components/growth/InviteFriendsCard.jsx": {
+    "relPath": "src/components/growth/InviteFriendsCard.jsx",
+    "found": true,
+    "violations": {
+      "direct_farmStorageRead": 1
+    }
+  },
+  "src/pages/OnboardingEntry.jsx": {
+    "relPath": "src/pages/OnboardingEntry.jsx",
+    "found": true,
+    "violations": {
+      "direct_farmStorageRead": 1
+    }
+  },
+  "src/components/markets/MarketSwitcherChip.jsx": {
+    "relPath": "src/components/markets/MarketSwitcherChip.jsx",
+    "found": true,
+    "violations": {
+      "direct_farmStorageRead": 1
+    }
+  },
+  "src/components/home/WaitlistNudgeCard.jsx": {
+    "relPath": "src/components/home/WaitlistNudgeCard.jsx",
+    "found": true,
+    "violations": {
+      "direct_farmStorageRead": 1
+    }
+  },
+  "src/components/home/ProfileCompletionPrompt.jsx": {
+    "relPath": "src/components/home/ProfileCompletionPrompt.jsx",
+    "found": true,
+    "violations": {
+      "direct_farmStorageRead": 1
+    }
+  },
+  "src/components/engagement/EngagementPlanCard.jsx": {
+    "relPath": "src/components/engagement/EngagementPlanCard.jsx",
+    "found": true,
+    "violations": {}
+  },
+  "src/components/engagement/TodaysPriorityCard.jsx": {
+    "relPath": "src/components/engagement/TodaysPriorityCard.jsx",
+    "found": true,
+    "violations": {}
+  },
+  "src/components/home/MarketplaceNudgeCard.jsx": {
+    "relPath": "src/components/home/MarketplaceNudgeCard.jsx",
+    "found": true,
+    "violations": {}
   }
 }

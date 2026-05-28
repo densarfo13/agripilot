@@ -39,16 +39,8 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 import useDailyEngagement from '../../hooks/useDailyEngagement.js';
 import { getRecentCompletions } from '../../engine/engagementHistory.js';
 import { useToast, ToastContainer } from '../intelligence/Toast.jsx';
-
-function _readActiveFarm() {
-  try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem('farroway_active_farm');
-    if (!raw) return null;
-    const v = JSON.parse(raw);
-    return v && typeof v === 'object' ? v : null;
-  } catch { return null; }
-}
+// Runtime Authority Cleanup — canonical Zustand farm subscription.
+import { useActiveFarm } from '../../hooks/useActiveFarm.js';
 
 function _todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -191,7 +183,8 @@ export default function TodaysPriorityCard({ farm, weather = null, style } = {})
   const navigate = useNavigate();
   const { toasts, showToast, dismissToast } = useToast();
 
-  const activeFarm = useMemo(() => farm || _readActiveFarm(), [farm]);
+  const { activeFarm: _canonicalFarm } = useActiveFarm();
+  const activeFarm = farm || _canonicalFarm;
 
   const plant   = (activeFarm?.crop || activeFarm?.plantId || '').toString();
   const country = activeFarm?.country || '';

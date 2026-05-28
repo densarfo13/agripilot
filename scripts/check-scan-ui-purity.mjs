@@ -44,6 +44,19 @@ const BASELINE_PATH = resolve(__dirname, '.scan-ui-purity-baseline.json');
 const TRACKED_SURFACES = Object.freeze([
   'src/components/scan/LiveCameraScanner.jsx',
   'src/pages/ScanPage.jsx',
+  // Runtime Authority Cleanup — track every component that still
+  // reads farroway_active_farm directly. Migrated components drop
+  // off the list as their grandfathered count reaches 0.
+  'src/components/activation/HarvestReadyPrompt.jsx',
+  'src/components/growth/InviteFriendsCard.jsx',
+  'src/pages/OnboardingEntry.jsx',
+  'src/components/markets/MarketSwitcherChip.jsx',
+  'src/components/home/WaitlistNudgeCard.jsx',
+  'src/components/home/ProfileCompletionPrompt.jsx',
+  // Already migrated this commit — grandfathered count = 0 expected:
+  'src/components/engagement/EngagementPlanCard.jsx',
+  'src/components/engagement/TodaysPriorityCard.jsx',
+  'src/components/home/MarketplaceNudgeCard.jsx',
 ]);
 
 // Patterns that signal duplicate ownership of state ScanRuntime
@@ -78,6 +91,27 @@ const FORBIDDEN_PATTERNS = Object.freeze([
   { id: 'direct_hybridAnalyze',
     re: /[^a-zA-Z_]hybridAnalyze\(/g,
     label: 'direct hybridAnalyze call' },
+  // Runtime Authority Cleanup — Scan side-effects (Journal save +
+  // task creation) must go through scanPersistenceBridge, not the
+  // underlying stores directly. The bridge enforces the "failed
+  // images never persist" guard.
+  { id: 'direct_saveScanEntry',
+    re: /[^a-zA-Z_]saveScanEntry\(/g,
+    label: 'direct saveScanEntry call (use scanPersistenceBridge)' },
+  { id: 'direct_saveScanUseful',
+    re: /[^a-zA-Z_]saveScanUseful\(/g,
+    label: 'direct saveScanUseful call (use scanPersistenceBridge)' },
+  { id: 'direct_addScanTasks',
+    re: /[^a-zA-Z_]addScanTasks\(/g,
+    label: 'direct addScanTasks call (use scanPersistenceBridge)' },
+  { id: 'direct_markTaskAdded',
+    re: /[^a-zA-Z_]markTaskAdded\(/g,
+    label: 'direct markTaskAdded call (use scanPersistenceBridge)' },
+  // Runtime Authority Cleanup — direct legacy farm-storage reads.
+  // Pages should subscribe via useActiveFarm() instead.
+  { id: 'direct_farmStorageRead',
+    re: /localStorage\.getItem\(['"]farroway_active_farm['"]/g,
+    label: 'direct farroway_active_farm localStorage read (use useActiveFarm)' },
 ]);
 
 const SURFACE_HEADER = '[check:scan-ui-purity]';

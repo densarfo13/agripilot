@@ -44,8 +44,16 @@ import { hybridAnalyze } from '../core/hybridScanEngine.js';
 // and gives us the canonical "Check this again tomorrow" follow-up
 // task we attach to Add to Today's Plan (spec \u00a77).
 import { followUpTaskFor, sanitizeScanText } from '../core/scanResultPolicy.js';
+// Runtime Authority Cleanup — direct persistence calls are now
+// funneled through scanPersistenceBridge. The legacy direct
+// imports (saveScanEntry / addScanTasks) stay accessible to other
+// callers but ScanPage uses the bridge below.
 import { saveScanEntry } from '../data/scanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
+import {
+  persistScanToJournal, persistScanUseful,
+  markScanTaskAdded, createScanFollowUpTasks,
+} from '../core/scan/scanPersistenceBridge.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 // Data Moat Layer follow-up \u2014 spec-shaped scan events fire
 // through the canonical analytics service so eventStore +
@@ -364,8 +372,7 @@ export default function ScanPage() {
       // overwrite the user's CURRENT result — they may have already
       // moved on. The journal entry is enough.
       if (FEATURE_SCAN_USEFULNESS) {
-        try { saveScanUseful(out, { experience: entry.experience || 'generic' }); }
-        catch { /* non-fatal */ }
+        persistScanUseful(out, { experience: entry.experience || 'generic' });
       }
       try { moatTrack('scan_offline_retry_success', { scanId: out?.scanId || null }); }
       catch { /* swallow */ }
@@ -1080,12 +1087,13 @@ export default function ScanPage() {
   const onSave = useCallback(() => {
     if (!result) return;
     try {
-      // Final scan engine spec §10: gardenId is populated when
-      // activeExperience='garden', farmId when 'farm'. Exactly
-      // one of the two slots is non-null per scan so garden +
-      // farm history surfaces stay isolated.
+      // Runtime Authority Cleanup — Journal save is funneled
+      // through scanPersistenceBridge instead of direct
+      // saveScanEntry/saveScanUseful calls. The bridge enforces
+      // the "failed images never persist" guard and gives us a
+      // single place to add ScanRuntime telemetry later.
       const isGarden = activeExperience === 'garden';
-      const entry = saveScanEntry(result, {
+      const journalResult = persistScanToJournal(result, {
         gardenId:  isGarden ? (activeGardenId || profile?.id || null) : null,
         farmId:    !isGarden ? (activeFarmId   || profile?.id || null) : null,
         cropId:    profile?.crop || profile?.cropId || null,
@@ -1094,22 +1102,13 @@ export default function ScanPage() {
         experience: activeExperience,
         language:  null,
       });
+      const entry = journalResult.entry;
       setSavedEntryId(entry?.id || null);
-      // FEATURE_SCAN_USEFULNESS: also write the lightweight entry to
-      // farroway_scan_history_v1 so UsefulScanHistory can display it
-      // without depending on the per-farm history slot.
-      //
-      // Farm-intelligence loop §3: forward the thumbnail captured by
-      // ScanCapture so the journal timeline can render an inline
-      // preview. saveScanUseful pulls severity / recommendations /
-      // weather caution off the result envelope itself.
       if (FEATURE_SCAN_USEFULNESS) {
-        try {
-          saveScanUseful(result, {
-            experience: activeExperience,
-            thumbnail:  pendingThumbnail,
-          });
-        } catch { /* non-fatal — old history still written above */ }
+        persistScanUseful(result, {
+          experience: activeExperience,
+          thumbnail:  pendingThumbnail,
+        });
       }
       try { trackEvent('scan_saved', {
         id: entry?.id,
@@ -1127,7 +1126,8 @@ export default function ScanPage() {
     if (!result) return;
     setTasksAdded(true);
     if (FEATURE_SCAN_USEFULNESS && result.scanId) {
-      try { markTaskAdded(result.scanId); } catch { /* non-fatal */ }
+      // Funneled through the bridge — see scanPersistenceBridge.
+      markScanTaskAdded(result.scanId);
     }
   }, [result]);
 
@@ -1156,13 +1156,16 @@ export default function ScanPage() {
             reason: sanitizeScanText(String(t?.reason || '')),
           })).filter((t) => t.title)
         : [];
-      const stored = addScanTasks(sanitisedSuggested, {
+      // Funneled through scanPersistenceBridge so the
+      // "no orphan tasks without a scanId" guard applies.
+      const taskResult = createScanFollowUpTasks(sanitisedSuggested, {
         scanId:    result.scanId,
         gardenId:  isGarden ? (activeGardenId || profile?.id || null) : null,
         farmId:    !isGarden ? (activeFarmId   || profile?.id || null) : null,
         experience: activeExperience,
         followUpTask,
       });
+      const stored = taskResult.stored || [];
       if (stored.length > 0) setTasksAdded(true);
       try { trackEvent('scan_task_created', {
         scanId: result.scanId,
@@ -1293,12 +1296,11 @@ export default function ScanPage() {
           // §3: thumbnail passthrough mirrors the auto-save path
           // above so both code paths produce the same enriched entry.
           (() => {
-            try {
-              saveScanUseful(result, {
-                experience: activeExperience,
-                thumbnail:  pendingThumbnail,
-              });
-            } catch { /* ignore */ }
+            // Funneled through bridge — see scanPersistenceBridge.
+            persistScanUseful(result, {
+              experience: activeExperience,
+              thumbnail:  pendingThumbnail,
+            });
             return (
               <UsefulResultCard
                 result={result}

@@ -34,18 +34,10 @@ import { trackEvent } from '../../analytics/analyticsStore.js';
 import { getDemandForCrop } from '../../market/marketDemand.js';
 import { getReferencePrice } from '../../lib/pricing/priceEngine.js';
 import { getActiveListings } from '../../market/marketStore.js';
+// Runtime Authority Cleanup — canonical Zustand farm subscription.
+import { useActiveFarm } from '../../hooks/useActiveFarm.js';
 
 const DISMISS_KEY = 'farroway_marketplace_nudge_dismissed';
-
-function _readActiveFarm() {
-  try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem('farroway_active_farm');
-    if (!raw) return null;
-    const v = JSON.parse(raw);
-    return v && typeof v === 'object' ? v : null;
-  } catch { return null; }
-}
 
 const S = {
   card: {
@@ -111,7 +103,7 @@ export default function MarketplaceNudgeCard({ style }) {
   });
   const viewedRef = useRef(false);
 
-  const farm    = useMemo(() => _readActiveFarm(), []);
+  const { activeFarm: farm } = useActiveFarm();
   const crop    = String(farm?.crop || farm?.plantId || '').trim();
   const country = String(farm?.country || '').trim();
   const region  = String(farm?.region || '').trim();

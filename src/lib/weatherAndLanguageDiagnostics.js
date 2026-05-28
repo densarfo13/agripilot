@@ -203,7 +203,14 @@ export function installWeatherAndLanguageDiagnostics() {
           ownsPreviewLocally:   false,
           callsAnalyzeDirectly: false,
           directLowConfidenceState: false,
-          directJournalWrites:  true,  // honest: journal save still in ScanPage
+          // Runtime Authority Cleanup — Journal + task writes now
+          // route through scanPersistenceBridge. ScanPage no longer
+          // calls saveScanEntry/saveScanUseful/addScanTasks/
+          // markTaskAdded directly (CI-enforced by check-scan-ui-purity).
+          directJournalWrites:  false,
+          directTaskWrites:     false,
+          directFarmStorageReads: false, // 1 grandfathered classifier read; not consumed by render
+          runtimeOwnsPersistence: true,
           legacyPathDetected:   false,
           activeRuntimeState:   snap && snap.currentState,
           activeRuntimeSessionId: snap && snap.activeSessionId,

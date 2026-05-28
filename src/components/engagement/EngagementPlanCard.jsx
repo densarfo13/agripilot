@@ -30,16 +30,10 @@ import { tStrict } from '../../i18n/strictT.js';
 import { trackEvent } from '../../analytics/analyticsStore.js';
 import useDailyEngagement from '../../hooks/useDailyEngagement.js';
 import { useToast, ToastContainer } from '../intelligence/Toast.jsx';
-
-function _readActiveFarm() {
-  try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem('farroway_active_farm');
-    if (!raw) return null;
-    const v = JSON.parse(raw);
-    return v && typeof v === 'object' ? v : null;
-  } catch { return null; }
-}
+// Runtime Authority Cleanup — subscribe to the canonical Zustand
+// farm store via useActiveFarm() instead of reading localStorage
+// directly. The legacy `_readActiveFarm` helper is removed.
+import { useActiveFarm } from '../../hooks/useActiveFarm.js';
 
 const S = {
   card: {
@@ -125,7 +119,10 @@ export default function EngagementPlanCard({ farm, weather = null, style } = {})
   const navigate = useNavigate();
   const { toasts, showToast, dismissToast } = useToast();
 
-  const activeFarm = useMemo(() => farm || _readActiveFarm(), [farm]);
+  // Canonical Zustand farm — falls back to caller-supplied `farm`
+  // prop if provided (legacy callers may still pass it explicitly).
+  const { activeFarm: _canonicalFarm } = useActiveFarm();
+  const activeFarm = farm || _canonicalFarm;
 
   const plant   = (activeFarm?.crop || activeFarm?.plantId || '').toString();
   const country = activeFarm?.country || '';
