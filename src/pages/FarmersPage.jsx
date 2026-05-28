@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { CREATOR_ROLES } from '../utils/roles.js';

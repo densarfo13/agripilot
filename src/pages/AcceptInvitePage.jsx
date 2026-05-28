@@ -17,7 +17,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { useTranslation, LANGUAGES as I18N_LANGUAGES } from '../i18n/index.js';
 import PasswordInput from '../components/PasswordInput.jsx';

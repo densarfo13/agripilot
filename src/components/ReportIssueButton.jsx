@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 
 const ISSUE_TYPES = [
   { value: 'BUG', label: 'Bug' },

@@ -19,7 +19,7 @@ import { safeTrackEvent } from '../lib/analytics.js';
 import { previewFarmerImport } from '../services/import/previewFarmerImport.js';
 import { executeFarmerImport, IMPORT_MODES } from '../services/import/executeFarmerImport.js';
 import { downloadTemplate, downloadErrorsCsv } from '../services/import/importTemplate.js';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 
 const PHASE = { ENTRY: 'entry', VALIDATING: 'validating', PREVIEW: 'preview', CONFIRMING: 'confirming', RESULT: 'result' };
 

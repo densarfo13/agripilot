@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 import useSafeData, { API_ERROR_TYPES } from '../hooks/useSafeData.js';

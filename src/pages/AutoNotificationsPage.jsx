@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import api, { formatApiError } from '../api/client.js';
+import api, { formatApiError } from '../runtime/apiRuntime.js';
 import { useAuthStore } from '../store/authStore.js';
 
 const TYPE_LABELS = {

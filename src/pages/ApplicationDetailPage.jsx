@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
 import { useAuthStore } from '../store/authStore.js';

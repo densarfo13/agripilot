@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, NavLink, Outlet, useOutletContext } from 'react-router-dom';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 

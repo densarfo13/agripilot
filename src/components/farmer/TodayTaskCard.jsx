@@ -43,7 +43,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // global stylesheet so every screen gets the same vocabulary.
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
-import api from '../../api/client.js';
+import api from '../../runtime/apiRuntime.js';
 import { trackEvent } from '../../core/analytics.js';
 import { getCurrentLang } from '../../utils/i18n.js';
 import { resolveContext } from '../../core/contextResolver.js';

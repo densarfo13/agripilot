@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import api from '../../api/client.js';
+import api from '../../runtime/apiRuntime.js';
 
 // ── Confidence presentation ────────────────────────────────
 const CONF = {

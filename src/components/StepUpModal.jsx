@@ -6,7 +6,7 @@
  * then the user retries the action that triggered the gate.
  */
 import React, { useState } from 'react';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { useAuthStore } from '../store/authStore.js';
 import {
   flushStepUpRetryQueue, rejectStepUpRetryQueue,

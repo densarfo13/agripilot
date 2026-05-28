@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import { useTranslation } from '../i18n/index.js';
-import api, { formatApiError } from '../api/client.js';
+import api, { formatApiError } from '../runtime/apiRuntime.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';

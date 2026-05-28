@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api, { formatApiError } from '../api/client.js';
+import api, { formatApiError } from '../runtime/apiRuntime.js';
 import { useAuthStore } from '../store/authStore.js';
 import { INSTITUTIONAL_ROLES } from '../utils/roles.js';
 import EmptyState from '../components/EmptyState.jsx';

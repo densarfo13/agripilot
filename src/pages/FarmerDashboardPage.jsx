@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useFarmStore } from '../store/farmStore.js';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 import { useTranslation, LANGUAGES } from '../i18n/index.js';

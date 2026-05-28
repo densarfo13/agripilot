@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { enqueue, isOnline } from '../utils/offlineQueue.js';
 import { getIdempotencyKey } from '../lib/idempotency.js';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import VoiceBar from './VoiceBar.jsx';
 import { trackVoiceStepCompleted } from '../utils/voiceAnalytics.js';
 import useGuaranteedAction, { ACTION_STATE } from '../hooks/useGuaranteedAction.js';

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';

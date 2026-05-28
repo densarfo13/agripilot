@@ -31,7 +31,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
-import api from '../../api/client.js';
+import api from '../../runtime/apiRuntime.js';
 
 // ─── Component ───────────────────────────────────────────
 export default function AdminIssueDashboardPage() {

@@ -1,7 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
-import api from '../runtime/apiRuntime.js';
+import { useFarmerNotificationsRuntime }
+  from '../hooks/useFarmerNotificationsRuntime.js';
 import EmptyState from '../components/EmptyState.jsx';
+
+/**
+ * FarmerNotificationsTab — pure subscriber to
+ * `useFarmerNotificationsRuntime`.
+ *
+ * Behavior contract (preserved from pre-wave-3):
+ *   • Loads on mount + on filter change.
+ *   • Three-way filter chip row: All / Unread / Read.
+ *   • Mark-single-read uses optimistic update.
+ *   • Mark-all-read button shows only when unreadCount > 0.
+ *   • After mark-read, `refresh()` from the farmer context is
+ *     fired (wired through the runtime's `onChange`) so the
+ *     header badge re-fetches its own count.
+ *   • Inline error banners with Retry button for load failures;
+ *     separate banner for action failures.
+ *   • Empty state when nothing matches.
+ *
+ * What changed (wave 3 — runtime ownership):
+ *   • This file no longer calls `api.*` directly.
+ *   • Loading flag, error state, fetch lifecycle, optimistic
+ *     update, request cancellation, and retry-on-transient now
+ *     live in `src/hooks/useFarmerNotificationsRuntime.js`.
+ *   • This component is now a PURE renderer over the runtime.
+ */
 
 const TYPE_COLORS = {
   application_update: '#C8944D',
@@ -13,55 +38,20 @@ const TYPE_COLORS = {
 };
 
 export default function FarmerNotificationsTab() {
-  const { farmerId, refresh } = useFarmerContext();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
-  const [markingAll, setMarkingAll] = useState(false);
-  const [loadError, setLoadError] = useState('');
-
-  const loadNotifications = () => {
-    setLoading(true);
-    setLoadError('');
-    const params = { limit: 50 };
-    if (filter === 'unread') params.read = 'false';
-    else if (filter === 'read') params.read = 'true';
-    api.get(`/notifications/farmer/${farmerId}`, { params })
-      .then(r => setNotifications(r.data))
-      .catch(() => setLoadError('Failed to load notifications'))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { loadNotifications(); }, [farmerId, filter]);
-
-  const [actionError, setActionError] = useState('');
-
-  const markRead = async (id) => {
-    setActionError('');
-    try {
-      await api.patch(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-      refresh();
-    } catch {
-      setActionError('Failed to mark as read. Please try again.');
-    }
-  };
-
-  const markAllRead = async () => {
-    setMarkingAll(true);
-    setActionError('');
-    try {
-      await api.post(`/notifications/farmer/${farmerId}/mark-all-read`);
-      loadNotifications();
-      refresh();
-    } catch {
-      setActionError('Failed to mark all as read. Please try again.');
-    } finally {
-      setMarkingAll(false);
-    }
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const { farmerId, refresh: refreshFarmerContext } = useFarmerContext();
+  const {
+    notifications, loading, loadError,
+    filter, setFilter,
+    markRead, markAllRead,
+    markingAll, actionError,
+    unreadCount, refresh,
+  } = useFarmerNotificationsRuntime({
+    farmerId,
+    // Propagate mark-read events back to the farmer context so its
+    // own unread-badge count re-fetches. Preserves the previous
+    // wiring (the page used to call `refresh()` after every mutation).
+    onChange: refreshFarmerContext,
+  });
 
   return (
     <div className="page-body" style={{ paddingTop: 0 }}>
@@ -80,7 +70,7 @@ export default function FarmerNotificationsTab() {
         )}
       </div>
 
-      {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={loadNotifications}>Retry</button></div>}
+      {loadError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={refresh}>Retry</button></div>}
       {actionError && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{actionError}</div>}
       {loading ? <div className="loading">Loading notifications...</div> : notifications.length === 0 ? (
         <div className="card"><div className="card-body"><EmptyState icon="🔕" title="No notifications" message="You're all caught up. Notifications about your farm will appear here." compact variant="success" /></div></div>

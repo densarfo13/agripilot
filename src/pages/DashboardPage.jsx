@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { PriorityBadge } from '../components/TrustRiskBadge.jsx';
 import { SkeletonDashboard } from '../components/SkeletonLoader.jsx';
 import { useAuthStore } from '../store/authStore.js';

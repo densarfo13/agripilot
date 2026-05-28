@@ -4,7 +4,7 @@ import { useTranslation } from '../i18n/index.js';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import EngagementStrip from '../components/engagement/EngagementStrip.jsx';
 import NgoModeCard from '../components/monetization/NgoModeCard.jsx';

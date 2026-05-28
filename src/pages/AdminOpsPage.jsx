@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import EmptyState from '../components/EmptyState.jsx';
 import {
   ErrorState, SessionExpiredState, MfaRequiredState, NetworkErrorState,

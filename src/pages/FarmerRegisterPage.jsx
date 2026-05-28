@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import BrandLogo from '../components/BrandLogo.jsx';

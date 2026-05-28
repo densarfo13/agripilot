@@ -30,7 +30,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import api from '../../api/client.js';
+import api from '../../runtime/apiRuntime.js';
 import { classifyFarmerRisk, summariseRisk } from '../../lib/ngoRiskLogic.js';
 
 // Shape: { totalFarmers, activeFarmers, inactiveFarmers,

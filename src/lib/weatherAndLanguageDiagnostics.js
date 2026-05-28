@@ -207,15 +207,15 @@ export function installWeatherAndLanguageDiagnostics() {
           infrastructureIsolated:    false,   // legacy components still
                                               // import infra directly
           violations: {
-            grandfatheredCount:    197,
-            grandfatheredFiles:    145,
+            grandfatheredCount:    157,
+            grandfatheredFiles:    107,
             newViolationsAllowed:  false,
             enforcedBy:            'scripts/check-layer-boundaries.mjs',
             breakdown: {
-              toInfrastructure:   116, // ↓ from 127 (api/client wave 2)
+              toInfrastructure:    76, // ↓ from 116 (api/client wave 3)
               toService:           58,
               toIntelligence:      11,
-              fromUI:             186, // ↓ from 197 (api/client wave 2)
+              fromUI:             146, // ↓ from 186 (api/client wave 3)
               fromInfrastructure:   6,
               fromRuntime:          1,
               fromIntelligence:     4,
@@ -239,15 +239,21 @@ export function installWeatherAndLanguageDiagnostics() {
                 landedAt: '2026-05-28',
                 bridge:  'src/runtime/apiRuntime.js + '
                   + 'src/services/api/apiGateway.js' },
+              { id: 'wave3_api_client_complete_+_notifications_runtime',
+                clearedFiles:   34, clearedViolations: 40,
+                landedAt: '2026-05-28',
+                bridge:  'src/hooks/useFarmerNotificationsRuntime.js + '
+                  + 'src/services/notifications/farmerNotificationsService.js + '
+                  + 'src/hooks/useApiResource.js' },
             ],
             nextWaveCandidate: {
-              targetBucket:  'api/client.js (34 remaining)',
-              violationCount: 34,
+              targetBucket:  'lib/api.js (28 files)',
+              violationCount: 28,
               riskLevel:     'medium',
-              note:          'Wave 2 closed 11 simple cases. The '
-                + 'remaining 34 need domain-specific hooks '
-                + '(notifications, marketplace, funding) or '
-                + 'admin-style data hooks before swapping the import.',
+              note:          'All UI api/client.js imports now route '
+                + 'through runtime. Next wave targets the older '
+                + 'fetch-wrapper at src/lib/api.js (used by FarmForm '
+                + 'and other pages for cookie-based auth flows).',
             },
           },
           generatedAt: new Date().toISOString(),
@@ -302,14 +308,29 @@ export function installWeatherAndLanguageDiagnostics() {
           return mod && typeof mod.getApiRuntimeOwnership === 'function'
             ? mod.getApiRuntimeOwnership() : null;
         }, null);
+        const notifications = _safe(() => {
+          const mod = _safe(() =>
+            require('../hooks/useFarmerNotificationsRuntime.js'), null);
+          return mod && typeof mod.getFarmerNotificationsRuntimeTelemetry === 'function'
+            ? mod.getFarmerNotificationsRuntimeTelemetry() : null;
+        }, null);
         const out = Object.freeze({
           runtimeFacade:     'src/runtime/apiRuntime.js',
           serviceGateway:    'src/services/api/apiGateway.js',
           infrastructure:    'src/api/client.js',
-          wave2Migrated:     11,    // pages funneled through runtime
-          remainingDirect:   34,    // pages still importing api/client.js
-          ownershipSnapshot: snap,
-          generatedAt:       new Date().toISOString(),
+          uiSurfacesMigrated: 45,    // all UI-layer api/client.js direct imports closed
+          uiSurfacesDirect:    0,    // zero remaining
+          domainHooks: Object.freeze({
+            scanHistory:        'src/hooks/useScanHistory.js',
+            farmerNotifications: 'src/hooks/useFarmerNotificationsRuntime.js',
+            apiResource:        'src/hooks/useApiResource.js',
+          }),
+          purePureSubscribers: Object.freeze([
+            'src/pages/FarmerNotificationsTab.jsx',  // wave 3 ownership migration
+          ]),
+          ownershipSnapshot:     snap,
+          notificationsRuntime:  notifications,
+          generatedAt:           new Date().toISOString(),
         });
         try { console.log('[Farroway · API Ownership]', out); } catch { /* swallow */ }
         return out;
@@ -335,16 +356,19 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__apiViolations) {
       window.__apiViolations = function () {
         const out = Object.freeze({
-          totalUiImportingDirectly: 34,
+          // Wave 3 result — zero UI files import api/client.js directly.
+          totalUiImportingDirectly:  0,
           wave2Cleared:             11,
-          wave2BaselineBefore:      208,
-          wave2BaselineAfter:       197,
-          remainingByDomain: Object.freeze({
-            adminTools:        14, // admin dashboards
-            farmerDashboards:   8, // farmer tabs
-            ngo:                1, // NgoDashboardV1
-            misc:              11, // boundaries, hooks, account, etc.
-          }),
+          wave3Cleared:             34,  // remaining facade migrations
+          wave3BaselineBefore:     197,
+          wave3BaselineAfter:      157,
+          totalApiViolationsCleared: 45,
+          runtimeOwnedLifecycle: Object.freeze([
+            // Pages where the runtime hook owns fetch + retry +
+            // optimistic update + cancellation — not just the
+            // import path.
+            'src/pages/FarmerNotificationsTab.jsx',
+          ]),
           enforcedBy:               'scripts/check-layer-boundaries.mjs',
           newViolationsAllowed:     false,
           generatedAt:              new Date().toISOString(),
@@ -361,16 +385,16 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__layerViolations) {
       window.__layerViolations = function () {
         const out = Object.freeze({
-          totalFiles:      145,
-          totalViolations: 197,
+          totalFiles:      107,
+          totalViolations: 157,
           bySourceLayer: Object.freeze({
-            ui:             186,
+            ui:             146,
             infrastructure:   6,
             intelligence:     4,
             runtime:          1,
           }),
           byTargetLayer: Object.freeze({
-            infrastructure: 116,
+            infrastructure:  76,
             service:         58,
             intelligence:    11,
           }),
@@ -427,15 +451,16 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__crossLayerImports) {
       window.__crossLayerImports = function () {
         // Snapshot of the top remaining import buckets that still
-        // cross layer boundaries — the migration backlog.
+        // cross layer boundaries — the migration backlog. The
+        // `api/client.js` bucket dropped OUT of the top 15 after
+        // wave 3 — UI no longer imports it directly anywhere.
         const out = Object.freeze({
           buckets: Object.freeze([
-            Object.freeze({ path: 'api/client.js',           count: 34 }),
             Object.freeze({ path: 'lib/api.js',              count: 28 }),
             Object.freeze({ path: '../market',               count: 25 }),
             Object.freeze({ path: '../lib',                  count:  9 }),
             Object.freeze({ path: '../api',                  count:  9 }),
-            Object.freeze({ path: '../data',                 count:  8 }),
+            Object.freeze({ path: '../data',                 count:  7 }),
             Object.freeze({ path: '../services',             count:  5 }),
             Object.freeze({ path: 'lib/api',                 count:  5 }),
             Object.freeze({ path: '../intelligence',         count:  4 }),
@@ -448,10 +473,11 @@ export function installWeatherAndLanguageDiagnostics() {
           recentlyCleared: Object.freeze([
             Object.freeze({ path: 'data/scanHistory.js', count: 3,
               replacedBy: 'src/hooks/useScanHistory.js' }),
-            Object.freeze({ path: 'api/client.js', count: 11,
-              replacedBy: 'src/runtime/apiRuntime.js' }),
+            Object.freeze({ path: 'api/client.js', count: 45,
+              replacedBy: 'src/runtime/apiRuntime.js (44 facade) + '
+                + 'src/hooks/useFarmerNotificationsRuntime.js (1 full ownership)' }),
           ]),
-          totalCrossLayerImports: 197,
+          totalCrossLayerImports: 157,
           generatedAt: new Date().toISOString(),
         });
         try { console.log('[Farroway · Cross-Layer Imports]', out); } catch { /* swallow */ }

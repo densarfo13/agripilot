@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import FarmerAvatar from './FarmerAvatar.jsx';
 import { compressImage, formatFileSize } from '../utils/imageCompress.js';
 import { useTranslation } from '../i18n/index.js';

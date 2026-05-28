@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { useOrgStore } from '../store/orgStore.js';
 import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 

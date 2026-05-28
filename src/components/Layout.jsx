@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useOrgStore } from '../store/orgStore.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from '../utils/roles.js';
 import BrandLogo from './BrandLogo.jsx';
 import ReportIssueButton from './ReportIssueButton.jsx';

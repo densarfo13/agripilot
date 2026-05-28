@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useAuthStore } from './store/authStore.js';
 import { loadTranslations, getCurrentLang } from './utils/i18n.js';
 import { initAutoSync } from './utils/offlineQueue.js';
-import api from './api/client.js';
+import api from './runtime/apiRuntime.js';
 // Demo-readiness: one-line call populates the local store with a
 // plausible NGO roster (farmers, farms, activity, issues) the first
 // time the app boots in demo mode. Production boots are unaffected

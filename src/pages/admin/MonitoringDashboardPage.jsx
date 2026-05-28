@@ -54,7 +54,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStrictTranslation as useTranslation } from '../../i18n/useStrictTranslation.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import { getEvents } from '../../core/eventStore.js';
-import api from '../../api/client.js';
+import api from '../../runtime/apiRuntime.js';
 
 const DAY_MS    = 24 * 60 * 60 * 1000;
 const WEEK_MS   = 7 * DAY_MS;
