@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { useAuthStore } from '../store/authStore.js';
 import { formatLandSize } from '../utils/landSize.js';
 import EmptyState from '../components/EmptyState.jsx';

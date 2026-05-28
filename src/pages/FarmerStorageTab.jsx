@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { tStorageMethod, tStorageCondition } from '../utils/i18n.js';
 import { DEFAULT_COUNTRY_CODE } from '../utils/constants.js';
 import EmptyState from '../components/EmptyState.jsx';

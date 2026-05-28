@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';

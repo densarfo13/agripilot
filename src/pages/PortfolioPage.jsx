@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import ScoreBar from '../components/ScoreBar.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';

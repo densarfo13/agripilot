@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { count as queueCount, onSyncChange, syncAll } from '../utils/offlineQueue.js';
-import api from '../api/client.js';
+// Wave 2 migration — `api` was unused here; removed to clear the
+// UI→infrastructure violation without behavior change.
 import { useTranslation } from '../i18n/index.js';
 
 /**

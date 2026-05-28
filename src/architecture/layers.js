@@ -83,6 +83,9 @@ export const LAYER_PREFIXES = Object.freeze([
   ['src/hooks/useActiveFarm',                 LAYER.RUNTIME],
   ['src/hooks/useLocationIntelligence',       LAYER.RUNTIME],
   ['src/hooks/useScanHistory',                LAYER.RUNTIME],
+  ['src/hooks/useApiClient',                  LAYER.RUNTIME],
+  ['src/runtime/apiRuntime',                  LAYER.RUNTIME],
+  ['src/runtime/',                            LAYER.RUNTIME],
   ['src/i18n/localeStorageBridge',            LAYER.RUNTIME],
   ['src/i18n/supportedLocales',               LAYER.RUNTIME],
 

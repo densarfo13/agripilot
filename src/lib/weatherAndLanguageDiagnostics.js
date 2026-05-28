@@ -207,15 +207,15 @@ export function installWeatherAndLanguageDiagnostics() {
           infrastructureIsolated:    false,   // legacy components still
                                               // import infra directly
           violations: {
-            grandfatheredCount:    208,
-            grandfatheredFiles:    155,
+            grandfatheredCount:    197,
+            grandfatheredFiles:    145,
             newViolationsAllowed:  false,
             enforcedBy:            'scripts/check-layer-boundaries.mjs',
             breakdown: {
-              toInfrastructure:   127,
-              toService:           58, // ↓ from 61 (scanHistory wave)
+              toInfrastructure:   116, // ↓ from 127 (api/client wave 2)
+              toService:           58,
               toIntelligence:      11,
-              fromUI:             197, // ↓ from 203 (scanHistory wave)
+              fromUI:             186, // ↓ from 197 (api/client wave 2)
               fromInfrastructure:   6,
               fromRuntime:          1,
               fromIntelligence:     4,
@@ -234,13 +234,20 @@ export function installWeatherAndLanguageDiagnostics() {
                 clearedFiles:    3, clearedViolations: 6,
                 landedAt: '2026-05-28',
                 bridge:  'src/hooks/useScanHistory.js' },
+              { id: 'wave2_api_client_facade',
+                clearedFiles:   11, clearedViolations: 11,
+                landedAt: '2026-05-28',
+                bridge:  'src/runtime/apiRuntime.js + '
+                  + 'src/services/api/apiGateway.js' },
             ],
             nextWaveCandidate: {
-              targetBucket:  'api/client.js',
-              violationCount: 45,
+              targetBucket:  'api/client.js (34 remaining)',
+              violationCount: 34,
               riskLevel:     'medium',
-              note:          'Spans 45 files — split into sub-waves '
-                + 'by route ownership.',
+              note:          'Wave 2 closed 11 simple cases. The '
+                + 'remaining 34 need domain-specific hooks '
+                + '(notifications, marketplace, funding) or '
+                + 'admin-style data hooks before swapping the import.',
             },
           },
           generatedAt: new Date().toISOString(),
@@ -280,6 +287,72 @@ export function installWeatherAndLanguageDiagnostics() {
         return out;
       };
     }
+    // Wave 2 API ownership diagnostics — live counters from the
+    // runtime gateway interceptor + the migration-state snapshot.
+    // These are real-time (telemetry) where possible, and source-
+    // time constants (ownership snapshot) otherwise. Refresh on
+    // each deploy.
+    if (!window.__apiOwnership) {
+      window.__apiOwnership = function () {
+        const snap = _safe(() => {
+          // Lazy import so the diagnostic doesn't pull the gateway
+          // into the diagnostic install path's static graph.
+          const mod = _safe(() =>
+            require('../runtime/apiRuntime.js'), null);
+          return mod && typeof mod.getApiRuntimeOwnership === 'function'
+            ? mod.getApiRuntimeOwnership() : null;
+        }, null);
+        const out = Object.freeze({
+          runtimeFacade:     'src/runtime/apiRuntime.js',
+          serviceGateway:    'src/services/api/apiGateway.js',
+          infrastructure:    'src/api/client.js',
+          wave2Migrated:     11,    // pages funneled through runtime
+          remainingDirect:   34,    // pages still importing api/client.js
+          ownershipSnapshot: snap,
+          generatedAt:       new Date().toISOString(),
+        });
+        try { console.log('[Farroway · API Ownership]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__runtimeFetches) {
+      window.__runtimeFetches = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/apiRuntime.js'), null);
+          return mod && typeof mod.getApiRuntimeTelemetry === 'function'
+            ? mod.getApiRuntimeTelemetry() : null;
+        }, null);
+        const out = Object.freeze({
+          interceptorOwner:  'src/services/api/apiGateway.js',
+          telemetry:         snap,
+          generatedAt:       new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Runtime Fetches]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__apiViolations) {
+      window.__apiViolations = function () {
+        const out = Object.freeze({
+          totalUiImportingDirectly: 34,
+          wave2Cleared:             11,
+          wave2BaselineBefore:      208,
+          wave2BaselineAfter:       197,
+          remainingByDomain: Object.freeze({
+            adminTools:        14, // admin dashboards
+            farmerDashboards:   8, // farmer tabs
+            ngo:                1, // NgoDashboardV1
+            misc:              11, // boundaries, hooks, account, etc.
+          }),
+          enforcedBy:               'scripts/check-layer-boundaries.mjs',
+          newViolationsAllowed:     false,
+          generatedAt:              new Date().toISOString(),
+        });
+        try { console.log('[Farroway · API Violations]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
     // Layered Architecture Migration §3 — three live diagnostics
     // that mirror the build-time check-layer-boundaries.mjs report
     // so the field can verify migration progress without rebuilding.
@@ -288,16 +361,16 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__layerViolations) {
       window.__layerViolations = function () {
         const out = Object.freeze({
-          totalFiles:      155,
-          totalViolations: 208,
+          totalFiles:      145,
+          totalViolations: 197,
           bySourceLayer: Object.freeze({
-            ui:             197,
+            ui:             186,
             infrastructure:   6,
             intelligence:     4,
             runtime:          1,
           }),
           byTargetLayer: Object.freeze({
-            infrastructure: 127,
+            infrastructure: 116,
             service:         58,
             intelligence:    11,
           }),
@@ -357,7 +430,7 @@ export function installWeatherAndLanguageDiagnostics() {
         // cross layer boundaries — the migration backlog.
         const out = Object.freeze({
           buckets: Object.freeze([
-            Object.freeze({ path: 'api/client.js',           count: 45 }),
+            Object.freeze({ path: 'api/client.js',           count: 34 }),
             Object.freeze({ path: 'lib/api.js',              count: 28 }),
             Object.freeze({ path: '../market',               count: 25 }),
             Object.freeze({ path: '../lib',                  count:  9 }),
@@ -375,8 +448,10 @@ export function installWeatherAndLanguageDiagnostics() {
           recentlyCleared: Object.freeze([
             Object.freeze({ path: 'data/scanHistory.js', count: 3,
               replacedBy: 'src/hooks/useScanHistory.js' }),
+            Object.freeze({ path: 'api/client.js', count: 11,
+              replacedBy: 'src/runtime/apiRuntime.js' }),
           ]),
-          totalCrossLayerImports: 208,
+          totalCrossLayerImports: 197,
           generatedAt: new Date().toISOString(),
         });
         try { console.log('[Farroway · Cross-Layer Imports]', out); } catch { /* swallow */ }

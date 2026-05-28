@@ -102,7 +102,6 @@
   "src/components/FarmForm.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js",
       "cross_layer_import:ui→infrastructure:../lib/api.js"
     ]
   },
@@ -424,12 +423,6 @@
       "cross_layer_import:ui→infrastructure:../lib/api.js"
     ]
   },
-  "src/components/SyncStatus.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
-    ]
-  },
   "src/components/TaskActionModal.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
@@ -633,12 +626,6 @@
       "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
-  "src/pages/AuditPage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
-    ]
-  },
   "src/pages/AutoNotificationsPage.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
@@ -731,12 +718,6 @@
       "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
-  "src/pages/FarmerNotificationsTab.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
-    ]
-  },
   "src/pages/FarmerOverviewTab.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
@@ -773,12 +754,6 @@
       "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
-  "src/pages/FarmerStorageTab.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
-    ]
-  },
   "src/pages/FarmerType.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
@@ -795,12 +770,6 @@
     "sourceLayer": "ui",
     "violationKeys": [
       "cross_layer_import:ui→infrastructure:../lib/api"
-    ]
-  },
-  "src/pages/FraudQueuePage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
   "src/pages/Home.jsx": {
@@ -826,12 +795,6 @@
     "violationKeys": [
       "cross_layer_import:ui→service:../services/landProfile.js",
       "cross_layer_import:ui→service:../services/temporaryTasks.js"
-    ]
-  },
-  "src/pages/Login.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
   "src/pages/ManageFarms.jsx": {
@@ -871,22 +834,10 @@
       "cross_layer_import:ui→infrastructure:../api/ngoApi.js"
     ]
   },
-  "src/pages/OfficerValidationPage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
-    ]
-  },
   "src/pages/OrganizationDashboardPage.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
       "cross_layer_import:ui→infrastructure:../lib/api/withTimeout.js"
-    ]
-  },
-  "src/pages/PendingRegistrationsPage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
   "src/pages/PilotMetricsPage.jsx": {
@@ -901,23 +852,11 @@
       "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
-  "src/pages/PortfolioPage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
-    ]
-  },
   "src/pages/ProfileSetup.jsx": {
     "sourceLayer": "ui",
     "violationKeys": [
       "cross_layer_import:ui→infrastructure:../lib/api.js",
       "cross_layer_import:ui→service:../services/activityLogger.js"
-    ]
-  },
-  "src/pages/ReportsPage.jsx": {
-    "sourceLayer": "ui",
-    "violationKeys": [
-      "cross_layer_import:ui→infrastructure:../api/client.js"
     ]
   },
   "src/pages/ResetPassword.jsx": {

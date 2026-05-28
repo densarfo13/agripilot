@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { safeTrackEvent } from '../lib/analytics.js';
-import { formatApiError } from '../api/client.js';
+import { formatApiError } from '../runtime/apiRuntime.js';
 import { STAFF_ROLES } from '../utils/roles.js';
 import { consumeReturnTo } from '../core/auth/returnToStorage.js';
 import PasswordInput from '../components/PasswordInput.jsx';

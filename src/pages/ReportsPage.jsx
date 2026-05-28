@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
 
 /**

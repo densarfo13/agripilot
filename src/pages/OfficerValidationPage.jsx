@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import api from '../api/client.js';
+import api from '../runtime/apiRuntime.js';
 import { getCropLabel, getCropIcon, getCropLabelSafe } from '../utils/crops.js';
 import InlineAlert from '../components/InlineAlert.jsx';
 import { FarmerAvatarSmall } from '../components/FarmerAvatar.jsx';
