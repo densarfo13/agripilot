@@ -1,0 +1,1001 @@
+{
+  "src/api/client.js": {
+    "sourceLayer": "infrastructure",
+    "violationKeys": [
+      "cross_layer_import:infrastructure→intelligence:../core/observability/observabilityTracker.js"
+    ]
+  },
+  "src/components/admin/FundingPartnershipsCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/ngoPilotLeads.js"
+    ]
+  },
+  "src/components/admin/InvestorMetricsCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../lib/api.js"
+    ]
+  },
+  "src/components/ai/LabelPromptModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/labels.js"
+    ]
+  },
+  "src/components/ai/usePostTaskLabelPrompt.js": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/labels.js",
+      "cross_layer_import:ui→service:../../data/labels.js"
+    ]
+  },
+  "src/components/buy/InterestForm.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/buyerPreferences.js",
+      "cross_layer_import:ui→infrastructure:../../market/marketStore.js",
+      "cross_layer_import:ui→infrastructure:../../market/marketTransaction.js"
+    ]
+  },
+  "src/components/CropSelect.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/cropRegionCatalog.js"
+    ]
+  },
+  "src/components/CropStageModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/daily/DailyPlanCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/eventLogger.js"
+    ]
+  },
+  "src/components/farm/NextBestActionCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→intelligence:../../intelligence/actionWindow.js",
+      "cross_layer_import:ui→service:../../services/weatherService.js"
+    ]
+  },
+  "src/components/FarmBenchmarkCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/FarmEconomicsCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/farmer/BasicFarmerHome.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../services/farmerLoopService.js"
+    ]
+  },
+  "src/components/farmer/TaskCorrectionModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../services/taskCorrection.js"
+    ]
+  },
+  "src/components/farmer/TodayTaskCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/components/FarmerTask.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/voiceService.js"
+    ]
+  },
+  "src/components/FarmForm.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js",
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/FarmHarvestCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/FarmInputTimingCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/FarmPestRiskCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/FarmTasksCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/FarmWeatherCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/funding/OrganizationPilotCTA.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../services/fundingService.js"
+    ]
+  },
+  "src/components/HarvestCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/home/DailyBriefingCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/components/home/MarketplaceNudgeCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketDemand.js",
+      "cross_layer_import:ui→infrastructure:../../market/marketStore.js"
+    ]
+  },
+  "src/components/home/NextBestActionCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/components/home/ProgressStrip.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/components/home/WaitlistNudgeCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketDemand.js",
+      "cross_layer_import:ui→infrastructure:../../market/marketStore.js"
+    ]
+  },
+  "src/components/LabelPrompt.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/eventLogger.js",
+      "cross_layer_import:ui→service:../data/labels.js"
+    ]
+  },
+  "src/components/LandBoundaryCapture.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/Layout.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/components/marketplace/AssistedDealButton.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/assistStore.js",
+      "cross_layer_import:ui→infrastructure:../../market/pricingVariants.js"
+    ]
+  },
+  "src/components/marketplace/BoostedBadge.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/boostStore.js"
+    ]
+  },
+  "src/components/marketplace/BoostListingButton.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/boostStore.js",
+      "cross_layer_import:ui→infrastructure:../../market/pricingVariants.js"
+    ]
+  },
+  "src/components/marketplace/BuyerPriorityCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/buyerPriority.js"
+    ]
+  },
+  "src/components/marketplace/ContactBuyerModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketTransaction.js"
+    ]
+  },
+  "src/components/marketplace/FarmerInterestPanel.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketStore.js",
+      "cross_layer_import:ui→infrastructure:../../market/marketTransaction.js"
+    ]
+  },
+  "src/components/marketplace/QuickReorderStrip.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/buyerPreferences.js",
+      "cross_layer_import:ui→infrastructure:../../market/recurringOrders.js"
+    ]
+  },
+  "src/components/marketplace/RecurringOrderToggle.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/recurringOrders.js"
+    ]
+  },
+  "src/components/marketplace/ScarcityBadges.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/scarcityIndicators.js"
+    ]
+  },
+  "src/components/marketplace/SellerBadges.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/sellerReputation.js"
+    ]
+  },
+  "src/components/NextActionCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/farmerLoopService.js"
+    ]
+  },
+  "src/components/ngo/MarketActivity.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketStore.js"
+    ]
+  },
+  "src/components/NotificationSettingsCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/notificationPreferences.js",
+      "cross_layer_import:ui→service:../services/notificationService.js"
+    ]
+  },
+  "src/components/OfflineBanner.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../lib/sync/offlineQueue.js",
+      "cross_layer_import:ui→service:../lib/sync/syncEngine.js"
+    ]
+  },
+  "src/components/OfflineSyncBanner.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../lib/syncManager.js"
+    ]
+  },
+  "src/components/OnboardingWizard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/cropRegionCatalog.js"
+    ]
+  },
+  "src/components/operator/OperatorInterestQueue.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketStore.js",
+      "cross_layer_import:ui→infrastructure:../../market/marketTransaction.js"
+    ]
+  },
+  "src/components/photo/PhotoIntelligence.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/eventLogger.js",
+      "cross_layer_import:ui→service:../../services/photoAnalysisService.js"
+    ]
+  },
+  "src/components/ProfilePhotoUpload.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/components/QuickUpdateFlow.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/components/region/RegionSettingsCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→intelligence:../../intelligence/region/regionProfiles.js"
+    ]
+  },
+  "src/components/ReportIssueButton.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/components/scan/ManualIssuePicker.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/components/scan/ScanCaptureUpgrade.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js"
+    ]
+  },
+  "src/components/scan/ScanHistory.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/scanHistory.js",
+      "forbidden_pattern:ui_imports_scanHistory"
+    ]
+  },
+  "src/components/scan/ScanResultCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js",
+      "forbidden_pattern:ui_imports_analyzeImageSafe",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/components/scan/SoilScanResultCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→intelligence:../../intelligence/tools/toolRecommendationEngine.js"
+    ]
+  },
+  "src/components/scan/UsefulResultCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/components/scan/UsefulScanHistory.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js",
+      "cross_layer_import:ui→service:../../lib/scan/scanHistoryStore.js"
+    ]
+  },
+  "src/components/SeasonalTimingModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/SeedScanFlow.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/sell/MarketInsightCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../market/marketDemand.js"
+    ]
+  },
+  "src/components/sell/PriceSuggestionWidget.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/components/SellReadinessInput.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/StepUpModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/components/SupportCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/SyncStatus.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/components/TaskActionModal.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/voicePrompts.js"
+    ]
+  },
+  "src/components/voice/VoiceAssistant.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../../data/eventLogger.js"
+    ]
+  },
+  "src/components/VoicePromptButton.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/voiceService.js"
+    ]
+  },
+  "src/components/WeatherStatusCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/voicePrompts.js"
+    ]
+  },
+  "src/components/WeeklySummaryCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/components/YieldRecordsCard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/core/farm/unified.js": {
+    "sourceLayer": "runtime",
+    "violationKeys": [
+      "cross_layer_import:runtime→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/core/intelligence/adapters/satelliteAdapter.js": {
+    "sourceLayer": "intelligence",
+    "violationKeys": [
+      "cross_layer_import:intelligence→infrastructure:../../satellite/satelliteProviderRegistry.js"
+    ]
+  },
+  "src/core/intelligence/invisibleIntelligenceEngine.js": {
+    "sourceLayer": "intelligence",
+    "violationKeys": [
+      "cross_layer_import:intelligence→infrastructure:../weather/weatherOperationalInterpreter.js"
+    ]
+  },
+  "src/core/intelligence/invisibleIntelligenceOrchestrator.js": {
+    "sourceLayer": "intelligence",
+    "violationKeys": [
+      "cross_layer_import:intelligence→infrastructure:../ngo/ngoIntelligenceEngine.js"
+    ]
+  },
+  "src/core/memory/farmMemorySnapshot.js": {
+    "sourceLayer": "intelligence",
+    "violationKeys": [
+      "cross_layer_import:intelligence→infrastructure:../ngo/outcomeAnalytics.js"
+    ]
+  },
+  "src/core/ngo/ngoIntelligenceEngine.js": {
+    "sourceLayer": "infrastructure",
+    "violationKeys": [
+      "cross_layer_import:infrastructure→intelligence:../deployment/deploymentGovernance.js",
+      "cross_layer_import:infrastructure→intelligence:../intelligence/dataQualityGate.js"
+    ]
+  },
+  "src/core/ngo/outcomeAnalytics.js": {
+    "sourceLayer": "infrastructure",
+    "violationKeys": [
+      "cross_layer_import:infrastructure→intelligence:../intelligence/recommendationLearning.js"
+    ]
+  },
+  "src/core/satellite/satelliteEnrichmentAdapter.js": {
+    "sourceLayer": "infrastructure",
+    "violationKeys": [
+      "cross_layer_import:infrastructure→intelligence:../deployment/deploymentGovernance.js",
+      "cross_layer_import:infrastructure→intelligence:../intelligence/dataQualityGate.js"
+    ]
+  },
+  "src/pages/AcceptInvitePage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AccountPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js",
+      "cross_layer_import:ui→service:../data/cropRegionCatalog.js"
+    ]
+  },
+  "src/pages/admin/AdminBasicPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/pages/admin/AdminIssueDashboardPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/pages/admin/AlertControlCenter.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/apiClient.js"
+    ]
+  },
+  "src/pages/admin/CreateProgram.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/ngoApi.js"
+    ]
+  },
+  "src/pages/admin/MonitoringDashboardPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/pages/AdminAnalyticsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/activityAggregator.js"
+    ]
+  },
+  "src/pages/AdminControlPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AdminImportFarmersPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js",
+      "cross_layer_import:ui→service:../services/import/executeFarmerImport.js",
+      "cross_layer_import:ui→service:../services/import/importTemplate.js",
+      "cross_layer_import:ui→service:../services/import/previewFarmerImport.js"
+    ]
+  },
+  "src/pages/AdminIssuesPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AdminOpsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AdminOrganizationsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AdminSyncQueuePage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../lib/sync/queueInspector.js",
+      "cross_layer_import:ui→service:../lib/sync/transport.js"
+    ]
+  },
+  "src/pages/AdminUsersPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AllTasksPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js",
+      "cross_layer_import:ui→service:../data/eventLogger.js",
+      "cross_layer_import:ui→service:../services/isReallyOnline.js",
+      "cross_layer_import:ui→service:../services/loadTasksSafe.js",
+      "cross_layer_import:ui→service:../services/offlineLogger.js"
+    ]
+  },
+  "src/pages/ApplicationDetailPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/ApplicationsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AuditPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/AutoNotificationsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/Buy.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../market/buyerIdentity.js",
+      "cross_layer_import:ui→infrastructure:../market/buyerNotifications.js",
+      "cross_layer_import:ui→infrastructure:../market/listingPriority.js",
+      "cross_layer_import:ui→infrastructure:../market/marketStore.js"
+    ]
+  },
+  "src/pages/BuyerManagementPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/BuyerTrustPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/BuyerView.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/CropSummary.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js",
+      "cross_layer_import:ui→service:../data/cropProfiles.js"
+    ]
+  },
+  "src/pages/Dashboard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/apiClient.js",
+      "cross_layer_import:ui→infrastructure:../lib/api.js",
+      "cross_layer_import:ui→service:../services/farmerLoopService.js",
+      "cross_layer_import:ui→service:../services/taskCorrection.js",
+      "cross_layer_import:ui→service:../services/temporaryTasks.js"
+    ]
+  },
+  "src/pages/DashboardPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/farmer/FarmerTodayPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→intelligence:../../intelligence/weatherRiskModel.js"
+    ]
+  },
+  "src/pages/FarmerActivitiesTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerDashboardPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerDetailPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerHomePage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerMarketTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerNotificationsTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerOverviewTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerProgressPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/FarmerProgressTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerRegisterPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerRemindersTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmersPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerStorageTab.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/FarmerType.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/ForgotPassword.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api"
+    ]
+  },
+  "src/pages/ForgotPasswordSms.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api"
+    ]
+  },
+  "src/pages/FraudQueuePage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/Home.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→intelligence:../intelligence/recommendations/getPrimaryGuidance.js"
+    ]
+  },
+  "src/pages/ImpactDashboardPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/InvestorIntelligencePage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/JournalPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/scanHistory.js",
+      "forbidden_pattern:ui_imports_scanHistory"
+    ]
+  },
+  "src/pages/LandCheckPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../services/landProfile.js",
+      "cross_layer_import:ui→service:../services/temporaryTasks.js"
+    ]
+  },
+  "src/pages/Login.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/ManageFarms.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/Marketplace.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../market/marketStore.js",
+      "cross_layer_import:ui→infrastructure:../market/marketSync.js"
+    ]
+  },
+  "src/pages/NewApplicationPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/ngo/NgoDashboardV1.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../../api/client.js"
+    ]
+  },
+  "src/pages/NgoDashboard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/eventLogger.js"
+    ]
+  },
+  "src/pages/NGOMapDashboard.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/ngoApi.js"
+    ]
+  },
+  "src/pages/OfficerValidationPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/OrganizationDashboardPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api/withTimeout.js"
+    ]
+  },
+  "src/pages/PendingRegistrationsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/PilotMetricsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/PilotQAPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/PortfolioPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/ProfileSetup.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js",
+      "cross_layer_import:ui→service:../services/activityLogger.js"
+    ]
+  },
+  "src/pages/ReportsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/ResetPassword.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api"
+    ]
+  },
+  "src/pages/ScanPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../core/scan/scanPersistenceBridge.js",
+      "cross_layer_import:ui→service:../data/scanHistory.js",
+      "cross_layer_import:ui→service:../lib/offlineScanQueue.js",
+      "cross_layer_import:ui→service:../lib/scan/scanHistoryStore.js",
+      "forbidden_pattern:ui_imports_analyzeImageSafe",
+      "forbidden_pattern:ui_imports_analyzeScan",
+      "forbidden_pattern:ui_imports_scanHistory",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/pages/ScanResultPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/scanHistory.js",
+      "forbidden_pattern:ui_imports_scanHistory",
+      "forbidden_pattern:ui_imports_scanToTask"
+    ]
+  },
+  "src/pages/SecurityRequestsPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/Sell.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../market/marketStore.js",
+      "cross_layer_import:ui→infrastructure:../market/marketSync.js"
+    ]
+  },
+  "src/pages/SupplyReadinessPage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api.js"
+    ]
+  },
+  "src/pages/Today.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→service:../data/eventLogger.js"
+    ]
+  },
+  "src/pages/VerificationQueuePage.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../api/client.js"
+    ]
+  },
+  "src/pages/VerifyEmail.jsx": {
+    "sourceLayer": "ui",
+    "violationKeys": [
+      "cross_layer_import:ui→infrastructure:../lib/api"
+    ]
+  }
+}
