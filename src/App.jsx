@@ -735,6 +735,15 @@ export default function App() {
         installScanContinuityBridge();
       } catch { /* never block app boot */ }
       try {
+        // Wave 5 — continuity runtime registers canonical writers,
+        // installs reconnect drain orchestration, and mirrors bus
+        // events into the replay log. Must mount BEFORE the
+        // diagnostics layer so __continuityHealth() has data.
+        const { installContinuityRuntime } =
+          await import('./runtime/continuity/continuityRuntime.js');
+        installContinuityRuntime();
+      } catch { /* never block app boot */ }
+      try {
         const { installWeatherAndLanguageDiagnostics } =
           await import('./lib/weatherAndLanguageDiagnostics.js');
         installWeatherAndLanguageDiagnostics();

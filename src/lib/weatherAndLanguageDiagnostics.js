@@ -498,6 +498,78 @@ export function installWeatherAndLanguageDiagnostics() {
         return out;
       };
     }
+    // Wave 5 continuity diagnostics — read-only snapshots of the
+    // persistence registry, sync orchestration, and event log.
+    // Each function lazy-loads its source module so the diagnostic
+    // install path stays cheap.
+    if (!window.__stateOwnership) {
+      window.__stateOwnership = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/continuity/continuityRuntime.js'), null);
+          return mod && typeof mod.getStateOwnershipReport === 'function'
+            ? mod.getStateOwnershipReport() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'continuity-runtime-v1',
+          reason:         'continuity_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · State Ownership]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__syncHealth) {
+      window.__syncHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/sync/syncRuntime.js'), null);
+          return mod && typeof mod.getSyncSnapshot === 'function'
+            ? mod.getSyncSnapshot() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'sync-runtime-v1',
+          reason:         'sync_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Sync Health]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__eventIntegrity) {
+      window.__eventIntegrity = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/events/eventRuntime.js'), null);
+          return mod && typeof mod.getEventIntegritySnapshot === 'function'
+            ? mod.getEventIntegritySnapshot() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'event-runtime-v1',
+          reason:         'event_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Event Integrity]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
+    if (!window.__continuityHealth) {
+      window.__continuityHealth = function () {
+        const snap = _safe(() => {
+          const mod = _safe(() =>
+            require('../runtime/continuity/continuityRuntime.js'), null);
+          return mod && typeof mod.getContinuityHealth === 'function'
+            ? mod.getContinuityHealth() : null;
+        }, null);
+        const out = snap || Object.freeze({
+          runtimeVersion: 'continuity-runtime-v1',
+          reason:         'continuity_runtime_not_installed',
+          generatedAt:    new Date().toISOString(),
+        });
+        try { console.log('[Farroway · Continuity Health]', out); } catch { /* swallow */ }
+        return out;
+      };
+    }
     if (!window.__sideEffectOwnership) {
       window.__sideEffectOwnership = function () {
         // Wave 4 governance diagnostic — names the runtime owner
