@@ -62,6 +62,12 @@ import decisionRoutes from './modules/decision/routes.js';
 import decisionV2Routers from './modules/decisionV2/routes.js';
 import benchmarkRoutes from './modules/benchmarking/routes.js';
 import intelligenceRoutes from './modules/intelligence/routes.js';
+// Phase 14 — Data Flywheel Intelligence API. Mounted at
+// /api/flywheel/* (NOT /api/intelligence/*) to avoid colliding
+// with the existing wave-9 application-intelligence module's
+// :applicationId wildcard. See the route module's header for the
+// full spec mapping.
+import flywheelRoutes from './modules/flywheel/routes.js';
 import reviewRoutes from './modules/reviews/routes.js';
 import portfolioRoutes from './modules/portfolio/routes.js';
 import reportRoutes from './modules/reports/routes.js';
@@ -1222,6 +1228,8 @@ app.use('/api/region',    decisionV2Routers.regionRouter);
 app.use('/api/decision', decisionRoutes);
 app.use('/api/benchmark', benchmarkRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+// Phase 14 — Data Flywheel Intelligence API
+app.use('/api/flywheel', flywheelRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/reports', reportRoutes);

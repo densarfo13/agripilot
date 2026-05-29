@@ -816,6 +816,16 @@ export default function App() {
         installFarmerAdoptionGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Phase 14 — pin __dataFlywheel() so QA + the future
+        // event-sync layer can introspect the flywheel composite
+        // (events + farm memory + crop memory + recommendation
+        // funnel + outcomes + regional insight + farmer/buyer/
+        // program trust). Backend mount: /api/flywheel/*.
+        const { installDataFlywheelGlobal } =
+          await import('./runtime/flywheel/index.js');
+        installDataFlywheelGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
