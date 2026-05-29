@@ -291,7 +291,24 @@ export default function BottomTabNav() {
                   console.log('[FARROWAY_NAV_HOME_TARGET]', tab.path);
                 }
               } catch { /* swallow */ }
-              navigate(tab.path);
+              // Scan UX Final Fix — tapping the Scan bottom-nav
+              // counts as explicit user intent. We pass intent
+              // via query param + route state so /scan can open
+              // the camera flow directly. Direct /scan URLs
+              // (refresh, deep link, PWA restore) still land on
+              // the idle landing card because they have no
+              // intent param and no nav state.
+              if (tab.key === 'scan') {
+                navigate(tab.path + '?intent=camera', {
+                  state: {
+                    userInitiatedCamera: true,
+                    cameraAttempted:     true,
+                    source:              'bottom_nav',
+                  },
+                });
+              } else {
+                navigate(tab.path);
+              }
             }}
             style={S.tab}
             aria-label={label}

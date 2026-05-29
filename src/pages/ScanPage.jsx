@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
 import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
@@ -222,6 +222,21 @@ export default function ScanPage() {
   // Subscribe to language change so labels refresh.
   useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Scan UX Final Fix — tapping the Scan bottom-nav navigates
+  // to /scan?intent=camera with route state. Direct /scan URLs
+  // (refresh, deep link, PWA restore) have NEITHER and stay
+  // idle. This is the single decision point.
+  const _launchedFromScanNav = (() => {
+    try {
+      const params = new URLSearchParams(location.search || '');
+      if (params.get('intent') === 'camera') return true;
+      const st = (location.state || {});
+      return st.userInitiatedCamera === true
+        && (st.source === 'bottom_nav' || st.cameraAttempted === true);
+    } catch { return false; }
+  })();
 
   const flagOn   = isFeatureEnabled('scanDetection');
   const mlScanOn = isFeatureEnabled('mlScan');
@@ -243,6 +258,32 @@ export default function ScanPage() {
   // are true — hard-blocking the error card on first load even if
   // a downstream component throws.
   const [userInitiatedCamera, setUserInitiatedCamera] = useState(false);
+
+  // Scan UX Final Fix — when the bottom-nav Scan tap brought the
+  // user here (?intent=camera or route state), promote them
+  // straight to the capture phase. Idle entry stays the default
+  // for direct URLs / refreshes / PWA restores.
+  const _launchedFromScanNavRef = useRef(_launchedFromScanNav);
+  useEffect(() => {
+    if (!_launchedFromScanNavRef.current) return;
+    // Mark as consumed so a re-mount without a fresh nav tap
+    // does not auto-launch the camera.
+    _launchedFromScanNavRef.current = false;
+    setCameraAttempted(true);
+    setUserInitiatedCamera(true);
+    setPhase('capture');
+    // Strip the intent param from the URL so a refresh of the
+    // resulting page lands back on the idle entry rather than
+    // re-launching the camera. Replace history entry; no nav.
+    try {
+      if (typeof window !== 'undefined' && window.history
+          && typeof window.history.replaceState === 'function'
+          && location.search) {
+        window.history.replaceState({}, '', location.pathname);
+      }
+    } catch { /* swallow */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Hidden gallery input ref — wired below so the "Use saved photo"
   // button on the entry card opens a file picker WITHOUT mounting
   // LiveCameraScanner (no getUserMedia call on the saved-photo path).

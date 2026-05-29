@@ -426,43 +426,17 @@ export default function ScanHub({ onTakePhoto, onUploadPhoto, recentLimit = 4 })
         </p>
       </section>
 
-      {/* Live status row — camera permission + connectivity */}
-      <section style={STYLES.statusRow} data-testid="scan-hub-status">
-        <div style={STYLES.statusCard} data-testid="scan-hub-status-camera">
-          <div style={STYLES.statusLabel}>
-            {tSafe('scan.hub.status.camera', 'Camera')}
-          </div>
-          <div style={STYLES.statusValue}>
-            <span style={{
-              ...STYLES.statusDot,
-              background: PERMISSION_COLOR[permission] || PERMISSION_COLOR.unknown,
-            }} />
-            {tSafe(
-              PERMISSION_LABEL_KEY[permission] || PERMISSION_LABEL_KEY.unknown,
-              PERMISSION_LABEL_DEFAULT[permission] || PERMISSION_LABEL_DEFAULT.unknown,
-            )}
-          </div>
-        </div>
-        <div style={STYLES.statusCard} data-testid="scan-hub-status-connectivity">
-          <div style={STYLES.statusLabel}>
-            {tSafe('scan.hub.status.connectivity', 'Connection')}
-          </div>
-          <div style={STYLES.statusValue}>
-            <span style={{
-              ...STYLES.statusDot,
-              background: online ? '#10B981' : '#F59E0B',
-            }} />
-            {online
-              ? tSafe('scan.hub.status.online', 'Online')
-              : tSafe('scan.hub.status.offline', 'Offline')}
-            {queueDepth > 0 ? (
-              <span style={{ color: '#94A3B8', fontWeight: 500, marginLeft: 6 }}>
-                · {queueDepth} {tSafe('scan.hub.status.pending', 'pending')}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </section>
+      {/* Live status row REMOVED per Scan UX Final Fix —
+          grower-facing UI must not surface developer status
+          cards (CAMERA Allowed / CONNECTION Online). The
+          underlying probes still run; their data is reachable
+          via /internal/godmode (__scanUIHealth + __queueHealth)
+          for QA / admin diagnostics only.
+
+          The component bodies (_useCameraPermission +
+          _useOfflineStatus) are intentionally kept above so the
+          subscriptions continue to power the boot-time
+          diagnostics — they just do not render any grower UI. */}
 
       {/* Recent scans — composes the existing ScanHistory component
           which self-hides when there are no entries. */}

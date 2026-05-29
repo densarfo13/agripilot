@@ -100,6 +100,7 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-evidence-chain.mjs',
   'scripts/check-report-real-data.mjs',
   'scripts/check-enterprise-readiness.mjs',
+  'scripts/check-scan-nav-camera-intent.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

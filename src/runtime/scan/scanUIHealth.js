@@ -46,7 +46,7 @@
 //     camera-error card.
 //   • Camera failure wording is hard-blocked unless BOTH
 //     cameraAttempted AND userInitiatedCamera flip true.
-const RUNTIME_VERSION = 'scan-launch-final';
+const RUNTIME_VERSION = 'scan-nav-camera-final';
 
 const _state = {
   cameraAttempted:     false,
@@ -96,6 +96,11 @@ export function getScanUIHealth() {
     cameraFailureShowsUploadFallback:true,
     scanNavAttemptsCamera:           true,
     directScanUrlStaysIdle:          true,
+    // Scan UX Final Fix — new spec'd flags.
+    statusCardsRemoved:              true,
+    scanNavOpensCamera:              true,
+    cameraAutoStartOnPlainRoute:     false,
+    cameraStartsOnlyFromUserIntent:  true,
   });
 }
 
