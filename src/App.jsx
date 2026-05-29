@@ -806,6 +806,16 @@ export default function App() {
         installNetworkIntelligenceGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Phase 13 — pin __farmerAdoption() so QA + the wave-8
+        // notifications runtime can introspect the adoption
+        // composite (onboarding score + first-7-days + referrals +
+        // weekly report + community + smart-notification candidates
+        // + D1/D7/D30 retention).
+        const { installFarmerAdoptionGlobal } =
+          await import('./runtime/adoption/index.js');
+        installFarmerAdoptionGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
