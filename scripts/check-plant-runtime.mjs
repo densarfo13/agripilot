@@ -102,7 +102,8 @@ for (const { src, sym } of REQUIRED) {
 // Plant interface fields documented in PlantRuntime.ts
 const PLANT_FIELDS = [
   'id', 'commonName', 'scientificName', 'category', 'subtype',
-  'growType', 'growthStage', 'healthScore', 'riskScore',
+  'growType', 'growthStage', 'lifecycleStage',
+  'healthScore', 'riskScore',
   'location', 'scans', 'tasks', 'history',
   'createdAt', 'updatedAt',
 ];
@@ -114,6 +115,48 @@ for (const f of PLANT_FIELDS) {
 // ManagedPlant type must be exported
 if (!/export\s+(interface|type)\s+ManagedPlant\b/.test(sources.runtime)) {
   fail('PlantRuntime.ts must export the ManagedPlant interface');
+}
+
+// Sprint A — governance manifest
+if (!/export\s+const\s+PLANT_RUNTIME_OWNERSHIP\b/.test(sources.runtime)) {
+  fail('PlantRuntime.ts must export PLANT_RUNTIME_OWNERSHIP');
+}
+for (const k of ['plantRuntime', 'scanRuntime', 'farmRuntime']) {
+  if (!new RegExp(k + '\\s*:').test(sources.runtime)) {
+    fail('PLANT_RUNTIME_OWNERSHIP missing owner: ' + k);
+  }
+}
+for (const cap of ['plant_state', 'plant_health',
+                    'plant_lifecycle', 'plant_memory']) {
+  if (sources.runtime.indexOf("'" + cap + "'") === -1) {
+    fail("PLANT_RUNTIME_OWNERSHIP.plantRuntime missing capability: '"
+      + cap + "'");
+  }
+}
+for (const cap of ['camera', 'upload', 'plant_id_classifier']) {
+  if (sources.runtime.indexOf("'" + cap + "'") === -1) {
+    fail("PLANT_RUNTIME_OWNERSHIP.scanRuntime missing capability: '"
+      + cap + "'");
+  }
+}
+for (const cap of ['farm_selection', 'garden_selection']) {
+  if (sources.runtime.indexOf("'" + cap + "'") === -1) {
+    fail("PLANT_RUNTIME_OWNERSHIP.farmRuntime missing capability: '"
+      + cap + "'");
+  }
+}
+
+// Sprint A — Daily Briefing composer
+if (!/export\s+function\s+plantsForBriefing\b/.test(sources.barrel)) {
+  fail('index.ts must export plantsForBriefing()');
+}
+if (!/PLANTS_BRIEFING_VERSION\b/.test(sources.barrel)) {
+  fail('index.ts must export PLANTS_BRIEFING_VERSION');
+}
+for (const k of ['needsAttention', 'attentionByCategory', 'headline']) {
+  if (sources.barrel.indexOf(k) === -1) {
+    fail('plantsForBriefing missing envelope field: ' + k);
+  }
 }
 
 // Lifecycle stages — 6 spec'd + DORMANT

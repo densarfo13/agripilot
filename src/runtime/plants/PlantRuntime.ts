@@ -51,6 +51,10 @@ export interface ManagedPlant {
   subtype:        string;       // family (Rosaceae, Solanaceae, ...)
   growType:       string;       // user-facing grow type
   growthStage:    string;       // seed/sprout/.../harvest/unknown
+  // Sprint A — spec uses `lifecycleStage`; carried as a stable
+  // alias of growthStage so callers can read either name. The two
+  // fields are kept in sync by freezePlant + advancePlantStage.
+  lifecycleStage: string;
   healthScore:    number;       // 0..100
   riskScore:      number;       // 0..100 (inverse of health-derived)
   location:       { regionLabel: string };
@@ -61,6 +65,40 @@ export interface ManagedPlant {
   updatedAt:      string;
   schemaVersion:  string;
 }
+
+/* ── Sprint A governance manifest ───────────────────────────────
+ * Documents the ownership boundaries the spec calls out. Engines
+ * read it; the CI gate verifies it stays in sync with reality.
+ * Any future runtime that wants to do plant work MUST go through
+ * this runtime (no direct findPlant + setState from UI).
+ */
+export const PLANT_RUNTIME_OWNERSHIP = Object.freeze({
+  plantRuntime: Object.freeze([
+    'plant_state',
+    'plant_health',
+    'plant_lifecycle',
+    'plant_memory',
+  ]),
+  scanRuntime: Object.freeze([
+    'camera',
+    'upload',
+    'plant_id_classifier',
+  ]),
+  farmRuntime: Object.freeze([
+    'farm_selection',
+    'garden_selection',
+  ]),
+  // Explicit non-ownership notes for clarity.
+  notes: Object.freeze({
+    persistence:
+      'Persistence belongs to the wave-5 single-writer (journal '
+      + 'store + scanPersistenceBridge). Engines never write to '
+      + 'storage.',
+    rendering:
+      'UI components own rendering; engines never touch the DOM '
+      + 'or React state.',
+  }),
+});
 
 const SCHEMA_VERSION = 'plant-managed-v1';
 const _validCategories = new Set<string>(PLANT_CATEGORIES as readonly string[]);
@@ -98,6 +136,10 @@ interface CreateCtx {
 
 export function freezePlant(p: any): ManagedPlant | null {
   if (!_isObj(p)) return null;
+  // Sprint A — lifecycleStage is a stable alias of growthStage.
+  // Caller may write either; we copy from whichever is set and
+  // keep them in sync on the way out.
+  const stage = _str(p.lifecycleStage) || _str(p.growthStage) || 'unknown';
   return Object.freeze({
     id:             _str(p.id),
     commonName:     _str(p.commonName),
@@ -105,7 +147,8 @@ export function freezePlant(p: any): ManagedPlant | null {
     category:       _str(p.category),
     subtype:        _str(p.subtype),
     growType:       _str(p.growType),
-    growthStage:    _str(p.growthStage) || 'unknown',
+    growthStage:    stage,
+    lifecycleStage: stage,
     healthScore:    _num(p.healthScore)  ?? 0,
     riskScore:      _num(p.riskScore)    ?? 0,
     location:       Object.freeze({
@@ -160,6 +203,7 @@ export function createManagedPlant(ctx: CreateCtx) {
         })]
       : [Object.freeze({ kind: 'created_manually', at: now })];
 
+    const seedStage = _str(c.growthStage) || 'vegetative';
     const managed: ManagedPlant = Object.freeze({
       id:             recordId,
       commonName:     _str((catalog as any).commonName)
@@ -168,7 +212,8 @@ export function createManagedPlant(ctx: CreateCtx) {
       category,
       subtype:        _str((catalog as any).family),
       growType:       _str(c.growType) || category,
-      growthStage:    _str(c.growthStage) || 'vegetative',
+      growthStage:    seedStage,
+      lifecycleStage: seedStage,
       healthScore:    _num(c.healthScore) ?? 0,
       riskScore:      _num(c.riskScore)   ?? 0,
       location:       Object.freeze({

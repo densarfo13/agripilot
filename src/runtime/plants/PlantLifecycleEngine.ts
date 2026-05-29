@@ -116,7 +116,13 @@ export function advancePlantStage(plant: ManagedPlant, to?: string) {
       // can render a clean lifecycle timeline.
       ...({ from: current, to: next } as any),
     });
-    return freezePlant({ ...stamped, growthStage: next });
+    // Sprint A — write BOTH growthStage and lifecycleStage so
+    // either reader name resolves to the same value. freezePlant
+    // re-syncs them on the way out anyway, but writing here keeps
+    // the patch object self-consistent for debugging.
+    return freezePlant({
+      ...stamped, growthStage: next, lifecycleStage: next,
+    });
   }, plant);
 }
 
