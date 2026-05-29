@@ -250,6 +250,22 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       intelligenceLoopReady:     _hasGlobal('__intelligenceLoopHealth'),
       outcomeTrackingReady:      _hasGlobal('__intelligenceLoopHealth'),
       dailyBriefingReady:        _sectionPasses('dailyBriefing'),
+      // Wave 12 — Enterprise hardening sub-readiness.
+      enterpriseSecurityReady:   _hasGlobal('__rbacHealth'),
+      auditReady:                _hasGlobal('__auditHealth'),
+      evidenceReady:             _hasGlobal('__evidenceHealth'),
+      reportsReady:              _hasGlobal('__reportHealth'),
+      outcomesReady:             _hasGlobal('__outcomeHealth'),
+      reliabilityReady:          _hasGlobal('__reliabilityHealth'),
+      // The verdict is read from __enterpriseReadiness at probe
+      // time; surface a quick-glance value too.
+      enterpriseReadinessVerdict: _safe(() => {
+        if (typeof window === 'undefined') return 'NOT_READY';
+        const w = window as any;
+        if (typeof w.__enterpriseReadiness !== 'function') return 'NOT_READY';
+        const r = w.__enterpriseReadiness();
+        return _str(r && r.verdict) || 'NOT_READY';
+      }, 'NOT_READY'),
     });
 
     return Object.freeze({

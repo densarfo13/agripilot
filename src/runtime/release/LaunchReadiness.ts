@@ -78,6 +78,23 @@ export function launchReadiness() {
       intelligenceLoopReady,
       outcomeTrackingReady,
       dailyBriefingReady,
+      // Wave 12 — Enterprise pillars.
+      enterpriseSecurityReady: _probe('__rbacHealth')
+        ? !!(_probe('__rbacHealth') as any).initialized : false,
+      auditReady:    _probe('__auditHealth')
+        ? !!(_probe('__auditHealth') as any).initialized : false,
+      evidenceReady: _probe('__evidenceHealth')
+        ? !!(_probe('__evidenceHealth') as any).initialized : false,
+      reportsReady:  _probe('__reportHealth')
+        ? !!(_probe('__reportHealth') as any).initialized : false,
+      outcomesReady: _probe('__outcomeHealth')
+        ? !!(_probe('__outcomeHealth') as any).initialized : false,
+      reliabilityReady: _probe('__reliabilityHealth')
+        ? !!(_probe('__reliabilityHealth') as any).initialized : false,
+      enterpriseReadinessVerdict: _safe(() => {
+        const r = _probe('__enterpriseReadiness');
+        return (r && (r as any).verdict) || 'NOT_READY';
+      }, 'NOT_READY'),
       godmodeInternalOnly:  godmodeReady,
       mobileUX:             mob,
       blockers,

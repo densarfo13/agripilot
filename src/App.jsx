@@ -946,6 +946,45 @@ export default function App() {
             await import('./runtime/intelligenceLoop/index');
           installIntelligenceLoopGlobal();
         } catch { /* never block boot */ }
+        // Enterprise-grade hardening (Wave 12) — RBAC + audit +
+        // evidence chain + reports + outcomes + reliability +
+        // enterprise-readiness gate. All pure runtimes; the
+        // boot install pins their diagnostic probes.
+        try {
+          const { installRBACGlobal } =
+            await import('./runtime/security/RBACRuntime');
+          installRBACGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installAuditRuntimeGlobal } =
+            await import('./runtime/audit/index');
+          installAuditRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installEvidenceChainGlobal } =
+            await import('./runtime/artifacts/EvidenceChain');
+          installEvidenceChainGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installReportRuntimeGlobal } =
+            await import('./runtime/reports/index');
+          installReportRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installOutcomeRuntimeGlobal } =
+            await import('./runtime/outcomes/index');
+          installOutcomeRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installReliabilityRuntimeGlobal } =
+            await import('./runtime/reliability/ReliabilityRuntime');
+          installReliabilityRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installEnterpriseReadinessGlobal } =
+            await import('./runtime/enterprise/EnterpriseReadinessGate');
+          installEnterpriseReadinessGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

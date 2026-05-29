@@ -94,6 +94,12 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-godmode-internal-only.mjs',
   'scripts/check-no-grower-camera-error-card.mjs',
   'scripts/check-intelligence-loop-ownership.mjs',
+  'scripts/check-enterprise-isolation.mjs',
+  'scripts/check-rbac-guards.mjs',
+  'scripts/check-audit-logging.mjs',
+  'scripts/check-evidence-chain.mjs',
+  'scripts/check-report-real-data.mjs',
+  'scripts/check-enterprise-readiness.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {
