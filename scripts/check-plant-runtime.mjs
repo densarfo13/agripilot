@@ -46,6 +46,7 @@ const FILES = {
   lifecycle:   'src/runtime/plants/PlantLifecycleEngine.ts',
   recommend:   'src/runtime/plants/PlantRecommendationEngine.ts',
   memory:      'src/runtime/plants/PlantMemoryGraph.ts',
+  timeline:    'src/runtime/plants/PlantTimeline.ts',
   barrel:      'src/runtime/plants/index.ts',
   growTypes:   'src/types/growTypes.ts',
   categories:  'src/modules/plants/plantCategories.ts',
@@ -88,6 +89,9 @@ const REQUIRED = [
   { src: 'recommend',  sym: 'PLANT_RECOMMENDATION_VERSION' },
   { src: 'memory',     sym: 'buildPlantMemory' },
   { src: 'memory',     sym: 'PLANT_MEMORY_VERSION' },
+  { src: 'timeline',   sym: 'buildPlantTimeline' },
+  { src: 'timeline',   sym: 'TIMELINE_EVENT_KIND' },
+  { src: 'timeline',   sym: 'PLANT_TIMELINE_VERSION' },
   { src: 'barrel',     sym: 'universalPlantRuntime' },
   { src: 'barrel',     sym: 'installUniversalPlantRuntimeGlobal' },
   { src: 'barrel',     sym: 'UNIVERSAL_PLANT_RUNTIME_VERSION' },
@@ -144,6 +148,43 @@ for (const cap of ['farm_selection', 'garden_selection']) {
     fail("PLANT_RUNTIME_OWNERSHIP.farmRuntime missing capability: '"
       + cap + "'");
   }
+}
+
+// Plant Timeline — 11 spec'd event kinds
+const TIMELINE_KINDS = [
+  'PlantCreated', 'ScanCompleted', 'DiseaseDetected', 'PestDetected',
+  'TaskCompleted', 'TreatmentApplied', 'GrowthStageChanged',
+  'BloomStarted', 'HarvestCompleted', 'RecommendationAccepted',
+  'RecommendationCompleted',
+];
+for (const k of TIMELINE_KINDS) {
+  if (!new RegExp(k + '\\s*:').test(sources.timeline)) {
+    fail('TIMELINE_EVENT_KIND missing: ' + k);
+  }
+}
+// Timeline envelope shape — required output fields
+for (const k of ['entries', 'groups', 'counts', 'totalCount',
+                  'attachments', 'plantId']) {
+  if (sources.timeline.indexOf(k) === -1) {
+    fail('PlantTimeline envelope missing field: ' + k);
+  }
+}
+// Date-grouping check — groups must carry { date, entries }
+if (!/date:\s*day/.test(sources.timeline)
+    && !/date:\s*_str/.test(sources.timeline)) {
+  fail('PlantTimeline groups missing "date" field');
+}
+// Timeline must NOT add new EVENT_KIND values — the strict-rule
+// says don't modify eventEngine. The timeline DERIVES the 11
+// spec'd kinds from existing event types.
+if (/EVENT_KIND\s*\[\s*['"]/.test(sources.timeline)) {
+  fail('PlantTimeline must not mutate EVENT_KIND');
+}
+
+// Barrel must thread timeline into composite
+if (sources.barrel.indexOf('timeline') === -1
+    || sources.barrel.indexOf('PLANT_TIMELINE_VERSION') === -1) {
+  fail('barrel must re-export timeline + version');
 }
 
 // Sprint A — Daily Briefing composer
@@ -241,7 +282,7 @@ const BANNED_PATTERNS = [
   /\.ai\/v1/i,
 ];
 for (const f of ['runtime', 'registry', 'health', 'tasks',
-                  'lifecycle', 'recommend', 'memory']) {
+                  'lifecycle', 'recommend', 'memory', 'timeline']) {
   const src = sources[f];
   for (const pat of BANNED_PATTERNS) {
     if (pat.test(src)) {

@@ -65,6 +65,9 @@ import {
 import {
   buildPlantMemory, PLANT_MEMORY_VERSION,
 } from './PlantMemoryGraph';
+import {
+  buildPlantTimeline, TIMELINE_EVENT_KIND, PLANT_TIMELINE_VERSION,
+} from './PlantTimeline';
 import { PLANT_RUNTIME_OWNERSHIP } from './PlantRuntime';
 
 export const UNIVERSAL_PLANT_RUNTIME_VERSION = 'universal-plant-runtime-v1';
@@ -177,6 +180,13 @@ export function universalPlantRuntime(ctx: any) {
         plant: focused as any, events: _arr(c.events),
       }), null)
     : null;
+  const timeline = focused
+    ? _safe(() => buildPlantTimeline({
+        plant: focused as any,
+        events: _arr(c.events),
+        limit: _isObj(c) ? (c as any).timelineLimit : undefined,
+      }), null)
+    : null;
 
   const briefing = _safe(() => plantsForBriefing({ plants } as any), null);
   return Object.freeze({
@@ -190,6 +200,7 @@ export function universalPlantRuntime(ctx: any) {
     tasks,
     recommendations: recs,
     memory,
+    timeline,
     briefing,
     ownership: PLANT_RUNTIME_OWNERSHIP,
     versions: Object.freeze({
@@ -200,6 +211,7 @@ export function universalPlantRuntime(ctx: any) {
       lifecycle:  PLANT_LIFECYCLE_VERSION,
       recommend:  PLANT_RECOMMENDATION_VERSION,
       memory:     PLANT_MEMORY_VERSION,
+      timeline:   PLANT_TIMELINE_VERSION,
       briefing:   PLANTS_BRIEFING_VERSION,
       schema:     PLANT_SCHEMA_VERSION,
     }),
@@ -258,5 +270,7 @@ export {
   recommendForManagedPlant, PLANT_RECOMMENDATION_VERSION,
   // Memory
   buildPlantMemory, PLANT_MEMORY_VERSION,
+  // Timeline
+  buildPlantTimeline, TIMELINE_EVENT_KIND, PLANT_TIMELINE_VERSION,
 };
 export type { ManagedPlant };
