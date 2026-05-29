@@ -1,0 +1,126 @@
+// server/prisma/migrations/_pending/plant_universal_runtime/
+//   schema_fragment.prisma
+//
+// READY-TO-MERGE Prisma model fragment for the Universal Plant
+// Runtime. NOT auto-applied — sits in `_pending/` so a
+// supervised migration sprint can:
+//
+//   1. Copy these models into server/prisma/schema.prisma
+//   2. Add relations on User / Farm / Garden / Scan / Task
+//      (commented suggestions below)
+//   3. Run `npx prisma migrate dev --name add_universal_plant_runtime`
+//      in a staging DB first
+//   4. Verify rollback path works
+//   5. Run `npx prisma migrate deploy` against production with
+//      `prisma-deploy-with-baseline.mjs` (current convention)
+//
+// Why deferred this sprint
+// ────────────────────────
+//   The standing migration guard (`guard:migration`) requires
+//   supervised deploy because Prisma migrations are irreversible
+//   against the production DB. The runtime works fine with
+//   localStorage at the UI layer today; cross-device sync is
+//   the only thing waiting on these tables.
+//
+// Strict-rule audit
+//   • Additive only — new tables, no schema changes to existing.
+//   • All foreign keys are optional so backfill is not required.
+//   • Indexes are minimal — add more in a follow-up after real
+//     query patterns emerge.
+
+enum PlantCategory {
+  crop
+  flower
+  vegetable
+  fruit
+  herb
+  houseplant
+  tree
+  shrub
+  unknown
+}
+
+enum PlantSource {
+  manual
+  scan
+}
+
+enum PlantTimelineEventType {
+  PlantCreated
+  ScanCompleted
+  DiseaseDetected
+  PestDetected
+  TaskGenerated
+  TaskCompleted
+  TreatmentApplied
+  GrowthStageChanged
+  BloomStarted
+  BloomForecastUpdated
+  RecommendationGenerated
+  RecommendationAccepted
+}
+
+model Plant {
+  id              String         @id @default(cuid())
+  userId          String
+  farmId          String?
+  gardenId        String?
+  commonName      String
+  scientificName  String?
+  category        PlantCategory  @default(unknown)
+  subtype         String?        // family (e.g. Rosaceae)
+  source          PlantSource    @default(manual)
+  healthScore     Int            @default(0)
+  riskScore       Int            @default(0)
+  lifecycleStage  String         @default("vegetative")
+  bloomStatus     String?
+  pollinatorScore Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Idempotency — same scan must never create a second plant.
+  // Format: plant:create-from-scan:{scanId}:{farmIdOrGardenId}
+  idempotencyKey  String?        @unique
+
+  timelineEvents  PlantTimelineEvent[]
+
+  // Relations to existing models — uncomment when merging into
+  // server/prisma/schema.prisma and add the @relation back on
+  // each parent model:
+  //
+  //   user            User            @relation(fields: [userId], references: [id])
+  //   farm            Farm?           @relation(fields: [farmId], references: [id])
+  //   garden          Garden?         @relation(fields: [gardenId], references: [id])
+
+  @@index([userId])
+  @@index([userId, category])
+  @@index([farmId])
+  @@index([gardenId])
+  @@index([createdAt])
+}
+
+model PlantTimelineEvent {
+  id          String                 @id @default(cuid())
+  plantId     String
+  eventType   PlantTimelineEventType
+  title       String
+  description String?
+  metadata    Json?                  // free-form payload
+  photoUrl    String?
+  scanId      String?
+  taskId      String?
+  createdAt   DateTime               @default(now())
+
+  plant       Plant                  @relation(
+    fields: [plantId], references: [id], onDelete: Cascade)
+
+  // Optional relations to existing Scan / Task models — wire
+  // when merging if those models exist:
+  //   scan        Scan?   @relation(fields: [scanId], references: [id])
+  //   task        Task?   @relation(fields: [taskId], references: [id])
+
+  @@index([plantId, createdAt])
+  @@index([plantId, eventType])
+  @@index([scanId])
+  @@index([taskId])
+}

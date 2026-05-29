@@ -294,19 +294,23 @@ export function installUniversalPlantRuntimeGlobal(): boolean {
               ? (byCat as any)[k].length : 0;
           }
           return {
-            initialized:        true,
-            plantCount:         Array.isArray(plants) ? plants.length : 0,
-            timelineEvents:     Array.isArray(events) ? events.length : 0,
+            initialized:         true,
+            plantCount:          Array.isArray(plants) ? plants.length : 0,
+            timelineEvents:      Array.isArray(events) ? events.length : 0,
             categories,
-            healthEngineReady:  true,
-            taskEngineReady:    true,
-            scanToPlantReady:   true,
-            runtimeVersion:     UNIVERSAL_PLANT_RUNTIME_VERSION,
+            healthEngineReady:   true,
+            taskEngineReady:     true,
+            scanToPlantReady:    true,
+            // Gap-fix §12 — new readiness flags.
+            offlineCreateReady:  true,   // engines are fetch-free
+            duplicateGuardReady: true,   // idempotency key live
+            runtimeVersion:      UNIVERSAL_PLANT_RUNTIME_VERSION,
           };
         }, {
           initialized: false, plantCount: 0, timelineEvents: 0,
           categories: {}, healthEngineReady: false,
           taskEngineReady: false, scanToPlantReady: false,
+          offlineCreateReady: false, duplicateGuardReady: false,
         });
         try { console.log('[Farroway · PlantRuntime health]', out); }
         catch { /* swallow */ }
@@ -327,6 +331,9 @@ export function installUniversalPlantRuntimeGlobal(): boolean {
           aggregatesReady:  true,
           requiresInternal: true,
           isInternalSession: internal,
+          // Gap-fix §12 — assert honestly that we surface real
+          // aggregates only; FounderDashboard fakes nothing.
+          fakeMetrics:      false,
         });
         try { console.log('[Farroway · Founder metrics health]', out); }
         catch { /* swallow */ }

@@ -38,13 +38,25 @@
  */
 
 import {
-  createManagedPlant, ManagedPlant,
+  createManagedPlant, ManagedPlant, appendPlantHistory,
 } from './PlantRuntime';
 import {
-  registryFindPlant,
-} from './PlantRegistry';
+  starterTasksFor,
+} from './PlantIntelligenceEngine';
 
-export const SCAN_TO_MANAGED_PLANT_VERSION = 'scan-to-managed-plant-v1';
+export const SCAN_TO_MANAGED_PLANT_VERSION = 'scan-to-managed-plant-v2';
+
+/**
+ * Idempotency key — Gap-fix sprint §5.
+ * Format: `plant:create-from-scan:{scanId}:{farmIdOrGardenId}`.
+ * Used by the duplicate guard so the same scan never creates a
+ * second managed plant even on retry / reconnect.
+ */
+export function idempotencyKeyFor(scanId: string,
+                                    farmOrGardenId: string): string {
+  return 'plant:create-from-scan:' + (scanId || '') + ':'
+    + (farmOrGardenId || '');
+}
 
 const _isObj = (v: unknown): v is Record<string, any> =>
   v != null && typeof v === 'object';
@@ -87,9 +99,35 @@ export function scanToManagedPlant(ctx: WorkflowCtx) {
       });
     }
 
-    // Dedupe — has the user already added a plant with this
-    // catalog id? Match by commonName since record ids are hashed.
+    // Gap-fix §5 — idempotency key. Same scan + same farm/garden
+    // MUST not create two managed plants.
+    const farmOrGardenId = _str(c.gardenId) || _str(c.farmId);
+    const idemKey = idempotencyKeyFor(_str(scan.scanId), farmOrGardenId);
+
+    // Dedupe — two checks:
+    // 1. exact idempotency-key match against any existing
+    //    plant.history entry (recorded at creation time below);
+    // 2. fallback name-match for plants created before the key
+    //    landed.
     const existing = _arr(c.existingPlants);
+    const byIdemKey = existing.find((p) => {
+      if (!_isObj(p)) return false;
+      const hist = _arr((p as any).history);
+      return hist.some((h: any) =>
+        _isObj(h) && _str((h as any).idempotencyKey) === idemKey);
+    });
+    if (byIdemKey) {
+      return Object.freeze({
+        runtimeVersion:   SCAN_TO_MANAGED_PLANT_VERSION,
+        eligible:         true,
+        alreadyManaged:   true,
+        existingPlantId:  (byIdemKey as any).id,
+        reason:           'plant_already_created_for_this_scan',
+        scanId:           _str(scan.scanId),
+        idempotencyKey:   idemKey,
+        route:            '/plants/' + (byIdemKey as any).id,
+      });
+    }
     const alreadyManagedRecord = existing.find((p) => {
       if (!_isObj(p)) return false;
       const stored = _str(p.commonName).toLowerCase();
@@ -107,6 +145,8 @@ export function scanToManagedPlant(ctx: WorkflowCtx) {
         existingPlantId:  (alreadyManagedRecord as any).id,
         reason:           'plant_already_in_my_plants',
         scanId:           _str(scan.scanId),
+        idempotencyKey:   idemKey,
+        route:            '/plants/' + (alreadyManagedRecord as any).id,
       });
     }
 
@@ -128,17 +168,52 @@ export function scanToManagedPlant(ctx: WorkflowCtx) {
         scanId:         _str(scan.scanId),
       });
     }
-    const plant = (produced as any).plant as ManagedPlant;
+    // Tag the produced plant's first history entry with the
+    // idempotency key so subsequent calls dedupe correctly.
+    let plant = (produced as any).plant as ManagedPlant;
+    plant = Object.freeze({
+      ...plant,
+      history: Object.freeze(_arr(plant.history).map((h) =>
+        _isObj(h) && _str((h as any).kind) === 'registered_from_scan'
+          ? Object.freeze({ ...h, idempotencyKey: idemKey } as any)
+          : h
+      )),
+    }) as ManagedPlant;
+
+    // Gap-fix §6 — full pipeline. Auto-attach:
+    //   • ScanCompleted timeline entry (alongside registered_from_scan)
+    //   • starter tasks for known plant ids
+    // Health score remains caller-driven (scoreManagedPlant) so
+    // we don't double-emit health snapshots; PlantProfile +
+    // dailyGrowEngine call it when they have the signals.
+    plant = appendPlantHistory(plant, {
+      kind: 'scan_completed',
+      ...({ scanId: _str(scan.scanId),
+            idempotencyKey: idemKey } as any),
+    } as any);
+
+    const starters = starterTasksFor(plant.commonName.toLowerCase());
+    if (_arr(starters).length > 0) {
+      const tasks = Object.freeze(_arr(starters).slice());
+      plant = Object.freeze({ ...plant, tasks }) as ManagedPlant;
+      plant = appendPlantHistory(plant, {
+        kind: 'tasks_generated',
+        ...({ count: tasks.length, source: 'starter' } as any),
+      } as any);
+    }
 
     return Object.freeze({
       runtimeVersion: SCAN_TO_MANAGED_PLANT_VERSION,
       eligible:       true,
       alreadyManaged: false,
       plant,
+      idempotencyKey: idemKey,
+      route:          '/plants/' + plant.id,
       payload: Object.freeze({
         // What the caller saves through scanPersistenceBridge
         // (NOT through this helper — wave-5 single-writer).
         operation: 'register_managed_plant',
+        idempotencyKey: idemKey,
         plant,
         registration: (produced as any).registration,
         ownerId:   _str(c.ownerId),

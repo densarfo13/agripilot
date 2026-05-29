@@ -23,7 +23,7 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
-import { universalPlantRuntime } from '../runtime/plants/index';
+import { universalPlantRuntime, plantIntelligence } from '../runtime/plants/index';
 
 const PLANTS_KEY = 'farroway_managed_plants';
 const EVENTS_KEY = 'farroway_event_log';
@@ -185,6 +185,18 @@ export default function PlantProfile() {
   const taskList = tasks && Array.isArray(tasks.taskEnvelope &&
     tasks.taskEnvelope.tasks) ? tasks.taskEnvelope.tasks : [];
 
+  // Gap-fix §8 — compose plant intelligence for flowers so the
+  // profile renders bloom + pollinator + companion cards. The
+  // catalog plant id is derived from the lower-cased common name.
+  const catalogId = String(focused.commonName || '')
+    .toLowerCase().replace(/\s+/g, '_');
+  const intel = catalogId
+    ? plantIntelligence({ plantId: catalogId,
+                          lifecycleStage: focused.lifecycleStage,
+                          haveInGarden: [] })
+    : null;
+  const isFlower = focused.category === 'flower';
+
   return (
     <main style={S.page} data-testid="plant-profile-page" data-plant-id={focused.id}>
       <button type="button" style={S.back}
@@ -234,6 +246,77 @@ export default function PlantProfile() {
           </div>
         ))}
       </div>
+
+      {/* Gap-fix §8 — flower-specific cards (bloom forecast,
+          pollinator value, companion suggestions). Self-hides
+          for non-flower categories. Safe wording: "Expected
+          bloom window" — never "guaranteed". */}
+      {isFlower && intel && intel.ok ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.bloom', 'Bloom forecast')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-bloom">
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#1F2933' }}>
+              {tSafe('plantProfile.bloom.window',
+                intel.bloom && intel.bloom.safeWording
+                  ? intel.bloom.safeWording
+                  : 'Expected bloom window')}
+              {intel.bloom && intel.bloom.estimatedDaysToBloom != null
+                ? ' · ~' + intel.bloom.estimatedDaysToBloom + ' days'
+                : ''}
+            </div>
+            <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+              {tSafe('plantProfile.bloom.status', 'Status')}:
+              {' ' + (intel.bloom && intel.bloom.status
+                       ? intel.bloom.status : 'unknown')}
+              {' · '}
+              {tSafe('plantProfile.bloom.confidence', 'Confidence')}:
+              {' ' + (intel.bloom && intel.bloom.confidence
+                       ? intel.bloom.confidence : 'unknown')}
+            </div>
+          </div>
+
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.pollinator', 'Pollinator')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-pollinator">
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#1F2933' }}>
+              {tSafe('plantProfile.pollinator.score', 'Pollinator score')}:
+              {' '}{intel.pollinator && typeof intel.pollinator.score === 'number'
+                ? intel.pollinator.score : '—'}
+            </div>
+            {intel.pollinator && Array.isArray(intel.pollinator.attracts)
+                && intel.pollinator.attracts.length > 0 ? (
+              <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                {tSafe('plantProfile.pollinator.attracts', 'Attracts')}:
+                {' ' + intel.pollinator.attracts.join(', ')}
+              </div>
+            ) : null}
+          </div>
+
+          {intel.companions && intel.companions.ok
+              && Array.isArray(intel.companions.goodCompanions)
+              && intel.companions.goodCompanions.length > 0 ? (
+            <>
+              <div style={S.sectionTitle}>
+                {tSafe('plantProfile.companions', 'Companions')}
+              </div>
+              <div style={S.card} data-testid="plant-profile-companions">
+                {intel.companions.goodCompanions.slice(0, 5).map((g) => (
+                  <div key={g.id} style={{
+                    fontSize: 13, color: '#1F2933',
+                    padding: '4px 0',
+                  }}>
+                    ✓ <strong>{g.commonName || g.id}</strong>
+                    {g.reason ? ' — ' + g.reason : ''}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </>
+      ) : null}
 
       <div style={S.sectionTitle}>
         {tSafe('plantProfile.timeline', 'Timeline')}

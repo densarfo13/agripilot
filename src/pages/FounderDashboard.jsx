@@ -96,11 +96,17 @@ const S = {
   },
 };
 
-function Tile({ label, value, testid }) {
+function Tile({ label, value, testid, emptyHint }) {
+  // Honest rendering — never invent a number when the source
+  // is missing. Render an em-dash with an optional tooltip.
+  const shown = (value === null || value === undefined || value === '')
+    ? '—' : value;
   return (
-    <div style={S.tile} data-testid={testid}>
+    <div style={S.tile} data-testid={testid}
+      title={shown === '—' ? (emptyHint
+        || 'Not enough data yet — needs backend wiring') : undefined}>
       <div style={S.tileLabel}>{label}</div>
-      <div style={S.tileValue}>{value}</div>
+      <div style={S.tileValue}>{shown}</div>
     </div>
   );
 }
@@ -161,7 +167,10 @@ export default function FounderDashboard() {
 
     return {
       adoption: {
-        users:    1, // local-only diagnostic; production metric needs backend
+        // Gap-fix §10 — DO NOT invent traction. Real user count
+        // needs backend wiring; local-only dashboards can't
+        // honestly report platform users from one device.
+        users:    null,
         farms:    Array.isArray(farms) ? farms.length : 0,
         gardens:  Array.isArray(gardens) ? gardens.length : 0,
         plantsCreated: Array.isArray(plants) ? plants.length : 0,

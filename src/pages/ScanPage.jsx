@@ -104,6 +104,13 @@ import { FEATURE_SCAN_USEFULNESS } from '../lib/pilotFlags.js';
 import UsefulResultCard from '../components/scan/UsefulResultCard.jsx';
 import UsefulScanHistory from '../components/scan/UsefulScanHistory.jsx';
 import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
+// Gap-fix sprint §2 — Scan → Managed Plant confirmation card.
+// Mounted under the result card; user MUST tap "Add to My
+// Plants" to create a managed plant record. No auto-create.
+import AddPlantConfirmationCard from '../components/plants/AddPlantConfirmationCard.jsx';
+import {
+  scanToManagedPlant as _scanToManagedPlant,
+} from '../runtime/plants/index';
 // Scan Pipeline Enforcement — race-condition guard. Each onContinue
 // call starts a fresh scan session; result publications inside
 // async callbacks (15s fallback, analyze response, ML-failure
@@ -1539,6 +1546,62 @@ export default function ScanPage() {
             <ScanFeedbackPrompt scanId={result.scanId || null} />
           </>
         )
+      ) : null}
+
+      {/* Gap-fix sprint §2 — Add-to-My-Plants confirmation card.
+          Renders ONLY after a successful result. No auto-create.
+          The wave-5 single-writer (UI layer) persists via
+          farroway_managed_plants; engines never write storage. */}
+      {phase === 'result' && result ? (
+        <AddPlantConfirmationCard
+          scanResult={result}
+          onAdd={(sr) => {
+            try {
+              const raw = (typeof window !== 'undefined' && window.localStorage)
+                ? window.localStorage.getItem('farroway_managed_plants') : null;
+              const existing = raw ? JSON.parse(raw) : [];
+              const wf = _scanToManagedPlant({
+                scanResult: sr,
+                ownerId:    profile?.id || profile?.userId || '',
+                farmId:     activeFarmId || profile?.farmId || '',
+                gardenId:   activeGardenId || profile?.gardenId || '',
+                location:   { regionLabel: profile?.region || '' },
+                existingPlants: Array.isArray(existing) ? existing : [],
+              });
+              if (!wf || !wf.eligible) {
+                try { trackEvent('plant_add_ineligible',
+                  { reason: (wf && wf.reason) || 'unknown' }); }
+                catch { /* ignore */ }
+                return;
+              }
+              if (wf.alreadyManaged && wf.route) {
+                try { navigate(wf.route); }
+                catch { /* ignore */ }
+                return;
+              }
+              const plant = wf.plant;
+              if (!plant) return;
+              const next = (Array.isArray(existing) ? existing : []).slice();
+              next.push(plant);
+              try {
+                window.localStorage.setItem(
+                  'farroway_managed_plants', JSON.stringify(next));
+              } catch { /* ignore quota */ }
+              try { trackEvent('plant_created_from_scan',
+                { plantId: plant.id, scanId: sr?.scanId || null }); }
+              catch { /* ignore */ }
+              if (wf.route) {
+                try { navigate(wf.route); } catch { /* ignore */ }
+              }
+            } catch { /* never crash the scan page */ }
+          }}
+          onScanAgain={onRetake}
+          onSaveForReview={() => {
+            try { trackEvent('plant_save_for_review',
+              { scanId: result?.scanId || null }); }
+            catch { /* ignore */ }
+          }}
+        />
       ) : null}
 
       {phase === 'error' ? (

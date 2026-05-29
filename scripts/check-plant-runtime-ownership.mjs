@@ -131,6 +131,26 @@ if (violations.length > 0) {
   fail(violations.length + ' ownership violation(s) found');
 }
 
+// Gap-fix §11 — additional governance rules.
+//   a. Scan page must not call getUserMedia on mount
+//   b. ScanFallback must never render the camera-error card
+//      without both cameraAttempted AND userInitiatedCamera
+const scanPage      = _read('src/pages/ScanPage.jsx') || '';
+const scanFallback  = _read('src/components/scan/ScanFallback.jsx') || '';
+
+if (/useEffect\([^)]*getUserMedia/i.test(scanPage)
+    || /\.getUserMedia\([^)]*\);\s*\}, *\[\s*\]\s*\)/i.test(scanPage)) {
+  fail('ScanPage calls getUserMedia inside an effect — auto-start forbidden');
+}
+if (!scanFallback.match(/cameraAttempted/)
+    || !scanFallback.match(/userInitiatedCamera/)) {
+  fail('ScanFallback must guard the camera-error card with both '
+    + 'cameraAttempted AND userInitiatedCamera');
+}
+if (!scanFallback.match(/firstLoadBlock\s*=/)) {
+  fail('ScanFallback must declare firstLoadBlock short-circuit');
+}
+
 // Spec also says: "Plant Runtime owns plants / plant health /
 // plant lifecycle / plant timeline / plant-generated tasks /
 // plant recommendations". Verify the ownership manifest still

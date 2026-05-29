@@ -39,7 +39,13 @@
  *   • No PII; only enum values + booleans.
  */
 
-const RUNTIME_VERSION = 'scan-idle-entry-v3';
+// Gap-fix sprint — version bumped from v3 → v4 to mark the
+// hardening pass that adds offline-safe plant creation + scan
+// confirmation wiring + governance ownership checks. The first-
+// load behaviour contract (idle entry, no camera auto-start,
+// hard-blocked error card) is unchanged from v3 — bump signals
+// "verified again in this sprint" rather than a behaviour change.
+const RUNTIME_VERSION = 'scan-idle-entry-v4';
 
 const _state = {
   cameraAttempted:     false,

@@ -117,9 +117,11 @@ for (const pattern of FORBIDDEN_AUTO_START) {
   }
 }
 
-// ─── 4. scanUIHealth v3 contract ────────────────────────────────
-if (!/scan-idle-entry-v3/.test(sources.uiHealth)) {
-  fail('scanUIHealth.js must declare RUNTIME_VERSION = scan-idle-entry-v3');
+// ─── 4. scanUIHealth v3/v4 contract ─────────────────────────────
+// Accept v3 or v4 — the contract fields are identical; v4 marks
+// the gap-fix sprint's re-verification pass.
+if (!/scan-idle-entry-v[34]\b/.test(sources.uiHealth)) {
+  fail('scanUIHealth.js must declare RUNTIME_VERSION = scan-idle-entry-v3 or v4');
 }
 const V3_FIELDS = [
   /version:\s*RUNTIME_VERSION/,
