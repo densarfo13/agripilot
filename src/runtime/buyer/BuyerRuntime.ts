@@ -63,6 +63,10 @@ export interface BuyerDashboardHealth {
   readonly buyerDataScoped: true;
   readonly fakeMetrics: false;
   readonly organizationScoped: true;
+  /** Honest transparency: 'in_memory' until the supervised Prisma
+   *  deploy of SellListing + BuyerInterest models lands. Admins
+   *  can read this in /internal/godmode to verify backing store. */
+  readonly persistence: 'in_memory' | 'prisma';
   readonly snapshots: {
     readonly listings: ReturnType<typeof listingsSnapshot>;
     readonly interests: ReturnType<typeof interestsSnapshot>;
@@ -83,6 +87,7 @@ export function buyerDashboardHealth(): BuyerDashboardHealth {
         buyerDataScoped: true as const,
         fakeMetrics: false as const,
         organizationScoped: true as const,
+        persistence: 'in_memory' as const,
         snapshots: Object.freeze({
           listings: listingsSnapshot(),
           interests: interestsSnapshot(),
@@ -99,6 +104,7 @@ export function buyerDashboardHealth(): BuyerDashboardHealth {
       buyerDataScoped: true as const,
       fakeMetrics: false as const,
       organizationScoped: true as const,
+      persistence: 'in_memory' as const,
       snapshots: Object.freeze({
         listings: listingsSnapshot(),
         interests: interestsSnapshot(),

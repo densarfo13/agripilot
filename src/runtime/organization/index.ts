@@ -71,6 +71,9 @@ export function ngoDashboardHealth() {
     evidenceReady:         true,
     reportsReady:          true,
     fakeData:              false,
+    // Honest transparency: in-memory until the supervised Prisma
+    // deploy of OrganizationMember + ProgramEnrollment lands.
+    persistence:           'in_memory' as const,
     snapshots:             Object.freeze({} as Record<string, any>),
     versions: Object.freeze({
       dashboard:    ORGANIZATION_DASHBOARD_VERSION,
@@ -89,6 +92,7 @@ export function ngoDashboardHealth() {
     evidenceReady:         false,
     reportsReady:          false,
     fakeData:              false,
+    persistence:           'in_memory' as const,
     snapshots:             Object.freeze({} as Record<string, any>),
   }));
 }

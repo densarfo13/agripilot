@@ -2173,13 +2173,17 @@ export default function App() {
                 listings. Mounted at "/buyer" — guarded for
                 buyer + admin roles by <RoleRoute>. */}
             <Route path="buyer" element={<RoleRoute roles={['buyer', ...ADMIN_ROLES]}><BrowseListingsPage /></RoleRoute>} />
-            {/* Sell-readiness surface — admin/staff/investor view of
-                farms ready to sell. Absolute path "/sell-readiness"
-                mounted with <RoleRoute>. */}
-            <Route path="sell-readiness" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><BuyerView /></RoleRoute>} />
-            {/* NGO / organization dashboard (Wave 14). Absolute
-                path "/organization" with <RoleRoute>. */}
-            <Route path="organization" element={<RoleRoute roles={['ngo', 'institutional_admin', ...ADMIN_ROLES]}><OrganizationDashboardPage /></RoleRoute>} />
+            {/* Sell-readiness surface — grower-side "mark ready to
+                sell" flow. Per Wave-14 spec §1: farmer/gardener/
+                grower/admin ONLY. (The earlier staff+investor wrap
+                was incorrect — that's the BUYER view; sell-readiness
+                is the SELLER side.) */}
+            <Route path="sell-readiness" element={<RoleRoute roles={['farmer', 'gardener', 'grower', ...ADMIN_ROLES]}><BuyerView /></RoleRoute>} />
+            {/* NGO / organization dashboard (Wave 14). Per spec §1:
+                ngo_admin / field_officer / organization_viewer / admin.
+                The earlier 'ngo' / 'institutional_admin' labels do
+                not match the RBAC role contract — corrected here. */}
+            <Route path="organization" element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', ...ADMIN_ROLES]}><OrganizationDashboardPage /></RoleRoute>} />
             <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />
             <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="admin/issues" element={<RoleRoute roles={ADMIN_ROLES}><AdminIssuesPage /></RoleRoute>} />
