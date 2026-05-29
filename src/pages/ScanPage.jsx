@@ -71,6 +71,7 @@ import { trackEvent as moatTrack } from '../core/analytics.js';
 import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanEntryCard from '../components/scan/ScanEntryCard.jsx';
+import ScanHub from '../components/scan/ScanHub.jsx';
 // UI tightening pass §8 — chips + recent-scans hint that sit below
 // the camera/upload card during the capture phase. Replaces the
 // previously empty page real-estate the spec called out.
@@ -1296,9 +1297,9 @@ export default function ScanPage() {
   if (phase === 'idle' && flagOn) {
     return (
       <>
-        <ScanEntryCard
+        <ScanHub
           onTakePhoto={_handleTakePhoto}
-          onUsePhoto={_handleUseSavedPhoto}
+          onUploadPhoto={_handleUseSavedPhoto}
         />
         <input
           ref={entryGalleryInputRef}

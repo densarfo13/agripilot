@@ -82,12 +82,23 @@ if (!/useState\(\s*false\s*\)[^;]*;\s*\/\/\s*Hidden gallery/.test(sources.scanPa
     'Required so ScanFallback can distinguish first-load from real failure.');
 }
 
-// 3) ScanEntryCard imported + rendered
-if (!/import\s+ScanEntryCard\s+from\s+['"][^'"]+ScanEntryCard\.jsx['"]/.test(sources.scanPage)) {
-  fail('ScanPage.jsx: ScanEntryCard not imported');
+// 3) An idle-state landing component is imported + rendered. RC1
+//    shipped ScanEntryCard; the production-hardening pass replaced
+//    the default render with the richer ScanHub. Either satisfies
+//    the contract — what matters is that SOMETHING calm renders in
+//    the idle phase and the camera never auto-starts.
+const idleImports = [
+  /import\s+ScanHub\s+from\s+['"][^'"]+ScanHub\.jsx['"]/,
+  /import\s+ScanEntryCard\s+from\s+['"][^'"]+ScanEntryCard\.jsx['"]/,
+];
+const idleRenders = [/<ScanHub\b/, /<ScanEntryCard\b/];
+if (!idleImports.some((re) => re.test(sources.scanPage))) {
+  fail('ScanPage.jsx: no idle-state landing component imported',
+    'Need either <ScanHub> or <ScanEntryCard>');
 }
-if (!/<ScanEntryCard\b/.test(sources.scanPage)) {
-  fail('ScanPage.jsx: <ScanEntryCard> not rendered');
+if (!idleRenders.some((re) => re.test(sources.scanPage))) {
+  fail('ScanPage.jsx: no idle-state landing component rendered',
+    'Need either <ScanHub> or <ScanEntryCard>');
 }
 
 // 4) Idle render guard must come BEFORE the capture early-return.
