@@ -421,4 +421,37 @@ export {
   PLANT_IMAGE_SERVICE_VERSION,
 } from './images/PlantImageService';
 
+// Verified Plant Media System — registry · service · cache ·
+// gallery · verification + 8 launch libraries (flower /
+// vegetable / fruit / herb / houseplant / crop / disease / pest).
+// Auto-seeds + bridges into PlantImageRegistry on import.
+export {
+  verifiedPlantMedia, installPlantMediaGlobal,
+  PLANT_MEDIA_SYSTEM_VERSION,
+  // Registry
+  registerPlantMedia, registerPlantMediaBulk,
+  getPlantMedia, listPlantMedia, listMediaByPlant, listMediaByType,
+  bridgeToImageRegistry, plantMediaSummary,
+  PLANT_MEDIA_TYPES, PLANT_MEDIA_REGISTRY_VERSION,
+  // Service
+  buildMediaUrl, buildMediaUrlForType, buildMediaSet,
+  mediaThumbnailUrl, plantMediaServiceInfo,
+  PLANT_MEDIA_FOLDERS, PLANT_MEDIA_CLOUD_NAME,
+  PLANT_MEDIA_SERVICE_VERSION,
+  // Cache
+  cacheMedia, getCachedMedia, listCachedKeys, cachedSize,
+  subscribeMediaCacheEvents, clearMediaCache,
+  plantMediaCacheSnapshot, CACHE_EVENT,
+  PLANT_MEDIA_CACHE_VERSION, PLANT_MEDIA_CACHE_MAX,
+  // Gallery
+  composePlantGallery, composeReferenceImagesForScan,
+  PLANT_GALLERY_VERSION,
+  // Verification
+  submitForVerification, approveVerification, rejectVerification,
+  listPendingVerifications, listAllVerifications,
+  plantImageVerificationSnapshot, VERIFICATION_STATUS,
+  PLANT_IMAGE_VERIFICATION_VERSION,
+} from './media';
+export type { PlantMedia, PlantMediaType } from './media';
+
 export type { ManagedPlant };

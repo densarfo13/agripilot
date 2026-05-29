@@ -888,9 +888,14 @@ export default function App() {
         // can introspect the runtime composite (managed Plant
         // records + lifecycle transitions + per-plant memory
         // graph + recommendations + tasks + health scoring).
-        const { installUniversalPlantRuntimeGlobal } =
+        const { installUniversalPlantRuntimeGlobal,
+                installPlantMediaGlobal } =
           await import('./runtime/plants');
         installUniversalPlantRuntimeGlobal();
+        // Verified Plant Media System — registry auto-seeds on
+        // the import above; this pins __plantMediaHealth() for QA.
+        try { installPlantMediaGlobal(); }
+        catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

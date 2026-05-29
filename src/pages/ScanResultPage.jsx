@@ -25,6 +25,8 @@ import { trackEvent } from '../analytics/analyticsStore.js';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 import { computeProduceIntelligence } from '../features/scan/ProduceIntelligenceEngine/index.js';
 import ProduceQualityBadge from '../components/produce/ProduceQualityBadge.jsx';
+import { composeReferenceImagesForScan } from '../runtime/plants/index';
+import PlantImage from '../components/plants/PlantImage.jsx';
 
 // Soft Ochre / Beige unified system. Replaces the legacy
 // dark-navy + neon-green inline tokens with the locked palette so
@@ -116,6 +118,32 @@ export default function ScanResultPage() {
     } catch { return null; }
   }, [entry]);
 
+  // Verified Plant Media System — pull reference photography for
+  // the identified plant + any matched diseases / pests so the
+  // scan result reads as "your photo ↔ verified references".
+  // composeReferenceImagesForScan always returns a frozen envelope
+  // (never throws); when nothing matches, every bucket is empty
+  // and we hide the section.
+  const referenceMedia = useMemo(() => {
+    const raw = entry && entry.raw;
+    if (!raw || typeof raw !== 'object') return null;
+    const slug = String(raw.plantId || raw.cropId
+      || entry?.cropId || entry?.plantName || '')
+      .toLowerCase().replace(/\s+/g, '-');
+    if (!slug) return null;
+    try {
+      return composeReferenceImagesForScan({
+        plantId:    slug,
+        region:     String(raw.region || entry?.region || ''),
+        diseaseIds: Array.isArray(raw.diseaseIds)
+          ? raw.diseaseIds.map(String) : [],
+        pestIds:    Array.isArray(raw.pestIds)
+          ? raw.pestIds.map(String) : [],
+        maxRef:     6,
+      });
+    } catch { return null; }
+  }, [entry]);
+
   useEffect(() => {
     if (!flagOn) {
       try { navigate('/scan-crop', { replace: true }); } catch { /* ignore */ }
@@ -159,6 +187,98 @@ export default function ScanResultPage() {
           />
           {produceIntel ? (
             <ProduceQualityBadge intel={produceIntel} variant="seller" />
+          ) : null}
+
+          {referenceMedia && (
+            (referenceMedia.plantReferences && referenceMedia.plantReferences.length > 0)
+            || (referenceMedia.diseaseReferences && referenceMedia.diseaseReferences.length > 0)
+            || (referenceMedia.pestReferences && referenceMedia.pestReferences.length > 0)
+          ) ? (
+            <section data-testid="scan-result-reference-images" style={{
+              background: '#FFFFFF',
+              border: '1px solid rgba(31,41,51,0.08)',
+              borderRadius: 14,
+              padding: '14px 14px 8px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#475569',
+                            textTransform: 'uppercase', letterSpacing: '0.06em',
+                            marginBottom: 8 }}>
+                {tStrict('scan.result.references.title', 'Reference plant images')}
+              </div>
+              {referenceMedia.plantReferences && referenceMedia.plantReferences.length > 0 ? (
+                <div style={{ display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                              gap: 6, marginBottom: 10 }}>
+                  {referenceMedia.plantReferences.map((m) => (
+                    <PlantImage
+                      key={m.id}
+                      plantId={m.plantId}
+                      plantLibraryImage={m.imageUrl}
+                      alt={m.plantId}
+                      size="thumb"
+                      testid={'scan-result-reference-' + m.id}
+                      style={{ width: '100%', height: 80, borderRadius: 8 }}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {referenceMedia.diseaseReferences && referenceMedia.diseaseReferences.length > 0 ? (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9B4747',
+                                textTransform: 'uppercase', letterSpacing: '0.06em',
+                                marginBottom: 6 }}>
+                    {tStrict('scan.result.references.diseases', 'Possible disease references')}
+                  </div>
+                  <div style={{ display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                                gap: 6, marginBottom: 10 }}>
+                    {referenceMedia.diseaseReferences.map((m) => (
+                      <div key={m.id} style={{ textAlign: 'center' }}>
+                        <PlantImage
+                          plantId={m.plantId}
+                          plantLibraryImage={m.imageUrl}
+                          alt={m.plantId}
+                          size="thumb"
+                          testid={'scan-result-disease-' + m.plantId}
+                          style={{ width: '100%', height: 80, borderRadius: 8 }}
+                        />
+                        <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                          {m.plantId}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+              {referenceMedia.pestReferences && referenceMedia.pestReferences.length > 0 ? (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9B4747',
+                                textTransform: 'uppercase', letterSpacing: '0.06em',
+                                marginBottom: 6 }}>
+                    {tStrict('scan.result.references.pests', 'Possible pest references')}
+                  </div>
+                  <div style={{ display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                                gap: 6 }}>
+                    {referenceMedia.pestReferences.map((m) => (
+                      <div key={m.id} style={{ textAlign: 'center' }}>
+                        <PlantImage
+                          plantId={m.plantId}
+                          plantLibraryImage={m.imageUrl}
+                          alt={m.plantId}
+                          size="thumb"
+                          testid={'scan-result-pest-' + m.plantId}
+                          style={{ width: '100%', height: 80, borderRadius: 8 }}
+                        />
+                        <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                          {m.plantId}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </section>
           ) : null}
         </>
       ) : (

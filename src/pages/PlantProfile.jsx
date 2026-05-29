@@ -23,7 +23,8 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
-import { universalPlantRuntime, plantIntelligence } from '../runtime/plants/index';
+import { universalPlantRuntime, plantIntelligence,
+         composePlantGallery } from '../runtime/plants/index';
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 import PlantImage from '../components/plants/PlantImage.jsx';
 
@@ -198,6 +199,18 @@ export default function PlantProfile() {
     : null;
   const isFlower = focused.category === 'flower';
 
+  // Verified Plant Media System — gallery + diseases + stage
+  // photography for the focused plant. Pure read-only over the
+  // boot-seeded PlantMediaRegistry.
+  const gallery = catalogId
+    ? composePlantGallery({
+        plantId:        catalogId,
+        lifecycleStage: focused.lifecycleStage,
+        maxGallery:     8,
+        maxDiagnostic:  6,
+      })
+    : null;
+
   return (
     <main style={S.page} data-testid="plant-profile-page" data-plant-id={focused.id}>
       <button type="button" style={S.back}
@@ -326,6 +339,84 @@ export default function PlantProfile() {
               </div>
             </>
           ) : null}
+        </>
+      ) : null}
+
+      {gallery && gallery.gallery && gallery.gallery.length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.gallery', 'Gallery')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-gallery">
+            <div style={{ display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                          gap: 6 }}>
+              {gallery.gallery.map((m) => (
+                <PlantImage
+                  key={m.id}
+                  plantId={m.plantId}
+                  plantLibraryImage={m.imageUrl}
+                  alt={focused.commonName}
+                  size="thumb"
+                  testid={'plant-profile-gallery-' + m.id}
+                  style={{ width: '100%', height: 96, borderRadius: 8 }}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {gallery && gallery.diseases && gallery.diseases.length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.diseases', 'Disease references')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-diseases">
+            <div style={{ display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                          gap: 6 }}>
+              {gallery.diseases.map((m) => (
+                <div key={m.id} style={{ textAlign: 'center' }}>
+                  <PlantImage
+                    plantId={m.plantId}
+                    plantLibraryImage={m.imageUrl}
+                    alt={m.plantId}
+                    size="thumb"
+                    testid={'plant-profile-disease-' + m.plantId}
+                    style={{ width: '100%', height: 80, borderRadius: 8 }}
+                  />
+                  <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>
+                    {m.plantId}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {gallery && gallery.stages && gallery.stages.length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.growthStages', 'Growth stage')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-stages">
+            <div style={{ display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                          gap: 6 }}>
+              {gallery.stages.map((m) => (
+                <PlantImage
+                  key={m.id}
+                  plantId={m.plantId}
+                  plantLibraryImage={m.imageUrl}
+                  alt={m.lifecycleStage || focused.commonName}
+                  size="card"
+                  testid={'plant-profile-stage-' + m.id}
+                />
+              ))}
+            </div>
+          </div>
         </>
       ) : null}
 
