@@ -203,6 +203,30 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         ? w.__appStoreReadiness() : null;
     }, null);
 
+    // Final Release Lock §11 — surfaced summary booleans so QA
+    // can read the high-priority gates at the top of the
+    // envelope without walking sections[].items[].
+    const _sectionPasses = (key: string) => {
+      const s = (sectionsObj as any)[key];
+      if (!s) return false;
+      return s.blockerCount === 0;
+    };
+    const _hasItemPassed = (id: string) => {
+      const r = (evaluation.byId as any)[id];
+      return !!r && r.status === CHECK_STATUS.PASSED;
+    };
+    const flags = Object.freeze({
+      scanStable:                _hasItemPassed('A.noFirstLoadError'),
+      mobileUXClean:             _hasItemPassed('J.noChartImports')
+                                  && _hasItemPassed('J.gatedChartRoutes'),
+      scanToManagedPlantReady:   _sectionPasses('scanToManagedPlant'),
+      plantTimelineReady:        _sectionPasses('plantTimeline'),
+      knowledgeLayerReady:       _sectionPasses('knowledgeLayer'),
+      realPlantMediaReady:       _sectionPasses('realPlantMedia'),
+      offlinePlantCreateReady:   _hasItemPassed('A.offlineQueue'),
+      founderMetricsReal:        _sectionPasses('founderDashboard'),
+    });
+
     return Object.freeze({
       runtimeVersion: RELEASE_LOCK_RUNTIME_VERSION,
       verdict,
@@ -215,6 +239,8 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       diagnosticsAvailable: evaluation.diagnosticsAvailable,
       build:          build || null,
       appStore:       appStore || null,
+      // Final Release Lock spec — top-level priority flags.
+      flags,
     });
   }, Object.freeze({
     runtimeVersion: RELEASE_LOCK_RUNTIME_VERSION,

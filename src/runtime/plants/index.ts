@@ -304,6 +304,11 @@ export function installUniversalPlantRuntimeGlobal(): boolean {
             // Gap-fix §12 — new readiness flags.
             offlineCreateReady:  true,   // engines are fetch-free
             duplicateGuardReady: true,   // idempotency key live
+            // Final Release Lock §4 — spec calls this out
+            // explicitly; PlantTimeline runtime + UI component
+            // both ship. Constant boolean reflects build-time
+            // wiring (CI gate check:plant-runtime asserts).
+            timelineReady:       true,
             runtimeVersion:      UNIVERSAL_PLANT_RUNTIME_VERSION,
           };
         }, {
@@ -311,6 +316,7 @@ export function installUniversalPlantRuntimeGlobal(): boolean {
           categories: {}, healthEngineReady: false,
           taskEngineReady: false, scanToPlantReady: false,
           offlineCreateReady: false, duplicateGuardReady: false,
+          timelineReady: false,
         });
         try { console.log('[Farroway · PlantRuntime health]', out); }
         catch { /* swallow */ }

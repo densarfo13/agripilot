@@ -39,13 +39,14 @@
  *   • No PII; only enum values + booleans.
  */
 
-// Gap-fix sprint — version bumped from v3 → v4 to mark the
-// hardening pass that adds offline-safe plant creation + scan
-// confirmation wiring + governance ownership checks. The first-
-// load behaviour contract (idle entry, no camera auto-start,
-// hard-blocked error card) is unchanged from v3 — bump signals
-// "verified again in this sprint" rather than a behaviour change.
-const RUNTIME_VERSION = 'scan-idle-entry-v4';
+// Final Release Lock pass — version bumped from v4 → `final` to
+// mark the canonical contract per the FARROWAY_RELEASE_LOCK_V1
+// spec. Behaviour unchanged from v3/v4:
+//   • /scan renders ScanEntryCard on first load — never the
+//     camera-error card.
+//   • Camera failure wording is hard-blocked unless BOTH
+//     cameraAttempted AND userInitiatedCamera flip true.
+const RUNTIME_VERSION = 'scan-idle-entry-final';
 
 const _state = {
   cameraAttempted:     false,
