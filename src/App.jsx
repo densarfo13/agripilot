@@ -1546,6 +1546,17 @@ export default function App() {
                 <FarmerProgressPage />
               </SafeRouteShell>
             } />
+            {/* Remove Mobile Dashboard Experience §6 — Progress is
+                renamed to Activity in the grower nav. /activity
+                mounts the same FarmerProgressPage (already
+                action-first, no analytics, GrowthJourneyCard
+                timeline). /progress remains live for backwards
+                compatibility and deep links. */}
+            <Route path="/activity" element={
+              <SafeRouteShell routeName="activity">
+                <FarmerProgressPage />
+              </SafeRouteShell>
+            } />
             {/* Garden Mode Refactor §4 — calm growth-story timeline
                 that replaces Progress as the 4th bottom-nav tab in
                 garden mode. Always-mounted (never gated) so deep

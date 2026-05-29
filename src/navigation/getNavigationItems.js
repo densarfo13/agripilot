@@ -1,29 +1,14 @@
 /**
  * getNavigationItems.js — region-experience-aware bottom nav tabs.
  *
- * Spec port note
- * ──────────────
- * The design doc lists nav targets like `/home`, `/scan`, `/ask`,
- * `/sell`, `/funding`. Several of those don't exist as top-level
- * routes in this codebase yet — the spec was authored against an
- * idealised route set. To keep navigation **working** while the
- * route catalog catches up, each entry resolves the **spoken /
- * displayed label** against the **closest existing real route**:
- *
- *     spec route   → resolved real route   (exists today)
- *     ──────────────────────────────────────
- *     /home        → /dashboard            ← farmer landing
- *     /my-farm     → /my-farm              ✓
- *     /tasks       → /tasks                ✓
- *     /progress    → /progress             ✓
- *     /ask         → /today                ← voice nav lives there
- *     /scan        → /scan-crop            ← real path
- *     /funding     → /program-dashboard    ← farmer funding view
- *     /sell        → /farmer/listings      ← seller-side hub
- *
- * Updating the resolution is a one-line edit per entry. The
- * spoken keyword bank in `VoiceAssistant.jsx` follows the same
- * convention so the two surfaces agree on where every label lands.
+ * Remove Mobile Dashboard Experience (Wave 9) — the grower
+ * bottom nav drops "Progress" (analytics overtone) and
+ * renames the slot to "Activity" (timeline). Farm mode keeps
+ * Sell as the 5th slot; Garden mode keeps Activity. Both
+ * modes always carry Home / (My Farm | My Plants) / Scan /
+ * Tasks. Funding moved off the primary nav for farm users —
+ * it stays reachable from the secondary "More" surface and
+ * via direct URL.
  *
  * Strict-rule audit
  *   • Pure / no React / no I/O.
@@ -48,43 +33,34 @@
  */
 
 const FARM_ITEMS = [
-  // Bottom Nav Home Source-of-Truth \u00A72 \u2014 Home must target /home.
-  // The prior /dashboard target relied on RoleAwareDashboard's
-  // Navigate-to-/home redirect for farmers; routing direct
-  // skips the hop and keeps the canonical Home URL visible
-  // from tap to mount.
-  { key: 'nav.home',     fallback: 'Home',       path: '/home',              icon: '\uD83C\uDFE1', testid: 'tab-home' },
-  { key: 'nav.myFarm',   fallback: 'My Farm',    path: '/my-farm',           icon: '\uD83C\uDF3E', testid: 'tab-farm' },
-  { key: 'nav.tasks',    fallback: 'Tasks',      path: '/tasks',             icon: '\u2705',       testid: 'tab-tasks' },
-  { key: 'nav.progress', fallback: 'Progress',   path: '/progress',          icon: '\uD83D\uDCC8', testid: 'tab-progress' },
-  // Funding tab now points at the new Funding Hub at /funding
-  // (region- and role-aware static catalog). The page itself
-  // checks the fundingHub feature flag and renders a "rolling
-  // out" message when off, so the route is always safe to land.
-  { key: 'nav.funding',  fallback: 'Funding',    path: '/funding',           icon: '\uD83D\uDCB0', testid: 'tab-funding' },
-  { key: 'nav.sell',     fallback: 'Sell',       path: '/farmer/listings',   icon: '\uD83E\uDDFA', testid: 'tab-sell' },
+  // Bottom Nav Home Source-of-Truth §2 — Home targets /home.
+  { key: 'nav.home',     fallback: 'Home',       path: '/home',              icon: '🏡', testid: 'tab-home' },
+  { key: 'nav.myFarm',   fallback: 'My Farm',    path: '/my-farm',           icon: '🌾', testid: 'tab-farm' },
+  { key: 'nav.scan',     fallback: 'Scan',       path: '__scan__',           icon: '📸', testid: 'tab-scan' },
+  { key: 'nav.tasks',    fallback: 'Tasks',      path: '/tasks',             icon: '✅',       testid: 'tab-tasks' },
+  { key: 'nav.sell',     fallback: 'Sell',       path: '/farmer/listings',   icon: '🧺', testid: 'tab-sell' },
 ];
 
 // Scan path resolution is deferred to call time so the new
 // /scan flow is reachable when the `scanDetection` feature
 // flag is on without changing this static table.
 const _BACKYARD_ITEMS_BASE = [
-  { key: 'nav.home',      fallback: 'Home',       path: '/home',      icon: '\uD83C\uDFE1', testid: 'tab-home' },
-  { key: 'nav.myGarden',  fallback: 'My Garden',  path: '/my-farm',   icon: '\uD83C\uDF31', testid: 'tab-farm' },
-  { key: 'nav.tasks',     fallback: 'Tasks',      path: '/tasks',     icon: '\u2705',       testid: 'tab-tasks' },
-  { key: 'nav.progress',  fallback: 'Progress',   path: '/progress',  icon: '\uD83D\uDCC8', testid: 'tab-progress' },
-  { key: 'nav.ask',       fallback: 'Ask',        path: '/today',     icon: '\uD83C\uDFA4', testid: 'tab-ask' },
-  { key: 'nav.scan',      fallback: 'Scan',       path: '__scan__',   icon: '\uD83D\uDCF8', testid: 'tab-scan' },
+  { key: 'nav.home',      fallback: 'Home',       path: '/home',       icon: '🏡', testid: 'tab-home' },
+  { key: 'nav.myPlants',  fallback: 'My Plants',  path: '/my-plants',  icon: '🌱', testid: 'tab-myplants' },
+  { key: 'nav.scan',      fallback: 'Scan',       path: '__scan__',    icon: '📸', testid: 'tab-scan' },
+  { key: 'nav.tasks',     fallback: 'Tasks',      path: '/tasks',      icon: '✅',       testid: 'tab-tasks' },
+  { key: 'nav.activity',  fallback: 'Activity',   path: '/activity',   icon: '📋', testid: 'tab-activity' },
 ];
 
 const GENERIC_ITEMS = [
   // Generic experience: subset of farm items, sell hidden until
   // we know the region opens marketplace flow. Mirrors §10
   // (Sell flow visibility) — backyard + generic both hide Sell.
-  { key: 'nav.home',     fallback: 'Home',     path: '/home',      icon: '\uD83C\uDFE1', testid: 'tab-home' },
-  { key: 'nav.myFarm',   fallback: 'My Farm',  path: '/my-farm',   icon: '\uD83C\uDF3E', testid: 'tab-farm' },
-  { key: 'nav.tasks',    fallback: 'Tasks',    path: '/tasks',     icon: '\u2705',       testid: 'tab-tasks' },
-  { key: 'nav.progress', fallback: 'Progress', path: '/progress',  icon: '\uD83D\uDCC8', testid: 'tab-progress' },
+  { key: 'nav.home',     fallback: 'Home',     path: '/home',      icon: '🏡', testid: 'tab-home' },
+  { key: 'nav.myFarm',   fallback: 'My Farm',  path: '/my-farm',   icon: '🌾', testid: 'tab-farm' },
+  { key: 'nav.scan',     fallback: 'Scan',     path: '__scan__',   icon: '📸', testid: 'tab-scan' },
+  { key: 'nav.tasks',    fallback: 'Tasks',    path: '/tasks',     icon: '✅',       testid: 'tab-tasks' },
+  { key: 'nav.activity', fallback: 'Activity', path: '/activity',  icon: '📋', testid: 'tab-activity' },
 ];
 
 // Static import — Vite ESM has no `require`. Defensive
@@ -119,8 +95,8 @@ function _materialise(items) {
  */
 export function getNavigationItems(experience) {
   if (experience === 'backyard') return _materialise(_BACKYARD_ITEMS_BASE);
-  if (experience === 'generic')  return GENERIC_ITEMS.slice();
-  return FARM_ITEMS.slice();
+  if (experience === 'generic')  return _materialise(GENERIC_ITEMS);
+  return _materialise(FARM_ITEMS);
 }
 
 // Backwards compat — older imports asked for BACKYARD_ITEMS.

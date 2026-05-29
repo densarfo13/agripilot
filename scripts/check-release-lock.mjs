@@ -85,6 +85,7 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-plant-knowledge.mjs',
   'scripts/check-knowledge-layer.mjs',
   'scripts/check-no-farmer-dashboard.mjs',
+  'scripts/check-mobile-no-dashboard.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

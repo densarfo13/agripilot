@@ -38,6 +38,10 @@ import {
 import {
   evaluateChecklist, DIAGNOSTICS_VERSION,
 } from './ReleaseLockDiagnostics';
+import {
+  mobileUXHealth, installMobileUXHealthGlobal,
+  MOBILE_UX_HEALTH_VERSION,
+} from './MobileUXHealth';
 
 const _safe = <T,>(fn: () => T, fb: T): T => {
   try { return fn(); } catch { return fb; }
@@ -51,6 +55,10 @@ export function installReleaseLockGlobal(): boolean {
   return _safe(() => {
     if (typeof window === 'undefined') return false;
     const w = window as any;
+    // Mobile UX health probe — pinned alongside the release lock
+    // so QA can call __mobileUXHealth() to verify the action-first
+    // grower nav stays locked.
+    try { installMobileUXHealthGlobal(); } catch { /* swallow */ }
     if (typeof w.__releaseLock !== 'function') {
       w.__releaseLock = function () {
         const out = computeReleaseLock();
@@ -109,4 +117,7 @@ export {
   computeReleaseLock, loadManualOverrides, setManualOverride,
   clearManualOverrides, exportReleaseLockReport,
   RELEASE_LOCK_RUNTIME_VERSION,
+  // Mobile UX
+  mobileUXHealth, installMobileUXHealthGlobal,
+  MOBILE_UX_HEALTH_VERSION,
 };
