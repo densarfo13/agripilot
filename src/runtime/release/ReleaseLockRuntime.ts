@@ -286,6 +286,32 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         return !!(r && r.organizationScoped);
       }, true),
       evidenceCaptureReady: _hasGlobal('__evidenceHealth'),
+      // Wave 15 — Federation runtime sub-readiness.
+      federationReady:      _hasGlobal('__federationHealth'),
+      oidcReady:            _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__federationHealth !== 'function') return false;
+        const r = w.__federationHealth();
+        return !!(r && r.oidcReady);
+      }, false),
+      claimMappingReady:    _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__federationHealth !== 'function') return false;
+        const r = w.__federationHealth();
+        return !!(r && r.claimMappingReady);
+      }, false),
+      jitProvisioningReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__federationHealth !== 'function') return false;
+        const r = w.__federationHealth();
+        return !!(r && r.jitProvisioningReady);
+      }, false),
+      // Federation audit reuses the existing audit runtime.
+      ssoAuditReady:        _hasGlobal('__auditHealth')
+                              && _hasGlobal('__federationHealth'),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

@@ -105,6 +105,7 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-scan-nav-camera-intent.mjs',
   'scripts/check-admin-impact-records.mjs',
   'scripts/check-prisma-fragment-conflicts.mjs',
+  'scripts/check-federation-security.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

@@ -121,6 +121,22 @@ export function launchReadiness() {
       evidenceCaptureReady: _probe('__evidenceHealth')
         ? !!(_probe('__evidenceHealth') as any).initialized
         : false,
+      // Wave 15 — Federation.
+      federationReady: _probe('__federationHealth')
+        ? !!(_probe('__federationHealth') as any).initialized
+        : false,
+      oidcReady: _probe('__federationHealth')
+        ? !!(_probe('__federationHealth') as any).oidcReady
+        : false,
+      claimMappingReady: _probe('__federationHealth')
+        ? !!(_probe('__federationHealth') as any).claimMappingReady
+        : false,
+      jitProvisioningReady: _probe('__federationHealth')
+        ? !!(_probe('__federationHealth') as any).jitProvisioningReady
+        : false,
+      ssoAuditReady: _probe('__federationHealth')
+        && _probe('__auditHealth')
+        ? true : false,
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

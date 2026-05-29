@@ -54,6 +54,7 @@ const PROBES = [
   ['__adminImpactHealth',   'Admin Impact'],
   ['__buyerDashboardHealth', 'Buyer Dashboard'],
   ['__ngoDashboardHealth',   'NGO Dashboard'],
+  ['__federationHealth',     'Federation'],
   ['__enterpriseReadiness', 'Enterprise Readiness'],
   ['__appStoreReadiness',   'App Store Readiness'],
   ['__releaseLock',         'Release Lock'],

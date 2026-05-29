@@ -50,6 +50,11 @@ export function enterpriseReadiness() {
         && typeof (window as any).__buyerDashboardHealth === 'function'),
       ngoMvpReady:   !!(typeof window !== 'undefined'
         && typeof (window as any).__ngoDashboardHealth === 'function'),
+      // Wave 15 — federation. CONDITIONAL by default for
+      // consumer launch; only an enterprise tenant that
+      // requires SSO would push this to a hard block.
+      federationReady: !!(typeof window !== 'undefined'
+        && typeof (window as any).__federationHealth === 'function'),
       auditLogs:             !!(audit && (audit as any).initialized
                               && (audit as any).appendOnly),
       evidenceChain:         !!(evidence && (evidence as any).initialized),

@@ -1004,6 +1004,14 @@ export default function App() {
             await import('./runtime/organization/index');
           installNgoDashboardGlobal();
         } catch { /* never block boot */ }
+        // Wave 15 — Federation runtime. Pins
+        // __federationHealth() so QA can verify OIDC validator +
+        // SAML placeholder + claim mapper + JIT gate.
+        try {
+          const { installFederationGlobal } =
+            await import('./runtime/auth/federation/index');
+          installFederationGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

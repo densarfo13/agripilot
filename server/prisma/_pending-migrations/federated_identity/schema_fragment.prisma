@@ -1,0 +1,88 @@
+// server/prisma/_pending-migrations/federated_identity/
+//   schema_fragment.prisma
+//
+// PENDING — staged for supervised deploy. NOT placed inside
+// prisma/migrations/ (see RECONCILIATION.md + the May-2026
+// production-502 incident).
+//
+// ─────────────────────────────────────────────────────────────
+// Federated Identity + Enterprise Auth (sprint Wave 15)
+// ─────────────────────────────────────────────────────────────
+
+enum FederationProviderType {
+  oidc
+  saml
+  google
+  apple
+  microsoft_entra
+  okta
+}
+
+model FederationProvider {
+  id              String                  @id @default(cuid())
+  organizationId  String
+  providerType    FederationProviderType
+  name            String
+  issuer          String?
+  clientId        String?
+  /** Reference key into a secrets store. NEVER the secret. */
+  clientSecretRef String?
+  domainHint      String?
+  enabled         Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([organizationId])
+  @@index([providerType])
+}
+
+model FederatedIdentity {
+  id                String   @id @default(cuid())
+  userId            String
+  organizationId    String?
+  providerId        String?
+  providerType      String
+  externalSubject   String
+  email             String
+  emailVerified     Boolean  @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([providerType, externalSubject])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([providerId])
+}
+
+model OrganizationLoginPolicy {
+  id                  String   @id @default(cuid())
+  organizationId      String   @unique
+  /** JSON list of allowed provider types. */
+  allowedProviders    Json
+  requireSso          Boolean  @default(false)
+  allowLocalFallback  Boolean  @default(true)
+  jitProvisioning     Boolean  @default(true)
+  defaultRole         String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model ClaimRoleMapping {
+  id              String   @id @default(cuid())
+  organizationId  String
+  providerId      String?
+  claimName       String
+  claimValue      String
+  /** Must reference a Farroway role from CLAIM_ASSIGNABLE_ROLES.
+   *  Admin / organization_admin are REJECTED by the API on write. */
+  role            String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, providerId, claimName, claimValue])
+  @@index([organizationId])
+  @@index([providerId])
+}
