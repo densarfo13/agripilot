@@ -226,6 +226,12 @@ export default function ScanPage() {
   // via the entry card. ScanFallback / overlays use this to suppress
   // the camera-error card during initial mount.
   const [cameraAttempted, setCameraAttempted] = useState(false);
+  // scan-idle-entry-v3: explicit "user tapped Take photo / Retry
+  // camera" flag. ScanFallback now refuses to render the camera-
+  // error card unless BOTH cameraAttempted AND userInitiatedCamera
+  // are true — hard-blocking the error card on first load even if
+  // a downstream component throws.
+  const [userInitiatedCamera, setUserInitiatedCamera] = useState(false);
   // Hidden gallery input ref — wired below so the "Use saved photo"
   // button on the entry card opens a file picker WITHOUT mounting
   // LiveCameraScanner (no getUserMedia call on the saved-photo path).
@@ -319,6 +325,71 @@ export default function ScanPage() {
       try { trackEvent('scan_opened', { experience }); } catch { /* ignore */ }
     }
   }, [flagOn, experience]);
+
+  // scan-idle-entry-v3 § ROUTE-ENTRY RESET — on every entry to
+  // /scan we force the route into idle mode and wipe any stale
+  // transient "camera_error" state that a prior session may have
+  // restored from localStorage / sessionStorage / runtime
+  // snapshots. Scan HISTORY is preserved — we only clear the
+  // transient UI error/status keys.
+  //
+  // Mount-only effect so this never fights with mid-session
+  // state changes.
+  useEffect(() => {
+    let cancelled = false;
+    // 1. Reset React-local transient state.
+    setPhase('idle');
+    setCameraAttempted(false);
+    setUserInitiatedCamera(false);
+    setError('');
+    setResult(null);
+    setLoadTimedOut(false);
+    // 2. Clear browser-storage camera/scan-UI error keys. NEVER
+    //    touch farroway_scan_history_* — history must survive.
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const KEYS = [
+          'farroway_scan_camera_error',
+          'farroway_scan_capture_error',
+          'farroway_scan_ui_error',
+          'farroway_scan_phase',
+          'farroway_camera_status',
+        ];
+        for (const k of KEYS) {
+          try { localStorage.removeItem(k); } catch { /* swallow */ }
+        }
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        const KEYS = [
+          'farroway_scan_camera_error',
+          'farroway_scan_phase',
+        ];
+        for (const k of KEYS) {
+          try { sessionStorage.removeItem(k); } catch { /* swallow */ }
+        }
+      }
+    } catch { /* never block mount on storage cleanup */ }
+    // 3. Pin window.__forceScanIdle so QA / Sentry can yank the
+    //    route back to idle from the console without a reload.
+    try {
+      if (typeof window !== 'undefined' && !cancelled) {
+        window.__forceScanIdle = function _forceScanIdle() {
+          try {
+            setPhase('idle');
+            setCameraAttempted(false);
+            setUserInitiatedCamera(false);
+            setError('');
+            setResult(null);
+            setLoadTimedOut(false);
+            return true;
+          } catch { return false; }
+        };
+      }
+    } catch { /* swallow */ }
+    return () => { cancelled = true; };
+    // Intentional one-shot — runs once per /scan route mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // iPhone Safari camera hardening (2026-05-13) §1 — the previous
   // 3-second hard-stop fired whenever phase === 'capture', which
@@ -543,9 +614,17 @@ export default function ScanPage() {
 
   // Mount the runtime once. The classifier closures over the ref
   // so input changes don't re-create the runtime.
+  //
+  // EMERGENCY FIX (scan-idle-entry-v3): the prior version passed
+  // `locale: lang`, but `lang` was never declared in this file.
+  // That ReferenceError fired on every ScanPage render, was caught
+  // by ScanErrorBoundary, and surfaced ScanFallback with
+  // reason='crash' — the on-screen "Camera ran into a problem"
+  // card. useScanRuntime tolerates a null/empty locale, so we
+  // pass null. Locale is resolved downstream via tSafe envelopes.
   const _scanRuntime = useScanRuntime({
     activeFarm: profile,
-    locale:     lang,
+    locale:     null,
     classifier: _runActiveScanClassifier,
     autoRegisterDiagnostic: true,
   });
@@ -1260,7 +1339,12 @@ export default function ScanPage() {
   // taps Take photo. The hidden file input below is triggered by
   // the Use-saved-photo button.
   const _handleTakePhoto = () => {
+    // scan-idle-entry-v3: both flags MUST be true for ScanFallback
+    // to be allowed to render its camera-error card. We set them
+    // here, where the user has explicitly tapped Take photo —
+    // not earlier.
     setCameraAttempted(true);
+    setUserInitiatedCamera(true);
     setPhase('capture');
   };
   const _handleUseSavedPhoto = () => {

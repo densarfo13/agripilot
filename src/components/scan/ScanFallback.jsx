@@ -99,9 +99,64 @@ export default function ScanFallback({
   onRetry,
   onUploadFile,
   onSetup,
+  // scan-idle-entry-v3 HARD GUARDS — both default to false.
+  // ScanErrorBoundary renders <ScanFallback reason="crash" /> with
+  // no props, which means these stay false and the camera-error
+  // card cannot fire on first load even if a child threw.
+  cameraAttempted = false,
+  userInitiatedCamera = false,
 }) {
   if (reason === 'setup_required') {
     return <SetupRequiredCard onSetup={onSetup} />;
+  }
+
+  // scan-idle-entry-v3 § FIRST-LOAD HARD BLOCK
+  // If the reason is a camera-failure flavour AND the user has
+  // NOT explicitly initiated the camera, refuse to render the
+  // banned wording ("Camera ran into a problem" / "Use a saved
+  // photo" / "Retry camera"). Render a calm loading surface and
+  // attempt window.__forceScanIdle() so the live ScanPage can
+  // recover into its idle entry card.
+  const isCameraFailureReason = CAMERA_FAIL_REASONS.includes(reason);
+  const firstLoadBlock =
+    isCameraFailureReason && (!cameraAttempted || !userInitiatedCamera);
+  if (firstLoadBlock) {
+    if (typeof window !== 'undefined' && typeof window.__forceScanIdle === 'function') {
+      try { window.__forceScanIdle(); } catch { /* swallow */ }
+    }
+    return (
+      <main style={S.page}
+        data-testid="scan-fallback-blocked"
+        data-reason={reason}
+        data-first-load-block="true"
+      >
+        <div style={S.card}>
+          <h2 style={S.title}>
+            {tSafe('scan.fallback.loading.title', 'Loading scan')}
+          </h2>
+          <p style={S.body}>
+            {tSafe('scan.fallback.loading.body',
+              'Preparing your scan tools. Tap retry if this takes a moment.')}
+          </p>
+          <div style={S.row}>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  if (typeof window !== 'undefined' && window.location) {
+                    window.location.reload();
+                  }
+                } catch { /* swallow */ }
+              }}
+              style={S.primaryBtn}
+              data-testid="scan-fallback-loading-retry"
+            >
+              {tSafe('common.retry', 'Retry')}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   const copy = RETRY_COPY[reason] || RETRY_COPY.crash;
