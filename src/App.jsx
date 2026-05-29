@@ -789,6 +789,14 @@ export default function App() {
         installFarmIntelligenceGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Phase 11 — pin __todayEngine() so QA can introspect the
+        // daily operating composite (briefing + ranked tasks +
+        // streaks + achievements) without re-importing engines.
+        const { installTodayEngineGlobal } =
+          await import('./runtime/today/index.js');
+        installTodayEngineGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
