@@ -48,8 +48,27 @@ import {
   PLANT_CATEGORIES, PLANT_CATEGORY_META, MIN_LAUNCH_TOTAL,
   isPlantCategory, plantCategoryMeta, PLANT_CATEGORIES_VERSION,
 } from './plantCategories';
+// Platform-tier engines (PascalCase per spec)
+import {
+  plantRegistry, registerPlantFromScan, lookupPlant,
+  PLANT_REGISTRY_VERSION,
+} from './PlantRegistry';
+import {
+  generatePlantTasks, PLANT_TASK_ENGINE_VERSION,
+} from './PlantTaskEngine';
+import {
+  computePlantHealthScore, PLANT_HEALTH_BANDS, PLANT_HEALTH_WEIGHTS,
+  PLANT_HEALTH_VERSION,
+} from './PlantHealthEngine';
+import {
+  getPlantKnowledge, answerPlantQuestion, PLANT_KNOWLEDGE_VERSION,
+} from './PlantKnowledgeEngine';
+import {
+  plantProfileEngine, PLANT_PROFILE_ENGINE_VERSION,
+} from './PlantProfileEngine';
 
 export const GLOBAL_PLANT_INTELLIGENCE_VERSION = 'global-plant-intelligence-v1';
+export const GLOBAL_PLANT_PLATFORM_VERSION = 'global-plant-platform-v1';
 
 const _isObj = (v: unknown): v is Record<string, any> =>
   v != null && typeof v === 'object';
@@ -94,14 +113,80 @@ export function globalPlantIntelligence(ctx: any) {
   });
 }
 
+/**
+ * Global Plant Platform composite — the spec's higher-tier
+ * surface. Combines library + search + profile WITH the platform
+ * engines (registry + task generation + health score + knowledge)
+ * so the UI gets one frozen envelope it can render straight onto
+ * a plant page.
+ */
+export function globalPlantPlatform(ctx: any) {
+  const c       = _isObj(ctx) ? ctx : {};
+  const base    = globalPlantIntelligence(c);
+  const registry = _safe(() => plantRegistry(), null);
+  const tasks    = c.plantId
+    ? _safe(() => generatePlantTasks(c as any), null) : null;
+  const health   = c.plantId
+    ? _safe(() => computePlantHealthScore(c as any), null) : null;
+  const knowledge = c.plantId
+    ? _safe(() => getPlantKnowledge(c as any), null) : null;
+  const profileFull = c.plantId
+    ? _safe(() => plantProfileEngine(c as any), null) : null;
+  const registration = c.scanResult
+    ? _safe(() => registerPlantFromScan(c as any), null) : null;
+  const knowledgeAnswer = c.question
+    ? _safe(() => answerPlantQuestion(c as any), null) : null;
+  return Object.freeze({
+    runtimeVersion: GLOBAL_PLANT_PLATFORM_VERSION,
+    generatedAt:    _now(),
+    base,
+    registry,
+    tasks,
+    health,
+    knowledge,
+    profileFull,
+    registration,
+    knowledgeAnswer,
+    versions: Object.freeze({
+      categories: PLANT_CATEGORIES_VERSION,
+      library:    PLANT_LIBRARY_VERSION,
+      search:     PLANT_SEARCH_VERSION,
+      profile:    PLANT_PROFILE_VERSION,
+      registry:   PLANT_REGISTRY_VERSION,
+      taskEngine: PLANT_TASK_ENGINE_VERSION,
+      health:     PLANT_HEALTH_VERSION,
+      knowledge:  PLANT_KNOWLEDGE_VERSION,
+      profileEngine: PLANT_PROFILE_ENGINE_VERSION,
+    }),
+    deferred: Object.freeze({
+      datasetVolume:
+        'spec target is 1,500+ rows; content-team backlog',
+      autoAddPersistence:
+        'registry.registerPlantFromScan emits a caller-ready '
+        + 'payload; persistence stays with the wave-5 single-writer',
+      llmAssistant:
+        'knowledge Q&A uses deterministic intent routing; no LLM',
+      satelliteSignals:
+        'satellite intelligence stays gated until backend ships',
+    }),
+  });
+}
+
 export function installGlobalPlantIntelligenceGlobal(): boolean {
   return _safe(() => {
     if (typeof window === 'undefined') return false;
     const w = window as any;
-    if (typeof w.__plantLibrary === 'function') return true;
+    if (typeof w.__plantLibrary === 'function'
+        && typeof w.__plantPlatform === 'function') return true;
     w.__plantLibrary = function (innerCtx: any) {
       const out = globalPlantIntelligence(innerCtx || {});
       try { console.log('[Farroway · Global Plant Intelligence]', out); }
+      catch { /* swallow */ }
+      return out;
+    };
+    w.__plantPlatform = function (innerCtx: any) {
+      const out = globalPlantPlatform(innerCtx || {});
+      try { console.log('[Farroway · Global Plant Platform]', out); }
       catch { /* swallow */ }
       return out;
     };
@@ -117,4 +202,11 @@ export {
   plantProfile, PLANT_PROFILE_VERSION,
   PLANT_CATEGORIES, PLANT_CATEGORY_META, MIN_LAUNCH_TOTAL,
   isPlantCategory, plantCategoryMeta, PLANT_CATEGORIES_VERSION,
+  plantRegistry, registerPlantFromScan, lookupPlant,
+  PLANT_REGISTRY_VERSION,
+  generatePlantTasks, PLANT_TASK_ENGINE_VERSION,
+  computePlantHealthScore, PLANT_HEALTH_BANDS, PLANT_HEALTH_WEIGHTS,
+  PLANT_HEALTH_VERSION,
+  getPlantKnowledge, answerPlantQuestion, PLANT_KNOWLEDGE_VERSION,
+  plantProfileEngine, PLANT_PROFILE_ENGINE_VERSION,
 };
