@@ -780,6 +780,15 @@ export default function App() {
         installScanUIHealthGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Phase 10 — pin __farmIntelligence() so QA can introspect
+        // the farm-intelligence composite (health score + field
+        // risk + weather actions + crop stage + trust) without
+        // re-importing the engines.
+        const { installFarmIntelligenceGlobal } =
+          await import('./runtime/farmIntelligence/index.js');
+        installFarmIntelligenceGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
