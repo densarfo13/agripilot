@@ -839,6 +839,18 @@ export default function App() {
         installGardenPlatformGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Intelligence Layer (Phase 16) — pin __intelligenceLayer()
+        // so QA can introspect the proactive Today composite
+        // (dailyGrowEngine + growthStage + weatherAdjuster +
+        // regionalDiseaseCalendar + pestRisk + diseaseForecast +
+        // soilAdvisor + satelliteGate + gardenHealth + smartScan).
+        // Backend pieces (satellite, market, LLM) are named-
+        // deferred in the envelope.
+        const { installIntelligenceLayerGlobal } =
+          await import('./intelligence/intelligenceLayer');
+        installIntelligenceLayerGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
