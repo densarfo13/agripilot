@@ -1,0 +1,75 @@
+{
+  "_": "Farroway Release Lock v1 — generated report template.",
+  "_note": "scripts/check-release-lock.mjs writes the live report to FARROWAY_RELEASE_LOCK_V1.json on every CI run. That file is git-ignored; this template ships in the repo so pipelines can pin the expected shape.",
+  "schema": "FARROWAY_RELEASE_LOCK_V1",
+  "source": "check-release-lock.mjs (static) | runtime browser via window.__releaseLockReport()",
+  "timestamp": "<ISO-8601 UTC>",
+  "verdict": "GREEN | YELLOW | RED",
+  "score": "<0-100>",
+  "blockers": [
+    {
+      "id": "<short id>",
+      "detail": "<human-readable reason>"
+    }
+  ],
+  "warnings": [
+    {
+      "id": "<short id>",
+      "detail": "<human-readable reason — non-blocking>"
+    }
+  ],
+  "passed": [
+    "<list of static checks that passed>"
+  ],
+  "summary": {
+    "total":   "<int>",
+    "passed":  "<int>",
+    "failed":  "<int>",
+    "warning": "<int>",
+    "pending": "<int>",
+    "unknown": "<int>",
+    "blockers": "<int>"
+  },
+  "sections": {
+    "scanRuntime":        "<SectionSummary>",
+    "plantRuntime":       "<SectionSummary>",
+    "scanToManagedPlant": "<SectionSummary>",
+    "myPlants":           "<SectionSummary>",
+    "plantProfile":       "<SectionSummary>",
+    "plantTimeline":      "<SectionSummary>",
+    "knowledgeLayer":     "<SectionSummary>",
+    "dailyBriefing":      "<SectionSummary>",
+    "realPlantMedia":     "<SectionSummary>",
+    "founderDashboard":   "<SectionSummary>"
+  },
+  "diagnosticsAvailable": {
+    "scanUIHealth":        "<boolean>",
+    "scanRuntimeHealthV8": "<boolean>",
+    "plantRuntimeHealth":  "<boolean>",
+    "founderMetricsHealth":"<boolean>",
+    "queueHealth":         "<boolean>",
+    "continuityHealth":    "<boolean>",
+    "farrowayBuild":       "<boolean>",
+    "appStoreReadiness":   "<boolean>",
+    "plantMediaHealth":    "<boolean>",
+    "farrowayKnowledge":   "<boolean>"
+  },
+  "knowledgeReport": {
+    "plants":   "<int (target ≥ 200)>",
+    "diseases": "<int (target ≥ 15)>",
+    "pests":    "<int (target ≥ 15)>"
+  },
+  "build": {
+    "sha":     "<deploy commit sha>",
+    "commit":  "<short sha alias>",
+    "version": "<package.json version>"
+  },
+  "appStore": {
+    "mode":      "internal | testflight | external",
+    "warnings":  "<string[]>",
+    "releaseLockVerdict":  "GREEN | YELLOW | RED",
+    "releaseLockScore":    "<0-100>",
+    "releaseLockBlockers": "<list>",
+    "blockedReason":       "release_lock_RED | null"
+  }
+}

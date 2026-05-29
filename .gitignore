@@ -21,3 +21,9 @@ Thumbs.db
 # we ignore them here so an interrupted deploy can't commit stale metadata.
 /BUILD_SHA
 /BUILD_TIMESTAMP
+
+# Release Lock — generated CI artifacts are ignored; only the
+# committed template at reports/FARROWAY_RELEASE_LOCK_V1.template.json
+# is tracked so pipelines can see the expected shape.
+reports/*.json
+!reports/*.template.json

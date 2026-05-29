@@ -228,6 +228,9 @@ const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
 // Internal-only founder dashboard (Phase 15 — gated by
 // `localStorage.farroway_internal === '1'` OR `?internal=1`).
 const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
+// Internal-only Release Lock dashboard (Wave 9 — gated by the
+// same `localStorage.farroway_internal === '1'` flag).
+const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
 // Enterprise Agriculture Platform — orgs / programs / cohorts
 // / interventions / analytics / trust. Internal gate today;
 // per-OrganizationMember role check ships with the migration.
@@ -904,6 +907,13 @@ export default function App() {
             await import('./knowledge/index');
           installFarrowayKnowledgeGlobal();
         } catch { /* never block boot */ }
+        // Farroway Release Lock — pin __releaseLock() and extend
+        // __appStoreReadiness with releaseLockVerdict.
+        try {
+          const { installReleaseLockGlobal } =
+            await import('./runtime/release/index');
+          installReleaseLockGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1380,6 +1390,10 @@ export default function App() {
               enforces the internal gate; the route is public so
               authorised users can reach it via direct URL. */}
           <Route path="/internal/founder" element={<FounderDashboard />} />
+          {/* Internal release-lock dashboard. The page renders an
+              "internal only" empty state for normal users — the
+              route is registered globally so admins can deep-link. */}
+          <Route path="/internal/release-lock" element={<ReleaseLockPage />} />
           {/* Enterprise Agriculture Platform. Same internal-gate
               pattern; full OrganizationMember role check ships
               with the Prisma migration. */}
