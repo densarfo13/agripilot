@@ -1,0 +1,58 @@
+// PENDING — staged for supervised deploy. Compose with admin_impact_demographics; the bulk onboarding runtime references FarmerProfile + ProgramEnrollment + Organization defined in that canonical fragment.
+
+enum BatchStatus {
+  uploaded
+  validating
+  validated
+  importing
+  imported
+  failed
+}
+
+enum BatchRowStatus {
+  valid
+  invalid
+  duplicate
+  imported
+  failed
+}
+
+model EnrollmentBatch {
+  id                 String      @id @default(cuid())
+  organizationId     String
+  programId          String?
+  cohortId           String?
+  uploadedByUserId   String
+  fileName           String
+  status             BatchStatus @default(uploaded)
+  totalRows          Int
+  validRows          Int
+  invalidRows        Int
+  duplicateRows      Int
+  importedRows       Int
+  failedRows         Int
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([organizationId])
+  @@index([programId])
+  @@index([uploadedByUserId])
+}
+
+model EnrollmentBatchRow {
+  id              String         @id @default(cuid())
+  batchId         String
+  rowNumber       Int
+  rawData         Json
+  normalizedData  Json?
+  status          BatchRowStatus @default(valid)
+  errorMessage    String?
+  duplicateReason String?
+  matchedUserId   String?
+  createdUserId   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([batchId, rowNumber])
+  @@index([batchId, status])
+}

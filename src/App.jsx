@@ -467,6 +467,12 @@ const FarmerProgressTab = lazy(() => import('./pages/FarmerProgressTab.jsx'));
 const AdminControlPage = lazy(() => import('./pages/AdminControlPage.jsx'));
 const AdminOrganizationsPage = lazy(() => import('./pages/AdminOrganizationsPage.jsx'));
 const OrganizationDashboardPage = lazy(() => import('./pages/OrganizationDashboardPage.jsx'));
+// Wave 17 — Bulk farmer onboarding pages.
+const OnboardingHome        = lazy(() => import('./pages/organization/OnboardingHome.jsx'));
+const OnboardingImport      = lazy(() => import('./pages/organization/OnboardingImport.jsx'));
+const OnboardingBatches     = lazy(() => import('./pages/organization/OnboardingBatches.jsx'));
+const OnboardingBatchDetail = lazy(() => import('./pages/organization/OnboardingBatchDetail.jsx'));
+const AddFarmerPage         = lazy(() => import('./pages/organization/AddFarmerPage.jsx'));
 const AdminSyncQueuePage = lazy(() => import('./pages/AdminSyncQueuePage.jsx'));
 const FarmerRegisterPage = lazy(() => import('./pages/FarmerRegisterPage.jsx'));
 // FarmerDashboardPage was the legacy V1 farmer dashboard rendered
@@ -1041,6 +1047,15 @@ export default function App() {
           const { installHumanReviewGlobal } =
             await import('./runtime/review/index');
           installHumanReviewGlobal();
+        } catch { /* never block boot */ }
+        // Wave 17 — Bulk farmer onboarding runtime. Pins
+        // __bulkOnboardingHealth() so QA can verify CSV parser +
+        // validator + duplicate detector + farmer provisioner +
+        // batch runtime + audit trail.
+        try {
+          const { installBulkOnboardingGlobal } =
+            await import("./runtime/organization/onboarding/index");
+          installBulkOnboardingGlobal();
         } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
@@ -2239,6 +2254,15 @@ export default function App() {
                 The earlier 'ngo' / 'institutional_admin' labels do
                 not match the RBAC role contract — corrected here. */}
             <Route path="organization" element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', ...ADMIN_ROLES]}><OrganizationDashboardPage /></RoleRoute>} />
+            {/* Wave 17 — Bulk farmer onboarding (spec roles only;
+                farmer/gardener/grower/buyer are intentionally
+                excluded — these surfaces enroll farmers, not
+                farmers themselves). */}
+            <Route path="organization/onboarding"                  element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', 'organization_admin', ...ADMIN_ROLES]}><OnboardingHome /></RoleRoute>} />
+            <Route path="organization/onboarding/import"           element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', 'organization_admin', ...ADMIN_ROLES]}><OnboardingImport /></RoleRoute>} />
+            <Route path="organization/onboarding/batches"          element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', 'organization_admin', ...ADMIN_ROLES]}><OnboardingBatches /></RoleRoute>} />
+            <Route path="organization/onboarding/batches/:batchId" element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', 'organization_admin', ...ADMIN_ROLES]}><OnboardingBatchDetail /></RoleRoute>} />
+            <Route path="organization/onboarding/add-farmer"       element={<RoleRoute roles={['ngo_admin', 'field_officer', 'organization_viewer', 'organization_admin', ...ADMIN_ROLES]}><AddFarmerPage /></RoleRoute>} />
             <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />
             <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="admin/issues" element={<RoleRoute roles={ADMIN_ROLES}><AdminIssuesPage /></RoleRoute>} />

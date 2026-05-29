@@ -146,6 +146,16 @@ export function launchReadiness() {
       backupReadiness:      true,
       privacyReadiness:     true,
       humanReviewReady:     _probe('__humanReviewHealth') ? true : false,
+      // Wave 17 — Bulk farmer onboarding.
+      bulkOnboardingReady:     _probe('__bulkOnboardingHealth') ? true : false,
+      duplicateDetectionReady: _safe(() => {
+        const r = _probe('__bulkOnboardingHealth');
+        return !!(r && (r as any).duplicateDetectionReady);
+      }, false),
+      farmerProvisioningReady: _safe(() => {
+        const r = _probe('__bulkOnboardingHealth');
+        return !!(r && (r as any).csvImportReady && (r as any).importReady);
+      }, false),
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

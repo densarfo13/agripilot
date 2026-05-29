@@ -321,6 +321,22 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       backupReadiness:        true,   // doc-based, see check:backup-docs
       privacyReadiness:       true,   // doc-based, see check:privacy-readiness
       humanReviewReady:       _hasGlobal("__humanReviewHealth"),
+      // Wave 17 — Bulk farmer onboarding.
+      bulkOnboardingReady:     _hasGlobal("__bulkOnboardingHealth"),
+      duplicateDetectionReady: _safe(() => {
+        if (typeof window === "undefined") return false;
+        const w = window as any;
+        if (typeof w.__bulkOnboardingHealth !== "function") return false;
+        const r = w.__bulkOnboardingHealth();
+        return !!(r && r.duplicateDetectionReady);
+      }, false),
+      farmerProvisioningReady: _safe(() => {
+        if (typeof window === "undefined") return false;
+        const w = window as any;
+        if (typeof w.__bulkOnboardingHealth !== "function") return false;
+        const r = w.__bulkOnboardingHealth();
+        return !!(r && r.csvImportReady && r.importReady);
+      }, false),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

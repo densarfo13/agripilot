@@ -60,6 +60,7 @@ const PROBES = [
   ['__retentionHealth',    'Retention Policy'],
   ['__monitoringHealth',   'Monitoring'],
   ['__humanReviewHealth',  'Human Review'],
+  ['__bulkOnboardingHealth', 'Bulk Onboarding'],
   ['__enterpriseReadiness', 'Enterprise Readiness'],
   ['__appStoreReadiness',   'App Store Readiness'],
   ['__releaseLock',         'Release Lock'],
