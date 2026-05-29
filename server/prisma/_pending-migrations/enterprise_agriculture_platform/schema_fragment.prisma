@@ -1,0 +1,302 @@
+// server/prisma/_pending-migrations/enterprise_agriculture_platform/
+//   schema_fragment.prisma
+//
+// READY-TO-MERGE Prisma model fragment for the Enterprise
+// Agriculture Platform. NOT auto-applied — sits in
+// `_pending-migrations/` so a supervised migration sprint can:
+//
+//   1. Copy these models into server/prisma/schema.prisma
+//   2. Add relations on User / Farm / Garden / Plant / Task / Scan
+//      (commented suggestions below)
+//   3. Run `npx prisma migrate dev --name add_enterprise_agriculture_platform`
+//      in a staging DB first
+//   4. Verify rollback path works
+//   5. Run `npx prisma migrate deploy` against production
+//
+// Why deferred this sprint
+// ────────────────────────
+//   This is the SECOND staged migration alongside the Universal
+//   Plant Runtime tables. The standing migration safety guard
+//   requires supervised deploy. The runtime + route stubs work
+//   today by returning 503 'enterprise_persistence_pending_migration'
+//   for write endpoints, with reads producing real aggregates
+//   from existing tables + localStorage managed plants.
+//
+// Strict-rule audit
+//   • Additive only — new tables, no schema changes to existing.
+//   • All foreign keys are optional so backfill is not required.
+//   • Idempotency keys + cascade delete protect against the
+//     dedup / orphan scenarios the spec calls out.
+
+enum OrgType {
+  NGO
+  GOVERNMENT
+  COOPERATIVE
+  AGRIBUSINESS
+  UNIVERSITY
+  DONOR
+  INTERNAL
+}
+
+enum OrgStatus {
+  active
+  inactive
+  pilot
+}
+
+enum OrgRole {
+  owner
+  admin
+  program_manager
+  field_officer
+  analyst
+  viewer
+}
+
+enum ProgramStatus {
+  draft
+  active
+  paused
+  completed
+}
+
+enum CohortType {
+  region
+  crop
+  training
+  intervention
+  season
+  custom
+}
+
+enum InterventionType {
+  seed
+  fertilizer
+  training
+  irrigation
+  pest_control
+  finance
+  advisory
+  other
+}
+
+enum InterventionStatus {
+  planned
+  delivered
+  accepted
+  completed
+  failed
+}
+
+enum ParticipantStatus {
+  assigned
+  delivered
+  accepted
+  completed
+  missed
+}
+
+enum ProgramFarmerStatus {
+  invited
+  active
+  inactive
+  completed
+}
+
+enum ReportStatus {
+  draft
+  generated
+  exported
+}
+
+enum TrustType {
+  farmer
+  farm
+  program
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  type      OrgType   @default(INTERNAL)
+  country   String?
+  region    String?
+  status    OrgStatus @default(pilot)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  members  OrganizationMember[]
+  programs Program[]
+  cohorts  Cohort[]
+  interventions Intervention[]
+  reports  ImpactReport[]
+
+  @@index([type])
+  @@index([country])
+  @@index([status])
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole  @default(viewer)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // user User @relation(fields: [userId], references: [id])  // wire on merge
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Program {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  cropFocus      String?
+  country        String?
+  region         String?
+  district       String?
+  startDate      DateTime?
+  endDate        DateTime?
+  status         ProgramStatus @default(draft)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  farmers        ProgramFarmer[]
+  cohorts        Cohort[]
+  interventions  Intervention[]
+  reports        ImpactReport[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model ProgramFarmer {
+  id        String              @id @default(cuid())
+  programId String
+  userId    String
+  farmId    String?
+  gardenId  String?
+  cohortId  String?
+  status    ProgramFarmerStatus @default(invited)
+  joinedAt  DateTime?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  cohort  Cohort? @relation(fields: [cohortId], references: [id])
+
+  // user   User    @relation(fields: [userId], references: [id])
+  // farm   Farm?   @relation(fields: [farmId], references: [id])
+
+  @@unique([programId, userId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Cohort {
+  id             String     @id @default(cuid())
+  organizationId String
+  programId      String?
+  name           String
+  type           CohortType @default(custom)
+  country        String?
+  region         String?
+  district       String?
+  crop           String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  program      Program?     @relation(fields: [programId], references: [id])
+  farmers      ProgramFarmer[]
+
+  @@index([organizationId, programId])
+  @@index([type])
+}
+
+model Intervention {
+  id             String             @id @default(cuid())
+  organizationId String
+  programId      String
+  cohortId       String?
+  name           String
+  type           InterventionType   @default(other)
+  description    String?
+  plannedDate    DateTime?
+  deliveredDate  DateTime?
+  status         InterventionStatus @default(planned)
+  // Idempotency: enterprise:intervention-complete:{interventionId}:{userId}
+  idempotencyKey String?            @unique
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  program      Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  participants InterventionParticipant[]
+
+  @@index([organizationId, programId])
+  @@index([status])
+}
+
+model InterventionParticipant {
+  id               String            @id @default(cuid())
+  interventionId   String
+  userId           String
+  farmId           String?
+  plantId          String?
+  status           ParticipantStatus @default(assigned)
+  evidencePhotoUrl String?
+  notes            String?
+  completedAt      DateTime?
+  idempotencyKey   String?           @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  intervention Intervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@unique([interventionId, userId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ImpactReport {
+  id             String       @id @default(cuid())
+  organizationId String
+  programId      String?
+  title          String
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  metrics        Json
+  status         ReportStatus @default(draft)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  program      Program?     @relation(fields: [programId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model TrustScore {
+  id        String    @id @default(cuid())
+  userId    String?
+  farmId    String?
+  programId String?
+  score     Int
+  type      TrustType
+  factors   Json
+  createdAt DateTime  @default(now())
+
+  @@index([type])
+  @@index([userId])
+  @@index([farmId])
+  @@index([programId])
+}

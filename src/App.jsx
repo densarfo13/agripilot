@@ -228,6 +228,10 @@ const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
 // Internal-only founder dashboard (Phase 15 — gated by
 // `localStorage.farroway_internal === '1'` OR `?internal=1`).
 const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
+// Enterprise Agriculture Platform — orgs / programs / cohorts
+// / interventions / analytics / trust. Internal gate today;
+// per-OrganizationMember role check ships with the migration.
+const EnterpriseHome     = lazy(() => import('./pages/enterprise/EnterpriseHome.jsx'));
 const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
@@ -858,6 +862,17 @@ export default function App() {
         installIntelligenceLayerGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Enterprise Agriculture Platform — pin
+        // __enterpriseRuntime, __enterpriseHealth,
+        // __enterpriseAnalyticsHealth (+ extend
+        // __appStoreReadiness warnings). Composes 7 enterprise
+        // engines (organizations / programs / cohorts /
+        // interventions / analytics / trust / reports).
+        const { installEnterpriseRuntimeGlobal } =
+          await import('./runtime/enterprise/index');
+        installEnterpriseRuntimeGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Global Plant Intelligence Library — pin __plantLibrary()
         // so QA can introspect the unified browsing surface
         // (categories + search + profiles + library across all 7
@@ -1352,6 +1367,10 @@ export default function App() {
               enforces the internal gate; the route is public so
               authorised users can reach it via direct URL. */}
           <Route path="/internal/founder" element={<FounderDashboard />} />
+          {/* Enterprise Agriculture Platform. Same internal-gate
+              pattern; full OrganizationMember role check ships
+              with the Prisma migration. */}
+          <Route path="/enterprise" element={<EnterpriseHome />} />
           <Route path="/start" element={<FarmerEntry />} />
 
           {/* Farmer-first entry (phone OTP, Google, offline) */}

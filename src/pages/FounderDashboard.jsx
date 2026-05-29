@@ -321,6 +321,38 @@ export default function FounderDashboard() {
             </div>
           </>
         ) : null}
+
+        {/* Phase 12 — Enterprise section. Reads from local
+            enterprise storage keys; all '—' when no enterprise
+            data exists. No fake revenue, contracts, customers. */}
+        <div style={S.section}>
+          {tSafe('founder.enterprise', 'Enterprise')}
+        </div>
+        <div style={S.grid}>
+          <Tile testid="founder-enterprise-orgs"
+            value={_read('farroway_enterprise_orgs', []).length || null}
+            label={tSafe('founder.orgs', 'Organizations')}
+            emptyHint="Create via /enterprise once migration ships" />
+          <Tile testid="founder-enterprise-active-programs"
+            value={(_read('farroway_enterprise_programs', [])
+                     .filter((p) => p && p.status === 'active').length) || null}
+            label={tSafe('founder.activePrograms', 'Active programs')} />
+          <Tile testid="founder-enterprise-enrolled-farmers"
+            value={(_read('farroway_enterprise_participants', []).length) || null}
+            label={tSafe('founder.enrolledFarmers', 'Enrolled farmers')} />
+          <Tile testid="founder-enterprise-interventions-completed"
+            value={(_read('farroway_enterprise_interventions', [])
+                     .filter((i) => i && i.status === 'completed').length) || null}
+            label={tSafe('founder.interventionsCompleted',
+              'Interventions completed')} />
+          <Tile testid="founder-enterprise-reports-generated"
+            value={(_read('farroway_enterprise_reports', []).length) || null}
+            label={tSafe('founder.reportsGenerated', 'Reports generated')} />
+          <Tile testid="founder-enterprise-data-ready"
+            value="Yes"
+            label={tSafe('founder.dataReady',
+              'Enterprise data readiness')} />
+        </div>
       </div>
     </main>
   );

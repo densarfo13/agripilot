@@ -68,6 +68,11 @@ import intelligenceRoutes from './modules/intelligence/routes.js';
 // :applicationId wildcard. See the route module's header for the
 // full spec mapping.
 import flywheelRoutes from './modules/flywheel/routes.js';
+// Enterprise Agriculture Platform — organizations, programs,
+// cohorts, interventions, analytics, reports, trust.
+// Writes return 503 until the Prisma migration ships (staged at
+// server/prisma/_pending-migrations/enterprise_agriculture_platform/).
+import enterpriseRoutes from './modules/enterprise/routes.js';
 import reviewRoutes from './modules/reviews/routes.js';
 import portfolioRoutes from './modules/portfolio/routes.js';
 import reportRoutes from './modules/reports/routes.js';
@@ -1230,6 +1235,8 @@ app.use('/api/benchmark', benchmarkRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
 // Phase 14 — Data Flywheel Intelligence API
 app.use('/api/flywheel', flywheelRoutes);
+// Enterprise Agriculture Platform
+app.use('/api/enterprise', enterpriseRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/reports', reportRoutes);
