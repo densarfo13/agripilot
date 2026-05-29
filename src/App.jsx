@@ -2020,8 +2020,21 @@ export default function App() {
               <Route path="progress" element={<FarmerProgressTab />} />
             </Route>
             <Route path="investor/farmers/:farmerId" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><InvestorIntelligencePage /></RoleRoute>} />
-            <Route path="portfolio" element={<PortfolioPage />} />
-            <Route path="reports" element={<ReportsPage />} />
+            {/* Remove Mobile Dashboard Experience §5 — /portfolio
+                and /reports use chart-style analytics and must NOT
+                be reachable by normal farmers/gardeners. Gated to
+                staff + admin + investor roles. The CI guard
+                check:no-farmer-dashboard enforces this lock. */}
+            <Route path="portfolio" element={
+              <RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}>
+                <PortfolioPage />
+              </RoleRoute>
+            } />
+            <Route path="reports" element={
+              <RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}>
+                <ReportsPage />
+              </RoleRoute>
+            } />
             <Route path="reports/print" element={<RoleRoute roles={STAFF_ROLES}><PrintableReportPage /></RoleRoute>} />
             <Route path="audit" element={<RoleRoute roles={ADMIN_ROLES}><AuditPage /></RoleRoute>} />
             <Route path="admin/users" element={<RoleRoute roles={ADMIN_ROLES}><AdminUsersPage /></RoleRoute>} />

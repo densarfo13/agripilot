@@ -45,6 +45,21 @@ export interface ChecklistItem {
   hint?:     string;
 }
 
+/* ── Section J' — No Farmer Dashboard Experience ───────────
+ * Added by the "Remove Mobile Dashboard Experience" sprint —
+ * these checks ensure normal farmers/gardeners never see
+ * traditional analytics dashboards. The CI gate
+ * check:no-farmer-dashboard owns the static enforcement. */
+const NO_FARMER_DASHBOARD: ChecklistItem[] = [
+  { id: 'J.noChartImports', section: 'founderDashboard',
+    label: 'No chart libraries on user-facing pages', kind: 'auto',
+    severity: 'blocker',
+    hint: 'check:no-farmer-dashboard fails CI if recharts/chart.js leaks to non-admin pages.' },
+  { id: 'J.gatedChartRoutes', section: 'founderDashboard',
+    label: '/portfolio and /reports are role-gated', kind: 'auto',
+    severity: 'blocker' },
+];
+
 /* ── Section A — Scan Runtime ──────────────────────────────── */
 const A_SCAN_RUNTIME: ChecklistItem[] = [
   { id: 'A.manual.iphoneSafari',  section: 'scanRuntime',
@@ -245,6 +260,7 @@ export const RELEASE_CHECKLIST: ReadonlyArray<ChecklistItem> = Object.freeze(
     A_SCAN_RUNTIME as any, B_PLANT_RUNTIME as any, C_SCAN_TO_PLANT as any,
     D_MY_PLANTS as any, E_PROFILE as any, F_TIMELINE as any,
     G_KNOWLEDGE as any, H_BRIEFING as any, I_MEDIA as any, J_FOUNDER as any,
+    NO_FARMER_DASHBOARD as any,
   ).map((i: any) => Object.freeze(i))
 );
 
