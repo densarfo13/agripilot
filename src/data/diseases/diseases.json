@@ -1,0 +1,307 @@
+[
+  {
+    "id": "leaf-spot",
+    "name": "Leaf Spot",
+    "symptoms": [
+      "Brown or black circular spots on leaves",
+      "Yellow halos surrounding the spots",
+      "Premature yellowing and leaf drop",
+      "Spots may merge into larger blotches over time"
+    ],
+    "causes": [
+      "Fungal pathogens — Cercospora, Alternaria, Septoria",
+      "Bacterial pathogens — Xanthomonas, Pseudomonas",
+      "Prolonged leaf wetness from overhead watering",
+      "Poor air circulation between plants"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy affected leaves immediately",
+      "Apply neem oil spray every 7 days during outbreaks",
+      "Spray copper-based organic fungicide weekly",
+      "Improve airflow by thinning dense growth",
+      "Apply compost tea as a foliar feed"
+    ],
+    "treatmentChemical": [
+      "Chlorothalonil fungicide every 7-14 days",
+      "Mancozeb for persistent fungal cases",
+      "Streptomycin for bacterial leaf spot",
+      "Follow label dilution rates — do not over-apply"
+    ],
+    "prevention": [
+      "Water at soil level, never overhead",
+      "Space plants according to mature size for airflow",
+      "Rotate crops on a 2-3 year cycle",
+      "Mulch to prevent soil-splash onto leaves",
+      "Disinfect pruning tools between plants",
+      "Avoid handling plants when foliage is wet"
+    ],
+    "images": ["plants/diseases/leaf-spot"]
+  },
+  {
+    "id": "powdery-mildew",
+    "name": "Powdery Mildew",
+    "symptoms": [
+      "White powdery coating on leaves, stems, and buds",
+      "Distorted or curled leaves",
+      "Yellowing and premature leaf drop",
+      "Reduced flowering and fruit yield",
+      "Stunted new growth"
+    ],
+    "causes": [
+      "Fungal pathogens in the Erysiphales order",
+      "High humidity with dry leaf surfaces",
+      "Crowded plantings and poor air circulation",
+      "Shaded conditions favouring spore germination"
+    ],
+    "treatmentOrganic": [
+      "Spray 1 tsp baking soda + 1 tsp horticultural oil per 1 L water weekly",
+      "Apply diluted milk spray (1 part milk : 9 parts water) every 7 days",
+      "Use potassium bicarbonate fungicide weekly",
+      "Prune affected leaves and discard (do not compost)",
+      "Increase sunlight exposure where possible"
+    ],
+    "treatmentChemical": [
+      "Sulphur-based fungicide every 10-14 days",
+      "Myclobutanil for severe systemic infections",
+      "Trifloxystrobin for resistant strains",
+      "Rotate fungicide classes to prevent resistance"
+    ],
+    "prevention": [
+      "Plant resistant cultivars when available",
+      "Provide 6+ hours of direct sunlight",
+      "Avoid evening watering",
+      "Thin foliage for cross-ventilation",
+      "Apply preventative neem oil during humid periods"
+    ],
+    "images": ["plants/diseases/powdery-mildew"]
+  },
+  {
+    "id": "blight",
+    "name": "Blight",
+    "symptoms": [
+      "Rapid browning and wilting of leaves and stems",
+      "Dark water-soaked lesions on foliage",
+      "White fuzzy growth on leaf undersides (late blight)",
+      "Fruits develop firm brown patches and rot",
+      "Entire plants collapse within days in severe cases"
+    ],
+    "causes": [
+      "Phytophthora infestans (late blight)",
+      "Alternaria solani (early blight)",
+      "Cool wet weather (60-80 °F / 15-27 °C)",
+      "Splash-borne spores from infected debris"
+    ],
+    "treatmentOrganic": [
+      "Remove and burn infected plants — do not compost",
+      "Apply copper-based organic fungicide every 5-7 days",
+      "Spray Bacillus subtilis biofungicide preventatively",
+      "Mulch heavily to block soil-borne spores",
+      "Stake plants to keep foliage off the ground"
+    ],
+    "treatmentChemical": [
+      "Chlorothalonil or mancozeb every 7 days",
+      "Cymoxanil + famoxadone for active infections",
+      "Metalaxyl for systemic protection (rotate classes)"
+    ],
+    "prevention": [
+      "Choose certified disease-free seed and transplants",
+      "Plant resistant tomato/potato varieties",
+      "Avoid overhead watering at all costs",
+      "Destroy volunteer nightshades each spring",
+      "Rotate crops on a 3+ year cycle",
+      "Apply preventative sprays before rainy spells"
+    ],
+    "images": ["plants/diseases/blight"]
+  },
+  {
+    "id": "rust",
+    "name": "Rust",
+    "symptoms": [
+      "Orange, yellow, or reddish-brown pustules on leaf undersides",
+      "Corresponding yellow flecks on leaf upper surfaces",
+      "Premature defoliation in severe infections",
+      "Weakened plant vigor and reduced yield",
+      "Spore powder rubs off on fingers when touched"
+    ],
+    "causes": [
+      "Pucciniales fungi — many species, often host-specific",
+      "Warm humid conditions (60-75 °F / 15-24 °C) with leaf wetness",
+      "Wind-dispersed spores from nearby infected plants",
+      "Alternate hosts allowing the rust life cycle to complete"
+    ],
+    "treatmentOrganic": [
+      "Remove infected leaves at first sign and seal in bin (do not compost)",
+      "Spray sulphur dust on cool dry mornings",
+      "Apply neem oil every 7-10 days during outbreaks",
+      "Use compost tea to boost natural leaf microbiome",
+      "Prune for better airflow through the canopy"
+    ],
+    "treatmentChemical": [
+      "Triadimefon for ornamental rust",
+      "Myclobutanil on fruit trees and vegetables",
+      "Propiconazole for cereal rusts",
+      "Apply at first symptom — curative use is less effective"
+    ],
+    "prevention": [
+      "Select rust-resistant cultivars",
+      "Eliminate nearby alternate hosts (e.g. junipers near apples)",
+      "Avoid overhead watering",
+      "Space and prune for airflow",
+      "Clean up fallen leaves each autumn"
+    ],
+    "images": ["plants/diseases/rust"]
+  },
+  {
+    "id": "wilt",
+    "name": "Wilt",
+    "symptoms": [
+      "Sudden wilting of leaves despite moist soil",
+      "Yellowing starting at lower leaves and moving upward",
+      "Brown vascular tissue visible when stem is cut",
+      "One-sided wilting on tomato/cucurbit plants",
+      "Plant death within days to weeks"
+    ],
+    "causes": [
+      "Fusarium oxysporum (fusarium wilt)",
+      "Verticillium dahliae (verticillium wilt)",
+      "Erwinia tracheiphila — vectored by cucumber beetles",
+      "Soil temperatures above 75 °F / 24 °C favour fusarium",
+      "Soil-borne — persists for years in infested soil"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy infected plants immediately",
+      "Solarise soil with clear plastic in hot months",
+      "Inoculate seedlings with Trichoderma harzianum",
+      "Drench root zone with Bacillus subtilis solution",
+      "Increase soil organic matter to suppress pathogens"
+    ],
+    "treatmentChemical": [
+      "No effective curative chemicals — focus on prevention",
+      "Pre-plant soil fumigation with metam-sodium (commercial only)",
+      "Fungicide drenches with thiophanate-methyl as supportive treatment"
+    ],
+    "prevention": [
+      "Plant resistant varieties (look for VFN coding on tomatoes)",
+      "Rotate non-host crops for 4+ years",
+      "Sanitise tools and stakes between seasons",
+      "Use clean seed and certified transplants",
+      "Avoid over-fertilising with nitrogen",
+      "Control insect vectors (cucumber beetles) early"
+    ],
+    "images": ["plants/diseases/wilt"]
+  },
+  {
+    "id": "root-rot",
+    "name": "Root Rot",
+    "symptoms": [
+      "Wilting despite wet soil",
+      "Yellowing lower leaves",
+      "Black, mushy, or slimy roots when uprooted",
+      "Foul rotting smell from the root ball",
+      "Stunted growth and plant decline"
+    ],
+    "causes": [
+      "Pythium, Phytophthora, Rhizoctonia, Fusarium fungi",
+      "Overwatering and poorly draining soil",
+      "Compacted soil restricting oxygen to roots",
+      "Reused contaminated pots or potting mix"
+    ],
+    "treatmentOrganic": [
+      "Stop watering and let soil dry partially",
+      "Remove plant, cut away black mushy roots with sterile blade",
+      "Repot in fresh well-draining mix with perlite/pumice",
+      "Drench with diluted hydrogen peroxide (1 tbsp / L) once",
+      "Apply mycorrhizal inoculant to encourage healthy roots"
+    ],
+    "treatmentChemical": [
+      "Drench with mefenoxam for Pythium/Phytophthora",
+      "Etridiazole for ornamental container plants",
+      "Thiophanate-methyl for general fungal root rot"
+    ],
+    "prevention": [
+      "Use pots with drainage holes",
+      "Choose well-draining substrate (avoid heavy clay)",
+      "Water only when top 2-3 cm of soil is dry",
+      "Sterilise reused pots with 10 % bleach solution",
+      "Raise garden beds for better drainage",
+      "Avoid burying stems below their original soil line"
+    ],
+    "images": ["plants/diseases/root-rot"]
+  },
+  {
+    "id": "anthracnose",
+    "name": "Anthracnose",
+    "symptoms": [
+      "Sunken dark lesions on fruit, leaves, and stems",
+      "Pink or orange spore masses in lesion centres in humid weather",
+      "Premature fruit drop",
+      "Twig dieback on woody plants",
+      "Leaf curling and distortion on hosts like sycamore and mango"
+    ],
+    "causes": [
+      "Colletotrichum and Apiognomonia fungi",
+      "Warm humid conditions (60-80 °F / 15-27 °C)",
+      "Spread via rain splash and contaminated tools",
+      "Overwinters in fallen debris and bark cankers"
+    ],
+    "treatmentOrganic": [
+      "Prune affected branches 15 cm below symptoms",
+      "Disinfect tools with 70 % alcohol between cuts",
+      "Apply copper-based organic fungicide at bud-break",
+      "Mulch heavily to suppress soil-borne spores",
+      "Apply Bacillus amyloliquefaciens biofungicide"
+    ],
+    "treatmentChemical": [
+      "Chlorothalonil at first symptom, every 7-14 days",
+      "Azoxystrobin for fruit-bearing crops",
+      "Mancozeb for ornamental hosts",
+      "Combine with copper for synergy"
+    ],
+    "prevention": [
+      "Plant resistant cultivars",
+      "Rake and destroy fallen leaves and fruit each autumn",
+      "Avoid overhead irrigation",
+      "Prune for airflow and sunlight penetration",
+      "Apply dormant copper spray on woody hosts"
+    ],
+    "images": ["plants/diseases/anthracnose"]
+  },
+  {
+    "id": "black-spot",
+    "name": "Black Spot",
+    "symptoms": [
+      "Circular black spots on rose leaves with fringed edges",
+      "Yellow halos around spots, leaves turn yellow then drop",
+      "Defoliation starts on lower leaves and moves up",
+      "Weakened plants with sparse blooms",
+      "Cane lesions in severe cases"
+    ],
+    "causes": [
+      "Diplocarpon rosae fungus",
+      "Warm humid weather above 75 °F / 24 °C",
+      "Leaf wetness for 7+ continuous hours",
+      "Spores splash from infected debris on the soil"
+    ],
+    "treatmentOrganic": [
+      "Remove every infected leaf — including those on the ground",
+      "Spray 1 tbsp baking soda + 1 tsp horticultural oil per 4 L water weekly",
+      "Apply sulphur dust on cool dry mornings",
+      "Use neem oil every 7-10 days during humid periods",
+      "Mulch base with shredded bark to block spore splash"
+    ],
+    "treatmentChemical": [
+      "Chlorothalonil every 7-10 days",
+      "Myclobutanil for systemic protection",
+      "Tebuconazole for resistant cases",
+      "Rotate three different fungicide classes through the season"
+    ],
+    "prevention": [
+      "Plant black-spot-resistant rose varieties (Knock Out, Bonica)",
+      "Water at soil level in the morning",
+      "Provide 6+ hours of full sun",
+      "Prune for airflow each spring",
+      "Apply preventative dormant-oil + copper spray at bud-break"
+    ],
+    "images": ["plants/diseases/black-spot"]
+  }
+]

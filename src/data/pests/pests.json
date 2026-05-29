@@ -1,0 +1,318 @@
+[
+  {
+    "id": "aphids",
+    "name": "Aphids",
+    "symptoms": [
+      "Curled, distorted, or yellowing leaves",
+      "Sticky honeydew coating on leaves and stems",
+      "Sooty mold growing on the honeydew",
+      "Stunted new growth and deformed buds",
+      "Clusters of tiny soft-bodied insects on new growth and leaf undersides"
+    ],
+    "lifecycle": [
+      "Egg — overwinters on host plant in cold climates",
+      "Nymph — 4 instars over 7-10 days to maturity",
+      "Adult — winged females disperse in summer; wingless females reproduce asexually (parthenogenesis)",
+      "10-30 generations per year depending on climate",
+      "One female can produce 80+ offspring without mating"
+    ],
+    "treatmentOrganic": [
+      "Spray strong jet of water to dislodge — repeat every 2 days",
+      "Apply insecticidal soap to infested foliage every 5-7 days",
+      "Release ladybugs, lacewings, or parasitic wasps",
+      "Spray neem oil weekly until populations crash",
+      "Dust diatomaceous earth on dry foliage as a barrier"
+    ],
+    "treatmentChemical": [
+      "Pyrethrin spray for fast knockdown",
+      "Imidacloprid systemic for severe ornamental infestations",
+      "Acetamiprid where bee-safety is required",
+      "Avoid neonicotinoids on flowering plants"
+    ],
+    "prevention": [
+      "Companion plant with marigolds, garlic, chives, and nasturtiums",
+      "Encourage beneficial insects with diverse flowering plants",
+      "Avoid over-fertilising with nitrogen (lush growth attracts aphids)",
+      "Inspect new plants before introducing them",
+      "Use reflective mulch to confuse winged aphids"
+    ],
+    "images": ["plants/pests/aphids"]
+  },
+  {
+    "id": "armyworm",
+    "name": "Armyworm",
+    "symptoms": [
+      "Ragged holes chewed in leaves, often overnight",
+      "Skeletonised leaves with only veins remaining",
+      "Plants stripped down to the stalk in severe outbreaks",
+      "Frass (dark pellets) on leaves and at the plant base",
+      "Caterpillars feed at night and hide under debris by day"
+    ],
+    "lifecycle": [
+      "Egg — laid in clusters of 50-200 on leaves or grasses",
+      "Larva — 6 instars over 14-21 days; this is the damaging stage",
+      "Pupa — pupates in the soil for 7-14 days",
+      "Adult moth — lives 9-14 days and lays up to 1,500 eggs",
+      "3-6 generations per year, migrates over long distances"
+    ],
+    "treatmentOrganic": [
+      "Spray Bacillus thuringiensis kurstaki (Bt) at dusk every 5-7 days",
+      "Hand-pick larvae in the early morning or after dark",
+      "Apply spinosad spray for advanced infestations",
+      "Release Trichogramma egg parasitoid wasps",
+      "Apply nematode (Steinernema carpocapsae) drench to the soil"
+    ],
+    "treatmentChemical": [
+      "Chlorantraniliprole at first sign of damage",
+      "Lambda-cyhalothrin pyrethroid for emergency knockdown",
+      "Emamectin benzoate for resistant fall armyworm",
+      "Rotate insecticide classes to prevent resistance"
+    ],
+    "prevention": [
+      "Pheromone traps to monitor adult moth flights",
+      "Encourage natural enemies — birds, ground beetles, parasitic wasps",
+      "Maintain weed-free field borders that harbour egg-laying moths",
+      "Plant trap crops (e.g. napier grass border for maize)",
+      "Scout fields weekly during peak season",
+      "Till crop residue after harvest to expose pupae"
+    ],
+    "images": ["plants/pests/armyworm"]
+  },
+  {
+    "id": "whitefly",
+    "name": "Whitefly",
+    "symptoms": [
+      "Tiny white moth-like insects fly up when foliage is disturbed",
+      "Yellowing, mottled, or curling leaves",
+      "Sticky honeydew and sooty mold growth",
+      "Stunted plants and reduced yields",
+      "Virus transmission (e.g. tomato yellow leaf curl, cassava mosaic)"
+    ],
+    "lifecycle": [
+      "Egg — laid on leaf undersides, hatches in 5-10 days",
+      "Nymph — 4 instars over 2-4 weeks, sessile after first instar",
+      "Pupa — non-feeding stage inside the final nymph skin",
+      "Adult — lives 30-60 days and lays 200-400 eggs",
+      "Continuous breeding in warm climates and greenhouses"
+    ],
+    "treatmentOrganic": [
+      "Hang yellow sticky traps near affected plants",
+      "Spray insecticidal soap on leaf undersides every 5-7 days",
+      "Apply neem oil at dusk every 7-10 days",
+      "Release Encarsia formosa parasitoid wasps in greenhouses",
+      "Vacuum adults from foliage in the early morning while sluggish"
+    ],
+    "treatmentChemical": [
+      "Pymetrozine for selective whitefly control",
+      "Pyriproxyfen insect growth regulator on nymphs",
+      "Acetamiprid systemic for ornamental crops",
+      "Spiromesifen for both nymphs and eggs"
+    ],
+    "prevention": [
+      "Use reflective silver mulch to repel adults",
+      "Install fine insect-mesh on greenhouse vents",
+      "Inspect transplants thoroughly before bringing them home",
+      "Remove and destroy heavily infested leaves",
+      "Avoid planting whitefly-magnet hosts (e.g. poinsettia) near vegetables",
+      "Rotate to non-host crops in heavily infested fields"
+    ],
+    "images": ["plants/pests/whitefly"]
+  },
+  {
+    "id": "thrips",
+    "name": "Thrips",
+    "symptoms": [
+      "Silvery or bronze streaks on leaves and petals",
+      "Black specks of frass on damaged surfaces",
+      "Distorted growth and deformed flowers",
+      "Tomato spotted wilt virus transmission",
+      "Slender 1-2 mm insects visible with a hand lens"
+    ],
+    "lifecycle": [
+      "Egg — inserted into plant tissue, hatches in 3-5 days",
+      "Larva — 2 instars over 7-14 days on leaves and flowers",
+      "Pupa — pre-pupal and pupal stages in the soil or leaf litter",
+      "Adult — lives 30-45 days and lays 80+ eggs",
+      "Up to 15 generations per year in warm climates"
+    ],
+    "treatmentOrganic": [
+      "Hang blue sticky traps near affected plants",
+      "Spray spinosad every 7 days during outbreaks",
+      "Apply insecticidal soap to all leaf surfaces",
+      "Release predatory mites (Amblyseius cucumeris)",
+      "Drench soil with beneficial nematodes (Steinernema feltiae)"
+    ],
+    "treatmentChemical": [
+      "Spinetoram for rotation with spinosad",
+      "Abamectin on persistent infestations",
+      "Methomyl for emergency knockdown (highly toxic — last resort)",
+      "Cyantraniliprole as a systemic option"
+    ],
+    "prevention": [
+      "Use insect-mesh screens on greenhouses (mesh < 0.2 mm)",
+      "Avoid planting near grassy field margins",
+      "Remove weeds that host thrips year-round",
+      "Mulch with reflective material to deter flight",
+      "Quarantine new ornamentals for 2 weeks before introducing"
+    ],
+    "images": ["plants/pests/thrips"]
+  },
+  {
+    "id": "spider-mites",
+    "name": "Spider Mites",
+    "symptoms": [
+      "Fine speckling or stippling on upper leaf surfaces",
+      "Fine silken webbing on leaf undersides and between stems",
+      "Bronzed, dusty, or pale appearance on heavily infested leaves",
+      "Leaf drop and stunted growth in severe cases",
+      "Tiny (< 0.5 mm) red, yellow, or green mites visible with a hand lens"
+    ],
+    "lifecycle": [
+      "Egg — laid singly on leaf undersides, hatches in 3 days at 26 °C",
+      "Larva — 6-legged, feeds for 1-2 days",
+      "Protonymph + deutonymph — 8-legged immatures over 4-5 days",
+      "Adult — lives 2-4 weeks, female lays 100+ eggs",
+      "Complete life cycle in 5-20 days; many generations per season"
+    ],
+    "treatmentOrganic": [
+      "Spray strong jet of water on leaf undersides every 2-3 days",
+      "Apply insecticidal soap weekly to all foliage surfaces",
+      "Spray horticultural oil to smother eggs and adults",
+      "Release predatory mites (Phytoseiulus persimilis)",
+      "Increase humidity around houseplants — mites prefer dry conditions"
+    ],
+    "treatmentChemical": [
+      "Abamectin every 10-14 days",
+      "Bifenazate for resistant populations",
+      "Fenpyroximate IGR for outdoor crops",
+      "Avoid pyrethroids — they kill predatory mites worse than spider mites"
+    ],
+    "prevention": [
+      "Maintain adequate watering and humidity",
+      "Mist houseplant foliage regularly",
+      "Avoid dusty conditions that protect mites from predators",
+      "Inspect new plants under leaves for early webbing",
+      "Encourage native predators by reducing broad-spectrum spray use"
+    ],
+    "images": ["plants/pests/spider-mites"]
+  },
+  {
+    "id": "scale",
+    "name": "Scale",
+    "symptoms": [
+      "Small bumpy oval discs (1-5 mm) attached to stems and leaves",
+      "Yellow chlorotic spots beneath the scale insect",
+      "Sticky honeydew and sooty mold on soft scale infestations",
+      "Branch dieback and overall plant decline",
+      "Heavily infested plants may shed leaves prematurely"
+    ],
+    "lifecycle": [
+      "Egg — laid under the female scale cover",
+      "Crawler — mobile newly-hatched stage; this is when scale is vulnerable",
+      "Settled nymph — inserts mouthparts and forms its protective covering",
+      "Adult female — lays 100-1000 eggs under her shell; legless and immobile",
+      "1-3 generations per year depending on species and climate"
+    ],
+    "treatmentOrganic": [
+      "Scrape scale off small infestations with a soft brush",
+      "Spray dormant horticultural oil on woody hosts in late winter",
+      "Apply summer-weight oil to active crawlers in spring/summer",
+      "Dab individual scales with rubbing alcohol on a cotton swab",
+      "Encourage parasitic wasps (Aphytis, Encarsia) and ladybirds"
+    ],
+    "treatmentChemical": [
+      "Imidacloprid soil drench for systemic ornamental control",
+      "Buprofezin IGR targeting crawlers",
+      "Pyriproxyfen on greenhouse infestations",
+      "Sulfoxaflor for tough soft-scale infestations"
+    ],
+    "prevention": [
+      "Inspect new plants for scale before bringing them home",
+      "Prune dense interior growth to expose hidden scales",
+      "Avoid over-fertilising with nitrogen",
+      "Monitor with sticky tape wrapped around stems to catch crawlers",
+      "Maintain healthy plant vigor — stressed plants attract scale"
+    ],
+    "images": ["plants/pests/scale"]
+  },
+  {
+    "id": "mealybugs",
+    "name": "Mealybugs",
+    "symptoms": [
+      "White cottony or waxy masses on stems, leaf joints, and roots",
+      "Yellowing, wilting, and stunted growth",
+      "Sticky honeydew and sooty mold on affected plants",
+      "Distorted new growth and dropping leaves",
+      "Heavy infestations cling to leaf undersides in cottony clusters"
+    ],
+    "lifecycle": [
+      "Egg — laid in cottony egg sacs, hatches in 7-10 days",
+      "Crawler — 1st instar nymphs disperse to feeding sites",
+      "Nymph — 3 instars over 6-10 weeks (longer for males)",
+      "Adult female — lives 2-3 months, lays 300-600 eggs",
+      "Males have wings and exist briefly to mate; do not feed",
+      "Continuous breeding indoors; 2-3 outdoor generations per year"
+    ],
+    "treatmentOrganic": [
+      "Dab individual mealybugs with 70 % isopropyl alcohol on a cotton swab",
+      "Wash off colonies with strong water spray weekly",
+      "Apply insecticidal soap to all stem joints and undersides",
+      "Release Cryptolaemus montrouzieri (mealybug destroyer beetle)",
+      "Spray neem oil every 7 days to smother and disrupt growth"
+    ],
+    "treatmentChemical": [
+      "Acetamiprid for systemic control on ornamentals",
+      "Buprofezin growth regulator targeting nymphs",
+      "Spirotetramat for citrus mealybugs",
+      "Avoid broad-spectrum sprays that kill mealybug predators"
+    ],
+    "prevention": [
+      "Quarantine new plants for 3-4 weeks before introducing",
+      "Wipe leaves regularly to detect early infestations",
+      "Avoid overcrowding plants — mealybugs spread by touch",
+      "Keep dust off leaves — encourages mealybugs and discourages predators",
+      "Repot houseplants in fresh sterile media every 1-2 years"
+    ],
+    "images": ["plants/pests/mealybugs"]
+  },
+  {
+    "id": "beetles",
+    "name": "Beetles",
+    "symptoms": [
+      "Holes chewed in leaves, sometimes skeletonising the leaf",
+      "Damaged flowers and developing fruit",
+      "Visible adult beetles feeding in groups",
+      "Larvae (grubs) damaging roots in the soil",
+      "Wilting plants where root feeding is heavy"
+    ],
+    "lifecycle": [
+      "Egg — laid in soil or on host foliage",
+      "Larva (grub) — 3 instars over weeks to months, feeds on roots",
+      "Pupa — pupates in soil chamber for 2-3 weeks",
+      "Adult — flies, feeds, and mates for several weeks",
+      "1 generation per year for most species (e.g. Japanese beetle, cucumber beetle)"
+    ],
+    "treatmentOrganic": [
+      "Hand-pick adults in the early morning and drown in soapy water",
+      "Apply neem oil weekly to deter feeding and disrupt eggs",
+      "Spray pyrethrin or spinosad for active infestations",
+      "Apply beneficial nematodes (Heterorhabditis) to soil for grubs",
+      "Use floating row covers until flowering for cucurbits"
+    ],
+    "treatmentChemical": [
+      "Carbaryl as a broad-spectrum knockdown on adults",
+      "Imidacloprid soil drench for grubs",
+      "Chlorantraniliprole on larval populations",
+      "Rotate to avoid resistance"
+    ],
+    "prevention": [
+      "Companion plant with garlic, chives, and tansy",
+      "Use kaolin clay foliar coating to deter feeding",
+      "Hand-tilling exposes pupae to birds and weather",
+      "Avoid drought-stressing plants — stressed plants attract beetles",
+      "Maintain healthy lawn to reduce grub habitat",
+      "Use pheromone traps only at field perimeters (they can attract more beetles)"
+    ],
+    "images": ["plants/pests/beetles"]
+  }
+]

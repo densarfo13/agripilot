@@ -24,7 +24,9 @@ import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { universalPlantRuntime, plantIntelligence,
-         composePlantGallery } from '../runtime/plants/index';
+         composePlantGallery,
+         composePlantEntry, findDisease, findPest }
+  from '../runtime/plants/index';
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 import PlantImage from '../components/plants/PlantImage.jsx';
 
@@ -211,6 +213,17 @@ export default function PlantProfile() {
       })
     : null;
 
+  // Plant Knowledge Database — composed PlantEntry with growth
+  // stages, careGuide, commonDiseases, commonPests. Joins
+  // PLANT_DB + knowledge supplement + DISEASE_DB + PEST_DB.
+  const knowledge = catalogId ? composePlantEntry(catalogId) : null;
+  const careGuide = knowledge && knowledge.careGuide;
+  const growthStages = knowledge && knowledge.growthStages;
+  const linkedDiseases = (knowledge && knowledge.commonDiseases || [])
+    .map((id) => findDisease(id)).filter(Boolean);
+  const linkedPests = (knowledge && knowledge.commonPests || [])
+    .map((id) => findPest(id)).filter(Boolean);
+
   return (
     <main style={S.page} data-testid="plant-profile-page" data-plant-id={focused.id}>
       <button type="button" style={S.back}
@@ -339,6 +352,101 @@ export default function PlantProfile() {
               </div>
             </>
           ) : null}
+        </>
+      ) : null}
+
+      {careGuide && Object.keys(careGuide).length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.careGuide', 'Care guide')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-care-guide">
+            {['water','sun','soil','fertilizer','pruning','temperature','notes']
+              .filter((k) => careGuide[k])
+              .map((k) => (
+                <div key={k} style={{ padding: '6px 0',
+                                       borderBottom: '1px solid rgba(31,41,51,0.06)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8',
+                                 textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {tSafe('plantProfile.care.' + k, k)}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#1F2933', marginTop: 2 }}>
+                    {careGuide[k]}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </>
+      ) : null}
+
+      {growthStages && growthStages.length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.growthStagesList', 'Growth stages')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-growth-stages">
+            {growthStages.map((g, i) => (
+              <div key={i} style={{ padding: '6px 0',
+                                     borderBottom: '1px solid rgba(31,41,51,0.06)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2933' }}>
+                  {g.stage}
+                  {typeof g.durationDays === 'number'
+                    ? ' · ~' + g.durationDays + ' days' : ''}
+                </div>
+                {g.description ? (
+                  <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
+                    {g.description}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {linkedDiseases.length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.commonDiseases', 'Common diseases')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-common-diseases">
+            {linkedDiseases.map((d) => (
+              <div key={d.id} style={{ padding: '8px 0',
+                                        borderBottom: '1px solid rgba(31,41,51,0.06)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2933' }}>
+                  {d.name}
+                </div>
+                {d.symptoms && d.symptoms[0] ? (
+                  <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
+                    {d.symptoms[0]}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {linkedPests.length > 0 ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.commonPests', 'Common pests')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-common-pests">
+            {linkedPests.map((p) => (
+              <div key={p.id} style={{ padding: '8px 0',
+                                        borderBottom: '1px solid rgba(31,41,51,0.06)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1F2933' }}>
+                  {p.name}
+                </div>
+                {p.symptoms && p.symptoms[0] ? (
+                  <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
+                    {p.symptoms[0]}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
         </>
       ) : null}
 

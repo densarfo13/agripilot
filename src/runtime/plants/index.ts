@@ -454,4 +454,20 @@ export {
 } from './media';
 export type { PlantMedia, PlantMediaType } from './media';
 
+// Plant Knowledge Database — diseases + pests + plant care
+// supplement (growthStages, commonDiseases, commonPests,
+// careGuide). Composes the existing PLANT_DB with two new
+// catalogs at src/data/diseases and src/data/pests.
+export {
+  DISEASE_DB, findDisease, searchDiseases, DISEASE_DB_VERSION,
+} from '../../data/diseases/index.js';
+export {
+  PEST_DB, findPest, searchPests, PEST_DB_VERSION,
+} from '../../data/pests/index.js';
+export {
+  PLANT_KNOWLEDGE, GROWTH_STAGE_TEMPLATES,
+  findPlantKnowledge, composePlantEntry,
+  PLANT_KNOWLEDGE_VERSION,
+} from '../../data/plants/knowledge.js';
+
 export type { ManagedPlant };
