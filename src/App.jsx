@@ -221,6 +221,8 @@ const MinimalFarmSetup   = lazy(() => import('./pages/MinimalFarmSetup.jsx'));
 // (not replacing) the existing setup paths so deep links keep
 // working.
 const QuickGardenSetup   = lazy(() => import('./pages/setup/QuickGardenSetup.jsx'));
+// Universal Plant Runtime — My Plants home grid.
+const MyPlants           = lazy(() => import('./pages/MyPlants.jsx'));
 const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
@@ -862,6 +864,15 @@ export default function App() {
         installGlobalPlantIntelligenceGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Universal Plant Runtime — pin __plantRuntime() so QA
+        // can introspect the runtime composite (managed Plant
+        // records + lifecycle transitions + per-plant memory
+        // graph + recommendations + tasks + health scoring).
+        const { installUniversalPlantRuntimeGlobal } =
+          await import('./runtime/plants');
+        installUniversalPlantRuntimeGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
@@ -1325,6 +1336,9 @@ export default function App() {
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
+          {/* Universal Plant Runtime home grid */}
+          <Route path="/my-plants" element={<MyPlants />} />
+          <Route path="/plants"    element={<Navigate to="/my-plants" replace />} />
           <Route path="/start" element={<FarmerEntry />} />
 
           {/* Farmer-first entry (phone OTP, Google, offline) */}

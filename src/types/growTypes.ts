@@ -29,6 +29,7 @@ export const GROW_TYPES = [
   'herb',
   'houseplant',
   'tree',
+  'shrub',
   'garden',
   'greenhouse',
 ] as const;
@@ -43,6 +44,7 @@ export const GROW_TYPE_ICONS: Record<GrowType, string> = {
   herb:       '🌿',
   houseplant: '🪴',
   tree:       '🌳',
+  shrub:      '🌿',
   garden:     '🏡',
   greenhouse: '🏠',
 };
@@ -55,6 +57,7 @@ export const GROW_TYPE_LABEL_KEY: Record<GrowType, string> = {
   herb:       'grow.type.herb',
   houseplant: 'grow.type.houseplant',
   tree:       'grow.type.tree',
+  shrub:      'grow.type.shrub',
   garden:     'grow.type.garden',
   greenhouse: 'grow.type.greenhouse',
 };
@@ -67,6 +70,7 @@ export const GROW_TYPE_LABEL_DEFAULT: Record<GrowType, string> = {
   herb:       'Herbs',
   houseplant: 'Indoor Plants',
   tree:       'Trees',
+  shrub:      'Shrubs',
   garden:     'Home Garden',
   greenhouse: 'Greenhouse',
 };

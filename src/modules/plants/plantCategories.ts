@@ -35,7 +35,7 @@ export const PLANT_CATEGORIES_VERSION = 'plant-categories-v1';
 
 export const PLANT_CATEGORIES = [
   'flower', 'vegetable', 'fruit', 'herb',
-  'houseplant', 'crop', 'tree',
+  'houseplant', 'crop', 'tree', 'shrub',
 ] as const;
 
 export type PlantCategory = typeof PLANT_CATEGORIES[number];
@@ -96,6 +96,13 @@ export const PLANT_CATEGORY_META: Record<PlantCategory, CategoryMeta> = {
     icon: GROW_TYPE_ICONS.tree,
     labelKey: 'plant.category.tree',
     labelDefault: 'Trees',
+    minLaunch: 100,
+  },
+  shrub: {
+    id: 'shrub',
+    icon: GROW_TYPE_ICONS.shrub,
+    labelKey: 'plant.category.shrub',
+    labelDefault: 'Shrubs',
     minLaunch: 100,
   },
 };
