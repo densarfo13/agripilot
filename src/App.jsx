@@ -826,6 +826,19 @@ export default function App() {
         installDataFlywheelGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Grow Platform (15-phase grow-mode expansion) — pin
+        // __gardenPlatform() so QA can introspect the
+        // grow-mode composite (growType + plant DB + flower
+        // advisor + companions + pollinator + scan tagger +
+        // garden mode + indoor care + marketplace gate +
+        // discover feed + library + assistant + dashboard +
+        // multi-garden). Farm mode is unchanged; Garden mode
+        // is opt-in.
+        const { installGardenPlatformGlobal } =
+          await import('./runtime/grow/index.js');
+        installGardenPlatformGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
