@@ -35,6 +35,7 @@ const _state = {
   // Capability flags — set by env / runtime probe.
   realClassifierAvailable: false,
   classifierEndpoint:      null,
+  classifierProvider:      null,
   scanApiEnabled:          false,
   mlScanFlagOn:            false,
   // Per-session telemetry.
@@ -54,29 +55,93 @@ const _now = () => _safe(() => new Date().toISOString(), '');
 
 /**
  * Detect real-classifier availability from build-time + runtime hints.
- * Called once at install; can be re-called when env changes.
- *
- *   @param {{
- *     mlScanFlagOn?: boolean,
- *     scanApiEnabled?: boolean,
- *     classifierEndpoint?: string|null,
- *   }} hints
+ * Synchronous, preserved for callers that need a quick read after
+ * install — but does NOT make the network probe. Use
+ * `probeClassifierAvailability()` for the authoritative server probe.
  */
 export function detectClassifierAvailability(hints) {
   const h = hints || {};
   _state.mlScanFlagOn = !!h.mlScanFlagOn;
   _state.scanApiEnabled = !!h.scanApiEnabled;
   _state.classifierEndpoint = h.classifierEndpoint || null;
-  // The classifier is "really available" only when BOTH the UI flag
-  // is on AND the API path is wired AND an endpoint is known.
-  _state.realClassifierAvailable =
-    _state.mlScanFlagOn
-    && _state.scanApiEnabled
-    && !!_state.classifierEndpoint;
   return Object.freeze({
     ok: true,
     realClassifierAvailable: _state.realClassifierAvailable,
   });
+}
+
+/**
+ * RC1 — authoritative classifier availability via the server
+ * /api/health/scan-provider endpoint. Replaces the frontend-only
+ * VITE_SCAN_API_URL probe.
+ *
+ *   await probeClassifierAvailability()
+ *   → { provider, configured, realClassifierAvailable, reason? }
+ *
+ * Behaviour:
+ *   • GET /api/health/scan-provider
+ *   • 2xx + classifierAvailable === true  → realClassifierAvailable = true
+ *   • non-2xx OR fetch threw               → realClassifierAvailable = false
+ *                                             reason = 'scan_provider_health_unreachable'
+ *   • Cached for 5 minutes so the readiness diagnostic doesn't
+ *     hammer the endpoint on every call.
+ *   • Never throws.
+ */
+const PROBE_CACHE_MS = 5 * 60 * 1000;
+let _probeCache = null;     // { at, result }
+let _probeInflight = null;  // dedupe concurrent probes
+
+export async function probeClassifierAvailability(opts) {
+  const force = !!(opts && opts.force);
+  const now = Date.now();
+  if (!force && _probeCache && (now - _probeCache.at) < PROBE_CACHE_MS) {
+    return _probeCache.result;
+  }
+  if (_probeInflight) return _probeInflight;
+  _probeInflight = (async () => {
+    let result;
+    try {
+      const res = await fetch('/api/health/scan-provider', {
+        method:  'GET',
+        headers: { Accept: 'application/json' },
+        credentials: 'omit',
+      });
+      if (!res || !res.ok) {
+        result = Object.freeze({
+          provider: 'unknown',
+          configured: false,
+          realClassifierAvailable: false,
+          reason: 'scan_provider_health_unreachable',
+        });
+      } else {
+        const data = await res.json().catch(() => null);
+        const provider = (data && data.provider) || 'unknown';
+        const configured = !!(data && data.configured);
+        const available  = !!(data && data.classifierAvailable);
+        result = Object.freeze({
+          provider,
+          configured,
+          realClassifierAvailable: available,
+          reason: available ? null : 'classifier_not_available',
+        });
+        // Mirror onto module state so synchronous getters reflect
+        // the latest authoritative read.
+        _state.realClassifierAvailable = available;
+        _state.classifierProvider = provider;
+      }
+    } catch {
+      result = Object.freeze({
+        provider: 'unknown',
+        configured: false,
+        realClassifierAvailable: false,
+        reason: 'scan_provider_health_unreachable',
+      });
+    }
+    _probeCache = { at: now, result };
+    _probeInflight = null;
+    return result;
+  })();
+  return _probeInflight;
 }
 
 /**
@@ -133,6 +198,8 @@ export function getScanHealthSnapshot() {
     imageValidated:           _state.imageValidations > 0,
     resultValid:              _state.resultValid > 0,
     classifierEndpoint:       _state.classifierEndpoint,
+    classifierProvider:       _state.classifierProvider,
+    provider:                 _state.classifierProvider, // alias
     scanApiEnabled:           _state.scanApiEnabled,
     mlScanFlagOn:             _state.mlScanFlagOn,
     counters: Object.freeze({

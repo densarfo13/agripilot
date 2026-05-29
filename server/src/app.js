@@ -593,6 +593,14 @@ async function _healthHandler(_req, res) {
 app.get('/api/health', _healthHandler);
 app.get('/health',     _healthHandler);
 
+// RC1 — scan-provider health (public, no auth). The frontend
+// classifier-availability runtime probes this BEFORE login so the
+// app store readiness diagnostic can report `realClassifierAvailable`
+// honestly. Never exposes the key — only configured/provider booleans.
+import { registerScanProviderHealthRoute as _registerScanProviderHealth }
+  from './routes/scanProviderHealth.js';
+_registerScanProviderHealth(app);
+
 // ─── ML scan endpoints (advanced ML layer spec) ───────────────
 // Pipeline:
 //   POST /api/scan/analyze

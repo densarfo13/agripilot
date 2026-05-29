@@ -36,6 +36,14 @@
  */
 
 import T from './translations.js';
+import { isFeatureEnabled } from '../config/features.js';
+
+// RC1 — Hindi gate. When enableHindiLocale is OFF the column chunk
+// is never requested; the loader returns an empty {default:null}
+// envelope so callers degrade to English seamlessly.
+function _hindiEnabled() {
+  try { return !!isFeatureEnabled('enableHindiLocale'); } catch { return false; }
+}
 
 const SUPPORTED = new Set(['en', 'fr', 'sw', 'ha', 'tw', 'hi']);
 const DEFAULT_LOCALE = 'en';
@@ -82,7 +90,17 @@ function _importColumn(locale) {
     case 'sw': return import('./columns/T-sw.js');
     case 'ha': return import('./columns/T-ha.js');
     case 'tw': return import('./columns/T-tw.js');
-    case 'hi': return import('./columns/T-hi.js');
+    case 'hi':
+      // RC1 — Hindi is gated behind enableHindiLocale (currently OFF
+      // because coverage is 54.3%). When the flag is off the
+      // dynamic import is bypassed so the Hindi column chunk is
+      // not requested at runtime. Files on disk are preserved.
+      // The flag check uses the statically-imported predicate
+      // at the top of this module.
+      if (!_hindiEnabled()) {
+        return Promise.resolve({ default: null });
+      }
+      return import('./columns/T-hi.js');
     case 'en':
       // English is part of translations.js post-cutover; explicit
       // no-op success so callers can always loadColumn('en').

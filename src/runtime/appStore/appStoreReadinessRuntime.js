@@ -47,7 +47,10 @@ import {
 } from '../notifications/notificationRuntime.js';
 import {
   detectClassifierAvailability, getScanHealthSnapshot,
+  probeClassifierAvailability,
 } from '../scan/classifierAvailability.js';
+import { getFarrowayBuild as _getFarrowayBuildCentral }
+  from '../release/farrowayBuild.js';
 import { isFeatureEnabled } from '../../config/features.js';
 
 const RUNTIME_VERSION = 'app-store-readiness-runtime-v1';
@@ -76,25 +79,32 @@ function _readBuildEnv() {
 }
 
 export function getFarrowayBuild() {
+  // RC1 — central module is now the source of truth for build
+  // identity. We compose its frozen envelope with the runtime-side
+  // `appStoreMode` reading so the existing callers (readiness
+  // composite, diagnostic) get one shape with both signals.
+  const central = _safe(() => _getFarrowayBuildCentral(), null);
   const env = _readBuildEnv();
+  let appStoreMode = false;
+  try {
+    const safety = _safe(() => getAppStoreSafetySnapshot(), null);
+    appStoreMode = !!(safety && safety.appStoreMode);
+  } catch { /* swallow */ }
   const winSha = _safe(() => {
     if (typeof window === 'undefined') return null;
     return window.__SCAN_BUILD_SHA__
       || window.__FARROWAY_BUILD_VERSION
       || null;
   }, null);
-  let appStoreMode = false;
-  try {
-    const safety = _safe(() => getAppStoreSafetySnapshot(), null);
-    appStoreMode = !!(safety && safety.appStoreMode);
-  } catch { /* swallow */ }
   return Object.freeze({
     runtimeVersion: RUNTIME_VERSION,
-    sha:            env.sha || winSha || 'unknown',
-    builtAt:        env.timestamp || null,
-    timestamp:      env.timestamp || null,   // legacy alias
+    sha:            (central && central.sha !== 'unknown' && central.sha)
+                      || env.sha || winSha || 'unknown',
+    builtAt:        (central && central.builtAt) || env.timestamp || null,
+    timestamp:      (central && central.builtAt) || env.timestamp || null,
     mode:           env.mode,
-    appStoreMode,
+    appStoreMode:   appStoreMode
+                      || !!(central && central.appStoreMode),
     isProduction:   env.isProduction,
     detectedAt:     _now(),
   });
@@ -146,6 +156,9 @@ export async function installAppStoreReadinessRuntime(opts) {
  *   }
  */
 export async function getAppStoreReadiness() {
+  // RC1 — fire the authoritative server probe alongside the
+  // synchronous reads. Cached internally so cost is bounded.
+  const probe = await _safeAsync(() => probeClassifierAvailability(), null);
   const scan = _safe(() => getScanHealthSnapshot(), null);
   const safety = _safe(() => getAppStoreSafetySnapshot(), null);
   const flags = _safe(() => getSafeFeatureFlags(), null);
@@ -176,9 +189,13 @@ export async function getAppStoreReadiness() {
     return snap && snap.registered >= 5;
   }, null);
 
+  const probeOk = !!(probe && probe.realClassifierAvailable === true);
   const checks = Object.freeze({
+    scanProviderConfigured:  probe ? !!probe.configured : null,
+    realClassifierAvailable: probeOk
+                             || (scan ? !!scan.realClassifierAvailable : null),
+    provider:                probe ? probe.provider : null,
     scanApiEnabled:          _safe(() => isFeatureEnabled('scanApiEnabled'), null),
-    realClassifierAvailable: scan ? !!scan.realClassifierAvailable : null,
     privacyUrlPresent,
     termsUrlPresent,
     nativeModeDetected:      safety ? !!safety.nativeShell : null,
@@ -193,6 +210,7 @@ export async function getAppStoreReadiness() {
       : null,
     offlineRuntimeReady:     queueRegistered,
     queueRegistered,
+    buildShaPresent:         !!(build && build.sha && build.sha !== 'unknown'),
   });
 
   const blockers = [];
@@ -203,14 +221,20 @@ export async function getAppStoreReadiness() {
   if (checks.privacyUrlPresent === false) blockers.push('privacy_url_missing');
   if (checks.termsUrlPresent === false) blockers.push('terms_url_missing');
   if (checks.hiddenRoutesSafe === false) blockers.push('flagged_routes_exposed');
+  // RC1 — classifier unavailable is a BLOCKER for external TestFlight
+  // and App Store. Internal TestFlight tolerates it (warning only).
+  if (checks.realClassifierAvailable === false) {
+    blockers.push('classifier_unavailable_for_external_release');
+  }
 
-  // Warnings — non-blocking but flag for QA.
+  // Warnings — non-blocking, surfaced for QA + internal TestFlight.
   if (checks.realClassifierAvailable === false) warnings.push('classifier_will_use_fallback');
+  if (checks.scanProviderConfigured === false) warnings.push('scan_provider_not_configured');
   if (checks.translationsPass === false) warnings.push('translation_coverage_below_80');
   if (checks.translationsPass == null) warnings.push('translation_coverage_unknown');
   if (checks.offlineRuntimeReady === false) warnings.push('offline_runtime_not_ready');
   if (checks.nativeModeDetected === false) warnings.push('not_running_in_native_shell');
-  if (!build || !build.sha || build.sha === 'unknown') warnings.push('build_sha_unknown');
+  if (!checks.buildShaPresent) warnings.push('build_sha_unknown');
   if (notif && notif.transport === 'none') warnings.push('notification_transport_none');
   if (notif && notif.permission !== 'granted') warnings.push('notification_permission_not_granted');
 

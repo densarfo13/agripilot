@@ -272,6 +272,7 @@ import { SafeRouteShell } from './components/system/SafeRouteShell.jsx';
 import FeatureGated from './components/system/FeatureGated.jsx';
 import RC1RouteGate from './components/system/RC1RouteGate.jsx';
 import OfflineQueueBanner from './components/system/OfflineQueueBanner.jsx';
+const ReleaseReadiness = lazy(() => import('./pages/internal/ReleaseReadiness.jsx'));
 const FundingOpportunityDetail = lazy(() =>
   import('./pages/FundingOpportunityDetail.jsx'));
 const FundingAdmin   = lazy(() => import('./pages/admin/FundingAdmin.jsx'));
@@ -761,6 +762,14 @@ export default function App() {
         const { installOfflineRuntime } =
           await import('./runtime/offline/offlineRuntime.js');
         installOfflineRuntime();
+      } catch { /* never block app boot */ }
+      try {
+        // RC1 — install the canonical build-identity global FIRST
+        // so the readiness runtime can read a consistent SHA when
+        // it composes its envelope below.
+        const { installFarrowayBuildGlobal } =
+          await import('./runtime/release/farrowayBuild.js');
+        installFarrowayBuildGlobal();
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1513,6 +1522,17 @@ export default function App() {
             <Route path="/internal/metrics" element={
               <RC1RouteGate flag="investorMetrics">
                 <MetricsDashboard />
+              </RC1RouteGate>
+            } />
+            {/* /internal/release — RC1 release readiness dashboard.
+                Gated behind investorMetrics so it only renders on
+                internal builds. Surfaces __farrowayBuild,
+                __scanRuntimeHealthV8, __queueHealth,
+                __continuityHealth, __offlineHealth,
+                __appStoreReadiness without DevTools. */}
+            <Route path="/internal/release" element={
+              <RC1RouteGate flag="investorMetrics">
+                <ReleaseReadiness />
               </RC1RouteGate>
             } />
             {/* /start — minimal onboarding entry. The page checks
