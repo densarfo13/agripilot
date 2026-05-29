@@ -70,6 +70,7 @@ import { trackEvent as moatTrack } from '../core/analytics.js';
 // + ExperienceSwitcher are showing on screen.
 import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
+import ScanEntryCard from '../components/scan/ScanEntryCard.jsx';
 // UI tightening pass §8 — chips + recent-scans hint that sit below
 // the camera/upload card during the capture phase. Replaces the
 // previously empty page real-estate the spec called out.
@@ -212,7 +213,21 @@ export default function ScanPage() {
   const flagOn   = isFeatureEnabled('scanDetection');
   const mlScanOn = isFeatureEnabled('mlScan');
 
-  const [phase, setPhase] = useState('capture');
+  // RC1 fix — scan no longer auto-opens the camera on mount.
+  // Default phase is 'idle'; ScanEntryCard renders the calm
+  // "Take photo / Use saved photo" landing. Camera only starts
+  // when the user taps "Take photo" (sets phase='capture' AND
+  // cameraAttempted=true so ScanFallback's "Camera ran into a
+  // problem" card cannot fire on first load).
+  const [phase, setPhase] = useState('idle');
+  // True ONLY once the user has explicitly requested camera access
+  // via the entry card. ScanFallback / overlays use this to suppress
+  // the camera-error card during initial mount.
+  const [cameraAttempted, setCameraAttempted] = useState(false);
+  // Hidden gallery input ref — wired below so the "Use saved photo"
+  // button on the entry card opens a file picker WITHOUT mounting
+  // LiveCameraScanner (no getUserMedia call on the saved-photo path).
+  const entryGalleryInputRef = useRef(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [savedEntryId, setSavedEntryId] = useState(null);
@@ -1223,7 +1238,7 @@ export default function ScanPage() {
             borderTopColor: '#C8944D',
             animation: 'farroway-spin 0.8s linear infinite',
           }} />
-          <span>{tStrict('scan.page.loading', 'Preparing camera\u2026')}</span>
+          <span>{tStrict('scan.page.loading', 'Preparing scan\u2026')}</span>
         </div>
       </main>
     );
@@ -1236,6 +1251,66 @@ export default function ScanPage() {
   const headerSubtitle = isBackyard
     ? tStrict('scan.page.subtitle.backyard', 'Photograph the plant or leaf and we\u2019ll suggest possible issues.')
     : tStrict('scan.page.subtitle.farm', 'Photograph the affected area and we\u2019ll suggest possible issues.');
+
+  // RC1 fix \u2014 idle landing. Default phase is 'idle' so the user
+  // sees ScanEntryCard ("Scan your crop" + Take photo / Use saved
+  // photo) on first mount. Camera does NOT start until the user
+  // taps Take photo. The hidden file input below is triggered by
+  // the Use-saved-photo button.
+  const _handleTakePhoto = () => {
+    setCameraAttempted(true);
+    setPhase('capture');
+  };
+  const _handleUseSavedPhoto = () => {
+    try {
+      if (entryGalleryInputRef.current) entryGalleryInputRef.current.click();
+    } catch { /* never block \u2014 picker is best-effort */ }
+  };
+  const _handleEntryFilePicked = async (ev) => {
+    try {
+      const file = ev && ev.target && ev.target.files && ev.target.files[0];
+      if (!file) return;
+      // Reuse ScanCapture's full pipeline by switching phase to
+      // 'capture' and forwarding the file via the existing
+      // onContinue contract. The base64 encoding + thumbnail are
+      // produced inline so we never need to mount the camera.
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e && e.target && e.target.result;
+        if (typeof dataUrl !== 'string') return;
+        const base64 = dataUrl.split(',')[1] || '';
+        await onContinue({
+          imageBase64: base64,
+          imageUrl:    dataUrl,
+          thumbnail:   dataUrl,
+          file,
+          focusContext: null,
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch { /* swallow \u2014 entry path stays calm on any error */ }
+    finally {
+      try { if (ev && ev.target) ev.target.value = ''; } catch { /* ignore */ }
+    }
+  };
+  if (phase === 'idle' && flagOn) {
+    return (
+      <>
+        <ScanEntryCard
+          onTakePhoto={_handleTakePhoto}
+          onUsePhoto={_handleUseSavedPhoto}
+        />
+        <input
+          ref={entryGalleryInputRef}
+          type="file"
+          accept="image/*"
+          onChange={_handleEntryFilePicked}
+          style={{ display: 'none' }}
+          data-testid="scan-entry-gallery-input"
+        />
+      </>
+    );
+  }
 
   // Single-interface scan fix: when phase === 'capture' AND the
   // browser can open the live camera, /scan renders ONLY the

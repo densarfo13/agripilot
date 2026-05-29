@@ -772,6 +772,14 @@ export default function App() {
         installFarrowayBuildGlobal();
       } catch { /* never block app boot */ }
       try {
+        // RC1 — pin __scanUIHealth() so QA can verify the scan
+        // landing default mode is 'idle' (no camera auto-start)
+        // without DevTools introspection.
+        const { installScanUIHealthGlobal } =
+          await import('./runtime/scan/scanUIHealth.js');
+        installScanUIHealthGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
