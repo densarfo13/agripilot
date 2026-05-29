@@ -215,6 +215,15 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       const r = (evaluation.byId as any)[id];
       return !!r && r.status === CHECK_STATUS.PASSED;
     };
+    // Probe presence of the role-scoped diagnostics for the
+    // Launch Readiness spec. Each "ready" boolean reflects
+    // whether the runtime contract is wired AND no hard blockers
+    // exist in the relevant section.
+    const _hasGlobal = (name: string) => _safe(() => {
+      if (typeof window === 'undefined') return false;
+      return typeof (window as any)[name] === 'function';
+    }, false);
+
     const flags = Object.freeze({
       scanStable:                _hasItemPassed('A.noFirstLoadError'),
       mobileUXClean:             _hasItemPassed('J.noChartImports')
@@ -225,6 +234,18 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       realPlantMediaReady:       _sectionPasses('realPlantMedia'),
       offlinePlantCreateReady:   _hasItemPassed('A.offlineQueue'),
       founderMetricsReal:        _sectionPasses('founderDashboard'),
+      // Wave 10 — role-scoped readiness booleans.
+      farmerReady:               _sectionPasses('scanToManagedPlant')
+                                  && _sectionPasses('plantRuntime'),
+      gardenerReady:             _sectionPasses('scanToManagedPlant')
+                                  && _sectionPasses('plantRuntime'),
+      adminReady:                _sectionPasses('founderDashboard')
+                                  && _hasGlobal('__godmodeHealth'),
+      ngoMvpReady:               _sectionPasses('founderDashboard'),
+      buyerMvpReady:             _sectionPasses('founderDashboard'),
+      oodaReady:                 _hasGlobal('__oodaHealth'),
+      artifactsReady:            _hasGlobal('__artifactHealth'),
+      godmodeReady:              _hasGlobal('__godmodeHealth'),
     });
 
     return Object.freeze({

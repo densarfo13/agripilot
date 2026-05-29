@@ -46,7 +46,7 @@
 //     camera-error card.
 //   • Camera failure wording is hard-blocked unless BOTH
 //     cameraAttempted AND userInitiatedCamera flip true.
-const RUNTIME_VERSION = 'scan-idle-entry-final';
+const RUNTIME_VERSION = 'scan-launch-final';
 
 const _state = {
   cameraAttempted:     false,

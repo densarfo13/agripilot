@@ -231,6 +231,9 @@ const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
+// Internal-only architecture + release audit page (Wave 10 —
+// same `localStorage.farroway_internal === '1'` gate).
+const GodmodePage        = lazy(() => import('./pages/internal/Godmode.jsx'));
 // Enterprise Agriculture Platform — orgs / programs / cohorts
 // / interventions / analytics / trust. Internal gate today;
 // per-OrganizationMember role check ships with the migration.
@@ -914,6 +917,26 @@ export default function App() {
             await import('./runtime/release/index');
           installReleaseLockGlobal();
         } catch { /* never block boot */ }
+        // Wave 10 — OODA Engine + Artifacts + Launch Readiness.
+        // All three are pure runtimes; the boot install simply
+        // pins their diagnostic probes onto window for QA.
+        try {
+          const { installOODAGlobal } =
+            await import('./runtime/intelligence/index');
+          installOODAGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installArtifactRuntimeGlobal } =
+            await import('./runtime/artifacts/index');
+          installArtifactRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installLaunchReadinessGlobal,
+                  installGodmodeHealthGlobal } =
+            await import('./runtime/release/LaunchReadiness');
+          installLaunchReadinessGlobal();
+          installGodmodeHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1394,6 +1417,10 @@ export default function App() {
               "internal only" empty state for normal users — the
               route is registered globally so admins can deep-link. */}
           <Route path="/internal/release-lock" element={<ReleaseLockPage />} />
+          {/* Internal-only architecture audit. Same internal-flag
+              gate as release-lock — the page itself renders an
+              "internal only" empty state for normal users. */}
+          <Route path="/internal/godmode" element={<GodmodePage />} />
           {/* Enterprise Agriculture Platform. Same internal-gate
               pattern; full OrganizationMember role check ships
               with the Prisma migration. */}

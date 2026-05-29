@@ -87,6 +87,11 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-no-farmer-dashboard.mjs',
   'scripts/check-mobile-no-dashboard.mjs',
   'scripts/check-founder-real-metrics.mjs',
+  'scripts/check-role-route-guards.mjs',
+  'scripts/check-buyer-no-payments.mjs',
+  'scripts/check-ngo-no-fake-data.mjs',
+  'scripts/check-ooda-artifact-ownership.mjs',
+  'scripts/check-godmode-internal-only.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

@@ -120,8 +120,8 @@ for (const pattern of FORBIDDEN_AUTO_START) {
 // ─── 4. scanUIHealth contract ───────────────────────────────────
 // Accept v3, v4, or "final" — the contract fields are identical;
 // the bumped strings just mark re-verification passes.
-if (!/scan-idle-entry-(v[34]|final)\b/.test(sources.uiHealth)) {
-  fail('scanUIHealth.js must declare RUNTIME_VERSION = scan-idle-entry-v3, v4, or final');
+if (!/scan-(idle-entry-(v[34]|final)|launch-final)\b/.test(sources.uiHealth)) {
+  fail('scanUIHealth.js must declare RUNTIME_VERSION = scan-idle-entry-v3, v4, final, or scan-launch-final');
 }
 const V3_FIELDS = [
   /version:\s*RUNTIME_VERSION/,

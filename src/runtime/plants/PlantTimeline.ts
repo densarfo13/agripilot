@@ -49,6 +49,7 @@ export const TIMELINE_EVENT_KIND = Object.freeze({
   ScanCompleted:          'ScanCompleted',
   DiseaseDetected:        'DiseaseDetected',
   PestDetected:           'PestDetected',
+  TaskGenerated:          'TaskGenerated',
   TaskCompleted:          'TaskCompleted',
   TreatmentApplied:       'TreatmentApplied',
   GrowthStageChanged:     'GrowthStageChanged',
@@ -56,6 +57,10 @@ export const TIMELINE_EVENT_KIND = Object.freeze({
   HarvestCompleted:       'HarvestCompleted',
   RecommendationAccepted: 'RecommendationAccepted',
   RecommendationCompleted: 'RecommendationCompleted',
+  // Wave 10 — Launch Readiness spec additions.
+  ReadyToSellMarked:      'ReadyToSellMarked',
+  BuyerInterestReceived:  'BuyerInterestReceived',
+  InterventionCompleted:  'InterventionCompleted',
 });
 
 const _isObj = (v: unknown): v is Record<string, any> =>
