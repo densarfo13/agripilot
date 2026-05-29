@@ -68,6 +68,9 @@ import {
 import {
   buildPlantTimeline, TIMELINE_EVENT_KIND, PLANT_TIMELINE_VERSION,
 } from './PlantTimeline';
+import {
+  scanToManagedPlant, SCAN_TO_MANAGED_PLANT_VERSION,
+} from './scanToManagedPlant';
 import { PLANT_RUNTIME_OWNERSHIP } from './PlantRuntime';
 
 export const UNIVERSAL_PLANT_RUNTIME_VERSION = 'universal-plant-runtime-v1';
@@ -163,6 +166,19 @@ export function universalPlantRuntime(ctx: any) {
   const created = c.scanResult
     ? _safe(() => createManagedPlant(c as any), null)
     : null;
+  // Sprint A completion — Scan → Managed Plant workflow envelope
+  // when both a scanResult AND the existing plant list are passed.
+  const scanWorkflow = c.scanResult
+    ? _safe(() => scanToManagedPlant({
+        scanResult: c.scanResult,
+        ownerId:    (c as any).ownerId,
+        gardenId:   (c as any).gardenId,
+        farmId:     (c as any).farmId,
+        location:   (c as any).location,
+        existingPlants: plants as any,
+        now:        (c as any).now,
+      }), null)
+    : null;
 
   // Optional: focused-plant signals — health, tasks, recs, memory.
   const focusId  = _isObj(c) ? (c as any).focusPlantId : null;
@@ -202,6 +218,7 @@ export function universalPlantRuntime(ctx: any) {
     memory,
     timeline,
     briefing,
+    scanWorkflow,
     ownership: PLANT_RUNTIME_OWNERSHIP,
     versions: Object.freeze({
       runtime:    PLANT_RUNTIME_VERSION,
@@ -213,6 +230,7 @@ export function universalPlantRuntime(ctx: any) {
       memory:     PLANT_MEMORY_VERSION,
       timeline:   PLANT_TIMELINE_VERSION,
       briefing:   PLANTS_BRIEFING_VERSION,
+      workflow:   SCAN_TO_MANAGED_PLANT_VERSION,
       schema:     PLANT_SCHEMA_VERSION,
     }),
     deferred: Object.freeze({
@@ -272,5 +290,13 @@ export {
   buildPlantMemory, PLANT_MEMORY_VERSION,
   // Timeline
   buildPlantTimeline, TIMELINE_EVENT_KIND, PLANT_TIMELINE_VERSION,
+  // Scan → Managed Plant workflow
+  scanToManagedPlant, SCAN_TO_MANAGED_PLANT_VERSION,
 };
+
+// briefingComposer lives in its own file to keep the circular-
+// import surface clean (it imports plantsForBriefing from THIS
+// barrel). Re-export via star so callers can use one import path.
+export { composeFullBriefing, FULL_BRIEFING_VERSION }
+  from './briefingComposer';
 export type { ManagedPlant };

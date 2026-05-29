@@ -223,6 +223,8 @@ const MinimalFarmSetup   = lazy(() => import('./pages/MinimalFarmSetup.jsx'));
 const QuickGardenSetup   = lazy(() => import('./pages/setup/QuickGardenSetup.jsx'));
 // Universal Plant Runtime — My Plants home grid.
 const MyPlants           = lazy(() => import('./pages/MyPlants.jsx'));
+// Single-plant detail page (universalPlantRuntime composite).
+const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
 const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
@@ -1336,8 +1338,12 @@ export default function App() {
           <Route path="/market" element={<Navigate to="/market/browse" replace />} />
 
           {/* Farmer-first entry: Welcome gate (auto-routes if session exists) */}
-          {/* Universal Plant Runtime home grid */}
+          {/* Universal Plant Runtime home grid + single-plant
+              profile. /plants → /my-plants alias keeps legacy
+              deep links pointing to the right surface. */}
           <Route path="/my-plants" element={<MyPlants />} />
+          <Route path="/my-plants/:plantId" element={<PlantProfile />} />
+          <Route path="/plants/:plantId"    element={<PlantProfile />} />
           <Route path="/plants"    element={<Navigate to="/my-plants" replace />} />
           <Route path="/start" element={<FarmerEntry />} />
 

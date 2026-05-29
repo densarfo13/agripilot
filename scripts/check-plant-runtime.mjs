@@ -47,12 +47,15 @@ const FILES = {
   recommend:   'src/runtime/plants/PlantRecommendationEngine.ts',
   memory:      'src/runtime/plants/PlantMemoryGraph.ts',
   timeline:    'src/runtime/plants/PlantTimeline.ts',
+  workflow:    'src/runtime/plants/scanToManagedPlant.ts',
+  briefingCmp: 'src/runtime/plants/briefingComposer.ts',
   barrel:      'src/runtime/plants/index.ts',
   growTypes:   'src/types/growTypes.ts',
   categories:  'src/modules/plants/plantCategories.ts',
   shrubs:      'src/data/plants/shrubs.json',
   dbLoader:    'src/data/plants/index.js',
   myPlants:    'src/pages/MyPlants.jsx',
+  plantProfile:'src/pages/PlantProfile.jsx',
   app:         'src/App.jsx',
 };
 const sources = {};
@@ -92,6 +95,10 @@ const REQUIRED = [
   { src: 'timeline',   sym: 'buildPlantTimeline' },
   { src: 'timeline',   sym: 'TIMELINE_EVENT_KIND' },
   { src: 'timeline',   sym: 'PLANT_TIMELINE_VERSION' },
+  { src: 'workflow',   sym: 'scanToManagedPlant' },
+  { src: 'workflow',   sym: 'SCAN_TO_MANAGED_PLANT_VERSION' },
+  { src: 'briefingCmp',sym: 'composeFullBriefing' },
+  { src: 'briefingCmp',sym: 'FULL_BRIEFING_VERSION' },
   { src: 'barrel',     sym: 'universalPlantRuntime' },
   { src: 'barrel',     sym: 'installUniversalPlantRuntimeGlobal' },
   { src: 'barrel',     sym: 'UNIVERSAL_PLANT_RUNTIME_VERSION' },
@@ -266,9 +273,50 @@ if (sources.myPlants.indexOf('Camera ran into a problem') !== -1) {
   fail('MyPlants.jsx must not show camera-error wording');
 }
 
+// PlantProfile UI surface — Sprint A completion
+const PROFILE_TESTIDS = [
+  'plant-profile-page',
+  'plant-profile-back',
+  'plant-profile-hero',
+  'plant-profile-stat-health',
+  'plant-profile-stat-risk',
+  'plant-profile-stat-tasks',
+  'plant-profile-tasks',
+  'plant-profile-timeline',
+];
+for (const id of PROFILE_TESTIDS) {
+  if (sources.plantProfile.indexOf(id) === -1) {
+    fail('PlantProfile.jsx missing testid: ' + id);
+  }
+}
+if (sources.plantProfile.indexOf('Camera ran into a problem') !== -1) {
+  fail('PlantProfile.jsx must not show camera-error wording');
+}
+
+// Briefing composer envelope shape
+for (const k of ['headline', 'plantsNeedingAttention',
+                  'attentionByCategory', 'plantCount',
+                  'todayTasks', 'warnings', 'opportunities',
+                  'recommendations']) {
+  if (sources.briefingCmp.indexOf(k) === -1) {
+    fail('composeFullBriefing envelope missing field: ' + k);
+  }
+}
+
+// Workflow envelope sentinels
+for (const k of ['eligible', 'alreadyManaged', 'payload',
+                  'recommendedFollowUps']) {
+  if (sources.workflow.indexOf(k) === -1) {
+    fail('scanToManagedPlant envelope missing field: ' + k);
+  }
+}
+
 // App.jsx routes + boot install
 if (!/path="\/my-plants"/.test(sources.app)) {
   fail('App.jsx does not mount /my-plants route');
+}
+if (!/path="\/my-plants\/:plantId"/.test(sources.app)) {
+  fail('App.jsx does not mount /my-plants/:plantId route');
 }
 if (!/installUniversalPlantRuntimeGlobal\s*\(\s*\)/.test(sources.app)) {
   fail('App.jsx does not call installUniversalPlantRuntimeGlobal() during boot');
@@ -282,7 +330,8 @@ const BANNED_PATTERNS = [
   /\.ai\/v1/i,
 ];
 for (const f of ['runtime', 'registry', 'health', 'tasks',
-                  'lifecycle', 'recommend', 'memory', 'timeline']) {
+                  'lifecycle', 'recommend', 'memory', 'timeline',
+                  'workflow', 'briefingCmp']) {
   const src = sources[f];
   for (const pat of BANNED_PATTERNS) {
     if (pat.test(src)) {
