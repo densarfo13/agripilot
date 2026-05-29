@@ -25,8 +25,9 @@ import herbs       from './herbs.json';
 import vegetables  from './vegetables.json';
 import fruits      from './fruits.json';
 import houseplants from './houseplants.json';
+import trees       from './trees.json';
 
-export const PLANT_DB_VERSION = 'plant-db-starter-v1';
+export const PLANT_DB_VERSION = 'plant-db-starter-v2';
 
 const _isObj = (v) => v != null && typeof v === 'object';
 const _arr   = (v) => (Array.isArray(v) ? v : []);
@@ -43,6 +44,7 @@ export const PLANTS_BY_TYPE = Object.freeze({
   vegetable:  _freezeAll(vegetables),
   fruit:      _freezeAll(fruits),
   houseplant: _freezeAll(houseplants),
+  tree:       _freezeAll(trees),
 });
 
 export const PLANT_DB = Object.freeze(
@@ -52,6 +54,7 @@ export const PLANT_DB = Object.freeze(
     .concat(PLANTS_BY_TYPE.vegetable)
     .concat(PLANTS_BY_TYPE.fruit)
     .concat(PLANTS_BY_TYPE.houseplant)
+    .concat(PLANTS_BY_TYPE.tree)
 );
 
 const _byId = (() => {
@@ -112,10 +115,18 @@ export const PLANT_DB_STATS = Object.freeze({
   vegetable:   PLANTS_BY_TYPE.vegetable.length,
   fruit:       PLANTS_BY_TYPE.fruit.length,
   houseplant:  PLANTS_BY_TYPE.houseplant.length,
-  // Spec'd 9500+ corpus target. Tracked here as a deferred metric
-  // so QA can see the runway visually.
+  tree:        PLANTS_BY_TYPE.tree.length,
+  // Global Plant Intelligence Library minimum launch dataset.
+  // Tracked here as a deferred metric so QA can see the runway
+  // visually. Content-team backlog — engines never gate on it.
   specTarget: Object.freeze({
-    flower: 5000, vegetable: 2000, herb: 1000,
-    fruit: 1000, houseplant: 500,
+    flower:     500,
+    vegetable:  300,
+    fruit:      200,
+    herb:       150,
+    houseplant: 200,
+    crop:       150,
+    tree:       100,
+    grandTotal: 1600,
   }),
 });

@@ -851,6 +851,17 @@ export default function App() {
         installIntelligenceLayerGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Global Plant Intelligence Library — pin __plantLibrary()
+        // so QA can introspect the unified browsing surface
+        // (categories + search + profiles + library across all 7
+        // plant categories including trees). Composition-only over
+        // the existing plant DB; persistence stays with the wave-5
+        // single-writer.
+        const { installGlobalPlantIntelligenceGlobal } =
+          await import('./modules/plants');
+        installGlobalPlantIntelligenceGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
