@@ -234,6 +234,8 @@ const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx')
 // Internal-only architecture + release audit page (Wave 10 —
 // same `localStorage.farroway_internal === '1'` gate).
 const GodmodePage        = lazy(() => import('./pages/internal/Godmode.jsx'));
+const QAPage             = lazy(() => import('./pages/internal/QAPage.jsx'));
+const ReviewPage         = lazy(() => import('./pages/internal/ReviewPage.jsx'));
 // Enterprise Agriculture Platform — orgs / programs / cohorts
 // / interventions / analytics / trust. Internal gate today;
 // per-OrganizationMember role check ships with the migration.
@@ -1015,6 +1017,31 @@ export default function App() {
             await import('./runtime/auth/federation/index');
           installFederationGlobal();
         } catch { /* never block boot */ }
+        try {
+          const { installQAReadinessGlobal } =
+            await import('./runtime/qa/index');
+          installQAReadinessGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installConsentGlobal } =
+            await import('./runtime/consent/index');
+          installConsentGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installRetentionPolicyGlobal } =
+            await import('./runtime/compliance/index');
+          installRetentionPolicyGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installMonitoringGlobal } =
+            await import('./runtime/monitoring/index');
+          installMonitoringGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installHumanReviewGlobal } =
+            await import('./runtime/review/index');
+          installHumanReviewGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1488,21 +1515,23 @@ export default function App() {
           <Route path="/plants/:plantId"    element={<PlantProfile />} />
           <Route path="/plants"    element={<Navigate to="/my-plants" replace />} />
           {/* Internal-only founder dashboard. Page itself
-              enforces the internal gate; the route is public so
-              authorised users can reach it via direct URL. */}
-          <Route path="/internal/founder" element={<FounderDashboard />} />
-          {/* Internal release-lock dashboard. The page renders an
-              "internal only" empty state for normal users — the
-              route is registered globally so admins can deep-link. */}
-          <Route path="/internal/release-lock" element={<ReleaseLockPage />} />
-          {/* Internal-only architecture audit. Same internal-flag
-              gate as release-lock — the page itself renders an
-              "internal only" empty state for normal users. */}
-          <Route path="/internal/godmode" element={<GodmodePage />} />
-          {/* Enterprise Agriculture Platform. Same internal-gate
-              pattern; full OrganizationMember role check ships
-              with the Prisma migration. */}
-          <Route path="/enterprise" element={<EnterpriseHome />} />
+              enforces the internal gate via INTERNAL_FLAG_KEY +
+              <RoleRoute> defence-in-depth. Restricted to admins.
+              Non-farmer/gardener/grower role list. */}
+          <Route path="/internal/founder" element={<RoleRoute roles={ADMIN_ROLES}><FounderDashboard /></RoleRoute>} />
+          {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
+              inside the page, plus <RoleRoute> guard so non-admins
+              redirect to "/". Excludes farmer/gardener/grower. */}
+          <Route path="/internal/release-lock" element={<RoleRoute roles={ADMIN_ROLES}><ReleaseLockPage /></RoleRoute>} />
+          {/* Internal-only architecture audit. Same INTERNAL_FLAG_KEY
+              gate as release-lock plus <RoleRoute> wrapper. */}
+          <Route path="/internal/godmode" element={<RoleRoute roles={ADMIN_ROLES}><GodmodePage /></RoleRoute>} />
+          <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
+          <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
+          {/* Enterprise Agriculture Platform. <RoleRoute> with admin-only
+              role list (excludes farmer/gardener/grower). Full
+              OrganizationMember role check ships with the Prisma migration. */}
+          <Route path="/enterprise" element={<RoleRoute roles={ADMIN_ROLES}><EnterpriseHome /></RoleRoute>} />
           <Route path="/start" element={<FarmerEntry />} />
 
           {/* Farmer-first entry (phone OTP, Google, offline) */}
@@ -1802,22 +1831,28 @@ export default function App() {
               </RC1RouteGate>
             } />
             {/* /internal/metrics — RC1 gated; redirects to /home
-                when investorMetrics flag is off. */}
+                when investorMetrics flag is off. Also wrapped in
+                <RoleRoute> (admin-only) for defence-in-depth. */}
             <Route path="/internal/metrics" element={
-              <RC1RouteGate flag="investorMetrics">
-                <MetricsDashboard />
-              </RC1RouteGate>
+              <RoleRoute roles={ADMIN_ROLES}>
+                <RC1RouteGate flag="investorMetrics">
+                  <MetricsDashboard />
+                </RC1RouteGate>
+              </RoleRoute>
             } />
             {/* /internal/release — RC1 release readiness dashboard.
                 Gated behind investorMetrics so it only renders on
                 internal builds. Surfaces __farrowayBuild,
                 __scanRuntimeHealthV8, __queueHealth,
                 __continuityHealth, __offlineHealth,
-                __appStoreReadiness without DevTools. */}
+                __appStoreReadiness without DevTools.
+                Wrapped in <RoleRoute> admin-only. */}
             <Route path="/internal/release" element={
-              <RC1RouteGate flag="investorMetrics">
-                <ReleaseReadiness />
-              </RC1RouteGate>
+              <RoleRoute roles={ADMIN_ROLES}>
+                <RC1RouteGate flag="investorMetrics">
+                  <ReleaseReadiness />
+                </RC1RouteGate>
+              </RoleRoute>
             } />
             {/* /start — minimal onboarding entry. The page checks
                 the `onboardingV2` flag and renders a "coming soon"
@@ -2047,18 +2082,22 @@ export default function App() {
               </SafeRouteShell>
             } />
             <Route path="/buyer/interests" element={
-              <SafeRouteShell routeName="buyer-interests">
-                <FeatureGated flag="FEATURE_BUYER_INTEREST" feature="buyer-interest">
-                  <BackyardGuard surface="sell"><MyInterestsPage /></BackyardGuard>
-                </FeatureGated>
-              </SafeRouteShell>
+              <RoleRoute roles={['buyer', 'super_admin', 'institutional_admin']}>
+                <SafeRouteShell routeName="buyer-interests">
+                  <FeatureGated flag="FEATURE_BUYER_INTEREST" feature="buyer-interest">
+                    <BackyardGuard surface="sell"><MyInterestsPage /></BackyardGuard>
+                  </FeatureGated>
+                </SafeRouteShell>
+              </RoleRoute>
             } />
             <Route path="/buyer/notifications" element={
-              <SafeRouteShell routeName="buyer-notifications">
-                <FeatureGated flag="FEATURE_BUYER" feature="buyer">
-                  <BackyardGuard surface="sell"><BuyerNotificationsPage /></BackyardGuard>
-                </FeatureGated>
-              </SafeRouteShell>
+              <RoleRoute roles={['buyer', 'super_admin', 'institutional_admin']}>
+                <SafeRouteShell routeName="buyer-notifications">
+                  <FeatureGated flag="FEATURE_BUYER" feature="buyer">
+                    <BackyardGuard surface="sell"><BuyerNotificationsPage /></BackyardGuard>
+                  </FeatureGated>
+                </SafeRouteShell>
+              </RoleRoute>
             } />
             <Route path="/onboarding/smart" element={<Navigate to="/onboarding/fast" replace />} />
             {/* Onboarding cleanup — duplicate /onboarding/fast

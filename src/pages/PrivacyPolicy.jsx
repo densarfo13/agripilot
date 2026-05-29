@@ -119,6 +119,20 @@ export default function PrivacyPolicy() {
           'For privacy questions, reach us at support@farroway.app.'
         )}
       </p>
+
+      {/* Footer cross-links — required by the App Store privacy
+          checklist (every privacy / terms surface MUST link to
+          the other). Pure anchors so they work even when
+          react-router isn't mounted (e.g. /privacy served as a
+          static HTML preview). */}
+      <p style={{ ...STYLES.p, marginTop: 24, fontSize: 13 }}>
+        <a href="/privacy" style={{ color: '#86EFAC', textDecoration: 'underline', marginRight: 12 }}>
+          {tStrict('privacy.link.self', 'Privacy Policy')}
+        </a>
+        <a href="/terms" style={{ color: '#86EFAC', textDecoration: 'underline' }}>
+          {tStrict('privacy.link.terms', 'Terms of Service')}
+        </a>
+      </p>
     </main>
   );
 }

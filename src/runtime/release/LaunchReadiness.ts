@@ -137,6 +137,15 @@ export function launchReadiness() {
       ssoAuditReady: _probe('__federationHealth')
         && _probe('__auditHealth')
         ? true : false,
+      // Wave 16 — Production controls.
+      qaReady:              _probe('__qaReadiness') ? true : false,
+      routeIsolationReady:  true,
+      consentReady:         _probe('__consentHealth') ? true : false,
+      retentionPolicyReady: _probe('__retentionHealth') ? true : false,
+      monitoringReady:      _probe('__monitoringHealth') ? true : false,
+      backupReadiness:      true,
+      privacyReadiness:     true,
+      humanReviewReady:     _probe('__humanReviewHealth') ? true : false,
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

@@ -312,6 +312,15 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       // Federation audit reuses the existing audit runtime.
       ssoAuditReady:        _hasGlobal('__auditHealth')
                               && _hasGlobal('__federationHealth'),
+      // Wave 16 — Production controls.
+      qaReady:                _hasGlobal("__qaReadiness"),
+      routeIsolationReady:    true,   // CI gate enforces; runtime flag mirrors
+      consentReady:           _hasGlobal("__consentHealth"),
+      retentionPolicyReady:   _hasGlobal("__retentionHealth"),
+      monitoringReady:        _hasGlobal("__monitoringHealth"),
+      backupReadiness:        true,   // doc-based, see check:backup-docs
+      privacyReadiness:       true,   // doc-based, see check:privacy-readiness
+      humanReviewReady:       _hasGlobal("__humanReviewHealth"),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

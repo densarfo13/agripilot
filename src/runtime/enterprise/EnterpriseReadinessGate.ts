@@ -55,6 +55,11 @@ export function enterpriseReadiness() {
       // requires SSO would push this to a hard block.
       federationReady: !!(typeof window !== 'undefined'
         && typeof (window as any).__federationHealth === 'function'),
+      qaReady:           !!(typeof window !== "undefined" && typeof (window as any).__qaReadiness === "function"),
+      consentReady:      !!(typeof window !== "undefined" && typeof (window as any).__consentHealth === "function"),
+      retentionReady:    !!(typeof window !== "undefined" && typeof (window as any).__retentionHealth === "function"),
+      monitoringReady:   !!(typeof window !== "undefined" && typeof (window as any).__monitoringHealth === "function"),
+      humanReviewReady:  !!(typeof window !== "undefined" && typeof (window as any).__humanReviewHealth === "function"),
       auditLogs:             !!(audit && (audit as any).initialized
                               && (audit as any).appendOnly),
       evidenceChain:         !!(evidence && (evidence as any).initialized),
