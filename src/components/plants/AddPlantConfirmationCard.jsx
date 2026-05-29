@@ -111,6 +111,12 @@ export default function AddPlantConfirmationCard({
                       : _str(scanResult.confidence) === 'medium' ? 'fair'
                       : _str(scanResult.confidence) === 'low' ? 'needs_review'
                       : '';
+  // Gap-fix blocker 4 — Plant.id covers crops well but flowers /
+  // houseplants / herbs often resolve to growType:'unknown'.
+  // Surface a calm hint so the user can still proceed instead of
+  // dead-ending. The actual category picker UI ships in a follow-
+  // up; this hint at least signals the recovery path.
+  const categoryUnknown = !category || category === 'unknown';
 
   return (
     <section style={S.card} data-testid="add-plant-confirmation-card">
@@ -167,6 +173,21 @@ export default function AddPlantConfirmationCard({
                 ? tSafe('plant.confirm.health.needsReview', 'Needs review')
                 : tSafe('plant.confirm.health.fair', 'Fair')}
             </div>
+          </div>
+        ) : null}
+        {categoryUnknown ? (
+          <div
+            data-testid="add-plant-category-unknown-hint"
+            style={{
+              marginTop: 8, fontSize: 12, color: '#92400E',
+              background: 'rgba(245,158,11,0.10)',
+              border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: 8, padding: '8px 10px', lineHeight: 1.5,
+            }}>
+            {tSafe('plant.confirm.unknownCategory',
+              'Plant identification was inconclusive. The plant '
+              + 'will be added as "unknown" — you can update the '
+              + 'category later from the plant profile.')}
           </div>
         ) : null}
       </div>

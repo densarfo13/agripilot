@@ -29,18 +29,10 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { registrySummary } from '../runtime/plants/index';
-
-const STORAGE_KEY = 'farroway_managed_plants';
-
-function _readManagedPlants() {
-  try {
-    if (typeof window === 'undefined') return [];
-    const raw = window.localStorage && window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
-}
+// Gap-fix blocker 3 — managed-plant persistence routes through
+// one facade so quota / corrupt-JSON / private-mode all degrade
+// silently the same way across MyPlants / PlantProfile / ScanPage.
+import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 
 const STYLES = {
   page: {
@@ -122,7 +114,7 @@ const STYLES = {
 
 export default function MyPlants() {
   const navigate = useNavigate();
-  const managedPlants = useMemo(() => _readManagedPlants(), []);
+  const managedPlants = useMemo(() => loadManagedPlants(), []);
   const summary = useMemo(
     () => registrySummary(managedPlants), [managedPlants]);
 

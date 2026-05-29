@@ -111,6 +111,10 @@ import AddPlantConfirmationCard from '../components/plants/AddPlantConfirmationC
 import {
   scanToManagedPlant as _scanToManagedPlant,
 } from '../runtime/plants/index';
+import {
+  loadManagedPlants as _loadManagedPlants,
+  appendManagedPlant as _appendManagedPlant,
+} from '../runtime/data/managedPlants.js';
 // Scan Pipeline Enforcement — race-condition guard. Each onContinue
 // call starts a fresh scan session; result publications inside
 // async callbacks (15s fallback, analyze response, ML-failure
@@ -1557,16 +1561,18 @@ export default function ScanPage() {
           scanResult={result}
           onAdd={(sr) => {
             try {
-              const raw = (typeof window !== 'undefined' && window.localStorage)
-                ? window.localStorage.getItem('farroway_managed_plants') : null;
-              const existing = raw ? JSON.parse(raw) : [];
+              // Gap-fix blocker 3 — managed-plant persistence
+              // routes through managedPlantsStore so quota /
+              // private-mode / corrupt-JSON degrade silently.
+              // ScanPage just reads + appends; the store handles
+              // the storage edge cases.
               const wf = _scanToManagedPlant({
                 scanResult: sr,
                 ownerId:    profile?.id || profile?.userId || '',
                 farmId:     activeFarmId || profile?.farmId || '',
                 gardenId:   activeGardenId || profile?.gardenId || '',
                 location:   { regionLabel: profile?.region || '' },
-                existingPlants: Array.isArray(existing) ? existing : [],
+                existingPlants: _loadManagedPlants(),
               });
               if (!wf || !wf.eligible) {
                 try { trackEvent('plant_add_ineligible',
@@ -1581,12 +1587,7 @@ export default function ScanPage() {
               }
               const plant = wf.plant;
               if (!plant) return;
-              const next = (Array.isArray(existing) ? existing : []).slice();
-              next.push(plant);
-              try {
-                window.localStorage.setItem(
-                  'farroway_managed_plants', JSON.stringify(next));
-              } catch { /* ignore quota */ }
+              _appendManagedPlant(plant);
               try { trackEvent('plant_created_from_scan',
                 { plantId: plant.id, scanId: sr?.scanId || null }); }
               catch { /* ignore */ }

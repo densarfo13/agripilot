@@ -24,14 +24,14 @@ import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { universalPlantRuntime, plantIntelligence } from '../runtime/plants/index';
+import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 
-const PLANTS_KEY = 'farroway_managed_plants';
 const EVENTS_KEY = 'farroway_event_log';
 
-function _read(key) {
+function _readEvents() {
   try {
     if (typeof window === 'undefined') return [];
-    const raw = window.localStorage && window.localStorage.getItem(key);
+    const raw = window.localStorage && window.localStorage.getItem(EVENTS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -144,8 +144,8 @@ export default function PlantProfile() {
   const navigate = useNavigate();
 
   const runtime = useMemo(() => {
-    const plants = _read(PLANTS_KEY);
-    const events = _read(EVENTS_KEY);
+    const plants = loadManagedPlants();
+    const events = _readEvents();
     return universalPlantRuntime({
       plants,
       events,

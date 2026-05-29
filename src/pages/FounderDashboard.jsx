@@ -165,14 +165,31 @@ export default function FounderDashboard() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // Gap-fix follow-up — replace null `users` (still null,
+    // cross-device count needs backend) with an honest
+    // `installations` metric: distinct ownerIds across managed
+    // plants + scan history on THIS device. Tile is labelled
+    // "Installations (this device)" so nothing reads as
+    // platform-wide users.
+    const ownerIds = new Set();
+    for (const p of (Array.isArray(plants) ? plants : [])) {
+      if (p && typeof p === 'object' && typeof p.ownerId === 'string'
+          && p.ownerId) ownerIds.add(p.ownerId);
+    }
+    for (const s of (Array.isArray(scanHistory) ? scanHistory : [])) {
+      if (s && typeof s === 'object' && typeof s.ownerId === 'string'
+          && s.ownerId) ownerIds.add(s.ownerId);
+    }
+    const localInstallations = ownerIds.size > 0
+      ? ownerIds.size
+      : (Array.isArray(sessions) && sessions.length > 0 ? 1 : 0);
+
     return {
       adoption: {
-        // Gap-fix §10 — DO NOT invent traction. Real user count
-        // needs backend wiring; local-only dashboards can't
-        // honestly report platform users from one device.
-        users:    null,
-        farms:    Array.isArray(farms) ? farms.length : 0,
-        gardens:  Array.isArray(gardens) ? gardens.length : 0,
+        users:         null,            // still null until backend lands
+        installations: localInstallations,
+        farms:         Array.isArray(farms) ? farms.length : 0,
+        gardens:       Array.isArray(gardens) ? gardens.length : 0,
         plantsCreated: Array.isArray(plants) ? plants.length : 0,
       },
       engagement: {
@@ -233,8 +250,14 @@ export default function FounderDashboard() {
 
         <div style={S.section}>{tSafe('founder.adoption', 'Adoption')}</div>
         <div style={S.grid}>
-          <Tile testid="founder-adoption-users" value={metrics.adoption.users}
-            label={tSafe('founder.users', 'Users')} />
+          <Tile testid="founder-adoption-users"
+            value={metrics.adoption.users}
+            label={tSafe('founder.users', 'Users (platform)')}
+            emptyHint="Cross-device user count needs backend telemetry" />
+          <Tile testid="founder-adoption-installations"
+            value={metrics.adoption.installations}
+            label={tSafe('founder.installations',
+              'Installations (this device)')} />
           <Tile testid="founder-adoption-farms" value={metrics.adoption.farms}
             label={tSafe('founder.farms', 'Farms')} />
           <Tile testid="founder-adoption-gardens" value={metrics.adoption.gardens}
