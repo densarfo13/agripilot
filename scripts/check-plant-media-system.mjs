@@ -155,7 +155,7 @@ const LIBS = [
   ['herbLibrary.ts',       'HERB_LIBRARY',        8],
   ['houseplantLibrary.ts', 'HOUSEPLANT_LIBRARY',  8],
   ['cropLibrary.ts',       'CROP_LIBRARY',       10],
-  ['diseaseLibrary.ts',    'DISEASE_LIBRARY',     8],
+  ['diseaseLibrary.ts',    'DISEASE_LIBRARY',     9],
   ['pestLibrary.ts',       'PEST_LIBRARY',        8],
 ];
 let totalEntries = 0;
@@ -174,7 +174,7 @@ for (const [file, name, expected] of LIBS) {
     totalEntries += expected;
   }
 }
-const EXPECTED_TOTAL = 82; // 20+10+10+8+8+10+8+8
+const EXPECTED_TOTAL = 83; // 20+10+10+8+8+10+9+8 (disease split early/late)
 if (totalEntries !== EXPECTED_TOTAL) {
   fail(`library: total entries ${totalEntries} ≠ ${EXPECTED_TOTAL}`);
 } else {
@@ -196,8 +196,8 @@ const SPEC_HOUSE = ['monstera','snake-plant','pothos','peace-lily',
   'zz-plant','rubber-plant','spider-plant','fiddle-leaf-fig'];
 const SPEC_CROP = ['maize','rice','cassava','soybean','wheat',
   'sorghum','groundnut','millet','cotton','sugarcane'];
-const SPEC_DISEASE = ['leaf-spot','powdery-mildew','blight','rust',
-  'wilt','root-rot','anthracnose','black-spot'];
+const SPEC_DISEASE = ['leaf-spot','powdery-mildew','early-blight','late-blight',
+  'rust','wilt','root-rot','anthracnose','black-spot'];
 const SPEC_PEST = ['aphids','armyworm','whitefly','thrips','spider-mites',
   'scale','mealybugs','beetles'];
 
@@ -302,7 +302,7 @@ if (FAILED.length > 0) {
 }
 console.log('[check:plant-media-system] PASS — Verified Plant Media System complete.');
 console.log('  5 engines (registry · service · cache · gallery · verification) wired.');
-console.log('  8 launch libraries → 82 verified media entries seeded.');
+console.log('  8 launch libraries → 83 verified media entries seeded.');
 console.log('  Cloudinary convention: plants/<folder>/<slug> · cloud=farroway-media.');
 console.log('  PlantProfile gallery + diseases + stages live · ScanResultPage shows references.');
 console.log('  Boot install (__plantMediaHealth) + bridge into PlantImageRegistry wired.');

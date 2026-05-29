@@ -55,16 +55,16 @@ function parseJSON(file, label) {
 // ─── 1. Diseases dataset ───────────────────────────────────────
 const DISEASE_FIELDS = ['id', 'name', 'symptoms', 'causes',
   'treatmentOrganic', 'treatmentChemical', 'prevention', 'images'];
-const SPEC_DISEASES = ['leaf-spot', 'powdery-mildew', 'blight', 'rust',
-  'wilt', 'root-rot', 'anthracnose', 'black-spot'];
+const SPEC_DISEASES = ['leaf-spot', 'powdery-mildew', 'early-blight', 'late-blight',
+  'rust', 'wilt', 'root-rot', 'anthracnose', 'black-spot'];
 
 const diseases = parseJSON(path.join(ROOT, 'src/data/diseases/diseases.json'),
   'disease-data');
 if (Array.isArray(diseases)) {
-  if (diseases.length !== 8) {
-    fail(`disease-data: expected 8 entries, found ${diseases.length}`);
+  if (diseases.length !== 9) {
+    fail(`disease-data: expected 9 entries, found ${diseases.length}`);
   } else {
-    pass(`disease-data: 8 entries present`);
+    pass(`disease-data: 9 entries present`);
   }
   for (const id of SPEC_DISEASES) {
     const e = diseases.find((d) => d && d.id === id);
@@ -78,7 +78,7 @@ if (Array.isArray(diseases)) {
       }
     }
   }
-  pass(`disease-data: all 8 spec diseases present with full field coverage`);
+  pass(`disease-data: all 9 spec diseases present with full field coverage`);
 }
 
 const diseaseIdx = readOrFail(path.join(ROOT, 'src/data/diseases/index.js'),
@@ -228,7 +228,7 @@ if (FAILED.length > 0) {
   process.exit(1);
 }
 console.log('[check:plant-knowledge] PASS — Plant Knowledge Database complete.');
-console.log(`  Diseases catalog: 8 entries (symptoms · causes · organic + chemical treatment · prevention).`);
+console.log(`  Diseases catalog: 9 entries (symptoms · causes · organic + chemical treatment · prevention).`);
 console.log(`  Pests    catalog: 8 entries (symptoms · lifecycle · organic + chemical treatment · prevention).`);
 console.log(`  Plant knowledge: ${SPEC_PLANTS.length} plants with growthStages + commonDiseases + commonPests + careGuide.`);
 console.log(`  Runtime barrel exports + PlantProfile surfaces all four datasets.`);

@@ -896,6 +896,14 @@ export default function App() {
         // the import above; this pins __plantMediaHealth() for QA.
         try { installPlantMediaGlobal(); }
         catch { /* never block boot */ }
+        // Farroway Knowledge Layer — pin __farrowayKnowledge() so
+        // QA can call the canonical lookupPlantKnowledge / disease /
+        // pest service from the production console.
+        try {
+          const { installFarrowayKnowledgeGlobal } =
+            await import('./knowledge/index');
+          installFarrowayKnowledgeGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

@@ -294,7 +294,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   jasmine: {
-    commonDiseases: ['leaf-spot', 'rust', 'blight'],
+    commonDiseases: ['leaf-spot', 'rust', 'early-blight'],
     commonPests:    ['aphids', 'mealybugs', 'whitefly', 'scale'],
     images:         ['plants/flowers/jasmine'],
     careGuide: {
@@ -308,7 +308,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   bougainvillea: {
-    commonDiseases: ['leaf-spot', 'blight'],
+    commonDiseases: ['leaf-spot', 'early-blight'],
     commonPests:    ['aphids', 'mealybugs', 'scale', 'thrips'],
     images:         ['plants/flowers/bougainvillea'],
     careGuide: {
@@ -322,7 +322,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   zinnia: {
-    commonDiseases: ['powdery-mildew', 'leaf-spot', 'blight'],
+    commonDiseases: ['powdery-mildew', 'leaf-spot', 'early-blight'],
     commonPests:    ['aphids', 'spider-mites', 'beetles'],
     images:         ['plants/flowers/zinnia'],
     careGuide: {
@@ -336,7 +336,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   geranium: {
-    commonDiseases: ['leaf-spot', 'blight', 'rust'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'rust'],
     commonPests:    ['aphids', 'whitefly', 'spider-mites'],
     images:         ['plants/flowers/geranium'],
     careGuide: {
@@ -350,7 +350,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   peony: {
-    commonDiseases: ['powdery-mildew', 'leaf-spot', 'blight', 'root-rot'],
+    commonDiseases: ['powdery-mildew', 'leaf-spot', 'early-blight', 'root-rot'],
     commonPests:    ['aphids', 'thrips'],
     images:         ['plants/flowers/peony'],
     careGuide: {
@@ -394,7 +394,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
 
   // ─── Vegetables ─────────────────────────────────────────────
   tomato: {
-    commonDiseases: ['blight', 'leaf-spot', 'wilt', 'powdery-mildew'],
+    commonDiseases: ['early-blight', 'late-blight', 'leaf-spot', 'wilt', 'powdery-mildew'],
     commonPests:    ['aphids', 'whitefly', 'spider-mites', 'thrips', 'armyworm', 'beetles'],
     images:         ['plants/vegetables/tomato'],
     careGuide: {
@@ -408,7 +408,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   pepper: {
-    commonDiseases: ['blight', 'leaf-spot', 'wilt'],
+    commonDiseases: ['early-blight', 'leaf-spot', 'wilt'],
     commonPests:    ['aphids', 'whitefly', 'spider-mites', 'thrips'],
     images:         ['plants/vegetables/pepper'],
     careGuide: {
@@ -422,7 +422,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   cucumber: {
-    commonDiseases: ['powdery-mildew', 'blight', 'wilt', 'leaf-spot'],
+    commonDiseases: ['powdery-mildew', 'early-blight', 'wilt', 'leaf-spot'],
     commonPests:    ['aphids', 'whitefly', 'spider-mites', 'beetles'],
     images:         ['plants/vegetables/cucumber'],
     careGuide: {
@@ -464,7 +464,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   cabbage: {
-    commonDiseases: ['blight', 'wilt', 'leaf-spot', 'root-rot'],
+    commonDiseases: ['early-blight', 'wilt', 'leaf-spot', 'root-rot'],
     commonPests:    ['aphids', 'thrips', 'beetles', 'armyworm'],
     images:         ['plants/vegetables/cabbage'],
     careGuide: {
@@ -478,7 +478,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   onion: {
-    commonDiseases: ['blight', 'wilt', 'leaf-spot', 'rust'],
+    commonDiseases: ['early-blight', 'wilt', 'leaf-spot', 'rust'],
     commonPests:    ['thrips', 'aphids'],
     images:         ['plants/vegetables/onion'],
     careGuide: {
@@ -492,7 +492,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   carrot: {
-    commonDiseases: ['leaf-spot', 'blight', 'root-rot'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'root-rot'],
     commonPests:    ['aphids', 'thrips', 'beetles'],
     images:         ['plants/vegetables/carrot'],
     careGuide: {
@@ -506,7 +506,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   kale: {
-    commonDiseases: ['leaf-spot', 'blight', 'powdery-mildew'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'powdery-mildew'],
     commonPests:    ['aphids', 'thrips', 'whitefly', 'beetles', 'armyworm'],
     images:         ['plants/vegetables/kale'],
     careGuide: {
@@ -520,7 +520,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   broccoli: {
-    commonDiseases: ['leaf-spot', 'blight', 'wilt', 'root-rot'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'wilt', 'root-rot'],
     commonPests:    ['aphids', 'beetles', 'armyworm', 'whitefly'],
     images:         ['plants/vegetables/broccoli'],
     careGuide: {
@@ -634,7 +634,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   strawberry: {
-    commonDiseases: ['leaf-spot', 'powdery-mildew', 'root-rot', 'blight'],
+    commonDiseases: ['leaf-spot', 'powdery-mildew', 'root-rot', 'early-blight'],
     commonPests:    ['aphids', 'thrips', 'spider-mites'],
     images:         ['plants/fruits/strawberry'],
     careGuide: {
@@ -678,7 +678,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
 
   // ─── Herbs ──────────────────────────────────────────────────
   basil: {
-    commonDiseases: ['leaf-spot', 'blight', 'wilt'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'wilt'],
     commonPests:    ['aphids', 'thrips', 'spider-mites'],
     images:         ['plants/herbs/basil'],
     careGuide: {
@@ -720,7 +720,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   thyme: {
-    commonDiseases: ['root-rot', 'blight'],
+    commonDiseases: ['root-rot', 'early-blight'],
     commonPests:    ['aphids', 'spider-mites'],
     images:         ['plants/herbs/thyme'],
     careGuide: {
@@ -762,7 +762,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   parsley: {
-    commonDiseases: ['leaf-spot', 'blight'],
+    commonDiseases: ['leaf-spot', 'early-blight'],
     commonPests:    ['aphids', 'thrips'],
     images:         ['plants/herbs/parsley'],
     careGuide: {
@@ -906,7 +906,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
 
   // ─── Crops ──────────────────────────────────────────────────
   maize: {
-    commonDiseases: ['leaf-spot', 'rust', 'blight', 'wilt'],
+    commonDiseases: ['leaf-spot', 'rust', 'early-blight', 'wilt'],
     commonPests:    ['armyworm', 'aphids', 'beetles', 'thrips'],
     images:         ['plants/crops/maize'],
     careGuide: {
@@ -920,7 +920,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   rice: {
-    commonDiseases: ['blight', 'leaf-spot', 'wilt'],
+    commonDiseases: ['early-blight', 'leaf-spot', 'wilt'],
     commonPests:    ['armyworm', 'aphids', 'thrips'],
     images:         ['plants/crops/rice'],
     careGuide: {
@@ -934,7 +934,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   cassava: {
-    commonDiseases: ['blight', 'leaf-spot', 'wilt', 'anthracnose'],
+    commonDiseases: ['early-blight', 'leaf-spot', 'wilt', 'anthracnose'],
     commonPests:    ['whitefly', 'mealybugs', 'spider-mites'],
     images:         ['plants/crops/cassava'],
     careGuide: {
@@ -948,7 +948,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   soybean: {
-    commonDiseases: ['blight', 'leaf-spot', 'rust', 'wilt'],
+    commonDiseases: ['early-blight', 'leaf-spot', 'rust', 'wilt'],
     commonPests:    ['aphids', 'armyworm', 'thrips', 'beetles'],
     images:         ['plants/crops/soybean'],
     careGuide: {
@@ -962,7 +962,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   wheat: {
-    commonDiseases: ['rust', 'leaf-spot', 'blight', 'powdery-mildew'],
+    commonDiseases: ['rust', 'leaf-spot', 'early-blight', 'powdery-mildew'],
     commonPests:    ['aphids', 'armyworm', 'thrips'],
     images:         ['plants/crops/wheat'],
     careGuide: {
@@ -1018,7 +1018,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   cotton: {
-    commonDiseases: ['leaf-spot', 'blight', 'wilt', 'anthracnose'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'wilt', 'anthracnose'],
     commonPests:    ['aphids', 'whitefly', 'thrips', 'armyworm'],
     images:         ['plants/crops/cotton'],
     careGuide: {

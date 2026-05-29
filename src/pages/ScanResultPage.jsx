@@ -26,6 +26,7 @@ import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 import { computeProduceIntelligence } from '../features/scan/ProduceIntelligenceEngine/index.js';
 import ProduceQualityBadge from '../components/produce/ProduceQualityBadge.jsx';
 import { composeReferenceImagesForScan } from '../runtime/plants/index';
+import { knowledgeForPlant } from '../knowledge/index';
 import PlantImage from '../components/plants/PlantImage.jsx';
 
 // Soft Ochre / Beige unified system. Replaces the legacy
@@ -144,6 +145,20 @@ export default function ScanResultPage() {
     } catch { return null; }
   }, [entry]);
 
+  // Farroway Knowledge Layer — canonical lookupPlantKnowledge
+  // after the scan identifies a plant. Returns care guide,
+  // common risks, today's tasks, pollinator info, companions.
+  const scanKnowledge = useMemo(() => {
+    const raw = entry && entry.raw;
+    if (!raw || typeof raw !== 'object') return null;
+    const slug = String(raw.plantId || raw.cropId
+      || entry?.cropId || entry?.plantName || '')
+      .toLowerCase().replace(/\s+/g, '-');
+    if (!slug) return null;
+    try { return knowledgeForPlant(slug); }
+    catch { return null; }
+  }, [entry]);
+
   useEffect(() => {
     if (!flagOn) {
       try { navigate('/scan-crop', { replace: true }); } catch { /* ignore */ }
@@ -187,6 +202,71 @@ export default function ScanResultPage() {
           />
           {produceIntel ? (
             <ProduceQualityBadge intel={produceIntel} variant="seller" />
+          ) : null}
+
+          {scanKnowledge && scanKnowledge.ok ? (
+            <section data-testid="scan-result-knowledge" style={{
+              background: '#FFFFFF',
+              border: '1px solid rgba(31,41,51,0.08)',
+              borderRadius: 14,
+              padding: '14px 14px 8px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#475569',
+                            textTransform: 'uppercase', letterSpacing: '0.06em',
+                            marginBottom: 8 }}>
+                {tStrict('scan.result.knowledge.title',
+                  'From the Knowledge Layer')}
+              </div>
+              {scanKnowledge.plant ? (
+                <div style={{ fontSize: 13, color: '#1F2933', marginBottom: 8 }}>
+                  <strong>{scanKnowledge.plant.commonName}</strong>
+                  {scanKnowledge.plant.scientificName
+                    ? ' · ' + scanKnowledge.plant.scientificName : ''}
+                </div>
+              ) : null}
+              {scanKnowledge.plant && scanKnowledge.plant.careGuide
+                  && scanKnowledge.plant.careGuide.water ? (
+                <div style={{ fontSize: 12, color: '#475569', marginBottom: 6 }}>
+                  <strong>{tStrict('scan.result.knowledge.water', 'Water')}:</strong>
+                  {' ' + scanKnowledge.plant.careGuide.water}
+                </div>
+              ) : null}
+              {scanKnowledge.todaysTasks
+                  && scanKnowledge.todaysTasks.length > 0 ? (
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#475569',
+                                 textTransform: 'uppercase', letterSpacing: '0.06em',
+                                 marginBottom: 4 }}>
+                    {tStrict('scan.result.knowledge.todaysTasks', "Today")}
+                  </div>
+                  {scanKnowledge.todaysTasks.map((t, i) => (
+                    <div key={i} style={{ fontSize: 13, color: '#1F2933', padding: '2px 0' }}>
+                      ✓ {tStrict(t.labelKey, t.labelDefault)}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {scanKnowledge.pollinator && scanKnowledge.pollinator.ok
+                  && scanKnowledge.pollinator.score != null ? (
+                <div style={{ fontSize: 12, color: '#475569', marginBottom: 6 }}>
+                  <strong>{tStrict('scan.result.knowledge.pollinator', 'Pollinator score')}:</strong>
+                  {' ' + scanKnowledge.pollinator.score + ' / 10'}
+                  {scanKnowledge.pollinator.attracts
+                    && scanKnowledge.pollinator.attracts.length > 0
+                    ? ' · attracts ' + scanKnowledge.pollinator.attracts.join(', ')
+                    : ''}
+                </div>
+              ) : null}
+              {scanKnowledge.companions && scanKnowledge.companions.ok
+                  && scanKnowledge.companions.good
+                  && scanKnowledge.companions.good.length > 0 ? (
+                <div style={{ fontSize: 12, color: '#475569' }}>
+                  <strong>{tStrict('scan.result.knowledge.companions', 'Companions')}:</strong>
+                  {' ' + scanKnowledge.companions.good
+                    .map((c) => c.commonName).join(', ')}
+                </div>
+              ) : null}
+            </section>
           ) : null}
 
           {referenceMedia && (

@@ -27,6 +27,7 @@ import { universalPlantRuntime, plantIntelligence,
          composePlantGallery,
          composePlantEntry, findDisease, findPest }
   from '../runtime/plants/index';
+import { knowledgeForPlant } from '../knowledge/index';
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 import PlantImage from '../components/plants/PlantImage.jsx';
 
@@ -213,16 +214,17 @@ export default function PlantProfile() {
       })
     : null;
 
-  // Plant Knowledge Database — composed PlantEntry with growth
-  // stages, careGuide, commonDiseases, commonPests. Joins
-  // PLANT_DB + knowledge supplement + DISEASE_DB + PEST_DB.
-  const knowledge = catalogId ? composePlantEntry(catalogId) : null;
+  // Farroway Knowledge Layer — canonical source of truth.
+  // Returns the joined envelope: plant + diseases + pests +
+  // companions + pollinator + todaysTasks in one call.
+  const know = catalogId ? knowledgeForPlant(catalogId) : null;
+  const knowledge = know && know.ok ? know.plant : null;
   const careGuide = knowledge && knowledge.careGuide;
   const growthStages = knowledge && knowledge.growthStages;
-  const linkedDiseases = (knowledge && knowledge.commonDiseases || [])
-    .map((id) => findDisease(id)).filter(Boolean);
-  const linkedPests = (knowledge && knowledge.commonPests || [])
-    .map((id) => findPest(id)).filter(Boolean);
+  const linkedDiseases = (know && know.ok && know.diseases) || [];
+  const linkedPests    = (know && know.ok && know.pests)    || [];
+  const companions     = know && know.ok ? know.companions  : null;
+  const pollinator     = know && know.ok ? know.pollinator  : null;
 
   return (
     <main style={S.page} data-testid="plant-profile-page" data-plant-id={focused.id}>
@@ -352,6 +354,105 @@ export default function PlantProfile() {
               </div>
             </>
           ) : null}
+        </>
+      ) : null}
+
+      {knowledge ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.facts', 'Plant facts')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-facts">
+            <div style={{ fontSize: 13, color: '#1F2933' }}>
+              {knowledge.subtype ? (
+                <div style={{ padding: '4px 0' }}>
+                  <strong>{tSafe('plantProfile.family', 'Family')}:</strong>
+                  {' ' + knowledge.subtype}
+                </div>
+              ) : null}
+              <div style={{ padding: '4px 0' }}>
+                <strong>{tSafe('plantProfile.water', 'Water')}:</strong>
+                {' ' + (knowledge.waterNeed || '—')}
+                {' · '}
+                <strong>{tSafe('plantProfile.sun', 'Sun')}:</strong>
+                {' ' + (knowledge.sunlightNeed || '—')}
+              </div>
+              <div style={{ padding: '4px 0' }}>
+                <strong>{tSafe('plantProfile.soil', 'Soil')}:</strong>
+                {' ' + (knowledge.soilNeed || '—')}
+              </div>
+              {knowledge.bloomMonths && knowledge.bloomMonths.length > 0 ? (
+                <div style={{ padding: '4px 0' }}>
+                  <strong>{tSafe('plantProfile.bloomMonths', 'Blooms')}:</strong>
+                  {' ' + knowledge.bloomMonths.join(', ')}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {pollinator && pollinator.ok && pollinator.score != null ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.pollinatorIntel', 'Pollinator intelligence')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-pollinator-intel">
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#1F2933' }}>
+              {tSafe('plantProfile.pollinator.score', 'Pollinator score')}:
+              {' ' + pollinator.score + ' / 10'}
+              {' · '}
+              <span style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>
+                {pollinator.band}
+              </span>
+            </div>
+            {pollinator.attracts && pollinator.attracts.length > 0 ? (
+              <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>
+                {tSafe('plantProfile.pollinator.attracts', 'Attracts')}:
+                {' ' + pollinator.attracts.join(', ')}
+              </div>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
+      {companions && companions.ok
+          && ((companions.good && companions.good.length > 0)
+              || (companions.avoid && companions.avoid.length > 0)) ? (
+        <>
+          <div style={S.sectionTitle}>
+            {tSafe('plantProfile.companionPlanting', 'Companion planting')}
+          </div>
+          <div style={S.card} data-testid="plant-profile-companion-planting">
+            {companions.good && companions.good.length > 0 ? (
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#16A34A',
+                               textTransform: 'uppercase', letterSpacing: '0.06em',
+                               marginBottom: 4 }}>
+                  {tSafe('plantProfile.companions.good', 'Good companions')}
+                </div>
+                {companions.good.map((c) => (
+                  <div key={c.id} style={{ fontSize: 13, color: '#1F2933', padding: '2px 0' }}>
+                    ✓ {c.commonName}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {companions.avoid && companions.avoid.length > 0 ? (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#B91C1C',
+                               textTransform: 'uppercase', letterSpacing: '0.06em',
+                               marginBottom: 4 }}>
+                  {tSafe('plantProfile.companions.avoid', 'Avoid planting near')}
+                </div>
+                {companions.avoid.map((c) => (
+                  <div key={c.id} style={{ fontSize: 13, color: '#1F2933', padding: '2px 0' }}>
+                    ✗ {c.commonName}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </>
       ) : null}
 

@@ -76,42 +76,81 @@
     "images": ["plants/diseases/powdery-mildew"]
   },
   {
-    "id": "blight",
-    "name": "Blight",
+    "id": "early-blight",
+    "name": "Early Blight",
     "symptoms": [
-      "Rapid browning and wilting of leaves and stems",
-      "Dark water-soaked lesions on foliage",
-      "White fuzzy growth on leaf undersides (late blight)",
-      "Fruits develop firm brown patches and rot",
-      "Entire plants collapse within days in severe cases"
+      "Concentric dark-brown bullseye lesions on lower leaves first",
+      "Yellow halo surrounding each lesion",
+      "Defoliation progresses from the base upward",
+      "Stem cankers and sunken dark spots on fruit shoulders",
+      "Reduced yield and sunscald on exposed fruit"
     ],
     "causes": [
-      "Phytophthora infestans (late blight)",
-      "Alternaria solani (early blight)",
-      "Cool wet weather (60-80 °F / 15-27 °C)",
-      "Splash-borne spores from infected debris"
+      "Alternaria solani fungus (and A. tomatophila)",
+      "Warm humid weather (24-29 °C) with 6+ hours leaf wetness",
+      "Splash-borne conidia from soil and infected debris",
+      "Plant stress from poor nutrition, drought, or heavy fruit load"
     ],
     "treatmentOrganic": [
-      "Remove and burn infected plants — do not compost",
-      "Apply copper-based organic fungicide every 5-7 days",
+      "Prune lower infected leaves to slow spread upward",
+      "Apply copper-based organic fungicide every 7 days",
       "Spray Bacillus subtilis biofungicide preventatively",
-      "Mulch heavily to block soil-borne spores",
-      "Stake plants to keep foliage off the ground"
+      "Mulch heavily to block soil-splash dispersal",
+      "Maintain plant nutrition — healthy plants resist better"
     ],
     "treatmentChemical": [
-      "Chlorothalonil or mancozeb every 7 days",
-      "Cymoxanil + famoxadone for active infections",
-      "Metalaxyl for systemic protection (rotate classes)"
+      "Chlorothalonil every 7-10 days from first symptoms",
+      "Mancozeb on alternating schedule with chlorothalonil",
+      "Azoxystrobin as a translaminar option (rotate classes)"
     ],
     "prevention": [
-      "Choose certified disease-free seed and transplants",
       "Plant resistant tomato/potato varieties",
-      "Avoid overhead watering at all costs",
-      "Destroy volunteer nightshades each spring",
-      "Rotate crops on a 3+ year cycle",
-      "Apply preventative sprays before rainy spells"
+      "3+ year rotation away from solanaceous crops",
+      "Stake or cage plants to keep foliage off the ground",
+      "Water at soil level, never overhead",
+      "Destroy crop debris each autumn",
+      "Apply preventative sprays during humid weather"
     ],
-    "images": ["plants/diseases/blight"]
+    "images": ["plants/diseases/early-blight"]
+  },
+  {
+    "id": "late-blight",
+    "name": "Late Blight",
+    "symptoms": [
+      "Pale-green water-soaked lesions that expand quickly",
+      "White fuzzy sporulation on leaf undersides in humid weather",
+      "Brown-black blotches on stems and petioles",
+      "Firm brown leathery patches on fruits and tubers",
+      "Whole plants can collapse within days of first symptoms"
+    ],
+    "causes": [
+      "Phytophthora infestans oomycete",
+      "Cool wet weather (10-20 °C) with prolonged leaf wetness",
+      "Wind-borne spores travel up to 50 km from source",
+      "Persists on infected tubers and volunteer plants"
+    ],
+    "treatmentOrganic": [
+      "Remove and BURN infected plants immediately — never compost",
+      "Apply copper hydroxide every 5-7 days at first sign",
+      "Spray Bacillus subtilis biofungicide preventatively",
+      "Cull volunteer potatoes that emerge after harvest",
+      "Stake plants and mulch heavily"
+    ],
+    "treatmentChemical": [
+      "Cymoxanil + mancozeb for active infections",
+      "Metalaxyl-M (systemic) — rotate to prevent resistance",
+      "Fluazinam or famoxadone in commercial production",
+      "Phosphorous acid drench as a curative"
+    ],
+    "prevention": [
+      "Choose certified disease-free seed potatoes and transplants",
+      "Plant late-blight-resistant varieties (Mountain Magic, Sarpo)",
+      "Apply preventative copper sprays before rainy spells",
+      "Destroy cull piles and volunteer nightshades each spring",
+      "Monitor regional blight reports during cool wet weather",
+      "3+ year rotation away from solanaceous crops"
+    ],
+    "images": ["plants/diseases/late-blight"]
   },
   {
     "id": "rust",

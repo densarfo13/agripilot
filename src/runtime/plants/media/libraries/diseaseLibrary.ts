@@ -11,7 +11,8 @@
 export const DISEASE_LIBRARY = Object.freeze([
   { plantId: 'leaf-spot',       slug: 'leaf-spot' },
   { plantId: 'powdery-mildew',  slug: 'powdery-mildew' },
-  { plantId: 'blight',          slug: 'blight' },
+  { plantId: 'early-blight',    slug: 'early-blight' },
+  { plantId: 'late-blight',     slug: 'late-blight' },
   { plantId: 'rust',            slug: 'rust' },
   { plantId: 'wilt',            slug: 'wilt' },
   { plantId: 'root-rot',        slug: 'root-rot' },
