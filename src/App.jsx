@@ -985,6 +985,13 @@ export default function App() {
             await import('./runtime/enterprise/EnterpriseReadinessGate');
           installEnterpriseReadinessGlobal();
         } catch { /* never block boot */ }
+        // Wave 13 — Admin impact + demographics + record system.
+        // Pure runtime; pins __adminImpactHealth() for QA.
+        try {
+          const { installAdminImpactGlobal } =
+            await import('./runtime/admin/index');
+          installAdminImpactGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

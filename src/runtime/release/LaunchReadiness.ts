@@ -91,6 +91,19 @@ export function launchReadiness() {
         ? !!(_probe('__outcomeHealth') as any).initialized : false,
       reliabilityReady: _probe('__reliabilityHealth')
         ? !!(_probe('__reliabilityHealth') as any).initialized : false,
+      // Wave 13 — admin impact + demographics.
+      adminImpactReady: _probe('__adminImpactHealth')
+        ? !!(_probe('__adminImpactHealth') as any).farmerProfilesReady
+        : false,
+      demographicsSafe: _probe('__adminImpactHealth')
+        ? !!(_probe('__adminImpactHealth') as any).demographicsOptional
+        : true,
+      organizationReportingReady: _probe('__adminImpactHealth')
+        ? !!(_probe('__adminImpactHealth') as any).organizationRecordsReady
+        : false,
+      impactLedgerReady: _probe('__adminImpactHealth')
+        ? !!(_probe('__adminImpactHealth') as any).impactRecordsReady
+        : false,
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

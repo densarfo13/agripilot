@@ -257,6 +257,17 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       reportsReady:              _hasGlobal('__reportHealth'),
       outcomesReady:             _hasGlobal('__outcomeHealth'),
       reliabilityReady:          _hasGlobal('__reliabilityHealth'),
+      // Wave 13 — Admin Impact + demographics + records.
+      adminImpactReady:          _hasGlobal('__adminImpactHealth'),
+      demographicsSafe:          _safe(() => {
+        if (typeof window === 'undefined') return true;
+        const w = window as any;
+        if (typeof w.__adminImpactHealth !== 'function') return true;
+        const r = w.__adminImpactHealth();
+        return !!(r && r.demographicsOptional);
+      }, true),
+      organizationReportingReady: _hasGlobal('__adminImpactHealth'),
+      impactLedgerReady:          _hasGlobal('__adminImpactHealth'),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

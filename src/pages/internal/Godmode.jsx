@@ -51,6 +51,7 @@ const PROBES = [
   ['__reportHealth',        'Reports'],
   ['__outcomeHealth',       'Outcomes'],
   ['__reliabilityHealth',   'Reliability'],
+  ['__adminImpactHealth',   'Admin Impact'],
   ['__enterpriseReadiness', 'Enterprise Readiness'],
   ['__appStoreReadiness',   'App Store Readiness'],
   ['__releaseLock',         'Release Lock'],

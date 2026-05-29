@@ -38,10 +38,14 @@ export function enterpriseReadiness() {
     const founder  = _probe('__founderMetricsHealth');
     const release  = _probe('__releaseLock');
 
+    const admin    = _probe('__adminImpactHealth');
     const checks = Object.freeze({
       organizationIsolation: typeof window !== 'undefined'
         && typeof (window as any).__rbacHealth === 'function',
       rbac:                  !!(rbac && (rbac as any).initialized),
+      adminImpactReady:      !!(admin
+        && (admin as any).farmerProfilesReady
+        && (admin as any).fakeMetrics === false),
       auditLogs:             !!(audit && (audit as any).initialized
                               && (audit as any).appendOnly),
       evidenceChain:         !!(evidence && (evidence as any).initialized),

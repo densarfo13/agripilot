@@ -1,0 +1,247 @@
+// server/prisma/_pending-migrations/admin_impact_demographics/
+//   schema_fragment.prisma
+//
+// PENDING — staged for supervised deploy. NOT placed inside
+// prisma/migrations/ because production `prisma migrate deploy`
+// scans every subdirectory there and would choke on the
+// missing migration.sql.
+//
+// Procedure: see README.md in this directory.
+//
+// ─────────────────────────────────────────────────────────────
+// Admin Impact + Demographics + Record System (sprint Wave 13)
+// ─────────────────────────────────────────────────────────────
+
+enum FarmerRole {
+  farmer
+  gardener
+  grower
+}
+
+enum AgeRange {
+  AGE_18_25         @map("18_25")
+  AGE_26_35         @map("26_35")
+  AGE_36_45         @map("36_45")
+  AGE_46_60         @map("46_60")
+  AGE_60_PLUS       @map("60_plus")
+  PREFER_NOT_TO_SAY @map("prefer_not_to_say")
+}
+
+enum Gender {
+  male
+  female
+  other
+  prefer_not_to_say
+}
+
+enum OnboardingStatus {
+  started
+  profile_completed
+  farm_created
+  first_scan_done
+  first_task_done
+  active
+}
+
+enum OrgType {
+  NGO
+  GOVERNMENT
+  COOPERATIVE
+  AGRIBUSINESS
+  INTERNAL
+}
+
+enum OrgStatus {
+  pilot
+  active
+  inactive
+}
+
+enum ProgramStatus {
+  draft
+  active
+  completed
+  paused
+}
+
+enum EnrollmentStatus {
+  invited
+  active
+  inactive
+  completed
+}
+
+enum InterventionType {
+  training
+  seed
+  fertilizer
+  irrigation
+  pest_control
+  finance
+  advisory
+  other
+}
+
+enum InterventionStatus {
+  planned
+  delivered
+  completed
+  failed
+}
+
+enum ParticipantStatus {
+  assigned
+  delivered
+  completed
+  missed
+}
+
+enum ImpactType {
+  scan_completed
+  plant_created
+  task_completed
+  intervention_completed
+  treatment_applied
+  harvest_recorded
+  health_improved
+  buyer_interest_received
+}
+
+enum ReportRecordType {
+  founder_summary
+  organization_summary
+  program_impact
+  intervention_summary
+}
+
+model FarmerProfile {
+  id                          String           @id @default(cuid())
+  userId                      String           @unique
+  role                        FarmerRole
+  ageRange                    AgeRange?
+  gender                      Gender?
+  country                     String?
+  region                      String?
+  district                    String?
+  village                     String?
+  farmSize                    String?
+  primaryCrops                Json?
+  organizationId              String?
+  programId                   String?
+  onboardingStatus            OnboardingStatus @default(started)
+  consentForProgramReporting  Boolean          @default(false)
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  @@index([organizationId])
+  @@index([programId])
+  @@index([role])
+}
+
+model Organization {
+  id        String     @id @default(cuid())
+  name      String
+  type      OrgType
+  country   String?
+  region    String?
+  status    OrgStatus  @default(pilot)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Program {
+  id              String         @id @default(cuid())
+  organizationId  String
+  name            String
+  cropFocus       String?
+  region          String?
+  district        String?
+  status          ProgramStatus  @default(draft)
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([organizationId])
+}
+
+model ProgramEnrollment {
+  id         String             @id @default(cuid())
+  programId  String
+  userId     String
+  farmId     String?
+  status     EnrollmentStatus   @default(invited)
+  joinedAt   DateTime           @default(now())
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@unique([programId, userId])
+  @@index([programId])
+  @@index([userId])
+}
+
+model Intervention {
+  id              String              @id @default(cuid())
+  organizationId  String
+  programId       String?
+  name            String
+  type            InterventionType
+  status          InterventionStatus  @default(planned)
+  plannedDate     DateTime?
+  completedDate   DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([programId])
+}
+
+model InterventionParticipant {
+  id                String             @id @default(cuid())
+  interventionId    String
+  userId            String
+  farmId            String?
+  status            ParticipantStatus  @default(assigned)
+  notes             String?
+  evidencePhotoUrl  String?
+  completedAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@unique([interventionId, userId])
+  @@index([interventionId])
+  @@index([userId])
+}
+
+model ImpactRecord {
+  id                  String      @id @default(cuid())
+  userId              String?
+  farmId              String?
+  gardenId            String?
+  plantId             String?
+  organizationId      String?
+  programId           String?
+  type                ImpactType
+  value               Json
+  evidenceArtifactId  String?
+  createdAt           DateTime    @default(now())
+
+  @@index([organizationId])
+  @@index([programId])
+  @@index([userId])
+  @@index([type])
+}
+
+model ReportRecord {
+  id              String            @id @default(cuid())
+  organizationId  String?
+  programId       String?
+  type            ReportRecordType
+  metrics         Json
+  generatedBy     String
+  generatedAt     DateTime          @default(now())
+  exportFormat    String?
+
+  @@index([organizationId])
+  @@index([type])
+}
