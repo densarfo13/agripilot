@@ -25,7 +25,7 @@
  *   • No camera-error wording; no first-load camera prompt.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { registrySummary } from '../runtime/plants/index';
@@ -126,6 +126,23 @@ export default function MyPlants() {
   const summary = useMemo(
     () => registrySummary(managedPlants), [managedPlants]);
 
+  // Search — Phase 5 spec. Filters managed plants by common
+  // name OR scientific name OR category, case-insensitive.
+  const [query, setQuery] = useState('');
+  const searchResults = useMemo(() => {
+    const q = (query || '').trim().toLowerCase();
+    if (q.length < 2) return null;
+    return (managedPlants || [])
+      .filter((p) => p && typeof p === 'object')
+      .filter((p) => {
+        const n = String(p.commonName || '').toLowerCase();
+        const s = String(p.scientificName || '').toLowerCase();
+        const c = String(p.category || '').toLowerCase();
+        return n.includes(q) || s.includes(q) || c.includes(q);
+      })
+      .slice(0, 25);
+  }, [query, managedPlants]);
+
   const isEmpty = summary.totalCount === 0;
 
   return (
@@ -138,6 +155,51 @@ export default function MyPlants() {
           'Every plant you scan, pick, or add lives here with tasks, '
           + 'health, and history.')}
       </p>
+
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={tSafe('myPlants.searchPlaceholder',
+          'Search by name, scientific name, or category')}
+        data-testid="my-plants-search"
+        style={{
+          width: '100%', padding: '10px 12px', fontSize: 14,
+          border: '1px solid rgba(31,41,51,0.12)', borderRadius: 10,
+          background: '#FFFFFF', marginBottom: 14, boxSizing: 'border-box',
+          fontFamily: 'inherit', color: '#1F2933',
+        }}
+      />
+
+      {searchResults != null ? (
+        <div data-testid="my-plants-search-results"
+          style={{ marginBottom: 14 }}>
+          {searchResults.length === 0 ? (
+            <p style={{ fontSize: 13, color: '#94A3B8',
+                        fontStyle: 'italic', margin: 0 }}>
+              {tSafe('myPlants.noResults',
+                'No plants match — try a different term.')}
+            </p>
+          ) : searchResults.map((p) => (
+            <button key={p.id} type="button"
+              onClick={() => navigate('/my-plants/' + encodeURIComponent(p.id))}
+              data-testid={`my-plants-search-result-${p.id}`}
+              style={{
+                appearance: 'none', width: '100%',
+                textAlign: 'left', cursor: 'pointer',
+                background: '#FFFFFF',
+                border: '1px solid rgba(31,41,51,0.08)',
+                borderRadius: 10, padding: '10px 12px',
+                marginBottom: 6, fontFamily: 'inherit',
+                fontSize: 13, color: '#1F2933',
+              }}>
+              <strong>{p.commonName || tSafe('myPlants.unnamed', 'Unnamed')}</strong>
+              {p.scientificName ? ' · ' + p.scientificName : ''}
+              {' · ' + (p.category || '')}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div style={STYLES.topRow}>
         <div style={STYLES.topStat} data-testid="my-plants-stat-total">

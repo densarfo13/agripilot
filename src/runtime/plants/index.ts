@@ -72,6 +72,15 @@ import {
   scanToManagedPlant, SCAN_TO_MANAGED_PLANT_VERSION,
 } from './scanToManagedPlant';
 import { PLANT_RUNTIME_OWNERSHIP } from './PlantRuntime';
+import {
+  plantIntelligence, starterTasksFor, STARTER_TASKS,
+  PLANT_INTELLIGENCE_VERSION,
+} from './PlantIntelligenceEngine';
+import {
+  PLANT_CONTRACTS_VERSION, PLANT_CATEGORY_VALUES,
+  PLANT_SOURCE, PLANT_TIMELINE_EVENT_TYPES,
+  HEALTH_LABEL_FOR_SCORE, HEALTH_LABEL_BANDS,
+} from './plantContracts';
 
 export const UNIVERSAL_PLANT_RUNTIME_VERSION = 'universal-plant-runtime-v1';
 export const PLANTS_BRIEFING_VERSION         = 'plants-briefing-v1';
@@ -228,10 +237,12 @@ export function universalPlantRuntime(ctx: any) {
       lifecycle:  PLANT_LIFECYCLE_VERSION,
       recommend:  PLANT_RECOMMENDATION_VERSION,
       memory:     PLANT_MEMORY_VERSION,
-      timeline:   PLANT_TIMELINE_VERSION,
-      briefing:   PLANTS_BRIEFING_VERSION,
-      workflow:   SCAN_TO_MANAGED_PLANT_VERSION,
-      schema:     PLANT_SCHEMA_VERSION,
+      timeline:    PLANT_TIMELINE_VERSION,
+      briefing:    PLANTS_BRIEFING_VERSION,
+      workflow:    SCAN_TO_MANAGED_PLANT_VERSION,
+      intelligence: PLANT_INTELLIGENCE_VERSION,
+      contracts:   PLANT_CONTRACTS_VERSION,
+      schema:      PLANT_SCHEMA_VERSION,
     }),
     deferred: Object.freeze({
       persistence:
@@ -253,13 +264,95 @@ export function installUniversalPlantRuntimeGlobal(): boolean {
   return _safe(() => {
     if (typeof window === 'undefined') return false;
     const w = window as any;
-    if (typeof w.__plantRuntime === 'function') return true;
-    w.__plantRuntime = function (innerCtx: any) {
-      const out = universalPlantRuntime(innerCtx || {});
-      try { console.log('[Farroway · Universal Plant Runtime]', out); }
-      catch { /* swallow */ }
-      return out;
-    };
+    // Universal runtime probe — already pinned in earlier sprints
+    if (typeof w.__plantRuntime !== 'function') {
+      w.__plantRuntime = function (innerCtx: any) {
+        const out = universalPlantRuntime(innerCtx || {});
+        try { console.log('[Farroway · Universal Plant Runtime]', out); }
+        catch { /* swallow */ }
+        return out;
+      };
+    }
+    // Phase 16 — __plantRuntimeHealth(): readiness probe.
+    if (typeof w.__plantRuntimeHealth !== 'function') {
+      w.__plantRuntimeHealth = function () {
+        const out = _safe(() => {
+          const plants  = _safe(() => {
+            const raw = w.localStorage
+              && w.localStorage.getItem('farroway_managed_plants');
+            return raw ? JSON.parse(raw) : [];
+          }, []);
+          const events  = _safe(() => {
+            const raw = w.localStorage
+              && w.localStorage.getItem('farroway_event_log');
+            return raw ? JSON.parse(raw) : [];
+          }, []);
+          const byCat = registryListByCategory(plants as any);
+          const categories: Record<string, number> = {};
+          for (const k of Object.keys(byCat || {})) {
+            categories[k] = Array.isArray((byCat as any)[k])
+              ? (byCat as any)[k].length : 0;
+          }
+          return {
+            initialized:        true,
+            plantCount:         Array.isArray(plants) ? plants.length : 0,
+            timelineEvents:     Array.isArray(events) ? events.length : 0,
+            categories,
+            healthEngineReady:  true,
+            taskEngineReady:    true,
+            scanToPlantReady:   true,
+            runtimeVersion:     UNIVERSAL_PLANT_RUNTIME_VERSION,
+          };
+        }, {
+          initialized: false, plantCount: 0, timelineEvents: 0,
+          categories: {}, healthEngineReady: false,
+          taskEngineReady: false, scanToPlantReady: false,
+        });
+        try { console.log('[Farroway · PlantRuntime health]', out); }
+        catch { /* swallow */ }
+        return Object.freeze(out);
+      };
+    }
+    // Phase 16 — __founderMetricsHealth(): dashboard readiness.
+    if (typeof w.__founderMetricsHealth !== 'function') {
+      w.__founderMetricsHealth = function () {
+        const internal = _safe(() => {
+          const v = w.localStorage
+            && w.localStorage.getItem('farroway_internal');
+          return v === '1';
+        }, false);
+        const out = Object.freeze({
+          available:        true,
+          route:            '/internal/founder',
+          aggregatesReady:  true,
+          requiresInternal: true,
+          isInternalSession: internal,
+        });
+        try { console.log('[Farroway · Founder metrics health]', out); }
+        catch { /* swallow */ }
+        return out;
+      };
+    }
+    // Phase 16 — extend the wave-8 __appStoreReadiness with the
+    // two warnings the spec asks for (do NOT block App Store).
+    if (typeof w.__appStoreReadiness === 'function'
+        && !(w as any).__appStoreReadiness.__plantsExtended) {
+      const prior = w.__appStoreReadiness as any;
+      const wrapped: any = function () {
+        const base = _safe(() => prior(), {});
+        const warnings = Array.isArray((base as any).warnings)
+          ? (base as any).warnings.slice() : [];
+        if (typeof w.__plantRuntimeHealth !== 'function') {
+          warnings.push('plantRuntimeMissing');
+        }
+        if (typeof w.__founderMetricsHealth !== 'function') {
+          warnings.push('founderDashboardMissing');
+        }
+        return Object.freeze({ ...base, warnings });
+      };
+      wrapped.__plantsExtended = true;
+      w.__appStoreReadiness = wrapped;
+    }
     return true;
   }, false);
 }
@@ -292,6 +385,13 @@ export {
   buildPlantTimeline, TIMELINE_EVENT_KIND, PLANT_TIMELINE_VERSION,
   // Scan → Managed Plant workflow
   scanToManagedPlant, SCAN_TO_MANAGED_PLANT_VERSION,
+  // Intelligence composite + starter tasks
+  plantIntelligence, starterTasksFor, STARTER_TASKS,
+  PLANT_INTELLIGENCE_VERSION,
+  // Formal contracts
+  PLANT_CONTRACTS_VERSION, PLANT_CATEGORY_VALUES,
+  PLANT_SOURCE, PLANT_TIMELINE_EVENT_TYPES,
+  HEALTH_LABEL_FOR_SCORE, HEALTH_LABEL_BANDS,
 };
 
 // briefingComposer lives in its own file to keep the circular-

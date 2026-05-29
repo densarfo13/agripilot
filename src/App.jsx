@@ -225,6 +225,9 @@ const QuickGardenSetup   = lazy(() => import('./pages/setup/QuickGardenSetup.jsx
 const MyPlants           = lazy(() => import('./pages/MyPlants.jsx'));
 // Single-plant detail page (universalPlantRuntime composite).
 const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
+// Internal-only founder dashboard (Phase 15 — gated by
+// `localStorage.farroway_internal === '1'` OR `?internal=1`).
+const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
 const QuickFarmSetup     = lazy(() => import('./pages/setup/QuickFarmSetup.jsx'));
 const Marketplace    = lazy(() => import('./pages/Marketplace.jsx'));
 const NgoImpactPage  = lazy(() => import('./pages/NgoImpactPage.jsx'));
@@ -1345,6 +1348,10 @@ export default function App() {
           <Route path="/my-plants/:plantId" element={<PlantProfile />} />
           <Route path="/plants/:plantId"    element={<PlantProfile />} />
           <Route path="/plants"    element={<Navigate to="/my-plants" replace />} />
+          {/* Internal-only founder dashboard. Page itself
+              enforces the internal gate; the route is public so
+              authorised users can reach it via direct URL. */}
+          <Route path="/internal/founder" element={<FounderDashboard />} />
           <Route path="/start" element={<FarmerEntry />} />
 
           {/* Farmer-first entry (phone OTP, Google, offline) */}
