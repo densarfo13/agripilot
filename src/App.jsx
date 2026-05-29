@@ -797,6 +797,15 @@ export default function App() {
         installTodayEngineGlobal();
       } catch { /* never block app boot */ }
       try {
+        // Phase 12 — pin __networkIntelligence() so QA can
+        // introspect the network-intel composite (digital twin +
+        // trends + peer benchmarks + collective recommendations +
+        // anonymized records ready for future sync).
+        const { installNetworkIntelligenceGlobal } =
+          await import('./runtime/intelligenceNetwork/index.js');
+        installNetworkIntelligenceGlobal();
+      } catch { /* never block app boot */ }
+      try {
         // Wave 8 — app store readiness composite. Probes classifier
         // availability, installs safety-mode flag overrides, detects
         // notification transport, reads locale state. Idempotent.
