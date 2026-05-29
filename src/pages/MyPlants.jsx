@@ -33,6 +33,9 @@ import { registrySummary } from '../runtime/plants/index';
 // one facade so quota / corrupt-JSON / private-mode all degrade
 // silently the same way across MyPlants / PlantProfile / ScanPage.
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
+// Real Plant Image System — render plant thumbnails in section
+// rows (and in the search result list when active).
+import PlantImage from '../components/plants/PlantImage.jsx';
 
 const STYLES = {
   page: {
@@ -184,10 +187,21 @@ export default function MyPlants() {
                 borderRadius: 10, padding: '10px 12px',
                 marginBottom: 6, fontFamily: 'inherit',
                 fontSize: 13, color: '#1F2933',
+                display: 'flex', alignItems: 'center', gap: 10,
               }}>
-              <strong>{p.commonName || tSafe('myPlants.unnamed', 'Unnamed')}</strong>
-              {p.scientificName ? ' · ' + p.scientificName : ''}
-              {' · ' + (p.category || '')}
+              <PlantImage
+                plantId={(p.commonName || '').toLowerCase().replace(/\s+/g, '_')}
+                plantLibraryImage={p.imageUrl}
+                scanImage={p.thumbnailUrl}
+                alt={p.commonName || ''}
+                size="thumb"
+                testid={`my-plants-result-image-${p.id}`}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong>{p.commonName || tSafe('myPlants.unnamed', 'Unnamed')}</strong>
+                {p.scientificName ? ' · ' + p.scientificName : ''}
+                {' · ' + (p.category || '')}
+              </div>
             </button>
           ))}
         </div>

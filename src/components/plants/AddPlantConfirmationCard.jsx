@@ -30,6 +30,8 @@
 
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
+// Real Plant Image System — one component, 4-tier fallback.
+import PlantImage from './PlantImage.jsx';
 // Note: this UI layer DOES NOT import the plant DB directly
 // (architecture layer rule: ui -> service is banned). The scan
 // envelope is expected to already carry the enriched fields
@@ -118,8 +120,23 @@ export default function AddPlantConfirmationCard({
   // up; this hint at least signals the recovery path.
   const categoryUnknown = !category || category === 'unknown';
 
+  // Real Plant Image System — pick the best signal available
+  // from the scan envelope to seed the image. Resolver handles
+  // the fallback to placeholder when nothing's present.
+  const _plantImageId = (scanResult.plantId
+    || (name || '').toLowerCase().replace(/\s+/g, '_'));
+  const _scanImage = scanResult.thumbnail || scanResult.imageUrl;
+
   return (
     <section style={S.card} data-testid="add-plant-confirmation-card">
+      <PlantImage
+        plantId={_plantImageId}
+        scanImage={_scanImage}
+        alt={name}
+        size="card"
+        testid="add-plant-image"
+        style={{ marginBottom: 12 }}
+      />
       <h2 style={S.header}>
         {tSafe('plant.confirm.title', 'Add this plant to My Plants?')}
       </h2>

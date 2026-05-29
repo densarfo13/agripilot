@@ -406,4 +406,19 @@ export {
 // barrel). Re-export via star so callers can use one import path.
 export { composeFullBriefing, FULL_BRIEFING_VERSION }
   from './briefingComposer';
+
+// Real Plant Image System — re-export from images/ subdir so
+// callers use one import path. UI components import the
+// resolved-image helpers via this barrel.
+export {
+  resolvePlantImage, registerVerifiedImage, clearVerifiedImage,
+  listVerifiedPlants, IMAGE_SOURCE, PLACEHOLDER_DATA_URI,
+  PLANT_IMAGE_REGISTRY_VERSION,
+} from './images/PlantImageRegistry';
+export {
+  buildResponsiveSet, optimizeForWidth, thumbnailUrl,
+  blockedInProduction, RESPONSIVE_WIDTHS, DEFAULT_SIZES,
+  PLANT_IMAGE_SERVICE_VERSION,
+} from './images/PlantImageService';
+
 export type { ManagedPlant };

@@ -61,6 +61,15 @@ export interface ManagedPlant {
   scans:          ReadonlyArray<any>;
   tasks:          ReadonlyArray<any>;
   history:        ReadonlyArray<any>;
+  // Real Plant Image System — spec fields. imageUrl + thumbnailUrl
+  // mirror the canonical image; galleryImages is a list of
+  // additional scan / verified-content photos. ALL three are
+  // optional — when missing, the PlantImage component resolves
+  // via the 4-tier fallback (verified → library → scan →
+  // placeholder).
+  imageUrl?:      string;
+  thumbnailUrl?:  string;
+  galleryImages?: ReadonlyArray<string>;
   createdAt:      string;
   updatedAt:      string;
   schemaVersion:  string;
@@ -157,6 +166,10 @@ export function freezePlant(p: any): ManagedPlant | null {
     scans:          Object.freeze(_arr(p.scans).slice()),
     tasks:          Object.freeze(_arr(p.tasks).slice()),
     history:        Object.freeze(_arr(p.history).slice()),
+    imageUrl:       _str(p.imageUrl),
+    thumbnailUrl:   _str(p.thumbnailUrl) || _str(p.imageUrl),
+    galleryImages:  Object.freeze(_arr(p.galleryImages).map(_str)
+                       .filter((u: string) => u.length > 0)),
     createdAt:      _str(p.createdAt),
     updatedAt:      _str(p.updatedAt),
     schemaVersion:  SCHEMA_VERSION,
@@ -224,6 +237,16 @@ export function createManagedPlant(ctx: CreateCtx) {
                                     : []),
       tasks:          Object.freeze(_arr(c.initialTasks).slice()),
       history:        Object.freeze(initialHistory),
+      // Image fields — seeded from the catalog row + scan
+      // result when present. The 4-tier fallback resolver
+      // handles the rest at render time.
+      imageUrl:       _str((catalog as any).image),
+      thumbnailUrl:   _str((catalog as any).image),
+      galleryImages:  Object.freeze(
+        (c.scanResult && _str((c.scanResult as any).thumbnail))
+          ? [_str((c.scanResult as any).thumbnail)]
+          : []
+      ),
       createdAt:      now,
       updatedAt:      now,
       schemaVersion:  SCHEMA_VERSION,

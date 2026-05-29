@@ -116,10 +116,13 @@ const PLANT_FIELDS = [
   'growType', 'growthStage', 'lifecycleStage',
   'healthScore', 'riskScore',
   'location', 'scans', 'tasks', 'history',
+  // Real Plant Image System — 3 optional image fields.
+  'imageUrl', 'thumbnailUrl', 'galleryImages',
   'createdAt', 'updatedAt',
 ];
 for (const f of PLANT_FIELDS) {
-  if (!new RegExp('\\b' + f + '\\b\\s*:').test(sources.runtime)) {
+  // Accept both required (`field:`) and optional (`field?:`) forms.
+  if (!new RegExp('\\b' + f + '\\??\\s*:').test(sources.runtime)) {
     fail('PlantRuntime.ts ManagedPlant interface missing field: ' + f);
   }
 }

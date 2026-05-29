@@ -21,6 +21,7 @@
 
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
+import PlantImage from './PlantImage.jsx';
 
 const _isObj = (v) => v != null && typeof v === 'object';
 const _arr   = (v) => (Array.isArray(v) ? v : []);
@@ -76,17 +77,30 @@ export default function PlantIntelligenceCard({ briefing }) {
       {list.length > 0 ? (
         <ul style={S.list}>
           {list.map((p) => (
-            <li key={p.id} style={S.item}
+            <li key={p.id} style={{ ...S.item,
+                                     display: 'flex',
+                                     alignItems: 'center',
+                                     gap: 10 }}
               data-testid={`plant-intelligence-item-${p.id}`}>
-              {p.commonName || tSafe('plant.unknown', 'Unknown plant')}
-              {p.lifecycleStage
-                ? ' · ' + tSafe('plant.briefing.stage', 'stage') + ' '
-                  + p.lifecycleStage
-                : ''}
-              {typeof p.healthScore === 'number'
-                ? ' · ' + tSafe('plant.briefing.health', 'health') + ' '
-                  + p.healthScore
-                : ''}
+              <PlantImage
+                plantId={(p.commonName || '').toLowerCase().replace(/\s+/g, '_')}
+                plantLibraryImage={p.imageUrl}
+                scanImage={p.thumbnailUrl}
+                alt={p.commonName || ''}
+                size="thumb"
+                testid={`plant-intelligence-image-${p.id}`}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {p.commonName || tSafe('plant.unknown', 'Unknown plant')}
+                {p.lifecycleStage
+                  ? ' · ' + tSafe('plant.briefing.stage', 'stage') + ' '
+                    + p.lifecycleStage
+                  : ''}
+                {typeof p.healthScore === 'number'
+                  ? ' · ' + tSafe('plant.briefing.health', 'health') + ' '
+                    + p.healthScore
+                  : ''}
+              </div>
             </li>
           ))}
         </ul>

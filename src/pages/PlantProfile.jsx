@@ -25,6 +25,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { tSafe } from '../i18n/tSafe.js';
 import { universalPlantRuntime, plantIntelligence } from '../runtime/plants/index';
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
+import PlantImage from '../components/plants/PlantImage.jsx';
 
 const EVENTS_KEY = 'farroway_event_log';
 
@@ -206,6 +207,16 @@ export default function PlantProfile() {
       </button>
 
       <section style={S.hero} data-testid="plant-profile-hero">
+        <PlantImage
+          plantId={catalogId}
+          plantLibraryImage={focused.imageUrl}
+          scanImage={focused.thumbnailUrl}
+          scanGallery={focused.galleryImages}
+          alt={focused.commonName}
+          size="hero"
+          testid="plant-profile-image"
+          style={{ marginBottom: 10 }}
+        />
         <h1 style={S.name}>{focused.commonName}</h1>
         {focused.scientificName ? (
           <p style={S.sci}>{focused.scientificName}</p>
