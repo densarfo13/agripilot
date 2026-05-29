@@ -49,6 +49,12 @@ export function launchReadiness() {
     const artifactsReady  = !!(arts && (arts as any).initialized);
     const godmodeReady    = (typeof window !== 'undefined')
       && typeof (window as any).__godmodeHealth === 'function';
+    const loop = _probe('__intelligenceLoopHealth');
+    const intelligenceLoopReady = !!(loop && (loop as any).initialized);
+    const outcomeTrackingReady  = !!(loop
+      && (loop as any).outcomeTrackingReady);
+    const dailyBriefingReady    = !!(loop
+      && (loop as any).dailyBriefingIntegrationReady);
 
     return Object.freeze({
       runtimeVersion: LAUNCH_READINESS_VERSION,
@@ -68,6 +74,10 @@ export function launchReadiness() {
       roleGuardsReady:      true,   // enforced by gate
       oodaReady,
       artifactsReady,
+      // Wave 11 — Intelligence Loop spec §17.
+      intelligenceLoopReady,
+      outcomeTrackingReady,
+      dailyBriefingReady,
       godmodeInternalOnly:  godmodeReady,
       mobileUX:             mob,
       blockers,

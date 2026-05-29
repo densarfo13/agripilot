@@ -246,6 +246,10 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       oodaReady:                 _hasGlobal('__oodaHealth'),
       artifactsReady:            _hasGlobal('__artifactHealth'),
       godmodeReady:              _hasGlobal('__godmodeHealth'),
+      // Wave 11 — Intelligence Loop spec §17.
+      intelligenceLoopReady:     _hasGlobal('__intelligenceLoopHealth'),
+      outcomeTrackingReady:      _hasGlobal('__intelligenceLoopHealth'),
+      dailyBriefingReady:        _sectionPasses('dailyBriefing'),
     });
 
     return Object.freeze({

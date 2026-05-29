@@ -937,6 +937,15 @@ export default function App() {
           installLaunchReadinessGlobal();
           installGodmodeHealthGlobal();
         } catch { /* never block boot */ }
+        // Intelligence Loop — composes scan + plant runtime +
+        // knowledge layer + OODA + artifacts + outcome tracker +
+        // learning signals. Engines are pure; this pin adds
+        // __intelligenceLoopHealth() for QA introspection.
+        try {
+          const { installIntelligenceLoopGlobal } =
+            await import('./runtime/intelligenceLoop/index');
+          installIntelligenceLoopGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
