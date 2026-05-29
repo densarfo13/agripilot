@@ -219,6 +219,23 @@ if (fs.existsSync(_distPath)) {
   // without the corresponding registration on the client.
   app.use('/robots.txt',
     express.static(path.join(_distPath, 'robots.txt'), pwaCache));
+
+  // RC1 — /cache-bust.js is intentionally NEVER cached. The script
+  // compares the build SHA pinned into index.html against the SHA
+  // recorded in localStorage; on mismatch it drops every
+  // CacheStorage entry, unregisters every service worker, and
+  // reloads once. If the browser ever cached this script the bust
+  // pipeline would freeze at the last deploy's SHA and stop firing.
+  app.use('/cache-bust.js',
+    express.static(path.join(_distPath, 'cache-bust.js'), {
+      maxAge: 0,
+      immutable: false,
+      setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      },
+    }));
 }
 
 // Removed: duplicate `app.use(express.static(_distPath))` that

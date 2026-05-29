@@ -89,6 +89,21 @@
     <link rel="privacy" href="https://farroway.app/privacy" />
     <meta name="privacy-policy" content="https://farroway.app/privacy" />
     <meta name="terms-of-service" content="https://farroway.app/terms" />
+
+    <!-- RC1 forced cache-bust pipeline. The Vite plugin pins the
+         build SHA into the value below at build time. The synchronous
+         loader script that follows compares the pinned SHA against
+         the SHA recorded in localStorage from the previous boot; on
+         mismatch it drops every CacheStorage entry, unregisters
+         every service worker, and reloads ONCE. Stops one of the
+         most stubborn iOS Safari / installed-PWA failure modes:
+         users stuck on a pre-fix shell after a deploy. -->
+    <script>
+      window.__FARROWAY_BUILD_SHA = '%FARROWAY_BUILD_SHA%';
+    </script>
+    <script src="/cache-bust.js"></script>
+    <meta name="farroway-build-sha" content="%FARROWAY_BUILD_SHA%" />
+    <meta name="farroway-build-timestamp" content="%FARROWAY_BUILD_TIMESTAMP%" />
   </head>
   <body>
     <div id="root"></div>

@@ -90,8 +90,38 @@ const _orphanSourcemapSweeperPlugin = {
   },
 };
 
+// RC1 — substitute %FARROWAY_BUILD_SHA% + %FARROWAY_BUILD_TIMESTAMP%
+// placeholders in index.html at build time. The synchronous
+// cache-bust script reads window.__FARROWAY_BUILD_SHA on every
+// load and compares against the SHA stored in localStorage from
+// the previous boot; on mismatch it drops caches + reloads once.
+const _farrowayBuildSha =
+     process.env.VITE_BUILD_SHA
+  || process.env.VITE_BUILD_ID
+  || process.env.RAILWAY_GIT_COMMIT_SHA
+  || _sentryRelease
+  || 'unknown';
+const _farrowayBuildTs =
+     process.env.VITE_BUILD_TIMESTAMP
+  || new Date().toISOString();
+
+function _farrowayHtmlPlaceholders() {
+  return {
+    name: 'farroway-html-placeholders',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        return html
+          .split('%FARROWAY_BUILD_SHA%').join(_farrowayBuildSha)
+          .split('%FARROWAY_BUILD_TIMESTAMP%').join(_farrowayBuildTs);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
+    _farrowayHtmlPlaceholders(),
     react(),
     // Sentry source-map upload + release tagging. Must come AFTER
     // react() so it sees the final emitted assets. Behaviour:
