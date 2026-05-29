@@ -2,6 +2,14 @@
 
 **Status:** READY · NOT YET DEPLOYED · supervised migration sprint required.
 
+**Location:** `server/prisma/_pending-migrations/plant_universal_runtime/`
+(deliberately OUTSIDE `prisma/migrations/` so Prisma's deploy scanner
+does NOT pick this up as a real migration. A previous gap-fix commit
+placed it inside `migrations/` and Prisma's startup-time `migrate
+deploy` errored on the missing `migration.sql`, taking production
+down briefly. Lesson: pending migration artifacts must live outside
+`prisma/migrations/`.)
+
 ## What this directory contains
 
 - `schema_fragment.prisma` — additive Plant + PlantTimelineEvent models + 3 enums (`PlantCategory`, `PlantSource`, `PlantTimelineEventType`).
