@@ -59,6 +59,10 @@ import {
   plantLibrary, plantLibrarySearch, PLANT_LIBRARY_VERSION,
 } from './plantLibrary.js';
 import {
+  flowerLibrary, filterFlowers, searchFlowers,
+  FLOWER_FILTERS, FLOWER_LIBRARY_VERSION,
+} from './flowerLibrary';
+import {
   aiPlantAssistant, AI_PLANT_ASSISTANT_VERSION,
 } from './aiPlantAssistant.js';
 import {
@@ -148,6 +152,16 @@ export function gardenPlatform(ctx) {
     limit: c.discoverLimit,
   }), null);
 
+  const flowers = (_str(c.growType) === 'flower'
+                || _arr(c.flowerFilters).length > 0
+                || _str(c.flowerQuery))
+    ? _safe(() => flowerLibrary({
+        filters: c.flowerFilters, query: c.flowerQuery,
+        season:  c.season, limit: c.flowerLimit,
+        offset:  c.flowerOffset,
+      }), null)
+    : null;
+
   const library = _safe(() => plantLibrary({
     type: c.libraryType, limit: c.libraryLimit, offset: c.libraryOffset,
   }), null);
@@ -177,6 +191,7 @@ export function gardenPlatform(ctx) {
     marketplace,
     discoverFeed,
     library,
+    flowers,
     assistant,
     dashboard,
     versions: Object.freeze({
@@ -191,6 +206,7 @@ export function gardenPlatform(ctx) {
       flowerMarketplace:   FLOWER_MARKETPLACE_VERSION,
       discoverFeed:        DISCOVER_FEED_VERSION,
       plantLibrary:        PLANT_LIBRARY_VERSION,
+      flowerLibrary:       FLOWER_LIBRARY_VERSION,
       aiPlantAssistant:    AI_PLANT_ASSISTANT_VERSION,
       gardenDashboard:     GARDEN_DASHBOARD_VERSION,
       multiGarden:         MULTI_GARDEN_VERSION,
@@ -250,6 +266,8 @@ export {
   FLOWER_MARKETPLACE_CATEGORIES, FLOWER_BUYER_CHANNELS,
   composeDiscoverFeed, DISCOVER_FEED_VERSION,
   plantLibrary, plantLibrarySearch, PLANT_LIBRARY_VERSION,
+  flowerLibrary, filterFlowers, searchFlowers,
+  FLOWER_FILTERS, FLOWER_LIBRARY_VERSION,
   aiPlantAssistant, AI_PLANT_ASSISTANT_VERSION,
   composeGardenDashboard, GARDEN_DASHBOARD_VERSION,
   resolveActiveGarden, GARDEN_KINDS, MULTI_GARDEN_VERSION, GARDEN_KIND_LABELS,
