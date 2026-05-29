@@ -99,7 +99,7 @@ function _copyForKind(kind, ctx) {
           primaryCta:   { kind: 'use_saved_photo', label: 'Use saved photo' },
           secondaryCta: iosSafari
             ? { kind: 'open_settings', label: 'Open Safari Settings' }
-            : { kind: 'retry',         label: 'Retry camera' },
+            : { kind: 'retry',         label: 'Try camera again' },
         };
       }
       return {
@@ -107,7 +107,7 @@ function _copyForKind(kind, ctx) {
         title: 'Camera permission needed',
         body:  'Allow camera access to scan, or use a saved photo instead.',
         instructions: [],
-        primaryCta:   { kind: 'retry', label: 'Retry camera' },
+        primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       };
     }
@@ -155,7 +155,7 @@ function _copyForKind(kind, ctx) {
           ? 'Scanning works with saved photos too.'
           : 'Try again in a moment.',
         instructions: [],
-        primaryCta:   { kind: 'retry', label: 'Retry camera' },
+        primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       };
     }
@@ -167,7 +167,7 @@ function _copyForKind(kind, ctx) {
           ? 'Scanning works with saved photos too.'
           : 'Try once more, or use a saved photo.',
         instructions: [],
-        primaryCta:   { kind: 'retry', label: 'Retry camera' },
+        primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       };
     }
@@ -177,7 +177,7 @@ function _copyForKind(kind, ctx) {
         title: 'Camera is busy',
         body:  'Another app may be using the camera. Close it and try again, or use a saved photo.',
         instructions: [],
-        primaryCta:   { kind: 'retry', label: 'Retry camera' },
+        primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       };
     }
@@ -187,7 +187,7 @@ function _copyForKind(kind, ctx) {
         title: 'Camera could not be configured',
         body:  'Try again, or use a saved photo.',
         instructions: [],
-        primaryCta:   { kind: 'retry', label: 'Retry camera' },
+        primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       };
     }
@@ -200,7 +200,7 @@ function _copyForKind(kind, ctx) {
           ? 'Scanning works with saved photos too.'
           : 'Try again, or use a saved photo.',
         instructions: [],
-        primaryCta:   { kind: 'retry', label: 'Retry camera' },
+        primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       };
     }
@@ -239,7 +239,7 @@ export function classifyCameraError(err, ctx) {
       title:        'Camera could not start',
       body:         'Try again, or use a saved photo.',
       instructions: [],
-      primaryCta:   { kind: 'retry', label: 'Retry camera' },
+      primaryCta:   { kind: 'retry', label: 'Try camera again' },
       secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
       autoFallback: false,
     });

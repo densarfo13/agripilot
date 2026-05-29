@@ -14,8 +14,8 @@
  *   }
  *
  * Why this is a module-level counter
- *   A React state counter resets on unmount. Users who hit
- *   "Retry camera", get bounced back to the home page, and
+ *   A React state counter resets on unmount. Users who tap
+ *   "Try camera again", get bounced back to the home page, and
  *   re-enter scan would otherwise see attemptCount reset to 0
  *   on every entry. The module-level singleton survives
  *   navigation (but NOT a full page reload — that's a

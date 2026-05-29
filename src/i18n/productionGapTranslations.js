@@ -331,13 +331,43 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     tw: 'Fa mfonini a wɔakora di dwuma',
     hi: 'सहेजी गई तस्वीर का उपयोग करें',
   },
+  // Emergency Fix — banned "Retry camera" wording replaced
+  // with calmer "Try camera again". The key stays for any
+  // legacy callers; the value is the spec-approved phrase.
   'scan.camera.retry': {
-    en: 'Retry camera',
+    en: 'Try camera again',
     fr: 'Réessayer la caméra',
     sw: 'Jaribu kamera tena',
     ha: 'Sake gwada kamara',
     tw: 'Sɔ camera no hwɛ bio',
     hi: 'कैमरा पुनः प्रयास करें',
+  },
+  // New key the updated ScanFallback uses directly.
+  'scan.camera.tryAgain': {
+    en: 'Try camera again',
+    fr: 'Réessayer la caméra',
+    sw: 'Jaribu kamera tena',
+    ha: 'Sake gwada kamara',
+    tw: 'Sɔ camera no hwɛ bio',
+    hi: 'कैमरा पुनः प्रयास करें',
+  },
+  // Spec-approved primary action label.
+  'scan.camera.uploadPhoto': {
+    en: 'Upload photo',
+    fr: 'Importer une photo',
+    sw: 'Pakia picha',
+    ha: 'Loda hoto',
+    tw: 'Fa mfonini fi mu',
+    hi: 'फ़ोटो अपलोड करें',
+  },
+  // Spec-approved helper line under the fallback buttons.
+  'scan.camera.helper': {
+    en: 'Camera may be blocked by your browser or phone settings.',
+    fr: 'La caméra peut être bloquée par votre navigateur ou les réglages du téléphone.',
+    sw: 'Kamera huenda imezuiliwa na kivinjari au mipangilio ya simu.',
+    ha: 'Mai yiwuwa burauza ko saitin wayar ya tare kamara.',
+    tw: 'Ebia browser anaa fone settings no asiw camera no kwan.',
+    hi: 'कैमरा आपके ब्राउज़र या फ़ोन सेटिंग्स द्वारा अवरुद्ध हो सकता है।',
   },
 
   // ─── Home page eyebrow + farm-name fallbacks ──────────────────

@@ -630,9 +630,11 @@ export default function ScanPage() {
   // `locale: lang`, but `lang` was never declared in this file.
   // That ReferenceError fired on every ScanPage render, was caught
   // by ScanErrorBoundary, and surfaced ScanFallback with
-  // reason='crash' — the on-screen "Camera ran into a problem"
-  // card. useScanRuntime tolerates a null/empty locale, so we
-  // pass null. Locale is resolved downstream via tSafe envelopes.
+  // reason='crash' — the on-screen camera-error card. Per the
+  // Emergency Fix, ScanFallback now never shows the banned
+  // wording: it renders the upload-first landing card instead.
+  // useScanRuntime tolerates a null/empty locale, so we pass
+  // null. Locale is resolved downstream via tSafe envelopes.
   const _scanRuntime = useScanRuntime({
     activeFarm: profile,
     locale:     null,

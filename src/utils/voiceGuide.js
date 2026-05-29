@@ -656,12 +656,16 @@ const VOICE_MAP = {
     ha: 'Ba ka da intanet. An adana bayananku kuma za a aika idan network ya dawo.',
     tw: 'Wonni intanɛt. Wɔakora wo data na wɔbɛsoma bere a network aba bio.',
   },
+  // Emergency Fix — generic-error voice line. Banned phrase
+  // "Tap retry to try again" replaced with calmer "Please try
+  // once more." so it never reads back the grower-facing
+  // dead-end wording on screen-reader paths.
   'error.retry': {
-    en: 'That did not work. Tap retry to try again.',
-    fr: 'Cela n\'a pas fonctionné. Appuyez réessayer.',
-    sw: 'Haijafanya kazi. Bonyeza jaribu tena.',
-    ha: 'Bai yi aiki ba. Danna sake gwadawa.',
-    tw: 'Ɛanyɛ adwuma. Fa so bio.',
+    en: 'That did not work. Please try once more.',
+    fr: 'Cela n\'a pas fonctionné. Veuillez réessayer.',
+    sw: 'Haijafanya kazi. Tafadhali jaribu tena.',
+    ha: 'Bai yi aiki ba. Don Allah a sake gwadawa.',
+    tw: 'Ɛanyɛ adwuma. Yɛsrɛ wo sɔ hwɛ bio.',
   },
 
   // ─── Profile Setup ───────────────────────────────────────────

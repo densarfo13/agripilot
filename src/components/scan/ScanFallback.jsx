@@ -72,15 +72,21 @@ const SETUP_COPY = Object.freeze({
 // the spec called out. Replaced with state-specific outcomes
 // that ALWAYS give the user a next action.
 // Each entry must include a primary CTA the user can tap.
+// Emergency Fix — every camera-failure entry must lead with a
+// calm, grower-friendly title. The previous "Camera ran into a
+// problem" / "Tap retry to try again" wording was the visible
+// dead-end the spec called out. All camera-failure reasons now
+// route through the same Scan-landing-style fallback: upload is
+// the primary action; the camera retry is a quiet secondary.
 const RETRY_COPY = Object.freeze({
-  crash:              { title: 'Camera ran into a problem',  body: 'Tap retry to try again, or upload a photo instead.' },
-  camera_unavailable: { title: 'Camera is not ready yet',     body: 'Use a saved photo to keep scanning.' },
-  permission_denied:  { title: 'Camera blocked',               body: 'Use a saved photo to keep scanning. You can re-enable the camera in browser settings later.' },
-  unsupported:        { title: 'This browser can\'t open the camera', body: 'Upload a photo from your gallery to keep going.' },
+  crash:              { title: 'Scan Your Plant',  body: 'Camera is not available right now. Upload a photo instead.' },
+  camera_unavailable: { title: 'Scan Your Plant',  body: 'Camera is not available right now. Upload a photo instead.' },
+  permission_denied:  { title: 'Scan Your Plant',  body: 'Camera is blocked. Upload a photo instead — you can re-enable the camera in browser settings later.' },
+  unsupported:        { title: 'Scan Your Plant',  body: 'This browser can\'t open the camera. Upload a photo instead.' },
   // The OLD generic "taking longer" message — kept as the
   // last-resort label but with calmer copy + a clearer next
   // action. Surface-specific failures below should be preferred.
-  timeout:            { title: 'Camera is taking a moment', body: 'Tap retry, or use a saved photo to keep scanning now.' },
+  timeout:            { title: 'Scan Your Plant',  body: 'Camera is taking a moment. Upload a photo instead — you can try the camera again any time.' },
   // Deep Deploy Audit fix — the page-mount stall (Scan code chunk
   // failed to render within the 15s safety ceiling) is NOT a
   // camera failure. Use accurate wording so the farmer knows
@@ -207,15 +213,18 @@ export default function ScanFallback({
         <div style={S.row}>
           {galleryFirst ? (
             <>
-              {/* Camera failed → gallery is the PRIMARY action.
-                  Retry camera drops to secondary; no auto-retry. */}
+              {/* Emergency Fix — camera failed → Upload is the
+                  primary CTA. Try-camera-again is a quiet
+                  secondary. Banned wording ("Camera ran into a
+                  problem" / "Tap retry to try again" / "Retry
+                  camera" / "Use a saved photo") removed. */}
               <button
                 type="button"
                 onClick={handleUploadClick}
                 style={S.primaryBtn}
                 data-testid="scan-fallback-upload"
               >
-                {tSafe('scan.camera.useSaved', 'Use a saved photo')}
+                {tSafe('scan.camera.uploadPhoto', 'Upload photo')}
               </button>
               <button
                 type="button"
@@ -223,7 +232,7 @@ export default function ScanFallback({
                 style={S.secondaryBtn}
                 data-testid="scan-fallback-retry"
               >
-                {tSafe('scan.camera.retry', 'Retry camera')}
+                {tSafe('scan.camera.tryAgain', 'Try camera again')}
               </button>
             </>
           ) : (
@@ -247,6 +256,18 @@ export default function ScanFallback({
             </>
           )}
         </div>
+        {/* Emergency Fix — small helper line on camera-failure
+            paths so growers know what to try if needed. Calm
+            wording, never blaming the device. */}
+        {galleryFirst ? (
+          <p style={{
+            fontSize: 12, color: '#64748B',
+            marginTop: 8, textAlign: 'center', lineHeight: 1.5,
+          }} data-testid="scan-fallback-helper">
+            {tSafe('scan.camera.helper',
+              'Camera may be blocked by your browser or phone settings.')}
+          </p>
+        ) : null}
         {/* Manual fallback — low-confidence / AI-unavailable scans
             never dead-end: the farmer picks what they see and it is
             saved to the journal + a follow-up task (§4, §5). */}

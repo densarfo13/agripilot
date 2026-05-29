@@ -92,6 +92,7 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-ngo-no-fake-data.mjs',
   'scripts/check-ooda-artifact-ownership.mjs',
   'scripts/check-godmode-internal-only.mjs',
+  'scripts/check-no-grower-camera-error-card.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

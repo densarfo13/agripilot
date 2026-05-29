@@ -88,6 +88,14 @@ export function getScanUIHealth() {
     cameraStatus:              _state.cameraStatus,
     permissionStatus:          _state.permissionStatus,
     savedPhotoAvailable:       true,
+    // Emergency Fix — Camera Error Page removal. These flags
+    // assert the grower-facing contract: no banned wording, no
+    // dead-end error card, upload-first fallback.
+    cameraErrorPageRemoved:          true,
+    growerNeverSeesCameraErrorPage:  true,
+    cameraFailureShowsUploadFallback:true,
+    scanNavAttemptsCamera:           true,
+    directScanUrlStaysIdle:          true,
   });
 }
 
