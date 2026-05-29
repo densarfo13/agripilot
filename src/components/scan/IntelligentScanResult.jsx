@@ -1,0 +1,668 @@
+/**
+ * IntelligentScanResult.jsx — Phase 9 farmer-friendly scan result.
+ *
+ *   <IntelligentScanResult result={scanResultEnvelope} onRetake={...}
+ *                          onChoose={...} onSaveForReview={...} />
+ *
+ * What this is
+ * ────────────
+ *   A composition layer that takes the existing /api/scan/analyze
+ *   envelope (Plant.id-backed; UNCHANGED) and presents it as a
+ *   farmer-friendly stacked-card layout:
+ *
+ *     1. Voice-play header (TTS via existing voiceService)
+ *     2. Plant Identification    (name + scientific + confidence + category)
+ *     3. Flower-specific block   (only when category is flower)
+ *     4. Crop Health             (severity + confidence + affected area)
+ *     5. Treatment Engine        (actions + organic + chemical +
+ *                                 prevention + recovery time)
+ *     6. Region Intelligence     (weather + season + crop hint)
+ *     7. Soil Intelligence       (only when soil data present)
+ *     8. Satellite Intelligence  (only when sentinel data present)
+ *     9. Needs Review Actions    (only when confidence low)
+ *
+ *   Every section reads from the envelope and gracefully renders
+ *   nothing when its data is absent. NO new API calls. NO Plant.id
+ *   modification. NO offline-queue or persistence changes — the
+ *   parent ScanPage owns those via scanPersistenceBridge.
+ *
+ * Strict-rule audit
+ *   • Pure render. SSR-safe (every browser API guarded).
+ *   • No direct API calls.
+ *   • Voice routed through src/services/voiceService.js — never
+ *     touches speechSynthesis directly.
+ *   • All copy via tSafe with sensible English defaults.
+ *   • Never surfaces raw JSON / API errors / confidence numbers
+ *     without farmer-language framing (Phase 9 rule).
+ */
+
+import React, { useMemo, useState, useCallback } from 'react';
+import { tSafe } from '../../i18n/tSafe.js';
+import { useTranslation } from '../../i18n/index.js';
+import NeedsReviewActions from './NeedsReviewActions.jsx';
+import {
+  speakText, stop as voiceStop, isAvailable as voiceAvailable,
+  isSpeaking as voiceIsSpeaking,
+} from '../../runtime/services/voiceService.js';
+
+const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
+const _isObj = (v) => v != null && typeof v === 'object';
+const _str  = (v) => (typeof v === 'string' ? v : '');
+const _num  = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const _arr  = (v) => (Array.isArray(v) ? v : []);
+const _isFn = (v) => typeof v === 'function';
+
+// ───────────────────────────────────────────────────────────
+// Envelope extractors — read existing fields, never modify.
+// ───────────────────────────────────────────────────────────
+
+function _extractIdentification(r) {
+  if (!_isObj(r)) return null;
+  const plantName =
+       _str(r.plantName)
+    || _str(r.commonName)
+    || _str(r.detectedName)
+    || _str(r.identification && r.identification.commonName)
+    || _str(r.identification && r.identification.detectedName)
+    || _str(r.crop)
+    || _str(r.cropName)
+    || '';
+  const scientificName =
+       _str(r.scientificName)
+    || _str(r.identification && r.identification.scientificName)
+    || '';
+  const category =
+       _str(r.plantCategory)
+    || _str(r.category)
+    || _str(r.identification && r.identification.category)
+    || '';
+  // Confidence may be tone ('high'|'medium'|'low'), 0-1 number,
+  // or 0-100 number. Normalize to a percent string for display.
+  const rawConf = r.confidence != null ? r.confidence
+                : r.identification && r.identification.confidence;
+  let confidencePct = null;
+  let confidenceTone = null;
+  if (typeof rawConf === 'string') {
+    const t = rawConf.toLowerCase();
+    if (t === 'high')   { confidenceTone = 'high';   confidencePct = 85; }
+    else if (t === 'medium' || t === 'medium_confidence') { confidenceTone = 'medium'; confidencePct = 55; }
+    else if (t === 'low' || t === 'needs_review') { confidenceTone = 'low'; confidencePct = 25; }
+  } else if (typeof rawConf === 'number') {
+    const n = rawConf > 1.5 ? rawConf : rawConf * 100;
+    confidencePct = Math.max(0, Math.min(100, Math.round(n)));
+    confidenceTone = confidencePct >= 70 ? 'high'
+                   : confidencePct >= 40 ? 'medium' : 'low';
+  } else if (typeof r.confidenceTone === 'string') {
+    confidenceTone = r.confidenceTone.toLowerCase();
+  }
+  if (!plantName) return null;
+  return Object.freeze({
+    plantName, scientificName, category, confidencePct, confidenceTone,
+  });
+}
+
+function _isFlowerCategory(category) {
+  const c = _str(category).toLowerCase();
+  return c === 'flower' || c === 'ornamental' || c === 'flowering_plant';
+}
+
+function _extractHealth(r) {
+  if (!_isObj(r)) return null;
+  const severityRaw = _str(r.severity || r.urgency || r.hybridUrgency).toLowerCase();
+  const severity = ['low', 'medium', 'high', 'moderate', 'serious', 'mild']
+    .includes(severityRaw) ? severityRaw : null;
+  const affectedAreaPct = _num(r.affectedAreaPct) != null
+    ? _num(r.affectedAreaPct)
+    : _num(r.affectedArea);
+  const issue = _str(r.possibleIssue) || _str(r.diagnosis) || '';
+  if (!severity && !affectedAreaPct && !issue) return null;
+  return Object.freeze({ severity, affectedAreaPct, issue });
+}
+
+function _extractTreatment(r) {
+  if (!_isObj(r)) return null;
+  const actions   = _arr(r.recommendedActions
+                       || (r.recommendation && r.recommendation.actions));
+  const organic   = _arr(r.organicTreatment || r.organic);
+  const chemical  = _arr(r.chemicalTreatment || r.chemical);
+  const prevention = _arr(r.prevention || r.preventiveActions);
+  const recovery  = _str(r.expectedRecoveryTime || r.recoveryTime);
+  if (actions.length === 0 && organic.length === 0
+      && chemical.length === 0 && prevention.length === 0
+      && !recovery) return null;
+  return Object.freeze({
+    actions, organic, chemical, prevention, recovery,
+  });
+}
+
+function _extractRegion(r) {
+  if (!_isObj(r)) return null;
+  const weatherNote = _str(r.weatherNote)
+    || _str(r.hybridContext && r.hybridContext.weatherNote);
+  const seasonNote  = _str(r.seasonNote);
+  const locationNote = _str(r.locationNote);
+  const cropHint    = _str(r.cropHint) || _str(r.hybridReason);
+  const notes = [weatherNote, seasonNote, locationNote, cropHint]
+    .filter(Boolean);
+  if (notes.length === 0) return null;
+  return Object.freeze({ weatherNote, seasonNote, locationNote, cropHint });
+}
+
+function _extractSoil(r) {
+  if (!_isObj(r) || !_isObj(r.soil)) return null;
+  const s = r.soil;
+  const present = !!(s.type || s.ph || s.drainage || s.organicMatter || s.suitabilityScore);
+  if (!present) return null;
+  return Object.freeze({
+    type:           _str(s.type),
+    ph:             _num(s.ph),
+    drainage:       _str(s.drainage),
+    organicMatter:  _str(s.organicMatter),
+    suitabilityScore: _num(s.suitabilityScore),
+  });
+}
+
+function _extractSatellite(r) {
+  if (!_isObj(r) || !_isObj(r.satellite)) return null;
+  const s = r.satellite;
+  const present = !!(s.vegetationHealth || s.moistureRisk || s.heatStress || s.growthTrend);
+  if (!present) return null;
+  return Object.freeze({
+    vegetationHealth: _str(s.vegetationHealth),
+    moistureRisk:     _str(s.moistureRisk),
+    heatStress:       _str(s.heatStress),
+    growthTrend:      _str(s.growthTrend),
+  });
+}
+
+function _shouldShowNeedsReview(r) {
+  if (!_isObj(r)) return false;
+  if (r.suppressed === true) return true;
+  if (typeof r.status === 'string'
+      && ['needs_review', 'low_confidence', 'uncertain']
+         .includes(r.status.toLowerCase())) return true;
+  if (typeof r.confidenceTone === 'string'
+      && ['low', 'needs_review'].includes(r.confidenceTone.toLowerCase())) return true;
+  return false;
+}
+
+// ───────────────────────────────────────────────────────────
+// Styles
+// ───────────────────────────────────────────────────────────
+
+const STYLES = {
+  page: {
+    background: '#F6F1E7',
+    padding:    '16px 14px 96px',
+    maxWidth:   720,
+    margin:     '0 auto',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+  },
+  card: {
+    background:    '#FFFFFF',
+    borderRadius:  14,
+    padding:       '14px 16px',
+    marginBottom:  12,
+    border:        '1px solid rgba(31,41,51,0.06)',
+    boxShadow:     '0 1px 2px rgba(31,41,51,0.03)',
+  },
+  cardTitle: {
+    margin:        '0 0 8px',
+    fontSize:      11,
+    fontWeight:    700,
+    color:         '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  },
+  primaryRow: {
+    display:       'flex',
+    alignItems:    'center',
+    gap:           10,
+  },
+  plantName: {
+    fontSize:      20,
+    fontWeight:    800,
+    color:         '#1F2933',
+    margin:        0,
+  },
+  scientific: {
+    fontSize:      13,
+    fontStyle:     'italic',
+    color:         '#64748B',
+    marginTop:     2,
+  },
+  metaRow: {
+    display:       'flex',
+    gap:           6,
+    flexWrap:      'wrap',
+    marginTop:     10,
+  },
+  pill: {
+    fontSize:      11,
+    fontWeight:    600,
+    padding:       '4px 9px',
+    borderRadius:  999,
+    background:    '#F1F5F9',
+    color:         '#475569',
+    border:        '1px solid rgba(31,41,51,0.06)',
+  },
+  confPill: (tone) => ({
+    fontSize:      11,
+    fontWeight:    700,
+    padding:       '4px 9px',
+    borderRadius:  999,
+    background:    tone === 'high'   ? 'rgba(16,185,129,0.12)'
+                 : tone === 'medium' ? 'rgba(245,158,11,0.12)'
+                 : 'rgba(239,68,68,0.12)',
+    color:         tone === 'high'   ? '#047857'
+                 : tone === 'medium' ? '#92400E'
+                 : '#991B1B',
+    border:        '1px solid rgba(31,41,51,0.06)',
+  }),
+  voiceBtn: {
+    appearance:    'none',
+    border:        '1.5px solid rgba(31,41,51,0.18)',
+    background:    '#FFFFFF',
+    color:         '#1F2933',
+    fontWeight:    600,
+    fontSize:      13,
+    padding:       '8px 14px',
+    borderRadius:  10,
+    cursor:        'pointer',
+    fontFamily:    'inherit',
+  },
+  list: {
+    margin:        '6px 0 0',
+    paddingLeft:   18,
+    fontSize:      13,
+    color:         '#1F2933',
+    lineHeight:    1.55,
+  },
+  subhead: {
+    fontSize:      12,
+    fontWeight:    700,
+    color:         '#475569',
+    margin:        '12px 0 4px',
+  },
+  body: {
+    margin:        0,
+    fontSize:      13,
+    color:         '#475569',
+    lineHeight:    1.5,
+  },
+  severityBar: (tone) => ({
+    display:       'inline-block',
+    width:         52,
+    height:        8,
+    borderRadius:  999,
+    background:    tone === 'high'   ? '#EF4444'
+                 : tone === 'medium' ? '#F59E0B'
+                 : '#10B981',
+    marginRight:   8,
+    verticalAlign: 'middle',
+  }),
+};
+
+function _toneFromSeverity(sev) {
+  const s = _str(sev).toLowerCase();
+  if (s === 'high' || s === 'serious') return 'high';
+  if (s === 'medium' || s === 'moderate') return 'medium';
+  return 'low';
+}
+
+function _humanCategory(c) {
+  const k = _str(c).toLowerCase();
+  if (k === 'flower' || k === 'flowering_plant' || k === 'ornamental') return 'flower';
+  if (k === 'crop')   return 'crop';
+  if (k === 'weed')   return 'weed';
+  if (k === 'garden') return 'garden plant';
+  return c;
+}
+
+// ───────────────────────────────────────────────────────────
+// Sub-cards
+// ───────────────────────────────────────────────────────────
+
+function VoiceHeader({ result }) {
+  const { lang } = useTranslation();
+  const available = _safe(() => voiceAvailable(), false);
+  const [speaking, setSpeaking] = useState(false);
+  const onListen = useCallback(() => {
+    const text = _buildSpokenSummary(result);
+    if (!text || !available) return;
+    if (speaking) {
+      _safe(() => voiceStop(), null);
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    _safe(() => speakText(text, lang || 'en'), null);
+    // Best-effort speaking-end detector via interval.
+    let tick = 0;
+    const t = setInterval(() => {
+      tick += 1;
+      const still = _safe(() => voiceIsSpeaking(), false);
+      if (!still || tick > 60) {
+        clearInterval(t);
+        setSpeaking(false);
+      }
+    }, 500);
+  }, [result, lang, available, speaking]);
+  if (!available) return null;
+  return (
+    <div style={{ ...STYLES.card, display: 'flex',
+        alignItems: 'center', justifyContent: 'space-between' }}
+      data-testid="scan-voice-header"
+    >
+      <div style={{ ...STYLES.cardTitle, margin: 0 }}>
+        {tSafe('scan.intel.voice.label', 'Voice')}
+      </div>
+      <button
+        type="button"
+        style={STYLES.voiceBtn}
+        onClick={onListen}
+        data-testid="scan-voice-listen"
+      >
+        {speaking
+          ? '⏹ ' + tSafe('scan.intel.voice.stop', 'Stop')
+          : '🔊 ' + tSafe('scan.intel.voice.listen', 'Listen')}
+      </button>
+    </div>
+  );
+}
+
+function PlantIdentificationSection({ identification }) {
+  if (!identification) return null;
+  const { plantName, scientificName, category, confidencePct, confidenceTone }
+    = identification;
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-plant">
+      <h4 style={STYLES.cardTitle}>
+        {tSafe('scan.intel.plant.title', 'Plant identification')}
+      </h4>
+      <p style={STYLES.plantName}>{plantName}</p>
+      {scientificName ? <div style={STYLES.scientific}>{scientificName}</div> : null}
+      <div style={STYLES.metaRow}>
+        {category ? (
+          <span style={STYLES.pill} data-testid="scan-intel-plant-category">
+            {_humanCategory(category)}
+          </span>
+        ) : null}
+        {confidencePct != null ? (
+          <span
+            style={STYLES.confPill(confidenceTone || 'low')}
+            data-testid="scan-intel-plant-confidence"
+          >
+            {confidencePct}% {tSafe('scan.intel.plant.confidence', 'confidence')}
+          </span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function FlowerSection({ identification, result }) {
+  if (!identification || !_isFlowerCategory(identification.category)) return null;
+  const flowerType = _str(result && result.flowerType)
+    || _str(result && result.subCategory);
+  const growingTips = _arr(result && result.growingTips);
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-flower">
+      <h4 style={STYLES.cardTitle}>
+        🌸 {tSafe('scan.intel.flower.title', 'Flower details')}
+      </h4>
+      <p style={{ ...STYLES.body, fontWeight: 700, color: '#1F2933' }}>
+        {identification.plantName}
+      </p>
+      {flowerType ? (
+        <div style={STYLES.subhead}>
+          {tSafe('scan.intel.flower.type', 'Type')}: {flowerType}
+        </div>
+      ) : null}
+      {growingTips.length > 0 ? (
+        <>
+          <div style={STYLES.subhead}>
+            {tSafe('scan.intel.flower.growingTips', 'Growing tips')}
+          </div>
+          <ul style={STYLES.list}>
+            {growingTips.slice(0, 5).map((tip, i) => (
+              <li key={'tip-' + i}>{_str(tip)}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+function CropHealthSection({ health }) {
+  if (!health) return null;
+  const tone = _toneFromSeverity(health.severity);
+  const sevLabelKey = `scan.intel.health.severity.${tone}`;
+  const sevLabel = { high: 'High', medium: 'Medium', low: 'Low' }[tone];
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-health">
+      <h4 style={STYLES.cardTitle}>
+        {tSafe('scan.intel.health.title', 'Crop health')}
+      </h4>
+      {health.issue ? (
+        <p style={{ ...STYLES.body, fontWeight: 600, color: '#1F2933' }}>
+          {health.issue}
+        </p>
+      ) : null}
+      {health.severity ? (
+        <div style={{ marginTop: 8 }}>
+          <span style={STYLES.severityBar(tone)} aria-hidden="true" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#1F2933' }}>
+            {tSafe('scan.intel.health.severityLabel', 'Severity')}
+            {': '}
+            {tSafe(sevLabelKey, sevLabel)}
+          </span>
+        </div>
+      ) : null}
+      {health.affectedAreaPct != null ? (
+        <div style={{ ...STYLES.body, marginTop: 6 }}>
+          {tSafe('scan.intel.health.affected', 'Affected area')}
+          {': '}
+          <strong>{health.affectedAreaPct}%</strong>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function TreatmentSection({ treatment }) {
+  if (!treatment) return null;
+  const Renderable = ({ titleKey, titleDefault, items, testId }) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div data-testid={testId}>
+        <div style={STYLES.subhead}>{tSafe(titleKey, titleDefault)}</div>
+        <ul style={STYLES.list}>
+          {items.slice(0, 5).map((it, i) => (
+            <li key={testId + '-' + i}>
+              {_isObj(it) ? (_str(it.title) || _str(it.text) || _str(it.label)) : _str(it)}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-treatment">
+      <h4 style={STYLES.cardTitle}>
+        {tSafe('scan.intel.treatment.title', 'Treatment')}
+      </h4>
+      <Renderable
+        titleKey="scan.intel.treatment.actions"
+        titleDefault="Recommended actions"
+        items={treatment.actions}
+        testId="scan-intel-treatment-actions"
+      />
+      <Renderable
+        titleKey="scan.intel.treatment.organic"
+        titleDefault="Organic treatment"
+        items={treatment.organic}
+        testId="scan-intel-treatment-organic"
+      />
+      <Renderable
+        titleKey="scan.intel.treatment.chemical"
+        titleDefault="Chemical treatment"
+        items={treatment.chemical}
+        testId="scan-intel-treatment-chemical"
+      />
+      <Renderable
+        titleKey="scan.intel.treatment.prevention"
+        titleDefault="Prevention"
+        items={treatment.prevention}
+        testId="scan-intel-treatment-prevention"
+      />
+      {treatment.recovery ? (
+        <div data-testid="scan-intel-treatment-recovery"
+          style={{ marginTop: 10 }}>
+          <div style={STYLES.subhead}>
+            {tSafe('scan.intel.treatment.recovery', 'Expected recovery time')}
+          </div>
+          <p style={STYLES.body}>{treatment.recovery}</p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function RegionSection({ region }) {
+  if (!region) return null;
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-region">
+      <h4 style={STYLES.cardTitle}>
+        🌦 {tSafe('scan.intel.region.title', 'Region intelligence')}
+      </h4>
+      <ul style={STYLES.list}>
+        {region.weatherNote   ? <li>{region.weatherNote}</li>   : null}
+        {region.seasonNote    ? <li>{region.seasonNote}</li>    : null}
+        {region.locationNote  ? <li>{region.locationNote}</li>  : null}
+        {region.cropHint      ? <li>{region.cropHint}</li>      : null}
+      </ul>
+    </section>
+  );
+}
+
+function SoilSection({ soil }) {
+  if (!soil) return null;
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-soil">
+      <h4 style={STYLES.cardTitle}>
+        🌍 {tSafe('scan.intel.soil.title', 'Soil intelligence')}
+      </h4>
+      {soil.type ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.soil.type', 'Type')}:</strong> {soil.type}
+      </div> : null}
+      {soil.ph != null ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.soil.ph', 'pH')}:</strong> {soil.ph}
+      </div> : null}
+      {soil.drainage ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.soil.drainage', 'Drainage')}:</strong> {soil.drainage}
+      </div> : null}
+      {soil.organicMatter ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.soil.organic', 'Organic matter')}:</strong> {soil.organicMatter}
+      </div> : null}
+      {soil.suitabilityScore != null ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.soil.suitability', 'Suitability')}:</strong> {soil.suitabilityScore}/100
+      </div> : null}
+    </section>
+  );
+}
+
+function SatelliteSection({ satellite }) {
+  if (!satellite) return null;
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-satellite">
+      <h4 style={STYLES.cardTitle}>
+        🛰 {tSafe('scan.intel.satellite.title', 'Field view')}
+      </h4>
+      {satellite.vegetationHealth ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.satellite.veg', 'Vegetation health')}:</strong> {satellite.vegetationHealth}
+      </div> : null}
+      {satellite.moistureRisk ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.satellite.moisture', 'Moisture risk')}:</strong> {satellite.moistureRisk}
+      </div> : null}
+      {satellite.heatStress ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.satellite.heat', 'Heat stress')}:</strong> {satellite.heatStress}
+      </div> : null}
+      {satellite.growthTrend ? <div style={STYLES.body}>
+        <strong>{tSafe('scan.intel.satellite.trend', 'Growth trend')}:</strong> {satellite.growthTrend}
+      </div> : null}
+    </section>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
+// Spoken summary — composed in farmer language for TTS.
+// ───────────────────────────────────────────────────────────
+
+function _buildSpokenSummary(result) {
+  if (!_isObj(result)) return '';
+  const ident = _extractIdentification(result);
+  const health = _extractHealth(result);
+  const treatment = _extractTreatment(result);
+  const parts = [];
+  if (ident) {
+    parts.push(
+      tSafe('scan.intel.voice.identified',
+        'This looks like') + ' ' + ident.plantName + '.');
+  }
+  if (health) {
+    if (health.severity) {
+      parts.push(
+        tSafe('scan.intel.voice.severity', 'Severity') + ': '
+        + (health.severity) + '.');
+    }
+    if (health.issue) parts.push(health.issue + '.');
+  }
+  if (treatment && treatment.actions.length > 0) {
+    const first = treatment.actions[0];
+    const t = _isObj(first) ? (_str(first.title) || _str(first.text)) : _str(first);
+    if (t) parts.push(
+      tSafe('scan.intel.voice.tryAction', 'Suggested action') + ': ' + t + '.');
+  }
+  return parts.join(' ');
+}
+
+// ───────────────────────────────────────────────────────────
+// Main component
+// ───────────────────────────────────────────────────────────
+
+export default function IntelligentScanResult({
+  result,
+  onRetake,
+  onChoose,
+  onSaveForReview,
+}) {
+  const identification = useMemo(() => _extractIdentification(result), [result]);
+  const health         = useMemo(() => _extractHealth(result),         [result]);
+  const treatment      = useMemo(() => _extractTreatment(result),      [result]);
+  const region         = useMemo(() => _extractRegion(result),         [result]);
+  const soil           = useMemo(() => _extractSoil(result),           [result]);
+  const satellite      = useMemo(() => _extractSatellite(result),      [result]);
+  const needsReview    = useMemo(() => _shouldShowNeedsReview(result), [result]);
+
+  return (
+    <main style={STYLES.page} data-testid="intelligent-scan-result">
+      <VoiceHeader result={result} />
+      <PlantIdentificationSection identification={identification} />
+      <FlowerSection identification={identification} result={result} />
+      <CropHealthSection health={health} />
+      <TreatmentSection treatment={treatment} />
+      <RegionSection region={region} />
+      <SoilSection soil={soil} />
+      <SatelliteSection satellite={satellite} />
+      {needsReview ? (
+        <NeedsReviewActions
+          onTakeAnother={_isFn(onRetake) ? onRetake : undefined}
+          onChoosePhoto={_isFn(onChoose) ? onChoose : undefined}
+          onSaveForReview={_isFn(onSaveForReview) ? onSaveForReview : undefined}
+        />
+      ) : null}
+    </main>
+  );
+}

@@ -205,11 +205,13 @@ const STYLES = {
 };
 
 const CAPABILITIES = Object.freeze([
-  { key: 'disease', defaultLabel: 'Disease detection',          icon: '🦠' },
-  { key: 'pest',    defaultLabel: 'Pest detection',              icon: '🐛' },
-  { key: 'crop',    defaultLabel: 'Crop identification',         icon: '🌾' },
-  { key: 'flower',  defaultLabel: 'Flower identification',       icon: '🌸' },
-  { key: 'garden',  defaultLabel: 'Garden plant identification', icon: '🪴' },
+  { key: 'disease',   defaultLabel: 'Diseases',              icon: '🦠' },
+  { key: 'pest',      defaultLabel: 'Pests',                 icon: '🐛' },
+  { key: 'nutrient',  defaultLabel: 'Nutrient deficiencies', icon: '🧪' },
+  { key: 'crop',      defaultLabel: 'Crops',                 icon: '🌾' },
+  { key: 'flower',    defaultLabel: 'Flowers',               icon: '🌸' },
+  { key: 'garden',    defaultLabel: 'Garden plants',         icon: '🪴' },
+  { key: 'weed',      defaultLabel: 'Weeds',                 icon: '🌱' },
 ]);
 
 // ───────────────────────────────────────────────────────────
@@ -379,8 +381,8 @@ export default function ScanHub({ onTakePhoto, onUploadPhoto, recentLimit = 4 })
         <p style={STYLES.heroSubtitle}>
           {tSafe(
             'scan.hub.subtitle',
-            'Detect disease, identify pests, and recognize crops or '
-            + 'garden plants from a single clear photo.',
+            'Identify diseases, pests, nutrient deficiencies, crops, '
+            + 'flowers, garden plants and weeds from a single clear photo.',
           )}
         </p>
         <div style={STYLES.chipRow}>

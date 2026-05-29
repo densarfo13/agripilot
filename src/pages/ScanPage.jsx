@@ -72,6 +72,7 @@ import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanEntryCard from '../components/scan/ScanEntryCard.jsx';
 import ScanHub from '../components/scan/ScanHub.jsx';
+import IntelligentScanResult from '../components/scan/IntelligentScanResult.jsx';
 // UI tightening pass §8 — chips + recent-scans hint that sit below
 // the camera/upload card during the capture phase. Replaces the
 // previously empty page real-estate the spec called out.
@@ -1362,6 +1363,14 @@ export default function ScanPage() {
           escalation={analyzingEscalation}
           focusContext={analyzingFocusContext}
           onCancel={onRetake}
+        />
+      ) : null}
+
+      {phase === 'result' && result ? (
+        <IntelligentScanResult
+          result={result}
+          onRetake={onRetake}
+          onChoose={_handleUseSavedPhoto}
         />
       ) : null}
 
