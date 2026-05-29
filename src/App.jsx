@@ -305,6 +305,9 @@ const Notifications  = lazy(() => import('./pages/Notifications.jsx'));
 
 // V2 enterprise auth pages — Login is NOT lazy (prevents Suspense flash on first load)
 import V2Login from './pages/Login.jsx';
+// Wave-15 — opt-in organization sign-in surface. Direct-URL
+// only; never linked from grower nav.
+import OrgLoginPage from './pages/OrgLoginPage.jsx';
 const V2Register = lazy(() => import('./pages/Register.jsx'));
 const V2ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const V2ForgotPasswordSms = lazy(() => import('./pages/ForgotPasswordSms.jsx'));
@@ -1508,6 +1511,11 @@ export default function App() {
 
           {/* V2 enterprise auth routes (cookie-based, httpOnly) */}
           <Route path="/login" element={<V2Login />} />
+          {/* Wave-15 — opt-in organization sign-in. Lives at
+              /org-login, deliberately NOT linked from any
+              grower nav so farmers / gardeners never see SSO
+              options unless their org admin shares the link. */}
+          <Route path="/org-login" element={<OrgLoginPage />} />
           <Route path="/register" element={<V2Register />} />
           <Route path="/forgot-password" element={<V2ForgotPassword />} />
           <Route path="/forgot-password/sms" element={<V2ForgotPasswordSms />} />

@@ -169,12 +169,68 @@ if (fragment) {
 }
 pass(`prisma-stage: 4 models + secret-ref-only column shape`);
 
-// ─── App.jsx boot install ──────────────────────────────────
+// ─── App.jsx boot install + opt-in /org-login route ───────
 const app = read(path.join(ROOT, 'src/App.jsx'));
 if (!/installFederationGlobal/.test(app)) {
   fail(`boot: src/App.jsx must wire installFederationGlobal()`);
 } else {
   pass(`boot: installFederationGlobal wired in App.jsx`);
+}
+
+if (!/path\s*=\s*['"]\/org-login['"][\s\S]{0,200}?<OrgLoginPage/.test(app)) {
+  fail(`org-login: /org-login route must mount <OrgLoginPage />`);
+}
+// Walk src/navigation/ for any /org-login leak — must stay
+// deep-link-only so farmers / gardeners never see SSO unless
+// their org admin shares the link.
+function walkNavFiles(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (e.name === 'node_modules' || e.name === 'dist') continue;
+      walkNavFiles(full, out);
+    } else if (/\.(tsx?|jsx?)$/.test(e.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+let navLeak = false;
+for (const f of walkNavFiles(path.join(ROOT, 'src/navigation'))) {
+  const src = read(f);
+  if (/['"]\/org-login['"]/.test(src)) {
+    fail(`nav-leak: ${path.relative(ROOT, f)} references /org-login — must be deep-link only`);
+    navLeak = true;
+  }
+}
+if (!navLeak) {
+  pass(`org-login: route mounted + zero grower-nav references (deep-link only)`);
+}
+
+// ─── Secrets resolver abstraction ──────────────────────────
+const resolverPath = path.join(ROOT,
+  'server/src/modules/auth/federation/secretsResolver.js');
+const resolver = read(resolverPath);
+if (!resolver) {
+  fail(`secrets-resolver: server/src/modules/auth/federation/secretsResolver.js missing`);
+} else {
+  for (const sym of ['registerSecretsResolver', 'resolveClientSecret',
+                      'secretsResolverSnapshot',
+                      'farroway-secrets-resolver-v1',
+                      'consume',
+                      'secrets_store_not_configured']) {
+    if (!resolver.includes(sym)) {
+      fail(`secrets-resolver: missing "${sym}"`);
+    }
+  }
+  // The success envelope MUST NOT carry a top-level "secret"
+  // field — only the consume(fn) closure API. Static check.
+  const stripped = strip(resolver);
+  if (/Object\.freeze\([\s\S]{0,500}?ok:\s*true[\s\S]{0,500}?\bsecret\s*:/.test(stripped)) {
+    fail(`secrets-resolver: success envelope must NOT include a "secret" field — only the consume() API`);
+  }
+  pass(`secrets-resolver: consume() API + no-secret-on-envelope enforced`);
 }
 
 // ─── Report ────────────────────────────────────────────────
