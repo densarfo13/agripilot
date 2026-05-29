@@ -104,6 +104,23 @@ export function launchReadiness() {
       impactLedgerReady: _probe('__adminImpactHealth')
         ? !!(_probe('__adminImpactHealth') as any).impactRecordsReady
         : false,
+      // Wave 14 — Buyer + NGO portals.
+      buyerMvpReady: _probe('__buyerDashboardHealth')
+        ? !!(_probe('__buyerDashboardHealth') as any).initialized
+        : false,
+      ngoMvpReady: _probe('__ngoDashboardHealth')
+        ? !!(_probe('__ngoDashboardHealth') as any).initialized
+        : false,
+      buyerNoPayments: _probe('__buyerDashboardHealth')
+        ? !!((_probe('__buyerDashboardHealth') as any).noPayments
+          && (_probe('__buyerDashboardHealth') as any).noEscrow)
+        : true,
+      ngoOrganizationScoped: _probe('__ngoDashboardHealth')
+        ? !!(_probe('__ngoDashboardHealth') as any).organizationScoped
+        : true,
+      evidenceCaptureReady: _probe('__evidenceHealth')
+        ? !!(_probe('__evidenceHealth') as any).initialized
+        : false,
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

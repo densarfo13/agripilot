@@ -46,6 +46,10 @@ export function enterpriseReadiness() {
       adminImpactReady:      !!(admin
         && (admin as any).farmerProfilesReady
         && (admin as any).fakeMetrics === false),
+      buyerMvpReady: !!(typeof window !== 'undefined'
+        && typeof (window as any).__buyerDashboardHealth === 'function'),
+      ngoMvpReady:   !!(typeof window !== 'undefined'
+        && typeof (window as any).__ngoDashboardHealth === 'function'),
       auditLogs:             !!(audit && (audit as any).initialized
                               && (audit as any).appendOnly),
       evidenceChain:         !!(evidence && (evidence as any).initialized),

@@ -268,6 +268,24 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       }, true),
       organizationReportingReady: _hasGlobal('__adminImpactHealth'),
       impactLedgerReady:          _hasGlobal('__adminImpactHealth'),
+      // Wave 14 — Buyer + NGO portals.
+      buyerMvpReady:        _hasGlobal('__buyerDashboardHealth'),
+      ngoMvpReady:          _hasGlobal('__ngoDashboardHealth'),
+      buyerNoPayments:      _safe(() => {
+        if (typeof window === 'undefined') return true;
+        const w = window as any;
+        if (typeof w.__buyerDashboardHealth !== 'function') return true;
+        const r = w.__buyerDashboardHealth();
+        return !!(r && r.noPayments && r.noEscrow);
+      }, true),
+      ngoOrganizationScoped: _safe(() => {
+        if (typeof window === 'undefined') return true;
+        const w = window as any;
+        if (typeof w.__ngoDashboardHealth !== 'function') return true;
+        const r = w.__ngoDashboardHealth();
+        return !!(r && r.organizationScoped);
+      }, true),
+      evidenceCaptureReady: _hasGlobal('__evidenceHealth'),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

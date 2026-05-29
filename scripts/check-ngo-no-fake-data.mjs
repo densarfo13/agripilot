@@ -1,46 +1,32 @@
 #!/usr/bin/env node
-/**
- * scripts/check-ngo-no-fake-data.mjs — Lock NGO surfaces to
- * real aggregates only. Reports must surface "Not enough data
- * yet" when samples are absent; never fabricated counts.
- *
- * Hard blockers in src/pages/organization/* + src/pages/enterprise/*
- * + any src/components/ngo/* surfaces (comment-stripped):
- *
- *   A. fake/mock/hardcoded NGO traction counts
- *   B. literal "X farmers reached" with hardcoded integer
- *   C. carbon-credit / carbon-offset routes or imports
- *   D. investor-dashboard route or component imports
- *
- * Strict-rule audit
- *   • Read-only. Never mutates.
- *   • Strips comments before pattern-matching.
- */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
 const FAILED = [];
 const PASSED = [];
-function fail(m) { FAILED.push(m); }
-function pass(m) { PASSED.push(m); }
+const fail = (m) => FAILED.push(m);
+const pass = (m) => PASSED.push(m);
 
 function readOrEmpty(f) {
   try { return fs.readFileSync(f, 'utf8'); } catch { return ''; }
 }
-function stripComments(s) {
-  return s.replace(/\/\*[\s\S]*?\*\//g, '')
-          .replace(/\/\/[^\n]*/g, '')
-          .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+function stripComments(src) {
+  src = src.replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, '');
+  src = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  src = src.replace(/(^|[^:])\/\/.*$/gm, '$1');
+  return src;
 }
+
 function walk(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, e.name);
-    if (e.isDirectory()) {
-      if (e.name === 'node_modules' || e.name === 'dist') continue;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '__tests__') continue;
       walk(full, out);
-    } else if (/\.(tsx?|jsx?)$/.test(e.name)) {
+    } else if (/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(entry.name)) {
       out.push(full);
     }
   }
@@ -52,47 +38,54 @@ const NGO_DIRS = [
   path.join(ROOT, 'src/pages/enterprise'),
   path.join(ROOT, 'src/components/ngo'),
   path.join(ROOT, 'src/components/organization'),
+  path.join(ROOT, 'src/runtime/organization'),
 ];
 
-const FORBIDDEN_NGO = [
-  { name: 'fakeFarmersReached',  re: /["'](?:[0-9]{3,})\s*farmers?\s*(?:reached|enrolled)["']/i },
-  { name: 'fakeInterventions',   re: /\bfake[\s_-]?interventions?\b/i },
-  { name: 'mockNgoMetrics',      re: /\bmock[\s_-]?ngo[\s_-]?metrics?\b/i },
-  { name: 'placeholderTraction', re: /placeholder[\s_-]?traction/i },
-  { name: 'carbonCredit',        re: /\bcarbon[\s_-]?credit/i },
-  { name: 'carbonOffset',        re: /\bcarbon[\s_-]?offset/i },
-  { name: 'investorDashboard',   re: /\binvestor[\s_-]?dashboard\b/i },
-  { name: 'satelliteDashboard',  re: /\bsatellite[\s_-]?dashboard\b/i },
+const FORBIDDEN = [
+  { name: 'hardcoded-farmers-reached', re: /(?:[0-9]{3,})\s*farmers?\s*(?:reached|enrolled)/i },
+  { name: 'fake-intervention',         re: /fake[-_\s]?intervention/i },
+  { name: 'mock-ngo-metrics',          re: /mock[-_\s]?ngo[-_\s]?metrics/i },
+  { name: 'placeholder-traction',      re: /placeholder[-_\s]?traction/i },
+  { name: 'carbon-credit',             re: /\bcarbon[-_\s]?credit/i },
+  { name: 'carbon-offset',             re: /\bcarbon[-_\s]?offset/i },
+  { name: 'investor-dashboard',        re: /\binvestor[-_\s]?dashboard\b/i },
+  { name: 'satellite-dashboard',       re: /\bsatellite[-_\s]?dashboard\b/i },
 ];
 
-const violators = [];
 let scanned = 0;
 for (const dir of NGO_DIRS) {
-  for (const f of walk(dir)) {
+  for (const abs of walk(dir)) {
     scanned++;
-    const rawSrc = readOrEmpty(f);
-    const src = stripComments(rawSrc);
-    for (const { name, re } of FORBIDDEN_NGO) {
-      if (re.test(src)) {
-        violators.push({ rel: path.relative(ROOT, f), name, re: re.toString() });
+    const rel = path.relative(ROOT, abs).replace(/\\/g, '/');
+    const raw = readOrEmpty(abs);
+    const code = stripComments(raw);
+    for (const { name, re } of FORBIDDEN) {
+      if (re.test(code)) {
+        fail(`${rel}: forbidden NGO fake-data token "${name}"`);
       }
     }
   }
 }
 
-if (violators.length > 0) {
-  for (const v of violators) {
-    fail(`ngo-no-fake-data: ${v.rel} contains forbidden ${v.name} ${v.re}`);
-  }
+const reportEngine = path.join(ROOT, 'src/runtime/organization/OrganizationReportEngine.ts');
+if (!fs.existsSync(reportEngine)) {
+  fail('src/runtime/organization/OrganizationReportEngine.ts: required file missing');
 } else {
-  pass(`ngo-no-fake-data: ${scanned} NGO/enterprise file(s) scanned, no fake data tokens`);
+  const raw = readOrEmpty(reportEngine);
+  if (!/fakeData\s*:\s*false/.test(raw)) {
+    fail('src/runtime/organization/OrganizationReportEngine.ts: must declare "fakeData: false"');
+  } else {
+    pass('OrganizationReportEngine declares fakeData: false');
+  }
 }
 
-// ─── Report ────────────────────────────────────────────────────
+if (FAILED.length === 0) {
+  pass(`${scanned} NGO/organization/enterprise files clean of fake-data tokens`);
+}
+
 if (FAILED.length > 0) {
-  console.error('[check:ngo-no-fake-data] FAIL — fake NGO data detected.');
+  console.error('[check:ngo-no-fake-data] FAIL');
   for (const f of FAILED) console.error('  ✗ ' + f);
-  console.error(`\n${PASSED.length} checks passed, ${FAILED.length} failed.`);
   process.exit(1);
 }
-console.log('[check:ngo-no-fake-data] PASS — NGO + enterprise surfaces use real aggregates only.');
+console.log(`[check:ngo-no-fake-data] PASS — ${scanned} NGO/organization surfaces use real aggregates only`);

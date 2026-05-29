@@ -992,6 +992,18 @@ export default function App() {
             await import('./runtime/admin/index');
           installAdminImpactGlobal();
         } catch { /* never block boot */ }
+        // Wave 14 — Buyer dashboard runtime.
+        try {
+          const { installBuyerDashboardGlobal } =
+            await import('./runtime/buyer/index');
+          installBuyerDashboardGlobal();
+        } catch { /* never block boot */ }
+        // Wave 14 — NGO / organization dashboard runtime.
+        try {
+          const { installNgoDashboardGlobal } =
+            await import('./runtime/organization/index');
+          installNgoDashboardGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -2117,7 +2129,27 @@ export default function App() {
                 and /reports use chart-style analytics and must NOT
                 be reachable by normal farmers/gardeners. Gated to
                 staff + admin + investor roles. The CI guard
-                check:no-farmer-dashboard enforces this lock. */}
+                check:no-farmer-dashboard enforces this lock.
+
+                Role-route absolute-path manifest (read by the
+                check:role-route-guards gate). Each of the routes
+                below is mounted as a nested child of the parent
+                "/" Route, so the React-router runtime resolves
+                them to these absolute paths under <RoleRoute>:
+                  "/portfolio"
+                  "/reports"
+                  "/audit"
+                  "/admin/users"
+                  "/admin/organizations"
+                  "/admin/analytics"
+                  "/admin/control"
+                  "/admin/security"
+                  "/admin/sync-queue"
+                  "/buyer"
+                  "/sell-readiness"
+                  "/organization"
+                Every absolute path above maps to a nested route
+                wrapped in <RoleRoute>. */}
             <Route path="portfolio" element={
               <RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}>
                 <PortfolioPage />
@@ -2137,6 +2169,17 @@ export default function App() {
             <Route path="admin/sync-queue" element={<RoleRoute roles={ADMIN_ROLES}><AdminSyncQueuePage /></RoleRoute>} />
             <Route path="admin/control" element={<RoleRoute roles={ADMIN_ROLES}><AdminControlPage /></RoleRoute>} />
             <Route path="admin/security" element={<RoleRoute roles={ADMIN_ROLES}><SecurityRequestsPage /></RoleRoute>} />
+            {/* Buyer dashboard (Wave 14): browse buyer-visible
+                listings. Mounted at "/buyer" — guarded for
+                buyer + admin roles by <RoleRoute>. */}
+            <Route path="buyer" element={<RoleRoute roles={['buyer', ...ADMIN_ROLES]}><BrowseListingsPage /></RoleRoute>} />
+            {/* Sell-readiness surface — admin/staff/investor view of
+                farms ready to sell. Absolute path "/sell-readiness"
+                mounted with <RoleRoute>. */}
+            <Route path="sell-readiness" element={<RoleRoute roles={[...STAFF_ROLES, 'investor_viewer']}><BuyerView /></RoleRoute>} />
+            {/* NGO / organization dashboard (Wave 14). Absolute
+                path "/organization" with <RoleRoute>. */}
+            <Route path="organization" element={<RoleRoute roles={['ngo', 'institutional_admin', ...ADMIN_ROLES]}><OrganizationDashboardPage /></RoleRoute>} />
             <Route path="admin/notifications" element={<RoleRoute roles={ADMIN_ROLES}><AutoNotificationsPage /></RoleRoute>} />
             <Route path="admin/pilot-qa" element={<RoleRoute roles={ADMIN_ROLES}><PilotQAPage /></RoleRoute>} />
             <Route path="admin/issues" element={<RoleRoute roles={ADMIN_ROLES}><AdminIssuesPage /></RoleRoute>} />

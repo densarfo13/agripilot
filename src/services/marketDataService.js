@@ -116,7 +116,7 @@ const PRICE_SIGNALS = [
   { cropCode: 'KALE',     country: 'KE', trend: 'stable',  months: [0,1,2,3,4,5,6,7,8,9,10,11], confidence: 'medium', season: 'year-round', noteKey: 'market.note.stapleDemand' },
 
   // Coffee: premium Arabica, global price linked
-  { cropCode: 'COFFEE',   country: 'KE', trend: 'rising',  months: [0, 1, 2],       confidence: 'low',    season: 'auction', noteKey: 'market.note.exportDemand' },
+  { cropCode: 'COFFEE',   country: 'KE', trend: 'rising',  months: [0, 1, 2],       confidence: 'low',    season: 'export-window', noteKey: 'market.note.exportDemand' },
 
   // Tea: steady, but factory prices fluctuate
   { cropCode: 'TEA',      country: 'KE', trend: 'stable',  months: [0,1,2,3,4,5,6,7,8,9,10,11], confidence: 'low', season: 'year-round', noteKey: 'market.note.regulatedPrice' },
