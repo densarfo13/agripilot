@@ -97,6 +97,10 @@ function _extendReleaseLockWithBlockers(): void {
       const fieldOfficerReady      = _readGlobalFlag('__fieldOfficerHealth','fieldOfficerReady');
       const buyerTrustReady        = _readGlobalFlag('__buyerTrustHealth', 'buyerTrustReady');
       const knowledgeCoverageReady = _readGlobalFlag('__knowledgeHealth',  'knowledgeCoverageReady');
+      // Wave-28 Harvest Readiness — two pilot-readiness flags
+      // surfaced via the harvest runtime's diagnostic envelope.
+      const harvestReadinessReady  = _readGlobalFlag('__harvestReadinessHealth', 'harvestReadinessReady');
+      const ripenessDetectionReady = _readGlobalFlag('__harvestReadinessHealth', 'ripenessDetectionReady');
       const next: any = { ...(base || {}),
         onboardingGuardReady: !!checks.c1_onboardingGuard,
         taskStoreReady:       !!checks.c2_taskStore,
@@ -111,6 +115,9 @@ function _extendReleaseLockWithBlockers(): void {
         fieldOfficerReady,
         buyerTrustReady,
         knowledgeCoverageReady,
+        // Wave-28 Harvest Readiness flags
+        harvestReadinessReady,
+        ripenessDetectionReady,
         goLiveVerdict:        live && live.verdict ? live.verdict : 'NO_GO',
       };
       // Any wave-26 blocker failure → force RELEASE LOCK to RED.

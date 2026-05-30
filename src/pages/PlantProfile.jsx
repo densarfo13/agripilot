@@ -36,6 +36,10 @@ import PlantImage from '../components/plants/PlantImage.jsx';
 // read the old key, leaving the per-plant timeline permanently
 // empty. Route through the canonical reader instead.
 import { getCanonicalActivityEvents } from '../runtime/launchBlockers/ActivityDataHealthRuntime';
+// Wave-28 — read-only harvest history surface. Only renders when
+// isSupportedPlant() returns true for the current plant.
+import { getLatestForPlant, isSupportedPlant }
+  from '../runtime/harvest';
 
 function _readEvents() {
   try {
@@ -316,6 +320,49 @@ export default function PlantProfile() {
                        ? intel.bloom.confidence : 'unknown')}
             </div>
           </div>
+
+          {/* Wave-28 — Harvest section. Only renders when the
+              plant is in the supported set; the runtime returns
+              category:'unknown' otherwise and we suppress the
+              block. Reads the canonical history (single-writer
+              localStorage owned by HarvestReadinessRuntime). */}
+          {(() => {
+            const pid = (plant && (plant.id || plant.plantId || plant.commonName)) || '';
+            if (!isSupportedPlant(pid)) return null;
+            const latest = getLatestForPlant(pid);
+            if (!latest) return null;
+            const status = latest.ripenessStatus || 'unknown';
+            const window = latest.estimatedHarvestWindow || '—';
+            const score  = latest.harvestReadinessScore || 0;
+            const headline =
+              status === 'ready'        ? tSafe('harvest.headline.ready',     'Likely ready to harvest') :
+              status === 'almost_ready' ? tSafe('harvest.headline.almost',    'Appears almost ready') :
+              status === 'not_ready'    ? tSafe('harvest.headline.notReady',  'Not ready yet') :
+              status === 'overripe'     ? tSafe('harvest.headline.needsLook', 'Needs another look') :
+                                          tSafe('harvest.headline.unclear',   'Readiness unclear');
+            return (
+              <>
+                <div style={S.sectionTitle}>
+                  {tSafe('plantProfile.harvest', 'Harvest')}
+                </div>
+                <div style={S.card} data-testid="plant-profile-harvest">
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1F2933' }}>
+                    {headline}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                    {tSafe('plantProfile.harvest.score', 'Readiness score')}:
+                    {' '}<strong>{score}</strong>
+                    {' · '}{tSafe('plantProfile.harvest.window', 'Expected window')}:
+                    {' '}<strong>{window}</strong>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+                    {tSafe('plantProfile.harvest.last', 'Latest scan')}:
+                    {' '}{latest.timestamp ? latest.timestamp.slice(0, 10) : '—'}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           <div style={S.sectionTitle}>
             {tSafe('plantProfile.pollinator', 'Pollinator')}

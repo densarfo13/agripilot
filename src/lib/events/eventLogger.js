@@ -47,6 +47,15 @@ export const EVENT_TYPES = Object.freeze([
   'issue_status_changed',
   'alert_dismissed',
   'outcome_recorded',
+  // Harvest Readiness — five timeline event types per spec §9.
+  // The Harvest Readiness runtime composes over logEvent; these
+  // strings are the canonical keys QA scripts and the activity
+  // timeline read.
+  'harvest_readiness_checked',
+  'fruit_ripeness_checked',
+  'harvest_task_generated',
+  'harvest_completed',
+  'bloom_stage_checked',
 ]);
 
 function hasStorage() {

@@ -165,6 +165,14 @@ import { resolveRealismImage, REALISM_ASSETS } from '../lib/realVisuals.jsx';
 // the soil-scan tile at the bottom of the Scan page; replaces the
 // legacy plant-pot emoji that previously sat there.
 import { default as RealisticIconLazy } from '../assets/realism/icons/RealisticIcon.jsx';
+// Wave-28 Harvest Readiness — composition runtime evaluated AFTER
+// ScanRuntime returns a normalized result. NEVER bypasses
+// ScanRuntime; never owns camera; never writes tasks from UI.
+// The runtime returns a frozen envelope that we attach to
+// `result.harvest` for the ScanResultCard child to render.
+import { evaluate as evaluateHarvest, isSupportedPlant as isHarvestSupportedPlant }
+  from '../runtime/harvest';
+import { logEvent as logHarvestEvent } from '../lib/events/eventLogger.js';
 
 // Unified Soft Ochre / Beige system. The mount-pending surface
 // (rendered before <PremiumPage> takes over) now uses the locked
@@ -295,8 +303,125 @@ export default function ScanPage() {
   const entryGalleryInputRef = useRef(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  // Wave-28 — track which scanId already had harvest evaluation
+  // attached so the useEffect below is idempotent (one evaluation
+  // per scan). Prevents render-loops and prevents duplicate
+  // timeline events / artifacts on reconnect-replay.
+  const _harvestSeenRef = useRef(new Set());
   const [savedEntryId, setSavedEntryId] = useState(null);
   const [tasksAdded, setTasksAdded] = useState(false);
+  // Wave-28 Harvest Readiness — single-shot evaluation per scan.
+  // Runs AFTER ScanRuntime has populated `result` (we never call
+  // ScanRuntime or the camera from here; we read the normalized
+  // envelope). Attaches `harvest` to the result, emits two
+  // timeline events through the canonical logEvent (whitelisted
+  // in EVENT_TYPES), and composes createHarvestArtifact via the
+  // existing ArtifactRuntime — no new architecture.
+  useEffect(() => {
+    if (!result) return undefined;
+    const scanId = result.scanId || result.id || '';
+    if (!scanId) return undefined;
+    if (result.harvest) return undefined;            // already attached
+    if (_harvestSeenRef.current.has(scanId)) return undefined;
+    _harvestSeenRef.current.add(scanId);
+
+    const ctxPlantId = (result.plantId
+                     || result.crop
+                     || result.cropId
+                     || result.plantName
+                     || result.cropName
+                     || profile?.crop
+                     || profile?.cropId
+                     || '') + '';
+    // Plant-not-supported gate — runtime would also return
+    // category:'unknown' but the upfront check saves a no-op
+    // evaluate() call and keeps the CI gate's audit clean
+    // (the gate enforces that unsupported plants never see the card).
+    if (!isHarvestSupportedPlant(ctxPlantId)) return undefined;
+
+    const harvest = evaluateHarvest({
+      scanResult: result,
+      plantContext: {
+        plantId:        ctxPlantId,
+        plantName:      result.plantName || result.cropName || result.crop || null,
+        lifecycleStage: result.lifecycleStage || null,
+        region:         profile?.region    || null,
+        season:         profile?.season    || null,
+        recentScanCategory: result.category || null,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Attach to the result so child cards (HarvestReadinessCard /
+    // BloomStageCard) can render. Spread keeps every other field
+    // including imageUrl + thumbnail intact.
+    setResult((prev) => prev ? { ...prev, harvest } : prev);
+
+    // Timeline emissions — canonical eventLogger only. Two events:
+    //   • harvest_readiness_checked — always (every evaluation)
+    //   • fruit_ripeness_checked    — when category is fruit/vegetable/crop
+    //   • bloom_stage_checked       — when category is flower
+    // logEvent is fail-soft: missing type → silent drop.
+    try {
+      logHarvestEvent({
+        type: 'harvest_readiness_checked',
+        farmId: activeFarmId || null,
+        payload: {
+          scanId,
+          plantId: ctxPlantId,
+          ripenessStatus: harvest.ripenessStatus,
+          score: harvest.harvestReadinessScore,
+          needsReview: harvest.needsReview,
+        },
+      });
+      if (harvest.category === 'flower') {
+        logHarvestEvent({
+          type: 'bloom_stage_checked',
+          farmId: activeFarmId || null,
+          payload: { scanId, plantId: ctxPlantId, bloomStage: harvest.bloomStage },
+        });
+      } else if (harvest.category && harvest.category !== 'unknown') {
+        logHarvestEvent({
+          type: 'fruit_ripeness_checked',
+          farmId: activeFarmId || null,
+          payload: { scanId, plantId: ctxPlantId,
+                     ripenessStatus: harvest.ripenessStatus },
+        });
+      }
+    } catch { /* swallow — timeline is non-critical */ }
+
+    // Artifact composition — ArtifactRuntime already has
+    // createHarvestArtifact. Fire-and-forget; the runtime is
+    // idempotent on (plantId, scanId, idempotencyKey).
+    try {
+      import('../runtime/artifacts/index').then((m) => {
+        try {
+          if (m && typeof m.createHarvestArtifact === 'function'
+              && ctxPlantId) {
+            m.createHarvestArtifact({
+              userId:   (profile?.id || profile?.userId || ''),
+              plantId:  ctxPlantId,
+              farmId:   activeFarmId || profile?.farmId || '',
+              gardenId: activeGardenId || profile?.gardenId || '',
+              photoUrl: result.imageUrl || result.thumbnail || '',
+              metadata: {
+                scanId,
+                ripenessStatus:  harvest.ripenessStatus,
+                readinessScore:  harvest.harvestReadinessScore,
+                estimatedWindow: harvest.estimatedHarvestWindow || null,
+                confidence:      harvest.confidence,
+                idempotencyKey:  harvest.idempotencyKey,
+              },
+              source: 'farroway-harvest-runtime',
+            });
+          }
+        } catch { /* swallow — artifact creation is non-critical */ }
+      }).catch(() => { /* swallow */ });
+    } catch { /* swallow */ }
+
+    return undefined;
+  }, [result, profile, activeFarmId, activeGardenId]);
+
   // May 2026 scan-crash hardening §7-§8 — show "Preparing
   // camera…" instead of a blank screen during initial mount;
   // flip to true after the first useEffect tick so the spinner

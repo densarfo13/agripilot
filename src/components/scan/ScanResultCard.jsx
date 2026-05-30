@@ -62,6 +62,11 @@ import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // `plantIdentification` envelope. Self-hides when absent so
 // older verdicts (no v3 envelope) keep their existing UI.
 import PlantIdentificationCard from './PlantIdentificationCard.jsx';
+// Wave-28 Harvest Readiness — two pure-presentational cards
+// rendered inline above the action row when the harvest runtime
+// returned a result attached to `result.harvest`.
+import HarvestReadinessCard from './HarvestReadinessCard.jsx';
+import BloomStageCard       from './BloomStageCard.jsx';
 
 const STYLES = {
   // Wave-27 CPO retention fix — honest beta banner + quota chip
@@ -929,6 +934,30 @@ export default function ScanResultCard({
 
       {result.safetyWarning ? (
         <div style={STYLES.helpBlock}>{result.safetyWarning}</div>
+      ) : null}
+
+      {/* Wave-28 Harvest Readiness — when the runtime returned a
+          harvest result on this scan, render the appropriate card
+          inline (above the action row). Gated on category so
+          unsupported plants never see the card. Bloom path for
+          flowers; harvest path for everything else. The parent
+          (ScanPage) attaches the result via window event so this
+          card stays pure-presentational. */}
+      {result && result.harvest && result.harvest.category === 'flower' ? (
+        <BloomStageCard
+          result={result.harvest}
+          onScanAgain={typeof onRetake === 'function' ? onRetake : undefined}
+        />
+      ) : null}
+      {result && result.harvest
+        && result.harvest.category !== 'unknown'
+        && result.harvest.category !== 'flower' ? (
+        <HarvestReadinessCard
+          result={result.harvest}
+          onCreateHarvestTask={typeof onAddTasks === 'function' ? onAddTasks : undefined}
+          onSavePlant={typeof onSave === 'function' ? onSave : undefined}
+          onScanAgain={typeof onRetake === 'function' ? onRetake : undefined}
+        />
       ) : null}
 
       <div style={STYLES.buttonsRow}>

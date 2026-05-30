@@ -1184,6 +1184,17 @@ export default function App() {
             await import('./runtime/knowledgeContent/index');
           installKnowledgeContentGlobal();
         } catch { /* never block boot */ }
+        // Wave-28 — Harvest Readiness runtime. Composition over the
+        // existing ScanRuntime + ArtifactRuntime + eventLogger;
+        // never owns camera, never bypasses ScanRuntime, never
+        // writes tasks directly. Pins window.__harvestReadinessHealth
+        // and extends __scanAnalysisHealth with harvest readiness
+        // flags. See src/runtime/harvest/.
+        try {
+          const { installHarvestReadinessGlobal } =
+            await import('./runtime/harvest/index');
+          installHarvestReadinessGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
