@@ -1403,6 +1403,15 @@ export default function App() {
             await import('./runtime/fieldIntelligence/FieldIntelligenceRuntime');
           installFieldIntelligenceGlobals();
         } catch { /* never block boot */ }
+        // Wave-37.5 — Farmer Success Engine. Composes existing
+        // outcomes + retention + field-intelligence + task-store
+        // + weather signals into daily-assistant surfaces. No new
+        // architecture; honest empty-states throughout.
+        try {
+          const { installFarmerSuccessGlobals } =
+            await import('./runtime/farmerSuccess/FarmerSuccessEngine');
+          installFarmerSuccessGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
