@@ -63,19 +63,42 @@ export function goLiveHealth() {
     const c6 = _ok(sync,       'referenceErrorRemoved', 'queueVisible',
                                 'syncStateHonest');
 
-    const allPass = c1 && c2 && c3 && c4 && c5 && c6;
+    // Wave-38 — Production go-live preconditions.
+    // Production persistence MUST be writable + write endpoints
+    // MUST be safe before public launch. Probed via the wave-38
+    // persistence runtime; falls back to "fail closed" when probe
+    // hasn't resolved yet.
+    const persistence = _probe('__persistenceHealth');
+    const persistenceProductionSafe =
+      !!(persistence
+         && (persistence.productionWritesEnabled === true
+             || persistence.isProduction === false)
+         && persistence.writeEndpointsSafe === true);
+
+    // Invite providers — invites are GO-with-limitations gate, not
+    // a blocker. Activation flow needs at least one provider for
+    // public launch but doesn't block soft launch.
+    const invites = _probe('__inviteHealth');
+    const invitesActivationReady =
+      !!(invites && invites.activationFlowReady === true
+         && invites.fakeDelivery === false);
+
+    // Offline validation — soft signal; surfaces in warnings.
+    const offline = _probe('__offlineValidationHealth');
+    const offlineWired = !!offline && offline.initialized === true;
+
+    const allWaveTwentySix = c1 && c2 && c3 && c4 && c5 && c6;
+    const allPass = allWaveTwentySix && persistenceProductionSafe;
 
     // Launch caveats — true today. Closing each is its own sprint:
-    //   • knowledgeGap        — Plants 66/200 (yellow per wave-25)
-    //   • ngoRolloutGated     — _pending-migrations/ awaiting Railway deploy
-    //   • buyerRolloutPending — four wave-26 highs not yet fixed
     const knowledgeGap        = true;
-    const ngoRolloutGated     = true;
+    const ngoRolloutGated     = !invitesActivationReady;
     const buyerRolloutPending = true;
 
     let verdict: 'NO_GO' | 'GO_WITH_LIMITATIONS' | 'GO';
     if (!allPass) verdict = 'NO_GO';
-    else if (knowledgeGap || ngoRolloutGated || buyerRolloutPending) {
+    else if (knowledgeGap || ngoRolloutGated || buyerRolloutPending
+             || !invitesActivationReady || !offlineWired) {
       verdict = 'GO_WITH_LIMITATIONS';
     } else {
       verdict = 'GO';
@@ -88,12 +111,20 @@ export function goLiveHealth() {
     if (!c4) blockers.push('C4_scanResult');
     if (!c5) blockers.push('C5_scanCta');
     if (!c6) blockers.push('C6_sync');
+    if (!persistenceProductionSafe) {
+      blockers.push('W38_persistenceProductionUnsafe');
+    }
+
+    const warnings: string[] = [];
+    if (!invitesActivationReady) warnings.push('W38_invitesNotConfigured');
+    if (!offlineWired)            warnings.push('W38_offlineValidationOffline');
 
     return Object.freeze({
       runtimeVersion:       GO_LIVE_HEALTH_RUNTIME_VERSION,
       verdict,
       allBlockersResolved:  allPass,
       blockers:             Object.freeze(blockers),
+      warnings:             Object.freeze(warnings),
       checks: Object.freeze({
         c1_onboardingGuard: c1,
         c2_taskStore:       c2,
@@ -101,12 +132,22 @@ export function goLiveHealth() {
         c4_scanResult:      c4,
         c5_scanCta:         c5,
         c6_sync:            c6,
+        w38_persistenceProductionSafe: persistenceProductionSafe,
+        w38_invitesActivationReady:    invitesActivationReady,
+        w38_offlineWired:               offlineWired,
       }),
       caveats: Object.freeze({
         knowledgeGap,
         ngoRolloutGated,
         buyerRolloutPending,
       }),
+      // Wave-38 — sub-probe envelopes for QA / production-console
+      // verification.
+      persistence:     persistence    || null,
+      invites:         invites        || null,
+      offline:         offline        || null,
+      bulkOnboarding:  _probe('__bulkOnboardingHealth'),
+      releaseLock:     _probe('__releaseLock'),
     });
   }, Object.freeze({
     runtimeVersion:      GO_LIVE_HEALTH_RUNTIME_VERSION,

@@ -1242,6 +1242,28 @@ export default function App() {
             await import('./runtime/knowledgeGraph/index');
           installKnowledgeGraphGlobal();
         } catch { /* never block boot */ }
+        // Wave-38 — Production go-live readiness: persistence
+        // probe + invite providers + offline validation. Each
+        // pins its diagnostic global and composes into
+        // __goLiveHealth() / __releaseLock(). Persistence is
+        // installed FIRST so other probes that depend on it
+        // (GoLiveHealth's persistenceProductionSafe gate) read
+        // the cached envelope.
+        try {
+          const { installPersistenceGlobal } =
+            await import('./runtime/persistence/index');
+          installPersistenceGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installInviteGlobal } =
+            await import('./runtime/invites/index');
+          installInviteGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installOfflineValidationGlobal } =
+            await import('./runtime/offline/OfflineValidationRuntime');
+          installOfflineValidationGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

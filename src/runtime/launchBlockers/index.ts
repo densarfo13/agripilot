@@ -112,6 +112,13 @@ function _extendReleaseLockWithBlockers(): void {
       const yieldIntelligenceReady     = _readGlobalFlag('__yieldIntelligenceHealth',     'yieldRiskReady');
       const satelliteIntelligenceReady = _readGlobalFlag('__satelliteIntelligenceHealth', 'initialized');
       const knowledgeGraphReady        = _readGlobalFlag('__knowledgeGraphHealth',        'initialized');
+      // Wave-38 Production Go-Live — three readiness flags.
+      // persistenceProductionSafe is the only true BLOCKER among
+      // wave-38 flags; invites + offline are go-with-limitations
+      // gates surfaced via __goLiveHealth.warnings.
+      const persistenceProductionSafe  = _readGlobalFlag('__persistenceHealth',           'writeEndpointsSafe');
+      const invitesActivationReady     = _readGlobalFlag('__inviteHealth',                'activationFlowReady');
+      const offlineValidationReady     = _readGlobalFlag('__offlineValidationHealth',     'initialized');
       const next: any = { ...(base || {}),
         onboardingGuardReady: !!checks.c1_onboardingGuard,
         taskStoreReady:       !!checks.c2_taskStore,
@@ -138,6 +145,10 @@ function _extendReleaseLockWithBlockers(): void {
         yieldIntelligenceReady,
         satelliteIntelligenceReady,
         knowledgeGraphReady,
+        // Wave-38 Production Go-Live flags
+        persistenceProductionSafe,
+        invitesActivationReady,
+        offlineValidationReady,
         goLiveVerdict:        live && live.verdict ? live.verdict : 'NO_GO',
       };
       // Any wave-26 blocker failure → force RELEASE LOCK to RED.
