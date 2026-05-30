@@ -107,6 +107,11 @@ function _extendReleaseLockWithBlockers(): void {
       const severityReady          = _readGlobalFlag('__severityHealth',          'severityReady');
       const outcomeComparisonReady = _readGlobalFlag('__outcomeComparisonHealth', 'outcomeComparisonReady');
       const weatherRiskReady       = _readGlobalFlag('__weatherRiskHealth',       'weatherRiskReady');
+      // Wave-36 V5 Invisible Intelligence — three readiness flags.
+      // These are WARNINGS, not blockers, for consumer launch.
+      const yieldIntelligenceReady     = _readGlobalFlag('__yieldIntelligenceHealth',     'yieldRiskReady');
+      const satelliteIntelligenceReady = _readGlobalFlag('__satelliteIntelligenceHealth', 'initialized');
+      const knowledgeGraphReady        = _readGlobalFlag('__knowledgeGraphHealth',        'initialized');
       const next: any = { ...(base || {}),
         onboardingGuardReady: !!checks.c1_onboardingGuard,
         taskStoreReady:       !!checks.c2_taskStore,
@@ -129,6 +134,10 @@ function _extendReleaseLockWithBlockers(): void {
         severityReady,
         outcomeComparisonReady,
         weatherRiskReady,
+        // Wave-36 V5 Invisible Intelligence — warnings, not blockers
+        yieldIntelligenceReady,
+        satelliteIntelligenceReady,
+        knowledgeGraphReady,
         goLiveVerdict:        live && live.verdict ? live.verdict : 'NO_GO',
       };
       // Any wave-26 blocker failure → force RELEASE LOCK to RED.

@@ -309,14 +309,150 @@ export function OutcomeComparisonSection({ outcomeComparison }) {
   );
 }
 
+// ─── Wave-36 V5 — Yield + Satellite cards ────────────────────────
+// Pure presentation. Reads ONLY safeMessage + risk level from the
+// frozen runtime envelope. NEVER exposes risk drivers, raw scores,
+// NDVI numbers, or "guaranteed" wording. Gated on hasEnoughData.
+
+function YieldRiskCard({ yieldIntel }) {
+  if (!yieldIntel) return null;
+  if (!yieldIntel.hasEnoughData) {
+    return (
+      <article
+        data-testid="scan-v5-yield-empty"
+        data-section-key="yield_risk"
+        data-section-value="not_enough_data"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px dashed rgba(255,255,255,0.14)',
+          borderRadius: 14,
+          padding: '10px 14px',
+          color: '#9FB3C8',
+          fontSize: 12.5,
+          lineHeight: 1.45,
+        }}
+      >
+        <span style={{ fontWeight: 700, marginRight: 6, color: '#FDE6C5' }}>
+          {tStrict('scanV5.yield.eyebrow', 'Yield risk')}:
+        </span>
+        {yieldIntel.safeMessage}
+      </article>
+    );
+  }
+  const riskTone =
+    yieldIntel.yieldRisk === 'high'   ? { color: '#FCA5A5', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.32)' } :
+    yieldIntel.yieldRisk === 'medium' ? { color: '#FDE68A', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.32)' } :
+    yieldIntel.yieldRisk === 'low'    ? { color: '#86EFAC', bg: 'rgba(34,197,94,0.10)',  border: 'rgba(34,197,94,0.32)' } :
+                                        { color: '#9FB3C8', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.12)' };
+  const label =
+    yieldIntel.yieldRisk === 'high'   ? tStrict('scanV5.yield.high',    'High') :
+    yieldIntel.yieldRisk === 'medium' ? tStrict('scanV5.yield.medium',  'Medium') :
+    yieldIntel.yieldRisk === 'low'    ? tStrict('scanV5.yield.low',     'Low') :
+                                        tStrict('scanV5.yield.unclear', 'Unclear');
+  const band = yieldIntel.forecastBand || {};
+  const showBand = typeof band.low === 'number' && typeof band.high === 'number';
+  return (
+    <article
+      data-testid="scan-v5-yield-risk"
+      data-section-key="yield_risk"
+      data-section-value={yieldIntel.yieldRisk}
+      style={{
+        background: riskTone.bg,
+        border: `1px solid ${riskTone.border}`,
+        borderRadius: 14,
+        padding: '12px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        color: '#EAF2FF',
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.06em', textTransform: 'uppercase',
+                    color: riskTone.color }}>
+        {tStrict('scanV5.yield.eyebrow', 'Yield risk')}
+      </div>
+      <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700,
+                   color: '#fff', lineHeight: 1.3 }}>
+        {label}
+      </h4>
+      <p style={{ margin: 0, fontSize: 13, color: '#EAF2FF', lineHeight: 1.45 }}>
+        {yieldIntel.safeMessage}
+      </p>
+      {showBand ? (
+        <div style={{ fontSize: 11, color: '#9FB3C8' }}>
+          {tStrict('scanV5.yield.forecastBand', 'Estimated yield range')}:{' '}
+          <strong style={{ color: '#FDE6C5' }}>
+            {band.low.toLocaleString()} – {band.high.toLocaleString()} {band.unit || 'kg'}
+          </strong>{' '}
+          <span style={{ opacity: 0.7 }}>
+            ({tStrict('scanV5.yield.estimatedNote', 'estimated band')})
+          </span>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function SatelliteSignalCard({ satellite }) {
+  if (!satellite) return null;
+  if (satellite.unavailable && !satellite.providerConfigured) {
+    return (
+      <article
+        data-testid="scan-v5-satellite-unavailable"
+        data-section-key="satellite_signal"
+        data-section-value="unavailable"
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px dashed rgba(255,255,255,0.12)',
+          borderRadius: 10,
+          padding: '8px 12px',
+          color: '#9FB3C8',
+          fontSize: 12,
+          lineHeight: 1.45,
+        }}
+      >
+        {satellite.safeMessage}
+      </article>
+    );
+  }
+  if (satellite.unavailable) return null;
+  return (
+    <article
+      data-testid="scan-v5-satellite-signal"
+      data-section-key="satellite_signal"
+      data-section-value={satellite.vegetationHealth}
+      style={{
+        background: 'rgba(34,197,94,0.06)',
+        border: '1px solid rgba(34,197,94,0.22)',
+        borderRadius: 12,
+        padding: '10px 14px',
+        color: '#EAF2FF',
+        fontSize: 13,
+        lineHeight: 1.45,
+      }}
+    >
+      <span style={{ fontWeight: 700, marginRight: 6, color: '#86EFAC' }}>
+        {tStrict('scanV5.satellite.eyebrow', 'Field signal')}:
+      </span>
+      {satellite.safeMessage}
+    </article>
+  );
+}
+
 export default function ScanIntelligenceSections({ intelligence }) {
   if (!intelligence) return null;
+  const v5 = intelligence.v5 || null;
   return (
     <>
       <SeveritySection         severity={intelligence.severity} />
       <GrowthStageSection      growthStage={intelligence.growthStage} />
       <WeatherRiskSection      weatherRisk={intelligence.weatherRisk} />
       <OutcomeComparisonSection outcomeComparison={intelligence.outcomeComparison} />
+      {/* Wave-36 V5 — yield + satellite simple cards. Knowledge
+          graph is intentionally invisible to growers. */}
+      {v5 ? <YieldRiskCard yieldIntel={v5.yieldIntel} /> : null}
+      {v5 ? <SatelliteSignalCard satellite={v5.satellite} /> : null}
     </>
   );
 }

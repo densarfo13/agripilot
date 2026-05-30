@@ -183,6 +183,12 @@ import { evaluate as evaluateGrowthStage,
 import { evaluate as evaluateSeverity }          from '../runtime/severity';
 import { evaluate as evaluateOutcomeComparison } from '../runtime/outcomeComparison';
 import { evaluate as evaluateWeatherRisk }       from '../runtime/weatherRisk';
+// Wave-36 V5 Invisible Intelligence — three composition runtimes
+// that produce decision-level signals. Output attaches to
+// `result.intelligence.v5`. NEVER expose raw NDVI / graph JSON
+// to growers — only the safeMessage from each runtime is rendered.
+import { evaluate as evaluateYieldIntelligence } from '../runtime/yield';
+import { evaluate as evaluateSatellite }         from '../runtime/satellite';
 
 // Unified Soft Ochre / Beige system. The mount-pending surface
 // (rendered before <PremiumPage> takes over) now uses the locked
@@ -477,6 +483,44 @@ export default function ScanPage() {
       timestamp: tsIso,
     });
 
+    // Wave-36 V5 Invisible Intelligence — composes three new
+    // runtimes against the V2 outputs. Satellite returns
+    // `unavailable:true` when no provider configured — that's
+    // an honest signal, NEVER fake values. Yield returns
+    // `hasEnoughData:false` when signals are too thin —
+    // farmer UI then shows "Not enough data yet". Knowledge
+    // graph is invisible: the runtime is queryable via
+    // window.__knowledgeGraphHealth() but never rendered.
+    const satellite = evaluateSatellite({
+      farmId: activeFarmId || undefined,
+      scanId,
+      region: profile?.region,
+      cropType: ctxPlantId,
+      timestamp: tsIso,
+    });
+    const yieldIntel = evaluateYieldIntelligence({
+      plantId: ctxPlantId,
+      scanId,
+      farmSizeHa:         profile?.farmSizeHa,
+      growthStage:        growthStage?.stage,
+      scanHealthScore:    typeof result.confidence === 'number'
+                          ? (result.confidence > 1
+                              ? result.confidence
+                              : result.confidence * 100)
+                          : undefined,
+      severityLevel:      severity?.level,
+      pestPressure:       (severity && Array.isArray(severity.damageSigns)
+                            && severity.damageSigns.some((s) =>
+                              /pest|aphid|beetle|borer|mite|caterpil/i.test(String(s))))
+                          ? 'high' : undefined,
+      weatherRiskLevel:   weatherRisk?.overallRisk,
+      vegetationHealth:   satellite?.vegetationHealth,
+      moistureRisk:       satellite?.moistureRisk,
+      heatStress:         satellite?.heatStress,
+      ndviTrend:          satellite?.ndviTrend,
+      timestamp: tsIso,
+    });
+
     // Attach to the result so child cards (HarvestReadinessCard /
     // BloomStageCard) can render. Spread keeps every other field
     // including imageUrl + thumbnail intact. wave-29 adds
@@ -489,6 +533,12 @@ export default function ScanPage() {
         growthStage,
         outcomeComparison,
         weatherRisk,
+        // Wave-36 V5 — invisible-intelligence outputs. UI renders
+        // ONLY the safeMessage from each runtime, never NDVI /
+        // graph JSON / raw yield numbers. The yield forecast band
+        // is the only numeric we expose, and only when
+        // hasEnoughData is true.
+        v5: Object.freeze({ yieldIntel, satellite }),
       }),
     } : prev);
 

@@ -1220,6 +1220,28 @@ export default function App() {
             await import('./runtime/weatherRisk/index');
           installWeatherRiskGlobal();
         } catch { /* never block boot */ }
+        // Wave-36 V5 Invisible Agricultural Intelligence — three
+        // composition runtimes that produce DECISION-LEVEL signals
+        // (yield risk, satellite signals, knowledge graph). NEVER
+        // exposed in grower UI as raw NDVI / graph JSON / yield
+        // algorithm — only as simple cards via composeSafeMessage
+        // and similar. The CI gate enforces no React imports + no
+        // raw-data exposure in grower surfaces.
+        try {
+          const { installYieldIntelligenceGlobal } =
+            await import('./runtime/yield/index');
+          installYieldIntelligenceGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installSatelliteIntelligenceGlobal } =
+            await import('./runtime/satellite/index');
+          installSatelliteIntelligenceGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installKnowledgeGraphGlobal } =
+            await import('./runtime/knowledgeGraph/index');
+          installKnowledgeGraphGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
