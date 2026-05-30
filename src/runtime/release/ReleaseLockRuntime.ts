@@ -405,6 +405,51 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       ngoImportTruthReady:  _hasGlobal("__ngoImportTruthHealth"),
       ngoMetricsTruthReady: _hasGlobal("__ngoMetricsHealth"),
       growerI18nReady:      _hasGlobal("__i18nGrowerHealth"),
+      // Wave-41 — pilot execution readiness flags. Each reads the
+      // canonical pilot health probe and composes a single boolean
+      // for the release-lock console.
+      plantCatalogReadiness: _safe(() => {
+        if (typeof window === 'undefined') return 'NOT_READY';
+        const w = window as any;
+        if (typeof w.__plantCatalogReadiness !== 'function') return 'NOT_READY';
+        const r = w.__plantCatalogReadiness();
+        return _str(r && r.launchStatus) || 'NOT_READY';
+      }, 'NOT_READY'),
+      regionalKnowledgeReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__regionalKnowledgeHealth !== 'function') return false;
+        const r = w.__regionalKnowledgeHealth();
+        return !!(r && r.packsLoaded >= 1);
+      }, false),
+      ngoPilotReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__ngoPilotHealth !== 'function') return false;
+        const r = w.__ngoPilotHealth();
+        return !!(r && r.pilotReady);
+      }, false),
+      growerPilotReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__growerPilotHealth !== 'function') return false;
+        const r = w.__growerPilotHealth();
+        return !!(r && r.pilotReady);
+      }, false),
+      outcomeCaptureReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__outcomeCaptureHealth !== 'function') return false;
+        const r = w.__outcomeCaptureHealth();
+        return !!(r && r.outcomeDatasetReady);
+      }, false),
+      pilotCommandReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__pilotCommandHealth !== 'function') return false;
+        const r = w.__pilotCommandHealth();
+        return !!(r && r.initialized && r.noFakeMetrics);
+      }, false),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

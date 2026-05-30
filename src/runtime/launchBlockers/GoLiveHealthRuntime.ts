@@ -121,6 +121,28 @@ export function goLiveHealth() {
     const knowledge       = _probe('__knowledgeCoverageHealth');
     const retention       = _probe('__retentionHealth');
 
+    // ─── Wave-41 — pilot-execution probes ───────────────────────
+    const plantCatalog   = _probe('__plantCatalogReadiness');
+    const regional       = _probe('__regionalKnowledgeHealth');
+    const ngoPilot       = _probe('__ngoPilotHealth');
+    const growerPilot    = _probe('__growerPilotHealth');
+    const outcomeCapture = _probe('__outcomeCaptureHealth');
+    const pilotCommand   = _probe('__pilotCommandHealth');
+
+    const plantCatalogStatus = (plantCatalog && typeof plantCatalog.launchStatus === 'string')
+      ? plantCatalog.launchStatus : 'NOT_READY';
+    const plantCatalogYellowOrReady =
+         plantCatalogStatus === 'READY'
+      || plantCatalogStatus === 'YELLOW';
+    const growerPilotReady = !!(growerPilot && growerPilot.pilotReady);
+    const ngoPilotReady    = !!(ngoPilot && ngoPilot.pilotReady);
+    const ngoPilotBlockedByPersistence = !!(ngoPilot
+      && Array.isArray(ngoPilot.blockers)
+      && ngoPilot.blockers.includes('persistence_not_production_safe'));
+    const outcomeCaptureReady = !!(outcomeCapture && outcomeCapture.outcomeDatasetReady);
+    const pilotCommandReady = !!(pilotCommand && pilotCommand.initialized);
+    const regionalReady = !!(regional && regional.packsLoaded >= 1);
+
     // Adoption-side blockers — these are TRUE blockers when their
     // probes positively report `forcedEnterpriseSetup` or
     // `noPayments=false` etc. Default to "no blocker" when the
@@ -156,7 +178,8 @@ export function goLiveHealth() {
       && !onboardingForcedEnterprise
       && !buyerHasPayments
       && !buyerPrivateDataLeaked
-      && !ngoSkipsCsvPreview;
+      && !ngoSkipsCsvPreview
+      && growerPilotReady;
 
     const blockers: string[] = [];
     if (!c1) blockers.push('C1_onboardingGuard');
@@ -171,14 +194,32 @@ export function goLiveHealth() {
     if (buyerHasPayments)           blockers.push('W39_buyerPaymentSurfacePresent');
     if (buyerPrivateDataLeaked)     blockers.push('W39_buyerPrivateDataLeaked');
     if (ngoSkipsCsvPreview)         blockers.push('W39_ngoCsvSkipsPreview');
+    // Wave-41 — grower pilot is a true blocker; NGO pilot
+    // persistence-block is also a blocker (consumer GO requires
+    // grower flow but tolerates NGO pilot being deferred unless
+    // it's deferred for the wrong reason).
+    if (!growerPilotReady) blockers.push('W41_growerPilotNotReady');
 
     const warnings: string[] = [];
-    if (!invitesProviderConfigured) warnings.push('W39_inviteProviderUnconfigured');
+    if (!invitesProviderConfigured) warnings.push('W41_inviteProviderUnconfigured');
     if (!invitesActivationReady)    warnings.push('W39_invitesNotConfigured');
     if (!offlineReady)              warnings.push('W39_offlineValidationOffline');
     if (knowledgeBelowTarget)       warnings.push(
       `W39_knowledgeBelowTarget(${launchCoveragePercent}%)`);
     if (!retentionReady)            warnings.push('W39_retentionUntracked');
+    // Wave-41 — pilot warnings (NOT blockers): plant catalog under
+    // 200, NGO pilot deferred for persistence, outcome dataset
+    // partial.
+    if (plantCatalogStatus !== 'READY') warnings.push(
+      `W41_plantCatalog(${plantCatalogStatus})`);
+    if (!regionalReady)         warnings.push('W41_regionalPacksMissing');
+    if (!ngoPilotReady && ngoPilotBlockedByPersistence) {
+      warnings.push('W41_ngoPilotDeferredForPersistence');
+    } else if (!ngoPilotReady) {
+      warnings.push('W41_ngoPilotNotReady');
+    }
+    if (!outcomeCaptureReady)   warnings.push('W41_outcomeCapturePartial');
+    if (!pilotCommandReady)     warnings.push('W41_pilotCommandUnavailable');
 
     let verdict: 'NO_GO' | 'GO_WITH_LIMITATIONS' | 'GO';
     if (!allBlockers) verdict = 'NO_GO';
@@ -226,6 +267,13 @@ export function goLiveHealth() {
       retention:       retention      || null,
       bulkOnboarding:  _probe('__bulkOnboardingHealth'),
       releaseLock:     _probe('__releaseLock'),
+      // Wave-41 — pilot execution sub-probes.
+      plantCatalog:    plantCatalog   || null,
+      regional:        regional       || null,
+      ngoPilot:        ngoPilot       || null,
+      growerPilot:     growerPilot    || null,
+      outcomeCapture:  outcomeCapture || null,
+      pilotCommand:    pilotCommand   || null,
     });
   }, Object.freeze({
     runtimeVersion:      GO_LIVE_HEALTH_RUNTIME_VERSION,

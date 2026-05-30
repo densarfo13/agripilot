@@ -1,0 +1,37 @@
+{
+  "region": "nigeria",
+  "crops": [
+    "rice",
+    "cassava",
+    "cowpea",
+    "groundnut",
+    "sorghum",
+    "millet"
+  ],
+  "commonDiseases": [
+    "leaf-spot",
+    "fusarium-wilt",
+    "rust",
+    "mosaic-virus",
+    "downy-mildew",
+    "powdery-mildew"
+  ],
+  "commonPests": [
+    "armyworm",
+    "weevils",
+    "aphids",
+    "whitefly",
+    "grasshoppers",
+    "leaf-miners"
+  ],
+  "seasonalNotes": [
+    "Northern Guinea Savanna: plant sorghum and millet at the first reliable rain (May-June).",
+    "Rice paddies are most vulnerable to stem-borer the first 3 weeks after transplanting.",
+    "Cowpea aphid build-up peaks late in the rains (September) — monitor flowering blocks."
+  ],
+  "farmerFriendlyGuidance": [
+    "Rotate cowpea with cereals to break weevil and pest cycles.",
+    "Dry sorghum heads thoroughly before storage to avoid mold and grain-weevil losses.",
+    "Inspect cassava cuttings for whitefly before planting to limit mosaic-virus spread."
+  ]
+}

@@ -260,6 +260,11 @@ const DataConsent    = lazy(() => import('./pages/DataConsent.jsx'));
 // URL, POSTs to /api/invites/accept, renders accepting/accepted/
 // failed states. Pure render; never logs the token.
 const Activate       = lazy(() => import('./pages/Activate.jsx'));
+// Wave-41 — admin-only pilot validation surfaces. Each renders
+// real health probes; no fake metrics.
+const PilotCommandPage = lazy(() => import('./pages/internal/pilot/PilotCommandPage.jsx'));
+const NGOPilotPage     = lazy(() => import('./pages/internal/pilot/NGOPilotPage.jsx'));
+const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1350,6 +1355,24 @@ export default function App() {
             await import('./runtime/knowledge/KnowledgeCoverageRuntime');
           installKnowledgeCoverageGlobal();
         } catch { /* never block boot */ }
+        // Wave-41 — Pilot execution probes: plant-catalog readiness,
+        // regional knowledge packs, NGO + grower pilot checklists,
+        // outcome capture, and the pilot-command-center summary.
+        try {
+          const { installPlantCatalogReadinessGlobal } =
+            await import('./runtime/knowledge/PlantCatalogReadinessRuntime');
+          installPlantCatalogReadinessGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installRegionalKnowledgeGlobal } =
+            await import('./runtime/knowledge/RegionalKnowledgeRuntime');
+          installRegionalKnowledgeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installPilotHealthGlobals } =
+            await import('./runtime/pilot/PilotHealthRuntime');
+          installPilotHealthGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1836,6 +1859,10 @@ export default function App() {
           {/* Internal-only architecture audit. Same INTERNAL_FLAG_KEY
               gate as release-lock plus <RoleRoute> wrapper. */}
           <Route path="/internal/godmode" element={<RoleRoute roles={ADMIN_ROLES}><GodmodePage /></RoleRoute>} />
+          {/* Wave-41 — pilot validation surfaces (admin only). */}
+          <Route path="/internal/pilot"        element={<RoleRoute roles={ADMIN_ROLES}><PilotCommandPage /></RoleRoute>} />
+          <Route path="/internal/pilot/ngo"    element={<RoleRoute roles={ADMIN_ROLES}><NGOPilotPage /></RoleRoute>} />
+          <Route path="/internal/pilot/grower" element={<RoleRoute roles={ADMIN_ROLES}><GrowerPilotPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was

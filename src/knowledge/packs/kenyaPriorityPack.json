@@ -1,0 +1,35 @@
+{
+  "region": "kenya",
+  "crops": [
+    "maize",
+    "tomato",
+    "beans",
+    "coffee"
+  ],
+  "commonDiseases": [
+    "late-blight",
+    "early-blight",
+    "fusarium-wilt",
+    "leaf-spot",
+    "powdery-mildew",
+    "rust"
+  ],
+  "commonPests": [
+    "armyworm",
+    "aphids",
+    "whitefly",
+    "thrips",
+    "caterpillars",
+    "spider-mites"
+  ],
+  "seasonalNotes": [
+    "Long rains (March-May) cover the main maize and bean crop in most of Central and Western Kenya.",
+    "Short rains (October-December) are the secondary planting window; outcomes more variable.",
+    "Coffee leaf rust pressure rises with humidity in the warm-and-wet shoulder seasons."
+  ],
+  "farmerFriendlyGuidance": [
+    "Plant certified maize seed and scout for fall armyworm starting at the V3 leaf stage.",
+    "Stake tomatoes early and prune lower leaves to reduce early- and late-blight pressure.",
+    "Inspect coffee leaves monthly for rust pustules during the long rains."
+  ]
+}

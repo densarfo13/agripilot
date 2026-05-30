@@ -1,0 +1,42 @@
+{
+  "region": "ghana",
+  "crops": [
+    "maize",
+    "cassava",
+    "plantain",
+    "yam",
+    "cocoa",
+    "groundnut",
+    "okra",
+    "pepper",
+    "tomato"
+  ],
+  "commonDiseases": [
+    "late-blight",
+    "early-blight",
+    "leaf-spot",
+    "powdery-mildew",
+    "mosaic-virus",
+    "fusarium-wilt",
+    "anthracnose"
+  ],
+  "commonPests": [
+    "armyworm",
+    "aphids",
+    "whitefly",
+    "fruit-flies",
+    "weevils",
+    "caterpillars",
+    "thrips"
+  ],
+  "seasonalNotes": [
+    "Major season planting peaks late March through May with the rains; minor season plant from September to October.",
+    "Fall armyworm pressure on maize is highest 4-8 weeks after emergence in the major season.",
+    "Cocoa black-pod disease accelerates during peak rainfall in June and October."
+  ],
+  "farmerFriendlyGuidance": [
+    "Scout maize fields weekly for fall armyworm during the first 6 weeks after planting.",
+    "Stagger tomato planting so harvests overlap the dry-season market window.",
+    "Cover groundnut seed-stocks tightly to keep aflatoxin-producing molds out."
+  ]
+}

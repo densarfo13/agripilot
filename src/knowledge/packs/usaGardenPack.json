@@ -1,0 +1,41 @@
+{
+  "region": "usa-garden",
+  "crops": [
+    "tomato",
+    "pepper",
+    "cucumber",
+    "rose",
+    "apple",
+    "blueberry"
+  ],
+  "commonDiseases": [
+    "late-blight",
+    "early-blight",
+    "powdery-mildew",
+    "downy-mildew",
+    "black-spot",
+    "fire-blight",
+    "leaf-spot",
+    "anthracnose"
+  ],
+  "commonPests": [
+    "aphids",
+    "spider-mites",
+    "whitefly",
+    "thrips",
+    "caterpillars",
+    "snails-and-slugs",
+    "beetles",
+    "scale"
+  ],
+  "seasonalNotes": [
+    "Transplant tomato and pepper after the last frost date in your USDA zone.",
+    "Cucumber beetles emerge alongside the first true leaves — monitor early.",
+    "Apple scab pressure rises with cool, wet springs; black-spot peaks on roses in humid summer weeks."
+  ],
+  "farmerFriendlyGuidance": [
+    "Mulch tomato beds and water at soil level to reduce splash-borne blight.",
+    "Rotate cucurbits to a new bed each year to limit cucumber-beetle carryover.",
+    "Hand-pick beetles off rose blooms early in the morning to keep populations low without sprays."
+  ]
+}
