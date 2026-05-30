@@ -37,3 +37,12 @@ export {
   type StageValue, type StageModelValue,
   type GrowthStageResult, type GrowthStageHealth,
 } from './growthContracts';
+
+// Wave-30 gap-fix #3 — planting-date capture + weeks-since-planting
+// derivation. Composition-only; ScanPage reads via getWeeksSincePlanting
+// and passes it into evaluate()'s plant context.
+export {
+  recordPlantingDate, getPlantingDate,
+  getWeeksSincePlanting, clearPlantingDate,
+  PLANTING_DATE_VERSION,
+} from './plantingDate';

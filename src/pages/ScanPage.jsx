@@ -178,7 +178,8 @@ import { logEvent as logHarvestEvent } from '../lib/events/eventLogger.js';
 // frozen / never throws. They attach onto `result.intelligence`
 // so the ScanResultCard child can render them in the spec's
 // order without architectural change.
-import { evaluate as evaluateGrowthStage }       from '../runtime/growth';
+import { evaluate as evaluateGrowthStage,
+         getWeeksSincePlanting }                 from '../runtime/growth';
 import { evaluate as evaluateSeverity }          from '../runtime/severity';
 import { evaluate as evaluateOutcomeComparison } from '../runtime/outcomeComparison';
 import { evaluate as evaluateWeatherRisk }       from '../runtime/weatherRisk';
@@ -382,6 +383,20 @@ export default function ScanPage() {
       plantContext: { plantId: ctxPlantId },
       timestamp: tsIso,
     });
+    // Wave-30 gap-fix #3 — derive weeksSincePlanting from the
+    // canonical farroway.plantingDates store with a sensible
+    // key composition: prefer `${farmId}:${plantId}`, fall back to
+    // bare `${plantId}`. Returns null when no date is stored, in
+    // which case the growth engine uses its keyword signals only.
+    const _plantKey      = (activeFarmId && ctxPlantId)
+                            ? `${activeFarmId}:${ctxPlantId}` : ctxPlantId;
+    const _wksFromStore  = getWeeksSincePlanting(_plantKey || '');
+    const _wksFromKeyOnly = (!_wksFromStore && activeFarmId && ctxPlantId)
+                            ? getWeeksSincePlanting(ctxPlantId) : null;
+    const weeksSincePlanting = (typeof profile?.weeksSincePlanting === 'number')
+                              ? profile.weeksSincePlanting
+                              : (_wksFromStore ?? _wksFromKeyOnly ?? undefined);
+
     const growthStage = evaluateGrowthStage({
       scanResult: result,
       plantContext: {
@@ -389,7 +404,7 @@ export default function ScanPage() {
         lifecycleStage:   result.lifecycleStage
                           || profile?.lifecycleStage
                           || profile?.cropStage,
-        weeksSincePlanting: profile?.weeksSincePlanting,
+        weeksSincePlanting,
       },
       timestamp: tsIso,
     });

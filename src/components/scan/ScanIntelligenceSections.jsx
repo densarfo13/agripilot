@@ -190,16 +190,91 @@ export function OutcomeComparisonSection({ outcomeComparison }) {
     worsened:  tStrict('scanV2.compare.worsened',  'Worse than last scan'),
     unknown:   tStrict('scanV2.compare.unknown',   'Not enough history to compare'),
   };
+  // Wave-30 gap-fix #2 — render before/after photos when the
+  // runtime surfaced them on the envelope. Photos are URL strings
+  // sourced from the canonical scan history; never the bytes.
+  // Pure presentation — no engine state, no fetch.
+  const before = outcomeComparison.beforePhoto;
+  const after  = outcomeComparison.afterPhoto;
+  const showPhotos = !!(before || after);
   return (
-    <_SectionCard
-      tone={tone}
-      eyebrow={tStrict('scanV2.compare.eyebrow', 'Compared to last scan')}
-      headline={labels[outcomeComparison.status]}
-      body={outcomeComparison.recommendation}
-      dataTestId="scan-v2-outcome-comparison"
-      dataKey="outcome_comparison"
-      dataValue={outcomeComparison.status}
-    />
+    <article
+      data-testid="scan-v2-outcome-comparison"
+      data-section-key="outcome_comparison"
+      data-section-value={outcomeComparison.status}
+      style={{
+        background: tone.bg,
+        border: `1px solid ${tone.border}`,
+        borderRadius: 14,
+        padding: '12px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        color: '#EAF2FF',
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.06em', textTransform: 'uppercase',
+                    color: tone.color }}>
+        {tStrict('scanV2.compare.eyebrow', 'Compared to last scan')}
+      </div>
+      <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700,
+                   color: '#fff', lineHeight: 1.3 }}>
+        {labels[outcomeComparison.status]}
+      </h4>
+      {outcomeComparison.recommendation ? (
+        <p style={{ margin: 0, fontSize: 13, color: '#EAF2FF', lineHeight: 1.45 }}>
+          {outcomeComparison.recommendation}
+        </p>
+      ) : null}
+      {showPhotos ? (
+        <div style={{ display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 8, marginTop: 4 }}
+             data-testid="scan-v2-outcome-photos">
+          {before ? (
+            <figure style={{ margin: 0, display: 'flex',
+                             flexDirection: 'column', gap: 4 }}>
+              <img src={before}
+                   alt={tStrict('scanV2.compare.beforeAlt', 'Previous scan')}
+                   loading="lazy"
+                   style={{ width: '100%', height: 100, objectFit: 'cover',
+                            borderRadius: 8,
+                            border: '1px solid rgba(255,255,255,0.10)' }} />
+              <figcaption style={{ fontSize: 11, color: '#9FB3C8',
+                                   fontWeight: 600,
+                                   textTransform: 'uppercase',
+                                   letterSpacing: '0.04em' }}>
+                {tStrict('scanV2.compare.before', 'Before')}
+                {outcomeComparison.beforeSeverity
+                  ? <> {' · '}<span style={{ textTransform: 'capitalize' }}>{outcomeComparison.beforeSeverity}</span></>
+                  : null}
+              </figcaption>
+            </figure>
+          ) : <div />}
+          {after ? (
+            <figure style={{ margin: 0, display: 'flex',
+                             flexDirection: 'column', gap: 4 }}>
+              <img src={after}
+                   alt={tStrict('scanV2.compare.afterAlt', 'Current scan')}
+                   loading="lazy"
+                   style={{ width: '100%', height: 100, objectFit: 'cover',
+                            borderRadius: 8,
+                            border: '1px solid rgba(255,255,255,0.10)' }} />
+              <figcaption style={{ fontSize: 11, color: '#9FB3C8',
+                                   fontWeight: 600,
+                                   textTransform: 'uppercase',
+                                   letterSpacing: '0.04em' }}>
+                {tStrict('scanV2.compare.after', 'After')}
+                {outcomeComparison.afterSeverity
+                  ? <> {' · '}<span style={{ textTransform: 'capitalize' }}>{outcomeComparison.afterSeverity}</span></>
+                  : null}
+              </figcaption>
+            </figure>
+          ) : <div />}
+        </div>
+      ) : null}
+    </article>
   );
 }
 

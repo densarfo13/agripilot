@@ -314,8 +314,28 @@ export function useLiveWeather(location) {
       })
       .then((json) => {
         if (!aliveRef.current) return;
-        setWeather(_normalise(json, fallbackLabel));
+        const normalised = _normalise(json, fallbackLabel);
+        setWeather(normalised);
         setLoading(false);
+        // Wave-30 gap-fix #1 — expose the most recent successful
+        // weather snapshot as window.__farrowayLastWeather so
+        // composition runtimes (WeatherRiskRuntime in particular)
+        // can read it without taking a runtime dependency on the
+        // React hook. NEVER throws; SSR-safe via the typeof check.
+        try {
+          if (typeof window !== 'undefined') {
+            (window).__farrowayLastWeather = Object.freeze({
+              tempC:       normalised.tempC,
+              rainChance:  normalised.rainChance,
+              weatherType: normalised.weatherType,
+              humidity:    normalised.humidity,
+              windKph:     normalised.windKph,
+              locationLabel: normalised.locationLabel,
+              source:      'useLiveWeather',
+              snapshotAt:  new Date().toISOString(),
+            });
+          }
+        } catch { /* never block weather render */ }
       })
       .catch((err) => {
         if (!aliveRef.current) return;

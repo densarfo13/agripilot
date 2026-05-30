@@ -169,14 +169,41 @@ export function evaluate(input: OutcomeComparisonEvaluateInput): OutcomeComparis
     if (current.level  === SEVERITY_LEVEL.UNKNOWN) conf = 25;
     if (previous.level === SEVERITY_LEVEL.UNKNOWN) conf = Math.min(conf, 25);
 
+    // Wave-30 gap-fix #2 — resolve the previous scan's image URL
+    // from the canonical scan-history store (composition over the
+    // existing localStorage layer). Read-only; never throws.
+    let previousImageUrl = '';
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('farroway_scan_history_v1');
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            const row = arr.find((r: any) =>
+              r && (r.scanId === previous.scanId || r.id === previous.scanId));
+            if (row) {
+              previousImageUrl = _str(row.imageUrl)
+                              || _str(row.thumbnail)
+                              || _str(row.photo)
+                              || '';
+            }
+          }
+        }
+      }
+    } catch { /* swallow — read-only fallback */ }
+
     const result: OutcomeComparisonResult = Object.freeze({
       plantId,
       currentScanId: scanId,
       previousScanId: previous.scanId,
       status,
       confidence: conf,
-      beforePhoto: _str(scan.previousImageUrl) || undefined,
-      afterPhoto:  _str(scan.imageUrl)         || _str(scan.thumbnail) || undefined,
+      beforePhoto: _str(scan.previousImageUrl)
+                || previousImageUrl
+                || undefined,
+      afterPhoto:  _str(scan.imageUrl)
+                || _str(scan.thumbnail)
+                || undefined,
       beforeSeverity: previous.level,
       afterSeverity:  current.level,
       recommendation: _copy(status),
