@@ -129,6 +129,19 @@ export function goLiveHealth() {
     const outcomeCapture = _probe('__outcomeCaptureHealth');
     const pilotCommand   = _probe('__pilotCommandHealth');
 
+    // ─── Wave-37 — field intelligence probes ────────────────────
+    const fieldIntel        = _probe('__fieldIntelligenceHealth');
+    const farmHealth        = _probe('__farmHealthScore');
+    const regionalRiskProbe = _probe('__regionalRisk');
+    const treatmentProbe    = _probe('__treatmentEffectiveness');
+    const ngoImpact         = _probe('__ngoImpactHealth');
+
+    const fieldIntelligenceReady = !!(fieldIntel && fieldIntel.intelligenceReady);
+    const farmHealthReady        = !!(farmHealth && farmHealth.initialized);
+    const regionalRiskReady      = !!(regionalRiskProbe && regionalRiskProbe.initialized);
+    const treatmentAnalyticsReady = !!(treatmentProbe && treatmentProbe.initialized);
+    const ngoImpactReady         = !!(ngoImpact && ngoImpact.initialized);
+
     const plantCatalogStatus = (plantCatalog && typeof plantCatalog.launchStatus === 'string')
       ? plantCatalog.launchStatus : 'NOT_READY';
     const plantCatalogYellowOrReady =
@@ -274,6 +287,17 @@ export function goLiveHealth() {
       growerPilot:     growerPilot    || null,
       outcomeCapture:  outcomeCapture || null,
       pilotCommand:    pilotCommand   || null,
+      // Wave-37 — field intelligence flags + sub-probes.
+      fieldIntelligenceReady,
+      farmHealthReady,
+      regionalRiskReady,
+      treatmentAnalyticsReady,
+      ngoImpactReady,
+      fieldIntelligence: fieldIntel || null,
+      farmHealth:        farmHealth || null,
+      regionalRisk:      regionalRiskProbe || null,
+      treatmentAnalytics: treatmentProbe || null,
+      ngoImpact:         ngoImpact || null,
     });
   }, Object.freeze({
     runtimeVersion:      GO_LIVE_HEALTH_RUNTIME_VERSION,
