@@ -1081,6 +1081,28 @@ export default function App() {
             await import('./runtime/launch/LaunchUXHealth');
           installLaunchUXHealthGlobal();
         } catch { /* never block boot */ }
+        // Wave 24 — Launch UX truthfulness sprint. Four sibling
+        // health pins that the parallel CI gates enforce statically.
+        try {
+          const { installActivityNavHealthGlobal } =
+            await import('./runtime/launch/ActivityNavHealth');
+          installActivityNavHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installNgoImportTruthHealthGlobal } =
+            await import('./runtime/launch/NgoImportTruthHealth');
+          installNgoImportTruthHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installNgoMetricsHealthGlobal } =
+            await import('./runtime/launch/NgoMetricsHealth');
+          installNgoMetricsHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installI18nGrowerHealthGlobal } =
+            await import('./runtime/launch/I18nGrowerHealth');
+          installI18nGrowerHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1720,11 +1742,7 @@ export default function App() {
                 when off it forwards to /onboarding so existing
                 pilots are unaffected. */}
             <Route path="/onboarding/simple" element={<Navigate to="/onboarding/fast" replace />} />
-            <Route path="/progress" element={
-              <SafeRouteShell routeName="progress">
-                <FarmerProgressPage />
-              </SafeRouteShell>
-            } />
+            <Route path="/progress" element={<Navigate to="/activity" replace />} />
             {/* Remove Mobile Dashboard Experience §6 — Progress is
                 renamed to Activity in the grower nav. /activity
                 mounts the same FarmerProgressPage (already

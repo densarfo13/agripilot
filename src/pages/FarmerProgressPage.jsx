@@ -39,6 +39,14 @@ import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
 import GrowthJourneyCard from '../components/progress/GrowthJourneyCard.jsx';
+// Activity page surfaces the canonical 11-kind plant timeline
+// (spec'd in src/runtime/plants/PlantTimeline.ts) — same render
+// component PlantProfile.jsx uses, just fed the merged union of
+// every managed plant's timeline so the farmer sees activity
+// across their whole garden at /activity.
+import PlantTimeline from '../components/plants/PlantTimeline.jsx';
+import { buildPlantTimeline, PLANT_TIMELINE_VERSION } from '../runtime/plants/PlantTimeline';
+import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 import { resolveMemoryMoment } from '../lib/memoryMoment.js';
 import { resolveRealismImage, REALISM_ASSETS } from '../lib/realVisuals.jsx';
 // Define Tab Tap Behavior §4 — farmer-only Funding/Sell
@@ -225,6 +233,89 @@ export default function FarmerProgressPage() {
   // chain that drifted after the canonical store updated.
   const _cropDisplayLabel = resolveCropName(canonicalFarm);
 
+  // ─── Activity timeline (spec §Activity surface) ──────────────
+  // Mirrors PlantProfile.jsx's read pattern: loadManagedPlants()
+  // + buildPlantTimeline. PlantProfile focuses ONE plant via
+  // universalPlantRuntime; Activity is the cross-plant view, so
+  // we call buildPlantTimeline per plant and union the entries,
+  // newest-first, capped at 20. Pure read-only over localStorage —
+  // the engines never write.
+  const _mergedTimeline = (() => {
+    try {
+      if (typeof window === 'undefined') {
+        return Object.freeze({
+          runtimeVersion: PLANT_TIMELINE_VERSION,
+          plantId: '',
+          entries: Object.freeze([]),
+          groups: Object.freeze([]),
+          counts: Object.freeze({}),
+          totalCount: 0,
+        });
+      }
+      let events = [];
+      try {
+        const raw = window.localStorage
+          && window.localStorage.getItem('farroway_event_log');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) events = parsed;
+        }
+      } catch { /* swallow — read-only */ }
+
+      const plants = loadManagedPlants() || [];
+      const all = [];
+      for (const p of plants) {
+        if (!p || typeof p !== 'object') continue;
+        const t = buildPlantTimeline({ plant: p, events });
+        if (t && Array.isArray(t.entries)) {
+          for (const e of t.entries) all.push(e);
+        }
+      }
+      // Newest-first across all plants — spec asks for top 20.
+      all.sort((a, b) => {
+        const ta = a && a.at ? Date.parse(a.at) : 0;
+        const tb = b && b.at ? Date.parse(b.at) : 0;
+        return (Number.isFinite(tb) ? tb : 0)
+             - (Number.isFinite(ta) ? ta : 0);
+      });
+      const capped = all.slice(0, 20);
+
+      // Re-group by ISO day so PlantTimeline.jsx (which renders
+      // `timeline.groups`) draws the merged view correctly.
+      const groupsMap = new Map();
+      for (const e of capped) {
+        const day = e && typeof e.day === 'string' ? e.day : '';
+        if (!day) continue;
+        if (!groupsMap.has(day)) groupsMap.set(day, []);
+        groupsMap.get(day).push(e);
+      }
+      const groups = Array.from(groupsMap.keys())
+        .sort((a, b) => b.localeCompare(a))
+        .map((day) => Object.freeze({
+          date: day,
+          entries: Object.freeze(groupsMap.get(day)),
+        }));
+
+      return Object.freeze({
+        runtimeVersion: PLANT_TIMELINE_VERSION,
+        plantId: '',
+        entries: Object.freeze(capped),
+        groups: Object.freeze(groups),
+        counts: Object.freeze({}),
+        totalCount: capped.length,
+      });
+    } catch {
+      return Object.freeze({
+        runtimeVersion: PLANT_TIMELINE_VERSION,
+        plantId: '',
+        entries: Object.freeze([]),
+        groups: Object.freeze([]),
+        counts: Object.freeze({}),
+        totalCount: 0,
+      });
+    }
+  })();
+
   if (!profile) return null;
 
   return (
@@ -246,8 +337,8 @@ export default function FarmerProgressPage() {
           farming journey) rather than the prior abstract SVG. */}
       <PremiumPageHero
         mode="farm"
-        eyebrow={tSafe('premium.eyebrow.progress', 'Growth journey')}
-        title={tSafe('progress.hero.title',    'Your growth journey')}
+        eyebrow={tSafe('premium.eyebrow.progress', 'Activity')}
+        title={tSafe('progress.hero.title',    'Your farm activity')}
         subtitle={tSafe(
           'progress.hero.subtitle',
           'Watch each stage build toward harvest.',
@@ -280,13 +371,78 @@ export default function FarmerProgressPage() {
           nextActionTitle={engineNextActionText || ''}
           nextActionMinutes={2}
           onStartCheck={() => {
-            try { navigate('/tasks'); }
+            try { _navigate('/tasks'); }
             catch { /* swallow */ }
           }}
           memoryMoment={memoryMoment}
           testId="farmer-progress-journey"
         />
       )}
+
+      {/* ═══ Recent activity — canonical plant timeline ══════════
+            The Activity surface (this page, also routed at
+            /activity) MUST surface the spec'd 11-event-kind
+            timeline so farmers see scans / tasks / treatments /
+            stage changes across their whole garden. We reuse
+            PlantTimeline.jsx exactly as PlantProfile.jsx does —
+            no chart libs, no dashboard. When there are no
+            events, the empty-state card invites the farmer to
+            scan or add their first plant. */}
+      {!loading && _mergedTimeline.totalCount > 0 ? (
+        <div style={S.activitySection} data-testid="activity-page-timeline">
+          <div style={S.activityHeader}>
+            {tSafe('activity.recent.title', 'Recent activity')}
+          </div>
+          <PlantTimeline timeline={_mergedTimeline} />
+        </div>
+      ) : null}
+
+      {!loading && _mergedTimeline.totalCount === 0 ? (
+        <div style={S.activityEmptyCard} data-testid="activity-page-empty">
+          <div style={S.activityEmptyTitle}>
+            {tSafe('activity.empty.title', 'No activity yet')}
+          </div>
+          <div style={S.activityEmptyBody}>
+            {tSafe(
+              'activity.empty.body',
+              'Scan or add your first plant to see your activity timeline.',
+            )}
+          </div>
+          <div style={S.activityEmptyCtas}>
+            <button
+              type="button"
+              style={S.activityCtaPrimary}
+              className="ff-tap"
+              data-testid="activity-empty-scan"
+              onClick={() => {
+                try {
+                  _navigate('/scan?intent=camera', {
+                    state: {
+                      userInitiatedCamera: true,
+                      cameraAttempted: true,
+                      source: 'activity_empty',
+                    },
+                  });
+                } catch { /* swallow */ }
+              }}
+            >
+              {tSafe('activity.empty.scan', 'Scan Plant')}
+            </button>
+            <button
+              type="button"
+              style={S.activityCtaSecondary}
+              className="ff-tap"
+              data-testid="activity-empty-add"
+              onClick={() => {
+                try { _navigate('/my-plants'); }
+                catch { /* swallow */ }
+              }}
+            >
+              {tSafe('activity.empty.add', 'Add Plant')}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Legacy fragmented Progress cards (May 2026 refinement
           spec §4 — "merge fragmented cards"). The seven cards
@@ -796,6 +952,78 @@ const S = {
   },
   econIcon: { fontSize: '1.125rem', flexShrink: 0 },
   econText: { fontSize: '0.8125rem', color: '#9FB3C8', fontWeight: 500, lineHeight: 1.4 },
+  // ─── Recent activity (PlantTimeline) section ───
+  // Sits between the GrowthJourneyCard and the offline / shortcut
+  // strip. Soft beige container so it reads as a calm informational
+  // block rather than a dashboard panel.
+  activitySection: {
+    margin: '12px 16px 0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  activityHeader: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#7A5A28',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  },
+  // ─── Empty-state card ───
+  activityEmptyCard: {
+    margin: '12px 16px 0',
+    padding: '20px 18px',
+    borderRadius: 14,
+    background: '#FFFFFF',
+    border: '1px solid rgba(31,41,51,0.08)',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    alignItems: 'center',
+  },
+  activityEmptyTitle: {
+    fontSize: 16,
+    fontWeight: 800,
+    color: '#1F2933',
+  },
+  activityEmptyBody: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 1.5,
+    maxWidth: 320,
+  },
+  activityEmptyCtas: {
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  activityCtaPrimary: {
+    appearance: 'none',
+    border: 'none',
+    background: '#C8944D',
+    color: '#FFFFFF',
+    padding: '10px 16px',
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  activityCtaSecondary: {
+    appearance: 'none',
+    background: 'transparent',
+    border: '1px solid rgba(31,41,51,0.18)',
+    color: '#1F2933',
+    padding: '10px 16px',
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
   // Soft Ochre offline note — warm amber on warm soft fill,
   // calm and informational rather than alarming.
   offlineNote: {

@@ -32,6 +32,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../runtime/apiRuntime.js';
 import { classifyFarmerRisk, summariseRisk } from '../../lib/ngoRiskLogic.js';
+import { tSafe } from '../../i18n/tSafe.js';
+
+// Best-effort runtime telemetry — dynamic-imported so a missing /
+// broken health module can never break the dashboard render.
+function _recordNgoApi(ok, payload) {
+  try {
+    import('../../runtime/launch/NgoMetricsHealth.ts')
+      .then((m) => {
+        try { m.recordApiCall(!!ok, payload); } catch { /* swallow */ }
+        try { if (ok) m.recordLastRefresh(new Date().toISOString()); }
+        catch { /* swallow */ }
+      })
+      .catch(() => { /* swallow — telemetry is best-effort */ });
+  } catch { /* swallow */ }
+}
 
 // Shape: { totalFarmers, activeFarmers, inactiveFarmers,
 //         taskCompletionRate, topCrops, regionsCovered,
@@ -51,6 +66,10 @@ export default function NgoDashboardV1() {
   const [farmers, setFarmers]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error,   setError]     = useState(null);
+  // Tracks whether the /v2/ngo/overview call itself failed so the
+  // KPI section can render an honest "data unavailable" message
+  // instead of a row of zero-counts dressed up as a success.
+  const [overviewApiFailed, setOverviewApiFailed] = useState(false);
 
   // Filters
   const [regionFilter, setRegionFilter] = useState('all');
@@ -65,6 +84,7 @@ export default function NgoDashboardV1() {
     (async () => {
       setLoading(true);
       setError(null);
+      setOverviewApiFailed(false);
       try {
         const [ovRes, farmersRes] = await Promise.all([
           api.get('/v2/ngo/overview').catch(() => null),
@@ -85,6 +105,12 @@ export default function NgoDashboardV1() {
                                 Array.isArray(d.regions)         ? d.regions              : [],
             upcomingHarvests:   Number(d.upcomingHarvests ?? 0),
           });
+          _recordNgoApi(true, d);
+        } else {
+          // Overview call returned no usable payload — flag honest
+          // "data unavailable" state instead of silently showing 0s.
+          setOverviewApiFailed(true);
+          _recordNgoApi(false, null);
         }
         if (farmersRes && farmersRes.data) {
           const list = Array.isArray(farmersRes.data.farmers)
@@ -168,46 +194,83 @@ export default function NgoDashboardV1() {
       {/* Empty state — spec §10. Renders BEFORE the cards so a
           fresh program with no farmers gets the calm prompt
           instead of a row of zeros. */}
-      {!loading && overview.totalFarmers === 0 && farmers.length === 0 ? (
-        <section style={S.emptyCard} data-testid="ngo-dashboard-empty">
+      {!loading && overviewApiFailed ? (
+        <section
+          style={S.emptyCard}
+          data-testid="ngo-dashboard-metrics-error"
+          role="status"
+        >
+          <span aria-hidden="true" style={S.emptyIcon}>{'\u26A0\uFE0F'}</span>
+          <h2 style={S.emptyTitle}>
+            {tSafe('ngo.metrics.error', 'Data temporarily unavailable')}
+          </h2>
+          <p style={S.emptyBody}>
+            We could not load NGO metrics right now. Please try
+            again in a moment.
+          </p>
+        </section>
+      ) : !loading
+            && overview.totalFarmers === 0
+            && overview.activeFarmers === 0
+            && overview.inactiveFarmers === 0
+            && overview.upcomingHarvests === 0
+            && farmers.length === 0 ? (
+        <section
+          style={S.emptyCard}
+          data-testid="ngo-dashboard-metrics-empty"
+        >
           <span aria-hidden="true" style={S.emptyIcon}>{'\uD83C\uDF31'}</span>
-          <h2 style={S.emptyTitle}>No farmers yet</h2>
+          <h2 style={S.emptyTitle}>
+            {tSafe('ngo.metrics.empty', 'Not enough data yet')}
+          </h2>
           <p style={S.emptyBody}>
             Add or invite farmers to start monitoring progress.
           </p>
         </section>
       ) : null}
 
-      {/* 8 dashboard cards — single grid, mobile-first wrap. */}
-      <section style={S.grid} data-testid="ngo-dashboard-cards">
-        <Card label="Total farmers"     value={overview.totalFarmers} />
-        <Card label="Active farmers"    value={overview.activeFarmers} />
-        <Card label="Inactive farmers"  value={overview.inactiveFarmers} />
-        <Card
-          label="Task completion"
-          value={overview.taskCompletionRate == null
-            ? '—'
-            : Math.round(overview.taskCompletionRate * 100) + '%'}
-        />
-        <Card
-          label="High-risk farmers"
-          value={riskSummary.high}
-          tone="warn"
-        />
-        <Card
-          label="Upcoming harvests"
-          value={overview.upcomingHarvests}
-        />
-        <Card
-          label="Top crops"
-          value={(overview.topCrops || []).slice(0, 2).join(', ') || '—'}
-          long
-        />
-        <Card
-          label="Regions covered"
-          value={(overview.regionsCovered || []).length}
-        />
-      </section>
+      {/* 8 dashboard cards. Suppressed when the metrics API
+          failed OR returned all-zero placeholder data — the
+          honest empty/error card above takes the slot instead so
+          users never see "0 farmers reached" dressed up as a
+          success metric. */}
+      {!overviewApiFailed && !(
+        overview.totalFarmers === 0
+        && overview.activeFarmers === 0
+        && overview.inactiveFarmers === 0
+        && overview.upcomingHarvests === 0
+        && farmers.length === 0
+      ) ? (
+        <section style={S.grid} data-testid="ngo-dashboard-cards">
+          <Card label="Total farmers"     value={overview.totalFarmers} />
+          <Card label="Active farmers"    value={overview.activeFarmers} />
+          <Card label="Inactive farmers"  value={overview.inactiveFarmers} />
+          <Card
+            label="Task completion"
+            value={overview.taskCompletionRate == null
+              ? '—'
+              : Math.round(overview.taskCompletionRate * 100) + '%'}
+          />
+          <Card
+            label="High-risk farmers"
+            value={riskSummary.high}
+            tone="warn"
+          />
+          <Card
+            label="Upcoming harvests"
+            value={overview.upcomingHarvests}
+          />
+          <Card
+            label="Top crops"
+            value={(overview.topCrops || []).slice(0, 2).join(', ') || '—'}
+            long
+          />
+          <Card
+            label="Regions covered"
+            value={(overview.regionsCovered || []).length}
+          />
+        </section>
+      ) : null}
 
       {/* Filters */}
       <section style={S.filters} data-testid="ngo-dashboard-filters">

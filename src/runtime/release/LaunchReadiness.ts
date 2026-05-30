@@ -177,6 +177,13 @@ export function launchReadiness() {
       }, false),
       oodaReadyWave21:      _probe('__oodaHealth') ? true : false,
       reviewReady:          _probe('__humanReviewHealth') ? true : false,
+      // Wave 22 — Launch UX composite.
+      launchUXReady:        _probe('__launchUXHealth') ? true : false,
+      // Wave 24 — Launch UX truthfulness sibling pins.
+      activityNavReady:     _probe('__activityNavHealth') ? true : false,
+      ngoImportTruthReady:  _probe('__ngoImportTruthHealth') ? true : false,
+      ngoMetricsTruthReady: _probe('__ngoMetricsHealth') ? true : false,
+      growerI18nReady:      _probe('__i18nGrowerHealth') ? true : false,
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

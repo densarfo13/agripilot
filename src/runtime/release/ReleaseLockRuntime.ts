@@ -359,6 +359,11 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       reviewReady:          _hasGlobal("__humanReviewHealth"),
       // Wave 22 — Launch UX composite.
       launchUXReady:        _hasGlobal("__launchUXHealth"),
+      // Wave 24 — Launch UX truthfulness.
+      activityNavReady:     _hasGlobal("__activityNavHealth"),
+      ngoImportTruthReady:  _hasGlobal("__ngoImportTruthHealth"),
+      ngoMetricsTruthReady: _hasGlobal("__ngoMetricsHealth"),
+      growerI18nReady:      _hasGlobal("__i18nGrowerHealth"),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

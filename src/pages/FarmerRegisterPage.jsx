@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { tSafe } from '../i18n/tSafe.js';
 import api from '../runtime/apiRuntime.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import CropSelect from '../components/CropSelect.jsx';
@@ -64,10 +65,10 @@ export default function FarmerRegisterPage() {
     setError('');
 
     if (form.password !== form.confirmPassword) {
-      return setError('Passwords do not match');
+      return setError(tSafe('register.error.passwordMismatch', 'Passwords do not match'));
     }
     if (form.password.length < 8) {
-      return setError('Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number');
+      return setError(tSafe('register.error.passwordPolicy', 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number'));
     }
 
     setLoading(true);
@@ -96,7 +97,7 @@ export default function FarmerRegisterPage() {
       clearDraft();
       setSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      setError(err.response?.data?.error || tSafe('register.error.generic', 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -107,21 +108,21 @@ export default function FarmerRegisterPage() {
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.successIcon}>&#10003;</div>
-          <h1 style={styles.title}>Registration Received</h1>
+          <h1 style={styles.title}>{tSafe('register.success.title', 'Registration Received')}</h1>
           <p style={styles.successText}>
-            Thank you for registering with Farroway. Your application is now <strong>pending review</strong>.
+            {tSafe('register.success.body', 'Thank you for registering with Farroway. Your application is now pending review.')}
           </p>
           <div style={styles.nextSteps}>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>What happens next:</h3>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>{tSafe('register.success.nextHeading', 'What happens next:')}</h3>
             <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#A1A1AA' }}>
-              <li>Our team will review your registration</li>
-              <li>A field officer may be assigned to verify your details</li>
-              <li>You will be notified once your account is approved</li>
-              <li>After approval, you can submit credit applications</li>
+              <li>{tSafe('register.success.step1', 'Our team will review your registration')}</li>
+              <li>{tSafe('register.success.step2', 'A field officer may be assigned to verify your details')}</li>
+              <li>{tSafe('register.success.step3', 'You will be notified once your account is approved')}</li>
+              <li>{tSafe('register.success.step4', 'After approval, you can submit credit applications')}</li>
             </ul>
           </div>
           <button onClick={() => navigate('/login')} style={styles.button}>
-            Go to Login
+            {tSafe('register.success.goToLogin', 'Go to Login')}
           </button>
         </div>
       </div>
@@ -134,19 +135,19 @@ export default function FarmerRegisterPage() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
           <BrandLogo variant="light" size="md" />
         </div>
-        <p style={styles.subtitle}>Farmer Registration</p>
+        <p style={styles.subtitle}>{tSafe('register.subtitle', 'Farmer Registration')}</p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           {draftRestored && (
             <div className="alert-inline alert-inline-success" style={{ fontSize: '0.8rem', textAlign: 'center', justifyContent: 'center' }}>
-              ↻ Your previous entry was restored automatically.
+              ↻ {tSafe('register.draftRestored', 'Your previous entry was restored automatically.')}
             </div>
           )}
           {error && <div style={styles.error}>{error}</div>}
 
-          <div style={styles.sectionLabel}>Personal Information</div>
+          <div style={styles.sectionLabel}>{tSafe('register.section.personal', 'Personal Information')}</div>
 
-          <input style={styles.input} placeholder="Full Name *" required value={form.fullName} onChange={set('fullName')} />
+          <input style={styles.input} placeholder={tSafe('register.field.fullName', 'Full Name *')} required value={form.fullName} onChange={set('fullName')} />
           <PhoneInput
             style={styles.input}
             value={form.phone}
@@ -154,13 +155,13 @@ export default function FarmerRegisterPage() {
             countryCode={form.countryCode}
             required
           />
-          <input style={styles.input} placeholder="Email Address *" required value={form.email} onChange={set('email')} type="email" />
+          <input style={styles.input} placeholder={tSafe('register.field.email', 'Email Address *')} required value={form.email} onChange={set('email')} type="email" />
 
           <div style={styles.row}>
             <PasswordInput
               wrapperStyle={{ flex: 1 }}
               style={{ ...styles.input, width: '100%' }}
-              placeholder="Password *" required
+              placeholder={tSafe('register.field.password', 'Password *')} required
               value={form.password} onChange={set('password')}
               minLength={8} autoComplete="new-password"
               testIdPrefix="farmer-register-password"
@@ -168,14 +169,14 @@ export default function FarmerRegisterPage() {
             <PasswordInput
               wrapperStyle={{ flex: 1 }}
               style={{ ...styles.input, width: '100%' }}
-              placeholder="Confirm Password *" required
+              placeholder={tSafe('register.field.confirmPassword', 'Confirm Password *')} required
               value={form.confirmPassword} onChange={set('confirmPassword')}
               minLength={8} autoComplete="new-password"
               testIdPrefix="farmer-register-confirm"
             />
           </div>
 
-          <div style={styles.sectionLabel}>Location</div>
+          <div style={styles.sectionLabel}>{tSafe('register.section.location', 'Location')}</div>
 
           <LocationDetect
             onDetected={(loc) => {
@@ -205,7 +206,7 @@ export default function FarmerRegisterPage() {
           />
           {form.latitude && (
             <div style={{ fontSize: '0.78rem', color: '#C8944D', marginBottom: '0.5rem' }}>
-              Location found — fields updated below.
+              {tSafe('register.locationFound', 'Location found — fields updated below.')}
             </div>
           )}
 
@@ -222,13 +223,13 @@ export default function FarmerRegisterPage() {
             </select>
           </div>
 
-          <input style={styles.input} placeholder="Region / County *" required value={form.region} onChange={set('region')} />
+          <input style={styles.input} placeholder={tSafe('register.field.region', 'Region / County *')} required value={form.region} onChange={set('region')} />
           <div style={styles.row}>
-            <input style={{ ...styles.input, flex: 1 }} placeholder="District (optional)" value={form.district} onChange={set('district')} />
-            <input style={{ ...styles.input, flex: 1 }} placeholder="Village (optional)" value={form.village} onChange={set('village')} />
+            <input style={{ ...styles.input, flex: 1 }} placeholder={tSafe('register.field.district', 'District (optional)')} value={form.district} onChange={set('district')} />
+            <input style={{ ...styles.input, flex: 1 }} placeholder={tSafe('register.field.village', 'Village (optional)')} value={form.village} onChange={set('village')} />
           </div>
 
-          <div style={styles.sectionLabel}>Farm Details (optional)</div>
+          <div style={styles.sectionLabel}>{tSafe('register.section.farmDetails', 'Farm Details (optional)')}</div>
 
           <div style={styles.row}>
             <div style={{ flex: 1 }}>
@@ -236,12 +237,12 @@ export default function FarmerRegisterPage() {
                 value={form.primaryCrop}
                 onChange={(v) => { setForm(f => ({ ...f, primaryCrop: v })); setSavedForm(prev => ({ ...prev, primaryCrop: v })); }}
                 countryCode={form.countryCode}
-                placeholder="Select crop (optional)"
+                placeholder={tSafe('register.field.primaryCrop', 'Select crop (optional)')}
                 optional
               />
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
-              <input style={{ ...styles.input, flex: 1 }} placeholder="Farm Size" value={form.farmSizeAcres} onChange={set('farmSizeAcres')} type="number" step="0.1" min="0" />
+              <input style={{ ...styles.input, flex: 1 }} placeholder={tSafe('register.field.farmSize', 'Farm Size')} value={form.farmSizeAcres} onChange={set('farmSizeAcres')} type="number" step="0.1" min="0" />
               <select style={{ ...styles.input, width: 'auto', minWidth: '7rem' }} value={form.landSizeUnit} onChange={e => { setForm(f => ({ ...f, landSizeUnit: e.target.value })); setSavedForm(prev => ({ ...prev, landSizeUnit: e.target.value })); }}>
                 {UNIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -249,11 +250,11 @@ export default function FarmerRegisterPage() {
           </div>
 
           <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? 'Submitting...' : 'Register'}
+            {loading ? tSafe('register.submitting', 'Submitting...') : tSafe('register.submit', 'Register')}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A1A1AA', margin: '0.5rem 0 0' }}>
-            Already have an account? <Link to="/login" style={{ color: '#C8944D' }}>Sign In</Link>
+            {tSafe('register.haveAccount', 'Already have an account?')} <Link to="/login" style={{ color: '#C8944D' }}>{tSafe('register.signIn', 'Sign In')}</Link>
           </p>
         </form>
       </div>

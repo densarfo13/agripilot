@@ -117,6 +117,10 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-backup-docs.mjs',
   'scripts/check-bulk-onboarding-security.mjs',
   'scripts/check-production-certification.mjs',
+  'scripts/check-activity-nav-consistency.mjs',
+  'scripts/check-no-fake-import-success.mjs',
+  'scripts/check-ngo-metrics-truthfulness.mjs',
+  'scripts/check-grower-i18n-hardcoded.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

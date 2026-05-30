@@ -34,8 +34,17 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useApiClient } from '../../hooks/useApiClient.js';
+import { trackEvent } from '../../core/analytics.js';
+
+const IMPORT_SUCCESS_STATUSES = [
+  'completed',
+  'imported',
+  'imported_invite_sent',
+  'imported_pending_invite',
+];
 
 const STEPS = [
   { key: 'upload',   label: 'Upload CSV'        },
@@ -199,12 +208,15 @@ function _runtimeSnapshot(batchId) {
 
 export default function OnboardingImportPage() {
   const { api: apiClient } = useApiClient();
+  let navigate = null;
+  try { navigate = useNavigate(); } catch { navigate = null; }
   const [stepIndex, setStepIndex] = useState(0);
   const [file, setFile]           = useState(null);
   const [batchId, setBatchId]     = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [duplicateActions, setDuplicateActions] = useState({});
   const [confirmResult, setConfirmResult] = useState(null);
+  const [confirmFailure, setConfirmFailure] = useState(null);
   const [apiError, setApiError] = useState(null);
 
   const health = useMemo(() => _safeProbe('__bulkOnboardingHealth'), []);
@@ -250,11 +262,21 @@ export default function OnboardingImportPage() {
         result = await apiClient.post(
           '/organization/onboarding/batches', form);
       }
-      const newId =
+      // Truth rule: success requires backend confirmation. Never
+      // synthesize a local draft batchId — that produced silent
+      // "0 imported / 0 failed / 0 skipped" success after 503s.
+      const confirmedId =
         (result && result.data && result.data.batchId)
           || (result && result.batchId)
-          || ('draft-' + Date.now());
-      setBatchId(newId);
+          || null;
+      if (!result || !confirmedId) {
+        setApiError(tSafe(
+          'orgOnboardingImport.uploadFailed',
+          'Upload could not be completed.'));
+        setStepIndex(0);
+        return;
+      }
+      setBatchId(confirmedId);
       setStepIndex(2);
     } catch (e) {
       setApiError(String((e && e.message) || e));
@@ -268,17 +290,34 @@ export default function OnboardingImportPage() {
     setDuplicateActions((prev) => ({ ...prev, [rowId]: action }));
     try {
       if (apiClient && typeof apiClient.post === 'function') {
-        apiClient.post(
+        const p = apiClient.post(
           `/organization/onboarding/batches/${batchId}/duplicates/${rowId}`,
           { action },
         );
+        if (p && typeof p.then === 'function') {
+          p.then((result) => {
+            // Truth rule: surface backend failure rather than
+            // silently swallowing — the user's choice did not
+            // persist if the API returned an error/null body.
+            if (!result || (result && result.error)) {
+              setApiError(tSafe(
+                'orgOnboardingImport.duplicateActionFailed',
+                'Duplicate action could not be saved.'));
+            }
+          }).catch((e) => {
+            setApiError(String((e && e.message) || e));
+          });
+        }
       }
-    } catch { /* swallowed — stub */ }
+    } catch (e) {
+      setApiError(String((e && e.message) || e));
+    }
   }, [batchId, apiClient]);
 
   const onConfirmImport = useCallback(async () => {
     setSubmitting(true);
     setApiError(null);
+    setConfirmFailure(null);
     try {
       let result = null;
       if (apiClient && typeof apiClient.post === 'function') {
@@ -286,18 +325,96 @@ export default function OnboardingImportPage() {
           `/organization/onboarding/batches/${batchId}/commit`,
           { duplicateActions });
       }
-      const payload = (result && result.data) || result || {};
+      // Truth rule: success requires backend confirmation with
+      // an allowed status AND either importedRows or createdRows.
+      // 503s, null bodies, or missing fields must surface as a
+      // failure panel — never as a fake "0 imported" success.
+      const payload = (result && result.data) || null;
+      const status = payload && payload.status;
+      const importedCount = payload
+        ? Number(
+            (payload.importedRows != null
+              ? payload.importedRows
+              : payload.createdRows) || 0,
+          )
+        : 0;
+      const hasImportedField = payload
+        && (payload.importedRows != null
+          || payload.createdRows != null);
+      const isSuccess = !!payload
+        && IMPORT_SUCCESS_STATUSES.indexOf(status) !== -1
+        && hasImportedField;
+
+      if (!isSuccess) {
+        setConfirmFailure({
+          title: tSafe(
+            'orgOnboardingImport.failTitle',
+            'Import could not be completed.'),
+          body: tSafe(
+            'orgOnboardingImport.failBody',
+            'Farroway could not save this import right now. '
+            + 'Please try again after persistence is available.'),
+        });
+        setApiError(tSafe(
+          'orgOnboardingImport.failTitle',
+          'Import could not be completed.'));
+        return;
+      }
+
       setConfirmResult({
-        imported: Number(payload.imported || 0),
-        failed:   Number(payload.failed   || 0),
-        skipped:  Number(payload.skipped  || 0),
+        imported: importedCount,
+        failed:   Number(payload.failedRows  || payload.failed  || 0),
+        skipped:  Number(payload.skippedRows || payload.skipped || 0),
+        status,
+        batchId: payload.batchId || batchId,
       });
     } catch (e) {
       setApiError(String((e && e.message) || e));
+      setConfirmFailure({
+        title: tSafe(
+          'orgOnboardingImport.failTitle',
+          'Import could not be completed.'),
+        body: tSafe(
+          'orgOnboardingImport.failBody',
+          'Farroway could not save this import right now. '
+          + 'Please try again after persistence is available.'),
+      });
     } finally {
       setSubmitting(false);
     }
   }, [batchId, duplicateActions, apiClient]);
+
+  const onDownloadErrorRows = useCallback(() => {
+    try {
+      trackEvent('org_onboarding_import_download_error_rows', {
+        batchId: batchId || null,
+      });
+    } catch { /* analytics swallow */ }
+  }, [batchId]);
+
+  const onBackToBatches = useCallback(() => {
+    try {
+      trackEvent('org_onboarding_import_back_to_batches', {
+        batchId: batchId || null,
+      });
+    } catch { /* analytics swallow */ }
+    if (navigate) {
+      navigate('/organization/onboarding/batches');
+    } else if (typeof window !== 'undefined' && window.location) {
+      window.location.assign('/organization/onboarding/batches');
+    }
+  }, [batchId, navigate]);
+
+  const onRetryImport = useCallback(() => {
+    try {
+      trackEvent('org_onboarding_import_retry', {
+        batchId: batchId || null,
+      });
+    } catch { /* analytics swallow */ }
+    setConfirmFailure(null);
+    setApiError(null);
+    onConfirmImport();
+  }, [batchId, onConfirmImport]);
 
   if (!available) {
     return (
@@ -629,7 +746,7 @@ export default function OnboardingImportPage() {
             </button>
             <button type="button" style={S.cta}
               onClick={onConfirmImport}
-              disabled={submitting || !!confirmResult}
+              disabled={submitting || !!confirmResult || !!confirmFailure}
               data-testid="orgOnboardingImport-confirm-btn">
               {confirmResult
                 ? tSafe('orgOnboardingImport.confirmDone', 'Imported')
@@ -662,6 +779,45 @@ export default function OnboardingImportPage() {
                 <span>{tSafe('orgOnboardingImport.resultSkipped',
                   'Skipped')}</span>
                 <span><strong>{confirmResult.skipped}</strong></span>
+              </div>
+            </div>
+          ) : null}
+
+          {confirmFailure ? (
+            <div style={{ marginTop: 14,
+                          border: '1px solid #FCA5A5',
+                          background: '#FEF2F2',
+                          borderRadius: 10,
+                          padding: '12px 14px' }}
+              data-testid="orgOnboardingImport-failure">
+              <div style={{ ...S.cardTitle, color: '#B91C1C' }}
+                data-testid="orgOnboardingImport-failure-title">
+                {confirmFailure.title}
+              </div>
+              <div style={{ ...S.cardBody, color: '#1F2933' }}
+                data-testid="orgOnboardingImport-failure-body">
+                {confirmFailure.body}
+              </div>
+              <div style={S.actionsRow}>
+                <button type="button" style={S.cta}
+                  onClick={onRetryImport}
+                  disabled={submitting}
+                  data-testid="orgOnboardingImport-failure-retry">
+                  {tSafe('orgOnboardingImport.retryImport',
+                    'Retry Import')}
+                </button>
+                <button type="button" style={S.ctaGhost}
+                  onClick={onDownloadErrorRows}
+                  data-testid="orgOnboardingImport-failure-download">
+                  {tSafe('orgOnboardingImport.downloadErrorRows',
+                    'Download Error Rows')}
+                </button>
+                <button type="button" style={S.ctaGhost}
+                  onClick={onBackToBatches}
+                  data-testid="orgOnboardingImport-failure-back-to-batches">
+                  {tSafe('orgOnboardingImport.backToBatches',
+                    'Back to Batches')}
+                </button>
               </div>
             </div>
           ) : null}

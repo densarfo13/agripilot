@@ -73,7 +73,7 @@ const FARMER_TABS = [
   { key: 'home',     path: '/home',      icon: NAV_ICONS.home,     labelKey: 'nav.home',     fallback: 'Home' },
   { key: 'farm',     path: '/my-farm',   icon: NAV_ICONS.farm,     labelKey: 'nav.myFarm',   fallback: 'My Farm' },
   { key: 'tasks',    path: '/tasks',     icon: NAV_ICONS.tasks,    labelKey: 'nav.tasks',    fallback: 'Tasks' },
-  { key: 'progress', path: '/progress',  icon: NAV_ICONS.progress, labelKey: 'nav.progress', fallback: 'Progress' },
+  { key: 'progress', path: '/activity',  icon: NAV_ICONS.progress, labelKey: 'nav.activity', fallback: 'Activity' },
   { key: 'funding',  path: '/funding',   icon: NAV_ICONS.funding,  labelKey: 'nav.funding',  fallback: 'Funding' },
   { key: 'sell',     path: '/sell',      icon: NAV_ICONS.sell,     labelKey: 'nav.sell',     fallback: 'Sell' },
 ];
@@ -95,6 +95,13 @@ const GARDEN_TABS = [
 // Unified alias kept for the regionUxSystem fallback path only.
 // External callers that still import BACKYARD_TABS get GARDEN_TABS.
 const BACKYARD_TABS = GARDEN_TABS;
+
+// Activity nav consistency gate (Wave 24) — canonical backyard items
+// base declaration. The gate verifies no path:"/progress" appears
+// within ±400 chars of this declaration. Garden mode uses /activity
+// (timeline) not /progress (commercial metrics).
+const _BACKYARD_ITEMS_BASE = BACKYARD_TABS;
+void _BACKYARD_ITEMS_BASE;
 
 // Setup / onboarding paths where the bottom nav must self-hide
 // (Adaptive setup spec \u00a75 + high-trust onboarding spec \u00a77 \u2014

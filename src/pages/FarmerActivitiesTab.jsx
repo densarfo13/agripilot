@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import api, { formatApiError } from '../runtime/apiRuntime.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -70,7 +71,7 @@ export default function FarmerActivitiesTab() {
     <div className="page-body" style={{ paddingTop: 0 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <select className="form-select" style={{ width: 200 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
+          <option value="">{tSafe("farmerActivities.filter.allTypes", "All Types")}</option>
           {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
         </select>
         <button className="btn btn-primary" onClick={() => {
@@ -80,62 +81,62 @@ export default function FarmerActivitiesTab() {
           }
           setShowForm(s => !s);
         }}>
-          {showForm ? 'Cancel' : '+ Log Activity'}
+          {showForm ? tSafe("common.cancel", "Cancel") : tSafe("farmerActivities.log.add", "+ Log Activity")}
         </button>
       </div>
 
       {/* Log activity form */}
       {showForm && (
         <div className="card" style={{ marginBottom: '1rem' }}>
-          <div className="card-header">Log New Activity</div>
+          <div className="card-header">{tSafe("farmerActivities.log.title", "Log New Activity")}</div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
               {error && <div className="alert-inline alert-inline-danger">{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label className="form-label">Activity Type *</label>
+                  <label className="form-label">{tSafe("farmerActivities.field.type", "Activity Type *")}</label>
                   <select className="form-select" value={form.activityType} onChange={e => setForm({ ...form, activityType: e.target.value })}>
                     {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="form-label">Crop Type {['planting', 'harvesting'].includes(form.activityType) ? '*' : ''}</label>
+                  <label className="form-label">{tSafe("farmerActivities.field.cropType", "Crop Type")} {['planting', 'harvesting'].includes(form.activityType) ? '*' : ''}</label>
                   <CropSelect
                     value={form.cropType}
                     onChange={(v) => setForm({ ...form, cropType: v })}
                     countryCode={farmer?.countryCode}
-                    placeholder="Search crops..."
+                    placeholder={tSafe("farmerActivities.field.cropType.placeholder", "Search crops...")}
                   />
                 </div>
                 <div>
-                  <label className="form-label">Date</label>
+                  <label className="form-label">{tSafe("farmerActivities.field.date", "Date")}</label>
                   <input className="form-input" type="date" value={form.activityDate} onChange={e => setForm({ ...form, activityDate: e.target.value })} />
                 </div>
                 <div>
-                  <label className="form-label">Quantity (kg)</label>
-                  <input className="form-input" type="number" step="0.1" value={form.quantityKg} onChange={e => setForm({ ...form, quantityKg: e.target.value })} placeholder="Optional" />
+                  <label className="form-label">{tSafe("farmerActivities.field.quantityKg", "Quantity (kg)")}</label>
+                  <input className="form-input" type="number" step="0.1" value={form.quantityKg} onChange={e => setForm({ ...form, quantityKg: e.target.value })} placeholder={tSafe("common.optional", "Optional")} />
                 </div>
                 {form.activityType === 'pesticide' && (
                   <>
                     <div>
-                      <label className="form-label">Pesticide Name *</label>
-                      <input className="form-input" value={form.pesticideName} onChange={e => setForm({ ...form, pesticideName: e.target.value })} placeholder="e.g. Neem oil, Cypermethrin" />
+                      <label className="form-label">{tSafe("farmerActivities.field.pesticideName", "Pesticide Name *")}</label>
+                      <input className="form-input" value={form.pesticideName} onChange={e => setForm({ ...form, pesticideName: e.target.value })} placeholder={tSafe("farmerActivities.field.pesticideName.placeholder", "e.g. Neem oil, Cypermethrin")} />
                     </div>
                     <div>
-                      <label className="form-label">Amount Used</label>
-                      <input className="form-input" value={form.pesticideAmount} onChange={e => setForm({ ...form, pesticideAmount: e.target.value })} placeholder="e.g. 2 litres, 500ml" />
+                      <label className="form-label">{tSafe("farmerActivities.field.amountUsed", "Amount Used")}</label>
+                      <input className="form-input" value={form.pesticideAmount} onChange={e => setForm({ ...form, pesticideAmount: e.target.value })} placeholder={tSafe("farmerActivities.field.amountUsed.placeholder", "e.g. 2 litres, 500ml")} />
                     </div>
                   </>
                 )}
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Description</label>
-                  <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Optional notes" />
+                  <label className="form-label">{tSafe("farmerActivities.field.description", "Description")}</label>
+                  <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder={tSafe("farmerActivities.field.description.placeholder", "Optional notes")} />
                 </div>
               </div>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>{tSafe("common.cancel", "Cancel")}</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting || (form.activityType === 'pesticide' && !form.pesticideName.trim())}>
-                  {submitting ? 'Saving...' : 'Log Activity'}
+                  {submitting ? tSafe("common.saving", "Saving...") : tSafe("farmerActivities.log.submit", "Log Activity")}
                 </button>
               </div>
             </form>
@@ -147,23 +148,23 @@ export default function FarmerActivitiesTab() {
       {error && !showForm && (
         <div className="alert alert-danger" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{error}</span>
-          <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={loadActivities}>Try again</button>
+          <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginLeft: '0.75rem' }} onClick={loadActivities}>{tSafe("common.tryAgain", "Try again")}</button>
         </div>
       )}
-      {loading ? <div className="loading">Loading activities...</div> : (
+      {loading ? <div className="loading">{tSafe("farmerActivities.loading", "Loading activities...")}</div> : (
         <div className="card">
-          <div className="card-header">Activities ({activities.length})</div>
+          <div className="card-header">{tSafe("farmerActivities.list.title", "Activities")} ({activities.length})</div>
           <div className="card-body" style={{ padding: activities.length ? 0 : undefined }}>
             {activities.length > 0 ? (
               <div className="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>Crop</th>
-                      <th>Quantity</th>
-                      <th>Description</th>
+                      <th>{tSafe("farmerActivities.col.date", "Date")}</th>
+                      <th>{tSafe("farmerActivities.col.type", "Type")}</th>
+                      <th>{tSafe("farmerActivities.col.crop", "Crop")}</th>
+                      <th>{tSafe("farmerActivities.col.quantity", "Quantity")}</th>
+                      <th>{tSafe("farmerActivities.col.description", "Description")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -184,7 +185,7 @@ export default function FarmerActivitiesTab() {
                 </table>
               </div>
             ) : (
-              <EmptyState icon="📝" title="No activities logged yet" message="Start tracking your farming activities by logging your first entry." action={{ label: 'Log Activity', onClick: () => setShowForm(true) }} compact />
+              <EmptyState icon="📝" title={tSafe("farmerActivities.empty.title", "No activities logged yet")} message={tSafe("farmerActivities.empty.message", "Start tracking your farming activities by logging your first entry.")} action={{ label: tSafe("farmerActivities.log.submit", "Log Activity"), onClick: () => setShowForm(true) }} compact />
             )}
           </div>
         </div>
