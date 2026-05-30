@@ -1,0 +1,720 @@
+[
+  {
+    "id": "nitrogen-deficiency",
+    "name": "Nitrogen Deficiency",
+    "aliases": ["N deficiency", "low nitrogen", "nitrogen hunger"],
+    "scientificName": "N (macro-element)",
+    "symptoms": [
+      "Pale-green to yellow lower leaves first (oldest leaves)",
+      "General stunted growth and small leaves",
+      "Reduced tillering and weak stems",
+      "Premature leaf drop on chronically deficient plants",
+      "Yellowing starts at leaf tips and progresses inward"
+    ],
+    "commonCauses": [
+      "Sandy soils with low organic matter",
+      "Heavy rainfall leaching nitrate from root zone",
+      "Cold soil suppressing microbial mineralisation",
+      "Imbalanced fertilisation (e.g. heavy K with no N)",
+      "Crop rotation without legume break"
+    ],
+    "treatment": [
+      "Side-dress with urea (46-0-0) or NPK 17-17-17",
+      "Foliar urea spray (1-2%) for fast correction",
+      "Apply compost or aged manure",
+      "Plant a green-manure cover crop in fallow"
+    ],
+    "prevention": [
+      "Annual organic matter top-up",
+      "Rotate with N-fixing legumes (cowpea, soybean, beans)",
+      "Split nitrogen application — never one heavy dose",
+      "Avoid bare fallow that loses N to leaching"
+    ],
+    "severityGuidance": "Medium when only lowest leaves yellowed; High when whole-plant chlorosis and stunting",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Plants look pale and small because they need more nitrogen. Add urea or manure now.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/nitrogen-deficiency"]
+  },
+  {
+    "id": "phosphorus-deficiency",
+    "name": "Phosphorus Deficiency",
+    "aliases": ["P deficiency", "low phosphorus", "purple-leaf disease"],
+    "scientificName": "P (macro-element)",
+    "symptoms": [
+      "Dark green or purplish-red discoloration on undersides of leaves",
+      "Stunted growth with delayed maturity",
+      "Reduced flowering and poor seed/fruit set",
+      "Older leaves affected first",
+      "Weak root system"
+    ],
+    "commonCauses": [
+      "Acidic soils (pH below 5.5) — P locked up",
+      "Cold soils slowing P uptake",
+      "Highly weathered tropical soils naturally low in P",
+      "Lack of organic matter for P cycling",
+      "Soil compaction limiting root reach"
+    ],
+    "treatment": [
+      "Apply single superphosphate (SSP) or DAP at planting",
+      "Lime acidic soils to raise pH toward 6.0-6.5",
+      "Incorporate compost rich in P",
+      "Mycorrhizal inoculants to improve P uptake"
+    ],
+    "prevention": [
+      "Soil-test before planting",
+      "Maintain pH 6.0-6.5 with periodic liming",
+      "Place P fertiliser in furrow, not broadcast (high fixation soils)",
+      "Avoid soil compaction"
+    ],
+    "severityGuidance": "Medium when purpling only on edges; High when whole leaves purple and plant stunted",
+    "followUpScanDays": 21,
+    "farmerFriendlySummary": "Leaves are turning purple — the plant cannot get enough phosphorus. Test soil pH and add SSP or DAP.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/phosphorus-deficiency"]
+  },
+  {
+    "id": "potassium-deficiency",
+    "name": "Potassium Deficiency",
+    "aliases": ["K deficiency", "low potassium", "leaf-edge scorch"],
+    "scientificName": "K (macro-element)",
+    "symptoms": [
+      "Yellowing then brown scorching on leaf margins of older leaves",
+      "Weak stems prone to lodging",
+      "Poor fruit quality — small, soft, low sugar",
+      "Reduced disease resistance",
+      "Stunted root growth"
+    ],
+    "commonCauses": [
+      "Sandy soils with low cation exchange capacity",
+      "Heavy nitrogen fertilisation without K balance",
+      "Drought stress reducing K uptake",
+      "Magnesium-rich liming antagonising K"
+    ],
+    "treatment": [
+      "Side-dress muriate of potash (MOP) or sulphate of potash (SOP)",
+      "Foliar K spray (potassium nitrate) for rapid correction",
+      "Apply wood ash (1-2 tons/ha) — naturally K-rich"
+    ],
+    "prevention": [
+      "Annual soil test for K reserves",
+      "Balanced NPK (17-17-17 or crop-specific)",
+      "Retain crop residues — they recycle K",
+      "Mulch to reduce drought stress on K uptake"
+    ],
+    "severityGuidance": "Medium when only leaf edges scorched; High when whole leaves brown and stems weak",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Leaf edges are scorching — plant needs more potassium. Apply MOP or wood ash.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/potassium-deficiency"]
+  },
+  {
+    "id": "calcium-deficiency",
+    "name": "Calcium Deficiency",
+    "aliases": ["Ca deficiency", "blossom-end rot", "tip burn"],
+    "scientificName": "Ca (secondary macro-element)",
+    "symptoms": [
+      "Blossom-end rot on tomato, pepper, watermelon (dark sunken spot)",
+      "Tip burn on lettuce, cabbage, strawberry",
+      "Distorted new growth and hooked leaf tips",
+      "Stunted root tips",
+      "Internal browning of bulb / heart vegetables"
+    ],
+    "commonCauses": [
+      "Uneven watering — drought followed by heavy rain",
+      "Acidic soils with low Ca reserves",
+      "Heavy ammonium-N fertilisation suppressing Ca uptake",
+      "High humidity reducing transpiration-pulled Ca",
+      "Sandy soils with low CEC"
+    ],
+    "treatment": [
+      "Foliar calcium chloride spray (0.5%) at first symptoms",
+      "Apply gypsum to soil (CaSO4) — doesn't shift pH",
+      "Drip irrigation to maintain even soil moisture",
+      "Mulch to stabilise soil moisture"
+    ],
+    "prevention": [
+      "Lime acidic soils before planting (raises Ca + pH)",
+      "Consistent watering — avoid drought-flood cycle",
+      "Balanced N source (avoid excess ammonium)",
+      "Maintain soil organic matter"
+    ],
+    "severityGuidance": "Medium when only first fruits show blossom-end rot; High when whole-plant tip burn",
+    "followUpScanDays": 7,
+    "farmerFriendlySummary": "Dark spots on the bottom of tomatoes or burnt leaf tips mean the plant cannot get calcium. Water evenly and add gypsum.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/calcium-deficiency"]
+  },
+  {
+    "id": "magnesium-deficiency",
+    "name": "Magnesium Deficiency",
+    "aliases": ["Mg deficiency", "interveinal chlorosis"],
+    "scientificName": "Mg (secondary macro-element)",
+    "symptoms": [
+      "Yellow patches between green leaf veins (interveinal chlorosis)",
+      "Older leaves affected first",
+      "Leaves may develop red or purple tints in some species",
+      "Premature leaf drop",
+      "Reduced photosynthesis and yield"
+    ],
+    "commonCauses": [
+      "Sandy, acidic soils naturally low in Mg",
+      "Heavy K fertilisation antagonising Mg uptake",
+      "Continuous use of high-Ca lime without Mg",
+      "Leaching from heavy rainfall in tropical soils"
+    ],
+    "treatment": [
+      "Foliar Epsom salt spray (MgSO4·7H2O) at 1-2% — fast acting",
+      "Apply dolomitic lime (raises Mg + pH)",
+      "Side-dress magnesium sulphate (Mg-S)"
+    ],
+    "prevention": [
+      "Use dolomite instead of calcitic lime when raising pH",
+      "Balanced K:Mg ratio in fertilisation",
+      "Maintain organic matter for Mg cycling",
+      "Periodic Mg-containing fertiliser"
+    ],
+    "severityGuidance": "Medium when interveinal chlorosis only on older leaves; High when whole-plant chlorosis",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Yellow patches between leaf veins mean magnesium is low. Spray Epsom salt solution.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/magnesium-deficiency"]
+  },
+  {
+    "id": "sulfur-deficiency",
+    "name": "Sulfur Deficiency",
+    "aliases": ["S deficiency", "sulphur deficiency"],
+    "scientificName": "S (secondary macro-element)",
+    "symptoms": [
+      "Uniform pale-yellow new leaves (looks like N deficiency)",
+      "Stunted growth",
+      "Reduced protein content in seeds and forage",
+      "Lower yields in oilseeds (rapeseed, sunflower)",
+      "Older leaves stay green initially — opposite of N"
+    ],
+    "commonCauses": [
+      "Sandy soils with low organic matter",
+      "Heavy leaching from rainfall",
+      "Reduced atmospheric S deposition due to clean-air laws",
+      "Continuous cropping without S-containing fertilisers"
+    ],
+    "treatment": [
+      "Apply ammonium sulphate (21-0-0+24S)",
+      "Side-dress single superphosphate (contains S)",
+      "Gypsum if Ca also low",
+      "Foliar magnesium sulphate addresses both Mg and S"
+    ],
+    "prevention": [
+      "Use S-containing fertilisers in S-deficient regions",
+      "Maintain organic matter levels",
+      "Soil test every 2-3 years",
+      "Avoid sulphur-free fertilisers like urea alone"
+    ],
+    "severityGuidance": "Medium when only young leaves pale; High when whole plant chlorotic",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "New leaves look pale and yellow — plant needs sulphur. Apply ammonium sulphate.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/sulfur-deficiency"]
+  },
+  {
+    "id": "iron-deficiency",
+    "name": "Iron Deficiency",
+    "aliases": ["Fe deficiency", "iron chlorosis", "lime-induced chlorosis"],
+    "scientificName": "Fe (micro-element)",
+    "symptoms": [
+      "Yellow leaves with sharp green veins (interveinal chlorosis) on YOUNG leaves",
+      "Older leaves stay green initially",
+      "Severe cases: whole new leaves white or cream",
+      "Stunted new growth",
+      "Reduced fruit set"
+    ],
+    "commonCauses": [
+      "Alkaline soils (pH above 7.5) — Fe locked in unavailable form",
+      "Waterlogged soils reducing Fe uptake",
+      "Overliming",
+      "High phosphate antagonism",
+      "Heavy calcareous soils common across African Sahel and US Southwest"
+    ],
+    "treatment": [
+      "Foliar iron chelate (Fe-EDDHA on alkaline soils, Fe-EDTA on neutral) — fast acting",
+      "Acidify soil with elemental sulphur (slow)",
+      "Apply chelated Fe to soil for long-term correction",
+      "Improve drainage if waterlogged"
+    ],
+    "prevention": [
+      "Use Fe-EDDHA on calcareous soils — only chelate stable above pH 7",
+      "Avoid overliming",
+      "Maintain organic matter for natural Fe cycling",
+      "Plant Fe-efficient varieties where available"
+    ],
+    "severityGuidance": "Medium when only top leaves yellow with green veins; High when whole new growth white",
+    "followUpScanDays": 7,
+    "farmerFriendlySummary": "Young leaves are yellow with green veins — the plant cannot get iron. Spray iron chelate.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/iron-deficiency"]
+  },
+  {
+    "id": "zinc-deficiency",
+    "name": "Zinc Deficiency",
+    "aliases": ["Zn deficiency", "little leaf", "white bud"],
+    "scientificName": "Zn (micro-element)",
+    "symptoms": [
+      "Small narrow leaves clustered at growing tips ('little leaf', 'rosetting')",
+      "Yellow streaking between veins on maize and citrus",
+      "Stunted internodes",
+      "White bud on maize",
+      "Reduced fruit size and yield"
+    ],
+    "commonCauses": [
+      "Alkaline soils (pH above 7) — Zn locked up",
+      "High phosphate fertilisation antagonising Zn",
+      "Cold wet soils reducing root uptake",
+      "Sandy soils naturally low in Zn",
+      "Continuous cereal cropping mining Zn"
+    ],
+    "treatment": [
+      "Foliar zinc sulphate spray (0.5%) — most cost-effective",
+      "Soil application of zinc sulphate at planting",
+      "Seed treatment with Zn for cereal crops",
+      "Compost rich in Zn-containing residues"
+    ],
+    "prevention": [
+      "Balance P:Zn ratio when fertilising",
+      "Soil test Zn every 3 years",
+      "Avoid extreme overliming",
+      "Crop rotation away from continuous cereals"
+    ],
+    "severityGuidance": "Medium when only some leaves small; High when whole plant rosetted",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Leaves are small and bunched at the tips — plant needs zinc. Spray zinc sulphate.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/zinc-deficiency"]
+  },
+  {
+    "id": "boron-deficiency",
+    "name": "Boron Deficiency",
+    "aliases": ["B deficiency", "heart rot", "hollow stem"],
+    "scientificName": "B (micro-element)",
+    "symptoms": [
+      "Death of growing tips and lateral buds",
+      "Brittle, thick, distorted leaves",
+      "Hollow stems in crucifers (cabbage, cauliflower)",
+      "Heart rot in beets and brassicas",
+      "Poor pollen development and fruit set"
+    ],
+    "commonCauses": [
+      "Sandy soils with low organic matter",
+      "Acidic and waterlogged soils",
+      "Drought reducing B uptake",
+      "Liming over-corrected to high pH",
+      "Continuous cereal cropping removing B"
+    ],
+    "treatment": [
+      "Foliar borax spray (0.1-0.2%) — VERY narrow window between deficiency and toxicity",
+      "Side-dress borax at recommended low rate (per crop label)",
+      "Application via fertigation for precision"
+    ],
+    "prevention": [
+      "Soil test B every 3 years — critical given narrow safe-application range",
+      "Maintain soil organic matter",
+      "Consistent watering",
+      "Use B-containing micronutrient blends in B-deficient regions"
+    ],
+    "severityGuidance": "Medium when only growing tips affected; High when widespread plant distortion and hollow stems",
+    "followUpScanDays": 10,
+    "farmerFriendlySummary": "Growing tips are dying and stems are hollow — plant needs boron. Spray borax carefully (low dose).",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/boron-deficiency"]
+  },
+  {
+    "id": "copper-deficiency",
+    "name": "Copper Deficiency",
+    "aliases": ["Cu deficiency", "wither tip", "exanthema"],
+    "scientificName": "Cu (micro-element)",
+    "symptoms": [
+      "Wilting and dieback of young shoots",
+      "Pale and wilting leaves on new growth",
+      "Poor pollen viability and seed set",
+      "Cereal heads with empty grains",
+      "Bark cracking in citrus (exanthema)"
+    ],
+    "commonCauses": [
+      "Highly weathered tropical soils",
+      "Peat or muck soils (organic complexes bind Cu)",
+      "Sandy soils with low CEC",
+      "Heavy N fertilisation increasing Cu demand",
+      "Alkaline soils above pH 7.5"
+    ],
+    "treatment": [
+      "Foliar copper sulphate spray (0.1-0.2%)",
+      "Copper oxychloride application (also fungicidal)",
+      "Soil broadcast of copper sulphate at low rate",
+      "Avoid over-application (Cu toxicity easy)"
+    ],
+    "prevention": [
+      "Soil test for micronutrients every 3 years",
+      "Avoid excessive N without Cu balance",
+      "Maintain pH 6.0-7.0",
+      "Use Cu-containing fungicides in deficient regions"
+    ],
+    "severityGuidance": "Medium when only tips wilt; High when whole-plant dieback and seed set affected",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Young shoots are wilting and dying back — plant needs copper. Spray copper sulphate.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/copper-deficiency"]
+  },
+  {
+    "id": "manganese-deficiency",
+    "name": "Manganese Deficiency",
+    "aliases": ["Mn deficiency", "grey speck on oats"],
+    "scientificName": "Mn (micro-element)",
+    "symptoms": [
+      "Interveinal chlorosis (similar to Fe deficiency) on younger leaves",
+      "Grey or olive-green spots on cereal leaves",
+      "Reduced root growth",
+      "Plant tissue brittleness",
+      "Poor flowering and seed development"
+    ],
+    "commonCauses": [
+      "Alkaline soils (pH above 6.5)",
+      "Organic peat soils",
+      "Heavy liming",
+      "Cold wet conditions reducing root uptake",
+      "Over-application of iron antagonising Mn"
+    ],
+    "treatment": [
+      "Foliar manganese sulphate spray (0.1-0.2%)",
+      "Mn-EDTA chelate on alkaline soils",
+      "Acidify soil to pH 6.0-6.5"
+    ],
+    "prevention": [
+      "Soil test before liming",
+      "Avoid extreme alkalinity",
+      "Maintain organic matter",
+      "Balanced micronutrient programme"
+    ],
+    "severityGuidance": "Medium when only mild interveinal chlorosis; High when whole-plant chlorosis",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Young leaves are yellow between veins (like iron deficiency) — plant may need manganese. Spray manganese sulphate.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/manganese-deficiency"]
+  },
+  {
+    "id": "molybdenum-deficiency",
+    "name": "Molybdenum Deficiency",
+    "aliases": ["Mo deficiency", "whiptail on cauliflower", "nitrogen mimicking"],
+    "scientificName": "Mo (micro-element)",
+    "symptoms": [
+      "Yellowing similar to nitrogen deficiency",
+      "Whiptail symptom on cauliflower and broccoli (narrow distorted leaves)",
+      "Reduced N-fixation in legumes",
+      "Stunted growth and poor flowering",
+      "Marginal leaf scorching"
+    ],
+    "commonCauses": [
+      "Acidic soils (pH below 5.5) — Mo locked up",
+      "Sandy soils naturally low in Mo",
+      "High S fertilisation antagonising Mo",
+      "Lack of organic matter"
+    ],
+    "treatment": [
+      "Foliar sodium molybdate (0.1%) — very low rate",
+      "Lime acidic soils to raise pH toward 6.5",
+      "Seed treatment with Mo for legumes"
+    ],
+    "prevention": [
+      "Maintain pH 6.0-6.8",
+      "Lime if soil acidic",
+      "Use Mo-containing micronutrient blends in deficient regions",
+      "Avoid extreme sulphate fertilisation"
+    ],
+    "severityGuidance": "Medium when only legume nodulation reduced; High when whiptail or whole-plant chlorosis",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Plant looks like it needs nitrogen but adding nitrogen isn't helping — likely molybdenum deficiency. Lime the soil and spray sodium molybdate.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/molybdenum-deficiency"]
+  },
+  {
+    "id": "chloride-deficiency",
+    "name": "Chloride Deficiency",
+    "aliases": ["Cl deficiency"],
+    "scientificName": "Cl (micro-element)",
+    "symptoms": [
+      "Wilting of leaves even when soil is moist",
+      "Chlorosis and bronzing on younger leaves",
+      "Reduced root growth",
+      "Stunted plants",
+      "Rare in field crops; more common in palms and coconut"
+    ],
+    "commonCauses": [
+      "Sandy inland soils far from sea (atmospheric Cl deposition low)",
+      "Use of Cl-free fertilisers (sulphate of potash, ammonium nitrate)",
+      "Heavy leaching from rainfall"
+    ],
+    "treatment": [
+      "Side-dress potassium chloride (KCl/MOP)",
+      "Apply ammonium chloride if Cl-only needed",
+      "Foliar KCl spray for fast correction"
+    ],
+    "prevention": [
+      "Use Cl-containing K fertiliser (MOP) where Cl-deficient",
+      "Monitor coastal vs inland location",
+      "Periodic soil test"
+    ],
+    "severityGuidance": "Low to Medium — rare in most field crops",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Plants are wilting even with enough water — sometimes a chloride issue. Use MOP fertiliser.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/chloride-deficiency"]
+  },
+  {
+    "id": "nickel-deficiency",
+    "name": "Nickel Deficiency",
+    "aliases": ["Ni deficiency"],
+    "scientificName": "Ni (micro-element)",
+    "symptoms": [
+      "Leaf tip burn on cereals and pecan",
+      "Urea toxicity-like symptoms",
+      "Reduced seed germination",
+      "Mouse-ear in pecan trees",
+      "Stunted growth in legumes"
+    ],
+    "commonCauses": [
+      "Highly weathered tropical soils",
+      "Acidic sandy soils",
+      "High zinc or copper antagonism"
+    ],
+    "treatment": [
+      "Foliar nickel sulphate spray (very low rate)",
+      "Soil amendment with composted residues",
+      "Adjust soil pH toward 6.0"
+    ],
+    "prevention": [
+      "Maintain soil organic matter",
+      "Balanced micronutrient programme",
+      "Soil test for Ni in suspected deficient zones"
+    ],
+    "severityGuidance": "Low — rarely seen except in pecan and intensive cereal systems",
+    "followUpScanDays": 21,
+    "farmerFriendlySummary": "Leaf tips are burning on cereals or nuts — could be nickel deficiency. Confirm with soil test.",
+    "regions": ["usa", "south_africa"],
+    "images": ["plants/nutrients/nickel-deficiency"]
+  },
+  {
+    "id": "silicon-deficiency",
+    "name": "Silicon Deficiency",
+    "aliases": ["Si deficiency"],
+    "scientificName": "Si (beneficial element)",
+    "symptoms": [
+      "Increased susceptibility to fungal diseases (rice blast, powdery mildew)",
+      "Weak stems prone to lodging in rice and cereals",
+      "Reduced grain quality",
+      "Higher leaf transpiration losses",
+      "Reduced drought tolerance"
+    ],
+    "commonCauses": [
+      "Highly weathered tropical soils (kaolinitic, leached)",
+      "Continuous rice cropping without Si return",
+      "Removal of crop residues which would otherwise recycle Si"
+    ],
+    "treatment": [
+      "Apply calcium silicate slag (steel-mill byproduct) where available",
+      "Diatomaceous earth as soil amendment",
+      "Retain rice straw to recycle Si",
+      "Potassium silicate foliar spray for quick fixes"
+    ],
+    "prevention": [
+      "Return crop residues to the field",
+      "Periodic Si amendment in continuous rice systems",
+      "Avoid burning rice straw"
+    ],
+    "severityGuidance": "Medium for rice and cereals — disease pressure increases with deficiency",
+    "followUpScanDays": 21,
+    "farmerFriendlySummary": "Crops weak-stemmed and disease-prone — silicon helps strengthen plants. Return straw to the field.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/silicon-deficiency"]
+  },
+  {
+    "id": "iron-toxicity",
+    "name": "Iron Toxicity (rice)",
+    "aliases": ["Fe toxicity", "bronzing", "akagare"],
+    "scientificName": "Fe (toxic excess)",
+    "symptoms": [
+      "Bronze spots on rice leaves spreading to whole leaf",
+      "Stunted plants and reduced tillering",
+      "Brown root rot and limp roots",
+      "Severe yield loss in flooded rice (10-100%)"
+    ],
+    "commonCauses": [
+      "Flooded acidic soils releasing reduced Fe2+",
+      "Inland valley swamps and acid sulphate soils",
+      "Continuous lowland rice on poorly-drained sites"
+    ],
+    "treatment": [
+      "Drain field briefly to oxidise Fe (cautious — affects yield)",
+      "Apply lime to raise soil pH",
+      "Use Fe-tolerant rice varieties (Suakoko 8, WITA 1)",
+      "Phosphate application to compete with Fe in roots"
+    ],
+    "prevention": [
+      "Plant Fe-tolerant rice varieties on suspect sites",
+      "Maintain pH near neutral with lime",
+      "Improve drainage in iron-rich lowlands",
+      "Avoid continuous lowland cropping on acid-Fe soils"
+    ],
+    "severityGuidance": "Medium when bronze spots only at leaf tips; High when whole plant bronzed and stunted",
+    "followUpScanDays": 7,
+    "farmerFriendlySummary": "Rice leaves turning bronze in flooded fields — likely iron toxicity. Drain briefly and lime the field.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania"],
+    "images": ["plants/nutrients/iron-toxicity"]
+  },
+  {
+    "id": "aluminum-toxicity",
+    "name": "Aluminum Toxicity",
+    "aliases": ["Al toxicity"],
+    "scientificName": "Al (toxic excess)",
+    "symptoms": [
+      "Stunted root growth — short, thick, brown roots",
+      "Phosphorus deficiency symptoms appearing despite adequate P",
+      "Stunted whole plant with poor yield",
+      "Drought sensitivity due to limited root depth",
+      "Lower leaf chlorosis"
+    ],
+    "commonCauses": [
+      "Acidic soils (pH below 5.0) releasing soluble Al",
+      "Highly weathered tropical Oxisols and Ultisols",
+      "Continuous acidifying N fertilisation without lime correction"
+    ],
+    "treatment": [
+      "Lime to raise soil pH toward 5.5-6.5 (critical)",
+      "Gypsum to displace Al deeper in subsoil",
+      "Plant Al-tolerant varieties (Brachiaria, certain rice and sorghum)",
+      "Phosphate fertilisation to immobilise Al"
+    ],
+    "prevention": [
+      "Annual soil pH test and lime correction",
+      "Avoid ammonium-N on acidifying soils",
+      "Cover crops with deep roots that tolerate Al",
+      "Use Al-tolerant varieties on chronically acid sites"
+    ],
+    "severityGuidance": "Medium when roots short but plant living; High when whole-plant stunting and yield collapse",
+    "followUpScanDays": 21,
+    "farmerFriendlySummary": "Roots are stunted and plant suffers in acid soil — aluminium toxicity. Lime the field.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa"],
+    "images": ["plants/nutrients/aluminum-toxicity"]
+  },
+  {
+    "id": "salinity-stress",
+    "name": "Salinity Stress",
+    "aliases": ["salt stress", "saline soil", "high EC"],
+    "scientificName": "Excess salts (NaCl, sulphates, carbonates)",
+    "symptoms": [
+      "Leaf-tip burn similar to drought",
+      "Stunted growth despite adequate water",
+      "Bluish-green tint to leaves",
+      "Reduced germination and seedling survival",
+      "White salt crust on soil surface"
+    ],
+    "commonCauses": [
+      "Poor irrigation drainage in dry climates",
+      "High-salt irrigation water",
+      "Coastal proximity with seawater intrusion",
+      "Heavy use of mineral fertilisers raising soil EC",
+      "Continuous irrigation without leaching"
+    ],
+    "treatment": [
+      "Heavy leaching irrigation with clean water (where possible)",
+      "Gypsum application to displace Na on cation sites",
+      "Improve drainage to remove leached salts",
+      "Plant salt-tolerant varieties (Pokkali rice, certain barley, date palm)"
+    ],
+    "prevention": [
+      "Test irrigation water EC and choose source carefully",
+      "Maintain drainage in irrigated lands",
+      "Periodic leaching to prevent salt build-up",
+      "Use salt-tolerant rootstocks for trees",
+      "Mulch to reduce evaporation-driven salt concentration"
+    ],
+    "severityGuidance": "Medium when only tip burn; High when whole-plant stunting and yield loss",
+    "followUpScanDays": 14,
+    "farmerFriendlySummary": "Crops stunted despite enough water, white crust on soil — too much salt. Improve drainage and leach.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/salinity-stress"]
+  },
+  {
+    "id": "low-organic-matter",
+    "name": "Low Organic Matter",
+    "aliases": ["depleted soil", "low SOM", "carbon-depleted soil"],
+    "scientificName": "Soil organic carbon depletion",
+    "symptoms": [
+      "Poor crop response to fertilisers",
+      "Soil crusting after rain",
+      "Reduced water-holding capacity",
+      "Visible erosion and slumping",
+      "Low earthworm and microbial activity"
+    ],
+    "commonCauses": [
+      "Continuous cropping without organic returns",
+      "Crop residue burning",
+      "Bare fallow without cover crops",
+      "Heavy tillage breaking down humus",
+      "Tropical heat accelerating OM decomposition"
+    ],
+    "treatment": [
+      "Apply compost (5-10 tons/ha annually)",
+      "Apply aged manure",
+      "Green manure cover crops (mucuna, sun hemp)",
+      "Reduced tillage / conservation agriculture"
+    ],
+    "prevention": [
+      "Retain crop residues — never burn",
+      "Annual compost or manure application",
+      "Cover crops in fallow periods",
+      "Reduce tillage frequency",
+      "Agroforestry — tree-crop intercrops cycle deep OM"
+    ],
+    "severityGuidance": "Medium when fertiliser response declining; High when soil visibly degraded and erosion present",
+    "followUpScanDays": 60,
+    "farmerFriendlySummary": "Soil looks tired and fertiliser doesn't work as well — needs more organic matter. Add compost and stop burning residues.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/low-organic-matter"]
+  },
+  {
+    "id": "soil-acidity",
+    "name": "Soil Acidity",
+    "aliases": ["low pH", "acid soil", "sour soil"],
+    "scientificName": "Low soil pH (H+ excess)",
+    "symptoms": [
+      "Poor crop response to fertilisers",
+      "Stunted growth across the field",
+      "Yellow lower leaves",
+      "Aluminium and manganese toxicity symptoms appearing",
+      "Reduced legume nodulation"
+    ],
+    "commonCauses": [
+      "Continuous use of ammonium-based N fertilisers (urea, NH4)",
+      "Heavy rainfall leaching base cations",
+      "Highly weathered tropical soils",
+      "Lack of liming over multiple seasons",
+      "Acid rain in industrial regions"
+    ],
+    "treatment": [
+      "Apply agricultural lime (CaCO3) — 1-3 tons/ha depending on soil test",
+      "Use dolomitic lime when Mg also low",
+      "Wood ash as low-cost lime alternative",
+      "Plant pH-tolerant varieties as bridge"
+    ],
+    "prevention": [
+      "Annual or biannual soil pH test",
+      "Lime maintenance — 0.5-1 ton/ha every 3-4 years",
+      "Balance fertiliser N sources (mix ammonium with nitrate)",
+      "Avoid continuous urea without lime",
+      "Use leguminous cover crops to fix N without acidification"
+    ],
+    "severityGuidance": "Medium when crops still respond to fertiliser; High when whole-field stunting and Al toxicity",
+    "followUpScanDays": 90,
+    "farmerFriendlySummary": "Soil is too acidic — crops won't take up nutrients. Test soil pH and add lime.",
+    "regions": ["ghana", "nigeria", "kenya", "uganda", "tanzania", "south_africa", "usa"],
+    "images": ["plants/nutrients/soil-acidity"]
+  }
+]
