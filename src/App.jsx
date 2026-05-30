@@ -265,6 +265,9 @@ const Activate       = lazy(() => import('./pages/Activate.jsx'));
 const PilotCommandPage = lazy(() => import('./pages/internal/pilot/PilotCommandPage.jsx'));
 const NGOPilotPage     = lazy(() => import('./pages/internal/pilot/NGOPilotPage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
+// Wave-36 — outcome intelligence pages (admin only).
+const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
+const FieldOfficerOutcomesPage = lazy(() => import('./pages/internal/FieldOfficerOutcomesPage.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1373,6 +1376,15 @@ export default function App() {
             await import('./runtime/pilot/PilotHealthRuntime');
           installPilotHealthGlobals();
         } catch { /* never block boot */ }
+        // Wave-36 — outcome intelligence globals. Installed after
+        // OutcomeRuntime so the chain runtime can compose against
+        // the canonical store. Pins __pilotAnalytics +
+        // __fieldOfficerView + __outcomeChainReady.
+        try {
+          const { installOutcomeIntelligenceGlobals } =
+            await import('./runtime/outcomeIntelligence/index');
+          installOutcomeIntelligenceGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1863,6 +1875,9 @@ export default function App() {
           <Route path="/internal/pilot"        element={<RoleRoute roles={ADMIN_ROLES}><PilotCommandPage /></RoleRoute>} />
           <Route path="/internal/pilot/ngo"    element={<RoleRoute roles={ADMIN_ROLES}><NGOPilotPage /></RoleRoute>} />
           <Route path="/internal/pilot/grower" element={<RoleRoute roles={ADMIN_ROLES}><GrowerPilotPage /></RoleRoute>} />
+          {/* Wave-36 — outcome intelligence surfaces (admin only). */}
+          <Route path="/internal/pilot-analytics"               element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
+          <Route path="/internal/pilot-analytics/field-officer" element={<RoleRoute roles={ADMIN_ROLES}><FieldOfficerOutcomesPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
