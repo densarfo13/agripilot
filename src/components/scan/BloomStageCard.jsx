@@ -81,6 +81,22 @@ export default function BloomStageCard({ result, onScanAgain }) {
           {result.recommendationBody}
         </p>
       ) : null}
+      {/* Wave-28 risk-fix #4 — when bloom stage couldn't be
+          determined, surface an actionable hint instead of leaving
+          the user stuck on "Stage unclear". Composes the existing
+          onScanAgain handler; no new module. */}
+      {stage === 'unknown' && typeof onScanAgain === 'function' ? (
+        <div style={{ fontSize: 12, color: '#FDE6C5', fontWeight: 600,
+                      background: 'rgba(200,148,77,0.08)',
+                      border: '1px dashed rgba(200,148,77,0.32)',
+                      borderRadius: 8, padding: '8px 10px' }}
+             data-testid="bloom-try-another-angle">
+          {tStrict(
+            'harvest.bloom.tryAnotherAngle',
+            'Try another angle in better light — close-up of one bloom often gives a clearer reading.'
+          )}
+        </div>
+      ) : null}
       {result.estimatedHarvestWindow ? (
         <div style={{ fontSize: 12, color: '#9FB3C8' }}>
           {tStrict('harvest.bloom.window', 'Best cut window:')}{' '}

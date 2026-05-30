@@ -69,6 +69,11 @@ export const SUPPORTED_CROPS = Object.freeze([
 
 export const SUPPORTED_FLOWERS = Object.freeze([
   'rose', 'hibiscus', 'sunflower', 'marigold',
+  // Wave-28 risk-fix #5 — broader gardener catalog. All four share
+  // the same generic bloom-stage rule (bud → blooming → peak →
+  // past) so they map cleanly into ruleFlower without per-plant
+  // overrides.
+  'orchid', 'lily', 'dahlia', 'daisy',
 ] as const);
 
 /** Full set the runtime treats — single source of truth. */
@@ -96,6 +101,9 @@ export const PLANT_CATEGORY: Readonly<Record<string, HarvestCategoryValue>> =
     // Flowers
     rose: 'flower', hibiscus: 'flower',
     sunflower: 'flower', marigold: 'flower',
+    // Wave-28 risk-fix #5 — broader gardener catalog
+    orchid: 'flower', lily: 'flower',
+    dahlia: 'flower', daisy: 'flower',
   });
 
 /** Storage key — owned by HarvestReadinessRuntime persistence. */

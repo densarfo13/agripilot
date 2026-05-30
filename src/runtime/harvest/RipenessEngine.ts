@@ -470,6 +470,10 @@ const RULES: Readonly<Record<string, Rule>> = Object.freeze({
   yam: ruleYam, soybean: ruleSoybean, groundnut: ruleGroundnut,
   rose: ruleFlower('rose'), hibiscus: ruleFlower('hibiscus'),
   sunflower: ruleFlower('sunflower'), marigold: ruleFlower('marigold'),
+  // Wave-28 risk-fix #5 — generic-bloom flowers; the ruleFlower
+  // factory handles all four with the same bud→peak→past pattern.
+  orchid: ruleFlower('orchid'), lily: ruleFlower('lily'),
+  dahlia: ruleFlower('dahlia'), daisy: ruleFlower('daisy'),
 });
 
 // ─── Recommendation copy — SAFE-WORDING ONLY ─────────────────────

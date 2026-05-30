@@ -344,7 +344,17 @@ export default function ScanPage() {
       plantContext: {
         plantId:        ctxPlantId,
         plantName:      result.plantName || result.cropName || result.crop || null,
-        lifecycleStage: result.lifecycleStage || null,
+        // Wave-28 risk-fix #6 — source lifecycleStage from the
+        // canonical farm/profile context, with the scan-envelope
+        // value taking precedence when present. cropStage is the
+        // existing MyFarm-edit-flow field; lifecycleStage is the
+        // scan-runtime field; either is acceptable as a hint to
+        // the ripeness engine (it lowercases + substring-matches
+        // 'mature', 'bud', etc).
+        lifecycleStage: result.lifecycleStage
+                     || profile?.lifecycleStage
+                     || profile?.cropStage
+                     || null,
         region:         profile?.region    || null,
         season:         profile?.season    || null,
         recentScanCategory: result.category || null,
@@ -386,6 +396,24 @@ export default function ScanPage() {
           farmId: activeFarmId || null,
           payload: { scanId, plantId: ctxPlantId,
                      ripenessStatus: harvest.ripenessStatus },
+        });
+      }
+      // Wave-28 risk-fix #2 — emit harvest_task_generated when the
+      // runtime returned ≥1 recommended task. Surfaces in the
+      // activity timeline so QA can see the task-suggestion fan-out
+      // without scraping localStorage. Idempotency-key carried so
+      // the event is unique per (scan, status) tuple.
+      if (Array.isArray(harvest.recommendedTasks)
+          && harvest.recommendedTasks.length > 0) {
+        logHarvestEvent({
+          type: 'harvest_task_generated',
+          farmId: activeFarmId || null,
+          payload: {
+            scanId, plantId: ctxPlantId,
+            ripenessStatus: harvest.ripenessStatus,
+            taskCount:      harvest.recommendedTasks.length,
+            idempotencyKey: harvest.idempotencyKey,
+          },
         });
       }
     } catch { /* swallow — timeline is non-critical */ }

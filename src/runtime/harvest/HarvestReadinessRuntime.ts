@@ -77,6 +77,78 @@ function _frozenSignals(input: any): HarvestVisualSignals {
   });
 }
 
+/**
+ * _deriveSignals — wave-28 risk-fix #1. The live scan envelope
+ * rarely carries explicit color/texture/defects fields today; the
+ * classifier mostly emits `possibleIssue` (free text) + `category`
+ * (yellowing / pests / disease / unknown). Without derived signals
+ * the ripeness engine falls to UNKNOWN+needsReview for most fruit
+ * scans. Surface what we CAN safely infer from the existing
+ * envelope without making overconfident claims:
+ *   • category 'yellowing' → color hint 'yellow'
+ *   • possibleIssue containing 'blight'/'rot'/'spot' → defect
+ *   • possibleIssue containing 'pest'/'beetle'/'aphid' → pest sign
+ *   • possibleIssue containing 'wilt'/'mold'/'mildew' → defect
+ *   • category 'pests' → pest sign 'pest damage'
+ *
+ * Pure. SSR-safe via _safe. Returns a frozen partial signals
+ * envelope merged with caller-supplied fields (caller wins).
+ */
+function _deriveSignals(scan: any): HarvestVisualSignals {
+  return _safe(() => {
+    if (!scan || typeof scan !== 'object') return Object.freeze({});
+    const issue = (_str(scan.possibleIssue) || _str(scan.issue)
+                  || _str(scan.diagnosis) || '').toLowerCase();
+    const category = (_str(scan.category) || '').toLowerCase();
+    const defects: string[] = [];
+    const pestSigns: string[] = [];
+    const diseaseSigns: string[] = [];
+    let color: string | undefined;
+
+    // Color hint from category.
+    if (category.includes('yellow')) color = 'yellow';
+    // Defect hints — disease keywords.
+    if (issue.includes('blight'))   { defects.push('blight signs');   diseaseSigns.push('blight'); }
+    if (issue.includes('rot'))      { defects.push('rot');            diseaseSigns.push('rot'); }
+    if (issue.includes('mold'))     { defects.push('mold');           diseaseSigns.push('mold'); }
+    if (issue.includes('mildew'))   { defects.push('mildew');         diseaseSigns.push('mildew'); }
+    if (issue.includes('wilt'))     { defects.push('wilting');        diseaseSigns.push('wilt'); }
+    if (issue.includes('spot'))     { defects.push('spotting');       diseaseSigns.push('leaf spot'); }
+    if (issue.includes('black'))    { defects.push('black discoloration'); }
+    if (issue.includes('soft'))     { defects.push('soft texture'); }
+    // Pest hints.
+    if (category === 'pests' || category.includes('pest')) {
+      pestSigns.push('pest damage');
+    }
+    if (issue.includes('aphid'))    pestSigns.push('aphids');
+    if (issue.includes('beetle'))   pestSigns.push('beetles');
+    if (issue.includes('caterpil')) pestSigns.push('caterpillars');
+    if (issue.includes('mite'))     pestSigns.push('mites');
+
+    return Object.freeze({
+      color,
+      defects:      defects.length      > 0 ? Object.freeze([...defects])      : undefined,
+      diseaseSigns: diseaseSigns.length > 0 ? Object.freeze([...diseaseSigns]) : undefined,
+      pestSigns:    pestSigns.length    > 0 ? Object.freeze([...pestSigns])    : undefined,
+    });
+  }, Object.freeze({}));
+}
+
+function _mergeSignals(
+  derived: HarvestVisualSignals,
+  caller:  HarvestVisualSignals,
+): HarvestVisualSignals {
+  // Caller-supplied fields always win.
+  return Object.freeze({
+    color:        caller.color        ?? derived.color,
+    size:         caller.size,         // derived has no size today
+    texture:      caller.texture,      // derived has no texture today
+    defects:      caller.defects      ?? derived.defects,
+    diseaseSigns: caller.diseaseSigns ?? derived.diseaseSigns,
+    pestSigns:    caller.pestSigns    ?? derived.pestSigns,
+  });
+}
+
 // ─── Persistence — single-writer for harvest history ──────────────
 
 function _hasLocal(): boolean {
@@ -203,8 +275,11 @@ export function evaluate(input: EvaluateInput): HarvestReadinessResult {
     }
 
     // Build signals from the scan result envelope. Defensive reads —
-    // every field is optional.
-    const signals: HarvestVisualSignals = _frozenSignals({
+    // every field is optional. Wave-28 risk-fix #1 — merge in
+    // signals derived from `possibleIssue` text + `category` so
+    // the ripeness engine has SOMETHING to chew on even when the
+    // classifier only emits the legacy minimal envelope.
+    const callerSignals: HarvestVisualSignals = _frozenSignals({
       color:        scan.color   || scan.dominantColor,
       size:         scan.size    || scan.estimatedSize,
       texture:      scan.texture,
@@ -212,6 +287,8 @@ export function evaluate(input: EvaluateInput): HarvestReadinessResult {
       diseaseSigns: scan.diseaseSigns || (scan.possibleIssue ? [scan.possibleIssue] : undefined),
       pestSigns:    scan.pestSigns,
     });
+    const derivedSignals = _deriveSignals(scan);
+    const signals: HarvestVisualSignals = _mergeSignals(derivedSignals, callerSignals);
 
     const rip = evaluateRipeness({
       plantId,

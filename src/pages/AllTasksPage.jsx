@@ -42,6 +42,11 @@ import { safeTrackEvent } from '../lib/analytics.js';
 // safeTrackEvent (above) ships to the backend analytics
 // endpoint; the two are complementary, not redundant.
 import { logEvent, EVENT_TYPES } from '../runtime/data/eventLogger.js';
+// Wave-28 risk-fix #3 — separate import from src/lib/events/eventLogger.js
+// because that store holds the canonical 'farroway.farmEvents' whitelist
+// where the wave-28 harvest event types were registered. Reusing the
+// existing data/eventLogger here would silently drop 'harvest_completed'.
+import { logEvent as logFarmEvent } from '../lib/events/eventLogger.js';
 import { buildTaskListViewModels } from '../domain/tasks/index.js';
 import { buildCompletionState } from '../domain/tasks/buildCompletionState.js';
 import { getLocalizedTaskTitle } from '../utils/taskTranslations.js';
@@ -180,6 +185,23 @@ export default function AllTasksPage() {
         priority: task.priority,
         actionType: task.actionType || null,
       });
+      // Wave-28 risk-fix #3 — when a HARVEST-type task completes,
+      // emit the canonical 'harvest_completed' event so the
+      // Activity timeline + PlantProfile harvest section show the
+      // closure of the loop. Fail-soft via logEvent.
+      try {
+        if (task && task.actionType === 'harvest') {
+          logFarmEvent({
+            type: 'harvest_completed',
+            farmId: currentFarmId,
+            payload: {
+              taskId:    task.id    || null,
+              taskTitle: task.title || null,
+              source:    'AllTasksPage',
+            },
+          });
+        }
+      } catch { /* swallow — timeline is non-critical */ }
       finishCompletion(task, savedOffline);
     } catch (err) {
       if (!navigator.onLine || !err.status) {
