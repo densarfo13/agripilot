@@ -19,9 +19,9 @@
  *     careGuide, companionPlants, commonDiseases, commonPests,
  *     pollinatorValue, bloomMonths, waterNeed, sunlightNeed,
  *     soilNeed)
- *   • Disease catalog covers 9 spec entries (incl. early-blight,
+ *   • Disease catalog covers 15 spec entries (incl. early-blight,
  *     late-blight)
- *   • Pest catalog covers all 8 spec entries
+ *   • Pest catalog covers all 15 spec entries
  *   • PlantProfile reads from src/knowledge (not direct data
  *     imports)
  *   • ScanResultPage calls knowledgeForPlant on scan result
@@ -117,9 +117,11 @@ const diseaseJson = (() => {
   catch { return null; }
 })();
 const SPEC_DISEASES_V2 = ['powdery-mildew', 'black-spot', 'leaf-spot',
-  'anthracnose', 'rust', 'wilt', 'root-rot', 'early-blight', 'late-blight'];
-if (!Array.isArray(diseaseJson) || diseaseJson.length !== 9) {
-  fail(`disease-data: expected exactly 9 entries, found ${
+  'anthracnose', 'rust', 'wilt', 'root-rot', 'early-blight', 'late-blight',
+  'downy-mildew', 'fusarium-wilt', 'mosaic-virus', 'fire-blight',
+  'sooty-mold', 'clubroot'];
+if (!Array.isArray(diseaseJson) || diseaseJson.length !== 15) {
+  fail(`disease-data: expected exactly 15 entries, found ${
     Array.isArray(diseaseJson) ? diseaseJson.length : 'invalid'}`);
 } else {
   for (const id of SPEC_DISEASES_V2) {
@@ -127,7 +129,7 @@ if (!Array.isArray(diseaseJson) || diseaseJson.length !== 9) {
       fail(`disease-data: missing spec entry "${id}"`);
     }
   }
-  pass(`disease-data: 9 entries including early-blight + late-blight`);
+  pass(`disease-data: 15 entries including early-blight + late-blight`);
 }
 
 // ─── 6. Pest catalog has 8 spec entries ────────────────────────
@@ -137,9 +139,11 @@ const pestJson = (() => {
   catch { return null; }
 })();
 const SPEC_PESTS_V2 = ['aphids', 'armyworm', 'whitefly', 'thrips',
-  'spider-mites', 'scale', 'mealybugs', 'beetles'];
-if (!Array.isArray(pestJson) || pestJson.length !== 8) {
-  fail(`pest-data: expected exactly 8 entries, found ${
+  'spider-mites', 'scale', 'mealybugs', 'beetles',
+  'caterpillars', 'leaf-miners', 'fruit-flies', 'snails-and-slugs',
+  'root-knot-nematodes', 'weevils', 'grasshoppers'];
+if (!Array.isArray(pestJson) || pestJson.length !== 15) {
+  fail(`pest-data: expected exactly 15 entries, found ${
     Array.isArray(pestJson) ? pestJson.length : 'invalid'}`);
 } else {
   for (const id of SPEC_PESTS_V2) {
@@ -147,7 +151,7 @@ if (!Array.isArray(pestJson) || pestJson.length !== 8) {
       fail(`pest-data: missing spec entry "${id}"`);
     }
   }
-  pass(`pest-data: 8 spec pests present`);
+  pass(`pest-data: 15 spec pests present`);
 }
 
 // ─── 7. PlantProfile reads from the knowledge layer ────────────
@@ -247,7 +251,7 @@ if (FAILED.length > 0) {
 console.log('[check:knowledge-layer] PASS — Farroway Knowledge Layer complete.');
 console.log(`  3 services (PlantKnowledgeService · DiseaseKnowledgeService · PestKnowledgeService) wired.`);
 console.log(`  PlantEntry: 16 fields including the spec's bloomMonths · waterNeed · sunlightNeed · soilNeed · subtype.`);
-console.log(`  Diseases:    9 entries (incl. early-blight + late-blight).`);
-console.log(`  Pests:       8 entries.`);
+console.log(`  Diseases:    15 entries (incl. early-blight + late-blight).`);
+console.log(`  Pests:       15 entries.`);
 console.log(`  knowledgeForPlant() one-call envelope for scan + profile · todaysTasks generated from care guide.`);
 console.log(`  Layer purity: no engine imports raw data/diseases or data/pests outside the knowledge layer.`);

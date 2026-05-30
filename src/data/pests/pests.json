@@ -314,5 +314,292 @@
       "Use pheromone traps only at field perimeters (they can attract more beetles)"
     ],
     "images": ["plants/pests/beetles"]
+  },
+  {
+    "id": "caterpillars",
+    "name": "Caterpillars",
+    "symptoms": [
+      "Large irregular holes chewed in leaves, often from leaf margins inward",
+      "Skeletonised foliage where only the leaf veins remain",
+      "Dark green or black frass pellets on leaves and at the plant base",
+      "Silken threads or rolled leaves sheltering young larvae",
+      "Tunnelling damage in heads of cabbage, broccoli, and cauliflower",
+      "Visible larvae feeding on undersides of leaves at dawn and dusk"
+    ],
+    "lifecycle": [
+      "Egg — laid singly or in small clusters on leaf undersides, hatches in 3-10 days",
+      "Larva — 5 instars over 14-30 days; this is the foliage-damaging stage",
+      "Pupa — chrysalis or cocoon attached to stems, leaves, or soil for 7-14 days",
+      "Adult moth or butterfly — lives 1-3 weeks and lays 100-600 eggs",
+      "2-5 generations per year in temperate zones; year-round in tropics"
+    ],
+    "treatmentOrganic": [
+      "Hand-pick larvae morning and evening on small plantings",
+      "Spray Bacillus thuringiensis kurstaki (Bt) at dusk every 5-7 days",
+      "Apply spinosad spray for larger or more advanced infestations",
+      "Release Trichogramma egg parasitoid wasps before populations peak",
+      "Cover susceptible crops with fine insect mesh during peak moth flights"
+    ],
+    "treatmentChemical": [
+      "Chlorantraniliprole for selective lepidopteran control",
+      "Indoxacarb on resistant populations",
+      "Emamectin benzoate for severe outbreaks",
+      "Rotate insecticide modes of action to slow resistance build-up"
+    ],
+    "prevention": [
+      "Hang pheromone traps to monitor adult moth flights and time sprays",
+      "Encourage parasitic wasps, predatory bugs, and insectivorous birds",
+      "Use floating row covers from transplant until harvest on brassicas",
+      "Remove weedy hosts from field margins between seasons",
+      "Inspect leaf undersides weekly for egg clusters and crush by hand",
+      "Rotate brassica plantings to break the lifecycle"
+    ],
+    "images": ["plants/pests/caterpillars"]
+  },
+  {
+    "id": "leaf-miners",
+    "name": "Leaf Miners",
+    "symptoms": [
+      "Pale serpentine tunnels (mines) winding through the leaf tissue",
+      "Translucent blotches or blister-like patches on affected leaves",
+      "Tiny black frass dots visible inside the mines when held up to the light",
+      "Premature leaf yellowing and drop on heavily mined foliage",
+      "Reduced yields on leafy crops such as spinach, chard, and lettuce",
+      "Small adult flies (1-2 mm) resting on upper leaf surfaces"
+    ],
+    "lifecycle": [
+      "Egg — adult female punctures leaf and inserts eggs into the tissue, hatches in 2-5 days",
+      "Larva — 3 instars feed inside the leaf for 5-10 days, creating the mine",
+      "Pupa — mature larva drops to the soil or pupates inside the mine for 7-14 days",
+      "Adult — lives 15-30 days; female creates many feeding/oviposition punctures",
+      "Continuous overlapping generations in warm climates and greenhouses"
+    ],
+    "treatmentOrganic": [
+      "Pinch out and destroy mined leaves as soon as they appear",
+      "Hang yellow sticky traps to catch egg-laying adults",
+      "Spray neem oil weekly to deter oviposition and disrupt larvae",
+      "Release Diglyphus isaea parasitoid wasps in greenhouse crops",
+      "Apply spinosad at first sign of mines to kill larvae through the leaf surface"
+    ],
+    "treatmentChemical": [
+      "Abamectin for translaminar control of larvae inside leaves",
+      "Cyromazine insect growth regulator on persistent infestations",
+      "Pyrethrins for fast knockdown of adult flies",
+      "Avoid broad-spectrum sprays that destroy parasitoid populations"
+    ],
+    "prevention": [
+      "Use fine insect mesh (less than 0.5 mm) on greenhouse vents and tunnels",
+      "Rotate crops to break the local lifecycle",
+      "Remove weedy hosts such as lambsquarters and chickweed",
+      "Plough or solarise soil after harvest to kill overwintering pupae",
+      "Plant trap crops such as columbine or velvet beans at field margins",
+      "Inspect transplants thoroughly before introducing them"
+    ],
+    "images": ["plants/pests/leaf-miners"]
+  },
+  {
+    "id": "fruit-flies",
+    "name": "Fruit Flies",
+    "symptoms": [
+      "Small puncture marks (stings) on developing fruit surface",
+      "Soft brown spots or premature yellowing around the sting site",
+      "Maggots tunnelling inside the flesh of ripening fruit",
+      "Fruit drop before maturity, often with oozing exudate",
+      "Secondary rot and fermenting smell from infested fruit",
+      "Adult flies (5-8 mm) with banded wings hovering near ripening crops"
+    ],
+    "lifecycle": [
+      "Egg — laid in batches of 2-15 beneath the fruit skin, hatches in 1-3 days",
+      "Larva — 3 instars feed inside the fruit for 6-14 days",
+      "Pupa — mature larva exits the fruit, pupates in the soil for 7-14 days",
+      "Adult — lives 30-60 days, female lays 800-1000 eggs over her lifetime",
+      "8-10 overlapping generations per year in subtropical and tropical zones"
+    ],
+    "treatmentOrganic": [
+      "Hang protein bait traps (hydrolysed yeast or commercial lure) at 1 per 10 trees",
+      "Bag developing fruit with paper or fine mesh sleeves before colour change",
+      "Collect and destroy all fallen and stung fruit daily during the season",
+      "Apply spinosad-based GF-120 bait sprays in droplets on host foliage",
+      "Release Diachasmimorpha parasitoid wasps where commercially available"
+    ],
+    "treatmentChemical": [
+      "Malathion bait sprays combined with protein hydrolysate",
+      "Lambda-cyhalothrin cover sprays on emergency outbreaks",
+      "Methyl eugenol male annihilation blocks for Bactrocera dorsalis",
+      "Cue-lure traps for melon and cucurbit fly species"
+    ],
+    "prevention": [
+      "Practise strict field sanitation — remove all fallen fruit weekly",
+      "Solarise or deep-bury culled fruit to kill larvae and pupae",
+      "Cultivate soil under trees during pupation to expose pupae to predators",
+      "Harvest fruit slightly under-ripe in high-pressure areas",
+      "Establish area-wide management with neighbours on shared trap networks",
+      "Plant early-maturing varieties to escape peak fly populations"
+    ],
+    "images": ["plants/pests/fruit-flies"]
+  },
+  {
+    "id": "snails-and-slugs",
+    "name": "Snails and Slugs",
+    "symptoms": [
+      "Irregular ragged holes with smooth edges chewed in leaves and stems",
+      "Shiny silvery mucous trails on foliage, soil, and pots",
+      "Seedlings sheared off at the soil line overnight",
+      "Damaged ripe strawberries, lettuce hearts, and tender hostas",
+      "Concentrated feeding damage on basal leaves close to the ground",
+      "Active feeding at night, after rain, and in early morning"
+    ],
+    "lifecycle": [
+      "Egg — laid in clusters of 20-100 in damp soil crevices, hatches in 10-30 days",
+      "Juvenile — miniature versions of adults, mature over 3-6 months",
+      "Adult — slugs live 1-2 years; some snails live up to 5 years",
+      "Hermaphrodites — each individual can lay eggs after mating",
+      "Multiple egg-laying events per year under moist conditions"
+    ],
+    "treatmentOrganic": [
+      "Apply iron-phosphate bait pellets around susceptible plantings",
+      "Hand-pick at night by torchlight or trap under wet boards by day",
+      "Set shallow beer traps sunk to ground level near affected plants",
+      "Ring beds with copper tape or copper-mesh barriers",
+      "Encourage natural predators — ground beetles, hedgehogs, ducks, and frogs"
+    ],
+    "treatmentChemical": [
+      "Metaldehyde pellets in fenced bait stations away from pets and wildlife",
+      "Methiocarb pellets on commercial-scale infestations",
+      "Avoid scattering bait on bare soil where it leaches with rain",
+      "Always follow label rates — over-use harms beneficial fauna"
+    ],
+    "prevention": [
+      "Water in the morning so the soil surface dries before nightfall",
+      "Remove ground-level hiding places — boards, rocks, leaf litter, mulch piles",
+      "Use rough mulches (crushed eggshells, sharp grit, wood ash) as barriers",
+      "Cultivate soil in early spring to expose overwintering eggs",
+      "Plant slug-resistant varieties (e.g. red lettuce, rosemary, lavender)",
+      "Keep grass strips short to reduce daytime shelter"
+    ],
+    "images": ["plants/pests/snails-and-slugs"]
+  },
+  {
+    "id": "root-knot-nematodes",
+    "name": "Root-Knot Nematodes",
+    "symptoms": [
+      "Knobbly galls and swellings along the roots of affected plants",
+      "Stunted growth despite adequate water and fertiliser",
+      "Yellowing of older leaves and mid-day wilting in warm weather",
+      "Reduced yields and small misshapen tubers or root crops",
+      "Patchy crop failure in fields, often worsening year on year",
+      "Microscopic worms (less than 1 mm) visible inside galls under a hand lens"
+    ],
+    "lifecycle": [
+      "Egg — laid in gelatinous masses on root surfaces, 200-500 per female",
+      "Juvenile (J1, J2) — second-stage juveniles hatch and seek host roots",
+      "Sedentary feeding stage (J3, J4) — embedded in root tissue, triggers gall formation",
+      "Adult female — pear-shaped, remains inside the root and produces eggs",
+      "Complete lifecycle in 25-30 days at 27 degrees C; multiple generations per season"
+    ],
+    "treatmentOrganic": [
+      "Plant Tagetes patula (French marigold) as a biofumigant before susceptible crops",
+      "Incorporate brassica residues or mustard cover crops then turn under",
+      "Drench soil with Purpureocillium lilacinum or Pochonia chlamydosporia bioagents",
+      "Add high rates of compost to boost antagonistic soil microbiota",
+      "Solarise soil under clear plastic for 4-6 weeks at peak summer temperatures"
+    ],
+    "treatmentChemical": [
+      "Fluensulfone applied pre-plant on heavily infested fields",
+      "Fluopyram seed treatments on commercial vegetable crops",
+      "Oxamyl drench on protected high-value crops (highly toxic — last resort)",
+      "Always observe pre-harvest intervals and worker re-entry periods"
+    ],
+    "prevention": [
+      "Rotate susceptible crops with non-host cereals or grasses for 2-3 seasons",
+      "Plant resistant cultivars (look for the Mi gene on tomato seed packets)",
+      "Quarantine new transplants and inspect root systems before planting",
+      "Sterilise tools and boots between fields to prevent soil movement",
+      "Maintain high soil organic matter to support antagonistic microbes",
+      "Avoid moving soil from infested fields to clean ones"
+    ],
+    "images": ["plants/pests/root-knot-nematodes"]
+  },
+  {
+    "id": "weevils",
+    "name": "Weevils",
+    "symptoms": [
+      "Notched leaf margins from adult feeding (classic C-shaped scallops)",
+      "Wilting and collapse of shoots tunnelled by larvae",
+      "Round exit holes on stored grains, beans, and tubers",
+      "Larvae visible inside seeds, stems, or below the soil on roots",
+      "Frass packed inside tunnels and chambers within stems or seeds",
+      "Adults with distinctive elongated snouts (1-15 mm) on foliage and stored produce"
+    ],
+    "lifecycle": [
+      "Egg — laid in soil, on plant tissue, or chewed into seeds and stems",
+      "Larva — legless C-shaped grub feeds inside plant tissue for 2-8 weeks",
+      "Pupa — pupates within the feeding chamber or in soil for 1-3 weeks",
+      "Adult — lives 6-12 months; many species do not fly and disperse by walking",
+      "1-3 generations per year for field species; continuous in stored grain"
+    ],
+    "treatmentOrganic": [
+      "Apply sticky bands around tree trunks to trap flightless adults",
+      "Drench soil with entomopathogenic nematodes (Heterorhabditis bacteriophora)",
+      "Hand-collect adults at night by shaking foliage onto a white sheet",
+      "Apply diatomaceous earth to stored grain to abrade adult cuticles",
+      "Spray neem oil to deter oviposition on susceptible crops"
+    ],
+    "treatmentChemical": [
+      "Pirimiphos-methyl on stored grain to control granary and rice weevils",
+      "Bifenthrin perimeter sprays for vine and root weevil adults",
+      "Imidacloprid drenches on ornamentals heavily attacked by root weevil larvae",
+      "Phosphine fumigation of sealed grain stores (licensed operators only)"
+    ],
+    "prevention": [
+      "Store grain and pulses in airtight, well-dried containers below 14 percent moisture",
+      "Freeze suspect seed for 72 hours at -18 degrees C before storage",
+      "Rotate field crops to break host continuity for specialist weevils",
+      "Maintain weed-free margins where adults shelter and overwinter",
+      "Inspect bulbs, tubers, and seed lots carefully before planting",
+      "Encourage ground beetles, shrews, and birds as natural predators"
+    ],
+    "images": ["plants/pests/weevils"]
+  },
+  {
+    "id": "grasshoppers",
+    "name": "Grasshoppers",
+    "symptoms": [
+      "Large ragged bites taken from leaf margins and whole leaves stripped",
+      "Heavy defoliation of cereals, vegetables, and pasture in dry seasons",
+      "Damage concentrated at field edges adjacent to grasslands and fallows",
+      "Cut stems and shredded seed heads in maize, sorghum, and millet",
+      "Visible nymphs and adults hopping or flying when disturbed",
+      "Frass pellets on the ground beneath roosting sites"
+    ],
+    "lifecycle": [
+      "Egg — pods of 20-100 eggs laid in soil in late summer, overwinter in place",
+      "Nymph — 5-6 instars over 30-50 days; wingless hoppers congregate in bands",
+      "Adult — fully winged, lives 60-90 days, disperses widely in search of food",
+      "Female lays 7-30 egg pods over her adult life",
+      "Usually 1 generation per year; some tropical species multivoltine"
+    ],
+    "treatmentOrganic": [
+      "Apply Nosema locustae protozoan bait early on young nymphs",
+      "Spray Beauveria bassiana or Metarhizium acridum biopesticides at first hatch",
+      "Release or attract chickens, ducks, guinea fowl, and wild birds",
+      "Cultivate egg-laying sites in autumn to expose pods to weather and predators",
+      "Drag a metal pole or rope across grass margins to dislodge and crush nymphs"
+    ],
+    "treatmentChemical": [
+      "Carbaryl bait blocks scattered on field edges during hopper bands",
+      "Fipronil ultra-low-volume sprays for swarm and outbreak control",
+      "Lambda-cyhalothrin perimeter sprays on emergency defoliation",
+      "Coordinate area-wide treatments with regional plant protection services"
+    ],
+    "prevention": [
+      "Plant grass border trap crops (e.g. napier or sudangrass) at field edges",
+      "Maintain habitat for predators — kestrels, shrikes, ground beetles, spiders",
+      "Disc or harrow known egg-laying ground in autumn or early spring",
+      "Avoid leaving large fallow blocks adjacent to high-value crops",
+      "Scout field edges weekly from emergence through to adult flight",
+      "Use early-maturing crop varieties to escape peak hopper damage"
+    ],
+    "images": ["plants/pests/grasshoppers"]
   }
 ]

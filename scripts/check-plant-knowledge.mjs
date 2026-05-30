@@ -4,13 +4,13 @@
  * Knowledge Database.
  *
  * Enforces:
- *   • src/data/diseases/diseases.json     — 8 disease entries
+ *   • src/data/diseases/diseases.json     — 15 disease entries
  *     each with: id, name, symptoms[], causes[],
  *     treatmentOrganic[], treatmentChemical[], prevention[],
  *     images[]
  *   • src/data/diseases/index.js          — exports findDisease,
  *     searchDiseases, DISEASE_DB, DISEASE_DB_VERSION
- *   • src/data/pests/pests.json           — 8 pest entries each
+ *   • src/data/pests/pests.json           — 15 pest entries each
  *     with: id, name, symptoms[], lifecycle[],
  *     treatmentOrganic[], treatmentChemical[], prevention[],
  *     images[]
@@ -56,15 +56,17 @@ function parseJSON(file, label) {
 const DISEASE_FIELDS = ['id', 'name', 'symptoms', 'causes',
   'treatmentOrganic', 'treatmentChemical', 'prevention', 'images'];
 const SPEC_DISEASES = ['leaf-spot', 'powdery-mildew', 'early-blight', 'late-blight',
-  'rust', 'wilt', 'root-rot', 'anthracnose', 'black-spot'];
+  'rust', 'wilt', 'root-rot', 'anthracnose', 'black-spot',
+  'downy-mildew', 'fusarium-wilt', 'mosaic-virus', 'fire-blight',
+  'sooty-mold', 'clubroot'];
 
 const diseases = parseJSON(path.join(ROOT, 'src/data/diseases/diseases.json'),
   'disease-data');
 if (Array.isArray(diseases)) {
-  if (diseases.length !== 9) {
-    fail(`disease-data: expected 9 entries, found ${diseases.length}`);
+  if (diseases.length !== 15) {
+    fail(`disease-data: expected 15 entries, found ${diseases.length}`);
   } else {
-    pass(`disease-data: 9 entries present`);
+    pass(`disease-data: 15 entries present`);
   }
   for (const id of SPEC_DISEASES) {
     const e = diseases.find((d) => d && d.id === id);
@@ -78,7 +80,7 @@ if (Array.isArray(diseases)) {
       }
     }
   }
-  pass(`disease-data: all 9 spec diseases present with full field coverage`);
+  pass(`disease-data: all 15 spec diseases present with full field coverage`);
 }
 
 const diseaseIdx = readOrFail(path.join(ROOT, 'src/data/diseases/index.js'),
@@ -93,15 +95,17 @@ pass(`disease-loader: exports findDisease/searchDiseases + version`);
 const PEST_FIELDS = ['id', 'name', 'symptoms', 'lifecycle',
   'treatmentOrganic', 'treatmentChemical', 'prevention', 'images'];
 const SPEC_PESTS = ['aphids', 'armyworm', 'whitefly', 'thrips',
-  'spider-mites', 'scale', 'mealybugs', 'beetles'];
+  'spider-mites', 'scale', 'mealybugs', 'beetles',
+  'caterpillars', 'leaf-miners', 'fruit-flies', 'snails-and-slugs',
+  'root-knot-nematodes', 'weevils', 'grasshoppers'];
 
 const pests = parseJSON(path.join(ROOT, 'src/data/pests/pests.json'),
   'pest-data');
 if (Array.isArray(pests)) {
-  if (pests.length !== 8) {
-    fail(`pest-data: expected 8 entries, found ${pests.length}`);
+  if (pests.length !== 15) {
+    fail(`pest-data: expected 15 entries, found ${pests.length}`);
   } else {
-    pass(`pest-data: 8 entries present`);
+    pass(`pest-data: 15 entries present`);
   }
   for (const id of SPEC_PESTS) {
     const e = pests.find((p) => p && p.id === id);
@@ -115,7 +119,7 @@ if (Array.isArray(pests)) {
       }
     }
   }
-  pass(`pest-data: all 8 spec pests present with full field coverage`);
+  pass(`pest-data: all 15 spec pests present with full field coverage`);
 }
 
 const pestIdx = readOrFail(path.join(ROOT, 'src/data/pests/index.js'),
@@ -228,7 +232,7 @@ if (FAILED.length > 0) {
   process.exit(1);
 }
 console.log('[check:plant-knowledge] PASS — Plant Knowledge Database complete.');
-console.log(`  Diseases catalog: 9 entries (symptoms · causes · organic + chemical treatment · prevention).`);
-console.log(`  Pests    catalog: 8 entries (symptoms · lifecycle · organic + chemical treatment · prevention).`);
+console.log(`  Diseases catalog: 15 entries (symptoms · causes · organic + chemical treatment · prevention).`);
+console.log(`  Pests    catalog: 15 entries (symptoms · lifecycle · organic + chemical treatment · prevention).`);
 console.log(`  Plant knowledge: ${SPEC_PLANTS.length} plants with growthStages + commonDiseases + commonPests + careGuide.`);
 console.log(`  Runtime barrel exports + PlantProfile surfaces all four datasets.`);

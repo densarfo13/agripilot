@@ -18,6 +18,12 @@ export const DISEASE_LIBRARY = Object.freeze([
   { plantId: 'root-rot',        slug: 'root-rot' },
   { plantId: 'anthracnose',     slug: 'anthracnose' },
   { plantId: 'black-spot',      slug: 'black-spot' },
+  { plantId: 'downy-mildew',    slug: 'downy-mildew' },
+  { plantId: 'fusarium-wilt',   slug: 'fusarium-wilt' },
+  { plantId: 'mosaic-virus',    slug: 'mosaic-virus' },
+  { plantId: 'fire-blight',     slug: 'fire-blight' },
+  { plantId: 'sooty-mold',      slug: 'sooty-mold' },
+  { plantId: 'clubroot',        slug: 'clubroot' },
 ] as const);
 
 export const DISEASE_LIBRARY_VERSION = 'disease-library-v1';

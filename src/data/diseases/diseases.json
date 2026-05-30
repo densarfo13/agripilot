@@ -342,5 +342,250 @@
       "Apply preventative dormant-oil + copper spray at bud-break"
     ],
     "images": ["plants/diseases/black-spot"]
+  },
+  {
+    "id": "downy-mildew",
+    "name": "Downy Mildew",
+    "symptoms": [
+      "Pale-yellow angular patches on upper leaf surfaces, bounded by veins",
+      "Greyish-white to violet fuzzy sporulation on leaf undersides in humid weather",
+      "Lesions turn brown and necrotic as tissue dies",
+      "Premature defoliation working from older leaves upward",
+      "Stunted growth and reduced fruit or head quality"
+    ],
+    "causes": [
+      "Oomycete pathogens — Peronospora, Plasmopara, Pseudoperonospora, Bremia species",
+      "Cool wet weather (10-22 °C) with prolonged leaf wetness or heavy dew",
+      "Wind-dispersed sporangia from infected crops upwind",
+      "Overwinters as oospores in soil debris and on volunteer hosts"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy infected leaves at first sign — do not compost",
+      "Apply copper hydroxide or copper octanoate every 7 days during outbreaks",
+      "Spray Bacillus subtilis or Bacillus amyloliquefaciens biofungicide preventatively",
+      "Drench root zone with phosphorous acid (potassium phosphite) as a plant defence activator",
+      "Improve airflow by thinning dense growth and weeding under canopies"
+    ],
+    "treatmentChemical": [
+      "Mancozeb every 7-10 days as a protectant",
+      "Cymoxanil + mancozeb tank mix for active infections",
+      "Mefenoxam or metalaxyl-M for systemic control — rotate to prevent resistance",
+      "Fluopicolide or mandipropamid in commercial production",
+      "Rotate FRAC fungicide groups to delay pathogen resistance"
+    ],
+    "prevention": [
+      "Plant resistant cultivars where available (DM-resistant cucumber, basil, lettuce)",
+      "Water at soil level in the morning so foliage dries quickly",
+      "Space plants according to mature size and prune for airflow",
+      "Rotate non-host crops on a 2-3 year cycle",
+      "Destroy crop debris and volunteer hosts each autumn",
+      "Apply preventative copper sprays before forecast cool wet spells"
+    ],
+    "images": ["plants/diseases/downy-mildew"]
+  },
+  {
+    "id": "fusarium-wilt",
+    "name": "Fusarium Wilt",
+    "symptoms": [
+      "Yellowing and wilting starting on one side of the plant or one branch",
+      "Lower leaves yellow first, then progressively higher leaves follow",
+      "Brown discoloration of vascular tissue visible when stem is cut lengthwise",
+      "Wilting during the heat of the day with partial recovery overnight early on",
+      "Stunted growth, reduced yield, and eventual plant collapse",
+      "Pinkish or white fungal growth on stem base in advanced stages"
+    ],
+    "causes": [
+      "Fusarium oxysporum soil-borne fungus, with host-specific formae speciales (e.g. f. sp. lycopersici on tomato)",
+      "Warm soil temperatures (24-29 °C) that favour fungal growth and infection",
+      "Entry through root wounds caused by transplanting, cultivation, or nematodes",
+      "Persists in soil as chlamydospores for 10+ years even without a host"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy infected plants including the root ball — never compost",
+      "Solarise infested soil with clear plastic for 4-6 weeks in hot months",
+      "Inoculate seedlings and transplants with Trichoderma harzianum or T. viride",
+      "Drench root zone with Bacillus subtilis solution at transplanting",
+      "Amend soil with compost to build a suppressive microbial community",
+      "Raise soil pH toward 6.5-7.0 with lime (fusarium prefers acidic soils)"
+    ],
+    "treatmentChemical": [
+      "No effective curative chemicals once a plant is infected",
+      "Pre-plant soil fumigation with metam-sodium or chloropicrin (commercial only)",
+      "Thiophanate-methyl drench as a supportive treatment on valuable crops",
+      "Prothioconazole seed treatment for cereal fusarium species"
+    ],
+    "prevention": [
+      "Plant resistant cultivars — look for VFN or F coding on tomato seed labels",
+      "Rotate to non-host crops for at least 4-5 years",
+      "Use certified disease-free seed and transplants from reputable sources",
+      "Sanitise tools, stakes, and trellises with 10 % bleach between seasons",
+      "Control root-knot nematodes that create entry wounds",
+      "Avoid excess nitrogen fertiliser — favour balanced or ammonium-free formulas"
+    ],
+    "images": ["plants/diseases/fusarium-wilt"]
+  },
+  {
+    "id": "mosaic-virus",
+    "name": "Mosaic Virus",
+    "symptoms": [
+      "Mottled light- and dark-green or yellow patches on leaves",
+      "Leaf distortion — curling, puckering, blistering, or strap-like narrowing",
+      "Stunted overall growth and shortened internodes",
+      "Reduced flowering and small, malformed, or mottled fruit",
+      "Yield loss of 20-90 % depending on virus and infection timing"
+    ],
+    "causes": [
+      "Plant viruses — Tobacco Mosaic Virus (TMV), Cucumber Mosaic Virus (CMV), Tomato Mosaic Virus (ToMV), and many others",
+      "Transmitted by sap-feeding insect vectors — aphids, whiteflies, thrips, leafhoppers",
+      "Mechanical spread through contaminated tools, hands, and plant-to-plant contact",
+      "Seed-borne in some cases (TMV in tomato, BCMV in beans)"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy infected plants immediately — there is no cure",
+      "Wash hands and disinfect tools with 10 % bleach or 70 % alcohol between plants",
+      "Control aphid, whitefly, and thrips vectors with insecticidal soap or neem oil",
+      "Release beneficial insects (lacewings, ladybeetles) to suppress vector populations",
+      "Use reflective silver mulch to deter incoming aphid vectors",
+      "Cover susceptible seedlings with floating row cover until well established"
+    ],
+    "treatmentChemical": [
+      "No chemical cure exists — viruses cannot be treated with fungicides or bactericides",
+      "Manage insect vectors with imidacloprid, pymetrozine, or spirotetramat where labelled",
+      "Pyrethroid sprays to knock down adult aphid and whitefly populations",
+      "Rotate vector-control insecticide modes of action to delay resistance"
+    ],
+    "prevention": [
+      "Plant resistant or tolerant cultivars (look for TMV, CMV, ToMV resistance codes)",
+      "Use certified virus-free seed and transplants",
+      "Control weeds — many serve as reservoir hosts for viruses and their vectors",
+      "Avoid tobacco products near tomato, pepper, and eggplant plantings (TMV risk)",
+      "Disinfect pruning tools between every plant during scouting and harvest",
+      "Install fine-mesh insect netting on greenhouse vents and entries"
+    ],
+    "images": ["plants/diseases/mosaic-virus"]
+  },
+  {
+    "id": "fire-blight",
+    "name": "Fire Blight",
+    "symptoms": [
+      "Blossoms wilt suddenly and turn brown-black as if scorched by fire",
+      "Young shoots wilt and curl into the classic shepherd's-crook shape",
+      "Blackened leaves remain attached to dead branches rather than dropping",
+      "Sunken, oozing cankers on branches and trunks weeping amber bacterial slime in warm weather",
+      "Reddish-brown discoloration of inner bark beneath cankers",
+      "Whole-tree death possible on susceptible cultivars within 1-3 seasons"
+    ],
+    "causes": [
+      "Erwinia amylovora bacterium",
+      "Warm humid spring weather (18-29 °C) coinciding with bloom",
+      "Spread by rain splash, wind, pollinators, and contaminated pruning tools",
+      "Enters through blossoms, natural openings, and fresh wounds from hail or pruning"
+    ],
+    "treatmentOrganic": [
+      "Prune out infected branches 30 cm below visible symptoms during dry weather",
+      "Disinfect pruning tools with 70 % alcohol or 10 % bleach between every cut",
+      "Burn or bag and remove all pruned material — never compost",
+      "Apply copper hydroxide sprays at silver-tip and green-tip stages",
+      "Spray Bacillus subtilis or Aureobasidium pullulans biological products at bloom",
+      "Avoid succulent shoot growth — over-fertilising with nitrogen worsens susceptibility"
+    ],
+    "treatmentChemical": [
+      "Streptomycin sulphate sprays at full bloom where regionally permitted",
+      "Oxytetracycline as an alternative to streptomycin in resistant areas",
+      "Kasugamycin in commercial orchards under label and regional restrictions",
+      "Prohexadione-calcium growth regulator to reduce shoot susceptibility",
+      "Rotate antibiotic and biological products to slow resistance development"
+    ],
+    "prevention": [
+      "Plant resistant pome fruit cultivars (e.g. Liberty, Enterprise, Goldrush apple)",
+      "Avoid highly susceptible varieties in regions with frequent fire-blight pressure",
+      "Prune in dry winter weather rather than spring or wet conditions",
+      "Use minimal nitrogen — vigorous succulent growth is highly susceptible",
+      "Monitor regional bloom-time blight risk models (MaryBlyt, Cougarblight)",
+      "Eliminate nearby wild hawthorn, mountain ash, and abandoned pome fruits as reservoirs"
+    ],
+    "images": ["plants/diseases/fire-blight"]
+  },
+  {
+    "id": "sooty-mold",
+    "name": "Sooty Mold",
+    "symptoms": [
+      "Black powdery or velvety coating on upper leaf surfaces, stems, and fruit",
+      "Coating wipes off with a damp cloth, revealing healthy tissue beneath",
+      "Reduced photosynthesis from light-blocking film causing chlorosis and weak growth",
+      "Sticky honeydew residue on leaves and on surfaces beneath the plant",
+      "Visible aphids, scale, whiteflies, or mealybugs on the plant or nearby"
+    ],
+    "causes": [
+      "Saprophytic fungi — Capnodium, Cladosporium, Aureobasidium species — growing on honeydew",
+      "Honeydew secreted by sap-sucking insects: aphids, scale, whiteflies, mealybugs, psyllids",
+      "Warm humid weather that favours fungal colonisation of sugary deposits",
+      "Heavy shading and poor airflow that keep honeydew deposits moist longer"
+    ],
+    "treatmentOrganic": [
+      "Identify and control the honeydew-producing pest first — the mold disappears when the food source stops",
+      "Spray insecticidal soap or horticultural oil to smother aphids, scale, and whiteflies",
+      "Apply neem oil weekly to disrupt pest reproduction and feeding",
+      "Release beneficial insects — ladybeetles, lacewings, parasitic wasps",
+      "Wash existing mold off leaves with a mild soap-and-water solution and soft cloth",
+      "Prune for better airflow and remove ant trails that protect honeydew-producing pests"
+    ],
+    "treatmentChemical": [
+      "Imidacloprid soil drench for systemic control of sap-feeding pests on ornamentals",
+      "Pyriproxyfen or buprofezin for scale and whitefly immature stages",
+      "Pyrethroid sprays for quick knockdown of adult aphid and whitefly populations",
+      "No fungicide is needed for the mold itself — remove the honeydew source instead",
+      "Always rotate insecticide modes of action to delay pest resistance"
+    ],
+    "prevention": [
+      "Monitor regularly for early signs of aphids, scale, and whiteflies",
+      "Maintain healthy plants — well-watered and properly fertilised plants resist pest outbreaks",
+      "Control ants that farm and protect aphids and scale from natural enemies",
+      "Encourage beneficial insect habitat with companion flowering plants",
+      "Prune for airflow and sunlight penetration through the canopy",
+      "Hose off honeydew and dust from leaves periodically to discourage colonisation"
+    ],
+    "images": ["plants/diseases/sooty-mold"]
+  },
+  {
+    "id": "clubroot",
+    "name": "Clubroot",
+    "symptoms": [
+      "Wilting during warm afternoons even when soil is moist",
+      "Yellowing, stunted, and poorly developed above-ground growth",
+      "Swollen, distorted, club-shaped or spindle-shaped galls on roots",
+      "Galls eventually rot, releasing a foul smell and millions of resting spores",
+      "Patchy poor stands across brassica beds with healthy plants beside affected ones",
+      "Reduced or failed head formation in cabbage, broccoli, and cauliflower"
+    ],
+    "causes": [
+      "Plasmodiophora brassicae — a soil-borne protist pathogen",
+      "Acidic soils (pH below 6.5) and waterlogged conditions strongly favour infection",
+      "Soil temperatures of 18-25 °C that promote zoospore movement and root infection",
+      "Resting spores survive in soil for 15-20 years and spread on tools, boots, and infected transplants"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy infected plants including all root galls — never compost",
+      "Raise soil pH to 7.2 or higher with agricultural lime or hydrated lime well before planting",
+      "Improve drainage with raised beds and organic matter additions",
+      "Apply Bacillus subtilis or Trichoderma biological soil treatments at transplant",
+      "Bait crop method — fast-growing brassicas tilled in early to stimulate and waste spores",
+      "Grow on a long rotation away from all brassica family crops and weeds"
+    ],
+    "treatmentChemical": [
+      "Fluazinam soil treatment at transplanting in commercial brassica production",
+      "Cyazofamid pre-plant drench where regionally registered",
+      "No truly curative chemical exists — management focuses on suppression",
+      "Always follow regional label restrictions for brassica soil-applied fungicides"
+    ],
+    "prevention": [
+      "Rotate brassica crops on a 7+ year cycle away from infested ground",
+      "Lime soil to pH 7.2-7.4 several months before planting brassicas",
+      "Plant clubroot-resistant cultivars (e.g. Kilaton, Crispus, Clapton cabbages)",
+      "Start with clean certified transplants — never accept stock from infested nurseries",
+      "Clean soil from tools, boots, and machinery between fields and between gardens",
+      "Control brassica weeds (shepherd's purse, wild mustard) that maintain spore populations"
+    ],
+    "images": ["plants/diseases/clubroot"]
   }
 ]

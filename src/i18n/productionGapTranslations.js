@@ -39,6 +39,74 @@
  *   • Pure data. Module-scope freeze.
  *   • Adding a key here MUST cover all 6 locales; the
  *     guard:duplicate-locales script will flag any partial entries.
+ *
+ * PENDING EXPERT TRANSLATION (Wave-24)
+ * ────────────────────────────────────
+ * The following tSafe-wrapped keys live in FarmerActivitiesTab.jsx and
+ * FarmerRegisterPage.jsx but involve agricultural / regulatory / domain
+ * vocabulary (pesticide product names, county-vs-region terminology,
+ * acres-vs-hectares, "field officer", credit-application flow). Machine
+ * translation would risk farmer confusion or, in the pesticide case,
+ * regulatory mis-labelling. English fallback ships safely via tSafe;
+ * these keys await native-speaker review by domain experts (agronomy
+ * lead + regional field officer per locale) before authoring.
+ *
+ *   FarmerActivitiesTab.jsx
+ *     farmerActivities.filter.allTypes
+ *     farmerActivities.log.add
+ *     farmerActivities.log.title
+ *     farmerActivities.log.submit
+ *     farmerActivities.field.type            (Activity Type — has enum)
+ *     farmerActivities.field.cropType
+ *     farmerActivities.field.cropType.placeholder
+ *     farmerActivities.field.date
+ *     farmerActivities.field.quantityKg      (unit-dependent)
+ *     farmerActivities.field.pesticideName
+ *     farmerActivities.field.pesticideName.placeholder  (product names)
+ *     farmerActivities.field.amountUsed
+ *     farmerActivities.field.amountUsed.placeholder     (units)
+ *     farmerActivities.field.description
+ *     farmerActivities.field.description.placeholder
+ *     farmerActivities.loading
+ *     farmerActivities.list.title
+ *     farmerActivities.col.date
+ *     farmerActivities.col.type
+ *     farmerActivities.col.crop
+ *     farmerActivities.col.quantity
+ *     farmerActivities.col.description
+ *     farmerActivities.empty.title
+ *     farmerActivities.empty.message
+ *
+ *   FarmerRegisterPage.jsx
+ *     register.error.passwordMismatch
+ *     register.error.passwordPolicy          (security copy — legal review)
+ *     register.error.generic
+ *     register.success.title
+ *     register.success.body
+ *     register.success.nextHeading
+ *     register.success.step1                 (mentions "team")
+ *     register.success.step2                 (mentions "field officer")
+ *     register.success.step3
+ *     register.success.step4                 (mentions "credit applications")
+ *     register.success.goToLogin
+ *     register.subtitle
+ *     register.draftRestored
+ *     register.section.personal
+ *     register.field.fullName                (has asterisk marker)
+ *     register.field.email                   (has asterisk marker)
+ *     register.field.password                (has asterisk marker)
+ *     register.field.confirmPassword
+ *     register.section.location
+ *     register.locationFound
+ *     register.field.region                  (Region/County — varies by country)
+ *     register.field.district
+ *     register.field.village
+ *     register.section.farmDetails
+ *     register.field.primaryCrop
+ *     register.field.farmSize                (acres vs hectares)
+ *     register.submitting
+ *     register.submit
+ *     register.haveAccount
  */
 
 export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
@@ -2658,6 +2726,140 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     ha: 'Danna sake gwadawa don sake loda, ko yi amfani da hoton da aka adana don ci gaba.',
     tw: 'Mia "san hwɛ" na ɛyɛ bio, anaa fa mfonini a wode asie di dwuma.',
     hi: 'पुनः लोड करने के लिए पुनः प्रयास करें, या जारी रखने के लिए सहेजी गई तस्वीर इस्तेमाल करें।',
+  },
+
+  // ─── Wave-24 common phrases (FarmerActivitiesTab + FarmerRegisterPage) ─
+  // High-confidence canonical translations for widely-used UI vocabulary.
+  // Technical / agricultural / regulatory keys from the same wave are
+  // tracked in the PENDING EXPERT TRANSLATION block at the top of the file
+  // and continue to ship English fallback via tSafe until reviewed.
+  'common.cancel': {
+    en: 'Cancel',
+    fr: 'Annuler',
+    sw: 'Ghairi',
+    ha: 'Soke',
+    tw: 'Twa mu',
+    hi: 'रद्द करें',
+  },
+  'common.save': {
+    en: 'Save',
+    fr: 'Enregistrer',
+    sw: 'Hifadhi',
+    ha: 'Ajiye',
+    tw: 'Kora so',
+    hi: 'सहेजें',
+  },
+  'common.submit': {
+    en: 'Submit',
+    fr: 'Soumettre',
+    sw: 'Tuma',
+    ha: 'Aika',
+    tw: 'Yi so',
+    hi: 'जमा करें',
+  },
+  'common.loading': {
+    en: 'Loading...',
+    fr: 'Chargement...',
+    sw: 'Inapakia...',
+    ha: 'Ana lodawa...',
+    tw: 'Reload...',
+    hi: 'लोड हो रहा है...',
+  },
+  'common.saving': {
+    en: 'Saving...',
+    fr: 'Enregistrement...',
+    sw: 'Inahifadhi...',
+    ha: 'Ana ajiyewa...',
+    tw: 'Reka...',
+    hi: 'सहेज रहा है...',
+  },
+  'common.tryAgain': {
+    en: 'Try again',
+    fr: 'Réessayer',
+    sw: 'Jaribu tena',
+    ha: 'Sake gwadawa',
+    tw: 'San so bio',
+    hi: 'पुनः प्रयास करें',
+  },
+  'common.date': {
+    en: 'Date',
+    fr: 'Date',
+    sw: 'Tarehe',
+    ha: 'Kwanan wata',
+    tw: 'Da',
+    hi: 'तारीख',
+  },
+  'common.email': {
+    en: 'Email',
+    fr: 'E-mail',
+    sw: 'Barua pepe',
+    ha: 'Imel',
+    tw: 'Email',
+    hi: 'ईमेल',
+  },
+  'common.password': {
+    en: 'Password',
+    fr: 'Mot de passe',
+    sw: 'Nenosiri',
+    ha: 'Kalmar sirri',
+    tw: 'Kokyem',
+    hi: 'पासवर्ड',
+  },
+  'common.optional': {
+    en: 'Optional',
+    fr: 'Facultatif',
+    sw: 'Si lazima',
+    ha: 'Ba dole ba',
+    tw: 'Ɛho hia',
+    hi: 'वैकल्पिक',
+  },
+  'common.fullName': {
+    en: 'Full Name',
+    fr: 'Nom complet',
+    sw: 'Jina kamili',
+    ha: 'Cikakken suna',
+    tw: 'Edin nyinaa',
+    hi: 'पूरा नाम',
+  },
+  'common.location': {
+    en: 'Location',
+    fr: 'Emplacement',
+    sw: 'Mahali',
+    ha: 'Wuri',
+    tw: 'Beae',
+    hi: 'स्थान',
+  },
+  'common.searchPlaceholder': {
+    en: 'Search...',
+    fr: 'Rechercher...',
+    sw: 'Tafuta...',
+    ha: 'Bincika...',
+    tw: 'Hwehwɛ...',
+    hi: 'खोजें...',
+  },
+  'register.signIn': {
+    en: 'Sign In',
+    fr: 'Se connecter',
+    sw: 'Ingia',
+    ha: 'Shiga',
+    tw: 'Bra mu',
+    hi: 'साइन इन करें',
+  },
+  'register.signInPrompt': {
+    en: 'Already have an account?',
+    fr: 'Vous avez déjà un compte ?',
+    sw: 'Una akaunti tayari?',
+    ha: 'Kana da asusu?',
+    tw: 'Wowɔ akawnt dada?',
+    hi: 'क्या आपके पास पहले से खाता है?',
+  },
+  'register.goToLogin': {
+    en: 'Go to Login',
+    fr: 'Aller à la connexion',
+    sw: 'Nenda kwenye Ingia',
+    ha: 'Je shiga',
+    tw: 'Kɔ Bra mu',
+    hi: 'लॉगिन पर जाएं',
   },
 });
 

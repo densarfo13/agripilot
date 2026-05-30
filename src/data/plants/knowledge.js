@@ -112,7 +112,7 @@ export const GROWTH_STAGE_TEMPLATES = Object.freeze({
 export const PLANT_KNOWLEDGE = Object.freeze({
   // ─── Flowers ────────────────────────────────────────────────
   rose: {
-    commonDiseases: ['black-spot', 'powdery-mildew', 'rust'],
+    commonDiseases: ['black-spot', 'powdery-mildew', 'rust', 'downy-mildew'],
     commonPests:    ['aphids', 'thrips', 'spider-mites', 'beetles'],
     images:         ['plants/flowers/rose'],
     careGuide: {
@@ -140,7 +140,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   hibiscus: {
-    commonDiseases: ['leaf-spot', 'powdery-mildew'],
+    commonDiseases: ['leaf-spot', 'powdery-mildew', 'sooty-mold'],
     commonPests:    ['aphids', 'whitefly', 'mealybugs', 'spider-mites'],
     images:         ['plants/flowers/hibiscus'],
     careGuide: {
@@ -394,8 +394,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
 
   // ─── Vegetables ─────────────────────────────────────────────
   tomato: {
-    commonDiseases: ['early-blight', 'late-blight', 'leaf-spot', 'wilt', 'powdery-mildew'],
-    commonPests:    ['aphids', 'whitefly', 'spider-mites', 'thrips', 'armyworm', 'beetles'],
+    commonDiseases: ['early-blight', 'late-blight', 'leaf-spot', 'wilt', 'powdery-mildew', 'fusarium-wilt', 'mosaic-virus'],
+    commonPests:    ['aphids', 'whitefly', 'spider-mites', 'thrips', 'armyworm', 'beetles', 'caterpillars', 'root-knot-nematodes'],
     images:         ['plants/vegetables/tomato'],
     careGuide: {
       water:       'Deep watering 2-3× per week; consistent moisture prevents blossom-end rot.',
@@ -408,8 +408,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   pepper: {
-    commonDiseases: ['early-blight', 'leaf-spot', 'wilt'],
-    commonPests:    ['aphids', 'whitefly', 'spider-mites', 'thrips'],
+    commonDiseases: ['early-blight', 'leaf-spot', 'wilt', 'mosaic-virus'],
+    commonPests:    ['aphids', 'whitefly', 'spider-mites', 'thrips', 'caterpillars', 'root-knot-nematodes'],
     images:         ['plants/vegetables/pepper'],
     careGuide: {
       water:       'Even moisture; deep watering 1-2× per week.',
@@ -422,8 +422,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   cucumber: {
-    commonDiseases: ['powdery-mildew', 'early-blight', 'wilt', 'leaf-spot'],
-    commonPests:    ['aphids', 'whitefly', 'spider-mites', 'beetles'],
+    commonDiseases: ['powdery-mildew', 'early-blight', 'wilt', 'leaf-spot', 'downy-mildew', 'mosaic-virus'],
+    commonPests:    ['aphids', 'whitefly', 'spider-mites', 'beetles', 'root-knot-nematodes'],
     images:         ['plants/vegetables/cucumber'],
     careGuide: {
       water:       'Deep daily watering during fruit set; cucumbers are 95 % water.',
@@ -436,8 +436,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   lettuce: {
-    commonDiseases: ['leaf-spot', 'wilt', 'powdery-mildew'],
-    commonPests:    ['aphids', 'thrips', 'whitefly'],
+    commonDiseases: ['leaf-spot', 'wilt', 'powdery-mildew', 'downy-mildew'],
+    commonPests:    ['aphids', 'thrips', 'whitefly', 'snails-and-slugs', 'leaf-miners'],
     images:         ['plants/vegetables/lettuce'],
     careGuide: {
       water:       'Light, frequent watering; shallow roots dry quickly.',
@@ -450,8 +450,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   spinach: {
-    commonDiseases: ['leaf-spot', 'wilt', 'rust'],
-    commonPests:    ['aphids', 'thrips', 'beetles'],
+    commonDiseases: ['leaf-spot', 'wilt', 'rust', 'downy-mildew'],
+    commonPests:    ['aphids', 'thrips', 'beetles', 'leaf-miners'],
     images:         ['plants/vegetables/spinach'],
     careGuide: {
       water:       'Even moisture; mulch to keep soil cool.',
@@ -464,8 +464,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   cabbage: {
-    commonDiseases: ['early-blight', 'wilt', 'leaf-spot', 'root-rot'],
-    commonPests:    ['aphids', 'thrips', 'beetles', 'armyworm'],
+    commonDiseases: ['early-blight', 'wilt', 'leaf-spot', 'root-rot', 'clubroot', 'downy-mildew'],
+    commonPests:    ['aphids', 'thrips', 'beetles', 'armyworm', 'caterpillars', 'snails-and-slugs'],
     images:         ['plants/vegetables/cabbage'],
     careGuide: {
       water:       'Deep, consistent watering — uneven moisture causes head splitting.',
@@ -493,7 +493,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   carrot: {
     commonDiseases: ['leaf-spot', 'early-blight', 'root-rot'],
-    commonPests:    ['aphids', 'thrips', 'beetles'],
+    commonPests:    ['aphids', 'thrips', 'beetles', 'root-knot-nematodes'],
     images:         ['plants/vegetables/carrot'],
     careGuide: {
       water:       'Even moisture; uneven watering causes cracking and forking.',
@@ -506,8 +506,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   kale: {
-    commonDiseases: ['leaf-spot', 'early-blight', 'powdery-mildew'],
-    commonPests:    ['aphids', 'thrips', 'whitefly', 'beetles', 'armyworm'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'powdery-mildew', 'clubroot'],
+    commonPests:    ['aphids', 'thrips', 'whitefly', 'beetles', 'armyworm', 'caterpillars'],
     images:         ['plants/vegetables/kale'],
     careGuide: {
       water:       'Even moisture; mulch heavily.',
@@ -520,8 +520,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   broccoli: {
-    commonDiseases: ['leaf-spot', 'early-blight', 'wilt', 'root-rot'],
-    commonPests:    ['aphids', 'beetles', 'armyworm', 'whitefly'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'wilt', 'root-rot', 'clubroot'],
+    commonPests:    ['aphids', 'beetles', 'armyworm', 'whitefly', 'caterpillars'],
     images:         ['plants/vegetables/broccoli'],
     careGuide: {
       water:       'Deep, consistent watering — heads need steady moisture.',
@@ -537,7 +537,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   // ─── Fruits ─────────────────────────────────────────────────
   mango: {
     commonDiseases: ['anthracnose', 'powdery-mildew', 'leaf-spot'],
-    commonPests:    ['thrips', 'mealybugs', 'scale', 'aphids'],
+    commonPests:    ['thrips', 'mealybugs', 'scale', 'aphids', 'fruit-flies'],
     images:         ['plants/fruits/mango'],
     careGuide: {
       water:       'Deep watering during flowering and fruit development; reduce in dormancy.',
@@ -550,7 +550,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   apple: {
-    commonDiseases: ['leaf-spot', 'rust', 'powdery-mildew', 'anthracnose'],
+    commonDiseases: ['leaf-spot', 'rust', 'powdery-mildew', 'anthracnose', 'fire-blight'],
     commonPests:    ['aphids', 'scale', 'spider-mites', 'beetles'],
     images:         ['plants/fruits/apple'],
     careGuide: {
@@ -564,7 +564,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   banana: {
-    commonDiseases: ['leaf-spot', 'wilt', 'anthracnose'],
+    commonDiseases: ['leaf-spot', 'wilt', 'anthracnose', 'fusarium-wilt'],
     commonPests:    ['aphids', 'thrips', 'mealybugs'],
     images:         ['plants/fruits/banana'],
     careGuide: {
@@ -578,8 +578,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   orange: {
-    commonDiseases: ['anthracnose', 'leaf-spot', 'root-rot'],
-    commonPests:    ['aphids', 'scale', 'mealybugs', 'whitefly', 'thrips'],
+    commonDiseases: ['anthracnose', 'leaf-spot', 'root-rot', 'sooty-mold'],
+    commonPests:    ['aphids', 'scale', 'mealybugs', 'whitefly', 'thrips', 'fruit-flies'],
     images:         ['plants/fruits/orange'],
     careGuide: {
       water:       'Deep watering every 7-10 days; less in winter.',
@@ -592,8 +592,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   lemon: {
-    commonDiseases: ['anthracnose', 'leaf-spot', 'root-rot'],
-    commonPests:    ['aphids', 'scale', 'mealybugs', 'spider-mites'],
+    commonDiseases: ['anthracnose', 'leaf-spot', 'root-rot', 'sooty-mold'],
+    commonPests:    ['aphids', 'scale', 'mealybugs', 'spider-mites', 'fruit-flies'],
     images:         ['plants/fruits/lemon'],
     careGuide: {
       water:       'Deep watering when top 2-3 cm of soil is dry.',
@@ -606,8 +606,8 @@ export const PLANT_KNOWLEDGE = Object.freeze({
     },
   },
   lime: {
-    commonDiseases: ['anthracnose', 'leaf-spot'],
-    commonPests:    ['aphids', 'scale', 'mealybugs', 'whitefly'],
+    commonDiseases: ['anthracnose', 'leaf-spot', 'sooty-mold'],
+    commonPests:    ['aphids', 'scale', 'mealybugs', 'whitefly', 'fruit-flies'],
     images:         ['plants/fruits/lime'],
     careGuide: {
       water:       'Even moisture; deep weekly watering.',
@@ -635,7 +635,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   strawberry: {
     commonDiseases: ['leaf-spot', 'powdery-mildew', 'root-rot', 'early-blight'],
-    commonPests:    ['aphids', 'thrips', 'spider-mites'],
+    commonPests:    ['aphids', 'thrips', 'spider-mites', 'snails-and-slugs'],
     images:         ['plants/fruits/strawberry'],
     careGuide: {
       water:       'Even moisture; mulch with straw to keep berries clean.',
@@ -678,7 +678,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
 
   // ─── Herbs ──────────────────────────────────────────────────
   basil: {
-    commonDiseases: ['leaf-spot', 'early-blight', 'wilt'],
+    commonDiseases: ['leaf-spot', 'early-blight', 'wilt', 'downy-mildew', 'fusarium-wilt'],
     commonPests:    ['aphids', 'thrips', 'spider-mites'],
     images:         ['plants/herbs/basil'],
     careGuide: {
@@ -907,7 +907,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   // ─── Crops ──────────────────────────────────────────────────
   maize: {
     commonDiseases: ['leaf-spot', 'rust', 'early-blight', 'wilt'],
-    commonPests:    ['armyworm', 'aphids', 'beetles', 'thrips'],
+    commonPests:    ['armyworm', 'aphids', 'beetles', 'thrips', 'grasshoppers', 'weevils'],
     images:         ['plants/crops/maize'],
     careGuide: {
       water:       '25 mm per week minimum; critical during tasselling and silking.',
@@ -921,7 +921,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   rice: {
     commonDiseases: ['early-blight', 'leaf-spot', 'wilt'],
-    commonPests:    ['armyworm', 'aphids', 'thrips'],
+    commonPests:    ['armyworm', 'aphids', 'thrips', 'weevils'],
     images:         ['plants/crops/rice'],
     careGuide: {
       water:       'Paddy varieties need 5-10 cm flooded water; upland rice rainfall-fed.',
@@ -949,7 +949,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   soybean: {
     commonDiseases: ['early-blight', 'leaf-spot', 'rust', 'wilt'],
-    commonPests:    ['aphids', 'armyworm', 'thrips', 'beetles'],
+    commonPests:    ['aphids', 'armyworm', 'thrips', 'beetles', 'caterpillars'],
     images:         ['plants/crops/soybean'],
     careGuide: {
       water:       '25 mm per week; critical during pod-fill.',
@@ -963,7 +963,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   wheat: {
     commonDiseases: ['rust', 'leaf-spot', 'early-blight', 'powdery-mildew'],
-    commonPests:    ['aphids', 'armyworm', 'thrips'],
+    commonPests:    ['aphids', 'armyworm', 'thrips', 'weevils'],
     images:         ['plants/crops/wheat'],
     careGuide: {
       water:       '25 mm per week; critical during heading and grain-fill.',
@@ -977,7 +977,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   sorghum: {
     commonDiseases: ['leaf-spot', 'rust', 'anthracnose'],
-    commonPests:    ['armyworm', 'aphids', 'thrips'],
+    commonPests:    ['armyworm', 'aphids', 'thrips', 'grasshoppers'],
     images:         ['plants/crops/sorghum'],
     careGuide: {
       water:       'Drought-tolerant; deep but infrequent watering.',
@@ -991,7 +991,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   groundnut: {
     commonDiseases: ['leaf-spot', 'rust', 'wilt'],
-    commonPests:    ['aphids', 'thrips', 'armyworm'],
+    commonPests:    ['aphids', 'thrips', 'armyworm', 'leaf-miners'],
     images:         ['plants/crops/groundnut'],
     careGuide: {
       water:       'Even moisture during flowering and pod fill.',
@@ -1005,7 +1005,7 @@ export const PLANT_KNOWLEDGE = Object.freeze({
   },
   millet: {
     commonDiseases: ['leaf-spot', 'rust', 'wilt'],
-    commonPests:    ['armyworm', 'aphids', 'thrips'],
+    commonPests:    ['armyworm', 'aphids', 'thrips', 'grasshoppers'],
     images:         ['plants/crops/millet'],
     careGuide: {
       water:       'Drought-tolerant; minimal supplemental water.',
