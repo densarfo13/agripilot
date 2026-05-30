@@ -64,6 +64,41 @@ import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 import PlantIdentificationCard from './PlantIdentificationCard.jsx';
 
 const STYLES = {
+  // Wave-27 CPO retention fix — honest beta banner + quota chip
+  // styles. Both sit ABOVE the canonical result card; matched to
+  // the calm, no-alarm-bell tone of the rest of the surface.
+  honestBetaBanner: {
+    background: 'rgba(200,148,77,0.10)',
+    border: '1px solid rgba(200,148,77,0.28)',
+    borderRadius: 12,
+    padding: '10px 14px',
+    color: '#FDE6C5',
+    fontSize: 13,
+    lineHeight: 1.4,
+    marginBottom: 8,
+  },
+  quotaChip: {
+    background: 'rgba(14,165,233,0.10)',
+    border: '1px solid rgba(14,165,233,0.32)',
+    borderRadius: 999,
+    padding: '6px 12px',
+    color: '#7DD3FC',
+    fontSize: 12,
+    fontWeight: 600,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  quotaChipAtZero: {
+    background: 'rgba(239,68,68,0.10)',
+    border: '1px solid rgba(239,68,68,0.32)',
+    borderRadius: 999,
+    padding: '6px 12px',
+    color: '#FCA5A5',
+    fontSize: 12,
+    fontWeight: 700,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
   card: {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.10)',
@@ -526,6 +561,50 @@ export default function ScanResultCard({
           // crop via the existing /my-farm edit flow.
         }}
       />
+    {/* Wave-27 / CPO retention fix — surface two signals the server
+        already emits but the UI was silently dropping:
+          1. inferenceMeta.fallbackUsed → honest "AI in beta" banner
+             so a fallback result doesn't read as a broken app.
+          2. scanQuota.remaining       → "N free scans left today"
+             chip so the 429 stops being a surprise.
+        Both are reads from the existing result envelope (server
+        emits at server/src/app.js:887-895). Pure UI composition;
+        no engine state, no new runtime. */}
+    {result && result.inferenceMeta && result.inferenceMeta.fallbackUsed ? (
+      <div
+        style={STYLES.honestBetaBanner}
+        data-testid="scan-result-beta-banner"
+        role="status"
+      >
+        {tStrict(
+          'scan.honestBeta',
+          'Photo analysis is in beta — verify with a local expert before treating.'
+        )}
+      </div>
+    ) : null}
+    {result && result.scanQuota
+        && typeof result.scanQuota.remaining === 'number'
+        && typeof result.scanQuota.limit     === 'number'
+        && result.scanQuota.limit > 0
+        && result.scanQuota.remaining <= 2 ? (
+      <div
+        style={result.scanQuota.remaining === 0
+          ? STYLES.quotaChipAtZero
+          : STYLES.quotaChip}
+        data-testid="scan-result-quota-chip"
+        data-remaining={result.scanQuota.remaining}
+      >
+        {result.scanQuota.remaining === 0
+          ? tStrict(
+              'scan.quotaUsed',
+              'No free scans left today — resets at midnight UTC.'
+            )
+          : (result.scanQuota.remaining === 1
+              ? tStrict('scan.quotaOneLeft', '1 free scan left today.')
+              : tStrict('scan.quotaNLeft',
+                        `${result.scanQuota.remaining} free scans left today.`))}
+      </div>
+    ) : null}
     <article
       style={STYLES.card}
       data-testid="scan-result-card"

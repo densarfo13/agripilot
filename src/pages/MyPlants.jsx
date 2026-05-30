@@ -52,6 +52,19 @@ const STYLES = {
             letterSpacing: '-0.01em' },
   subtitle: { margin: '0 0 18px', fontSize: 14, color: '#667085',
               lineHeight: 1.5 },
+  // Wave-27 — honest device-persistence hint.
+  devicePersistHint: {
+    display: 'inline-block',
+    background: '#FFF9F0',
+    border: '1px solid rgba(200,148,77,0.32)',
+    color: '#8B6914',
+    fontSize: 11,
+    fontWeight: 600,
+    padding: '4px 10px',
+    borderRadius: 999,
+    marginBottom: 12,
+    cursor: 'help',
+  },
   topRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
@@ -204,6 +217,28 @@ export default function MyPlants() {
               </div>
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {/* Wave-27 CPO retention fix — honest persistence hint. MyPlants
+          today is localStorage-only (loadManagedPlants reads from
+          farroway_managed_plants). Without this hint, users assume
+          cloud sync and lose plants on cache clear. Surfacing the
+          truth turns the "I lost my plants" ticket into an expected
+          behavior. Pure UI add — no engine change. */}
+      {summary.totalCount > 0 ? (
+        <div
+          style={STYLES.devicePersistHint}
+          data-testid="my-plants-device-persist-hint"
+          title={tSafe(
+            'myPlants.savedOnThisDevice.tooltip',
+            'Plants are saved on this device. Avoid clearing browser data — we are working on cloud sync.'
+          )}
+        >
+          {tSafe(
+            'myPlants.savedOnThisDevice',
+            'Saved on this device'
+          )}
         </div>
       ) : null}
 
