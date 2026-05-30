@@ -114,6 +114,7 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-human-review.mjs',
   'scripts/check-backup-docs.mjs',
   'scripts/check-bulk-onboarding-security.mjs',
+  'scripts/check-production-certification.mjs',
 ];
 for (const f of REQUIRED_SIBLING_GATES) {
   if (!fs.existsSync(path.join(ROOT, f))) {

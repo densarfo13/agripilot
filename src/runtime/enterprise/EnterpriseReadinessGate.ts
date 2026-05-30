@@ -62,6 +62,8 @@ export function enterpriseReadiness() {
       humanReviewReady:  !!(typeof window !== "undefined" && typeof (window as any).__humanReviewHealth === "function"),
       bulkOnboardingReady: !!(typeof window !== "undefined"
         && typeof (window as any).__bulkOnboardingHealth === "function"),
+      productionCertificationReady: !!(typeof window !== "undefined"
+        && typeof (window as any).__productionCertification === "function"),
       auditLogs:             !!(audit && (audit as any).initialized
                               && (audit as any).appendOnly),
       evidenceChain:         !!(evidence && (evidence as any).initialized),

@@ -236,6 +236,7 @@ const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx')
 const GodmodePage        = lazy(() => import('./pages/internal/Godmode.jsx'));
 const QAPage             = lazy(() => import('./pages/internal/QAPage.jsx'));
 const ReviewPage         = lazy(() => import('./pages/internal/ReviewPage.jsx'));
+const ProductionCertificationPage = lazy(() => import("./pages/internal/ProductionCertificationPage.jsx"));
 // Enterprise Agriculture Platform — orgs / programs / cohorts
 // / interventions / analytics / trust. Internal gate today;
 // per-OrganizationMember role check ships with the migration.
@@ -1057,6 +1058,11 @@ export default function App() {
             await import("./runtime/organization/onboarding/index");
           installBulkOnboardingGlobal();
         } catch { /* never block boot */ }
+        try {
+          const { installProductionCertificationGlobal } =
+            await import("./runtime/certification/index");
+          installProductionCertificationGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1543,6 +1549,7 @@ export default function App() {
           <Route path="/internal/godmode" element={<RoleRoute roles={ADMIN_ROLES}><GodmodePage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
+          <Route path="/internal/production-certification" element={<ProductionCertificationPage />} />
           {/* Enterprise Agriculture Platform. <RoleRoute> with admin-only
               role list (excludes farmer/gardener/grower). Full
               OrganizationMember role check ships with the Prisma migration. */}

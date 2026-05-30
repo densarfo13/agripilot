@@ -337,6 +337,15 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         const r = w.__bulkOnboardingHealth();
         return !!(r && r.csvImportReady && r.importReady);
       }, false),
+      // Wave 18 — Production certification composite.
+      productionCertificationReady: _hasGlobal("__productionCertification"),
+      certificationVerdict: _safe(() => {
+        if (typeof window === "undefined") return "UNKNOWN";
+        const w = window as any;
+        if (typeof w.__productionCertification !== "function") return "UNKNOWN";
+        const r = w.__productionCertification();
+        return _str(r && r.verdict) || "UNKNOWN";
+      }, "UNKNOWN"),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

@@ -156,6 +156,12 @@ export function launchReadiness() {
         const r = _probe('__bulkOnboardingHealth');
         return !!(r && (r as any).csvImportReady && (r as any).importReady);
       }, false),
+      // Wave 18 — Production certification composite.
+      productionCertificationReady: _probe('__productionCertification') ? true : false,
+      certificationVerdict: _safe(() => {
+        const r = _probe('__productionCertification');
+        return (r && (r as any).verdict) || 'UNKNOWN';
+      }, 'UNKNOWN'),
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';
