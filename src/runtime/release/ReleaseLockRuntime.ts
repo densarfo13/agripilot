@@ -346,6 +346,17 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         const r = w.__productionCertification();
         return _str(r && r.verdict) || "UNKNOWN";
       }, "UNKNOWN"),
+      // Wave 21 — Scan Intelligence Final Fix.
+      nativeCameraReady:    _safe(() => {
+        if (typeof window === "undefined") return false;
+        const w = window as any;
+        if (typeof w.__scanUIHealth !== "function") return false;
+        const r = w.__scanUIHealth();
+        return !!(r && r.nativeCameraScreenReady && r.shutterAvailable
+                    && r.galleryOptionAvailable && r.flipCameraAvailable);
+      }, false),
+      scanAnalysisReady:    _hasGlobal("__scanAnalysisHealth"),
+      reviewReady:          _hasGlobal("__humanReviewHealth"),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

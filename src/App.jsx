@@ -1063,6 +1063,16 @@ export default function App() {
             await import("./runtime/certification/index");
           installProductionCertificationGlobal();
         } catch { /* never block boot */ }
+        // Wave 21 — Scan Analysis pipeline. Pins
+        // __scanAnalysisHealth() so QA can verify the
+        // compress → analyze → normalize → OODA → artifact
+        // pipeline contract (composes existing runtimes; never
+        // calls Plant.id directly).
+        try {
+          const { installScanAnalysisGlobal } =
+            await import('./runtime/scan/ScanAnalysisRuntime');
+          installScanAnalysisGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

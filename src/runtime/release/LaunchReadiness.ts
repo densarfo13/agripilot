@@ -162,6 +162,21 @@ export function launchReadiness() {
         const r = _probe('__productionCertification');
         return (r && (r as any).verdict) || 'UNKNOWN';
       }, 'UNKNOWN'),
+      // Wave 21 — Scan Intelligence Final Fix.
+      nativeCameraReady:    _safe(() => {
+        const r = _probe('__scanUIHealth');
+        return !!(r && (r as any).nativeCameraScreenReady
+                    && (r as any).shutterAvailable
+                    && (r as any).galleryOptionAvailable
+                    && (r as any).flipCameraAvailable);
+      }, false),
+      scanAnalysisReady:    _probe('__scanAnalysisHealth') ? true : false,
+      scanArtifactsReady:   _safe(() => {
+        const r = _probe('__artifactHealth');
+        return !!(r && (r as any).scanArtifactsReady);
+      }, false),
+      oodaReadyWave21:      _probe('__oodaHealth') ? true : false,
+      reviewReady:          _probe('__humanReviewHealth') ? true : false,
       enterpriseReadinessVerdict: _safe(() => {
         const r = _probe('__enterpriseReadiness');
         return (r && (r as any).verdict) || 'NOT_READY';

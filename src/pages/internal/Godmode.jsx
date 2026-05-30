@@ -36,6 +36,7 @@ import { INTERNAL_FLAG_KEY } from '../../runtime/release/releaseLockContracts';
 
 const PROBES = [
   ['__scanUIHealth',        'Scan UI Health'],
+  ['__scanAnalysisHealth',  'Scan Analysis Pipeline'],
   ['__plantRuntimeHealth',  'Plant Runtime'],
   ['__plantMediaHealth',    'Plant Media'],
   ['__farrowayKnowledge',   'Knowledge Layer'],
