@@ -47,6 +47,13 @@ import GrowthJourneyCard from '../components/progress/GrowthJourneyCard.jsx';
 import PlantTimeline from '../components/plants/PlantTimeline.jsx';
 import { buildPlantTimeline, PLANT_TIMELINE_VERSION } from '../runtime/plants/PlantTimeline';
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
+// Wave-26 C-3 — Activity used to read 'farroway_event_log', a key
+// nothing writes. The canonical event log is owned by
+// src/lib/events/eventLogger.js under 'farroway.farmEvents'. The
+// launch-blocker runtime migrates any legacy keys into the
+// canonical store at boot and exposes a single read helper so the
+// timeline reflects all historical data.
+import { getCanonicalActivityEvents } from '../runtime/launchBlockers/ActivityDataHealthRuntime';
 import { resolveMemoryMoment } from '../lib/memoryMoment.js';
 import { resolveRealismImage, REALISM_ASSETS } from '../lib/realVisuals.jsx';
 // Define Tab Tap Behavior §4 — farmer-only Funding/Sell
@@ -252,14 +259,15 @@ export default function FarmerProgressPage() {
           totalCount: 0,
         });
       }
+      // Wave-26 C-3 — canonical Activity key is 'farroway.farmEvents'
+      // (owned by src/lib/events/eventLogger.js). The launch-blocker
+      // runtime migrates legacy 'farroway_event_log' / 'farroway_events'
+      // into the canonical store at boot, so this single read returns
+      // the union of historical + current activity. Never throws.
       let events = [];
       try {
-        const raw = window.localStorage
-          && window.localStorage.getItem('farroway_event_log');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) events = parsed;
-        }
+        const list = getCanonicalActivityEvents();
+        if (Array.isArray(list)) events = list;
       } catch { /* swallow — read-only */ }
 
       const plants = loadManagedPlants() || [];

@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { count as queueCount, onSyncChange, syncAll } from '../utils/offlineQueue.js';
-// Wave 2 migration — `api` was unused here; removed to clear the
-// UI→infrastructure violation without behavior change.
+// Wave-26 C-6 — restore the apiRuntime import so the "Sync Now" /
+// retry buttons can actually drain the queue. The wave-2 removal
+// was over-eager: SyncStatus needs apiClient because syncAll's
+// signature is `syncAll(apiClient)`. Importing the same canonical
+// runtime instance App.jsx wires into initAutoSync(api) keeps both
+// drain paths talking to one transport. Without this, lines 68 + 88
+// threw `ReferenceError: api is not defined` and Sync Now silently
+// failed — see the wave-26 launch audit C-6 finding.
+import apiRuntime from '../runtime/apiRuntime.js';
 import { useTranslation } from '../i18n/index.js';
 
 /**
@@ -65,7 +72,7 @@ export default function SyncStatus() {
           <span>{pending === 1 ? t('sync.pendingOne', { count: pending }) : t('sync.pendingMany', { count: pending })}</span>
           {online && (
             <button
-              onClick={() => syncAll(api)}
+              onClick={() => { try { syncAll(apiRuntime); } catch { /* swallow */ } }}
               style={styles.syncNowBtn}
             >
               {t('sync.syncNow')}
@@ -85,7 +92,7 @@ export default function SyncStatus() {
           <span>{syncState.failed === 1 ? t('sync.failedOne', { count: syncState.failed }) : t('sync.failedMany', { count: syncState.failed })}</span>
           {syncState.remaining > 0 && online && (
             <button
-              onClick={() => syncAll(api)}
+              onClick={() => { try { syncAll(apiRuntime); } catch { /* swallow */ } }}
               style={styles.syncNowBtn}
             >
               {t('common.retry')}

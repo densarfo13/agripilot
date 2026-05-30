@@ -20,17 +20,62 @@
  * NEVER returns null — see blank-screen spec §1.
  */
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { isProfileComplete } from '../utils/farmScore.js';
 import { useAuthStore } from '../store/authStore.js';
 // AuthContext provides the real auth-loading signal for strict mode.
 // useAuthOrNull is used so this component can also render outside the
 // AuthProvider (belt-and-suspenders for SSR / test environments).
 import { useAuthOrNull } from '../context/AuthContext.jsx';
+// Wave-26 C-1 — read-only onboarding guard probe. isOnboardingValid()
+// returns false only when role/mode/entity/profile state is genuinely
+// missing AND no canonical completion flag is set. The check is
+// scoped to a strict route allowlist (Home / Tasks / Scan / Activity)
+// to prevent any redirect loop with /onboarding/* or /profile/setup.
+import { isOnboardingValid } from '../runtime/launchBlockers/OnboardingGuardRuntime';
+
+// Pathnames where Wave-26 C-1 forces a redirect to /onboarding/fast
+// when isOnboardingValid() returns false. Listed verbatim per spec:
+//   "Never allow: Home / Tasks / Scan / Activity until onboarding
+//    state valid."
+const _ONBOARDING_GUARDED_PREFIXES = Object.freeze([
+  '/home',
+  '/tasks',
+  '/scan',
+  '/activity',
+  '/progress',
+]);
+
+function _shouldEnforceOnboardingGuard(pathname) {
+  if (typeof pathname !== 'string') return false;
+  // The root "/" is rendered as Home via the index route; guard it too.
+  if (pathname === '/') return true;
+  for (const p of _ONBOARDING_GUARDED_PREFIXES) {
+    if (pathname === p || pathname.startsWith(p + '/')) return true;
+  }
+  return false;
+}
 
 export default function ProfileGuard({ children, optional = true }) {
   const { user } = useAuthStore();
   const profile = user?.profile || user;
+  const location = useLocation();
+
+  // ── Wave-26 C-1 onboarding bypass guard ────────────────────────
+  // Read-only probe. When the user is on a guarded route AND the
+  // onboarding state is invalid, redirect once to /onboarding/fast.
+  // The guard probe is conservative (returns false only when state
+  // genuinely missing) so users who completed onboarding pass
+  // through immediately. Loop-safe because /onboarding/* is NOT in
+  // the guarded prefix list.
+  if (_shouldEnforceOnboardingGuard(location?.pathname || '')) {
+    let valid = true;
+    try { valid = isOnboardingValid(); }
+    catch { valid = true; /* never block on probe failure */ }
+    if (!valid) {
+      return <Navigate to="/onboarding/fast" replace />;
+    }
+  }
 
   // ── Optional mode (default) ────────────────────────────────────
   // AuthGuard already blocked until auth was resolved. ProfileGuard's

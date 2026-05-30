@@ -73,6 +73,11 @@ import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanEntryCard from '../components/scan/ScanEntryCard.jsx';
 import ScanHub from '../components/scan/ScanHub.jsx';
 import IntelligentScanResult from '../components/scan/IntelligentScanResult.jsx';
+// Wave-26 C-4 — single-result-card invariant. Gates IntelligentScanResult
+// so it is mutually exclusive with the legacy UsefulResultCard /
+// ScanResultCard path. Until the wave-21 analysis runtime is mounted
+// end-to-end, this returns false and only the legacy card mounts.
+import { shouldRenderIntelligentResult } from '../runtime/launchBlockers/ScanResultHealthRuntime';
 // UI tightening pass §8 — chips + recent-scans hint that sit below
 // the camera/upload card during the capture phase. Replaces the
 // previously empty page real-estate the spec called out.
@@ -1504,7 +1509,12 @@ export default function ScanPage() {
         />
       ) : null}
 
-      {phase === 'result' && result ? (
+      {/* Wave-26 C-4 — single result card. shouldRenderIntelligentResult()
+          is the canonical gate. When true, IntelligentScanResult is the
+          sole rendered result surface; when false the legacy
+          UsefulResultCard / ScanResultCard path below renders instead.
+          The two branches are mutually exclusive — never both. */}
+      {phase === 'result' && result && shouldRenderIntelligentResult() ? (
         <IntelligentScanResult
           result={result}
           onRetake={onRetake}
@@ -1512,7 +1522,7 @@ export default function ScanPage() {
         />
       ) : null}
 
-      {phase === 'result' && result ? (
+      {phase === 'result' && result && !shouldRenderIntelligentResult() ? (
         FEATURE_SCAN_USEFULNESS ? (
           // FEATURE_SCAN_USEFULNESS — clean farmer-friendly card.
           // saveScanUseful is idempotent (same scanId → no-op).

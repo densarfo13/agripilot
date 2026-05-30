@@ -1103,6 +1103,19 @@ export default function App() {
             await import('./runtime/launch/I18nGrowerHealth');
           installI18nGrowerHealthGlobal();
         } catch { /* never block boot */ }
+        // Wave 26 — six critical launch-blocker fixes (C-1…C-6) +
+        // composite go-live verdict. Pure-runtime composition over
+        // the existing modules; each install pins a __xxxHealth()
+        // diagnostic so QA can verify the wave-26 invariants from
+        // the production console. ActivityDataHealth additionally
+        // migrates legacy 'farroway_event_log' / 'farroway_events'
+        // entries into the canonical 'farroway.farmEvents' store
+        // at boot — idempotent, never loses data.
+        try {
+          const { installLaunchBlockerGlobals } =
+            await import('./runtime/launchBlockers/index');
+          installLaunchBlockerGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

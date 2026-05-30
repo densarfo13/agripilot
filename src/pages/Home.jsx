@@ -668,6 +668,33 @@ export default function Home() {
       try { sessionStorage.setItem('farroway_pilot_task_done', '1'); } catch { /* swallow */ }
       _setSessionTaskDone(true);
     }
+    // Wave-26 C-2 — bridge the Home habit-completion event into
+    // the canonical task store so the /tasks badge + Activity
+    // timeline + Notifications all reflect the same source of
+    // truth. We dispatch the same payload AllTasksPage.handleComplete
+    // posts to /api/v2/farm-tasks/:farmId/tasks/:taskId/complete via
+    // a dynamic import to avoid pulling the api module into the
+    // Home bundle's critical path. Resolves silently when the
+    // task id can't be matched (no real farm-task row → habit only).
+    try {
+      const taskId   = ctxIntel?.todayTask?.id || '';
+      const farmId   = (local && local.farm && local.farm.id) || '';
+      if (taskId && farmId) {
+        import('../runtime/auth.js')
+          .then((mod) => {
+            try {
+              if (mod && typeof mod.completeTask === 'function') {
+                mod.completeTask(farmId, taskId, {
+                  title:    ctxIntel.todayTask.title    || null,
+                  priority: ctxIntel.todayTask.priority || null,
+                  actionType: ctxIntel.todayTask.actionType || null,
+                });
+              }
+            } catch { /* swallow — habit path already persisted */ }
+          })
+          .catch(() => { /* swallow — never block UI on bridge */ });
+      }
+    } catch { /* swallow */ }
     // Refinement spec §4 — record the completion timestamp so the
     // MemoryMomentLine on the NEXT visit can quietly reference
     // "yesterday's task". Stored as a single millisecond integer;
