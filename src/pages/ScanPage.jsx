@@ -1644,6 +1644,11 @@ export default function ScanPage() {
             try { trackEvent('plant_save_for_review',
               { scanId: result?.scanId || null }); }
             catch { /* ignore */ }
+            // Critical fix: actually persist the scan to the
+            // farmer's journal so "Save for review" is not a
+            // misleading no-op. onSave funnels through
+            // scanPersistenceBridge (journal + useful history).
+            try { onSave(); } catch { /* never crash */ }
           }}
         />
       ) : null}
