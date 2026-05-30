@@ -3,7 +3,7 @@ import express from 'express';
 import satelliteRoutes from './routes/satellite.js';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -515,11 +515,14 @@ const scanUserLimiter = rateLimit({
   legacyHeaders: false,
   store: _rlStore('scan-user'),
   handler: _onRateLimited('scan-user'),
-  keyGenerator: (req) => {
-    // Prefer authenticated userId; fall back to IP so the
-    // middleware is still safe to mount before authenticate.
+  keyGenerator: (req, res) => {
+    // Prefer authenticated userId; fall back to the
+    // ipKeyGenerator helper from express-rate-limit so IPv6
+    // addresses are masked to a subnet (required since v8 —
+    // bare `req.ip` throws ERR_ERL_KEY_GEN_IPV6 at server boot).
     const u = req.user && (req.user.sub || req.user.id);
-    return u ? `u:${u}` : `ip:${req.ip}`;
+    if (u) return `u:${u}`;
+    return `ip:${ipKeyGenerator(req, res)}`;
   },
 });
 const fundingLimiter = rateLimit({
