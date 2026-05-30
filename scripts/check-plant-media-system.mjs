@@ -148,13 +148,17 @@ for (const status of ['PENDING', 'APPROVED', 'REJECTED']) {
 pass(`verification: submit/approve/reject + 3 statuses`);
 
 // ─── 6. Eight launch libraries with spec'd counts ──────────────
+// Wave-41-hardening — vegetable (10→11) + crop (10→16) library
+// counts grew to cover the regional pack priority crops (okra,
+// plantain, yam, cocoa, cowpea, beans, coffee). Original entries
+// preserved; new entries are appended in lockstep with this list.
 const LIBS = [
   ['flowerLibrary.ts',     'FLOWER_LIBRARY',     20],
-  ['vegetableLibrary.ts',  'VEGETABLE_LIBRARY',  10],
+  ['vegetableLibrary.ts',  'VEGETABLE_LIBRARY',  11],
   ['fruitLibrary.ts',      'FRUIT_LIBRARY',      10],
   ['herbLibrary.ts',       'HERB_LIBRARY',        8],
   ['houseplantLibrary.ts', 'HOUSEPLANT_LIBRARY',  8],
-  ['cropLibrary.ts',       'CROP_LIBRARY',       10],
+  ['cropLibrary.ts',       'CROP_LIBRARY',       16],
   ['diseaseLibrary.ts',    'DISEASE_LIBRARY',    15],
   ['pestLibrary.ts',       'PEST_LIBRARY',       15],
 ];
@@ -174,7 +178,7 @@ for (const [file, name, expected] of LIBS) {
     totalEntries += expected;
   }
 }
-const EXPECTED_TOTAL = 96; // 20+10+10+8+8+10+15+15
+const EXPECTED_TOTAL = 103; // 20+11+10+8+8+16+15+15 (wave-41-hardening: +7 priority crops)
 if (totalEntries !== EXPECTED_TOTAL) {
   fail(`library: total entries ${totalEntries} ≠ ${EXPECTED_TOTAL}`);
 } else {

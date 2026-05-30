@@ -1,7 +1,10 @@
 /**
  * src/runtime/plants/media/libraries/vegetableLibrary.ts —
  * Launch dataset of verified vegetable photography references
- * (10 entries).
+ * (11 entries).
+ *
+ * Wave-41-hardening — added okra (Ghana priority crop referenced
+ * by ghanaPriorityPack).
  *
  * Cloudinary path: plants/vegetables/<slug>
  */
@@ -17,6 +20,8 @@ export const VEGETABLE_LIBRARY = Object.freeze([
   { plantId: 'carrot',   slug: 'carrot' },
   { plantId: 'kale',     slug: 'kale' },
   { plantId: 'broccoli', slug: 'broccoli' },
+  // Wave-41-hardening addition — Ghana priority crop.
+  { plantId: 'okra',     slug: 'okra' },
 ] as const);
 
-export const VEGETABLE_LIBRARY_VERSION = 'vegetable-library-v1';
+export const VEGETABLE_LIBRARY_VERSION = 'vegetable-library-v2';
