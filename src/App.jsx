@@ -270,6 +270,8 @@ const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyti
 const FieldOfficerOutcomesPage = lazy(() => import('./pages/internal/FieldOfficerOutcomesPage.jsx'));
 // Wave-37 — executive field intelligence dashboard (admin only).
 const FieldIntelligencePage = lazy(() => import('./pages/internal/FieldIntelligencePage.jsx'));
+// Wave-38 — NGO command center page (admin only).
+const NGOHealthPage = lazy(() => import('./pages/internal/NGOHealthPage.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1412,6 +1414,14 @@ export default function App() {
             await import('./runtime/farmerSuccess/FarmerSuccessEngine');
           installFarmerSuccessGlobals();
         } catch { /* never block boot */ }
+        // Wave-38 — Pilot observability runtime. Activation,
+        // adoption funnel, scan success metrics, alerts, NGO
+        // command, composite __pilotHealth. Real data only.
+        try {
+          const { installPilotObservabilityGlobals } =
+            await import('./runtime/pilotObservability/PilotObservabilityRuntime');
+          installPilotObservabilityGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1907,6 +1917,8 @@ export default function App() {
           <Route path="/internal/pilot-analytics/field-officer" element={<RoleRoute roles={ADMIN_ROLES}><FieldOfficerOutcomesPage /></RoleRoute>} />
           {/* Wave-37 — executive field-intelligence dashboard (admin only). */}
           <Route path="/internal/intelligence" element={<RoleRoute roles={ADMIN_ROLES}><FieldIntelligencePage /></RoleRoute>} />
+          {/* Wave-38 — NGO command center (admin only). */}
+          <Route path="/internal/ngo-health"   element={<RoleRoute roles={ADMIN_ROLES}><NGOHealthPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
