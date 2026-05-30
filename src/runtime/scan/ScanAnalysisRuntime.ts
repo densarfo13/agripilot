@@ -54,8 +54,8 @@ import {
   createScanArtifactRecord, SCAN_ARTIFACT_SERVICE_VERSION,
 } from '../artifacts/ScanArtifactService';
 import {
-  submitForReview, PLANT_IMAGE_VERIFICATION_VERSION,
-} from '../plants/media/PlantImageVerification';
+  submitForReview, HUMAN_REVIEW_VERSION,
+} from '../review/index';
 
 export const SCAN_ANALYSIS_RUNTIME_VERSION = 'scan-analysis-runtime-v1';
 
@@ -195,20 +195,19 @@ export function runScanPipeline(ctx: PipelineCtx) {
       source:        ctx.source === 'gallery' ? 'gallery' : 'camera',
     });
 
-    // ─── Low-confidence review (best-effort; verification queue
-    //      currently scoped to plant-image moderation — used as
-    //      the placeholder review channel until a dedicated
-    //      low-confidence-scan queue ships in HumanReviewRuntime). ─
+    // ─── Low-confidence review — emits to the canonical
+    // HumanReviewRuntime queue with type "low_confidence_scan"
+    // per the spec. The dedicated queue (Wave 16) is the right
+    // destination — plant-image moderation is separate.
     let reviewSubmission: any = null;
     if (normalized.needsReview && _str(normalized.scanId)) {
       reviewSubmission = _safe(() => submitForReview({
-        plantId:    _str(normalized.commonName).toLowerCase().replace(/\s+/g, '-')
-                     || 'unknown',
-        type:       'plant',
-        candidateUrl:  _str(ctx.imageUrl) || _str(ctx.thumbnailUrl),
-        userId:        _str(ctx.userId),
-        region:        _str(ctx.location),
-      }), null);
+        type:       'low_confidence_scan',
+        userId:     _str(ctx.userId),
+        scanId:     _str(normalized.scanId),
+        plantId:    _str((ctx.raw as any) && (ctx.raw as any).plantId),
+        reason:     _str(normalized.confidenceBand) + ' confidence',
+      } as any), null);
     }
 
     // ─── Grower-safe summary message ─────────────────────────
@@ -263,7 +262,7 @@ export function scanAnalysisHealth() {
       ooda:      OODA_ENGINE_VERSION,
       contracts: OODA_RUNTIME_VERSION,
       artifact:  SCAN_ARTIFACT_SERVICE_VERSION,
-      review:    PLANT_IMAGE_VERIFICATION_VERSION,
+      review:    HUMAN_REVIEW_VERSION,
     }),
   }), Object.freeze({
     runtimeVersion: SCAN_ANALYSIS_RUNTIME_VERSION,
