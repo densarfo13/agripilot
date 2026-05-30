@@ -30,16 +30,17 @@ import { universalPlantRuntime, plantIntelligence,
 import { knowledgeForPlant } from '../knowledge/index';
 import { loadManagedPlants } from '../runtime/data/managedPlants.js';
 import PlantImage from '../components/plants/PlantImage.jsx';
-
-const EVENTS_KEY = 'farroway_event_log';
+// CPO retention pass — wave-26 C-3 migrated the canonical event
+// log from 'farroway_event_log' to 'farroway.farmEvents'. The
+// pilot-feedback workflow (H-6) caught that PlantProfile still
+// read the old key, leaving the per-plant timeline permanently
+// empty. Route through the canonical reader instead.
+import { getCanonicalActivityEvents } from '../runtime/launchBlockers/ActivityDataHealthRuntime';
 
 function _readEvents() {
   try {
-    if (typeof window === 'undefined') return [];
-    const raw = window.localStorage && window.localStorage.getItem(EVENTS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const list = getCanonicalActivityEvents();
+    return Array.isArray(list) ? list : [];
   } catch { return []; }
 }
 

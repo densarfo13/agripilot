@@ -570,6 +570,25 @@ const PageLoader = () => (
  */
 function AppCrashBoundaryWithLocation({ children }) {
   const location = useLocation();
+  // CPO pilot-fix C-3 — recordVisit() previously only fired on
+  // FarmerTodayPage via DailyReminderBanner mount. Deep-linkers
+  // straight to /scan, /my-plants, /activity, or /tasks (the
+  // natural week-2 muscle-memory routes) never updated
+  // lastVisitISO, leaving daysSinceLastVisit() permanently stale
+  // and the return-banner firing falsely. Hoist the call to a
+  // top-level route-change effect so every navigation refreshes
+  // the visit signal. Idempotent — recordVisit() is a no-op on
+  // second call within the same UTC day.
+  React.useEffect(() => {
+    let cancelled = false;
+    import('./lib/retention/streakStore.js').then((m) => {
+      if (cancelled) return;
+      try {
+        if (m && typeof m.recordVisit === 'function') m.recordVisit();
+      } catch { /* never propagate — retention is non-critical */ }
+    }).catch(() => { /* swallow */ });
+    return () => { cancelled = true; };
+  }, [location.pathname]);
   return (
     <AppCrashBoundary routeKey={location.pathname}>
       {children}

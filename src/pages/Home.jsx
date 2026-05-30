@@ -677,22 +677,52 @@ export default function Home() {
     // Home bundle's critical path. Resolves silently when the
     // task id can't be matched (no real farm-task row → habit only).
     try {
-      const taskId   = ctxIntel?.todayTask?.id || '';
       const farmId   = (local && local.farm && local.farm.id) || '';
+      // CPO pilot-fix C-7 — contextEngine never stamped an `id` on
+      // the today-task envelope, so the wave-26 C-2 bridge was
+      // permanently dead. Derive a stable id at the call site:
+      // prefer any id contextEngine eventually emits, else build
+      // a deterministic ctx-{farmId}-{todayUTC} key so the server
+      // can dedupe across re-renders of the same day. On failure
+      // (offline / 5xx) enqueue with the same idempotency key —
+      // mirrors AllTasksPage.handleComplete's offline path.
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const taskId   = (ctxIntel?.todayTask?.id)
+                       || (farmId ? `ctx-${farmId}-${todayKey}` : '');
       if (taskId && farmId) {
+        const taskBody = {
+          title:      ctxIntel.todayTask.title      || null,
+          priority:   ctxIntel.todayTask.priority   || null,
+          actionType: ctxIntel.todayTask.actionType || null,
+        };
         import('../runtime/auth.js')
           .then((mod) => {
             try {
               if (mod && typeof mod.completeTask === 'function') {
-                mod.completeTask(farmId, taskId, {
-                  title:    ctxIntel.todayTask.title    || null,
-                  priority: ctxIntel.todayTask.priority || null,
-                  actionType: ctxIntel.todayTask.actionType || null,
-                });
+                return mod.completeTask(farmId, taskId, taskBody);
               }
-            } catch { /* swallow — habit path already persisted */ }
+              return null;
+            } catch { return null; }
           })
-          .catch(() => { /* swallow — never block UI on bridge */ });
+          .catch(() => {
+            // C-8 — offline / network failure: enqueue with the
+            // same idempotency key derived above so the reconnect
+            // drain replays it exactly once (no duplicate counts).
+            try {
+              import('../utils/offlineQueue.js').then((q) => {
+                if (q && typeof q.enqueue === 'function') {
+                  q.enqueue({
+                    method: 'POST',
+                    url: `/api/v2/farm-tasks/${farmId}/tasks/${encodeURIComponent(taskId)}/complete`,
+                    data: taskBody,
+                    entityType: 'task',
+                    actionType: 'complete',
+                    idempotencyKey: `complete:${farmId}:${taskId}`,
+                  }).catch(() => { /* swallow */ });
+                }
+              }).catch(() => { /* swallow */ });
+            } catch { /* swallow — never block UI on bridge */ }
+          });
       }
     } catch { /* swallow */ }
     // Refinement spec §4 — record the completion timestamp so the

@@ -83,6 +83,16 @@ export function formatApiError(err, fallback = 'Something went wrong. Please try
   // server response, not a connectivity failure.
   if (err.status && !err.response) {
     if (err.status === 429) {
+      // CPO pilot-fix C-6 — server's scanLimitGuard emits
+      // `code: 'scan_limit_reached'` for the daily 3-scan cap.
+      // The generic "please wait a moment" copy implied a
+      // temporary throttle; the cap is actually daily, so users
+      // who hit it tap-retry and think the app is broken. Branch
+      // on the code so the user sees an honest reset window.
+      if (err.code === 'scan_limit_reached'
+          || err.data?.code === 'scan_limit_reached') {
+        return 'You’ve used today’s 3 free scans. The quota resets at midnight UTC.';
+      }
       return 'Too many requests — please wait a moment and try again.';
     }
     const fe = err.fieldErrors;
@@ -101,6 +111,11 @@ export function formatApiError(err, fallback = 'Something went wrong. Please try
   }
   // Rate limited — show user-friendly message with retry hint
   if (err.response.status === 429) {
+    // CPO pilot-fix C-6 — same daily-cap branch as the fetch path.
+    const rcode = err.response?.data?.code;
+    if (rcode === 'scan_limit_reached') {
+      return 'You’ve used today’s 3 free scans. The quota resets at midnight UTC.';
+    }
     const retryAfter = err.response.headers?.['retry-after'];
     const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
     return seconds
