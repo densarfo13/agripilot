@@ -46,6 +46,11 @@ import { getLatestForPlant, isSupportedPlant }
 import { getLatestStageForPlant }       from '../runtime/growth';
 import { getLatestSeverityForPlant }    from '../runtime/severity';
 import { getLatestComparisonForPlant }  from '../runtime/outcomeComparison';
+// Wave-31 H5 — planting-date capture wires into the wave-30 API.
+// recordPlantingDate / getPlantingDate are pure; composition
+// over the canonical farroway.plantingDates localStorage map.
+import { recordPlantingDate, getPlantingDate }
+  from '../runtime/growth';
 
 function _readEvents() {
   try {
@@ -326,6 +331,59 @@ export default function PlantProfile() {
                        ? intel.bloom.confidence : 'unknown')}
             </div>
           </div>
+
+          {/* Wave-31 H5 — Planting date capture. Composes the
+              wave-30 plantingDate API; feeds weeksSincePlanting
+              into the growth runtime's crop-stage fallback. The
+              input is a plain HTML date picker; on commit we
+              recordPlantingDate(plantKey, isoDate). Reading the
+              stored value seeds the input on subsequent mounts. */}
+          {(() => {
+            const pid = (plant && (plant.id || plant.plantId || plant.commonName)) || '';
+            if (!pid) return null;
+            const storedDate = getPlantingDate(pid) || '';
+            // Coerce to YYYY-MM-DD for the input element.
+            const initial = storedDate.length >= 10
+                            ? storedDate.slice(0, 10) : '';
+            return (
+              <>
+                <div style={S.sectionTitle}>
+                  {tSafe('plantProfile.plantingDate', 'Planting date')}
+                </div>
+                <div style={S.card} data-testid="plant-profile-planting-date">
+                  <label style={{ fontSize: 13, color: '#1F2933',
+                                   display: 'flex', alignItems: 'center',
+                                   gap: 10, flexWrap: 'wrap' }}>
+                    <span>{tSafe('plantProfile.plantingDate.label',
+                          'When was this planted?')}</span>
+                    <input
+                      type="date"
+                      defaultValue={initial}
+                      onBlur={(e) => {
+                        const v = (e.target && e.target.value) || '';
+                        if (!v) return;
+                        try { recordPlantingDate(pid, v); }
+                        catch { /* swallow — never block */ }
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(31,41,51,0.18)',
+                        background: '#FFFFFF', color: '#1F2933',
+                        fontSize: 13, fontFamily: 'inherit',
+                      }}
+                      data-testid="plant-profile-planting-date-input"
+                    />
+                  </label>
+                  <div style={{ fontSize: 11, color: '#64748B',
+                                marginTop: 6 }}>
+                    {tSafe('plantProfile.plantingDate.hint',
+                      'Optional. Helps the scan engine estimate growth stage when the photo signals are unclear.')}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           {/* Wave-28 — Harvest section. Only renders when the
               plant is in the supported set; the runtime returns

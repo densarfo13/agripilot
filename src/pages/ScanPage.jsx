@@ -318,6 +318,12 @@ export default function ScanPage() {
   // per scan). Prevents render-loops and prevents duplicate
   // timeline events / artifacts on reconnect-replay.
   const _harvestSeenRef = useRef(new Set());
+  // Wave-31 H4 — surface the Add-to-My-Plants result so the user
+  // sees explicit feedback when the workflow returns ineligible
+  // (e.g. plant not in catalog) or already-managed. Founder audit
+  // flagged the previous silent return as a HIGH adoption blocker.
+  // Three values: 'idle' | 'ineligible:{reason}' | 'added'.
+  const [addPlantNotice, setAddPlantNotice] = useState('');
   const [savedEntryId, setSavedEntryId] = useState(null);
   const [tasksAdded, setTasksAdded] = useState(false);
   // Wave-28 Harvest Readiness — single-shot evaluation per scan.
@@ -657,6 +663,7 @@ export default function ScanPage() {
     setUserInitiatedCamera(false);
     setError('');
     setResult(null);
+    setAddPlantNotice('');
     setLoadTimedOut(false);
     // 2. Clear browser-storage camera/scan-UI error keys. NEVER
     //    touch farroway_scan_history_* — history must survive.
@@ -694,6 +701,7 @@ export default function ScanPage() {
             setUserInitiatedCamera(false);
             setError('');
             setResult(null);
+    setAddPlantNotice('');
             setLoadTimedOut(false);
             return true;
           } catch { return false; }
@@ -1488,6 +1496,7 @@ export default function ScanPage() {
     _sessionRef.current = null;
     setError('');
     setResult(null);
+    setAddPlantNotice('');
     setSavedEntryId(null);
     setTasksAdded(false);
     setPendingThumbnail(null);
@@ -1866,6 +1875,54 @@ export default function ScanPage() {
           Renders ONLY after a successful result. No auto-create.
           The wave-5 single-writer (UI layer) persists via
           farroway_managed_plants; engines never write storage. */}
+      {/* Wave-31 H4 — inline notice for the Add-to-My-Plants
+          result. Renders only when the workflow has produced a
+          decision; clears on re-scan via the result-reset effect.
+          Pure composition; uses existing PremiumPage chrome. */}
+      {phase === 'result' && result && addPlantNotice ? (
+        (() => {
+          const isIneligible = addPlantNotice.startsWith('ineligible:');
+          const reason = isIneligible ? addPlantNotice.slice('ineligible:'.length) : '';
+          const isAdded = addPlantNotice === 'added';
+          const isAlready = addPlantNotice === 'already-managed';
+          const bg = isAdded ? 'rgba(34,197,94,0.10)'
+                   : isAlready ? 'rgba(14,165,233,0.10)'
+                   : 'rgba(245,158,11,0.10)';
+          const border = isAdded ? 'rgba(34,197,94,0.32)'
+                       : isAlready ? 'rgba(14,165,233,0.32)'
+                       : 'rgba(245,158,11,0.32)';
+          const tone = isAdded ? '#86EFAC'
+                     : isAlready ? '#7DD3FC'
+                     : '#FDE68A';
+          const message = isAdded
+            ? tStrict('scan.addPlant.success',
+                      'Plant added to My Plants.')
+            : isAlready
+            ? tStrict('scan.addPlant.already',
+                      'Already in My Plants — opened your plant.')
+            : reason === 'plant_not_in_catalog'
+              ? tStrict('scan.addPlant.notInCatalog',
+                  'We don’t recognize this plant yet — the scan was saved to your history. Once we add this plant we’ll surface it on the plant page.')
+              : tStrict('scan.addPlant.couldNotAdd',
+                  'Could not add this plant right now — the scan was saved to your history.');
+          return (
+            <div data-testid="scan-add-plant-notice"
+                 data-notice-kind={addPlantNotice}
+                 style={{
+                   background: bg, border: `1px solid ${border}`,
+                   borderRadius: 12, padding: '10px 14px',
+                   color: '#EAF2FF', fontSize: 13.5, lineHeight: 1.45,
+                   display: 'flex', alignItems: 'center', gap: 10,
+                 }}>
+              <span style={{ display: 'inline-block', width: 8,
+                             height: 8, borderRadius: '50%',
+                             background: tone, flexShrink: 0 }} />
+              <span>{message}</span>
+            </div>
+          );
+        })()
+      ) : null}
+
       {phase === 'result' && result ? (
         <AddPlantConfirmationCard
           scanResult={result}
@@ -1885,12 +1942,19 @@ export default function ScanPage() {
                 existingPlants: _loadManagedPlants(),
               });
               if (!wf || !wf.eligible) {
-                try { trackEvent('plant_add_ineligible',
-                  { reason: (wf && wf.reason) || 'unknown' }); }
+                // Wave-31 H4 — surface the failure inline instead
+                // of silently returning. Reason values from the
+                // scanToManagedPlant workflow include
+                // 'plant_not_in_catalog' | 'missing_data' | etc.
+                // Pass through so the notice copy can be specific.
+                const reason = (wf && wf.reason) || 'unknown';
+                setAddPlantNotice(`ineligible:${reason}`);
+                try { trackEvent('plant_add_ineligible', { reason }); }
                 catch { /* ignore */ }
                 return;
               }
               if (wf.alreadyManaged && wf.route) {
+                setAddPlantNotice('already-managed');
                 try { navigate(wf.route); }
                 catch { /* ignore */ }
                 return;
@@ -1898,6 +1962,7 @@ export default function ScanPage() {
               const plant = wf.plant;
               if (!plant) return;
               _appendManagedPlant(plant);
+              setAddPlantNotice('added');
               try { trackEvent('plant_created_from_scan',
                 { plantId: plant.id, scanId: sr?.scanId || null }); }
               catch { /* ignore */ }
