@@ -94,7 +94,7 @@ export default function ProgressStrip() {
 
   return (
     <section style={STYLES.wrap} data-testid="progress-strip">
-      <span style={STYLES.header}>Progress</span>
+      <span style={STYLES.header}>Activity</span>
       <ul style={STYLES.list}>
         {progress.positiveSignals.map((sig, i) => <li key={i}>{sig}</li>)}
       </ul>

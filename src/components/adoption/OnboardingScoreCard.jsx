@@ -101,11 +101,11 @@ export default function OnboardingScoreCard({ adoption }) {
     <section style={STYLES.card}
       data-testid="onboarding-score-card"
       role="region"
-      aria-label={tSafe('adoption.onboarding.aria', 'Onboarding progress')}
+      aria-label={tSafe('adoption.onboarding.aria', 'Setup steps')}
     >
       <div style={STYLES.header}>
         <div style={STYLES.title}>
-          {tSafe('adoption.onboarding.title', 'Setup progress')}
+          {tSafe('adoption.onboarding.title', 'Your setup')}
         </div>
         <div style={STYLES.pct}
           data-testid="onboarding-score-percent">{o.percent}%</div>

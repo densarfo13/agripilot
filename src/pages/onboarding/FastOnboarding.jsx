@@ -919,7 +919,7 @@ export default function FastOnboarding() {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={tSafe('fastOnboarding.progressAria',
-          'Onboarding progress')}
+          'Setup steps')}
       >
         <div style={{ ...S.progressFill, width: `${progressPct}%` }} />
       </div>

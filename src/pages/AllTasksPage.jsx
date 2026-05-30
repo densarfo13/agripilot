@@ -546,7 +546,7 @@ export default function AllTasksPage() {
             style={S.viewProgressLink}
             data-testid="tasks-view-progress"
           >
-            {tSafe('tasks.viewProgress', 'View progress')}
+            {tSafe('tasks.viewProgress', 'View activity')}
             <span aria-hidden="true" style={{ marginLeft: 6 }}>→</span>
           </button>
         </div>

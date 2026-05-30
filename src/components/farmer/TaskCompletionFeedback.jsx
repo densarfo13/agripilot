@@ -90,10 +90,11 @@ export default function TaskCompletionFeedback({
   const nextLabel      = tStrict('retention.completed.next', 'Next:');
   const continueLabel  = tStrict('retention.cta.continue', 'Continue');
   const closeLabel     = tStrict('retention.cta.close', 'Close');
-  // Spec v2 §2: explicit "+1 progress" line shown alongside the
+  // Spec v2 §2: explicit "+1 activity" line shown alongside the
   // streak chip so the farmer sees both the running total (streak)
-  // and the per-completion delta. Stays subtle.
-  const progressDeltaLabel = tStrict('retention.completed.progressDelta', '+1 progress');
+  // and the per-completion delta. Stays subtle. (Launch-hardening:
+  // renamed from "+1 progress" to align with the Activity rename.)
+  const progressDeltaLabel = tStrict('retention.completed.progressDelta', '+1 activity');
 
   // Streak text uses interpolation when the key has a `{count}`
   // token; pass count via the bound t. Hides entirely when streak

@@ -107,6 +107,7 @@ const REQUIRED_SIBLING_GATES = [
   'scripts/check-prisma-fragment-conflicts.mjs',
   'scripts/check-federation-security.mjs',
   'scripts/check-scan-analysis-pipeline.mjs',
+  'scripts/check-launch-friction.mjs',
   'scripts/check-route-role-isolation.mjs',
   'scripts/check-consent-required.mjs',
   'scripts/check-privacy-readiness.mjs',

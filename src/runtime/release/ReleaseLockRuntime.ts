@@ -357,6 +357,8 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       }, false),
       scanAnalysisReady:    _hasGlobal("__scanAnalysisHealth"),
       reviewReady:          _hasGlobal("__humanReviewHealth"),
+      // Wave 22 — Launch UX composite.
+      launchUXReady:        _hasGlobal("__launchUXHealth"),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

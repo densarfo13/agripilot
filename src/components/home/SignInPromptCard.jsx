@@ -142,7 +142,7 @@ export default function SignInPromptCard({ style }) {
       <span style={S.icon} aria-hidden="true">{'\uD83D\uDD12'}</span>
       <div style={S.body}>
         <span style={S.title}>
-          {tStrict('home.signin.title', 'Save your progress')}
+          {tStrict('home.signin.title', 'Save your activity')}
         </span>
         <span style={S.copy}>
           {tStrict('home.signin.copy',

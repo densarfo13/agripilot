@@ -1073,6 +1073,14 @@ export default function App() {
             await import('./runtime/scan/ScanAnalysisRuntime');
           installScanAnalysisGlobal();
         } catch { /* never block boot */ }
+        // Wave 22 — Launch UX health composite. Pins
+        // __launchUXHealth() which mirrors the 11 grower-flow
+        // gates the launch-friction CI gate enforces statically.
+        try {
+          const { installLaunchUXHealthGlobal } =
+            await import('./runtime/launch/LaunchUXHealth');
+          installLaunchUXHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
