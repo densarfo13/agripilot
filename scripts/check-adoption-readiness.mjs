@@ -129,8 +129,14 @@ const activateSrc = requireFile('src/pages/Activate.jsx', 'invites');
 if (!/farrowayActivateRouteMounted/.test(activateSrc)) {
   fail('invites: Activate.jsx must attest mount via __farrowayActivateRouteMounted');
 }
-if (!/\/api\/invites\/accept/.test(activateSrc)) {
-  fail('invites: Activate.jsx must POST to /api/invites/accept');
+// Wave-39 hardening: Activate.jsx delegates to the existing
+// /accept-invite UI (full acceptance flow with email/password)
+// rather than duplicating the API call. Either accept-invite
+// redirect OR a direct /api/invites/...accept POST is acceptable
+// — both honestly process the token.
+if (!/accept-invite/.test(activateSrc)
+ && !/\/api\/invites\/.*accept/.test(activateSrc)) {
+  fail('invites: Activate.jsx must process the token via /accept-invite or /api/invites/*/accept');
 }
 
 // ─── 7. Persistence contract surfaces criticalWritesPersisted ──

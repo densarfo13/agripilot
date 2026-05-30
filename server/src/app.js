@@ -103,6 +103,11 @@ import pilotMetricsRoutes from './modules/pilotMetrics/routes.js';
 import pilotQARoutes from './modules/pilotQA/routes.js';
 import securityRoutes from './modules/security/routes.js';
 import inviteRoutes from './modules/invites/routes.js';
+// Wave-39 — canonical admin-only invite-management routes.
+// Exposes GET /api/invites/status/:farmerId and POST
+// /api/invites/:farmerId/resend. Sits alongside the existing
+// public acceptance routes; admin-gated internally.
+import inviteAdminRoutes from './modules/invites/adminRoutes.js';
 import trustRoutes from './modules/trust/routes.js';
 import taskRoutes from './modules/tasks/routes.js';
 import systemRoutes from './modules/system/routes.js';
@@ -599,6 +604,10 @@ const _deployMetadata = (() => {
     });
   }
 })();
+// Wave-39 — persistence probe for the canonical health envelope.
+// Read-only; piggybacks on the SELECT 1 round-trip below.
+import { probePersistence as _probePersistence } from './config/persistenceProbe.js';
+
 async function _healthHandler(_req, res) {
   let dbStatus = 'down';
   try {
@@ -606,6 +615,24 @@ async function _healthHandler(_req, res) {
     dbStatus = 'ok';
   } catch { dbStatus = 'down'; }
   const uptime = Math.floor((Date.now() - _serverStartedAt) / 1000);
+
+  // Wave-39 — persistence envelope for __persistenceHealth().
+  // Honest mode + migration + criticalWritesPersisted flags.
+  // Probe is safe even when the DB is down — returns an
+  // unavailable envelope without throwing.
+  let persistence = null;
+  try {
+    persistence = await _probePersistence({ dbStatus });
+  } catch {
+    persistence = Object.freeze({
+      mode:                    'unavailable',
+      databaseUrlPresent:      false,
+      prismaClientReady:       false,
+      migrationsApplied:       false,
+      criticalWritesPersisted: false,
+    });
+  }
+
   // BACKWARD-COMPAT: every pre-hardening field stays exactly where
   // it was — { status, db, uptime, timestamp, version }. New
   // observability fields are ADDED, never removed or renamed.
@@ -626,6 +653,9 @@ async function _healthHandler(_req, res) {
     environment:    _deployMetadata.environment,
     releaseVersion: _deployMetadata.releaseVersion,
     serverStartedAt: _deployMetadata.serverStartedAt,
+    // Wave-39 — persistence envelope. Frontend's
+    // __persistenceHealth() reads this exact shape.
+    persistence,
   };
   res.status(dbStatus === 'ok' ? 200 : 503).json(body);
 }
@@ -1294,6 +1324,9 @@ app.use('/api/organizations', organizationRoutes);
 app.use('/api/pilot', pilotMetricsRoutes);
 app.use('/api/pilot-qa', pilotQARoutes);
 app.use('/api/security', securityRoutes);
+// Wave-39 — admin routes FIRST so /api/invites/status/:farmerId
+// resolves before the public router's /:token wildcard matches.
+app.use('/api/invites', inviteAdminRoutes);
 app.use('/api/invites', inviteRoutes); // public invite acceptance (rate-limited internally)
 app.use('/api/trust', trustRoutes);
 app.use('/api/tasks', taskRoutes);
