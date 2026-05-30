@@ -60,7 +60,25 @@ const _safe = <T,>(fn: () => T, fb: T): T => {
  * blocker fails. Mirrors the pattern already used in
  * src/runtime/release/index.ts where __appStoreReadiness is wrapped
  * to inject releaseLockVerdict. Idempotent.
+ *
+ * Final Gap Closure Pack (post-wave-26) — additionally surfaces six
+ * pilot-readiness flags drawn from the new runtime suite:
+ *   outcomeTrackingReady / feedbackReady / retentionReady /
+ *   fieldOfficerReady / buyerTrustReady / knowledgeCoverageReady
+ * All flags are read from their respective __*Health globals
+ * that the Gap-Closure Pack installs at boot. Missing globals
+ * surface as `false` rather than crashing.
  */
+function _readGlobalFlag(name: string, key: string): boolean {
+  return _safe(() => {
+    if (typeof window === 'undefined') return false;
+    const w = window as any;
+    if (typeof w[name] !== 'function') return false;
+    const out = w[name]();
+    return !!(out && out[key]);
+  }, false);
+}
+
 function _extendReleaseLockWithBlockers(): void {
   _safe(() => {
     if (typeof window === 'undefined') return;
@@ -72,6 +90,13 @@ function _extendReleaseLockWithBlockers(): void {
       const base = _safe(() => prior(), {} as any) || {};
       const live = _safe(() => goLiveHealth(), null as any);
       const checks = live && live.checks ? live.checks : {};
+      // Final Gap Closure Pack — six pilot-readiness flags
+      const outcomeTrackingReady   = _readGlobalFlag('__outcomeHealth',    'outcomeTrackingReady');
+      const feedbackReady          = _readGlobalFlag('__feedbackHealth',   'feedbackReady');
+      const retentionReady         = _readGlobalFlag('__retentionHealth',  'retentionReady');
+      const fieldOfficerReady      = _readGlobalFlag('__fieldOfficerHealth','fieldOfficerReady');
+      const buyerTrustReady        = _readGlobalFlag('__buyerTrustHealth', 'buyerTrustReady');
+      const knowledgeCoverageReady = _readGlobalFlag('__knowledgeHealth',  'knowledgeCoverageReady');
       const next: any = { ...(base || {}),
         onboardingGuardReady: !!checks.c1_onboardingGuard,
         taskStoreReady:       !!checks.c2_taskStore,
@@ -79,6 +104,13 @@ function _extendReleaseLockWithBlockers(): void {
         scanResultReady:      !!checks.c4_scanResult,
         scanCtaReady:         !!checks.c5_scanCta,
         syncReady:            !!checks.c6_sync,
+        // Gap Closure Pack flags
+        outcomeTrackingReady,
+        feedbackReady,
+        retentionReady,
+        fieldOfficerReady,
+        buyerTrustReady,
+        knowledgeCoverageReady,
         goLiveVerdict:        live && live.verdict ? live.verdict : 'NO_GO',
       };
       // Any wave-26 blocker failure → force RELEASE LOCK to RED.

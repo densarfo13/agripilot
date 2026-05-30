@@ -1135,6 +1135,55 @@ export default function App() {
             await import('./runtime/launchBlockers/index');
           installLaunchBlockerGlobals();
         } catch { /* never block boot */ }
+        // Final Gap Closure Pack — six composition runtimes for the
+        // pilot launch:
+        //   1. Outcome tracking — Issue → Recommendation → Task →
+        //      Follow-up scan → Outcome stored, with frozen 5-status
+        //      enum (resolved/improved/unchanged/worsened/unknown).
+        //   2. Feedback intelligence — thumbs-up/down collector
+        //      with hashed userId, capped at 500 rows.
+        //   3. Retention analytics — D1/D7/D30 cohort markers +
+        //      weekly active growers/gardeners counters.
+        //   4. Field officer workflow — offline-safe intervention
+        //      queue, organization-scoped, audit-log composition.
+        //   5. Buyer trust signals — read-only composition over
+        //      scan history + managed plants; ratings/reviews
+        //      explicitly excluded.
+        //   6. Knowledge content — counts plants/flowers/diseases/
+        //      pests against the 250/50/30/30 launch target.
+        // Each runtime pins its own window.__*Health probe; failures
+        // are fault-isolated so a single misbehaving module never
+        // blocks app boot.
+        try {
+          const { installOutcomeRuntimeGlobal } =
+            await import('./runtime/outcomes/index');
+          installOutcomeRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installFeedbackRuntimeGlobal } =
+            await import('./runtime/feedback/index');
+          installFeedbackRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installRetentionRuntimeGlobal } =
+            await import('./runtime/retention/index');
+          installRetentionRuntimeGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installFieldOfficerGlobal } =
+            await import('./runtime/fieldOfficer/index');
+          installFieldOfficerGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installBuyerTrustGlobal } =
+            await import('./runtime/buyerTrust/index');
+          installBuyerTrustGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installKnowledgeContentGlobal } =
+            await import('./runtime/knowledgeContent/index');
+          installKnowledgeContentGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
