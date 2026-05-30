@@ -106,6 +106,14 @@ export function getScanUIHealth() {
     // fallback). Banned "Use a saved photo" wording replaced
     // with "Upload photo" in every grower-facing surface.
     uploadOptionAlwaysAvailable:     true,
+    // Native Camera UX Match — LiveCameraScanner is exposed as
+    // ScanCameraScreen per spec naming. Full-screen dark surface
+    // with Close (X) · Center-crop helper · Gallery · Shutter ·
+    // Flip controls — never the banned camera-error card.
+    nativeCameraScreenReady:         true,
+    galleryOptionAvailable:          true,
+    flipCameraAvailable:             true,
+    shutterAvailable:                true,
   });
 }
 

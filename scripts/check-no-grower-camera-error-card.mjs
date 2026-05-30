@@ -123,13 +123,47 @@ const REQUIRED_FLAGS = [
   'directScanUrlStaysIdle',
   // Camera + Upload Final Fix — Upload is always reachable.
   'uploadOptionAlwaysAvailable',
+  // Native Camera UX Match — 4 control flags that audit the
+  // ScanCameraScreen surface (delegating to LiveCameraScanner).
+  'nativeCameraScreenReady',
+  'galleryOptionAvailable',
+  'flipCameraAvailable',
+  'shutterAvailable',
 ];
 for (const flag of REQUIRED_FLAGS) {
   if (!new RegExp('\\b' + flag + '\\s*:').test(healthSrc)) {
     fail(`scan-ui-health: __scanUIHealth() must expose "${flag}"`);
   }
 }
-pass(`scan-ui-health: 6 emergency-fix + camera-upload-final flags exposed`);
+pass(`scan-ui-health: 10 emergency-fix + camera-upload + native-camera flags exposed`);
+
+// ─── ScanCameraScreen spec-named module exists ───────────────
+const cameraScreen = readOrEmpty(path.join(ROOT,
+  'src/components/scan/ScanCameraScreen.jsx'));
+if (!cameraScreen) {
+  fail(`scan-camera-screen: src/components/scan/ScanCameraScreen.jsx missing`);
+} else if (!/LiveCameraScanner/.test(cameraScreen)) {
+  fail(`scan-camera-screen: ScanCameraScreen.jsx must delegate to LiveCameraScanner (single source of truth)`);
+} else {
+  pass(`scan-camera-screen: ScanCameraScreen.jsx re-exports LiveCameraScanner`);
+}
+
+// ─── LiveCameraScanner contains all 4 required controls ──────
+const cameraImpl = readOrEmpty(path.join(ROOT,
+  'src/components/scan/LiveCameraScanner.jsx'));
+const CAMERA_CONTROL_MARKERS = [
+  { name: 'Close (X) button',      re: /aria-label[^,)]*tSafe\(['"]common\.close/ },
+  { name: 'Center-crop helper',    re: /Center\s+crop\s+or\s+leaf/ },
+  { name: 'Shutter button',        re: /S\.shutter\b/ },
+  { name: 'Flip button',           re: /scan\.camera\.flip/ },
+  { name: 'Gallery upload button', re: /scan\.camera\.gallery|scan\.camera\.upload/ },
+];
+for (const { name, re } of CAMERA_CONTROL_MARKERS) {
+  if (!re.test(cameraImpl)) {
+    fail(`scan-camera-controls: LiveCameraScanner missing "${name}"`);
+  }
+}
+pass(`scan-camera-controls: Close · Center-crop · Shutter · Flip · Gallery all wired`);
 
 // ─── ScanFallback uses the spec-approved CTA labels ───────────
 const fallback = readOrEmpty(path.join(ROOT,
@@ -155,4 +189,5 @@ if (FAILED.length > 0) {
 console.log('[check:no-grower-camera-error-card] PASS — grower never sees the camera error card.');
 console.log(`  Banned phrases cleared from src/ outside the release-lock + scripts allowlist.`);
 console.log(`  ScanFallback uses "Upload photo" primary + "Try camera again" secondary + helper line.`);
-console.log(`  __scanUIHealth() exposes the 6 diagnostic flags (incl. uploadOptionAlwaysAvailable).`);
+console.log(`  __scanUIHealth() exposes the 10 diagnostic flags (incl. nativeCameraScreenReady + galleryOptionAvailable + flipCameraAvailable + shutterAvailable).`);
+console.log(`  ScanCameraScreen.jsx re-exports LiveCameraScanner; all 5 native-camera controls (Close · Center-crop · Shutter · Flip · Gallery) verified.`);
