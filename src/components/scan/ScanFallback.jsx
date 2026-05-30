@@ -46,9 +46,9 @@ import ManualIssuePicker from './ManualIssuePicker.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
 
 // Reasons where the camera itself failed or is not ready. For
-// these, "Use a saved photo" becomes the PRIMARY action and the
-// camera retry drops to secondary — the farmer is steered
-// gallery-first instead of being pushed to keep retrying a camera
+// these, the Upload photo button becomes the PRIMARY action and
+// the camera retry drops to secondary — the farmer is steered
+// upload-first instead of being pushed to keep retrying a camera
 // that just failed (Final Scan Preview + Gallery-First Fix §2).
 const CAMERA_FAIL_REASONS = Object.freeze([
   'crash', 'camera_unavailable', 'permission_denied', 'unsupported', 'timeout',
@@ -91,7 +91,7 @@ const RETRY_COPY = Object.freeze({
   // failed to render within the 15s safety ceiling) is NOT a
   // camera failure. Use accurate wording so the farmer knows
   // to retry the page load, not blame the camera.
-  page_loading:       { title: 'Scan is taking a moment',     body: 'Tap retry to reload, or use a saved photo to keep scanning now.' },
+  page_loading:       { title: 'Scan is taking a moment',     body: 'Tap retry to reload, or upload a photo to keep scanning now.' },
   // Spec §7 — surface-specific outcomes the FSM emits.
   upload_failed:      { title: 'Upload failed',               body: 'Try a smaller photo, or check your connection and retry.' },
   analysis_delayed:   { title: 'Analysis is delayed',          body: 'Your photo was saved for retry — you can keep using the app.' },
@@ -215,9 +215,9 @@ export default function ScanFallback({
             <>
               {/* Emergency Fix — camera failed → Upload is the
                   primary CTA. Try-camera-again is a quiet
-                  secondary. Banned wording ("Camera ran into a
-                  problem" / "Tap retry to try again" / "Retry
-                  camera" / "Use a saved photo") removed. */}
+                  secondary. Banned wording removed (see
+                  scripts/check-no-grower-camera-error-card.mjs
+                  for the enforced ban list). */}
               <button
                 type="button"
                 onClick={handleUploadClick}

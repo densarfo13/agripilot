@@ -101,6 +101,11 @@ export function getScanUIHealth() {
     scanNavOpensCamera:              true,
     cameraAutoStartOnPlainRoute:     false,
     cameraStartsOnlyFromUserIntent:  true,
+    // Camera + Upload Final Fix — Upload is always reachable
+    // (entry card + inside camera capture UI + permission-denied
+    // fallback). Banned "Use a saved photo" wording replaced
+    // with "Upload photo" in every grower-facing surface.
+    uploadOptionAlwaysAvailable:     true,
   });
 }
 

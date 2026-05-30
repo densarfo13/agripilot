@@ -105,7 +105,7 @@ function _copyForKind(kind, ctx) {
       return {
         tone:  'info',
         title: 'Camera permission needed',
-        body:  'Allow camera access to scan, or use a saved photo instead.',
+        body:  'Allow camera access to scan, or upload a photo instead.',
         instructions: [],
         primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
@@ -165,7 +165,7 @@ function _copyForKind(kind, ctx) {
         title: 'Camera is taking too long',
         body:  blocked
           ? 'Scanning works with saved photos too.'
-          : 'Try once more, or use a saved photo.',
+          : 'Try once more, or upload a photo.',
         instructions: [],
         primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
@@ -175,7 +175,7 @@ function _copyForKind(kind, ctx) {
       return {
         tone:  'info',
         title: 'Camera is busy',
-        body:  'Another app may be using the camera. Close it and try again, or use a saved photo.',
+        body:  'Another app may be using the camera. Close it and try again, or upload a photo.',
         instructions: [],
         primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
@@ -185,7 +185,7 @@ function _copyForKind(kind, ctx) {
       return {
         tone:  'info',
         title: 'Camera could not be configured',
-        body:  'Try again, or use a saved photo.',
+        body:  'Try again, or upload a photo.',
         instructions: [],
         primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
@@ -198,7 +198,7 @@ function _copyForKind(kind, ctx) {
         title: 'Camera could not start',
         body:  blocked
           ? 'Scanning works with saved photos too.'
-          : 'Try again, or use a saved photo.',
+          : 'Try again, or upload a photo.',
         instructions: [],
         primaryCta:   { kind: 'retry', label: 'Try camera again' },
         secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },
@@ -237,7 +237,7 @@ export function classifyCameraError(err, ctx) {
       kind:         CAMERA_FAILURE_KINDS.UNKNOWN,
       tone:         'info',
       title:        'Camera could not start',
-      body:         'Try again, or use a saved photo.',
+      body:         'Try again, or upload a photo.',
       instructions: [],
       primaryCta:   { kind: 'retry', label: 'Try camera again' },
       secondaryCta: { kind: 'use_saved_photo', label: 'Use saved photo' },

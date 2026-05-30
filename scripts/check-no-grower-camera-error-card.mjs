@@ -61,6 +61,9 @@ const BANNED_PATTERNS = [
   /Camera\s+ran\s+into\s+a\s+problem/i,
   /Tap\s+retry\s+to\s+try\s+again/i,
   /\bRetry\s+camera\b/i,
+  // Camera + Upload Final Fix — "Use a saved photo" replaced
+  // with "Upload photo" everywhere grower-facing.
+  /\bUse\s+a\s+saved\s+photo\b/i,
 ];
 
 // Files where these strings can legitimately appear because
@@ -118,13 +121,15 @@ const REQUIRED_FLAGS = [
   'cameraFailureShowsUploadFallback',
   'scanNavAttemptsCamera',
   'directScanUrlStaysIdle',
+  // Camera + Upload Final Fix — Upload is always reachable.
+  'uploadOptionAlwaysAvailable',
 ];
 for (const flag of REQUIRED_FLAGS) {
   if (!new RegExp('\\b' + flag + '\\s*:').test(healthSrc)) {
     fail(`scan-ui-health: __scanUIHealth() must expose "${flag}"`);
   }
 }
-pass(`scan-ui-health: 5 new emergency-fix flags exposed`);
+pass(`scan-ui-health: 6 emergency-fix + camera-upload-final flags exposed`);
 
 // ─── ScanFallback uses the spec-approved CTA labels ───────────
 const fallback = readOrEmpty(path.join(ROOT,
@@ -150,4 +155,4 @@ if (FAILED.length > 0) {
 console.log('[check:no-grower-camera-error-card] PASS — grower never sees the camera error card.');
 console.log(`  Banned phrases cleared from src/ outside the release-lock + scripts allowlist.`);
 console.log(`  ScanFallback uses "Upload photo" primary + "Try camera again" secondary + helper line.`);
-console.log(`  __scanUIHealth() exposes the 5 new diagnostic flags.`);
+console.log(`  __scanUIHealth() exposes the 6 diagnostic flags (incl. uploadOptionAlwaysAvailable).`);

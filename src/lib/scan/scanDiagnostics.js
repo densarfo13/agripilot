@@ -264,7 +264,7 @@ export function failureMessage(kind) {
     case 'unauthorized':        return 'Your session expired. Sign in again to retry.';
     case 'server_error':        return 'The analyzer is unavailable right now. Try again shortly.';
     case 'unsupported_image':   return 'This photo could not be prepared. Try a smaller JPEG or PNG.';
-    default:                    return 'Scan could not finish. Try again or use a saved photo.';
+    default:                    return 'Scan could not finish. Try again or upload a photo.';
   }
 }
 

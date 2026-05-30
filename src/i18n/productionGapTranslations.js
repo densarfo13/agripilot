@@ -22,9 +22,9 @@
  *        the "three languages on one screen" symptom captured.
  *
  *     3. LiveCameraScanner fallback panel ("Camera is taking a
- *        moment", "Tap retry, or use a saved photo to keep scanning
- *        now.", "Retry camera", etc.) was hardcoded English in JSX,
- *        not even wrapped in tSafe.
+ *        moment", "Tap retry, or upload a photo to keep scanning
+ *        now.", upload-first CTA, etc.) was hardcoded English in
+ *        JSX, not even wrapped in tSafe.
  *
  *   Shape: `{ key: { locale: value } }`. Merged via the empty-slot
  *   fill in src/i18n/index.js — translator-authored canonical
@@ -316,7 +316,7 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     hi: 'कैमरा थोड़ा समय ले रहा है',
   },
   'scan.camera.takingMoment.body': {
-    en: 'Tap retry, or use a saved photo to keep scanning now.',
+    en: 'Tap retry, or upload a photo to keep scanning now.',
     fr: 'Touchez réessayer, ou utilisez une photo enregistrée pour continuer.',
     sw: 'Gusa jaribu tena, au tumia picha iliyohifadhiwa kuendelea kuchanganua sasa.',
     ha: 'Danna sake gwadawa, ko yi amfani da hoton da aka adana don ci gaba da sikan yanzu.',
@@ -324,12 +324,12 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     hi: 'पुनः प्रयास करें टैप करें, या अभी स्कैन जारी रखने के लिए सहेजी गई तस्वीर का उपयोग करें।',
   },
   'scan.camera.useSaved': {
-    en: 'Use a saved photo',
-    fr: 'Utiliser une photo enregistrée',
-    sw: 'Tumia picha iliyohifadhiwa',
-    ha: 'Yi amfani da hoton da aka adana',
-    tw: 'Fa mfonini a wɔakora di dwuma',
-    hi: 'सहेजी गई तस्वीर का उपयोग करें',
+    en: 'Upload photo',
+    fr: 'Téléverser une photo',
+    sw: 'Pakia picha',
+    ha: 'Loda hoto',
+    tw: 'Fa mfonini bi gu so',
+    hi: 'फोटो अपलोड करें',
   },
   // Emergency Fix — banned "Retry camera" wording replaced
   // with calmer "Try camera again". The key stays for any
@@ -2652,7 +2652,7 @@ export const PRODUCTION_GAP_TRANSLATIONS = Object.freeze({
     hi: 'स्कैन में थोड़ा समय लग रहा है',
   },
   'scan.fallback.page_loading.body': {
-    en: 'Tap retry to reload, or use a saved photo to keep scanning now.',
+    en: 'Tap retry to reload, or upload a photo to keep scanning now.',
     fr: 'Appuyez sur réessayer pour recharger, ou utilisez une photo enregistrée pour continuer.',
     sw: 'Gusa jaribu tena kupakia upya, au tumia picha iliyohifadhiwa kuendelea kuskani.',
     ha: 'Danna sake gwadawa don sake loda, ko yi amfani da hoton da aka adana don ci gaba.',

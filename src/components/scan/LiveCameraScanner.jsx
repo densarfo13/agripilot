@@ -465,7 +465,7 @@ export default function LiveCameraScanner({
       setPhase('permission_denied');
       setErrorMsg(tSafe(
         'scan.camera.denied',
-        'Camera access was denied. Tap "Use a saved photo" to continue.',
+        'Camera is not available right now. Upload a photo instead.',
       ));
       _cameraLog('preflight_denied');
       return;
@@ -521,7 +521,7 @@ export default function LiveCameraScanner({
             denied
               ? tSafe(
                   'scan.camera.denied',
-                  'Camera access was denied. Tap "Use a saved photo" to continue.',
+                  'Camera is not available right now. Upload a photo instead.',
                 )
               : tSafe(
                   'scan.camera.failed',
@@ -991,7 +991,7 @@ export default function LiveCameraScanner({
             >
               <_GalleryIcon size={18} />
               <span style={{ marginLeft: 8 }}>
-                {tSafe('scan.camera.useSaved', 'Use a saved photo')}
+                {tSafe('scan.camera.useSaved', 'Upload photo')}
               </span>
             </button>
             {/* Try-again is offered in BOTH error AND denied states.
