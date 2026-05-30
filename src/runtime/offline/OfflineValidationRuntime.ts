@@ -27,6 +27,12 @@ export interface OfflineValidationHealth {
   offlineAddPlantReady:         boolean;
   offlineAddFarmerReady:        boolean;
   offlineTaskCompleteReady:     boolean;
+  /**
+   * Wave-39 — true iff the artifact-creation offline path is wired
+   * (probed via the artifact queue key OR the artifact runtime
+   * health global).
+   */
+  offlineArtifactReady:         boolean;
   reconnectSyncReady:           boolean;
   duplicatePreventionReady:     boolean;
   queueHealthAvailable:         boolean;
@@ -74,6 +80,13 @@ export function offlineValidationHealth(): OfflineValidationHealth {
                                      || _hasGlobal('__persistenceHealth');
     const offlineTaskCompleteReady = _hasGlobal('__taskStoreHealth')
                                      || syncHealthOk;
+    // Wave-39 — artifact-offline path: the ArtifactRuntime is the
+    // single owner of evidence artifacts and writes through the
+    // canonical offline-queue keys. We probe its health surface
+    // first, then fall back to queue-key presence.
+    const offlineArtifactReady     = _hasGlobal('__artifactRuntimeHealth')
+                                     || _hasKey('farroway.artifactQueue')
+                                     || _hasKey('farroway-offline.mutations');
     const reconnectSyncReady       = syncHealthOk;
     const duplicatePreventionReady = detected.length > 0;
     const queueHealthAvailable     = syncHealthOk;
@@ -84,6 +97,7 @@ export function offlineValidationHealth(): OfflineValidationHealth {
       offlineAddPlantReady,
       offlineAddFarmerReady,
       offlineTaskCompleteReady,
+      offlineArtifactReady,
       reconnectSyncReady,
       duplicatePreventionReady,
       queueHealthAvailable,
@@ -96,6 +110,7 @@ export function offlineValidationHealth(): OfflineValidationHealth {
     offlineAddPlantReady:     false,
     offlineAddFarmerReady:    false,
     offlineTaskCompleteReady: false,
+    offlineArtifactReady:     false,
     reconnectSyncReady:       false,
     duplicatePreventionReady: false,
     queueHealthAvailable:     false,

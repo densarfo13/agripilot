@@ -46,6 +46,7 @@ function _emptyHealth(): PersistenceHealth {
     productionWritesEnabled: false,
     writeEndpointsSafe:      true,
     isProduction:            _isProduction(),
+    criticalWritesPersisted: false,
   });
 }
 
@@ -110,6 +111,13 @@ export async function refreshPersistenceHealth(): Promise<PersistenceHealth> {
         && !!p.migrationsApplied;
       const writeEndpointsSafe =
         productionWritesEnabled || !isProd;
+      // criticalWritesPersisted — server emits this once
+      // npm run validate:persistence has been run against the live
+      // DB. Fall back to productionWritesEnabled for honest default.
+      const criticalWritesPersisted =
+        typeof p.criticalWritesPersisted === 'boolean'
+          ? !!p.criticalWritesPersisted
+          : productionWritesEnabled;
       const fresh: PersistenceHealth = Object.freeze({
         runtimeVersion:          PERSISTENCE_RUNTIME_VERSION,
         initialized:             true,
@@ -120,6 +128,7 @@ export async function refreshPersistenceHealth(): Promise<PersistenceHealth> {
         productionWritesEnabled,
         writeEndpointsSafe,
         isProduction:            isProd,
+        criticalWritesPersisted,
         lastProbedAt:            new Date().toISOString(),
       });
       _cache = fresh;

@@ -75,6 +75,11 @@ export interface InviteHealth {
   tokenHashingReady:        boolean;
   activationFlowReady:      boolean;
   fakeDelivery:             boolean;  // ALWAYS false in production
+  // Wave-39 — adoption-readiness extensions.
+  activationRouteReady:     boolean;  // /activate route mounted
+  resendReady:              boolean;  // POST /api/invites/resend wired
+  expirationReady:          boolean;  // expiresAt enforced
+  inviteStatusVisible:      boolean;  // admin can see invite status
 }
 
 /** Token expiry default — 14 days. */

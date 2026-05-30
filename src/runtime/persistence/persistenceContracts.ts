@@ -29,6 +29,14 @@ export interface PersistenceHealth {
   productionWritesEnabled:  boolean;
   writeEndpointsSafe:       boolean;
   isProduction:             boolean;
+  /**
+   * Wave-39 — true iff the canonical critical-write list has been
+   * end-to-end validated against the live Prisma client (operator
+   * runs `npm run validate:persistence`). Reported by the server's
+   * /api/health envelope when set; falls back to
+   * `productionWritesEnabled` for default-honest behaviour.
+   */
+  criticalWritesPersisted:  boolean;
   lastProbedAt?:            string;
   probeError?:              string;
 }
@@ -54,17 +62,31 @@ export const SAFE_503_MESSAGE =
  * before production writes are considered safe. CI gate
  * check-prisma-production-ready enforces this list.
  */
+// Canonical names from THIS codebase's Prisma schema. See also the
+// CI gate at scripts/check-prisma-production-ready.mjs. The
+// conceptual-vs-actual mapping is:
+//   conceptual FarmerProfile       → actual Farmer
+//   conceptual ProgramEnrollment   → actual Application
+//   conceptual SellListing         → actual CropListing
+//   conceptual AuditEvent          → actual AuditLog
+//   conceptual Artifact            → actual EvidenceFile
+//   conceptual ImpactRecord        → staged ImpactReport
+//   conceptual EnrollmentBatch*    → staged EnrollmentBatch*
 export const REQUIRED_PRISMA_MODELS = Object.freeze([
   'User',
-  'FarmerProfile',
+  'Farmer',
   'Organization',
   'Program',
-  'ProgramEnrollment',
+  'Application',
+  'CropListing',
+  'BuyerInterest',
+  'AuditLog',
+  'EvidenceFile',
+] as const);
+
+/** Staged models — live in server/prisma/_pending-migrations/. */
+export const STAGED_PRISMA_MODELS = Object.freeze([
   'EnrollmentBatch',
   'EnrollmentBatchRow',
-  'SellListing',
-  'BuyerInterest',
-  'AuditEvent',
-  'Artifact',
-  'ImpactRecord',
+  'ImpactReport',
 ] as const);

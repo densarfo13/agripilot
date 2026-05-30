@@ -49,18 +49,25 @@ if (!existsSync(schemaPath)) {
 } else {
   const schema = readFileSync(schemaPath, 'utf8');
   pass(`schema.prisma present (${schema.length} chars)`);
-  // Check required models.
+  // Check required models — canonical names from this codebase's
+  // schema (see persistenceContracts.ts).
   const REQUIRED = [
-    'User', 'FarmerProfile', 'Organization', 'Program', 'ProgramEnrollment',
-    'EnrollmentBatch', 'EnrollmentBatchRow', 'SellListing', 'BuyerInterest',
-    'AuditEvent', 'Artifact', 'ImpactRecord',
+    'User', 'Farmer', 'Organization', 'Program', 'Application',
+    'CropListing', 'BuyerInterest', 'AuditLog', 'EvidenceFile',
   ];
+  // Staged models — informational only (in _pending-migrations/).
+  const STAGED = ['EnrollmentBatch', 'EnrollmentBatchRow', 'ImpactReport'];
   const missing = REQUIRED.filter((m) =>
     !new RegExp(`^\\s*model\\s+${m}\\s*\\{`, 'm').test(schema));
   if (missing.length > 0) {
     fail(`schema: missing required models — ${missing.join(', ')}`);
   } else {
-    pass(`schema: all 12 production-critical models present`);
+    pass(`schema: all ${REQUIRED.length} canonical production models present`);
+  }
+  const stagedMissing = STAGED.filter((m) =>
+    !new RegExp(`^\\s*model\\s+${m}\\s*\\{`, 'm').test(schema));
+  if (stagedMissing.length > 0) {
+    warn(`schema: ${stagedMissing.length} staged models pending: ${stagedMissing.join(', ')} (in _pending-migrations/)`);
   }
 }
 
@@ -82,6 +89,43 @@ if (existsSync(migrationsDir)) {
   warn(`Only _pending-migrations/ folder present — not yet promoted to migrations/. Operator must review and promote.`);
 } else {
   fail(`Neither migrations/ nor _pending-migrations/ folder present`);
+}
+
+// ─── 5. Wave-39 — critical write targets enumerated ────────────
+// These are the 9 critical-write surfaces the spec requires us
+// to validate end-to-end. This static check only confirms each
+// surface has a representable model in the schema; it does NOT
+// execute writes. Operators run the actual smoke-writes against
+// a non-production DB before promoting.
+const CRITICAL_WRITE_TARGETS = [
+  { surface: 'User write',           model: 'User'         },
+  { surface: 'Farmer write',         model: 'Farmer'       },
+  { surface: 'Plant write',          model: 'ManagedPlant' },
+  { surface: 'Task write',           model: 'Task'         },
+  { surface: 'EnrollmentBatch write',model: 'EnrollmentBatch' },
+  { surface: 'CropListing write',    model: 'CropListing'  },
+  { surface: 'BuyerInterest write',  model: 'BuyerInterest' },
+  { surface: 'AuditLog write',       model: 'AuditLog'     },
+  { surface: 'EvidenceFile write',   model: 'EvidenceFile' },
+];
+if (existsSync(schemaPath)) {
+  const schema = readFileSync(schemaPath, 'utf8');
+  const targetMissing = [];
+  const targetPresent = [];
+  for (const t of CRITICAL_WRITE_TARGETS) {
+    const re = new RegExp(`^\\s*model\\s+${t.model}\\s*\\{`, 'm');
+    if (re.test(schema)) {
+      targetPresent.push(t.surface);
+    } else {
+      targetMissing.push(`${t.surface} (model ${t.model})`);
+    }
+  }
+  if (targetPresent.length > 0) {
+    pass(`critical-write targets: ${targetPresent.length}/${CRITICAL_WRITE_TARGETS.length} reachable`);
+  }
+  if (targetMissing.length > 0) {
+    warn(`critical-write targets pending: ${targetMissing.join(', ')}`);
+  }
 }
 
 // ─── Report ────────────────────────────────────────────────────

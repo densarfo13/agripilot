@@ -256,6 +256,10 @@ const PrivacyPolicy  = lazy(() => import('./pages/PrivacyPolicy.jsx'));
 const Terms          = lazy(() => import('./pages/Terms.jsx'));
 const GuidanceDisclaimer = lazy(() => import('./pages/GuidanceDisclaimer.jsx'));
 const DataConsent    = lazy(() => import('./pages/DataConsent.jsx'));
+// Wave-39 — invite-activation route. Reads `?token=<raw>` from the
+// URL, POSTs to /api/invites/accept, renders accepting/accepted/
+// failed states. Pure render; never logs the token.
+const Activate       = lazy(() => import('./pages/Activate.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1264,6 +1268,31 @@ export default function App() {
             await import('./runtime/offline/OfflineValidationRuntime');
           installOfflineValidationGlobal();
         } catch { /* never block boot */ }
+        // Wave-39 — Adoption-readiness probes: farmer/gardener
+        // onboarding, NGO onboarding, buyer onboarding, knowledge
+        // coverage. Each pins its diagnostic global and composes
+        // into __goLiveHealth(). All four are installed even when
+        // some optional global health probes are absent.
+        try {
+          const { installOnboardingHealthGlobal } =
+            await import('./runtime/adoption/OnboardingHealthRuntime');
+          installOnboardingHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installNGOOnboardingHealthGlobal } =
+            await import('./runtime/adoption/NGOOnboardingHealthRuntime');
+          installNGOOnboardingHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installBuyerOnboardingHealthGlobal } =
+            await import('./runtime/adoption/BuyerOnboardingHealthRuntime');
+          installBuyerOnboardingHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installKnowledgeCoverageHealthGlobal } =
+            await import('./runtime/adoption/KnowledgeCoverageHealthRuntime');
+          installKnowledgeCoverageHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1673,6 +1702,8 @@ export default function App() {
               page so external links keep working. */}
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
+          {/* Wave-39 — public invite-activation route. */}
+          <Route path="/activate" element={<Activate />} />
 
           {/* Viral Click → Conversion (§1-§5) — value-first
               landing for share-link recipients. Two paths so
