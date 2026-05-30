@@ -601,5 +601,568 @@
       "Use early-maturing crop varieties to escape peak hopper damage"
     ],
     "images": ["plants/pests/grasshoppers"]
+  },
+  {
+    "id": "fall-armyworm",
+    "name": "Fall Armyworm (Spodoptera frugiperda)",
+    "symptoms": [
+      "Ragged, papery 'shot-hole' damage to maize leaves",
+      "Sawdust-like frass visible in maize whorls",
+      "Larvae visible inside whorl during day or under leaf sheaths",
+      "Damage to silks and developing cobs in later infestations",
+      "Severe defoliation possible — 30-50% yield loss in unmanaged fields"
+    ],
+    "lifecycle": [
+      "Egg — laid in masses of 50-200 on underside of leaves; hatch in 2-4 days",
+      "Larva — 6 instars over 14-22 days; final instar most destructive",
+      "Pupa — in soil for 7-12 days",
+      "Adult — strong-flying moth, lives 10-15 days, lays up to 1000 eggs",
+      "Multi-voltine — continuous generations under warm conditions"
+    ],
+    "treatmentOrganic": [
+      "Bacillus thuringiensis (Bt) sprays targeting young larvae in whorl",
+      "Pheromone traps for monitoring and mass-trapping",
+      "Sand or ash dusting into maize whorls",
+      "Release egg parasitoid Telenomus remus where available",
+      "Push-pull system with Desmodium intercrop and Napier grass border"
+    ],
+    "treatmentChemical": [
+      "Emamectin benzoate or chlorantraniliprole into the whorl",
+      "Spinetoram for resistance management",
+      "Avoid synthetic pyrethroids (rapid resistance development)",
+      "Treat early — third instar onwards is much harder to control"
+    ],
+    "prevention": [
+      "Synchronised early planting across the area",
+      "Scout fields weekly from emergence — treat at 20% damaged plants",
+      "Crop rotation — break the continuous-host cycle",
+      "Field-edge sanitation — remove host weeds (grasses)",
+      "Plant tolerant maize varieties where available"
+    ],
+    "images": ["plants/pests/fall-armyworm"]
+  },
+  {
+    "id": "stem-borer",
+    "name": "Stem Borer (Busseola fusca / Chilo partellus)",
+    "symptoms": [
+      "Small entry holes in maize and sorghum stems",
+      "Dead-heart symptom in young plants",
+      "Frass-filled tunnels visible when stem is split",
+      "Lodging from weakened stems in mature plants",
+      "Yield losses 20-40% depending on infestation timing"
+    ],
+    "lifecycle": [
+      "Egg — laid in batches on lower leaf sheaths or whorl; hatch in 4-7 days",
+      "Larva — bores into stem after a brief leaf-feeding phase; 25-35 days",
+      "Pupa — inside stem tunnel for 7-14 days",
+      "Adult — night-active moth; 4-6 generations per year",
+      "Diapause in stem stubble during dry season"
+    ],
+    "treatmentOrganic": [
+      "Push-pull intercrop with Desmodium + Napier grass border",
+      "Bt-based sprays directed into whorls before larvae bore in",
+      "Trichogramma parasitoid release at egg stage",
+      "Pith-extraction (removing borer-damaged stems) at harvest",
+      "Burn crop residues to destroy diapausing larvae"
+    ],
+    "treatmentChemical": [
+      "Cypermethrin or lambda-cyhalothrin granules into whorls (early instars only)",
+      "Carbofuran granules where registered and label-permitted",
+      "Once larvae bore into stem chemical control is largely ineffective"
+    ],
+    "prevention": [
+      "Plant Bt-maize where regulated and available",
+      "Synchronised planting to disrupt generation cycle",
+      "Destroy crop residues immediately after harvest",
+      "Trap crops (Napier grass) on field perimeter",
+      "Crop rotation with non-host crops (legumes)"
+    ],
+    "images": ["plants/pests/stem-borer"]
+  },
+  {
+    "id": "tuta-absoluta",
+    "name": "Tuta Absoluta (Tomato Leafminer)",
+    "symptoms": [
+      "Irregular blotch-shaped mines in tomato leaves",
+      "Larval frass visible inside mines",
+      "Holes bored into stems, flowers, and developing fruit",
+      "Reduced fruit quality and secondary rot entry",
+      "Severe defoliation in heavy infestations"
+    ],
+    "lifecycle": [
+      "Egg — minute yellow eggs laid singly on leaves and stems; hatch in 4-6 days",
+      "Larva — 4 instars over 12-15 days; the destructive stage",
+      "Pupa — in soil or curled leaf for 7-10 days",
+      "Adult — small grey moth, lives 6-15 days, female lays 200-300 eggs",
+      "10-12 generations per year in warm climates"
+    ],
+    "treatmentOrganic": [
+      "Pheromone traps (Tuta-specific) for monitoring and mass-trapping",
+      "Bt sprays targeting young larvae before they bore in",
+      "Spinosad sprays per organic label",
+      "Trichogramma achaeae releases at egg stage",
+      "Remove and destroy mined leaves and damaged fruit"
+    ],
+    "treatmentChemical": [
+      "Emamectin benzoate, chlorantraniliprole, or indoxacarb",
+      "Avoid pyrethroid use (resistance emerges rapidly)",
+      "Always follow PHI for tomato",
+      "Rotate IRAC mode-of-action groups every 2-3 sprays"
+    ],
+    "prevention": [
+      "Insect-proof netting on greenhouse vents (mesh ≤0.4 mm)",
+      "Strict rotation away from solanaceous crops",
+      "Destroy crop residues immediately after harvest",
+      "Quarantine new transplants and inspect for mines",
+      "Eliminate host weeds (nightshades, datura)"
+    ],
+    "images": ["plants/pests/tuta-absoluta"]
+  },
+  {
+    "id": "cutworms",
+    "name": "Cutworms",
+    "symptoms": [
+      "Young seedlings cut off at or just above soil level overnight",
+      "Greasy-grey caterpillars curled into a 'C' shape when disturbed",
+      "Damage scattered across the field — not uniform",
+      "Worst damage on transplants and direct-seeded crops in the first 2-3 weeks"
+    ],
+    "lifecycle": [
+      "Egg — laid singly or in clusters in plant debris; hatch in 4-7 days",
+      "Larva — 6 instars over 28-35 days; nocturnal feeders, hide in soil by day",
+      "Pupa — in soil for 12-15 days",
+      "Adult — large brown moths (e.g. Agrotis ipsilon); 2-4 generations per year"
+    ],
+    "treatmentOrganic": [
+      "Hand-pick larvae at dusk or early morning by scratching around damaged plants",
+      "Cardboard or foil collars around seedling stems",
+      "Diatomaceous earth around plant base",
+      "Bt sprays at dusk for young larvae",
+      "Encourage ground beetles and birds — natural predators"
+    ],
+    "treatmentChemical": [
+      "Lambda-cyhalothrin or bifenthrin bait around damaged areas",
+      "Chlorpyrifos granules in soil before planting (where label permits)",
+      "Treat at dusk for best contact with active larvae"
+    ],
+    "prevention": [
+      "Clean cultivation before planting — remove weeds and crop residue",
+      "Delay transplanting in known cutworm-pressure fields by 2-3 weeks",
+      "Stale-seedbed technique — let weeds flush, then destroy before planting",
+      "Avoid planting after grassland or pasture without 1-season break",
+      "Scout fields nightly during first 2 weeks post-emergence"
+    ],
+    "images": ["plants/pests/cutworms"]
+  },
+  {
+    "id": "termites",
+    "name": "Termites",
+    "symptoms": [
+      "Mud tubes on stems, walls, or wooden structures",
+      "Wilting plants with hollow or cut roots",
+      "Damage to crop stubble, stored grain, and wooden field structures",
+      "Sudden plant collapse in mature stage",
+      "Significant losses on sugarcane, maize, groundnut, and cotton in dry conditions"
+    ],
+    "lifecycle": [
+      "Eggs laid by queen inside the nest; hatch in 24-90 days",
+      "Workers — sterile soft-bodied castes that feed on cellulose; long-lived",
+      "Soldiers — defend the colony",
+      "Reproductives — winged alates swarm after rains to start new colonies",
+      "Colonies persist for years; queens can live decades"
+    ],
+    "treatmentOrganic": [
+      "Locate and destroy queen and main nest where accessible",
+      "Beauveria bassiana entomopathogenic fungus near nests",
+      "Wood ash mixed into soil around plants",
+      "Encourage natural predators (ants, ground beetles)",
+      "Aspilia africana extract used in some traditional systems"
+    ],
+    "treatmentChemical": [
+      "Imidacloprid soil drench at planting (where labelled for the crop)",
+      "Chlorpyrifos or fipronil termiticide barriers per label",
+      "Treat known nest mounds with insecticidal dust"
+    ],
+    "prevention": [
+      "Avoid heavy mulching with woody residues (attracts foragers)",
+      "Remove old stumps, logs, and untreated wooden stakes",
+      "Plant termite-tolerant or fast-growing varieties",
+      "Irrigate adequately — drought-stressed plants are more vulnerable",
+      "Treat seed with insecticide where chemical use is justified"
+    ],
+    "images": ["plants/pests/termites"]
+  },
+  {
+    "id": "locusts",
+    "name": "Locusts",
+    "symptoms": [
+      "Sudden mass defoliation across large areas",
+      "Crops stripped to bare stems within hours of swarm landing",
+      "Visible swarms during day; resting groups overnight",
+      "Damage to all green vegetation — cereals, legumes, pasture, vegetables",
+      "Catastrophic regional yield losses during swarm years"
+    ],
+    "lifecycle": [
+      "Egg — laid in pods of 80-100 in sandy soil; hatch in 10-65 days depending on temperature",
+      "Hopper — 5 instars over 30-50 days; the marching band stage",
+      "Adult — solitary phase or gregarious swarm phase (depends on density)",
+      "Swarm phase forms when hopper density exceeds threshold; can fly 150 km/day",
+      "2-5 generations per year during outbreaks"
+    ],
+    "treatmentOrganic": [
+      "Metarhizium acridum (biopesticide fungus) on hopper bands",
+      "Coordinated mechanical control — trenching, beating in early hopper stage",
+      "Encourage natural enemies (birds, parasitic flies)",
+      "Community-level scouting and reporting to FAO Locust Watch"
+    ],
+    "treatmentChemical": [
+      "Aerial or vehicle-mounted ULV spray — fenitrothion, malathion, or chlorpyrifos",
+      "Targeting solitary outbreak areas is far cheaper than swarm chase",
+      "Coordinated through national locust control units (CRC, DLCO-EA)"
+    ],
+    "prevention": [
+      "Early detection in known outbreak areas (Sahel, Horn of Africa, Red Sea coast)",
+      "Report sightings immediately to regional FAO units",
+      "Maintain early-warning monitoring infrastructure",
+      "Treat egg-laying sites BEFORE eggs hatch when possible",
+      "Reduce hopper density at solitary stage to prevent gregarious transition"
+    ],
+    "images": ["plants/pests/locusts"]
+  },
+  {
+    "id": "storage-beetles",
+    "name": "Storage Beetles",
+    "symptoms": [
+      "Small round exit holes in stored grain (maize weevil) or beans (bean weevil)",
+      "Fine flour-like dust at storage container base",
+      "Live adult beetles crawling through stored grain",
+      "Heated and musty smell as infestation grows",
+      "Significant weight and quality loss — up to 30% in 6 months"
+    ],
+    "lifecycle": [
+      "Egg — laid singly inside grain kernel by female",
+      "Larva — develops entirely inside the grain, 25-35 days",
+      "Pupa — inside grain, 5-7 days",
+      "Adult — chews exit hole; lives 4-5 months; female lays 150+ eggs",
+      "5-7 generations per year in warm storage"
+    ],
+    "treatmentOrganic": [
+      "Solar heating — spread grain in thin layer in full sun for 4-6 hours, several days",
+      "Sub-zero freezing — 7 days at -18 °C kills all stages",
+      "Diatomaceous earth mixed at 0.1-0.5% with stored grain",
+      "Hermetic storage — Purdue Improved Crop Storage (PICS) bags or metal silos",
+      "Add neem seed powder (1-2%) for combined repellent + insecticidal effect"
+    ],
+    "treatmentChemical": [
+      "Phosphine fumigation in sealed silos (licensed applicators only)",
+      "Pirimiphos-methyl admix at recommended label rates",
+      "Methoprene IGR for long-term storage"
+    ],
+    "prevention": [
+      "Dry grain to ≤13.5% moisture before storage",
+      "Clean storage structures fully before each season — no residue, no spilled grain",
+      "Hermetic bags (PICS, GrainPro) for smallholder storage",
+      "Inspect stores monthly during storage period",
+      "Use insect-resistant varieties where available"
+    ],
+    "images": ["plants/pests/storage-beetles"]
+  },
+  {
+    "id": "cassava-green-mite",
+    "name": "Cassava Green Mite",
+    "symptoms": [
+      "Yellow stippling on cassava leaves",
+      "Bronzing of upper leaf surface in heavy infestations",
+      "Premature leaf drop, especially upper canopy",
+      "Reduced tuber yield (20-50% loss)",
+      "Symptoms worst during dry season"
+    ],
+    "lifecycle": [
+      "Egg — laid on underside of leaves; hatch in 4-5 days",
+      "Larva and 2 nymphal stages — 8-12 days total",
+      "Adult — lives 2-4 weeks; female lays 50-90 eggs",
+      "10-12 generations per year in warm climates",
+      "Wind dispersal between fields"
+    ],
+    "treatmentOrganic": [
+      "Predatory mites (Typhlodromalus aripo, Neoseiulus idaeus) classical biocontrol",
+      "Maintain field hygiene — control alternative host weeds",
+      "Adequate cassava nutrition (esp. nitrogen, water) reduces susceptibility",
+      "Resistant varieties (TMS 30572 and clones)"
+    ],
+    "treatmentChemical": [
+      "Specific acaricides (abamectin) only in severe outbreaks per label",
+      "Avoid broad-spectrum insecticides — they kill the natural enemy mites"
+    ],
+    "prevention": [
+      "Plant resistant cassava varieties where available",
+      "Encourage predatory mite populations with diverse field borders",
+      "Avoid early-dry-season planting where mite pressure peaks",
+      "Maintain weed-free perimeter to reduce alternative hosts",
+      "Source clean planting material"
+    ],
+    "images": ["plants/pests/cassava-green-mite"]
+  },
+  {
+    "id": "cassava-mealybug",
+    "name": "Cassava Mealybug",
+    "symptoms": [
+      "White cottony masses on shoot tips, leaves, and stems",
+      "Bunchy top symptom — shortened internodes and twisted leaves",
+      "Honeydew secretion attracting sooty mould",
+      "Severe stunting and tuber yield loss (40-80% in unmanaged fields)",
+      "Spread by wind, ants, and infested cuttings"
+    ],
+    "lifecycle": [
+      "Egg — laid in white waxy ovisac; ~600 per female; hatch in 5-10 days",
+      "Crawler — 3 nymphal stages over 25-30 days",
+      "Adult — wingless female, winged male; female lives 30-60 days",
+      "6-8 generations per year in tropical conditions"
+    ],
+    "treatmentOrganic": [
+      "Classical biocontrol with parasitoid wasp Anagyrus lopezi — extremely successful in Africa",
+      "Insecticidal soap or neem oil spot-treatment on cuttings and young plants",
+      "Inspect and reject infested cuttings BEFORE planting"
+    ],
+    "treatmentChemical": [
+      "Imidacloprid soil drench at planting where label permits",
+      "Spirotetramat foliar — works through plant systems",
+      "Avoid broad-spectrum sprays — they kill the parasitoid"
+    ],
+    "prevention": [
+      "Plant clean cuttings — visually inspect at planting",
+      "Dip cuttings in insecticidal soap before planting",
+      "Maintain Anagyrus lopezi populations through diverse landscape",
+      "Plant tolerant cassava varieties where available",
+      "Coordinated regional clean-seed programmes"
+    ],
+    "images": ["plants/pests/cassava-mealybug"]
+  },
+  {
+    "id": "banana-weevil",
+    "name": "Banana Weevil",
+    "symptoms": [
+      "Wilting and yellowing of leaves, especially in dry season",
+      "Tunnels in rhizome and pseudostem base visible when cut open",
+      "Pseudostem leans or topples in heavy infestations",
+      "Reduced bunch weight and premature plant death",
+      "Yield losses of 30-60% in severe cases"
+    ],
+    "lifecycle": [
+      "Egg — laid in pseudostem base or rhizome; hatch in 5-8 days",
+      "Larva — 5 instars over 25-30 days, tunnelling in rhizome",
+      "Pupa — in larval tunnel for 6-9 days",
+      "Adult — Cosmopolites sordidus; nocturnal, hides in leaf debris; lives 1-2 years",
+      "Slow build-up — multiple generations within the same mat"
+    ],
+    "treatmentOrganic": [
+      "Pseudostem traps — cut sections placed flat to trap adults; remove and destroy weekly",
+      "Beauveria bassiana applied near rhizome",
+      "Field sanitation — destroy harvested pseudostems and remove crop residue",
+      "Hot water treatment (52 °C, 15 min) of suckers before planting"
+    ],
+    "treatmentChemical": [
+      "Imidacloprid soil drench at planting (suckers)",
+      "Carbofuran granules around rhizome where labelled",
+      "Targeted pseudostem injection — limited efficacy and labour-intensive"
+    ],
+    "prevention": [
+      "Use clean tissue-culture plantlets or thoroughly pared suckers",
+      "Hot water treatment of suckers before planting",
+      "Field sanitation — never leave harvested pseudostems intact in field",
+      "Avoid planting on heavily infested previous-banana sites",
+      "Rotate fields between banana cycles where feasible"
+    ],
+    "images": ["plants/pests/banana-weevil"]
+  },
+  {
+    "id": "coffee-berry-borer",
+    "name": "Coffee Berry Borer",
+    "symptoms": [
+      "Small entry hole at the apex of green or ripe coffee berries",
+      "Female beetle visible inside berry when split open",
+      "Damaged beans inside — discoloured, hollowed, or filled with frass",
+      "Premature berry drop in heavy infestations",
+      "Quality and yield loss — 20-50% in unmanaged plots"
+    ],
+    "lifecycle": [
+      "Egg — laid inside the developing coffee bean by female; 30-60 eggs per cluster",
+      "Larva — 2 instars over 10-26 days inside the bean",
+      "Pupa — 4-9 days inside the bean",
+      "Adult — Hypothenemus hampei; tiny black beetle; female bores into next berry",
+      "3-5 generations per year — continuous in stored berries on tree or ground"
+    ],
+    "treatmentOrganic": [
+      "Strict regular harvesting — never leave overripe berries on tree or ground",
+      "Beauveria bassiana spray on developing berries",
+      "Pheromone-baited traps for monitoring and mass-trapping",
+      "Parasitoid releases (Cephalonomia stephanoderis, Phymastichus coffea) where established",
+      "Post-harvest gleaning — pick up every fallen berry"
+    ],
+    "treatmentChemical": [
+      "Endosulfan was historically used but is now banned/restricted in most countries",
+      "Cypermethrin or chlorpyrifos sprays — very limited efficacy once larvae inside",
+      "Focus on cultural control rather than chemistry"
+    ],
+    "prevention": [
+      "Continuous harvesting at correct ripeness — no overripe berries left",
+      "Field sanitation — collect ALL fallen berries weekly",
+      "Trap-cropping with early-ripening rows around plot perimeter",
+      "Coordinate community-wide sanitation in producer regions",
+      "Prune coffee trees to improve light penetration and harvest access"
+    ],
+    "images": ["plants/pests/coffee-berry-borer"]
+  },
+  {
+    "id": "pod-borer-maruca",
+    "name": "Pod Borer (Maruca vitrata)",
+    "symptoms": [
+      "Holes bored into cowpea, pigeonpea, soybean flowers and pods",
+      "Frass extruding from entry holes",
+      "Damaged seeds inside pods — discoloured and partially eaten",
+      "Flower clusters webbed together by larval silk",
+      "Yield losses 20-80% on cowpea in West and East Africa"
+    ],
+    "lifecycle": [
+      "Egg — laid singly or in groups on flowers; hatch in 3-5 days",
+      "Larva — 5 instars over 10-14 days; feeds on flowers and pods",
+      "Pupa — in soil or plant debris for 7-10 days",
+      "Adult — Maruca vitrata moth; lives 7-12 days, lays 200+ eggs",
+      "4-6 generations per year"
+    ],
+    "treatmentOrganic": [
+      "Bt sprays during flowering window",
+      "Neem-based insecticides at first flowering",
+      "Trap crops (early-flowering cowpea) on field edge",
+      "Pheromone traps for monitoring and mass-trapping",
+      "Release Trichogramma chilonis at egg stage"
+    ],
+    "treatmentChemical": [
+      "Lambda-cyhalothrin or emamectin benzoate at first flowers",
+      "Two sprays 7-10 days apart during peak flowering",
+      "Always follow PHI on the label"
+    ],
+    "prevention": [
+      "Plant Bt-cowpea where available and regulated",
+      "Early-maturing varieties to escape peak pest pressure",
+      "Synchronous planting across the area",
+      "Field sanitation — destroy crop residues after harvest",
+      "Intercrop with cereals (sorghum, maize) to reduce concentration"
+    ],
+    "images": ["plants/pests/pod-borer-maruca"]
+  },
+  {
+    "id": "bollworm",
+    "name": "Bollworm (Helicoverpa armigera)",
+    "symptoms": [
+      "Round holes in cotton bolls, tomato fruits, chickpea pods",
+      "Frass at entry holes",
+      "Damaged developing seeds and bored fruits",
+      "Flower bud abortion in heavy infestations",
+      "Yield losses 30-80% in cotton when uncontrolled"
+    ],
+    "lifecycle": [
+      "Egg — laid singly on flowers and young fruits; 500-3000 per female; hatch in 3-5 days",
+      "Larva — 6 instars over 15-25 days; the destructive stage",
+      "Pupa — in soil for 8-15 days",
+      "Adult — large moth, strongly migratory, lives 7-21 days",
+      "4-7 generations per year across most cropping zones"
+    ],
+    "treatmentOrganic": [
+      "Bt sprays at egg-hatch through 2nd instar",
+      "Pheromone trap monitoring + mass-trapping",
+      "Trichogramma chilonis releases at egg stage",
+      "Encourage parasitoid wasps with nectar-source plants",
+      "HearNPV (Helicoverpa nucleopolyhedrovirus) where available"
+    ],
+    "treatmentChemical": [
+      "Emamectin benzoate, spinosad, or chlorantraniliprole at 1st-2nd instar",
+      "Rotate IRAC groups every 2-3 sprays",
+      "Avoid pyrethroids alone (resistance widespread)"
+    ],
+    "prevention": [
+      "Plant Bt-cotton or Bt-cowpea where adopted and regulated",
+      "Synchronised regional planting",
+      "Deep ploughing to expose overwintering pupae",
+      "Refuge plantings in Bt-crop systems to manage resistance",
+      "Crop rotation away from key hosts (cotton-cereal-legume cycle)"
+    ],
+    "images": ["plants/pests/bollworm"]
+  },
+  {
+    "id": "striga",
+    "name": "Striga (Witchweed)",
+    "symptoms": [
+      "Stunted, wilting cereal plants despite adequate rainfall",
+      "Bright purple/pink/yellow flowering plants attached to crop roots",
+      "Severe yield loss on infested fields — often 30-80%",
+      "Damage visible by mid-season; plants may die before maturity",
+      "Striga emerges only after attaching to host roots"
+    ],
+    "lifecycle": [
+      "Seed — tiny (0.2 mm); dormant in soil for up to 20 years",
+      "Germination triggered by chemical signal (strigolactone) from host roots",
+      "Underground parasitism — attaches to host root, draws water and nutrients for 4-6 weeks",
+      "Emergence above soil and flowering",
+      "Each plant produces 50,000-500,000 seeds"
+    ],
+    "treatmentOrganic": [
+      "Hand-pulling Striga BEFORE seed-set — prevents seed bank build-up",
+      "Push-pull system — Desmodium intercrop suppresses germination + Napier grass border",
+      "Soil fertility — heavy nitrogen reduces strigolactone signal",
+      "Rotate with legumes (cowpea, soybean) that 'suicide-germinate' Striga without supporting it",
+      "Resistant varieties (Striga-tolerant maize, sorghum hybrids)"
+    ],
+    "treatmentChemical": [
+      "Imazapyr-coated seed (IR-maize) suppresses early attachment",
+      "Pre-emergence atrazine + metolachlor where labelled",
+      "No effective post-emergence herbicide that spares the crop"
+    ],
+    "prevention": [
+      "Plant Striga-resistant or tolerant varieties",
+      "Maintain soil fertility — well-fertilised crops germinate less Striga",
+      "Push-pull system (Desmodium intercrop, Napier border)",
+      "Trap-crop rotation with legumes",
+      "Never let Striga set seed — hand-pull before flowering"
+    ],
+    "images": ["plants/pests/striga"]
+  },
+  {
+    "id": "leafhoppers",
+    "name": "Leafhoppers",
+    "symptoms": [
+      "Stippled, pale, or yellow patches on leaves ('hopperburn')",
+      "Leaf curling and crinkling in heavy infestations",
+      "Vector role — transmit phytoplasma and virus diseases",
+      "Honeydew and sooty mould on leaf undersides",
+      "Stunted growth in rice, cotton, beans, citrus"
+    ],
+    "lifecycle": [
+      "Egg — inserted into leaf veins; hatch in 5-10 days",
+      "Nymph — 5 instars over 14-21 days",
+      "Adult — winged; lives 3-6 weeks; female lays 100-200 eggs",
+      "5-8 generations per year",
+      "Many host crops — wide ecological flexibility"
+    ],
+    "treatmentOrganic": [
+      "Insecticidal soap or neem oil for nymph control",
+      "Reflective mulch to deter adults",
+      "Encourage natural enemies — spiders, predatory bugs, lacewings",
+      "Yellow sticky traps for monitoring",
+      "Remove heavily infested lower leaves"
+    ],
+    "treatmentChemical": [
+      "Acetamiprid or pymetrozine — neonicotinoid-class with whitefly/leafhopper specificity",
+      "Lambda-cyhalothrin where labelled",
+      "Avoid repeated pyrethroid use (resistance)"
+    ],
+    "prevention": [
+      "Plant resistant varieties where available (especially rice — IR varieties)",
+      "Field sanitation — remove host weeds",
+      "Crop rotation",
+      "Diverse field borders to support natural enemies",
+      "Manage nitrogen — excess promotes hopper populations"
+    ],
+    "images": ["plants/pests/leafhoppers"]
   }
 ]

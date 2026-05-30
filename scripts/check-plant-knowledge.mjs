@@ -63,10 +63,12 @@ const SPEC_DISEASES = ['leaf-spot', 'powdery-mildew', 'early-blight', 'late-blig
 const diseases = parseJSON(path.join(ROOT, 'src/data/diseases/diseases.json'),
   'disease-data');
 if (Array.isArray(diseases)) {
-  if (diseases.length !== 15) {
-    fail(`disease-data: expected 15 entries, found ${diseases.length}`);
+  // Wave-32 knowledge expansion — floor of 15 (the original spec
+  // minimum) raised by additions; the 15 spec IDs must remain.
+  if (diseases.length < 15) {
+    fail(`disease-data: expected ≥15 entries, found ${diseases.length}`);
   } else {
-    pass(`disease-data: 15 entries present`);
+    pass(`disease-data: ${diseases.length} entries present (≥15 floor)`);
   }
   for (const id of SPEC_DISEASES) {
     const e = diseases.find((d) => d && d.id === id);
@@ -102,10 +104,12 @@ const SPEC_PESTS = ['aphids', 'armyworm', 'whitefly', 'thrips',
 const pests = parseJSON(path.join(ROOT, 'src/data/pests/pests.json'),
   'pest-data');
 if (Array.isArray(pests)) {
-  if (pests.length !== 15) {
-    fail(`pest-data: expected 15 entries, found ${pests.length}`);
+  // Wave-32 knowledge expansion — floor of 15; the 15 spec IDs
+  // must remain.
+  if (pests.length < 15) {
+    fail(`pest-data: expected ≥15 entries, found ${pests.length}`);
   } else {
-    pass(`pest-data: 15 entries present`);
+    pass(`pest-data: ${pests.length} entries present (≥15 floor)`);
   }
   for (const id of SPEC_PESTS) {
     const e = pests.find((p) => p && p.id === id);
@@ -232,7 +236,7 @@ if (FAILED.length > 0) {
   process.exit(1);
 }
 console.log('[check:plant-knowledge] PASS — Plant Knowledge Database complete.');
-console.log(`  Diseases catalog: 15 entries (symptoms · causes · organic + chemical treatment · prevention).`);
-console.log(`  Pests    catalog: 15 entries (symptoms · lifecycle · organic + chemical treatment · prevention).`);
+console.log(`  Diseases catalog: ${Array.isArray(diseases) ? diseases.length : '?'} entries (symptoms · causes · organic + chemical treatment · prevention).`);
+console.log(`  Pests    catalog: ${Array.isArray(pests) ? pests.length : '?'} entries (symptoms · lifecycle · organic + chemical treatment · prevention).`);
 console.log(`  Plant knowledge: ${SPEC_PLANTS.length} plants with growthStages + commonDiseases + commonPests + careGuide.`);
 console.log(`  Runtime barrel exports + PlantProfile surfaces all four datasets.`);

@@ -587,5 +587,524 @@
       "Control brassica weeds (shepherd's purse, wild mustard) that maintain spore populations"
     ],
     "images": ["plants/diseases/clubroot"]
+  },
+  {
+    "id": "maize-lethal-necrosis",
+    "name": "Maize Lethal Necrosis (MLN)",
+    "symptoms": [
+      "Chlorotic mottling on young leaves, starting at whorl",
+      "Severe leaf necrosis from leaf margin inward",
+      "Stunted growth and dead-heart symptom in seedlings",
+      "Premature plant death often before tasselling",
+      "Cobs malformed or absent — near-total yield loss possible"
+    ],
+    "causes": [
+      "Synergistic co-infection of Maize Chlorotic Mottle Virus (MCMV) and a potyvirus (SCMV / MDMV / WSMV)",
+      "Vector-spread by thrips, leaf beetles, and rootworms",
+      "Seed-borne transmission of MCMV",
+      "Continuous maize cropping without rotation"
+    ],
+    "treatmentOrganic": [
+      "Rogue and burn infected plants as soon as symptoms appear",
+      "Rotate to non-cereal crops (legumes, cassava) for 2+ seasons",
+      "Use certified MCMV-free seed",
+      "Encourage thrips predators with diverse field borders"
+    ],
+    "treatmentChemical": [
+      "No curative chemistry — virus complex cannot be sprayed away",
+      "Targeted insecticides for thrips and beetle vectors only as preventive (e.g. lambda-cyhalothrin per label)",
+      "Seed treatments to suppress early vector landings"
+    ],
+    "prevention": [
+      "Plant MLN-tolerant maize varieties where available (KDV1, WE3127, etc.)",
+      "Strict crop rotation — do not plant maize on maize",
+      "Synchronised regional planting to break vector population build-up",
+      "Eliminate volunteer maize between seasons",
+      "Inspect seedlings at V3-V5 for the diagnostic dead-heart"
+    ],
+    "images": ["plants/diseases/maize-lethal-necrosis"]
+  },
+  {
+    "id": "cassava-mosaic-disease",
+    "name": "Cassava Mosaic Disease (CMD)",
+    "symptoms": [
+      "Yellow-green chlorotic mosaic on cassava leaves",
+      "Leaf distortion and reduced leaf size",
+      "Stunted plant growth",
+      "Reduced tuber size and yield (30-90% losses)",
+      "Symptom severity worse on young leaves than older ones"
+    ],
+    "causes": [
+      "African cassava mosaic virus (ACMV) and East African cassava mosaic virus (EACMV)",
+      "Transmitted by whitefly Bemisia tabaci",
+      "Spread through infected stem cuttings used for planting"
+    ],
+    "treatmentOrganic": [
+      "Rogue and destroy infected plants — do not replant cuttings from symptomatic plants",
+      "Use clean planting material from disease-free fields",
+      "Control whitefly vectors with neem oil and yellow sticky traps",
+      "Intercrop with non-host plants to disrupt whitefly movement"
+    ],
+    "treatmentChemical": [
+      "No curative chemistry available for the virus",
+      "Whitefly insecticides (imidacloprid, acetamiprid per label) as vector control only"
+    ],
+    "prevention": [
+      "Plant CMD-resistant varieties (TME 419, TME 14, TMS 30572)",
+      "Source cuttings from certified clean-stem schemes",
+      "Inspect and remove infected plants at 4-6 weeks after planting",
+      "Maintain field hygiene — do not handle healthy plants after symptomatic ones",
+      "Rotate fields between cassava cycles"
+    ],
+    "images": ["plants/diseases/cassava-mosaic-disease"]
+  },
+  {
+    "id": "cassava-brown-streak-disease",
+    "name": "Cassava Brown Streak Disease (CBSD)",
+    "symptoms": [
+      "Brown necrotic streaks on stems and petioles",
+      "Yellow blotching and feathery chlorosis on mature leaves",
+      "Dark brown corky necrosis inside tubers (the diagnostic sign)",
+      "Reduced root size and inedible tuber flesh",
+      "Yield losses 30-100% in susceptible varieties"
+    ],
+    "causes": [
+      "Cassava brown streak virus (CBSV) and Ugandan cassava brown streak virus (UCBSV)",
+      "Transmitted by whitefly Bemisia tabaci",
+      "Spread through infected stem cuttings"
+    ],
+    "treatmentOrganic": [
+      "Rogue and destroy infected plants and unmarketable roots",
+      "Use clean planting material from certified sources",
+      "Inspect tubers at harvest — symptoms often only visible internally",
+      "Control whitefly with neem and yellow traps"
+    ],
+    "treatmentChemical": [
+      "No virus-curative treatment available",
+      "Whitefly vector control only as preventive"
+    ],
+    "prevention": [
+      "Plant CBSD-tolerant varieties (NASE 14, MM06/0083, etc.)",
+      "Source cuttings from disease-free regions",
+      "Early harvest (8-10 months) where pressure is high to reduce tuber necrosis",
+      "Maintain regional clean-seed schemes",
+      "Avoid moving planting material across CBSD pressure zones"
+    ],
+    "images": ["plants/diseases/cassava-brown-streak-disease"]
+  },
+  {
+    "id": "bacterial-wilt",
+    "name": "Bacterial Wilt (Ralstonia)",
+    "symptoms": [
+      "Sudden wilting of one or more branches during the hottest part of the day",
+      "Wilted leaves remain green initially, then yellow and collapse",
+      "Brown vascular discoloration in stem cross-section",
+      "White bacterial ooze when cut stem is submerged in clean water",
+      "Plant death within days to weeks"
+    ],
+    "causes": [
+      "Ralstonia solanacearum — soilborne bacterium",
+      "Spreads via contaminated soil, tools, water, and infected plant material",
+      "Survives in roots of weeds and solanaceous crops",
+      "Favoured by warm (24-35 °C), wet soils"
+    ],
+    "treatmentOrganic": [
+      "No effective organic cure once symptoms appear",
+      "Rogue and destroy infected plants — do not compost",
+      "Solarise soil under clear plastic for 4-6 weeks in hot months",
+      "Drench infected areas with bleach solution (per safety guidance) before replanting"
+    ],
+    "treatmentChemical": [
+      "Streptomycin or copper-based bactericides offer limited suppression only",
+      "No curative chemistry — focus on quarantine and resistant varieties"
+    ],
+    "prevention": [
+      "Plant resistant or tolerant varieties (especially in tomato, banana, ginger)",
+      "Long crop rotation (4+ years) away from solanaceous and host crops",
+      "Disinfect tools with bleach between plants",
+      "Use clean planting material and certified seed",
+      "Avoid water-splash from infected areas — drip irrigation preferred",
+      "Manage soil drainage to reduce root injury"
+    ],
+    "images": ["plants/diseases/bacterial-wilt"]
+  },
+  {
+    "id": "black-sigatoka",
+    "name": "Black Sigatoka",
+    "symptoms": [
+      "Initially small dark streaks on young leaves, parallel to veins",
+      "Streaks enlarge into elongated black lesions with yellow halos",
+      "Lesions coalesce, killing entire leaf surface",
+      "Severe defoliation leads to premature fruit ripening and bunch loss",
+      "Reduces bunch weight by 30-50% in untreated plantations"
+    ],
+    "causes": [
+      "Fungus Pseudocercospora fijiensis (formerly Mycosphaerella fijiensis)",
+      "Spreads by windborne ascospores during wet conditions",
+      "Survives on leaf debris between crop cycles"
+    ],
+    "treatmentOrganic": [
+      "Strip and destroy infected leaves (de-leafing every 2-3 weeks)",
+      "Improve plantation airflow with proper plant spacing",
+      "Foliar mineral oil sprays where permitted",
+      "Avoid overhead irrigation"
+    ],
+    "treatmentChemical": [
+      "Rotated systemic fungicides — propiconazole, tebuconazole, azoxystrobin",
+      "Add protectant mancozeb or chlorothalonil in heavy pressure",
+      "Follow fungicide resistance management — never repeat the same class consecutively"
+    ],
+    "prevention": [
+      "Plant tolerant varieties (FHIA hybrids where adapted)",
+      "Maintain healthy plant nutrition (K, Mg)",
+      "Manage drainage to reduce humidity",
+      "Sanitation — remove infected leaves continuously",
+      "Quarantine new planting material from outside the farm"
+    ],
+    "images": ["plants/diseases/black-sigatoka"]
+  },
+  {
+    "id": "tuta-damage",
+    "name": "Tuta Damage (Tomato Leafminer)",
+    "symptoms": [
+      "Irregular blotch-shaped mines in tomato leaves",
+      "Larval frass visible inside leaf mines",
+      "Holes bored into stems, flowers, and developing fruit",
+      "Fruit damage allows secondary rot organisms in",
+      "Severe leaf damage causes premature defoliation"
+    ],
+    "causes": [
+      "Larval feeding by Tuta absoluta (tomato leafminer moth)",
+      "Continuous tomato cropping without break",
+      "Mild winters allow year-round populations"
+    ],
+    "treatmentOrganic": [
+      "Pheromone traps for monitoring and mass-trapping (Tuta absoluta pheromone)",
+      "Bacillus thuringiensis (Bt) sprays targeting young larvae",
+      "Spinosad sprays per organic label",
+      "Release the parasitoid Trichogramma achaeae where available",
+      "Remove and destroy heavily mined leaves and damaged fruit"
+    ],
+    "treatmentChemical": [
+      "Rotated chemistry — emamectin benzoate, chlorantraniliprole, indoxacarb",
+      "Avoid repeated use of pyrethroids (rapid resistance)",
+      "Always follow pre-harvest interval (PHI) on the label"
+    ],
+    "prevention": [
+      "Insect-proof nets on greenhouse vents (mesh ≤0.4 mm)",
+      "Crop rotation away from tomato and other solanaceous crops",
+      "Destroy crop residues immediately after harvest",
+      "Sanitation between seasons — remove volunteer tomatoes and host weeds",
+      "Source nursery plants from monitored, treatment-history-known suppliers"
+    ],
+    "images": ["plants/diseases/tuta-damage"]
+  },
+  {
+    "id": "cocoa-black-pod",
+    "name": "Cocoa Black Pod",
+    "symptoms": [
+      "Dark brown to black water-soaked spots on cocoa pods",
+      "Spots spread rapidly to engulf the entire pod within days",
+      "Pods turn hard, black, and shrivelled (mummified)",
+      "White fungal growth on lesion surface in humid conditions",
+      "Beans inside become rotten and inedible"
+    ],
+    "causes": [
+      "Phytophthora palmivora and P. megakarya — soilborne oomycetes",
+      "Spread by rain splash, ants, and contaminated tools",
+      "Favoured by humid, wet conditions and dense canopy"
+    ],
+    "treatmentOrganic": [
+      "Frequent pod sanitation — remove and bury infected pods weekly",
+      "Prune cocoa canopy to improve airflow and light penetration",
+      "Copper-based organic fungicides during peak rainy season"
+    ],
+    "treatmentChemical": [
+      "Metalaxyl + mancozeb foliar spray every 3-4 weeks during peak humidity",
+      "Cymoxanil or fosetyl-aluminium where available",
+      "Always follow PHI for cocoa export markets"
+    ],
+    "prevention": [
+      "Plant tolerant clones (CCN-51, ICS-95 where adapted)",
+      "Continuous pod sanitation — never leave infected pods on tree or ground",
+      "Improve drainage to reduce surface water and splash",
+      "Disinfect harvesting tools between trees",
+      "Manage shade — too much shade favours the pathogen"
+    ],
+    "images": ["plants/diseases/cocoa-black-pod"]
+  },
+  {
+    "id": "cocoa-swollen-shoot",
+    "name": "Cocoa Swollen Shoot Virus (CSSVD)",
+    "symptoms": [
+      "Red flushing of young leaves followed by chlorotic mottling",
+      "Swelling of stems and roots ('swollen shoots')",
+      "Reduced pod size and number",
+      "Tree dieback within 2-4 years of infection",
+      "Severe yield loss; eventual tree death"
+    ],
+    "causes": [
+      "Cocoa swollen shoot virus (CSSV) — Badnavirus family",
+      "Transmitted by mealybugs (Planococcoides njalensis and related species)",
+      "Spread by infected planting material"
+    ],
+    "treatmentOrganic": [
+      "Cutting-out — rogue infected and contact trees within 15 m radius",
+      "Control mealybug vectors with neem oil and natural enemies",
+      "Replant cleared sites only after a fallow period of 6+ months"
+    ],
+    "treatmentChemical": [
+      "No virus-curative treatment exists",
+      "Targeted mealybug control with imidacloprid soil drench where labelled"
+    ],
+    "prevention": [
+      "Plant CSSV-tolerant varieties where available",
+      "Source planting material from certified disease-free nurseries",
+      "Regular survey of farms — early detection minimises spread",
+      "Maintain shade-tree diversity to disrupt mealybug movement",
+      "Strict cutting-out programmes coordinated across neighbouring farms"
+    ],
+    "images": ["plants/diseases/cocoa-swollen-shoot"]
+  },
+  {
+    "id": "banana-bunchy-top",
+    "name": "Banana Bunchy Top Virus (BBTV)",
+    "symptoms": [
+      "Severe stunting with new leaves becoming progressively shorter and narrower",
+      "Bunchy rosette appearance at top of plant ('bunchy top')",
+      "Dark green hook-shaped streaks along leaf veins and midribs",
+      "Wavy or sawtooth leaf margins",
+      "No bunch produced from infected plants"
+    ],
+    "causes": [
+      "Banana bunchy top virus (BBTV) — Nanovirus family",
+      "Transmitted by the banana aphid Pentalonia nigronervosa",
+      "Spread by infected suckers / planting material"
+    ],
+    "treatmentOrganic": [
+      "Rogue and destroy infected mats (mother plant + all suckers)",
+      "Control banana aphid with insecticidal soap and natural predators",
+      "Use clean tissue-cultured planting material"
+    ],
+    "treatmentChemical": [
+      "No curative chemistry for the virus",
+      "Banana aphid control with systemic insecticides per label"
+    ],
+    "prevention": [
+      "Use only clean, certified tissue-culture plantlets",
+      "Quarantine new banana planting material",
+      "Regular farm survey — remove infected mats immediately",
+      "Manage banana aphid populations preventively",
+      "Avoid moving planting material across infected regions"
+    ],
+    "images": ["plants/diseases/banana-bunchy-top"]
+  },
+  {
+    "id": "banana-xanthomonas-wilt",
+    "name": "Banana Xanthomonas Wilt (BXW)",
+    "symptoms": [
+      "Yellowing and wilting of leaves starting with younger inner leaves",
+      "Pale-yellow bacterial ooze from cut pseudostem",
+      "Premature ripening of fruit with internal staining",
+      "Total plant collapse within weeks",
+      "Spreads rapidly across plantations"
+    ],
+    "causes": [
+      "Xanthomonas vasicola pv. musacearum — bacterial pathogen",
+      "Transmitted through cutting tools, insects visiting male flowers, infected planting material",
+      "Spread between farms by tool contamination"
+    ],
+    "treatmentOrganic": [
+      "Single-stemming and male flower removal with sterile tools",
+      "Tool disinfection with bleach or flame between every plant",
+      "Rogue and destroy infected mats fully — burn or deep-bury"
+    ],
+    "treatmentChemical": [
+      "No effective chemistry — strict cultural and quarantine measures only",
+      "Antibiotic sprays not recommended due to resistance concerns"
+    ],
+    "prevention": [
+      "Remove male bud immediately after last hand sets",
+      "Disinfect all cutting tools between every plant",
+      "Source clean tissue-cultured plantlets only",
+      "Restrict plantation movement of visitors and tools during outbreaks",
+      "Avoid intercropping with susceptible Musa cultivars"
+    ],
+    "images": ["plants/diseases/banana-xanthomonas-wilt"]
+  },
+  {
+    "id": "tomato-yellow-leaf-curl",
+    "name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+    "symptoms": [
+      "Severe upward curling and cupping of young leaves",
+      "Yellow leaf margins and stunted plant growth",
+      "Flower abortion and very poor fruit set",
+      "Plants infected at seedling stage may produce no fruit",
+      "Symptoms most severe under warm, dry conditions"
+    ],
+    "causes": [
+      "Tomato yellow leaf curl virus (TYLCV) — Begomovirus family",
+      "Transmitted exclusively by the whitefly Bemisia tabaci",
+      "No seed transmission"
+    ],
+    "treatmentOrganic": [
+      "Rogue infected plants — virus cannot be cured",
+      "Insect-proof nursery netting to protect transplants",
+      "Yellow sticky traps for whitefly monitoring and mass-trapping",
+      "Neem oil sprays to suppress whitefly populations",
+      "Mulch with reflective silver film to deter whitefly landings"
+    ],
+    "treatmentChemical": [
+      "No curative chemistry for the virus",
+      "Whitefly control with pymetrozine, flonicamid, or pyriproxyfen per label"
+    ],
+    "prevention": [
+      "Plant TYLCV-tolerant or resistant varieties (Ty-1, Ty-3 gene sources)",
+      "Whitefly-proof nursery (≤0.4 mm mesh)",
+      "Reflective mulch and yellow traps from transplant",
+      "Crop-free period of at least 2 months between tomato cycles",
+      "Eliminate volunteer tomatoes and host weeds (Datura, Solanum nigrum)"
+    ],
+    "images": ["plants/diseases/tomato-yellow-leaf-curl"]
+  },
+  {
+    "id": "septoria-leaf-spot",
+    "name": "Septoria Leaf Spot",
+    "symptoms": [
+      "Small circular spots with grey centres and dark margins on lower leaves",
+      "Tiny black fruiting bodies (pycnidia) visible in spot centres",
+      "Spots spread upward through plant as season progresses",
+      "Severe defoliation reduces fruit yield and quality",
+      "Most aggressive in warm, wet weather"
+    ],
+    "causes": [
+      "Septoria lycopersici (tomato) and S. tritici (wheat) fungi",
+      "Spores spread by water splash and contaminated tools",
+      "Overwinters on infected plant debris and host weeds"
+    ],
+    "treatmentOrganic": [
+      "Remove and destroy lower infected leaves immediately",
+      "Mulch heavily to reduce soil-splash onto leaves",
+      "Copper-based organic fungicide every 7-10 days during peak pressure",
+      "Improve airflow with stake/cage support"
+    ],
+    "treatmentChemical": [
+      "Chlorothalonil or mancozeb every 7-14 days",
+      "Rotate with azoxystrobin or pyraclostrobin to manage resistance",
+      "Follow label PHI carefully"
+    ],
+    "prevention": [
+      "3-year crop rotation away from tomato and solanaceous crops",
+      "Stake or cage plants to keep foliage off the ground",
+      "Drip irrigation only — never overhead",
+      "Sanitise tools and remove infected plant debris at end of season",
+      "Eliminate host weeds (horsenettle, nightshades)"
+    ],
+    "images": ["plants/diseases/septoria-leaf-spot"]
+  },
+  {
+    "id": "verticillium-wilt",
+    "name": "Verticillium Wilt",
+    "symptoms": [
+      "Yellowing and wilting starting on one side of the plant",
+      "Brown vascular discoloration in stem cross-section",
+      "Lower and outer leaves wilt first, then progress upward",
+      "Stunted growth and reduced yield",
+      "Wide host range — tomato, eggplant, cotton, strawberry, many trees"
+    ],
+    "causes": [
+      "Soilborne fungi Verticillium dahliae and V. albo-atrum",
+      "Survives 10+ years in soil as microsclerotia",
+      "Enters plant through root injuries",
+      "Favoured by cool, moist soils (18-24 °C)"
+    ],
+    "treatmentOrganic": [
+      "No organic cure once established — focus on resistance and rotation",
+      "Solarise soil under clear plastic for 6+ weeks in hot months",
+      "Build soil biology with compost to suppress sclerotia"
+    ],
+    "treatmentChemical": [
+      "No effective curative fungicide",
+      "Soil fumigation (chloropicrin, metam-sodium) only in commercial high-value systems"
+    ],
+    "prevention": [
+      "Plant resistant or tolerant varieties (look for 'V' or 'VFN' designation on tomato)",
+      "Long crop rotation (4-6 years) with non-host crops (corn, grains)",
+      "Avoid root injury during cultivation",
+      "Sanitise tools to prevent field-to-field spread",
+      "Source transplants from disease-free nurseries"
+    ],
+    "images": ["plants/diseases/verticillium-wilt"]
+  },
+  {
+    "id": "coffee-leaf-rust",
+    "name": "Coffee Leaf Rust",
+    "symptoms": [
+      "Yellow-orange powdery pustules on the underside of coffee leaves",
+      "Corresponding chlorotic patches visible on leaf upper surface",
+      "Severe defoliation leads to dieback and reduced cherry yield",
+      "First infection often appears in lower canopy and spreads upward",
+      "Yield losses up to 70% in untreated outbreaks"
+    ],
+    "causes": [
+      "Fungus Hemileia vastatrix",
+      "Urediniospores spread by wind, rain, and human movement",
+      "Favoured by alternating wet and dry conditions, 21-25 °C"
+    ],
+    "treatmentOrganic": [
+      "Strip and destroy heavily infected leaves",
+      "Copper hydroxide sprays at first symptom appearance",
+      "Prune shade trees to improve airflow",
+      "Foliar nutrition (K, Mg, Zn) to strengthen plants"
+    ],
+    "treatmentChemical": [
+      "Systemic fungicides — cyproconazole, triadimefon, tebuconazole",
+      "Protectant copper-based fungicides at start of wet season",
+      "Rotate chemistry classes to delay resistance"
+    ],
+    "prevention": [
+      "Plant rust-resistant varieties (Catimor, Sarchimor, Castillo hybrids)",
+      "Shade management — moderate shade reduces splash dispersal",
+      "Balanced nutrition — avoid excess nitrogen",
+      "Sanitation — remove infected leaves and prunings from plot",
+      "Coordinate fungicide timing with regional monitoring"
+    ],
+    "images": ["plants/diseases/coffee-leaf-rust"]
+  },
+  {
+    "id": "crown-rot",
+    "name": "Crown Rot (Phytophthora Stem Rot)",
+    "symptoms": [
+      "Water-soaked dark lesions at soil line",
+      "Sudden wilting despite moist soil",
+      "Stem becomes soft, brown, and collapses near base",
+      "Roots discoloured and reduced",
+      "Plant death within days once symptoms visible"
+    ],
+    "causes": [
+      "Phytophthora spp. — soilborne water moulds",
+      "Favoured by waterlogged, poorly-drained soils",
+      "Spread by infected irrigation water and soil splash",
+      "Survives in soil as oospores for many years"
+    ],
+    "treatmentOrganic": [
+      "Improve drainage immediately — raise beds where possible",
+      "Solarise affected soil for 4-6 weeks in hot months",
+      "Trichoderma harzianum soil drench as biological agent",
+      "Avoid overhead watering"
+    ],
+    "treatmentChemical": [
+      "Metalaxyl-M (mefenoxam) soil drench at first sign",
+      "Fosetyl-aluminium foliar spray to support root recovery",
+      "Phosphonate / phosphite injections in tree crops"
+    ],
+    "prevention": [
+      "Plant resistant rootstocks (where applicable for trees)",
+      "Improve and maintain soil drainage with raised beds and organic matter",
+      "Use clean irrigation water — avoid recycled drainage",
+      "Avoid planting too deep — keep root collar above soil line",
+      "Rotate with non-host crops where soilborne pressure builds up"
+    ],
+    "images": ["plants/diseases/crown-rot"]
   }
 ]
