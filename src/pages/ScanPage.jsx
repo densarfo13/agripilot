@@ -189,6 +189,10 @@ import { evaluate as evaluateWeatherRisk }       from '../runtime/weatherRisk';
 // to growers — only the safeMessage from each runtime is rendered.
 import { evaluate as evaluateYieldIntelligence } from '../runtime/yield';
 import { evaluate as evaluateSatellite }         from '../runtime/satellite';
+// Wave-37 risk-fix #4 — derive farmSizeHa from the canonical
+// farm.size + farm.sizeUnit via the existing pure converter.
+// Static import keeps the path simple and tree-shakable.
+import { toSquareMeters as _farmSizeToSquareMeters } from '../lib/units/areaConversion.js';
 
 // Unified Soft Ochre / Beige system. The mount-pending surface
 // (rendered before <PremiumPage> takes over) now uses the locked
@@ -498,11 +502,32 @@ export default function ScanPage() {
       cropType: ctxPlantId,
       timestamp: tsIso,
     });
+    // Wave-37 risk-fix #4 — derive farmSizeHa from the canonical
+    // farm record (profile.size + profile.sizeUnit) via the
+    // existing toSquareMeters converter. Returns undefined when
+    // the farm record is missing a size; yield runtime then
+    // returns "Not enough data yet" via hasEnoughData=false.
+    let _farmSizeHa;
+    try {
+      if (typeof profile?.farmSizeHa === 'number') {
+        _farmSizeHa = profile.farmSizeHa;
+      } else if (profile?.size != null && profile?.sizeUnit) {
+        const sqm = _farmSizeToSquareMeters(profile.size, profile.sizeUnit);
+        if (Number.isFinite(sqm) && sqm > 0) _farmSizeHa = sqm / 10000;
+      }
+    } catch { /* swallow — yield falls back to "not enough data" */ }
+
     const yieldIntel = evaluateYieldIntelligence({
       plantId: ctxPlantId,
       scanId,
-      farmSizeHa:         profile?.farmSizeHa,
+      farmSizeHa:         _farmSizeHa,
       growthStage:        growthStage?.stage,
+      // Wave-37 risk-fix #2 — region multiplier wired through.
+      // Normalizes the profile region (e.g. "South Africa") to the
+      // multiplier lookup key (south_africa).
+      region:             typeof profile?.region === 'string'
+                          ? profile.region.toLowerCase().replace(/\s+/g, '_')
+                          : undefined,
       scanHealthScore:    typeof result.confidence === 'number'
                           ? (result.confidence > 1
                               ? result.confidence

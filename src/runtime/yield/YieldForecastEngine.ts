@@ -18,10 +18,33 @@ function _num(v: unknown): number | null {
 }
 
 /**
+ * Wave-37 risk-fix #2 — Per-region yield multipliers applied to
+ * the global reference yields below. Reflects that yield potential
+ * varies dramatically by region (rainfall, soil, infrastructure,
+ * inputs availability). Multiplier of 1.0 = global average; <1.0 =
+ * typically below average; >1.0 = typically above average.
+ *
+ * Pure data. Composes the region field caller passes in via the
+ * forecast input. Default (no region match) is 1.0 — preserves
+ * pre-wave-37 behavior.
+ */
+const REGION_YIELD_MULTIPLIER: Readonly<Record<string, number>> =
+  Object.freeze({
+    ghana:        0.7,      // smallholder rainfed
+    nigeria:      0.65,     // smallholder rainfed
+    kenya:        0.75,     // mixed infrastructure
+    uganda:       0.7,
+    tanzania:     0.7,
+    south_africa: 1.05,     // commercial sector strong
+    usa:          1.4,      // commercial irrigated baseline
+  });
+
+/**
  * Per-crop reference yields (kg/ha) — used as the central "expected"
  * band anchor. These are conservative, region-non-specific
- * approximations. The forecast band widens to ±30% to ±50% based
- * on confidence.
+ * approximations. Region multipliers (above) adjust for known
+ * regional yield potential. Forecast band widens to ±30% to ±50%
+ * based on risk uncertainty.
  */
 const REFERENCE_YIELD_KG_PER_HA: Readonly<Record<string, number>> =
   Object.freeze({
@@ -55,6 +78,7 @@ export interface YieldForecastInput {
   farmSizeHa?:       number;       // farm size in hectares
   plantCount?:       number;       // alternative when no size
   growthStage?:      string;
+  region?:           string;       // wave-37 region multiplier key
   riskScore:         number;       // 0-100 from YieldRiskEngine
   hasSufficientData: boolean;
 }
@@ -70,8 +94,14 @@ export function evaluateYieldForecast(input: YieldForecastInput): YieldForecastB
     const ha = _num(input.farmSizeHa);
     if (ha === null) return Object.freeze({});
 
-    // Base expected yield from area × reference.
-    const baseExpected = refYield * ha;
+    // Wave-37 — apply per-region multiplier when the caller passed
+    // a region. Default 1.0 preserves pre-wave-37 behavior.
+    const regionKey = typeof input.region === 'string'
+                      ? input.region.toLowerCase() : '';
+    const regionMult = REGION_YIELD_MULTIPLIER[regionKey] ?? 1.0;
+
+    // Base expected yield from area × reference × region multiplier.
+    const baseExpected = refYield * ha * regionMult;
 
     // Risk-adjusted central estimate.
     const riskPenalty = 1 - Math.min(0.6, input.riskScore / 200); // up to -30%

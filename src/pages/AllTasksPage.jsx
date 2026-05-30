@@ -200,6 +200,27 @@ export default function AllTasksPage() {
               source:    'AllTasksPage',
             },
           });
+          // Wave-37 risk-fix #3 — write the outcome edge into the
+          // wave-36 knowledge graph so future recommendation cycles
+          // can learn from completed harvest tasks. Idempotent
+          // (recordOutcomeEdge dedupes by taskId+outcomeId). Pure
+          // composition; no architecture change.
+          try {
+            import('../runtime/knowledgeGraph').then((m) => {
+              try {
+                if (m && typeof m.recordOutcomeEdge === 'function') {
+                  const outcomeId = `harvest:${task.id || 'na'}:` +
+                                    new Date().toISOString().slice(0, 10);
+                  m.recordOutcomeEdge(
+                    String(task.id || 'unknown'),
+                    outcomeId,
+                    'improved',          // task-completion implies "improved" by default
+                    new Date().toISOString(),
+                  );
+                }
+              } catch { /* swallow — graph is non-critical */ }
+            }).catch(() => { /* swallow */ });
+          } catch { /* swallow */ }
         }
       } catch { /* swallow — timeline is non-critical */ }
       finishCompletion(task, savedOffline);

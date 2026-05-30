@@ -89,32 +89,62 @@ function _plantPestEdges(): ReadonlyArray<GraphEdge> {
 
 // ─── Public queries ───────────────────────────────────────────────
 
-/** Snapshot the entire graph (plants + diseases + pests + treatments + regions + outcomes). */
-export function snapshot(): GraphQueryResult {
+// Wave-37 risk-fix #5 — Memoize the snapshot. The plant /
+// disease / pest / treatment / region nodes + their derived
+// edges are derived from static catalogs (PLANT_KNOWLEDGE +
+// canonical Knowledge Layer + nutrients.json). Only the outcome
+// edges grow over time via recordOutcomeEdge(). So we cache the
+// static portion at first call and only re-extract outcome edges.
+// Reduces __knowledgeGraphHealth() cost from O(plants+diseases+
+// pests+treatments+regions+outcomes) on every probe to O(outcomes).
+let _staticCache: {
+  staticNodes: ReadonlyArray<GraphNode>;
+  staticEdges: ReadonlyArray<GraphEdge>;
+} | null = null;
+
+function _buildStaticCache() {
   return _safe(() => {
     const plantNodes   = listPlantNodes();
     const diseaseNodes = listDiseaseNodes();
     const pestNodes    = listPestNodes();
     const treatments   = extractTreatmentGraph();
     const regions      = extractRegionGraph();
-    const outcomes     = extractOutcomeGraph();
 
-    const nodes: GraphNode[] = [
+    const staticNodes: GraphNode[] = [
       ...plantNodes, ...diseaseNodes, ...pestNodes,
-      ...treatments.nodes, ...regions.nodes, ...outcomes.nodes,
+      ...treatments.nodes, ...regions.nodes,
     ];
-
-    const edges: GraphEdge[] = [
+    const staticEdges: GraphEdge[] = [
       ..._plantDiseaseEdges(),
       ..._plantPestEdges(),
       ...treatments.edges,
       ...regions.edges,
-      ...outcomes.edges,
     ];
+    return Object.freeze({
+      staticNodes: Object.freeze(staticNodes),
+      staticEdges: Object.freeze(staticEdges),
+    });
+  }, Object.freeze({
+    staticNodes: Object.freeze([]) as ReadonlyArray<GraphNode>,
+    staticEdges: Object.freeze([]) as ReadonlyArray<GraphEdge>,
+  }));
+}
+
+/** Snapshot the entire graph (plants + diseases + pests + treatments + regions + outcomes). */
+export function snapshot(): GraphQueryResult {
+  return _safe(() => {
+    if (!_staticCache) _staticCache = _buildStaticCache();
+    const outcomes = extractOutcomeGraph();    // dynamic — re-read
 
     return Object.freeze({
-      nodes: Object.freeze(nodes),
-      edges: Object.freeze(edges),
+      nodes: Object.freeze([
+        ..._staticCache.staticNodes,
+        ...outcomes.nodes,
+      ]),
+      edges: Object.freeze([
+        ..._staticCache.staticEdges,
+        ...outcomes.edges,
+      ]),
     });
   }, Object.freeze({
     nodes: Object.freeze([]) as ReadonlyArray<GraphNode>,

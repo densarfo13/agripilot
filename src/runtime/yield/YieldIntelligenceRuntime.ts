@@ -83,6 +83,7 @@ export interface YieldEvaluateInput {
   farmSizeHa?:       number;
   plantCount?:       number;
   growthStage?:      string;
+  region?:           string;       // wave-37 — region multiplier key
   scanHealthScore?:  number;
   severityLevel?:    string;
   pestPressure?:     string;
@@ -144,6 +145,7 @@ export function evaluate(input: YieldEvaluateInput): YieldIntelligenceResult {
       farmSizeHa:        input.farmSizeHa,
       plantCount:        input.plantCount,
       growthStage:       input.growthStage,
+      region:            input.region,     // wave-37 region multiplier
       riskScore:         riskOut.score,
       hasSufficientData: enough,
     });
