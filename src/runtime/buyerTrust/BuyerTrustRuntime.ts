@@ -230,6 +230,15 @@ export function getTrustSignals(
     const lastScanDate     = _lastScanIso();
     const recentPlantPhoto = _recentPlantPhoto();
     const activeGrower     = _hasRecentScan(lastScanDate);
+    // Wave-35 H9 — honest empty-state copy. When NO local scan
+    // history exists, the previous envelope returned all-falsey
+    // values silently. The buyer UI then showed a card with no
+    // signals and no explanation. Surfacing `emptyStateReason`
+    // lets the UI render an honest "no recent data" line
+    // without changing the contract for the happy path.
+    const emptyStateReason: string | null = (!lastScanDate && !recentPlantPhoto)
+      ? 'no_recent_scan_data'
+      : null;
     return Object.freeze({
       runtimeVersion:        BUYER_TRUST_RUNTIME_VERSION,
       ready:                 true,
@@ -242,6 +251,7 @@ export function getTrustSignals(
       // and "light it up" later without a contract change.
       verifiedGrowerBadge:   false,
       verifiedBadgeReserved: true,
+      emptyStateReason,
     });
   }, _fallback());
 }

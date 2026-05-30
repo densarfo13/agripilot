@@ -182,7 +182,38 @@ export function WeatherRiskSection({ weatherRisk }) {
 }
 
 export function OutcomeComparisonSection({ outcomeComparison }) {
-  if (!outcomeComparison || outcomeComparison.status === 'unknown') return null;
+  if (!outcomeComparison) return null;
+  // Wave-35 H5 — when this is the first scan for the plant, the
+  // runtime returns status:'unknown' because there's nothing to
+  // compare against. Previously the section silently hid. Now we
+  // surface a helpful "still learning" hint so the user knows
+  // outcome comparison is set up and will activate on the next scan.
+  if (outcomeComparison.status === 'unknown') {
+    return (
+      <article
+        data-testid="scan-v2-outcome-comparison"
+        data-section-key="outcome_comparison"
+        data-section-value="learning"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px dashed rgba(255,255,255,0.14)',
+          borderRadius: 14,
+          padding: '10px 14px',
+          color: '#9FB3C8',
+          fontSize: 12.5,
+          lineHeight: 1.45,
+        }}
+      >
+        <span style={{ fontWeight: 700, marginRight: 6, color: '#FDE6C5' }}>
+          {tStrict('scanV2.compare.eyebrow', 'Compared to last scan')}:
+        </span>
+        {tStrict(
+          'scanV2.compare.learning',
+          'Scan this plant again in a few days and we’ll track if it’s improving or worsening.'
+        )}
+      </article>
+    );
+  }
   const tone = COMPARISON_TONE[outcomeComparison.status] || COMPARISON_TONE.unknown;
   const labels = {
     improved:  tStrict('scanV2.compare.improved',  'Improved since last scan'),

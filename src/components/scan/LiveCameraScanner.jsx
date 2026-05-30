@@ -299,6 +299,19 @@ export default function LiveCameraScanner({
 
   const [facing, setFacing] = useState(facingHint || 'environment');
   const [phase, setPhase] = useState('idle');
+  // Wave-35 H1 — surface a reassuring "warming up" hint after
+  // 4 seconds in the requesting_camera phase. iOS Safari cold
+  // starts can take up to 20s; without the hint users assume
+  // the app is broken and bail. Pure UI state — no engine change.
+  const [_waitingTooLong, _setWaitingTooLong] = useState(false);
+  useEffect(() => {
+    if (phase !== 'requesting_camera') {
+      _setWaitingTooLong(false);
+      return undefined;
+    }
+    const t = setTimeout(() => _setWaitingTooLong(true), 4000);
+    return () => clearTimeout(t);
+  }, [phase]);
   // Rotating guidance text — cycles through 3 tips on a 3.2s loop
   // so the camera feels like it's coaching the user without
   // adding click affordance. Pauses when the camera isn't
@@ -972,6 +985,21 @@ export default function LiveCameraScanner({
             <p style={S.statusText}>
               {tSafe('scan.camera.requesting', 'Opening camera…')}
             </p>
+            {/* Wave-35 H1 — iOS camera cold-start can take up to 20s.
+                After 4s of waiting, surface a reassuring hint so the
+                user does not assume the app is broken. Composition
+                over existing _waitingTooLong state (added below). */}
+            {_waitingTooLong ? (
+              <p style={{ ...S.statusText, fontSize: 12,
+                          color: 'rgba(255,255,255,0.55)',
+                          marginTop: 6, lineHeight: 1.4 }}
+                 data-testid="scan-camera-cold-start-hint">
+                {tSafe(
+                  'scan.camera.coldStartHint',
+                  'Camera warming up — this can take a few seconds on first use.'
+                )}
+              </p>
+            ) : null}
           </div>
         )}
 

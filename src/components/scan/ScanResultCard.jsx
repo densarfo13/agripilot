@@ -975,6 +975,34 @@ export default function ScanResultCard({
         />
       ) : null}
 
+      {/* Wave-35 H8 — when the harvest engine returned category
+          'unknown' (= plant not in the 28-plant supported set) AND
+          we DO have a plant identification (so it's not just a
+          generic scan failure), surface a small honest hint that
+          harvest readiness isn't yet supported for this plant.
+          Suppresses for flowers (BloomStageCard renders instead). */}
+      {result && result.harvest
+        && result.harvest.category === 'unknown'
+        && (result.plantName || result.cropName || result.crop) ? (
+        <div
+          data-testid="harvest-not-supported-hint"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px dashed rgba(255,255,255,0.12)',
+            borderRadius: 10,
+            padding: '8px 12px',
+            color: '#9FB3C8',
+            fontSize: 12,
+            lineHeight: 1.45,
+          }}
+        >
+          {tStrict(
+            'scan.harvest.notYetSupported',
+            'Harvest readiness for this plant is not yet supported. We are expanding the supported list.'
+          )}
+        </div>
+      ) : null}
+
       <div style={STYLES.buttonsRow}>
         {typeof onRetake === 'function' ? (
           <button type="button" onClick={onRetake} style={STYLES.btn} data-testid="scan-result-retake">

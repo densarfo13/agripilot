@@ -85,4 +85,9 @@ export interface TrustSignal {
   readonly activeGrowerBadge:     boolean;
   readonly verifiedGrowerBadge:   boolean;
   readonly verifiedBadgeReserved: boolean;
+  // Wave-35 H9 — when both lastScanDate and recentPlantPhoto are
+  // absent, this is set to 'no_recent_scan_data' so the UI can
+  // render an honest empty-state line instead of a card with no
+  // signals. null when at least one signal exists.
+  readonly emptyStateReason?:     string | null;
 }

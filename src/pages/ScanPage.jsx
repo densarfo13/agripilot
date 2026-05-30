@@ -318,6 +318,53 @@ export default function ScanPage() {
   // per scan). Prevents render-loops and prevents duplicate
   // timeline events / artifacts on reconnect-replay.
   const _harvestSeenRef = useRef(new Set());
+  // Wave-35 H4 — keep window.__farrowayLastWeather populated even
+  // when the user deep-links to /scan without visiting Home first.
+  // Composes useLiveWeather indirectly: we check if the snapshot
+  // is missing on mount and trigger a fresh resolve via a
+  // lightweight hook import. Reads location from profile only —
+  // never owns geolocation.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const w = window;
+    if (w.__farrowayLastWeather
+        && w.__farrowayLastWeather.snapshotAt) return undefined;
+    let cancelled = false;
+    // Lazy import — keeps the weather hook out of the scan-page
+    // critical-path bundle when the snapshot is already fresh.
+    import('../hooks/useLiveWeather.js')
+      .then((m) => {
+        if (cancelled) return;
+        // The hook itself writes __farrowayLastWeather on resolve.
+        // We can't call the hook here (rules-of-hooks); the host
+        // page that DID mount it (Home) is the canonical writer.
+        // What we CAN do: pre-warm by fetching the same endpoint
+        // directly so the snapshot exists before the scan finishes.
+        try {
+          const lat = profile?.lat || profile?.latitude;
+          const lng = profile?.lng || profile?.longitude;
+          if (typeof lat !== 'number' || typeof lng !== 'number') return;
+          const url = `/api/weather?lat=${lat}&lng=${lng}`;
+          fetch(url, { credentials: 'include' }).then((r) => r.json()).then((j) => {
+            if (cancelled) return;
+            w.__farrowayLastWeather = Object.freeze({
+              tempC:        j?.tempC ?? null,
+              rainChance:   j?.rainChance ?? null,
+              weatherType:  j?.weatherType ?? null,
+              humidity:     j?.humidity ?? null,
+              windKph:      j?.windKph ?? null,
+              locationLabel: j?.locationLabel ?? null,
+              source:       'ScanPage-prewarm',
+              snapshotAt:   new Date().toISOString(),
+            });
+          }).catch(() => { /* swallow */ });
+        } catch { /* swallow */ }
+        void m;
+      })
+      .catch(() => { /* swallow — weather is non-critical */ });
+    return () => { cancelled = true; };
+  }, [profile]);
+
   // Wave-31 H4 — surface the Add-to-My-Plants result so the user
   // sees explicit feedback when the workflow returns ineligible
   // (e.g. plant not in catalog) or already-managed. Founder audit
