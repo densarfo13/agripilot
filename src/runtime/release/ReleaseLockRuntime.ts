@@ -252,8 +252,27 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       dailyBriefingReady:        _sectionPasses('dailyBriefing'),
       // Wave 12 — Enterprise hardening sub-readiness.
       enterpriseSecurityReady:   _hasGlobal('__rbacHealth'),
-      auditReady:                _hasGlobal('__auditHealth'),
-      evidenceReady:             _hasGlobal('__evidenceHealth'),
+      // Wave 40 — auditReady now requires full canonical coverage,
+      // not just runtime presence.
+      auditReady:                _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__auditHealth !== 'function') return false;
+        const r = w.__auditHealth();
+        return !!(r && r.initialized && r.canonicalEventsCovered);
+      }, false),
+      // Wave 40 — evidenceReady now composed from
+      // __programEvidenceHealth (full chain), falling back to
+      // __evidenceHealth presence.
+      evidenceReady:             _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__programEvidenceHealth === 'function') {
+          const r = w.__programEvidenceHealth();
+          return !!(r && r.evidenceReady);
+        }
+        return typeof w.__evidenceHealth === 'function';
+      }, false),
       reportsReady:              _hasGlobal('__reportHealth'),
       outcomesReady:             _hasGlobal('__outcomeHealth'),
       reliabilityReady:          _hasGlobal('__reliabilityHealth'),
@@ -317,8 +336,30 @@ export function computeReleaseLock(opts?: ComputeOpts) {
       routeIsolationReady:    true,   // CI gate enforces; runtime flag mirrors
       consentReady:           _hasGlobal("__consentHealth"),
       retentionPolicyReady:   _hasGlobal("__retentionHealth"),
-      monitoringReady:        _hasGlobal("__monitoringHealth"),
+      // Wave 40 — readiness flags pulled from canonical probes
+      // (overrides the legacy stubs above; see below).
+      monitoringReady:        _safe(() => {
+        if (typeof window === "undefined") return false;
+        const w = window as any;
+        if (typeof w.__monitoringHealth !== "function") return false;
+        const r = w.__monitoringHealth();
+        return !!(r && r.initialized && r.errorReporterReady);
+      }, false),
       backupReadiness:        true,   // doc-based, see check:backup-docs
+      backupReady:            _safe(() => {
+        if (typeof window === "undefined") return false;
+        const w = window as any;
+        if (typeof w.__backupHealth !== "function") return false;
+        const r = w.__backupHealth();
+        return !!(r && r.backupReady);
+      }, false),
+      securityReady:          _safe(() => {
+        if (typeof window === "undefined") return false;
+        const w = window as any;
+        if (typeof w.__securityHealth !== "function") return false;
+        const r = w.__securityHealth();
+        return !!(r && r.securityReady);
+      }, false),
       privacyReadiness:       true,   // doc-based, see check:privacy-readiness
       humanReviewReady:       _hasGlobal("__humanReviewHealth"),
       // Wave 17 — Bulk farmer onboarding.

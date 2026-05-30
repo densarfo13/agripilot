@@ -1293,6 +1293,39 @@ export default function App() {
             await import('./runtime/adoption/KnowledgeCoverageHealthRuntime');
           installKnowledgeCoverageHealthGlobal();
         } catch { /* never block boot */ }
+        // Wave-40 — Enterprise trust + operations hardening
+        // probes. Tenant isolation, backup, security, program
+        // evidence, and the composite enterprise-readiness verdict.
+        // Audit/monitoring globals are wired by their own boot
+        // paths elsewhere; this block adds the wave-40 wrappers.
+        try {
+          const { installTenantIsolationHealthGlobal } =
+            await import('./runtime/enterprise/security/TenantIsolationHealthRuntime');
+          installTenantIsolationHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installBackupHealthGlobal, markBackupRunbookPresent } =
+            await import('./runtime/backup/BackupHealthRuntime');
+          // The wave-40 governance gate enforces docs/BACKUP_RUNBOOK.md
+          // ships in the build; this attestation flag mirrors that.
+          markBackupRunbookPresent();
+          installBackupHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installSecurityHealthGlobal } =
+            await import('./runtime/security/SecurityHealthRuntime');
+          installSecurityHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installProgramEvidenceHealthGlobal } =
+            await import('./runtime/evidence/ProgramEvidenceHealthRuntime');
+          installProgramEvidenceHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installEnterpriseReadinessGlobal } =
+            await import('./runtime/enterprise/EnterpriseReadinessRuntime');
+          installEnterpriseReadinessGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
