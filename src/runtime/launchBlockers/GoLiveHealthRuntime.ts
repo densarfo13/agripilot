@@ -105,6 +105,15 @@ export function goLiveHealth() {
     const offline = _probe('__offlineValidationHealth');
     const offlineWired = !!(offline && offline.initialized === true);
 
+    // Wave-23 — direct queue-health probe takes precedence when
+    // available; falls back to the offline-validation probe.
+    const queue = _probe('__queueHealth');
+    const queueWired = !!(queue && queue.initialized === true
+                          && queue.offlineQueueReady === true);
+    // Treat queue-readiness as the truth for offlineWired when the
+    // wave-23 probe is live; otherwise keep the legacy signal.
+    const offlineReady = queue ? queueWired : offlineWired;
+
     // ─── Wave-39 — adoption probes ───────────────────────────────
     const onboarding      = _probe('__onboardingHealth');
     const ngoOnboarding   = _probe('__ngoOnboardingHealth');
@@ -166,7 +175,7 @@ export function goLiveHealth() {
     const warnings: string[] = [];
     if (!invitesProviderConfigured) warnings.push('W39_inviteProviderUnconfigured');
     if (!invitesActivationReady)    warnings.push('W39_invitesNotConfigured');
-    if (!offlineWired)              warnings.push('W39_offlineValidationOffline');
+    if (!offlineReady)              warnings.push('W39_offlineValidationOffline');
     if (knowledgeBelowTarget)       warnings.push(
       `W39_knowledgeBelowTarget(${launchCoveragePercent}%)`);
     if (!retentionReady)            warnings.push('W39_retentionUntracked');

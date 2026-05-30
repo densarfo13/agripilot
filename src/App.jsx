@@ -1326,6 +1326,30 @@ export default function App() {
             await import('./runtime/enterprise/EnterpriseReadinessRuntime');
           installEnterpriseReadinessGlobal();
         } catch { /* never block boot */ }
+        // Wave-23 — Launch-cleanup probes: clean-build attestation,
+        // queue health, wave-23-target knowledge coverage. The
+        // wave-23 KnowledgeCoverage installer intentionally
+        // overrides the wave-39 adoption-tier installer (same
+        // __knowledgeCoverageHealth global, launch-target envelope).
+        try {
+          const { installBuildHealthGlobal, markCleanBuild } =
+            await import('./runtime/build/BuildHealthRuntime');
+          // The wave-23 governance gate enforces clean:build ran
+          // in build:safe; this attestation mirrors that fact for
+          // the in-app diagnostic.
+          markCleanBuild();
+          installBuildHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installQueueHealthGlobal } =
+            await import('./runtime/offline/QueueHealthRuntime');
+          installQueueHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installKnowledgeCoverageGlobal } =
+            await import('./runtime/knowledge/KnowledgeCoverageRuntime');
+          installKnowledgeCoverageGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

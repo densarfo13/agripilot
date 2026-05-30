@@ -9,7 +9,7 @@
  *   • Catches any synchronous render error inside its children.
  *   • Logs `[FARROWAY_HOME_CRASH]` once with route + message
  *     (no PII, safe for production drains).
- *   • Renders <SafeHomeFallback /> in place of the crashed
+ *   • Renders <SafeHomeRecovery /> in place of the crashed
  *     subtree, so the user sees real UI instead of a blank
  *     screen or the global ErrorBoundary's full-page card.
  *   • Stamps `farroway_last_home_crash_at` in localStorage so
@@ -21,9 +21,9 @@
  *   the recovery card with three buttons. That's the right UX
  *   for a fatal crash. For Home specifically — which the
  *   pilot needs to ALWAYS render — we want a softer landing:
- *   the user keeps their session, can navigate to /tasks /
- *   /dashboard, and only sees the global card when even the
- *   safe fallback fails to render.
+ *   the user keeps their session, can navigate to /scan or
+ *   /tasks, and only sees the global card when even the safe
+ *   recovery component fails to render.
  *
  * Strict-rule audit
  *   • Class component (required for componentDidCatch).
@@ -36,7 +36,8 @@
  */
 
 import React from 'react';
-import SafeHomeFallback from '../../pages/SafeHomeFallback.jsx';
+// Wave-23 §3 — recovery component (legacy dashboard wording removed).
+import SafeHomeRecovery from '../../pages/SafeHomeRecovery.jsx';
 
 function _currentPath() {
   try {
@@ -87,7 +88,7 @@ export default class HomeErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <SafeHomeFallback />;
+      return <SafeHomeRecovery />;
     }
     return this.props.children;
   }

@@ -1,9 +1,14 @@
 /**
- * SafeHomeFallback — the absolute-worst-case Home UI.
+ * SafeHomeRecovery — wave-23 absolute-worst-case Home UI.
  *
- *   <HomeErrorBoundary fallback={SafeHomeFallback}>
- *     <Home />
- *   </HomeErrorBoundary>
+ * Renamed from SafeHomeFallback (wave-23 §3) to remove the legacy
+ * "Dashboard" link + wording. This is a grower-facing recovery
+ * screen, not a dashboard tile. Allowed copy only:
+ *
+ *   "We couldn't load Home."
+ *   "Try again"
+ *   "Go to Scan"
+ *   "Go to Tasks"
  *
  * Contract
  *   • ZERO dynamic logic. No useEffect, no useState that reads
@@ -17,74 +22,56 @@
  *     this paints something.
  *
  * When this paints, an actual render error has already been
- * caught by HomeErrorBoundary. The two recovery actions are
- * deliberately the safest possible:
- *   1. "Continue setup" → /profile/setup (a real route,
- *      reachable even when /home is on fire).
- *   2. "Open dashboard" → /dashboard (the V1 fallback path
- *      farmers can use to read their farm data without the
- *      crashing Home component).
+ * caught by HomeErrorBoundary. The two recovery actions land on
+ * the safest possible grower-facing routes:
+ *   • /scan  — kicks the user back into the primary scan flow
+ *   • /tasks — the read-only task list, no dashboard layout
  *
  * Strict-rule audit
  *   • Pure presentational. Synchronous. Never throws.
  *   • No state, no effects, no refs.
- *   • Visible debug footer ("Safe mode") so engineers can
- *     tell at a glance the boundary fired.
+ *   • Visible debug footer ("Safe mode") so engineers can tell
+ *     at a glance the boundary fired.
+ *   • Wave-23 governance: no "Dashboard" / "Analytics" /
+ *     "Reports" / "Metrics" tokens. Enforced by
+ *     scripts/check-no-legacy-dashboard.mjs.
  */
 
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const STATIC_TASK = Object.freeze({
-  title:       'Check soil moisture',
-  description: 'Water only if soil feels dry',
-  cta:         'Mark as done',
-});
+function _reload() {
+  try { if (typeof window !== 'undefined') window.location.reload(); }
+  catch { /* swallow */ }
+}
 
-export default function SafeHomeFallback() {
+export default function SafeHomeRecovery() {
   return (
-    <div style={S.page} data-testid="safe-home-fallback">
+    <div style={S.page} data-testid="safe-home-recovery">
       <div style={S.shell}>
         <header style={S.header}>
           <p style={S.eyebrow}>Farroway</p>
-          <h1 style={S.title}>You're home.</h1>
+          <h1 style={S.title}>We couldn't load Home.</h1>
           <p style={S.subtitle}>
-            We've kept things simple while we sort a small issue.
-            Your data is safe.
+            Your data is safe. Try again, or pick one of the
+            options below to keep going.
           </p>
         </header>
 
         <section style={S.card}>
-          <p style={S.cardLabel}>Today's task</p>
-          <h2 style={S.cardTitle}>{STATIC_TASK.title}</h2>
-          <p style={S.cardBody}>{STATIC_TASK.description}</p>
           <button
             type="button"
             style={S.btnPrimary}
-            data-testid="safe-home-task-cta"
+            onClick={_reload}
+            data-testid="safe-home-retry-cta"
           >
-            {STATIC_TASK.cta}
+            Try again
           </button>
         </section>
 
-        <section style={S.setupCard}>
-          <p style={S.setupLabel}>Optional</p>
-          <h2 style={S.setupTitle}>Continue setup</h2>
-          <p style={S.setupBody}>
-            Add your crop and location to unlock smarter tasks.
-          </p>
-          <Link
-            to="/profile/setup"
-            style={S.btnGhost}
-            data-testid="safe-home-setup-cta"
-          >
-            Continue setup
-          </Link>
-        </section>
-
         <section style={S.linksGrid}>
-          <Link to="/dashboard" style={S.linkTile}>Dashboard</Link>
-          <Link to="/tasks"     style={S.linkTile}>Tasks</Link>
+          <Link to="/scan"  style={S.linkTile}>Go to Scan</Link>
+          <Link to="/tasks" style={S.linkTile}>Go to Tasks</Link>
         </section>
 
         <footer style={S.footer}>
@@ -105,7 +92,6 @@ const C = {
   inkDim:   'rgba(255,255,255,0.65)',
   inkFaint: 'rgba(255,255,255,0.45)',
   green:    '#C8944D',
-  amber:    '#F59E0B',
 };
 
 const S = {
@@ -159,28 +145,8 @@ const S = {
     flexDirection: 'column',
     gap: '0.5rem',
   },
-  cardLabel: {
-    margin: 0,
-    fontSize: '0.6875rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: C.inkFaint,
-  },
-  cardTitle: {
-    margin: 0,
-    fontSize: '1.125rem',
-    fontWeight: 700,
-  },
-  cardBody: {
-    margin: 0,
-    fontSize: '0.9375rem',
-    color: C.inkDim,
-    lineHeight: 1.55,
-  },
   btnPrimary: {
     alignSelf: 'flex-start',
-    marginTop: '0.5rem',
     padding: '0.85rem 1.4rem',
     border: 'none',
     borderRadius: '12px',
@@ -191,50 +157,6 @@ const S = {
     cursor: 'pointer',
     minHeight: 46,
     boxShadow: '0 8px 22px rgba(200,148,77,0.25)',
-  },
-  setupCard: {
-    background: 'rgba(245,158,11,0.06)',
-    border: '1px dashed rgba(245,158,11,0.35)',
-    borderRadius: '16px',
-    padding: '1.25rem 1.1rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  setupLabel: {
-    margin: 0,
-    fontSize: '0.6875rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: C.amber,
-  },
-  setupTitle: {
-    margin: 0,
-    fontSize: '1.0625rem',
-    fontWeight: 700,
-  },
-  setupBody: {
-    margin: 0,
-    fontSize: '0.9375rem',
-    color: C.inkDim,
-    lineHeight: 1.5,
-  },
-  btnGhost: {
-    alignSelf: 'flex-start',
-    marginTop: '0.5rem',
-    padding: '0.7rem 1.1rem',
-    borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.18)',
-    background: 'transparent',
-    color: C.ink,
-    fontSize: '0.875rem',
-    fontWeight: 700,
-    textDecoration: 'none',
-    minHeight: 40,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   linksGrid: {
     display: 'grid',
