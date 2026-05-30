@@ -56,6 +56,13 @@ export const EVENT_TYPES = Object.freeze([
   'harvest_task_generated',
   'harvest_completed',
   'bloom_stage_checked',
+  // Wave-29 Scan Intelligence V2 — three new timeline event types
+  // emitted by the V2 sub-runtimes (growth stage / severity /
+  // outcome comparison). Harvest readiness re-uses its existing
+  // 'harvest_readiness_checked' so no fourth entry needed.
+  'growth_stage_detected',
+  'severity_updated',
+  'outcome_compared',
 ]);
 
 function hasStorage() {

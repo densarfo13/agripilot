@@ -67,6 +67,10 @@ import PlantIdentificationCard from './PlantIdentificationCard.jsx';
 // returned a result attached to `result.harvest`.
 import HarvestReadinessCard from './HarvestReadinessCard.jsx';
 import BloomStageCard       from './BloomStageCard.jsx';
+// Wave-29 Scan Intelligence V2 sections — severity, growth stage,
+// weather risk, outcome comparison. All read-only from
+// result.intelligence. Pure presentation; no engine state.
+import ScanIntelligenceSections from './ScanIntelligenceSections.jsx';
 
 const STYLES = {
   // Wave-27 CPO retention fix — honest beta banner + quota chip
@@ -934,6 +938,17 @@ export default function ScanResultCard({
 
       {result.safetyWarning ? (
         <div style={STYLES.helpBlock}>{result.safetyWarning}</div>
+      ) : null}
+
+      {/* Wave-29 Scan Intelligence V2 — sections render above the
+          harvest card so the on-screen order is:
+            Plant name → Health → Severity → Growth stage →
+            Harvest readiness → Weather risk → Outcome comparison.
+          Each subsection self-hides when its envelope is
+          unknown / empty so an unsupported plant produces no
+          additional chrome. */}
+      {result && result.intelligence ? (
+        <ScanIntelligenceSections intelligence={result.intelligence} />
       ) : null}
 
       {/* Wave-28 Harvest Readiness — when the runtime returned a

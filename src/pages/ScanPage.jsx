@@ -173,6 +173,15 @@ import { default as RealisticIconLazy } from '../assets/realism/icons/RealisticI
 import { evaluate as evaluateHarvest, isSupportedPlant as isHarvestSupportedPlant }
   from '../runtime/harvest';
 import { logEvent as logHarvestEvent } from '../lib/events/eventLogger.js';
+// Wave-29 Scan Intelligence V2 — four composition runtimes pinned
+// to the same scan-result pipeline. Each is pure / SSR-safe /
+// frozen / never throws. They attach onto `result.intelligence`
+// so the ScanResultCard child can render them in the spec's
+// order without architectural change.
+import { evaluate as evaluateGrowthStage }       from '../runtime/growth';
+import { evaluate as evaluateSeverity }          from '../runtime/severity';
+import { evaluate as evaluateOutcomeComparison } from '../runtime/outcomeComparison';
+import { evaluate as evaluateWeatherRisk }       from '../runtime/weatherRisk';
 
 // Unified Soft Ochre / Beige system. The mount-pending surface
 // (rendered before <PremiumPage> takes over) now uses the locked
@@ -362,10 +371,58 @@ export default function ScanPage() {
       timestamp: new Date().toISOString(),
     });
 
+    // Wave-29 Scan Intelligence V2 — compose four additional
+    // runtimes against the same normalized scan result. Order is
+    // important: severity MUST run before outcomeComparison so
+    // the comparison can read the just-appended history row.
+    // All four are pure + SSR-safe + frozen-envelope.
+    const tsIso = new Date().toISOString();
+    const severity = evaluateSeverity({
+      scanResult: result,
+      plantContext: { plantId: ctxPlantId },
+      timestamp: tsIso,
+    });
+    const growthStage = evaluateGrowthStage({
+      scanResult: result,
+      plantContext: {
+        plantId:          ctxPlantId,
+        lifecycleStage:   result.lifecycleStage
+                          || profile?.lifecycleStage
+                          || profile?.cropStage,
+        weeksSincePlanting: profile?.weeksSincePlanting,
+      },
+      timestamp: tsIso,
+    });
+    const outcomeComparison = evaluateOutcomeComparison({
+      currentScan: { ...result, scanId },
+      plantContext: { plantId: ctxPlantId },
+      timestamp: tsIso,
+    });
+    const weatherRisk = evaluateWeatherRisk({
+      scanResult: { ...result, scanId },
+      plantContext: { plantId: ctxPlantId, region: profile?.region },
+      // useLiveWeather is the existing canonical hook; we read the
+      // last weather snapshot the host page already resolved via
+      // window.__farrowayLastWeather if available (no new fetch).
+      weather: (typeof window !== 'undefined'
+                && (window).__farrowayLastWeather) || {},
+      timestamp: tsIso,
+    });
+
     // Attach to the result so child cards (HarvestReadinessCard /
     // BloomStageCard) can render. Spread keeps every other field
-    // including imageUrl + thumbnail intact.
-    setResult((prev) => prev ? { ...prev, harvest } : prev);
+    // including imageUrl + thumbnail intact. wave-29 adds
+    // `intelligence` as a single frozen sub-envelope.
+    setResult((prev) => prev ? {
+      ...prev,
+      harvest,
+      intelligence: Object.freeze({
+        severity,
+        growthStage,
+        outcomeComparison,
+        weatherRisk,
+      }),
+    } : prev);
 
     // Timeline emissions — canonical eventLogger only. Two events:
     //   • harvest_readiness_checked — always (every evaluation)
@@ -414,6 +471,38 @@ export default function ScanPage() {
             taskCount:      harvest.recommendedTasks.length,
             idempotencyKey: harvest.idempotencyKey,
           },
+        });
+      }
+      // Wave-29 Scan Intelligence V2 — three new timeline events
+      // matching the V2 envelope. Each fires only when the
+      // corresponding runtime produced a meaningful result (the
+      // runtime's needsReview flag is the gate — UNKNOWN/needsReview
+      // skips the event to keep activity timelines clean).
+      if (growthStage && !growthStage.needsReview) {
+        logHarvestEvent({
+          type: 'growth_stage_detected',
+          farmId: activeFarmId || null,
+          payload: { scanId, plantId: ctxPlantId,
+                     stage: growthStage.stage,
+                     model: growthStage.model },
+        });
+      }
+      if (severity && !severity.needsReview) {
+        logHarvestEvent({
+          type: 'severity_updated',
+          farmId: activeFarmId || null,
+          payload: { scanId, plantId: ctxPlantId,
+                     level: severity.level, score: severity.score },
+        });
+      }
+      if (outcomeComparison && !outcomeComparison.needsReview) {
+        logHarvestEvent({
+          type: 'outcome_compared',
+          farmId: activeFarmId || null,
+          payload: { scanId, plantId: ctxPlantId,
+                     status: outcomeComparison.status,
+                     beforeSeverity: outcomeComparison.beforeSeverity,
+                     afterSeverity:  outcomeComparison.afterSeverity },
         });
       }
     } catch { /* swallow — timeline is non-critical */ }

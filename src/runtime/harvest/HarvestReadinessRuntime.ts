@@ -422,17 +422,34 @@ export function installHarvestReadinessGlobal(): boolean {
       };
     }
     // Extend __scanAnalysisHealth so the existing wave-21
-    // diagnostic surfaces harvest integration status without
-    // requiring a separate probe.
+    // diagnostic surfaces harvest + wave-29 V2 integration status
+    // without requiring separate probes.
     if (typeof w.__scanAnalysisHealth === 'function'
         && !(w as any).__scanAnalysisHealth.__harvestExtended) {
       const prior = w.__scanAnalysisHealth;
       const wrapped: any = function () {
         const base = _safe(() => prior(), {} as any) || {};
         const h    = _safe(() => harvestReadinessHealth(), null as any);
+        // Wave-29 — read the four V2 probes (if present) and
+        // surface their ready flags here too so QA can read all
+        // scan-stack readiness from one place.
+        const _readReady = (name: string, key: string): boolean => {
+          try {
+            const fn = (w as any)[name];
+            if (typeof fn !== 'function') return false;
+            const o = fn();
+            return !!(o && o[key]);
+          } catch { return false; }
+        };
         return Object.freeze({ ...base,
           harvestReadinessReady:  !!(h && h.harvestReadinessReady),
           ripenessDetectionReady: !!(h && h.ripenessDetectionReady),
+          // Wave-29 V2 readiness
+          growthStageReady:       _readReady('__growthStageHealth',       'growthStageReady'),
+          severityReady:          _readReady('__severityHealth',          'severityReady'),
+          outcomeComparisonReady: _readReady('__outcomeComparisonHealth', 'outcomeComparisonReady'),
+          weatherRiskReady:       _readReady('__weatherRiskHealth',       'weatherRiskReady'),
+          harvestReady:           !!(h && h.harvestReadinessReady),
         });
       };
       wrapped.__harvestExtended = true;

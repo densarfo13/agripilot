@@ -1195,6 +1195,31 @@ export default function App() {
             await import('./runtime/harvest/index');
           installHarvestReadinessGlobal();
         } catch { /* never block boot */ }
+        // Wave-29 Scan Intelligence V2 — four additional composition
+        // runtimes evaluated against the same normalized scan result.
+        // Each pins its own diagnostic global; together with
+        // __harvestReadinessHealth they upgrade scan from an
+        // identification engine to an agricultural decision engine.
+        try {
+          const { installGrowthStageGlobal } =
+            await import('./runtime/growth/index');
+          installGrowthStageGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installSeverityGlobal } =
+            await import('./runtime/severity/index');
+          installSeverityGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installOutcomeComparisonGlobal } =
+            await import('./runtime/outcomeComparison/index');
+          installOutcomeComparisonGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installWeatherRiskGlobal } =
+            await import('./runtime/weatherRisk/index');
+          installWeatherRiskGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

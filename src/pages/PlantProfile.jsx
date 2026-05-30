@@ -40,6 +40,12 @@ import { getCanonicalActivityEvents } from '../runtime/launchBlockers/ActivityDa
 // isSupportedPlant() returns true for the current plant.
 import { getLatestForPlant, isSupportedPlant }
   from '../runtime/harvest';
+// Wave-29 Scan Intelligence V2 — read-only latest envelopes from
+// the four V2 sub-runtimes. Each is pure / SSR-safe / never
+// throws. PlantProfile renders whichever exist.
+import { getLatestStageForPlant }       from '../runtime/growth';
+import { getLatestSeverityForPlant }    from '../runtime/severity';
+import { getLatestComparisonForPlant }  from '../runtime/outcomeComparison';
 
 function _readEvents() {
   try {
@@ -359,6 +365,57 @@ export default function PlantProfile() {
                     {tSafe('plantProfile.harvest.last', 'Latest scan')}:
                     {' '}{latest.timestamp ? latest.timestamp.slice(0, 10) : '—'}
                   </div>
+                </div>
+              </>
+            );
+          })()}
+
+          {/* Wave-29 Scan Intelligence V2 — render the latest
+              growth stage / severity / outcome comparison for
+              this plant. Each pulls from the canonical history
+              store (single-writer localStorage owned by its
+              runtime). Self-hides when the row is missing. */}
+          {(() => {
+            const pid = (plant && (plant.id || plant.plantId || plant.commonName)) || '';
+            if (!pid) return null;
+            const stage = getLatestStageForPlant(pid);
+            const sev   = getLatestSeverityForPlant(pid);
+            const cmp   = getLatestComparisonForPlant(pid);
+            if (!stage && !sev && !cmp) return null;
+            return (
+              <>
+                <div style={S.sectionTitle}>
+                  {tSafe('plantProfile.scanIntelligence', 'Scan intelligence')}
+                </div>
+                <div style={S.card} data-testid="plant-profile-scan-v2">
+                  {stage ? (
+                    <div style={{ fontSize: 13, color: '#1F2933',
+                                  marginBottom: 4 }}>
+                      <strong>{tSafe('plantProfile.v2.growthStage', 'Growth stage')}:</strong>{' '}
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {String(stage.stage || 'unknown').replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  ) : null}
+                  {sev ? (
+                    <div style={{ fontSize: 13, color: '#1F2933',
+                                  marginBottom: 4 }}>
+                      <strong>{tSafe('plantProfile.v2.severity', 'Severity')}:</strong>{' '}
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {String(sev.level || 'unknown')}
+                      </span>
+                      {typeof sev.score === 'number'
+                        ? <> {' · '}<em>{sev.score}/100</em></> : null}
+                    </div>
+                  ) : null}
+                  {cmp ? (
+                    <div style={{ fontSize: 13, color: '#1F2933' }}>
+                      <strong>{tSafe('plantProfile.v2.outcome', 'Outcome comparison')}:</strong>{' '}
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {String(cmp.status || 'unknown')}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </>
             );

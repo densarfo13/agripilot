@@ -101,6 +101,12 @@ function _extendReleaseLockWithBlockers(): void {
       // surfaced via the harvest runtime's diagnostic envelope.
       const harvestReadinessReady  = _readGlobalFlag('__harvestReadinessHealth', 'harvestReadinessReady');
       const ripenessDetectionReady = _readGlobalFlag('__harvestReadinessHealth', 'ripenessDetectionReady');
+      // Wave-29 Scan Intelligence V2 — four runtime readiness flags
+      // for growth stage / severity / outcome comparison / weather risk.
+      const growthStageReady       = _readGlobalFlag('__growthStageHealth',       'growthStageReady');
+      const severityReady          = _readGlobalFlag('__severityHealth',          'severityReady');
+      const outcomeComparisonReady = _readGlobalFlag('__outcomeComparisonHealth', 'outcomeComparisonReady');
+      const weatherRiskReady       = _readGlobalFlag('__weatherRiskHealth',       'weatherRiskReady');
       const next: any = { ...(base || {}),
         onboardingGuardReady: !!checks.c1_onboardingGuard,
         taskStoreReady:       !!checks.c2_taskStore,
@@ -118,6 +124,11 @@ function _extendReleaseLockWithBlockers(): void {
         // Wave-28 Harvest Readiness flags
         harvestReadinessReady,
         ripenessDetectionReady,
+        // Wave-29 Scan Intelligence V2 flags
+        growthStageReady,
+        severityReady,
+        outcomeComparisonReady,
+        weatherRiskReady,
         goLiveVerdict:        live && live.verdict ? live.verdict : 'NO_GO',
       };
       // Any wave-26 blocker failure → force RELEASE LOCK to RED.
