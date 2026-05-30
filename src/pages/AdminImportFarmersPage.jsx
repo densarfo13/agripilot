@@ -46,7 +46,20 @@ async function saveFarmerAdapter({ mode, payload }) {
       return { ok: true, id: payload.id, result: res?.data };
     }
   } catch (err) {
-    return { ok: false, error: err?.response?.data?.message || err?.message || 'save_failed' };
+    // Wave-27 — surface the wave-22-style honest envelope so the
+    // operator sees "deploy required" instead of "save_failed" while
+    // the bulk-onboarding Prisma migration is still pending.
+    const data = err?.response?.data || {};
+    const reason  = typeof data.reason === 'string' ? data.reason : '';
+    const detail  = typeof data.detail === 'string' ? data.detail : '';
+    const message = data.message || err?.message || 'save_failed';
+    return {
+      ok: false,
+      error: reason || message,
+      reason,
+      detail,
+      status: err?.response?.status || 0,
+    };
   }
   return { ok: false, error: 'unknown_mode' };
 }

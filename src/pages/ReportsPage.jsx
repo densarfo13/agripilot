@@ -4,6 +4,11 @@ import {
 } from 'recharts';
 import api from '../runtime/apiRuntime.js';
 import ChartErrorBoundary from '../components/ChartErrorBoundary.jsx';
+// Wave-27 — ReportsPage had zero i18n coverage per founder audit
+// Part 4 §10. Wrap visible English copy through tSafe with explicit
+// English fallbacks so translators can supply keys without breaking
+// the screen, but missing keys still render readable English.
+import { tSafe } from '../i18n/tSafe.js';
 
 /**
  * ReportsPage — NGO / admin portfolio report.
@@ -71,9 +76,11 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <>
-        <div className="page-header"><h1>Reports</h1></div>
+        <div className="page-header"><h1>{tSafe('reports.title', 'Reports')}</h1></div>
         <div className="page-body">
-          <div className="loading">Loading the latest portfolio figures…</div>
+          <div className="loading">
+            {tSafe('reports.loading', 'Loading the latest portfolio figures…')}
+          </div>
         </div>
       </>
     );
@@ -82,21 +89,21 @@ export default function ReportsPage() {
   if (errored || !report) {
     return (
       <>
-        <div className="page-header"><h1>Reports</h1></div>
+        <div className="page-header"><h1>{tSafe('reports.title', 'Reports')}</h1></div>
         <div className="page-body">
           <div className="alert alert-danger" role="alert">
             <div style={{ fontWeight: 600, marginBottom: 4 }}>
-              We could not load the report right now.
+              {tSafe('reports.errorTitle', 'We could not load the report right now.')}
             </div>
             <div style={{ fontSize: '0.875rem', opacity: 0.85 }}>
-              This is usually temporary. Try again in a moment.
+              {tSafe('reports.errorHint', 'This is usually temporary. Try again in a moment.')}
             </div>
             <button
               className="btn btn-outline btn-sm"
               style={{ marginTop: '0.75rem' }}
               onClick={loadReport}
             >
-              Reload report
+              {tSafe('reports.reload', 'Reload report')}
             </button>
           </div>
         </div>

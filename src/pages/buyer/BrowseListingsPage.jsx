@@ -108,7 +108,7 @@ export default function BrowseListingsPage() {
   const resultCount = state.listings.length;
   const resultHeader = useMemo(() => {
     if (state.loading) return t('common.loading');
-    if (state.error) return tSafe('market.browse.error', '');
+    if (state.error) return tSafe('market.browse.error', 'Could not load listings. Try again.');
     if (resultCount === 0) return tSafe('market.browse.noResults', 'No produce listings available yet.');
     return t('market.browse.results', { count: resultCount })
       || `${resultCount} listings`;
@@ -120,7 +120,8 @@ export default function BrowseListingsPage() {
     <div style={S.page}>
       <div style={S.container}>
         <header style={S.header}>
-          <h1 style={S.title}>{tSafe('market.browse.title', '')}</h1>
+          {/* Wave-27 — non-empty English fallbacks per founder audit P2 #10. */}
+          <h1 style={S.title}>{tSafe('market.browse.title', 'Browse produce')}</h1>
           {interestEnabled && (
             <button
               type="button"
@@ -128,7 +129,7 @@ export default function BrowseListingsPage() {
               style={S.linkBtn}
               data-testid="go-my-interests"
             >
-              {tSafe('market.myInterests.link', '')}
+              {tSafe('market.myInterests.link', 'My interests')}
             </button>
           )}
         </header>

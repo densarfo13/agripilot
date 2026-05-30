@@ -38,15 +38,22 @@ import { normaliseRegion, normaliseCountry } from '../outbreak/regionNormaliser.
 import MapErrorBoundary from '../components/MapErrorBoundary.jsx';
 import NgoInsightsPanel from '../components/ngo/NgoInsightsPanel.jsx';
 import RoiPanel from '../components/ngo/RoiPanel.jsx';
+// Wave-27 — Source severity colors from the design system instead of
+// inline hex literals (founder audit Part 4 §9). Keeps NGO surface
+// consistent with the grower-side ochre/amber/error palette.
+import { PREMIUM_TOKENS } from '../components/premium/tokens.js';
 
 // Heavy: leaflet + tile layer + circles. Code-split so the
 // dashboard chunk stays tiny on low-end devices.
 const OutbreakMap = lazy(() => import('../components/OutbreakMap.jsx'));
 
+// Wave-27 — Severity colors now flow through PREMIUM_TOKENS so the
+// next palette tweak doesn't skip this page. Error / amber / muted-earth
+// are the closest grower-palette analogues for high / medium / low.
 const SEV_COLOR = Object.freeze({
-  high:   '#FCA5A5',
-  medium: '#FCD34D',
-  low:    '#93C5FD',
+  high:   PREMIUM_TOKENS.error      || '#FCA5A5',
+  medium: PREMIUM_TOKENS.amber      || '#FCD34D',
+  low:    PREMIUM_TOKENS.mutedEarth || '#93C5FD',
 });
 
 function titleCase(s) {

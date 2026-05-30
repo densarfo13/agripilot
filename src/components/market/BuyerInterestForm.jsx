@@ -31,13 +31,15 @@ export default function BuyerInterestForm({
   if (submitted) {
     return (
       <div style={S.success} data-testid="interest-success">
-        <strong>{tSafe('market.interest.sentTitle', '')}</strong>
+        {/* Wave-27 — English fallbacks per founder audit P2 #10. */}
+        <strong>{tSafe('market.interest.sentTitle', 'Interest sent')}</strong>
         <p style={S.successBody}>
-          {tSafe('market.interest.sentBody', '')}
+          {tSafe('market.interest.sentBody',
+            'The seller will see your interest and contact details only if they accept.')}
         </p>
         {onBrowseMore && (
           <button type="button" onClick={onBrowseMore} style={S.btnGhost}>
-            {tSafe('market.interest.browseMore', '')}
+            {tSafe('market.interest.browseMore', 'Browse more listings')}
           </button>
         )}
       </div>
@@ -46,17 +48,17 @@ export default function BuyerInterestForm({
 
   return (
     <form onSubmit={handleSubmit} style={S.form} data-testid="interest-form">
-      <h3 style={S.title}>{tSafe('market.interest.title', '')}</h3>
+      <h3 style={S.title}>{tSafe('market.interest.title', 'Express interest')}</h3>
 
       <div style={S.row}>
-        <Field label={tSafe('market.interest.quantity', '')} flex={1}>
+        <Field label={tSafe('market.interest.quantity', 'Quantity')} flex={1}>
           <input type="number" inputMode="decimal" min="0" step="0.1"
             value={form.quantityRequested} onChange={set('quantityRequested')}
             style={S.input}
             data-testid="interest-quantity"
           />
         </Field>
-        <Field label={tSafe('market.interest.offered', '')} flex={1}>
+        <Field label={tSafe('market.interest.offered', 'Offered price')} flex={1}>
           <input type="number" inputMode="decimal" min="0" step="0.01"
             value={form.offeredPrice} onChange={set('offeredPrice')}
             style={S.input}
@@ -65,7 +67,7 @@ export default function BuyerInterestForm({
         </Field>
       </div>
 
-      <Field label={tSafe('market.interest.note', '')}>
+      <Field label={tSafe('market.interest.note', 'Note to seller (optional)')}>
         <textarea
           value={form.note} onChange={set('note')}
           maxLength={400} rows={3} style={S.textarea}
@@ -76,7 +78,10 @@ export default function BuyerInterestForm({
       {error && <p style={S.err}>{t(`market.err.${error}`) || t('issue.err.generic')}</p>}
 
       <button type="submit" disabled={submitting} style={S.btnPrimary}>
-        {submitting ? t('common.saving') : (t('market.action.sendInterest') || tSafe('market.action.interested', ''))}
+        {submitting
+          ? t('common.saving')
+          : (t('market.action.sendInterest')
+             || tSafe('market.action.interested', 'Send interest'))}
       </button>
     </form>
   );

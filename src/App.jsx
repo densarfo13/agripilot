@@ -1602,7 +1602,12 @@ export default function App() {
           <Route path="/internal/godmode" element={<RoleRoute roles={ADMIN_ROLES}><GodmodePage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
-          <Route path="/internal/production-certification" element={<ProductionCertificationPage />} />
+          {/* Wave-27 fix — /internal/production-certification was
+              mounted without any RoleRoute; the founder-readiness
+              audit (Part 3) flagged it as a critical access bug.
+              Now matched to the rest of /internal/* (godmode/qa/review)
+              which all gate by ADMIN_ROLES. */}
+          <Route path="/internal/production-certification" element={<RoleRoute roles={ADMIN_ROLES}><ProductionCertificationPage /></RoleRoute>} />
           {/* Enterprise Agriculture Platform. <RoleRoute> with admin-only
               role list (excludes farmer/gardener/grower). Full
               OrganizationMember role check ships with the Prisma migration. */}
@@ -2195,7 +2200,12 @@ export default function App() {
             <Route path="/gardens" element={<ManageGardens />} />
             <Route path="/welcome-farmer" element={<WelcomeScreen />} />
             <Route path="/crop-fit/quick" element={<CropFitQuick />} />
-            <Route path="/program-dashboard" element={<ProgramDashboardPage />} />
+            {/* Wave-27 fix — /program-dashboard exposed NGO program
+                surface to any authenticated user. The founder-readiness
+                audit (Part 3) flagged it as a critical access bug.
+                Gated to ADMIN_ROLES until proper org-member scoping
+                ships with the pending enterprise migration. */}
+            <Route path="/program-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><ProgramDashboardPage /></RoleRoute>} />
             {/*
               /settings now resolves to the unified Settings page
               (notifications + communication + farmer ID), backed by

@@ -54,7 +54,10 @@ export default function ListingDetailPage() {
     return <Shell><p style={S.muted}>{t('common.loading')}</p></Shell>;
   }
   if (!state.listing) {
-    return <Shell><p style={S.muted}>{tSafe('market.detail.notFound', '')}</p></Shell>;
+    // Wave-27 fix — empty-string fallback rendered blank `<p>` when
+    // the i18n key was missing (founder audit Part 2 #10). Use real
+    // English copy as the fallback so the page is never blank.
+    return <Shell><p style={S.muted}>{tSafe('market.detail.notFound', 'Listing not found.')}</p></Shell>;
   }
 
   const isActive = state.listing.status === 'active';
@@ -70,13 +73,17 @@ export default function ListingDetailPage() {
 
       {state.listing.notes && (
         <div style={S.notes}>
-          <h3 style={S.notesTitle}>{tSafe('market.detail.notes', '')}</h3>
+          {/* Wave-27 — English fallback so missing i18n keys never render blank. */}
+          <h3 style={S.notesTitle}>{tSafe('market.detail.notes', 'Seller notes')}</h3>
           <p style={S.notesBody}>{state.listing.notes}</p>
         </div>
       )}
 
       <div style={S.contactNote}>
-        {tSafe('market.detail.contactNote', '')}
+        {tSafe(
+          'market.detail.contactNote',
+          'Your contact details stay private. The seller only sees them after they accept your interest.'
+        )}
       </div>
 
       {isActive && !interestEnabled && (
@@ -100,18 +107,21 @@ export default function ListingDetailPage() {
 
       {!isActive && (
         <div style={S.closed} data-testid="listing-unavailable">
+          {/* Wave-27 — non-empty English fallbacks per founder audit P2 #10. */}
           <strong>
             {state.listing.status === 'reserved'
-              ? (tSafe('market.detail.reservedTitle', ''))
-              : (tSafe('market.detail.unavailableTitle', ''))}
+              ? (tSafe('market.detail.reservedTitle', 'Already reserved'))
+              : (tSafe('market.detail.unavailableTitle', 'No longer available'))}
           </strong>
           <p style={S.closedBody}>
             {state.listing.status === 'reserved'
-              ? (tSafe('market.detail.reservedBody', ''))
-              : (tSafe('market.detail.unavailableBody', ''))}
+              ? (tSafe('market.detail.reservedBody',
+                  'Another buyer has reserved this listing. Try browsing similar produce.'))
+              : (tSafe('market.detail.unavailableBody',
+                  'This listing has closed. Browse current produce.'))}
           </p>
           <button type="button" onClick={() => navigate('/market/browse')} style={S.browseBtn}>
-            {tSafe('market.interest.browseMore', '')}
+            {tSafe('market.interest.browseMore', 'Browse more listings')}
           </button>
         </div>
       )}

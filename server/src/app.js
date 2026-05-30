@@ -48,6 +48,14 @@ import aiTaskRoutes from './modules/aiTask/routes.js';
 import serviceAliasesRoutes from './modules/serviceAliases/routes.js';
 import ngoRoutes    from './modules/ingest/ngoRoutes.js';
 import farmersRoutes from './modules/farmers/routes.js';
+// Wave-27 — Honest 503 stub for /api/v2/farmers/partner-import.
+// AdminImportFarmersPage.jsx posts to /api/v2/farmers/partner-import
+// (and PATCHes /api/v2/farmers/:id/partner-import). Both endpoints
+// were missing pre-wave-27 — the founder-readiness audit flagged
+// this as a critical NGO blocker. The stub returns the same
+// machine-readable PENDING_REASON envelope as the bulk-onboarding
+// writes so the frontend banner is consistent.
+import partnerImportRoutes from './modules/farmers/partnerImportRoutes.js';
 import applicationsRoutes from './modules/applications/routes.js';
 import locationRoutes from './modules/location/routes.js';
 import evidenceRoutes from './modules/evidence/routes.js';
@@ -1217,6 +1225,10 @@ app.get('/api/me', authenticate, async (req, res) => {
 app.use('/api/v2/satellite', authenticate, satelliteRoutes);
 
 app.use('/api/farmers', farmersRoutes);
+// Wave-27 — Partner-import honest 503 stub. Mounted under /api/v2/farmers
+// so AdminImportFarmersPage.jsx (which posts to /api/v2/farmers/partner-import)
+// receives the documented PENDING_REASON instead of a generic 404.
+app.use('/api/v2/farmers', partnerImportRoutes);
 app.use('/api/applications', applicationsRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/evidence', evidenceRoutes);
