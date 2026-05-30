@@ -1385,6 +1385,15 @@ export default function App() {
             await import('./runtime/outcomeIntelligence/index');
           installOutcomeIntelligenceGlobals();
         } catch { /* never block boot */ }
+        // Production Acceptance — composite operator-facing
+        // probe that mirrors docs/PRODUCTION_ACCEPTANCE_TEST.md.
+        // Installed last so every upstream probe has had a chance
+        // to land at boot.
+        try {
+          const { installProductionAcceptanceGlobal } =
+            await import('./runtime/production/ProductionAcceptanceHealthRuntime');
+          installProductionAcceptanceGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
