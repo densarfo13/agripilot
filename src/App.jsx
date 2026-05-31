@@ -1458,6 +1458,15 @@ export default function App() {
             await import('./runtime/loginRouting/LoginRoutingHealthRuntime');
           installLoginRoutingHealthGlobal();
         } catch { /* never block boot */ }
+        // Permanent scan-stability — pins __scanPermanentHealth()
+        // (safe-shell-first / upload-primary / camera-optional
+        // contract). Installed after the scan-startup probe so the
+        // roll-up can cross-check it.
+        try {
+          const { installScanPermanentHealthGlobal } =
+            await import('./runtime/scanStartup/ScanPermanentHealthRuntime');
+          installScanPermanentHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

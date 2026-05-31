@@ -450,6 +450,15 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         const r = w.__pilotCommandHealth();
         return !!(r && r.initialized && r.noFakeMetrics);
       }, false),
+      // Permanent scan-stability roll-up — safe-shell-first /
+      // upload-primary / camera-optional contract.
+      scanPermanentReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__scanPermanentHealth !== 'function') return false;
+        const r = w.__scanPermanentHealth();
+        return !!(r && r.scanPermanentReady);
+      }, false),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

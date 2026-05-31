@@ -132,6 +132,22 @@ const STYLES = {
     marginTop:     10,
     fontFamily:    'inherit',
   },
+  // Permanent-stability fix — quiet tertiary "Go Home" escape on
+  // the safe shell.
+  ctaGhost: {
+    appearance:    'none',
+    border:        '1px solid rgba(31,41,51,0.12)',
+    background:    'transparent',
+    color:         '#64748B',
+    fontWeight:    600,
+    fontSize:      14,
+    padding:       '11px 18px',
+    borderRadius:  14,
+    cursor:        'pointer',
+    width:         '100%',
+    marginTop:     10,
+    fontFamily:    'inherit',
+  },
   ctaHint: {
     margin:        '14px 0 0',
     fontSize:      12,
@@ -417,6 +433,22 @@ export default function ScanHub({ onTakePhoto, onUploadPhoto, recentLimit = 4 })
           data-testid="scan-hub-upload-photo"
         >
           🖼 {tSafe('scan.hub.uploadPhoto', 'Upload photo')}
+        </button>
+        {/* Permanent-stability fix — Go Home is always available on
+            the safe shell so the user is never trapped on /scan
+            even if camera + upload both stall. Pure navigation,
+            no dependency on camera/runtime/permission. */}
+        <button
+          type="button"
+          style={STYLES.ctaGhost}
+          onClick={() => {
+            try {
+              if (typeof window !== 'undefined') window.location.assign('/home');
+            } catch { /* swallow */ }
+          }}
+          data-testid="scan-hub-go-home"
+        >
+          🏠 {tSafe('scan.hub.goHome', 'Go Home')}
         </button>
         <p style={STYLES.ctaHint}>
           {tSafe(

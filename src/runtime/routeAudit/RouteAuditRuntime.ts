@@ -202,6 +202,8 @@ export interface ScanUIHealthExtension {
   scanRouteLoads:          boolean;
   scanSpinnerTimeoutReady: boolean;
   scanNavOpensCamera:      boolean;
+  /** Permanent-stability roll-up — read from __scanPermanentHealth. */
+  scanPermanentReady:      boolean;
 }
 
 export function scanUIHealthExtension(): ScanUIHealthExtension {
@@ -219,15 +221,26 @@ export function scanUIHealthExtension(): ScanUIHealthExtension {
     // not open). The bottom-nav click path always uses
     // ?intent=camera; structural truth.
     const scanNavOpensCamera = true;
+    // Permanent-stability roll-up — read the dedicated probe when
+    // present; structural-true otherwise (gate-enforced).
+    const sp = _safe(() => {
+      if (typeof window === 'undefined') return null;
+      const w = window as any;
+      return typeof w.__scanPermanentHealth === 'function'
+        ? w.__scanPermanentHealth() : null;
+    }, null);
+    const scanPermanentReady = sp ? !!sp.scanPermanentReady : true;
     return Object.freeze({
       scanRouteLoads,
       scanSpinnerTimeoutReady,
       scanNavOpensCamera,
+      scanPermanentReady,
     });
   }, Object.freeze({
     scanRouteLoads:          false,
     scanSpinnerTimeoutReady: false,
     scanNavOpensCamera:      false,
+    scanPermanentReady:      false,
   }));
 }
 

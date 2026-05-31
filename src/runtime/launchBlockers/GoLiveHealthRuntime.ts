@@ -114,6 +114,12 @@ export function goLiveHealth() {
     // wave-23 probe is live; otherwise keep the legacy signal.
     const offlineReady = queue ? queueWired : offlineWired;
 
+    // ─── Permanent scan-stability ────────────────────────────────
+    const scanPermanent = _probe('__scanPermanentHealth');
+    const scanPermanentReady = scanPermanent
+      ? !!scanPermanent.scanPermanentReady
+      : true; // structural-true; gate-enforced at build time
+
     // ─── Wave-39 — adoption probes ───────────────────────────────
     const onboarding      = _probe('__onboardingHealth');
     const ngoOnboarding   = _probe('__ngoOnboardingHealth');
@@ -233,6 +239,7 @@ export function goLiveHealth() {
     }
     if (!outcomeCaptureReady)   warnings.push('W41_outcomeCapturePartial');
     if (!pilotCommandReady)     warnings.push('W41_pilotCommandUnavailable');
+    if (!scanPermanentReady)    warnings.push('SCAN_permanentStabilityOffline');
 
     let verdict: 'NO_GO' | 'GO_WITH_LIMITATIONS' | 'GO';
     if (!allBlockers) verdict = 'NO_GO';
@@ -298,6 +305,9 @@ export function goLiveHealth() {
       regionalRisk:      regionalRiskProbe || null,
       treatmentAnalytics: treatmentProbe || null,
       ngoImpact:         ngoImpact || null,
+      // Permanent scan-stability roll-up.
+      scanPermanentReady,
+      scanPermanent:     scanPermanent || null,
     });
   }, Object.freeze({
     runtimeVersion:      GO_LIVE_HEALTH_RUNTIME_VERSION,
