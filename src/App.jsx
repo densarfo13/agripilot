@@ -577,6 +577,11 @@ import { SeasonProvider } from './context/SeasonContext.jsx';
 // crashing the SPA.
 import PageLoaderWithTimeout from './components/system/PageLoaderWithTimeout.jsx';
 import LazyLoadErrorBoundary from './components/system/LazyLoadErrorBoundary.jsx';
+// Global safe loader (startup-deadlock fix §2) — the app-level
+// loading gate uses this so an auth bootstrap that never settles can
+// never leave a full-screen spinner forever; it flips to a recovery
+// panel after the timeout.
+import SafeLoader from './components/common/SafeLoader.jsx';
 // Wave real-device scan validation — visible 3s/5s diagnostic banner.
 // Self-hides off /scan and once scan-ready. Polls __scanStartupHealth()
 // every 500ms. Eager-loaded (NOT lazy) so the banner can render
@@ -737,7 +742,13 @@ function RoleRoute({ roles, children }) {
 // redirecting to /login before the V2 cookie session is verified.
 function AuthLoadingGate({ children }) {
   const { authLoading } = useAuth();
-  if (authLoading) return <PageLoader />;
+  // Startup-deadlock fix §2/§3 — never gate the whole app on an
+  // indefinite spinner. AuthContext.bootstrap() releases authLoading
+  // within an absolute 8s hard-stop; SafeLoader is the belt-and-
+  // suspenders: even if authLoading somehow stayed true, it flips to
+  // a Try Again / Go Home recovery panel after 8s instead of spinning
+  // forever.
+  if (authLoading) return <SafeLoader timeoutMs={8000} />;
   return children;
 }
 
@@ -1495,6 +1506,13 @@ export default function App() {
           const { installBottomNavHealthGlobal } =
             await import('./runtime/bottomNav/BottomNavHealthRuntime');
           installBottomNavHealthGlobal();
+        } catch { /* never block boot */ }
+        // Auth-startup hard-stop diagnostic — pins __authStartupHealth()
+        // so the bootstrap-timeout contract is observable on-device.
+        try {
+          const { installAuthStartupHealthGlobal } =
+            await import('./runtime/authStartup/AuthStartupHealthRuntime');
+          installAuthStartupHealthGlobal();
         } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {

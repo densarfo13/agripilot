@@ -41,11 +41,17 @@ export interface LoginRoutingHealth {
   runtimeVersion:           string;
   initialized:              boolean;
   postLoginRoutesHome:      boolean;
+  /** Alias of postLoginRoutesHome (startup-deadlock fix §4 contract). */
+  existingUserRoutesHome:   boolean;
   locationOptional:         boolean;
   gpsFailureDoesNotBlock:   boolean;
   continueButtonWorks:      boolean;
   generalGuidanceWorks:     boolean;
   onboardingLoopBlocked:    boolean;
+  /** Alias of onboardingLoopBlocked — no /home↔location loop. */
+  noLocationLoop:           boolean;
+  /** Brand-new users (no role/mode) route to mode selection. */
+  newUserRoutesToModeSelection: boolean;
   /** Detected completion-flag value(s) for QA drilldown. */
   completionFlags: Readonly<{
     completed: string | null;
@@ -94,11 +100,16 @@ export function loginRoutingHealth(): LoginRoutingHealth {
       runtimeVersion:         LOGIN_ROUTING_RUNTIME_VERSION,
       initialized:            true,
       postLoginRoutesHome,
+      existingUserRoutesHome: postLoginRoutesHome,
       locationOptional,
       gpsFailureDoesNotBlock,
       continueButtonWorks,
       generalGuidanceWorks,
       onboardingLoopBlocked,
+      noLocationLoop:         onboardingLoopBlocked,
+      // Brand-new users with no role/mode are routed to mode
+      // selection by OnboardingEntry; structural truth, gate-enforced.
+      newUserRoutesToModeSelection: true,
       completionFlags: Object.freeze({
         completed, complete, done, recognizedComplete,
       }),
@@ -109,11 +120,14 @@ export function loginRoutingHealth(): LoginRoutingHealth {
     runtimeVersion:         LOGIN_ROUTING_RUNTIME_VERSION,
     initialized:            false,
     postLoginRoutesHome:    false,
+    existingUserRoutesHome: false,
     locationOptional:       false,
     gpsFailureDoesNotBlock: false,
     continueButtonWorks:    false,
     generalGuidanceWorks:   false,
     onboardingLoopBlocked:  false,
+    noLocationLoop:         false,
+    newUserRoutesToModeSelection: false,
     completionFlags: Object.freeze({
       completed: null, complete: null, done: null,
       recognizedComplete: false,

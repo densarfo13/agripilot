@@ -12,6 +12,12 @@ import {
   SESSION_EXPIRED_EVENT,
 } from '../lib/api.js';
 import { withBootstrapTimeout } from '../utils/withBootstrapTimeout.js';
+// Auth-startup observability — records bootstrap start/settle/timeout
+// timing for window.__authStartupHealth(). Plain module, no React,
+// SSR-safe; never affects control flow.
+import {
+  markAuthBootstrapStart, markAuthBootstrapSettled, markAuthBootstrapTimedOut,
+} from '../runtime/authStartup/authStartupState.js';
 import { logActivity } from '../services/activityLogger.js';
 import { clearSessionState } from '../lib/auth/clearSessionState.js';
 import { startInactivityWatcher } from '../lib/auth/inactivityWatcher.js';
@@ -220,10 +226,14 @@ export function AuthProvider({ children }) {
     // so it fires even if the async continuation is wedged. It is
     // the absolute guarantee that the auth gate ALWAYS opens within
     // 8s no matter what hangs. Cleared on every normal exit path.
+    // Record bootstrap start for __authStartupHealth() (idempotent;
+    // first call wins so a StrictMode double-invoke doesn't reset it).
+    try { markAuthBootstrapStart(8000); } catch { /* swallow */ }
     let _authGateReleased = false;
     const _releaseAuthGate = () => {
       if (_authGateReleased) return;
       _authGateReleased = true;
+      try { markAuthBootstrapSettled(); } catch { /* swallow */ }
       try { setAuthLoading(false); } catch { /* swallow */ }
     };
     const _authGateHardStop = setTimeout(() => {
@@ -231,6 +241,7 @@ export function AuthProvider({ children }) {
 
         console.warn('[AUTH] Hard-stop — releasing auth gate after 8s ceiling');
       } catch { /* swallow */ }
+      try { markAuthBootstrapTimedOut(); } catch { /* swallow */ }
       _releaseAuthGate();
     }, 8000);
 

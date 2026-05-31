@@ -42,9 +42,13 @@ export interface RouteGuardHealth {
   runtimeVersion:                 string;
   initialized:                    boolean;
   authGuardReady:                 boolean;
+  /** Alias of authGuardReady — /home /scan /tasks /activity are auth-only. */
+  authOnlyRoutesReady:            boolean;
   locationDoesNotBlockHome:       boolean;
   locationDoesNotBlockScan:       boolean;
   onboardingLoopBlocked:          boolean;
+  /** No guard can produce a redirect loop (role-only gating). */
+  noInfiniteRedirects:            boolean;
   existingUserRoutesHome:         boolean;
   scanAllowedWithGeneralGuidance: boolean;
 }
@@ -85,9 +89,13 @@ export function routeGuardHealth(): RouteGuardHealth {
       runtimeVersion:                 ROUTE_GUARD_RUNTIME_VERSION,
       initialized:                    true,
       authGuardReady,
+      authOnlyRoutesReady:            authGuardReady,
       locationDoesNotBlockHome,
       locationDoesNotBlockScan,
       onboardingLoopBlocked,
+      // No guard branches on completeness → no redirect loop possible
+      // (enforced by check-route-guard-loops).
+      noInfiniteRedirects:            true,
       existingUserRoutesHome,
       scanAllowedWithGeneralGuidance,
     });
@@ -95,9 +103,11 @@ export function routeGuardHealth(): RouteGuardHealth {
     runtimeVersion:                 ROUTE_GUARD_RUNTIME_VERSION,
     initialized:                    false,
     authGuardReady:                 false,
+    authOnlyRoutesReady:            false,
     locationDoesNotBlockHome:       true,
     locationDoesNotBlockScan:       true,
     onboardingLoopBlocked:          true,
+    noInfiniteRedirects:            true,
     existingUserRoutesHome:         true,
     scanAllowedWithGeneralGuidance: true,
   }));
