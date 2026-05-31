@@ -264,6 +264,7 @@ const Activate       = lazy(() => import('./pages/Activate.jsx'));
 // real health probes; no fake metrics.
 const PilotCommandPage = lazy(() => import('./pages/internal/pilot/PilotCommandPage.jsx'));
 const NGOPilotPage     = lazy(() => import('./pages/internal/pilot/NGOPilotPage.jsx'));
+const PerformancePage  = lazy(() => import('./pages/internal/PerformancePage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // Wave-36 — outcome intelligence pages (admin only).
 const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
@@ -1557,6 +1558,14 @@ export default function App() {
             await import('./runtime/pilotGap/PilotGapHealthRuntime');
           installPilotGapHealthGlobals();
         } catch { /* never block boot */ }
+        // Performance audit diagnostics — pins __scanPerformanceHealth /
+        // __pollingPerformanceHealth / __bundleHealth / __memoryHealth /
+        // __performanceHealth (composite + verdict).
+        try {
+          const { installPerformanceHealthGlobals } =
+            await import('./runtime/performance/PerformanceHealthRuntime');
+          installPerformanceHealthGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -2052,6 +2061,7 @@ export default function App() {
           {/* Wave-41 — pilot validation surfaces (admin only). */}
           <Route path="/internal/pilot"        element={<RoleRoute roles={ADMIN_ROLES}><PilotCommandPage /></RoleRoute>} />
           <Route path="/internal/pilot/ngo"    element={<RoleRoute roles={ADMIN_ROLES}><NGOPilotPage /></RoleRoute>} />
+          <Route path="/internal/performance"  element={<RoleRoute roles={ADMIN_ROLES}><PerformancePage /></RoleRoute>} />
           <Route path="/internal/pilot/grower" element={<RoleRoute roles={ADMIN_ROLES}><GrowerPilotPage /></RoleRoute>} />
           {/* Wave-36 — outcome intelligence surfaces (admin only). */}
           <Route path="/internal/pilot-analytics"               element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />

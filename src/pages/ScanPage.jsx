@@ -1037,6 +1037,12 @@ export default function ScanPage() {
   // before publishing so a fallback timer / late analyze response
   // can never overwrite a fresher attempt.
   const _sessionRef = useRef(null);
+  // Perf / memory — true once the user has navigated away from /scan.
+  // The analyze flow checks this before publishing so an in-flight
+  // analysis that resolves AFTER unmount neither updates state nor
+  // leaks (acceptance test §13.8 — leave during analysis, no leak).
+  const _unmountedRef = useRef(false);
+  useEffect(() => () => { _unmountedRef.current = true; }, []);
 
   // ─── Final Scan Consumer Migration ──────────────────────────
   // The classifier wrapper that ScanRuntime invokes. It calls the
@@ -1537,7 +1543,9 @@ export default function ScanPage() {
       //
       // Scan Pipeline Enforcement — drop if the user has already
       // moved on while we were awaiting the classifier.
-      if (isStaleScanSession(_localSessionId)) return;
+      // Perf/memory — abandon publication if the user left /scan (the
+      // ScanPage unmounted) OR a fresher attempt superseded this one.
+      if (_unmountedRef.current || isStaleScanSession(_localSessionId)) return;
       try { emitScanEvent(SCAN_EVENTS.AI_RESPONSE_RECEIVED, {
         sessionId: _localSessionId,
         confidence: refinedOut?.confidence || null,

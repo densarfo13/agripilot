@@ -359,7 +359,12 @@ function _useOfflineStatus() {
     window.addEventListener('online',  onUp);
     window.addEventListener('offline', onDown);
     refresh();
-    const t = setInterval(refresh, 10_000);
+    // Perf — skip the queue-depth poll while the tab is hidden so a
+    // backgrounded scan page does no work (battery + CPU + no point).
+    const t = setInterval(() => {
+      try { if (typeof document !== 'undefined' && document.hidden) return; } catch { /* ignore */ }
+      refresh();
+    }, 10_000);
     return () => {
       window.removeEventListener('online',  onUp);
       window.removeEventListener('offline', onDown);

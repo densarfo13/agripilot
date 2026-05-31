@@ -78,7 +78,11 @@ export default function OfflineQueueBanner() {
     let timer = null;
     const tick = async () => {
       if (!alive) return;
-      await refresh();
+      // Perf — skip the network read while the tab is hidden; just
+      // re-arm the timer so we resume promptly when it's visible again.
+      let hidden = false;
+      try { hidden = typeof document !== 'undefined' && document.hidden; } catch { hidden = false; }
+      if (!hidden) await refresh();
       if (!alive) return;
       timer = setTimeout(tick, POLL_MS);
     };

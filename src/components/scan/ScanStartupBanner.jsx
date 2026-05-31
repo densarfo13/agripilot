@@ -97,6 +97,8 @@ export default function ScanStartupBanner() {
     const tick = () => {
       try {
         if (!alive) return;
+        // Perf — don't poll the startup probe while the tab is hidden.
+        if (typeof document !== 'undefined' && document.hidden) return;
         setSnap(_probe());
       } catch { /* swallow */ }
     };
