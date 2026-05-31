@@ -1566,6 +1566,13 @@ export default function App() {
             await import('./runtime/performance/PerformanceHealthRuntime');
           installPerformanceHealthGlobals();
         } catch { /* never block boot */ }
+        // i18n diagnostics — pins __languageState / __languageHealth /
+        // __messageTemplateHealth (honest coverage, no fake 100%).
+        try {
+          const { installLanguageHealthGlobals } =
+            await import('./runtime/i18n/LanguageHealthRuntime.js');
+          installLanguageHealthGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

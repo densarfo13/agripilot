@@ -28,6 +28,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { tSafe } from '../../i18n/tSafe.js';
 
 const DEFAULT_TIMEOUT_MS = 5000;
 
@@ -100,10 +101,10 @@ export default function SafeLoader({
       <div style={S.card}>
         <div style={S.icon} aria-hidden="true">⏱️</div>
         <h1 style={S.heading}>
-          {title || 'Something is taking longer than expected.'}
+          {title || tSafe('common.takingLonger', 'Something is taking longer than expected.')}
         </h1>
         <p style={S.body}>
-          {message || 'Your data is safe. Choose what to do next.'}
+          {message || tSafe('common.dataSafeChoose', 'Your data is safe. Choose what to do next.')}
         </p>
         <div style={S.btnRow}>
           <button
@@ -112,7 +113,7 @@ export default function SafeLoader({
             onClick={handleRetry}
             data-testid="safe-loader-retry"
           >
-            Try Again
+            {tSafe('common.tryAgain', 'Try Again')}
           </button>
           {scanCtx && (
             <button
@@ -121,7 +122,7 @@ export default function SafeLoader({
               onClick={_goUpload}
               data-testid="safe-loader-upload"
             >
-              Upload Photo
+              {tSafe('scan.camera.uploadPhoto', 'Upload Photo')}
             </button>
           )}
           <button
@@ -130,7 +131,7 @@ export default function SafeLoader({
             onClick={_goHome}
             data-testid="safe-loader-home"
           >
-            Go Home
+            {tSafe('common.goHome', 'Go Home')}
           </button>
         </div>
       </div>
