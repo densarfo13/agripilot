@@ -1590,6 +1590,15 @@ export default function App() {
           await import('./core/camera/cameraHealthEngine.js');
         installCameraDiagnostics();
       } catch { /* never block app boot */ }
+      // iOS camera-init diagnostic — pins window.__cameraHealth()
+      // {state, permissionState, videoReady, videoWidth, failedStage,
+      // startupMs, …} so the REAL camera stage is observable on-device
+      // (not the vague "runtimeInitialized" the scan-startup probe showed).
+      try {
+        const { installCameraHealthGlobal } =
+          await import('./core/camera/cameraRuntimeManager.js');
+        installCameraHealthGlobal();
+      } catch { /* never block app boot */ }
     })();
 
     loadTranslations(getCurrentLang())

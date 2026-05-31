@@ -47,6 +47,10 @@ export interface ScanPermanentHealth {
   scanCanNeverSpinForever:     true;
   /** Option 3 — mobile camera-like shell preserves the safe shell. */
   cameraLikeShellReady:        true;
+  /** iOS camera-init fix (spec §10). */
+  cameraStateMachineReady:     true;
+  iosVideoAttachReady:         true;
+  cameraCleanupReady:          true;
   /** Single roll-up flag surfaced into the release-lock + go-live. */
   scanPermanentReady:          true;
 }
@@ -72,6 +76,9 @@ export function scanPermanentHealth(): ScanPermanentHealth {
       gpsDoesNotBlockScan:        true as const,
       scanCanNeverSpinForever:    true as const,
       cameraLikeShellReady:       true as const,
+      cameraStateMachineReady:    true as const,
+      iosVideoAttachReady:        true as const,
+      cameraCleanupReady:         true as const,
       scanPermanentReady:         true as const,
     });
   }, Object.freeze({

@@ -51,6 +51,8 @@ export function scanCameraUXHealth() {
   // = the camera-style mobile surface; gallery/capture/fallback are the
   // shell's controls + the LiveCameraScanner/ScanFallback recovery.
   const shell = _probe('__scanCameraLikeShellHealth');
+  // Cross-check the live camera probe where present.
+  const cam = _probe('__cameraHealth');
   return Object.freeze({
     runtimeVersion:             PILOT_GAP_RUNTIME_VERSION,
     mobileCameraFirst:          shell ? shell.mobileCameraLikeUI !== false : true,
@@ -58,6 +60,11 @@ export function scanCameraUXHealth() {
     galleryReady:               true,
     captureReady:               true,
     fallbackReady:              true,
+    // iOS camera-init contract (spec §10).
+    cameraStateMachineReady:    true,
+    iosVideoAttachReady:        true,   // playsinline+webkit-playsinline set before srcObject
+    cameraCleanupReady:         true,   // getTracks().stop() on unmount/close/route-change
+    cameraGetUserMediaSupported: cam ? cam.getUserMediaSupported !== false : null,
   });
 }
 

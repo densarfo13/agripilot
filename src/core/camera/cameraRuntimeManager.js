@@ -57,6 +57,12 @@ let _recoveryCount  = 0;
 let _lastRecoveryReason = null;
 let _listenersInstalled = false;
 let _initInFlight   = false;
+// iOS camera-init diagnostics — the REAL failed stage (not the vague
+// "runtimeInitialized" the scan-startup probe reported) + timing.
+let _failedStage    = null;
+let _lastErrorName  = null;
+let _startedAt      = 0;
+let _settledAt      = 0;
 
 function _hasWindow()   { try { return typeof window !== 'undefined'; } catch { return false; } }
 function _hasDocument() { try { return typeof document !== 'undefined'; } catch { return false; } }
@@ -163,15 +169,19 @@ export async function initializeCamera(opts) {
     // 1) Release any prior stream.
     releaseTracks();
     _setState(CAMERA_STATE.STARTING);
+    _failedStage = null;
+    _startedAt   = _safe(() => Date.now(), 0);
+    _settledAt   = 0;
 
     if (typeof navigator === 'undefined'
         || !navigator.mediaDevices
         || typeof navigator.mediaDevices.getUserMedia !== 'function') {
       _setState(CAMERA_STATE.FAILED);
-      _lastError = 'getusermedia_unavailable';
+      _lastError   = 'getusermedia_unavailable';
+      _failedStage = 'getusermedia_unsupported';
       return Object.freeze({
         ok: false, state: _state, stream: null,
-        reason: _lastError,
+        reason: _lastError, failedStage: _failedStage,
       });
     }
 
@@ -188,10 +198,11 @@ export async function initializeCamera(opts) {
 
     if (!stream) {
       _setState(CAMERA_STATE.FAILED);
-      _lastError = 'init_timeout_or_denied';
+      _lastError   = 'init_timeout_or_denied';
+      _failedStage = 'starting';   // getUserMedia timed out or was denied
       return Object.freeze({
         ok: false, state: _state, stream: null,
-        reason: _lastError,
+        reason: _lastError, failedStage: _failedStage,
       });
     }
 
@@ -199,25 +210,40 @@ export async function initializeCamera(opts) {
     _activeVideo  = _isObj(o.videoEl) ? o.videoEl : null;
     if (_activeVideo) {
       _safe(() => {
-        _activeVideo.srcObject = stream;
-        // iOS Safari critical attrs
-        _activeVideo.playsInline = true;
-        _activeVideo.muted       = true;
-        _activeVideo.autoplay    = true;
-        const playRes = _activeVideo.play && _activeVideo.play();
+        const v = _activeVideo;
+        // ─── iOS Safari video-attach order (CRITICAL) ───────────
+        // The inline-playback attributes MUST be present as real
+        // ATTRIBUTES, and set BEFORE the stream is attached — incl.
+        // the legacy `webkit-playsinline` for older iOS. Setting them
+        // only as properties, or after srcObject, makes iOS attempt
+        // fullscreen playback, which fails inline and leaves
+        // videoWidth at 0 ("stream received but no frames / Camera
+        // unavailable" — the exact reported symptom).
+        try { v.setAttribute('playsinline', 'true'); } catch { /* swallow */ }
+        try { v.setAttribute('webkit-playsinline', 'true'); } catch { /* swallow */ }
+        v.playsInline = true;
+        v.muted       = true;
+        v.autoplay    = true;
+        // THEN attach the stream.
+        v.srcObject = stream;
+        const playRes = v.play && v.play();
         if (playRes && typeof playRes.catch === 'function') {
-          playRes.catch(() => { /* iOS rejects when not user-initiated */ });
+          // iOS may reject play() without a user gesture; the caller
+          // (LiveCameraScanner) awaits real frames + offers a visible
+          // "Tap to start camera" gesture path. Don't fail here.
+          playRes.catch(() => { _failedStage = 'video_play_blocked'; });
         }
       }, null);
     }
 
     _installResumeListeners();
     _setState(CAMERA_STATE.ACTIVE);
-    _lastError = null;
+    _lastError   = null;
+    _settledAt   = _safe(() => Date.now(), 0);
 
     return Object.freeze({
       ok: true, state: _state, stream,
-      reason: null,
+      reason: null, failedStage: null,
     });
   } finally {
     _initInFlight = false;
@@ -302,6 +328,12 @@ export function releaseBlobUrl(url) {
 export function getRuntimeSnapshot() {
   return _safe(() => {
     const probe = validateStream();
+    const v = _activeVideo;
+    const vw = (v && typeof v.videoWidth === 'number') ? v.videoWidth : 0;
+    const vh = (v && typeof v.videoHeight === 'number') ? v.videoHeight : 0;
+    const startupMs = (_startedAt > 0)
+      ? Math.max(0, (_settledAt > 0 ? _settledAt : Date.now()) - _startedAt)
+      : null;
     return Object.freeze({
       engineVersion:       ENGINE_VERSION,
       state:               _state,
@@ -311,7 +343,14 @@ export function getRuntimeSnapshot() {
       recoveryCount:       _recoveryCount,
       lastRecoveryReason:  _lastRecoveryReason,
       lastError:           _lastError,
+      lastErrorName:       _lastErrorName,
+      failedStage:         _failedStage,
       videoBound:          !!_activeVideo,
+      videoAttached:       !!(v && v.srcObject),
+      videoWidth:          vw,
+      videoHeight:         vh,
+      videoReady:          vw > 0,
+      startupMs,
       generatedAt:         Date.now(),
     });
   }, Object.freeze({
@@ -325,6 +364,57 @@ export function getRuntimeSnapshot() {
   }));
 }
 
+/**
+ * installCameraHealthGlobal — pins window.__cameraHealth() with the
+ * iOS camera-init contract envelope. Read-only; composes the live
+ * runtime snapshot + a best-effort permission read. SSR-safe.
+ */
+export function installCameraHealthGlobal() {
+  return _safe(() => {
+    if (!_hasWindow()) return false;
+    const w = window;
+    if (typeof w.__cameraHealth === 'function') return true;
+    w.__cameraHealth = function () {
+      const snap = getRuntimeSnapshot();
+      const getUserMediaSupported = _safe(() =>
+        typeof navigator !== 'undefined'
+        && !!navigator.mediaDevices
+        && typeof navigator.mediaDevices.getUserMedia === 'function', false);
+      // Permission state — synchronous best-effort; the live
+      // LiveCameraScanner refreshes this via the Permissions API.
+      const permissionState = _safe(() => {
+        const cached = w.__farrowayCameraPermission;
+        return typeof cached === 'string' ? cached : 'unknown';
+      }, 'unknown');
+      const out = Object.freeze({
+        state:                 snap.state,
+        permissionState,
+        getUserMediaSupported,
+        streamActive:          snap.streamActive,
+        videoAttached:         snap.videoAttached,
+        videoReady:            snap.videoReady,
+        videoWidth:            snap.videoWidth,
+        videoHeight:           snap.videoHeight,
+        deviceCount:           _safe(() => {
+          const n = w.__farrowayCameraDeviceCount;
+          return typeof n === 'number' ? n : null;
+        }, null),
+        lastErrorName:         snap.lastErrorName,
+        lastErrorMessage:      snap.lastError,
+        startupMs:             snap.startupMs,
+        failedStage:           snap.failedStage,
+      });
+      try {
+        const dev = typeof import.meta !== 'undefined'
+          && import.meta.env && import.meta.env.DEV;
+        if (dev || w.__farrowayHealthLog === true) console.log('[Farroway · Camera]', out);
+      } catch { /* swallow */ }
+      return out;
+    };
+    return true;
+  }, false);
+}
+
 /** Test-only reset. */
 export function _resetCameraRuntimeForTests() {
   releaseTracks();
@@ -336,6 +426,10 @@ export function _resetCameraRuntimeForTests() {
   _lastRecoveryReason = null;
   _listenersInstalled = false;
   _initInFlight = false;
+  _failedStage = null;
+  _lastErrorName = null;
+  _startedAt = 0;
+  _settledAt = 0;
 }
 
 export const _internal = Object.freeze({
@@ -347,7 +441,7 @@ const _module = {
   initializeCamera, stopCamera, restartCamera,
   recoverCamera, releaseTracks, validateStream,
   isCameraHealthy, getActiveStream,
-  releaseBlobUrl, getRuntimeSnapshot,
+  releaseBlobUrl, getRuntimeSnapshot, installCameraHealthGlobal,
   _resetCameraRuntimeForTests, _internal,
 };
 export default _module;

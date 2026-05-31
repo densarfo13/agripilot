@@ -78,10 +78,15 @@ const PREFERRED_CONSTRAINTS = (facing) => ({
   },
 });
 
-const MIN_CONSTRAINTS = (facing) => ({
-  audio: false,
-  video: { facingMode: facing },
-});
+// Ultimate-lenient fallback (iOS camera-init spec §4). When the
+// ideal-resolution + facingMode constraints are rejected (some iOS
+// builds + locked-down devices), `{ video: true }` is the most
+// compatible request and almost always succeeds. `facing` is accepted
+// for signature parity but intentionally not used here.
+const MIN_CONSTRAINTS = (facing) => {
+  void facing;
+  return { audio: false, video: true };
+};
 
 function _isIos() {
   try {
@@ -470,6 +475,12 @@ export default function LiveCameraScanner({
     // throws on { name: 'camera' } — the helper returns null in
     // that case so we fall through to the standard gUM flow.
     const preflight = await _queryCameraPermission();
+    // Surface the live permission state for window.__cameraHealth().
+    try {
+      if (typeof window !== 'undefined' && preflight) {
+        window.__farrowayCameraPermission = preflight;
+      }
+    } catch { /* swallow */ }
     if (isStale()) return;
     // Permissions API uses W3C spec values ('granted' / 'denied'
     // / 'prompt') — those are NOT our internal phase names. Map
@@ -922,6 +933,10 @@ export default function LiveCameraScanner({
           <video
             ref={videoRef}
             playsInline
+            // Legacy iOS inline-playback attribute. Without it, older
+            // iOS Safari/WKWebView builds force fullscreen playback,
+            // which fails inline → 0-width frame ("Camera unavailable").
+            webkit-playsinline="true"
             muted
             autoPlay
             style={S.video}
