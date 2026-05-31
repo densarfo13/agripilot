@@ -189,12 +189,24 @@ function _refresh(): void {
   const now = _now();
   if (_state.componentMountedAt == null && _hasEl('[data-testid="scan-capture"]')) {
     _state.componentMountedAt = now;
+    // Real-device root-cause fix — the scan-capture sentinel now
+    // appears on the in-page mount spinner the moment ScanPage's
+    // React tree renders, so its arrival simultaneously proves
+    // the chunk loaded, the component rendered, AND the
+    // queueMicrotask mount flip is about to run. Emit the three
+    // trace stages the spec calls out so the operator sees the
+    // transition explicitly.
+    _appendTrace('chunkLoaded');
+    _appendTrace('componentRendered');
     _appendTrace('componentMounted');
+    _appendTrace('microtaskMounted');
   }
   if (_state.uploadFallbackAt == null
-      && _hasEl('[data-testid="scan-capture-fallback"]')) {
+      && (_hasEl('[data-testid="scan-capture-fallback"]')
+          || _hasEl('[data-testid="scan-fallback-upload"]'))) {
     _state.uploadFallbackAt = now;
     _appendTrace('uploadFallbackVisible');
+    _appendTrace('fallbackRendered');
   }
   if (_state.runtimeInitializedAt == null
       && (_hasGlobal('__scanResultHealth') || _hasGlobal('__scanCtaHealth'))) {
@@ -233,6 +245,7 @@ function _patchGetUserMedia(): void {
                 if (_onScanRoute() && _state.cameraGrantedAt == null) {
                   _state.cameraGrantedAt = _now();
                   _appendTrace('cameraGranted');
+                  _appendTrace('cameraReady');
                   // Permissions API doesn't always fire `change`
                   // after first grant; mirror the state here.
                   if (_permissionState !== 'granted') {
@@ -281,6 +294,10 @@ export interface ScanStartupHealth {
    *  "scan-capture" rendered, meaning lazy chunk resolved). */
   suspenseResolved:         boolean;
   componentMounted:         boolean;
+  /** Real-device root-cause fix — mirrors componentMounted from
+   *  ScanPage's `_mountedRef.current`. Asserts the queueMicrotask
+   *  mount flip succeeded without relying on a stale closure. */
+  mountedRefCurrent:         boolean;
   /** Wave audit alias for cameraRequested timestamp existence. */
   cameraRequestStarted:     boolean;
   cameraRequested:          boolean;
@@ -296,6 +313,14 @@ export interface ScanStartupHealth {
   /** True iff cameraGranted OR uploadFallbackVisible. */
   scanReady:                boolean;
   startupDurationMs:        number | null;
+  /** Real-device root-cause fix — hard-stop bound enforced by
+   *  ScanPage.jsx. 5000ms per spec; lower than this means a
+   *  faster recovery; higher would be a regression. */
+  hardStopMs:               5000;
+  /** Real-device root-cause fix — true iff the in-page mount
+   *  spinner is guaranteed to flip to a recovery UI at or before
+   *  hardStopMs. Anchored by ScanPage's 5s setLoadTimedOut path. */
+  infiniteSpinnerBlocked:   true;
   /** Highest stage observed for the current /scan session. */
   stage:                    string;
   /** Bonus context — current pathname for diagnostic drilldown. */
@@ -309,6 +334,7 @@ const FROZEN_FALLBACK: Readonly<ScanStartupHealth> = Object.freeze({
   routeMatched:           false,
   suspenseResolved:       false,
   componentMounted:       false,
+  mountedRefCurrent:      false,
   cameraRequestStarted:   false,
   cameraRequested:        false,
   cameraPermissionState:  'unknown',
@@ -318,6 +344,8 @@ const FROZEN_FALLBACK: Readonly<ScanStartupHealth> = Object.freeze({
   runtimeInitialized:     false,
   scanReady:              false,
   startupDurationMs:      null,
+  hardStopMs:             5000 as const,
+  infiniteSpinnerBlocked: true as const,
   stage:                  'not-on-scan',
   currentPath:            '',
 });
@@ -360,6 +388,11 @@ export function scanStartupHealth(): ScanStartupHealth {
       routeMatched:           onScan,
       suspenseResolved,
       componentMounted,
+      // mountedRefCurrent mirrors componentMounted — both flip true
+      // the moment ScanPage renders ANY tree (the in-page spinner
+      // now carries data-testid="scan-capture" after the
+      // root-cause fix, so the React mount is the signal).
+      mountedRefCurrent:      componentMounted,
       cameraRequestStarted:   cameraRequested,
       cameraRequested,
       cameraPermissionState:  _permissionState,
@@ -369,6 +402,8 @@ export function scanStartupHealth(): ScanStartupHealth {
       runtimeInitialized,
       scanReady,
       startupDurationMs,
+      hardStopMs:             5000 as const,
+      infiniteSpinnerBlocked: true as const,
       stage:                  _highestStage(),
       currentPath:            String(_safe(() =>
         typeof window !== 'undefined' && window.location

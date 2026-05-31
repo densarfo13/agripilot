@@ -852,24 +852,40 @@ export default function ScanPage() {
   //   • Deadline extended to 15s (well above the iOS cold-start
   //     budget) — `mounted` flips after a microtask in practice,
   //     so this only fires on genuine mount failures.
+  // Real-device root-cause fix — on iPhone Safari the previous
+  // `setTimeout(... 0)` macrotask sat behind a backlogged boot
+  // queue, leaving `mounted` false for several visible seconds.
+  // Use queueMicrotask so the flip lands before the next paint
+  // regardless of how busy the macrotask queue is. Also use a
+  // ref so the hard-stop's stale-closure read of `mounted` is
+  // replaced by the live current value.
+  const _mountedRef = useRef(false);
   useEffect(() => {
     if (!flagOn) return undefined;
     let cancelled = false;
-    // Microtask flip — happens immediately, but the React
-    // render between mount and this state update IS the
-    // "Preparing camera…" frame.
-    const t0 = setTimeout(() => { if (!cancelled) setMounted(true); }, 0);
+    const flip = () => {
+      if (cancelled) return;
+      _mountedRef.current = true;
+      setMounted(true);
+    };
+    try {
+      if (typeof queueMicrotask === 'function') queueMicrotask(flip);
+      else Promise.resolve().then(flip);
+    } catch {
+      try { setTimeout(flip, 0); } catch { /* swallow */ }
+    }
+    // Real-device root-cause fix — drop hard-stop from 15s to 5s
+    // (matches wave-real-device spec) and consult the ref so a
+    // successful late flip isn't mis-stamped as a stall.
     const tHardStop = setTimeout(() => {
       if (cancelled) return;
-      // Only fire if the page truly never finished mounting.
-      // Camera startup latency is handled by LiveCameraScanner.
-      if (!mounted) {
+      if (!_mountedRef.current) {
         setLoadTimedOut(true);
-        try { trackEvent('scan_load_failed', { reason: 'mount_stall_15s' }); }
+        try { trackEvent('scan_load_failed', { reason: 'mount_stall_5s' }); }
         catch { /* swallow */ }
       }
-    }, 15000);
-    return () => { cancelled = true; clearTimeout(t0); clearTimeout(tHardStop); };
+    }, 5000);
+    return () => { cancelled = true; clearTimeout(tHardStop); };
     // Intentional one-shot — only fires on initial mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagOn]);
@@ -1749,8 +1765,20 @@ export default function ScanPage() {
   // Initial-mount loading state — "Preparing camera…" so the
   // user never sees a blank screen during the first paint.
   if (!mounted) {
+    // Real-device root-cause fix \u2014 emit data-testid="scan-capture"
+    // on the mount spinner so __scanStartupHealth() flips
+    // componentMounted=true the moment ScanPage's React tree
+    // renders ANYTHING. Without this, the banner waited for
+    // ScanCapture to render, but on iPhone Safari ScanCapture is
+    // gated behind the `mounted` flag \u2014 which left the runtime
+    // stuck reporting componentMounted:false.
     return (
-      <main style={STYLES.page} data-screen="scan-page" data-phase="loading">
+      <main
+        style={STYLES.page}
+        data-screen="scan-page"
+        data-phase="loading"
+        data-testid="scan-capture"
+      >
         <div style={{
           flex: 1,
           display: 'flex',

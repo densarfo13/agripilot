@@ -50,8 +50,13 @@ import { tSafe } from '../../i18n/tSafe.js';
 // the camera retry drops to secondary — the farmer is steered
 // upload-first instead of being pushed to keep retrying a camera
 // that just failed (Final Scan Preview + Gallery-First Fix §2).
+// Real-device root-cause fix — page_loading is now routed through
+// the camera-failure branch (Upload Photo primary, Try Again
+// secondary) because the user's observable symptom is "spinner
+// won't end" and the right next action is to upload a photo.
 const CAMERA_FAIL_REASONS = Object.freeze([
   'crash', 'camera_unavailable', 'permission_denied', 'unsupported', 'timeout',
+  'page_loading',
 ]);
 
 // Reasons where the AI could not read the photo confidently —
@@ -91,7 +96,8 @@ const RETRY_COPY = Object.freeze({
   // failed to render within the 15s safety ceiling) is NOT a
   // camera failure. Use accurate wording so the farmer knows
   // to retry the page load, not blame the camera.
-  page_loading:       { title: 'Scan is taking a moment',     body: 'Tap retry to reload, or upload a photo to keep scanning now.' },
+  // Real-device root-cause fix — exact spec copy.
+  page_loading:       { title: 'Camera unavailable',          body: 'Camera is taking longer than expected. You can still upload a photo.' },
   // Spec §7 — surface-specific outcomes the FSM emits.
   upload_failed:      { title: 'Upload failed',               body: 'Try a smaller photo, or check your connection and retry.' },
   analysis_delayed:   { title: 'Analysis is delayed',          body: 'Your photo was saved for retry — you can keep using the app.' },
@@ -197,6 +203,14 @@ export default function ScanFallback({
     catch { /* swallow */ }
   }, []);
 
+  // Real-device root-cause fix — spec mandates a Go Home button
+  // on the camera-unavailable / page_loading state.
+  const handleGoHome = useCallback(() => {
+    try {
+      if (typeof window !== 'undefined') window.location.assign('/home');
+    } catch { /* swallow */ }
+  }, []);
+
   const handleFile = useCallback((e) => {
     try {
       const f = e && e.target && e.target.files && e.target.files[0];
@@ -234,6 +248,18 @@ export default function ScanFallback({
               >
                 {tSafe('scan.camera.tryAgain', 'Try camera again')}
               </button>
+              {/* Real-device root-cause fix — Go Home button is
+                  spec-mandated on the page_loading fallback. */}
+              {reason === 'page_loading' && (
+                <button
+                  type="button"
+                  onClick={handleGoHome}
+                  style={S.secondaryBtn}
+                  data-testid="scan-fallback-home"
+                >
+                  {tSafe('common.goHome', 'Go Home')}
+                </button>
+              )}
             </>
           ) : (
             <>
