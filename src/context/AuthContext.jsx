@@ -202,6 +202,38 @@ export function AuthProvider({ children }) {
     const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
     if (isDev) console.log('[AUTH] Bootstrap start');
 
+    // ═══ PERMANENT AUTH-GATE HARD-STOP (iPhone Safari fix) ═══
+    // ROOT CAUSE: the `finally` that releases authLoading is scoped
+    // only to the /me try-block below. The repair steps BEFORE it
+    // (`await import(...)`, `await repairActiveContext()`) are
+    // unbounded — try/catch bounds a REJECTION, not a HANG. On
+    // iPhone Safari a dynamic import() can stall (stale service-
+    // worker precache pointing at a renamed hashed chunk; Safari
+    // holding the fetch) and repairActiveContext() can hang on
+    // IndexedDB (Safari Private / ITP). When that happens bootstrap
+    // never reaches the finally, authLoading stays true forever,
+    // and AuthLoadingGate renders the full-screen Farroway spinner
+    // for the WHOLE app — /scan never mounts, so every downstream
+    // scan fix is unreachable.
+    //
+    // This timer is scheduled on the event loop BEFORE any await,
+    // so it fires even if the async continuation is wedged. It is
+    // the absolute guarantee that the auth gate ALWAYS opens within
+    // 8s no matter what hangs. Cleared on every normal exit path.
+    let _authGateReleased = false;
+    const _releaseAuthGate = () => {
+      if (_authGateReleased) return;
+      _authGateReleased = true;
+      try { setAuthLoading(false); } catch { /* swallow */ }
+    };
+    const _authGateHardStop = setTimeout(() => {
+      try {
+
+        console.warn('[AUTH] Hard-stop — releasing auth gate after 8s ceiling');
+      } catch { /* swallow */ }
+      _releaseAuthGate();
+    }, 8000);
+
     // ─── Step -1: Explicit-logout short-circuit ─────────────
     // If the farmer just hit Logout, every downstream repair
     // path (repairSession, repairExperience, cached-profile
@@ -218,7 +250,8 @@ export function AuthProvider({ children }) {
         if (isDev) console.log('[AUTH] Explicit-logout flag set — skipping repair / restore');
         setUser(null);
         setIsOfflineSession(false);
-        setAuthLoading(false);
+        clearTimeout(_authGateHardStop);
+        _releaseAuthGate();
         return;
       }
     } catch { /* never propagate */ }
@@ -229,10 +262,15 @@ export function AuthProvider({ children }) {
     // _onboarding_completed). Lazy-imported so a corrupted
     // repair module can never break boot.
     try {
-      const { repairSession } = await import('../utils/repairSession.js');
-      const actions = repairSession();
-      if (isDev && actions && actions.length) {
-        console.log('[AUTH] repairSession applied:', actions);
+      // iPhone Safari fix — bound the dynamic import. A stalled
+      // chunk fetch (stale SW precache) must not hang bootstrap.
+      const mod = await withBootstrapTimeout(
+        import('../utils/repairSession.js'), 2000, null, 'import repairSession');
+      if (mod && typeof mod.repairSession === 'function') {
+        const actions = mod.repairSession();
+        if (isDev && actions && actions.length) {
+          console.log('[AUTH] repairSession applied:', actions);
+        }
       }
     } catch (err) {
       if (isDev) console.warn('[AUTH] repairSession unavailable:', err && err.message);
@@ -245,10 +283,18 @@ export function AuthProvider({ children }) {
     // the chain is a no-op after Logout. Lazy-imported so a
     // problem in any step can never break boot.
     try {
-      const { repairActiveContext } = await import('../utils/repairActiveContext.js');
-      const ctxActions = await repairActiveContext();
-      if (isDev && ctxActions && ctxActions.length) {
-        console.log('[AUTH] repairActiveContext applied:', ctxActions);
+      // iPhone Safari fix — bound BOTH the dynamic import AND the
+      // repair call. repairActiveContext() can touch IndexedDB,
+      // which hangs in Safari Private / under ITP. Either stall
+      // must not hold the auth gate closed.
+      const ctxMod = await withBootstrapTimeout(
+        import('../utils/repairActiveContext.js'), 2000, null, 'import repairActiveContext');
+      if (ctxMod && typeof ctxMod.repairActiveContext === 'function') {
+        const ctxActions = await withBootstrapTimeout(
+          Promise.resolve(ctxMod.repairActiveContext()), 2000, null, 'repairActiveContext');
+        if (isDev && ctxActions && ctxActions.length) {
+          console.log('[AUTH] repairActiveContext applied:', ctxActions);
+        }
       }
     } catch (err) {
       if (isDev) console.warn('[AUTH] repairActiveContext unavailable:', err && err.message);
@@ -331,7 +377,8 @@ export function AuthProvider({ children }) {
       }
     } finally {
       if (isDev) console.log('[AUTH] Bootstrap complete, authLoading → false');
-      setAuthLoading(false);
+      clearTimeout(_authGateHardStop);
+      _releaseAuthGate();
     }
   }
 

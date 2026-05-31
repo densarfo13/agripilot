@@ -144,6 +144,31 @@ if (!/scanPermanentReady/.test(releaseLock)) {
   fail('release-lock: __releaseLock must surface scanPermanentReady');
 }
 
+// ─── 10. Auth gate cannot hang the app (THE real root cause) ───
+// AuthLoadingGate gates EVERY route (incl. /scan) on authLoading.
+// If bootstrap() can hang before releasing it, /scan never mounts
+// and the full-screen Farroway spinner shows forever. Enforce an
+// absolute hard-stop timer + bounded repair awaits so the gate
+// ALWAYS opens within a fixed ceiling.
+const authCtx = read(path.join(ROOT, 'src/context/AuthContext.jsx'));
+if (!authCtx) {
+  fail('auth: src/context/AuthContext.jsx must exist');
+} else {
+  if (!/_authGateHardStop/.test(authCtx) || !/_releaseAuthGate/.test(authCtx)) {
+    fail('auth: bootstrap() must schedule an absolute auth-gate hard-stop that releases authLoading even if a step hangs');
+  } else {
+    pass('auth: bootstrap has an absolute auth-gate hard-stop');
+  }
+  // The repairActiveContext dynamic-import must be bounded — a
+  // stalled chunk fetch (stale SW precache) on iOS Safari must not
+  // hold the gate closed. Reject the raw unbounded `await import`.
+  if (/await\s+import\(\s*['"]\.\.\/utils\/repairActiveContext\.js['"]\s*\)/.test(authCtx)) {
+    fail('auth: repairActiveContext import must be bounded by withBootstrapTimeout (unbounded await can hang the gate on iOS Safari)');
+  } else {
+    pass('auth: repair dynamic-imports are bounded');
+  }
+}
+
 // ─── Report ────────────────────────────────────────────────────
 if (FAILED.length > 0) {
   console.error('[check:scan-permanent-stability] FAIL');
