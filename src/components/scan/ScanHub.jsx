@@ -132,6 +132,50 @@ const STYLES = {
     marginTop:     10,
     fontFamily:    'inherit',
   },
+  // Permanent-stability §9 — non-blocking onboarding-incomplete banner.
+  setupBanner: {
+    background:    'rgba(200,148,77,0.10)',
+    border:        '1px solid rgba(200,148,77,0.30)',
+    borderRadius:  14,
+    padding:       '12px 14px',
+    marginBottom:  16,
+  },
+  setupBannerText: {
+    margin:        '0 0 10px',
+    fontSize:      14,
+    color:         '#7A5A2E',
+    fontWeight:    600,
+    lineHeight:    1.4,
+  },
+  setupBannerRow: {
+    display:       'flex',
+    gap:           8,
+    flexWrap:      'wrap',
+  },
+  setupBannerPrimary: {
+    appearance:    'none',
+    border:        'none',
+    background:    '#C8944D',
+    color:         '#FFFFFF',
+    fontWeight:    700,
+    fontSize:      14,
+    padding:       '10px 16px',
+    borderRadius:  12,
+    cursor:        'pointer',
+    fontFamily:    'inherit',
+  },
+  setupBannerGhost: {
+    appearance:    'none',
+    border:        '1px solid rgba(31,41,51,0.18)',
+    background:    'transparent',
+    color:         '#1F2933',
+    fontWeight:    600,
+    fontSize:      14,
+    padding:       '10px 16px',
+    borderRadius:  12,
+    cursor:        'pointer',
+    fontFamily:    'inherit',
+  },
   // Permanent-stability fix — quiet tertiary "Go Home" escape on
   // the safe shell.
   ctaGhost: {
@@ -386,8 +430,56 @@ export default function ScanHub({ onTakePhoto, onUploadPhoto, recentLimit = 4 })
 
   const recentCount = Array.isArray(history) ? history.length : 0;
 
+  // Permanent-stability §9 — non-blocking onboarding-incomplete
+  // banner. /scan NEVER redirects to onboarding (only auth can
+  // block it). When onboarding isn't complete we surface a calm,
+  // DISMISSIBLE banner offering "Continue Setup" — but the Upload
+  // / Take photo / Go Home shell below stays fully usable, so
+  // "Scan with General Guidance" is simply dismissing the banner
+  // and scanning right here. Accepts BOTH 'true' and '1'.
+  const [showSetupBanner, setShowSetupBanner] = React.useState(() => _safe(() => {
+    if (typeof localStorage === 'undefined') return false;
+    const done = (v) => v === 'true' || v === '1';
+    const complete = done(localStorage.getItem('farroway_onboarding_completed'))
+                  || done(localStorage.getItem('farroway_onboarding_complete'))
+                  || done(localStorage.getItem('farroway_onboarding_done'));
+    return !complete;
+  }, false));
+
   return (
     <main style={STYLES.page} data-testid="scan-hub" data-scan-default-mode="idle">
+      {showSetupBanner ? (
+        <section style={STYLES.setupBanner} data-testid="scan-hub-setup-banner">
+          <p style={STYLES.setupBannerText}>
+            {tSafe('scan.hub.setupPrompt',
+              'Finish setup or scan with general guidance.')}
+          </p>
+          <div style={STYLES.setupBannerRow}>
+            <button
+              type="button"
+              style={STYLES.setupBannerPrimary}
+              data-testid="scan-hub-continue-setup"
+              onClick={() => {
+                try {
+                  if (typeof window !== 'undefined') {
+                    window.location.assign('/onboarding/fast');
+                  }
+                } catch { /* swallow */ }
+              }}
+            >
+              {tSafe('scan.hub.continueSetup', 'Continue Setup')}
+            </button>
+            <button
+              type="button"
+              style={STYLES.setupBannerGhost}
+              data-testid="scan-hub-general-guidance"
+              onClick={() => setShowSetupBanner(false)}
+            >
+              {tSafe('scan.hub.generalGuidance', 'Scan with General Guidance')}
+            </button>
+          </div>
+        </section>
+      ) : null}
       {/* Hero */}
       <section style={STYLES.hero} data-testid="scan-hub-hero">
         <div style={STYLES.heroEmoji} aria-hidden="true">🌿</div>
