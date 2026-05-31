@@ -564,17 +564,20 @@ import { ForecastProvider } from './context/ForecastContext.jsx';
 import { MarketProvider } from './context/MarketContext.jsx';
 import { SeasonProvider } from './context/SeasonContext.jsx';
 
-// Soft Ochre / Beige unified system — page loader uses the locked
-// background + ochre primary spinner so cold-start matches the rest
-// of the app instead of flashing the legacy dark-navy + neon-green.
-const PageLoader = () => (
-  <div style={{ minHeight: '100vh', background: '#F6F1E7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-      <div style={{ width: '2rem', height: '2rem', border: '3px solid rgba(36,49,58,0.10)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'farroway-spin 0.8s linear infinite' }} />
-      <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F2933' }}>Farroway</span>
-    </div>
-  </div>
-);
+// Wave broken-link audit fix — replaced the static loader with
+// the self-timing variant so the outer Suspense fallback NEVER
+// hangs forever on a stalled lazy chunk. After 5s it flips to a
+// recovery panel with Try again / Upload photo (scan route only)
+// / Go Home. Root cause: inner SafeRouteShell's useEffect can't
+// run while its children are suspended on a lazy import, so its
+// timeout never fired. Putting the timeout INSIDE the Suspense
+// fallback guarantees recovery regardless of which chunk is in
+// flight. LazyLoadErrorBoundary additionally catches ChunkLoadError
+// so a failed chunk download surfaces a recovery panel rather than
+// crashing the SPA.
+import PageLoaderWithTimeout from './components/system/PageLoaderWithTimeout.jsx';
+import LazyLoadErrorBoundary from './components/system/LazyLoadErrorBoundary.jsx';
+const PageLoader = () => <PageLoaderWithTimeout />;
 
 /**
  * AppCrashBoundaryWithLocation — thin function-component wrapper that
@@ -1422,6 +1425,15 @@ export default function App() {
             await import('./runtime/pilotObservability/PilotObservabilityRuntime');
           installPilotObservabilityGlobals();
         } catch { /* never block boot */ }
+        // Wave broken-link audit — installs __routeAuditHealth,
+        // __brokenLinkHealth, and EXTENDS __scanUIHealth with the
+        // 3 new attestation fields (scanRouteLoads,
+        // scanSpinnerTimeoutReady, scanNavOpensCamera).
+        try {
+          const { installRouteAuditGlobals } =
+            await import('./runtime/routeAudit/RouteAuditRuntime');
+          installRouteAuditGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1824,6 +1836,7 @@ export default function App() {
       {/* RC1 — global persistent offline-pending banner. Self-hides
           when the queue is empty. Reads via wave-7 queueRegistry. */}
       <OfflineQueueBanner />
+      <LazyLoadErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Marketing landing page (farroway.app homepage).
@@ -2691,6 +2704,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
+      </LazyLoadErrorBoundary>
       {/* Floating voice-first navigator — fixed bottom-centre. The
           mic FAB is now scoped to the /scan route so it doesn't
           clutter Home / My Farm / My Grow / Tasks / Progress. The
