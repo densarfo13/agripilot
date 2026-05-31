@@ -1467,6 +1467,35 @@ export default function App() {
             await import('./runtime/scanStartup/ScanPermanentHealthRuntime');
           installScanPermanentHealthGlobal();
         } catch { /* never block boot */ }
+        // Permanent Mobile Navigation Fix — pins the five new
+        // diagnostics so the stale-bundle / route-reach / route-guard /
+        // bottom-nav / build-version contracts are observable on real
+        // devices. All five are composition-only read-only probes.
+        try {
+          const { installAppVersionHealthGlobal } =
+            await import('./runtime/appVersion/AppVersionRuntime');
+          installAppVersionHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installCacheRecoveryHealthGlobal } =
+            await import('./runtime/cache/CacheRecoveryRuntime');
+          installCacheRecoveryHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installRouteReachHealthGlobal } =
+            await import('./runtime/routeReach/RouteReachHealthRuntime');
+          installRouteReachHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installRouteGuardHealthGlobal } =
+            await import('./runtime/routeGuard/RouteGuardHealthRuntime');
+          installRouteGuardHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installBottomNavHealthGlobal } =
+            await import('./runtime/bottomNav/BottomNavHealthRuntime');
+          installBottomNavHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

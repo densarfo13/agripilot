@@ -134,6 +134,25 @@ function _isSetupPath(pathname) {
   return false;
 }
 
+// Permanent Mobile Navigation Fix §8 — iOS detection. On iOS the
+// Scan tap must NOT pass `?intent=camera`; a forced camera intent
+// is what re-triggers the getUserMedia autostart spin on iPhone
+// Safari. iOS lands on /scan with a plain source marker so ScanPage
+// renders the safe ScanHub shell first; the camera only starts when
+// the user taps "Take photo". Non-iOS keeps the intent path (safe
+// shell still renders first; camera is optional).
+function _isIOSDevice() {
+  try {
+    if (typeof navigator === 'undefined') return false;
+    const ua = String(navigator.userAgent || '');
+    // iPadOS 13+ reports as Macintosh but exposes touch points.
+    const iPadOS = /\bMacintosh\b/.test(ua)
+      && typeof navigator.maxTouchPoints === 'number'
+      && navigator.maxTouchPoints > 1;
+    return /\b(iPhone|iPad|iPod)\b/.test(ua) || iPadOS;
+  } catch { return false; }
+}
+
 // Module-level guard so the [FARROWAY_NAV_ACTIVE_FILE] marker
 // fires once per page load, not once per BottomTabNav re-mount.
 let _bottomNavActiveFileLogged = false;
@@ -306,13 +325,26 @@ export default function BottomTabNav() {
               // the idle landing card because they have no
               // intent param and no nav state.
               if (tab.key === 'scan') {
-                navigate(tab.path + '?intent=camera', {
-                  state: {
-                    userInitiatedCamera: true,
-                    cameraAttempted:     true,
-                    source:              'bottom_nav',
-                  },
-                });
+                // Permanent Mobile Navigation Fix §8 — iOS must NOT
+                // receive ?intent=camera (it re-triggers the iPhone
+                // Safari autostart spin). iOS navigates to the plain
+                // /scan route; ScanPage renders the ScanHub safe
+                // shell and the camera opens only on an explicit
+                // "Take photo" tap. Non-iOS keeps the intent path —
+                // the safe shell still renders first there too.
+                if (_isIOSDevice()) {
+                  navigate(tab.path, {
+                    state: { source: 'bottom_nav_scan' },
+                  });
+                } else {
+                  navigate(tab.path + '?intent=camera', {
+                    state: {
+                      userInitiatedCamera: true,
+                      cameraAttempted:     true,
+                      source:              'bottom_nav',
+                    },
+                  });
+                }
               } else {
                 navigate(tab.path);
               }

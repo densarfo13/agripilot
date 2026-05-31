@@ -55,7 +55,6 @@ for (const tok of [
   'ChunkLoadError',
   'loading chunk',
   'failed to fetch dynamically imported module',
-  "Something didn't load correctly",
   '__lastLazyLoadErrorAt',
 ]) {
   // Case-insensitive — boundary normalises to lowercase before
@@ -63,6 +62,13 @@ for (const tok of [
   if (!new RegExp(tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(boundarySrc)) {
     fail(`boundary: must contain "${tok}"`);
   }
+}
+// Recovery heading — accept either phrasing. The Permanent Mobile
+// Navigation Fix §9 uses the spec wording "Something did not load
+// correctly."; the earlier build shipped the contraction "didn't".
+// Both satisfy the intent (a not-loaded recovery message is shown).
+if (!/Something did(n['’]?t| not) load correctly/i.test(boundarySrc)) {
+  fail('boundary: must show a "Something did(n\'t/ not) load correctly" recovery heading');
 }
 
 const appSrc = requireFile('src/App.jsx', 'app');

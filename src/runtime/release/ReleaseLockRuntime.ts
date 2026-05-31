@@ -459,6 +459,46 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         const r = w.__scanPermanentHealth();
         return !!(r && r.scanPermanentReady);
       }, false),
+      // Permanent Mobile Navigation Fix — composite roll-up over the
+      // route-guard / route-reach / cache-recovery / bottom-nav
+      // probes. Reads __goLiveHealth.mobileNavReady where present,
+      // else composes the structural truths directly.
+      mobileNavReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const guard = typeof w.__routeGuardHealth === 'function'
+          ? w.__routeGuardHealth() : null;
+        const perm = typeof w.__scanPermanentHealth === 'function'
+          ? w.__scanPermanentHealth() : null;
+        const login = typeof w.__loginRoutingHealth === 'function'
+          ? w.__loginRoutingHealth() : null;
+        const safeShellFirst   = !(perm && perm.safeShellFirst === false);
+        const uploadAvailable  = !(perm && perm.uploadPrimary === false);
+        const noInfiniteSpinner = !(perm && perm.scanCanNeverSpinForever === false);
+        const routesHome       = !(login && login.postLoginRoutesHome === false)
+                              && !(guard && guard.existingUserRoutesHome === false);
+        const locHome          = !(guard && guard.locationDoesNotBlockHome === false);
+        const locScan          = !(guard && guard.locationDoesNotBlockScan === false);
+        const noLoop           = !(guard && guard.onboardingLoopBlocked === false);
+        return safeShellFirst && uploadAvailable && noInfiniteSpinner
+          && routesHome && locHome && locScan && noLoop;
+      }, false),
+      cacheRecoveryReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__cacheRecoveryHealth !== 'function') return false;
+        const r = w.__cacheRecoveryHealth();
+        return !!(r && r.reloadSafe);
+      }, false),
+      bottomNavReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__bottomNavHealth !== 'function') return false;
+        const r = w.__bottomNavHealth();
+        return !!(r && r.scanPathSafe && r.homePathSafe
+          && r.activityPathSafe && r.noStaleProgressPath
+          && r.noUndefinedNavigate && r.iosScanNavNoCameraIntent);
+      }, false),
       // The verdict is read from __enterpriseReadiness at probe
       // time; surface a quick-glance value too.
       enterpriseReadinessVerdict: _safe(() => {

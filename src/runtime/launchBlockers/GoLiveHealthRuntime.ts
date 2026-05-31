@@ -120,6 +120,33 @@ export function goLiveHealth() {
       ? !!scanPermanent.scanPermanentReady
       : true; // structural-true; gate-enforced at build time
 
+    // ─── Permanent mobile-navigation probes (spec §10) ───────────
+    // Compose the new diagnostics. Each flag defaults to its
+    // structural truth when the probe hasn't loaded, so an unloaded
+    // probe never wrongly NO_GOs — only an EXPLICIT false is a RED
+    // blocker (matching the existing fail-open-for-warnings pattern).
+    const routeGuard    = _probe('__routeGuardHealth');
+    const loginRouting  = _probe('__loginRoutingHealth');
+    const cacheRecovery = _probe('__cacheRecoveryHealth');
+    const routeReach    = _probe('__routeReachHealth');
+    const bottomNav     = _probe('__bottomNavHealth');
+
+    // The seven RED conditions (spec §10). `=== false` so a missing
+    // probe (null) is treated as not-failing.
+    const scanSafeShellFirst      = !(scanPermanent && scanPermanent.safeShellFirst === false);
+    const uploadAvailable         = !(scanPermanent && scanPermanent.uploadPrimary === false);
+    const noInfiniteSpinner       = !(scanPermanent && scanPermanent.scanCanNeverSpinForever === false);
+    const loginRoutesExistingUserHome =
+         !(loginRouting && loginRouting.postLoginRoutesHome === false)
+      && !(routeGuard && routeGuard.existingUserRoutesHome === false);
+    const locationDoesNotBlockHome = !(routeGuard && routeGuard.locationDoesNotBlockHome === false);
+    const locationDoesNotBlockScan = !(routeGuard && routeGuard.locationDoesNotBlockScan === false);
+    const noRouteGuardLoop         = !(routeGuard && routeGuard.onboardingLoopBlocked === false);
+    const mobileNavReady =
+         scanSafeShellFirst && uploadAvailable && noInfiniteSpinner
+      && loginRoutesExistingUserHome && locationDoesNotBlockHome
+      && locationDoesNotBlockScan && noRouteGuardLoop;
+
     // ─── Wave-39 — adoption probes ───────────────────────────────
     const onboarding      = _probe('__onboardingHealth');
     const ngoOnboarding   = _probe('__ngoOnboardingHealth');
@@ -198,7 +225,9 @@ export function goLiveHealth() {
       && !buyerHasPayments
       && !buyerPrivateDataLeaked
       && !ngoSkipsCsvPreview
-      && growerPilotReady;
+      && growerPilotReady
+      // Permanent mobile-navigation RED conditions (spec §10).
+      && mobileNavReady;
 
     const blockers: string[] = [];
     if (!c1) blockers.push('C1_onboardingGuard');
@@ -218,6 +247,14 @@ export function goLiveHealth() {
     // grower flow but tolerates NGO pilot being deferred unless
     // it's deferred for the wrong reason).
     if (!growerPilotReady) blockers.push('W41_growerPilotNotReady');
+    // Permanent mobile-navigation RED conditions (spec §10).
+    if (!scanSafeShellFirst)            blockers.push('MNAV_scanSafeShellFirst');
+    if (!uploadAvailable)               blockers.push('MNAV_uploadAvailable');
+    if (!loginRoutesExistingUserHome)   blockers.push('MNAV_loginRoutesExistingUserHome');
+    if (!locationDoesNotBlockHome)      blockers.push('MNAV_locationDoesNotBlockHome');
+    if (!locationDoesNotBlockScan)      blockers.push('MNAV_locationDoesNotBlockScan');
+    if (!noInfiniteSpinner)             blockers.push('MNAV_noInfiniteSpinner');
+    if (!noRouteGuardLoop)              blockers.push('MNAV_noRouteGuardLoop');
 
     const warnings: string[] = [];
     if (!invitesProviderConfigured) warnings.push('W41_inviteProviderUnconfigured');
@@ -308,6 +345,22 @@ export function goLiveHealth() {
       // Permanent scan-stability roll-up.
       scanPermanentReady,
       scanPermanent:     scanPermanent || null,
+      // Permanent mobile-navigation roll-up (spec §10).
+      mobileNavReady,
+      mobileNav: Object.freeze({
+        scanSafeShellFirst,
+        uploadAvailable,
+        loginRoutesExistingUserHome,
+        locationDoesNotBlockHome,
+        locationDoesNotBlockScan,
+        noInfiniteSpinner,
+        noRouteGuardLoop,
+      }),
+      routeGuard:    routeGuard    || null,
+      loginRouting:  loginRouting  || null,
+      cacheRecovery: cacheRecovery || null,
+      routeReach:    routeReach    || null,
+      bottomNav:     bottomNav     || null,
     });
   }, Object.freeze({
     runtimeVersion:      GO_LIVE_HEALTH_RUNTIME_VERSION,

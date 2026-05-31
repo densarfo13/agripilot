@@ -135,10 +135,38 @@ function _goHome() {
   } catch { /* swallow */ }
 }
 
+// Permanent Mobile Navigation Fix §9 — scan-route chunk failures
+// also offer Upload Photo, routing to the dependency-free plain
+// upload surface (ScanPage renders PlainUploadFallback for
+// ?intent=upload — it pulls in no lazy chunks).
+function _goUpload() {
+  try {
+    if (typeof window === 'undefined') return;
+    window.location.assign('/scan?intent=upload');
+  } catch { /* swallow */ }
+}
+
 function _currentPath() {
   try {
     if (typeof window === 'undefined' || !window.location) return '';
     return String(window.location.pathname || '');
+  } catch { return ''; }
+}
+
+function _isScanRoute() {
+  return /^\/scan(\/|$)/.test(_currentPath());
+}
+
+// Build SHA pinned into index.html by the Vite plugin — logged with
+// every chunk failure so the deploy that served the dead chunk is
+// identifiable from a user's console capture.
+function _buildSha() {
+  try {
+    if (typeof window === 'undefined') return '';
+    const w = window;
+    return (typeof w.__FARROWAY_BUILD_SHA === 'string'
+      && w.__FARROWAY_BUILD_SHA.indexOf('%') !== 0)
+        ? w.__FARROWAY_BUILD_SHA : '';
   } catch { return ''; }
 }
 
@@ -170,9 +198,13 @@ export default class LazyLoadErrorBoundary extends React.Component {
     const route = _currentPath();
     _markLazyError(route, err && err.message);
     try {
-      // One greppable line for QA.
+      // One greppable line for QA — includes the chunk message,
+      // route, and build SHA so the dead-chunk deploy is identifiable.
       // eslint-disable-next-line no-console
-      console.error('[FARROWAY_LAZY_LOAD_ERROR]', route, err && err.message);
+      console.error('[FARROWAY_LAZY_LOAD_ERROR]',
+        'route:', route,
+        'chunk:', (err && err.message) || '',
+        'build:', _buildSha());
     } catch { /* swallow */ }
     // Best-effort monitoring hook (never re-throws).
     try {
@@ -220,7 +252,7 @@ export default class LazyLoadErrorBoundary extends React.Component {
         >
           <div style={S.card}>
             <div style={S.icon} aria-hidden="true">📡</div>
-            <h1 style={S.heading}>Something didn't load correctly.</h1>
+            <h1 style={S.heading}>Something did not load correctly.</h1>
             <p style={S.body}>
               Your data is safe. Check your connection and try again.
             </p>
@@ -231,8 +263,22 @@ export default class LazyLoadErrorBoundary extends React.Component {
                 onClick={_retry}
                 data-testid="lazy-load-error-retry"
               >
-                Try again
+                Try Again
               </button>
+              {/* Permanent Mobile Navigation Fix §9 — on the scan
+                  route, also offer Upload Photo (dependency-free
+                  plain upload surface) so a dead scan chunk never
+                  leaves the grower without a working path. */}
+              {_isScanRoute() && (
+                <button
+                  type="button"
+                  style={S.secondary}
+                  onClick={_goUpload}
+                  data-testid="lazy-load-error-upload"
+                >
+                  Upload Photo
+                </button>
+              )}
               <button
                 type="button"
                 style={S.ghost}
@@ -279,6 +325,13 @@ const S = {
   primary: {
     padding: '12px 20px', borderRadius: 12, border: 'none',
     background: C.accent, color: '#FFFFFF',
+    fontSize: 15, fontWeight: 700, cursor: 'pointer',
+    minHeight: 46,
+  },
+  secondary: {
+    padding: '12px 20px', borderRadius: 12,
+    border: '1px solid ' + C.accent,
+    background: 'transparent', color: C.accent,
     fontSize: 15, fontWeight: 700, cursor: 'pointer',
     minHeight: 46,
   },

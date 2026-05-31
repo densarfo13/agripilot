@@ -89,6 +89,11 @@ import ScanResultCard from '../components/scan/ScanResultCard.jsx';
 //   • Camera unavailable / permission denied
 //   • 3s load timeout
 import ScanFallback from '../components/scan/ScanFallback.jsx';
+// Permanent Mobile Navigation Fix §4 — dependency-free plain-HTML
+// upload surface. Imported EAGERLY (no lazy) so the `?intent=upload`
+// recovery path renders even when the camera / shell chunks failed.
+// It dynamic-imports the analysis engine only AFTER a file is picked.
+import PlainUploadFallback from '../components/scan/PlainUploadFallback.jsx';
 // Advanced ML scan layer §9: ask the user "Was this helpful?"
 // after the result renders so we can build a training-data
 // foundation. Self-suppresses after one tap per scanId.
@@ -1779,6 +1784,23 @@ export default function ScanPage() {
   // boot stall. Wording reflects that honestly.
   if (loadTimedOut) {
     return <ScanFallback reason="page_loading" />;
+  }
+
+  // Permanent Mobile Navigation Fix §4 — explicit upload-intent deep
+  // link. Every recovery surface (PageLoaderWithTimeout's "Upload
+  // photo", LazyLoadErrorBoundary, ScanFallback) routes to
+  // /scan?intent=upload. Render the dependency-free PlainUploadFallback
+  // directly so the user always has a working upload path — it pulls
+  // in zero lazy chunks and dynamic-imports the analysis engine only
+  // after a file is chosen. No camera, no getUserMedia, no spinner.
+  const _launchedForUpload = (() => {
+    try {
+      const params = new URLSearchParams(location.search || '');
+      return params.get('intent') === 'upload';
+    } catch { return false; }
+  })();
+  if (_launchedForUpload) {
+    return <PlainUploadFallback />;
   }
 
   // Initial-mount loading state — "Preparing camera…" so the
