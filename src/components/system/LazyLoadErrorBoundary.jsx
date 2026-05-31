@@ -51,6 +51,83 @@ function _retry() {
   } catch { /* swallow */ }
 }
 
+/**
+ * _autoRecoverOnce — best-effort one-shot self-recovery.
+ *
+ * The most common cause of ChunkLoadError on production is a
+ * stale service-worker / browser HTTP cache holding an old
+ * bundle hash that no longer exists on the CDN. Reloading
+ * without clearing the cache often hits the same stale entry
+ * and shows the user the recovery panel again.
+ *
+ * On the FIRST chunk error of the session we:
+ *   1. Mark `farroway.lazyRecoveryAttempted=1` in sessionStorage
+ *      so we only auto-recover once (prevents reload loops).
+ *   2. Best-effort `caches.delete()` for every CacheStorage key.
+ *   3. Best-effort unregister of every active service worker.
+ *   4. `window.location.reload()` with a `?_freshFetch=…` marker
+ *      so any CDN-edge negotiation prefers a fresh fetch.
+ *
+ * Returns true if we kicked off recovery (caller should NOT
+ * render the panel — the page will reload). Returns false if
+ * recovery was already attempted or SSR — caller renders the
+ * panel for the user to act.
+ */
+function _autoRecoverOnce() {
+  try {
+    if (typeof window === 'undefined') return false;
+    const ss = window.sessionStorage;
+    if (ss && ss.getItem('farroway.lazyRecoveryAttempted') === '1') {
+      return false;  // already tried once this session
+    }
+    if (ss) {
+      try { ss.setItem('farroway.lazyRecoveryAttempted', '1'); }
+      catch { /* swallow */ }
+    }
+    // Fire-and-forget cache + SW cleanup. Don't await — we want
+    // the reload to happen even if these reject.
+    try {
+      if (typeof caches !== 'undefined' && caches.keys) {
+        caches.keys().then((keys) => {
+          for (const k of keys) {
+            try { caches.delete(k); } catch { /* swallow */ }
+          }
+        }).catch(() => { /* swallow */ });
+      }
+    } catch { /* swallow */ }
+    try {
+      if (navigator && navigator.serviceWorker
+          && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          for (const r of regs) {
+            try { r.unregister(); } catch { /* swallow */ }
+          }
+        }).catch(() => { /* swallow */ });
+      }
+    } catch { /* swallow */ }
+    // Brief delay so the cleanup tasks can begin before reload.
+    setTimeout(() => {
+      try {
+        // String-level cache-bust — avoid new URL() to honor the
+        // safe-URL-construction governance gate; this path only
+        // ever runs in a real browser with window.location set.
+        const href  = String(window.location.href || '');
+        const stamp = String(Date.now());
+        const sep   = href.indexOf('?') >= 0 ? '&' : '?';
+        const next  = href.indexOf('_freshFetch=') >= 0
+          ? href
+          : href + sep + '_freshFetch=' + stamp;
+        window.location.replace(next);
+      } catch {
+        try { window.location.reload(); } catch { /* swallow */ }
+      }
+    }, 80);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function _goHome() {
   try {
     if (typeof window === 'undefined') return;
@@ -68,11 +145,21 @@ function _currentPath() {
 export default class LazyLoadErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hadChunkError: false };
+    this.state = { hadChunkError: false, autoRecovering: false };
   }
 
   static getDerivedStateFromError(err) {
-    return { hadChunkError: _isChunkError(err) };
+    if (!_isChunkError(err)) return null;
+    // Try one-shot recovery (clear caches + SW + reload). If it
+    // returns true, the page is about to reload — render a brief
+    // "recovering…" UI rather than the failure panel so the user
+    // sees forward motion instead of a scary error card.
+    let recovering = false;
+    try { recovering = _autoRecoverOnce(); } catch { recovering = false; }
+    return {
+      hadChunkError:    true,
+      autoRecovering:   recovering,
+    };
   }
 
   componentDidCatch(err) {
@@ -104,6 +191,27 @@ export default class LazyLoadErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hadChunkError) {
+      // Brief "recovering" UI while the auto-recovery (cache
+      // purge + SW unregister + reload) is in flight. The reload
+      // typically lands in well under a second; if for any
+      // reason it doesn't, the user still sees their data is safe.
+      if (this.state.autoRecovering) {
+        return (
+          <div
+            style={S.page}
+            role="status"
+            data-testid="lazy-load-auto-recovering"
+          >
+            <div style={S.card}>
+              <div style={S.icon} aria-hidden="true">🔄</div>
+              <h1 style={S.heading}>Refreshing Farroway…</h1>
+              <p style={S.body}>
+                Loading a fresh copy. Your data is safe.
+              </p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div
           style={S.page}

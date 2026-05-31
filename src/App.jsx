@@ -1957,6 +1957,11 @@ export default function App() {
               grower nav so farmers / gardeners never see SSO
               options unless their org admin shares the link. */}
           <Route path="/org-login" element={<OrgLoginPage />} />
+          {/* Wave broken-link audit — spec-named /organization
+              aliases redirect to the canonical /org-login surface
+              so spec deep-links resolve. */}
+          <Route path="/organization"    element={<Navigate to="/org-login" replace />} />
+          <Route path="/organization/*"  element={<Navigate to="/org-login" replace />} />
           <Route path="/register" element={<V2Register />} />
           <Route path="/forgot-password" element={<V2ForgotPassword />} />
           <Route path="/forgot-password/sms" element={<V2ForgotPasswordSms />} />
