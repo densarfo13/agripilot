@@ -1,25 +1,33 @@
 /**
- * src/components/scan/ScanStartupBanner.jsx — visible diagnostic
- * banner for real-device scan startup.
+ * src/components/scan/ScanStartupBanner.jsx — wave iOS audit
+ * 3-state visible diagnostic banner for real-device scan
+ * startup.
  *
- * Mounts globally (one place in the App tree). Self-hides unless:
- *   • the user is currently on /scan
- *   • the page has been on /scan for at least 3000ms
- *   • the scan is not yet ready (no camera + no upload fallback)
+ * Mounts globally. Self-hides unless the user is on /scan AND
+ * the scan is not yet ready (no camera + no upload fallback).
  *
  * States
  * ──────
- *   ≥ 3000ms AND < 5000ms:
- *     "Scan startup taking longer than expected"
- *     (just a yellow notice — no action yet)
+ *   State 1 (≥ 600ms AND < 3000ms): "Opening camera…"
+ *     Compact ochre banner so the user knows work is happening.
+ *     600ms threshold avoids a flash on fast cameras.
  *
- *   ≥ 5000ms AND still not ready:
- *     "Camera unavailable. You can upload a photo instead."
- *     buttons: Upload photo  ·  Go Home
+ *   State 2 (≥ 3000ms AND < 5000ms): "Camera is taking longer
+ *     than expected" — yellow notice with stage + duration.
+ *
+ *   State 3 (≥ 5000ms OR permissionState === 'denied'):
+ *     "Camera unavailable" with three buttons:
+ *       • Upload Photo → /scan?intent=upload
+ *       • Try Again    → window.location.reload()
+ *       • Go Home      → /home
+ *
+ *   Permission-denied path (anytime permissionState='denied'):
+ *     "Camera access is blocked in Safari settings."
+ *     + step-by-step instructions to open Settings.
  *
  * Strict-rule audit
  *   • Pure read-only component. Polls __scanStartupHealth() every
- *     500ms via interval (cleaned up on unmount).
+ *     500ms (cleaned up on unmount).
  *   • Never throws. Never modifies the scan engine.
  *   • Inline styles only.
  */
@@ -27,6 +35,7 @@
 import React, { useEffect, useState } from 'react';
 
 const POLL_MS    = 500;
+const OPENING_MS = 600;
 const WARN_MS    = 3000;
 const ERR_MS     = 5000;
 
@@ -41,10 +50,24 @@ function _probe() {
   }, null);
 }
 
+function _isIOS() {
+  return _safe(() => {
+    if (typeof navigator === 'undefined') return false;
+    const ua = String(navigator.userAgent || '');
+    return /\b(iPhone|iPad|iPod)\b/.test(ua);
+  }, false);
+}
+
 function _goUpload() {
   _safe(() => {
     if (typeof window === 'undefined') return;
     window.location.assign('/scan?intent=upload');
+  });
+}
+function _retry() {
+  _safe(() => {
+    if (typeof window === 'undefined') return;
+    window.location.reload();
   });
 }
 function _goHome() {
@@ -52,6 +75,18 @@ function _goHome() {
     if (typeof window === 'undefined') return;
     window.location.assign('/home');
   });
+}
+
+function _phase(snap) {
+  if (!snap || !snap.initialized || !snap.routeLoaded) return null;
+  if (snap.scanReady) return null;
+  if (snap.cameraPermissionState === 'denied') return 'denied';
+  const dur = typeof snap.startupDurationMs === 'number'
+    ? snap.startupDurationMs : 0;
+  if (dur >= ERR_MS)     return 'error';
+  if (dur >= WARN_MS)    return 'warning';
+  if (dur >= OPENING_MS) return 'opening';
+  return null;
 }
 
 export default function ScanStartupBanner() {
@@ -62,8 +97,7 @@ export default function ScanStartupBanner() {
     const tick = () => {
       try {
         if (!alive) return;
-        const s = _probe();
-        setSnap(s);
+        setSnap(_probe());
       } catch { /* swallow */ }
     };
     tick();
@@ -74,40 +108,43 @@ export default function ScanStartupBanner() {
     };
   }, []);
 
-  if (!snap) return null;
-  if (!snap.initialized) return null;
-  if (!snap.routeLoaded) return null;
-  if (snap.scanReady) return null;
-  const dur = typeof snap.startupDurationMs === 'number'
+  const phase = _phase(snap);
+  if (!phase) return null;
+
+  const dur = (snap && typeof snap.startupDurationMs === 'number')
     ? snap.startupDurationMs : 0;
-  if (dur < WARN_MS) return null;
+  const stage = snap && snap.stage ? snap.stage : '';
+  const iOS = _isIOS();
 
-  const isError = dur >= ERR_MS;
-  const heading = isError
-    ? 'Camera unavailable. You can upload a photo instead.'
-    : 'Scan startup taking longer than expected';
-
-  return (
-    <div
-      style={S.wrap}
-      role={isError ? 'alert' : 'status'}
-      data-testid={isError ? 'scan-startup-error' : 'scan-startup-warning'}
-      data-stage={snap.stage}
-      data-duration-ms={dur}
-    >
-      <div style={isError ? S.cardError : S.cardWarn}>
-        <div style={S.icon} aria-hidden="true">
-          {isError ? '📷' : '⏱️'}
-        </div>
-        <div style={S.text}>
-          <div style={S.heading}>{heading}</div>
-          <div style={S.subtle}>
-            Stage reached: <code style={S.code}>{snap.stage}</code>
-            {' · '}
-            <code style={S.code}>{dur}ms</code>
+  /* ── State: PERMISSION DENIED ──────────────────────────── */
+  if (phase === 'denied') {
+    return (
+      <div
+        style={S.wrap}
+        role="alert"
+        data-testid="scan-startup-denied"
+        data-stage={stage}
+      >
+        <div style={S.cardError}>
+          <div style={S.icon} aria-hidden="true">🔒</div>
+          <div style={S.text}>
+            <div style={S.heading}>Camera access is blocked in Safari settings.</div>
+            <div style={S.subtle}>
+              {iOS ? (
+                <>
+                  Open <strong>Settings</strong> → scroll to <strong>Safari</strong>
+                  {' '}→ <strong>Camera</strong> → set to <strong>Allow</strong>,
+                  then return here and tap <strong>Try Again</strong>.
+                </>
+              ) : (
+                <>
+                  Open your browser's site settings for{' '}
+                  <strong>farroway.app</strong>, allow camera access, then
+                  tap <strong>Try Again</strong>.
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        {isError && (
           <div style={S.btnRow}>
             <button
               type="button"
@@ -115,7 +152,15 @@ export default function ScanStartupBanner() {
               onClick={_goUpload}
               data-testid="scan-startup-upload"
             >
-              Upload photo
+              Upload Photo
+            </button>
+            <button
+              type="button"
+              style={S.secondary}
+              onClick={_retry}
+              data-testid="scan-startup-retry"
+            >
+              Try Again
             </button>
             <button
               type="button"
@@ -126,7 +171,97 @@ export default function ScanStartupBanner() {
               Go Home
             </button>
           </div>
-        )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── State 3: CAMERA UNAVAILABLE (≥ 5s) ─────────────────── */
+  if (phase === 'error') {
+    return (
+      <div
+        style={S.wrap}
+        role="alert"
+        data-testid="scan-startup-error"
+        data-stage={stage}
+        data-duration-ms={dur}
+      >
+        <div style={S.cardError}>
+          <div style={S.icon} aria-hidden="true">📷</div>
+          <div style={S.text}>
+            <div style={S.heading}>Camera unavailable</div>
+            <div style={S.subtle}>
+              Stage reached: <code style={S.code}>{stage}</code>
+              {' · '}<code style={S.code}>{dur}ms</code>
+            </div>
+          </div>
+          <div style={S.btnRow}>
+            <button
+              type="button"
+              style={S.primary}
+              onClick={_goUpload}
+              data-testid="scan-startup-upload"
+            >
+              Upload Photo
+            </button>
+            <button
+              type="button"
+              style={S.secondary}
+              onClick={_retry}
+              data-testid="scan-startup-retry"
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              style={S.ghost}
+              onClick={_goHome}
+              data-testid="scan-startup-home"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── State 2: TAKING LONGER (3-5s) ──────────────────────── */
+  if (phase === 'warning') {
+    return (
+      <div
+        style={S.wrap}
+        role="status"
+        data-testid="scan-startup-warning"
+        data-stage={stage}
+        data-duration-ms={dur}
+      >
+        <div style={S.cardWarn}>
+          <div style={S.icon} aria-hidden="true">⏱️</div>
+          <div style={S.text}>
+            <div style={S.heading}>Camera is taking longer than expected</div>
+            <div style={S.subtle}>
+              Stage reached: <code style={S.code}>{stage}</code>
+              {' · '}<code style={S.code}>{dur}ms</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── State 1: OPENING (600ms-3s) ────────────────────────── */
+  return (
+    <div
+      style={S.wrap}
+      role="status"
+      data-testid="scan-startup-opening"
+      data-stage={stage}
+      data-duration-ms={dur}
+    >
+      <div style={S.cardOpening}>
+        <div style={S.spinner} aria-hidden="true" />
+        <div style={S.headingOpening}>Opening camera…</div>
       </div>
     </div>
   );
@@ -137,10 +272,11 @@ const C = {
   warnInk:  '#92400E',
   errBg:    '#FEE2E2',
   errInk:   '#991B1B',
+  openBg:   '#F6F1E7',
+  openInk:  '#1F2933',
   border:   'rgba(0,0,0,0.06)',
   accent:   '#C8944D',
   ink:      '#1F2933',
-  inkDim:   'rgba(31,41,51,0.65)',
 };
 
 const S = {
@@ -153,6 +289,13 @@ const S = {
     width: 'min(440px, 92vw)',
     pointerEvents: 'auto',
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+  },
+  cardOpening: {
+    background: C.openBg, color: C.openInk,
+    border: '1px solid '+C.border, borderRadius: 14,
+    padding: '12px 16px',
+    boxShadow: '0 8px 22px rgba(0,0,0,0.08)',
+    display: 'flex', alignItems: 'center', gap: 12,
   },
   cardWarn: {
     background: C.warnBg, color: C.warnInk,
@@ -170,15 +313,32 @@ const S = {
     flexWrap: 'wrap',
   },
   icon: { fontSize: 22, lineHeight: '24px', flex: '0 0 24px' },
+  spinner: {
+    width: 20, height: 20,
+    border: '3px solid rgba(31,41,51,0.15)',
+    borderTopColor: C.accent,
+    borderRadius: '50%',
+    animation: 'farroway-spin 0.8s linear infinite',
+    flex: '0 0 20px',
+  },
   text: { flex: 1, minWidth: 0 },
   heading: { fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.35 },
-  subtle:  { fontSize: '0.75rem', opacity: 0.85, marginTop: 4 },
+  headingOpening: { fontWeight: 700, fontSize: '0.9375rem', color: C.openInk },
+  subtle:  { fontSize: '0.8125rem', opacity: 0.9, marginTop: 4,
+             lineHeight: 1.5 },
   code:    { fontFamily: 'monospace', background: 'rgba(0,0,0,0.06)',
              padding: '0 0.3rem', borderRadius: 4 },
   btnRow: { display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%' },
   primary: {
     padding: '8px 14px', borderRadius: 10, border: 'none',
     background: C.accent, color: '#FFFFFF',
+    fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
+    minHeight: 40,
+  },
+  secondary: {
+    padding: '8px 14px', borderRadius: 10,
+    border: '1px solid '+C.accent,
+    background: 'transparent', color: C.accent,
     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
     minHeight: 40,
   },
