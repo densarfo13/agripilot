@@ -16,6 +16,7 @@
 
 import {
   SUPPORTED_LOCALES, entityLocalizationCoverage, getMissingEntityLabels,
+  translatorReviewSummary,
 } from '../../i18n/translateEntityLabel.js';
 
 export const LANGUAGE_HEALTH_RUNTIME_VERSION = 'language-health-v1';
@@ -109,6 +110,17 @@ export function languageHealth() {
       return null;
     }, null);
 
+    const review = _safe(() => translatorReviewSummary(), { total: 0 });
+    // translationCoverageByLocale — REAL entity coverage per locale.
+    const translationCoverageByLocale = _safe(() => {
+      const out = {};
+      for (const l of SUPPORTED_LOCALES) {
+        const types = ['disease', 'pest', 'nutrient', 'treatment'];
+        const vals = types.map((ty) => _safe(() => entity[ty].perLocale[l], 0));
+        out[l] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+      }
+      return Object.freeze(out);
+    }, Object.freeze({}));
     return Object.freeze({
       runtimeVersion:           LANGUAGE_HEALTH_RUNTIME_VERSION,
       selectedLanguage,
@@ -120,7 +132,11 @@ export function languageHealth() {
         disease:  pct('disease'),
         pest:     pct('pest'),
         nutrient: pct('nutrient'),
+        treatment: pct('treatment'),
       }),
+      translationCoverageByLocale,
+      translatorReviewRequired: review.total > 0,
+      translatorReviewCount:    review.total,
       hardcodedStringsFound,                 // null when detector not run
       untranslatedKeys,                      // null when logger absent
       missingEntityLabels,

@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "type": "crop",
+    "note": "Crops are sourced from the canonical 6-language registry at src/config/crops.js (CROP_LABELS_BY_LANG, ~50 crops × 6 languages, partner-verified) via getCropLabelSafe. translateEntityLabel delegates type:'crop' there. This file documents the contract + the rollout crop list; it is NOT the live source for crop labels (no duplication / drift).",
+    "source": "src/config/crops.js#CROP_LABELS_BY_LANG",
+    "locales": ["en", "tw", "ha", "fr", "sw", "hi"]
+  },
+  "entities": [
+    { "key": "maize", "en": "Maize / Corn", "delegatesTo": "registry", "aliases": ["maize", "corn"], "translatorReview": { "tw": false, "ha": false, "sw": true, "hi": false } },
+    { "key": "cassava", "en": "Cassava", "delegatesTo": "registry", "aliases": ["cassava"], "translatorReview": { "tw": false, "ha": false, "sw": true, "hi": false } },
+    { "key": "yam", "en": "Yam", "delegatesTo": "registry", "aliases": ["yam"], "translatorReview": { "tw": false, "ha": false, "sw": true, "hi": false } },
+    { "key": "plantain", "en": "Plantain", "delegatesTo": "registry", "aliases": ["plantain"], "translatorReview": { "tw": false, "ha": false, "sw": true, "hi": false } },
+    { "key": "rice", "en": "Rice", "delegatesTo": "registry", "aliases": ["rice"], "translatorReview": { "tw": false, "ha": false, "sw": false, "hi": false } },
+    { "key": "cocoa", "en": "Cocoa", "delegatesTo": "registry", "aliases": ["cocoa"], "translatorReview": { "tw": false, "ha": true, "sw": true, "hi": true } },
+    { "key": "coffee", "en": "Coffee", "delegatesTo": "registry", "aliases": ["coffee"], "translatorReview": { "tw": true, "ha": true, "sw": false, "hi": false } },
+    { "key": "tomato", "en": "Tomato", "delegatesTo": "registry", "aliases": ["tomato"], "translatorReview": { "tw": false, "ha": false, "sw": false, "hi": false } },
+    { "key": "pepper", "en": "Pepper", "delegatesTo": "registry", "aliases": ["pepper", "chilli"], "translatorReview": { "tw": false, "ha": false, "sw": false, "hi": false } },
+    { "key": "onion", "en": "Onion", "delegatesTo": "registry", "aliases": ["onion"], "translatorReview": { "tw": false, "ha": false, "sw": false, "hi": false } },
+    { "key": "okra", "en": "Okra", "delegatesTo": "registry", "aliases": ["okra"], "translatorReview": { "tw": false, "ha": false, "sw": true, "hi": false } },
+    { "key": "ginger", "en": "Ginger", "delegatesTo": "registry", "aliases": ["ginger"], "translatorReview": { "tw": false, "ha": false, "sw": true, "hi": false } }
+  ]
+}

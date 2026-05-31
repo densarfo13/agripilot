@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "type": "disease",
+    "note": "Honest agricultural catalog. en authentic; fr high-confidence. tw/ha/sw/hi are null + translatorReview:true until a partner agronomist supplies verified terms — NEVER machine-fabricated. Frontend shows the English fallback for null locales and the diagnostic records reviewRequired.",
+    "locales": ["en", "tw", "ha", "fr", "sw", "hi"]
+  },
+  "entities": [
+    { "key": "leaf_spot", "en": "Leaf spot", "tw": null, "ha": null, "fr": "Tache foliaire", "sw": null, "hi": null, "scientificName": null, "aliases": ["leaf spot", "leaf spots"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "early_blight", "en": "Early blight", "tw": null, "ha": null, "fr": "Alternariose (mildiou précoce)", "sw": null, "hi": null, "scientificName": "Alternaria solani", "aliases": ["early blight"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "late_blight", "en": "Late blight", "tw": null, "ha": null, "fr": "Mildiou", "sw": null, "hi": null, "scientificName": "Phytophthora infestans", "aliases": ["late blight"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "cassava_mosaic_disease", "en": "Cassava mosaic disease", "tw": null, "ha": null, "fr": "Mosaïque du manioc", "sw": null, "hi": null, "scientificName": null, "aliases": ["cassava mosaic", "cmd"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "maize_lethal_necrosis", "en": "Maize lethal necrosis", "tw": null, "ha": null, "fr": "Nécrose létale du maïs", "sw": null, "hi": null, "scientificName": null, "aliases": ["mln"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "rust", "en": "Rust", "tw": null, "ha": null, "fr": "Rouille", "sw": null, "hi": null, "scientificName": null, "aliases": ["rust"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "powdery_mildew", "en": "Powdery mildew", "tw": null, "ha": null, "fr": "Oïdium", "sw": null, "hi": null, "scientificName": null, "aliases": ["powdery mildew"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "bacterial_wilt", "en": "Bacterial wilt", "tw": null, "ha": null, "fr": "Flétrissement bactérien", "sw": null, "hi": null, "scientificName": null, "aliases": ["bacterial wilt"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "root_rot", "en": "Root rot", "tw": null, "ha": null, "fr": "Pourriture des racines", "sw": null, "hi": null, "scientificName": null, "aliases": ["root rot"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } }
+  ]
+}

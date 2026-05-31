@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "note": "Honest backlog of agricultural terms awaiting verified human translation. These are NOT machine-translated into tw/ha/sw/hi — they render the English fallback today and are flagged here for a partner agronomist. Generated to mirror src/i18n/entities/*.json null locales.",
+    "locales": ["tw", "ha", "sw", "hi"],
+    "priorities": {
+      "HIGH": "scan diagnosis, treatment instructions, safety/waiting-period, pesticide guidance, harvest readiness",
+      "MEDIUM": "crop / pest / disease / nutrient names",
+      "LOW": "general UI labels"
+    }
+  },
+  "entries": [
+    { "key": "remove_affected_leaves", "namespace": "treatments", "sourceText": "Remove affected leaves", "locale": "tw,ha,sw,hi", "reason": "safety-relevant treatment instruction", "priority": "HIGH", "suggestedContext": "what to do after a disease diagnosis" },
+    { "key": "neem_oil_spray", "namespace": "treatments", "sourceText": "Neem oil spray", "locale": "tw,ha,sw,hi", "reason": "pesticide guidance", "priority": "HIGH", "suggestedContext": "organic pest treatment" },
+    { "key": "consult_local_expert", "namespace": "treatments", "sourceText": "Consult a local expert", "locale": "tw,ha,sw,hi", "reason": "low-confidence diagnosis escalation", "priority": "HIGH", "suggestedContext": "shown when scan confidence is low" },
+    { "key": "early_blight", "namespace": "diseases", "sourceText": "Early blight", "locale": "tw,ha,sw,hi", "reason": "scan diagnosis label", "priority": "MEDIUM", "suggestedContext": "tomato/potato leaf disease" },
+    { "key": "late_blight", "namespace": "diseases", "sourceText": "Late blight", "locale": "tw,ha,sw,hi", "reason": "scan diagnosis label", "priority": "MEDIUM", "suggestedContext": "tomato/potato leaf disease" },
+    { "key": "cassava_mosaic_disease", "namespace": "diseases", "sourceText": "Cassava mosaic disease", "locale": "tw,ha,sw,hi", "reason": "scan diagnosis label", "priority": "MEDIUM", "suggestedContext": "cassava viral disease" },
+    { "key": "fall_armyworm", "namespace": "pests", "sourceText": "Fall armyworm", "locale": "tw,ha,sw,hi", "reason": "pest diagnosis label", "priority": "MEDIUM", "suggestedContext": "maize pest" },
+    { "key": "stem_borer", "namespace": "pests", "sourceText": "Stem borer", "locale": "tw,ha,sw,hi", "reason": "pest diagnosis label", "priority": "MEDIUM", "suggestedContext": "maize/cereal pest" },
+    { "key": "nitrogen_deficiency", "namespace": "nutrients", "sourceText": "Nitrogen deficiency", "locale": "tw,ha,sw,hi", "reason": "nutrient diagnosis label", "priority": "MEDIUM", "suggestedContext": "yellowing older leaves" },
+    { "key": "potassium_deficiency", "namespace": "nutrients", "sourceText": "Potassium deficiency", "locale": "tw,ha,sw,hi", "reason": "nutrient diagnosis label", "priority": "MEDIUM", "suggestedContext": "leaf-margin scorch" },
+    { "key": "cocoa", "namespace": "crops", "sourceText": "Cocoa", "locale": "ha,sw,hi", "reason": "crop name", "priority": "MEDIUM", "suggestedContext": "tree cash crop" },
+    { "key": "coffee", "namespace": "crops", "sourceText": "Coffee", "locale": "tw,ha", "reason": "crop name", "priority": "MEDIUM", "suggestedContext": "tree cash crop" }
+  ]
+}

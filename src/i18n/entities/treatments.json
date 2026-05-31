@@ -1,0 +1,15 @@
+{
+  "_meta": {
+    "type": "treatment",
+    "note": "en authentic; fr high-confidence. tw/ha/sw/hi null + translatorReview. SAFETY-CRITICAL: treatment / pesticide / waiting-period wording is HIGH-priority translator review — never machine-translate a farmer-facing safety instruction.",
+    "locales": ["en", "tw", "ha", "fr", "sw", "hi"]
+  },
+  "entities": [
+    { "key": "remove_affected_leaves", "en": "Remove affected leaves", "tw": null, "ha": null, "fr": "Retirer les feuilles atteintes", "sw": null, "hi": null, "scientificName": null, "aliases": ["remove affected leaves"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "improve_drainage", "en": "Improve drainage", "tw": null, "ha": null, "fr": "Améliorer le drainage", "sw": null, "hi": null, "scientificName": null, "aliases": ["improve drainage"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "neem_oil_spray", "en": "Neem oil spray", "tw": null, "ha": null, "fr": "Pulvérisation d’huile de neem", "sw": null, "hi": null, "scientificName": null, "aliases": ["neem oil", "neem spray"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "handpick_pests", "en": "Hand-pick pests", "tw": null, "ha": null, "fr": "Ramasser les ravageurs à la main", "sw": null, "hi": null, "scientificName": null, "aliases": ["handpick", "hand pick pests"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "rotate_crops", "en": "Rotate crops", "tw": null, "ha": null, "fr": "Pratiquer la rotation des cultures", "sw": null, "hi": null, "scientificName": null, "aliases": ["crop rotation", "rotate crops"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "consult_local_expert", "en": "Consult a local expert", "tw": null, "ha": null, "fr": "Consulter un expert local", "sw": null, "hi": null, "scientificName": null, "aliases": ["consult expert", "local expert"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } }
+  ]
+}

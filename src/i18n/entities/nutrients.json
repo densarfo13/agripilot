@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "type": "nutrient",
+    "note": "en authentic; fr high-confidence. tw/ha/sw/hi null + translatorReview until verified — never fabricated.",
+    "locales": ["en", "tw", "ha", "fr", "sw", "hi"]
+  },
+  "entities": [
+    { "key": "nitrogen_deficiency", "en": "Nitrogen deficiency", "tw": null, "ha": null, "fr": "Carence en azote", "sw": null, "hi": null, "scientificName": null, "aliases": ["nitrogen deficiency", "n deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "phosphorus_deficiency", "en": "Phosphorus deficiency", "tw": null, "ha": null, "fr": "Carence en phosphore", "sw": null, "hi": null, "scientificName": null, "aliases": ["phosphorus deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "potassium_deficiency", "en": "Potassium deficiency", "tw": null, "ha": null, "fr": "Carence en potassium", "sw": null, "hi": null, "scientificName": null, "aliases": ["potassium deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "calcium_deficiency", "en": "Calcium deficiency", "tw": null, "ha": null, "fr": "Carence en calcium", "sw": null, "hi": null, "scientificName": null, "aliases": ["calcium deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "magnesium_deficiency", "en": "Magnesium deficiency", "tw": null, "ha": null, "fr": "Carence en magnésium", "sw": null, "hi": null, "scientificName": null, "aliases": ["magnesium deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "iron_deficiency", "en": "Iron deficiency", "tw": null, "ha": null, "fr": "Carence en fer", "sw": null, "hi": null, "scientificName": null, "aliases": ["iron deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "zinc_deficiency", "en": "Zinc deficiency", "tw": null, "ha": null, "fr": "Carence en zinc", "sw": null, "hi": null, "scientificName": null, "aliases": ["zinc deficiency"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } }
+  ]
+}

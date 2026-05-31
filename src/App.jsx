@@ -265,6 +265,7 @@ const Activate       = lazy(() => import('./pages/Activate.jsx'));
 const PilotCommandPage = lazy(() => import('./pages/internal/pilot/PilotCommandPage.jsx'));
 const NGOPilotPage     = lazy(() => import('./pages/internal/pilot/NGOPilotPage.jsx'));
 const PerformancePage  = lazy(() => import('./pages/internal/PerformancePage.jsx'));
+const I18nQAPage       = lazy(() => import('./pages/internal/I18nQAPage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // Wave-36 — outcome intelligence pages (admin only).
 const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
@@ -1573,6 +1574,17 @@ export default function App() {
             await import('./runtime/i18n/LanguageHealthRuntime.js');
           installLanguageHealthGlobals();
         } catch { /* never block boot */ }
+        // Offline language packs + voice/text alignment diagnostics.
+        try {
+          const { installOfflineLanguagePackGlobal } =
+            await import('./i18n/offlineLanguagePackRuntime.js');
+          installOfflineLanguagePackGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installVoiceLanguageGlobal } =
+            await import('./i18n/voiceLanguageRuntime.js');
+          installVoiceLanguageGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -2078,6 +2090,7 @@ export default function App() {
           <Route path="/internal/pilot"        element={<RoleRoute roles={ADMIN_ROLES}><PilotCommandPage /></RoleRoute>} />
           <Route path="/internal/pilot/ngo"    element={<RoleRoute roles={ADMIN_ROLES}><NGOPilotPage /></RoleRoute>} />
           <Route path="/internal/performance"  element={<RoleRoute roles={ADMIN_ROLES}><PerformancePage /></RoleRoute>} />
+          <Route path="/internal/i18n"         element={<RoleRoute roles={ADMIN_ROLES}><I18nQAPage /></RoleRoute>} />
           <Route path="/internal/pilot/grower" element={<RoleRoute roles={ADMIN_ROLES}><GrowerPilotPage /></RoleRoute>} />
           {/* Wave-36 — outcome intelligence surfaces (admin only). */}
           <Route path="/internal/pilot-analytics"               element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />

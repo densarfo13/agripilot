@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "type": "pest",
+    "note": "en authentic; fr high-confidence. tw/ha/sw/hi null + translatorReview until verified — never fabricated.",
+    "locales": ["en", "tw", "ha", "fr", "sw", "hi"]
+  },
+  "entities": [
+    { "key": "aphids", "en": "Aphids", "tw": null, "ha": null, "fr": "Pucerons", "sw": null, "hi": null, "scientificName": "Aphidoidea", "aliases": ["aphid", "aphids"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "fall_armyworm", "en": "Fall armyworm", "tw": null, "ha": null, "fr": "Chenille légionnaire d’automne", "sw": null, "hi": null, "scientificName": "Spodoptera frugiperda", "aliases": ["fall armyworm", "army worm", "armyworm"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "stem_borer", "en": "Stem borer", "tw": null, "ha": null, "fr": "Foreur de tige", "sw": null, "hi": null, "scientificName": null, "aliases": ["stem borer"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "whiteflies", "en": "Whiteflies", "tw": null, "ha": null, "fr": "Aleurodes", "sw": null, "hi": null, "scientificName": null, "aliases": ["whitefly", "whiteflies"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "thrips", "en": "Thrips", "tw": null, "ha": null, "fr": "Thrips", "sw": null, "hi": null, "scientificName": null, "aliases": ["thrips"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "spider_mites", "en": "Spider mites", "tw": null, "ha": null, "fr": "Tétranyques", "sw": null, "hi": null, "scientificName": null, "aliases": ["spider mite", "spider mites"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "mealybugs", "en": "Mealybugs", "tw": null, "ha": null, "fr": "Cochenilles farineuses", "sw": null, "hi": null, "scientificName": null, "aliases": ["mealybug", "mealybugs"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "fruit_flies", "en": "Fruit flies", "tw": null, "ha": null, "fr": "Mouches des fruits", "sw": null, "hi": null, "scientificName": null, "aliases": ["fruit fly", "fruit flies"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "tuta_absoluta", "en": "Tuta absoluta", "tw": null, "ha": null, "fr": "Tuta absoluta", "sw": null, "hi": null, "scientificName": "Phthorimaea absoluta", "aliases": ["tuta absoluta", "tomato leafminer"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } },
+    { "key": "weevils", "en": "Weevils", "tw": null, "ha": null, "fr": "Charançons", "sw": null, "hi": null, "scientificName": null, "aliases": ["weevil", "weevils"], "translatorReview": { "tw": true, "ha": true, "sw": true, "hi": true } }
+  ]
+}

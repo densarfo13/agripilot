@@ -37,22 +37,49 @@ if (!layer) {
   }
   if (!/getCropLabelSafe/.test(layer))
     F.push('layer must compose getCropLabelSafe (6-language crop registry) for crops');
-  for (const tbl of ['DISEASE_LABELS', 'PEST_LABELS', 'NUTRIENT_LABELS']) {
-    if (!new RegExp(`\\b${tbl}\\b`).test(layer))
-      F.push(`layer must define ${tbl} (canonical-key localization table)`);
+  // Source of truth = the JSON catalogs.
+  for (const cat of ['diseases.json', 'pests.json', 'nutrients.json', 'treatments.json']) {
+    if (!new RegExp(`entities/${cat}`).test(layer))
+      F.push(`layer must import the ./entities/${cat} catalog`);
+  }
+  // Object return contract { label, locale, fallbackUsed, reviewRequired, canonicalKey }.
+  for (const tok of ['fallbackUsed', 'reviewRequired', 'canonicalKey']) {
+    if (!new RegExp(`\\b${tok}\\b`).test(layer))
+      F.push(`translateEntityLabel must return "${tok}" in its result object`);
   }
   // Honest fallback + missing-key recording.
   if (!/_recordMissing/.test(layer) || !/_humanizeEnglish/.test(layer))
     F.push('layer must fall back to humanized English + record missing keys (honest coverage)');
-  // No fabrication — translator-review locales declared.
   if (!/TRANSLATOR_REVIEW_LOCALES/.test(layer))
     F.push('layer must declare TRANSLATOR_REVIEW_LOCALES (no fabricated tw/ha/sw/hi terms)');
-  // en + fr must be present in each table (high-confidence baseline).
-  if (!/en:\s*'/.test(layer) || !/fr:\s*'/.test(layer))
-    F.push('disease/pest/nutrient tables must carry en + fr labels');
   if (!F.some((m) => m.includes('layer') || m.includes('translateEntityLabel')))
-    P.push('entity-label layer present: crop delegation + disease/pest/nutrient tables + safe fallback + missing-key recording');
+    P.push('entity-label layer present: crop delegation + JSON catalogs + object return + safe fallback + missing-key recording');
 }
+
+// ─── 1b. JSON catalogs honest (en+fr present; tw/ha/sw/hi null + review) ──
+for (const cat of ['diseases', 'pests', 'nutrients', 'treatments']) {
+  const raw = read(`src/i18n/entities/${cat}.json`);
+  if (!raw) { F.push(`entities/${cat}.json must exist`); continue; }
+  let parsed; try { parsed = JSON.parse(raw); } catch { F.push(`entities/${cat}.json must be valid JSON`); continue; }
+  const rows = (parsed && Array.isArray(parsed.entities)) ? parsed.entities : [];
+  if (!rows.length) { F.push(`entities/${cat}.json must define entities[]`); continue; }
+  let ok = true;
+  for (const r of rows) {
+    if (!r.key || !r.en) { ok = false; break; }
+    if (!r.translatorReview) { ok = false; break; }
+    // No fabrication: a non-null tw/ha/sw/hi must NOT also be flagged review;
+    // a null must be flagged review (honest).
+    for (const loc of ['tw', 'ha', 'sw', 'hi']) {
+      if (r[loc] == null && r.translatorReview[loc] !== true) { ok = false; break; }
+    }
+    if (!ok) break;
+  }
+  if (!ok) F.push(`entities/${cat}.json: each entity needs key+en+translatorReview, and every null locale must be review:true (no fabrication)`);
+  else P.push(`entities/${cat}.json honest (en authentic, null locales flagged review)`);
+}
+const queue = read('src/i18n/translatorReviewQueue.json');
+if (!queue) F.push('src/i18n/translatorReviewQueue.json must exist (honest review backlog)');
+else { try { JSON.parse(queue); P.push('translatorReviewQueue.json present + valid'); } catch { F.push('translatorReviewQueue.json must be valid JSON'); } }
 
 // ─── 2. Crop registry is 6-language ────────────────────────────
 const crops = read('src/config/crops.js');
