@@ -101,12 +101,18 @@ if (idx2 >= 0) {
   fail('scan-page: hard-stop block not parseable for stale-closure audit');
 }
 
-// ─── 4. scan-capture testid on the mount path ──────────────────
-// The mount spinner (rendered while !mounted) must carry the
-// scan-capture testid so the diagnostic runtime can flip
-// componentMounted=true immediately.
-if (!/if\s*\(\s*!\s*mounted\s*\)\s*\{[\s\S]{0,800}?data-testid=["']scan-capture["']/.test(scanPageSrc)) {
-  fail('scan-page: mount spinner (the !mounted return) must carry data-testid="scan-capture"');
+// ─── 4. Emergency fix — NO fullscreen mount-gated spinner ──────
+// The previous rule required a scan-capture testid on the
+// `if (!mounted) return <spinner>` block. The emergency fix
+// DELETED that block entirely (it was the persistent-spin cause).
+// New invariant: ScanPage must NOT return a fullscreen spinner
+// gated behind `!mounted`, and the ScanHub safe shell must be
+// the idle render.
+if (/if\s*\(\s*!\s*mounted\s*\)\s*\{[\s\S]{0,400}?farroway-spin/.test(scanPageSrc)) {
+  fail('scan-page: must NOT render a fullscreen spinner gated behind `if (!mounted)` (emergency fix removed it)');
+}
+if (!/phase\s*===\s*['"]idle['"]/.test(scanPageSrc) || !/ScanHub/.test(scanPageSrc)) {
+  fail('scan-page: idle phase must render the ScanHub safe shell');
 }
 
 // ─── 5. Upload Photo fallback testid + Go Home button ──────────

@@ -257,12 +257,31 @@ export default function ScanPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // EMERGENCY FIX — render-safe-shell-before-camera.
+  // Launch-safe flag: on iOS Safari we do NOT auto-promote to the
+  // camera-capture phase. Tapping the Scan nav lands the user on
+  // the safe ScanHub shell (Take photo / Upload photo) and the
+  // camera only starts when the user explicitly taps Take photo.
+  // This removes the autostart spin risk entirely on iOS — the
+  // observable symptom the user reported. Desktop / Android keep
+  // the fast-path autostart.
+  const DISABLE_SCAN_CAMERA_AUTOSTART_ON_IOS = true;
+  const _isIOSSafari = (() => {
+    try {
+      if (typeof navigator === 'undefined') return false;
+      const ua = String(navigator.userAgent || '');
+      return /\b(iPhone|iPad|iPod)\b/.test(ua);
+    } catch { return false; }
+  })();
+
   // Scan UX Final Fix — tapping the Scan bottom-nav navigates
   // to /scan?intent=camera with route state. Direct /scan URLs
   // (refresh, deep link, PWA restore) have NEITHER and stay
   // idle. This is the single decision point.
   const _launchedFromScanNav = (() => {
     try {
+      // EMERGENCY FIX — never auto-launch the camera on iOS Safari.
+      if (DISABLE_SCAN_CAMERA_AUTOSTART_ON_IOS && _isIOSSafari) return false;
       const params = new URLSearchParams(location.search || '');
       if (params.get('intent') === 'camera') return true;
       const st = (location.state || {});
@@ -1764,41 +1783,17 @@ export default function ScanPage() {
 
   // Initial-mount loading state — "Preparing camera…" so the
   // user never sees a blank screen during the first paint.
-  if (!mounted) {
-    // Real-device root-cause fix \u2014 emit data-testid="scan-capture"
-    // on the mount spinner so __scanStartupHealth() flips
-    // componentMounted=true the moment ScanPage's React tree
-    // renders ANYTHING. Without this, the banner waited for
-    // ScanCapture to render, but on iPhone Safari ScanCapture is
-    // gated behind the `mounted` flag \u2014 which left the runtime
-    // stuck reporting componentMounted:false.
-    return (
-      <main
-        style={STYLES.page}
-        data-screen="scan-page"
-        data-phase="loading"
-        data-testid="scan-capture"
-      >
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-          color: '#667085',
-        }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            border: '3px solid rgba(36,49,58,0.10)',
-            borderTopColor: '#C8944D',
-            animation: 'farroway-spin 0.8s linear infinite',
-          }} />
-          <span>{tStrict('scan.page.loading', 'Preparing scan\u2026')}</span>
-        </div>
-      </main>
-    );
-  }
+  // EMERGENCY FIX \u2014 render-safe-shell-before-camera.
+  // The fullscreen "Preparing scan\u2026" spinner that used to live
+  // here gated the ENTIRE page behind `mounted`. On iPhone Safari
+  // any render delay left the user on a full-screen spinner \u2014 the
+  // persistent-spin symptom. It is now DELETED. The page falls
+  // straight through to the `phase === 'idle'` branch below, which
+  // renders ScanHub: a synchronous safe shell (Upload photo + Take
+  // photo, no camera init, no spinner). Upload works regardless of
+  // mounted / runtimeInitialized / cameraReady / permission state.
+  // Camera starts only AFTER the shell renders.
+  void mounted;
 
   const isBackyard = experience === 'backyard';
   const headerTitle = isBackyard

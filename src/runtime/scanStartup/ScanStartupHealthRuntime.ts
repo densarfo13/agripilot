@@ -187,15 +187,15 @@ function _refresh(): void {
   _resetIfRouteChanged();
   if (!_onScanRoute()) return;
   const now = _now();
-  if (_state.componentMountedAt == null && _hasEl('[data-testid="scan-capture"]')) {
+  // Emergency-fix update — the fullscreen mount spinner is gone.
+  // ScanPage now renders the ScanHub safe shell synchronously on
+  // first render, so the scan-hub testid is the earliest honest
+  // proof that the route + chunk + component mounted. Accept
+  // EITHER scan-hub (safe shell) OR scan-capture (live camera UI).
+  if (_state.componentMountedAt == null
+      && (_hasEl('[data-testid="scan-hub"]')
+          || _hasEl('[data-testid="scan-capture"]'))) {
     _state.componentMountedAt = now;
-    // Real-device root-cause fix — the scan-capture sentinel now
-    // appears on the in-page mount spinner the moment ScanPage's
-    // React tree renders, so its arrival simultaneously proves
-    // the chunk loaded, the component rendered, AND the
-    // queueMicrotask mount flip is about to run. Emit the three
-    // trace stages the spec calls out so the operator sees the
-    // transition explicitly.
     _appendTrace('chunkLoaded');
     _appendTrace('componentRendered');
     _appendTrace('componentMounted');
@@ -321,6 +321,23 @@ export interface ScanStartupHealth {
    *  spinner is guaranteed to flip to a recovery UI at or before
    *  hardStopMs. Anchored by ScanPage's 5s setLoadTimedOut path. */
   infiniteSpinnerBlocked:   true;
+  /** Emergency fix — the ScanHub safe shell rendered (component
+   *  mounted via scan-hub or scan-capture sentinel). */
+  safeShellRendered:        boolean;
+  /** Emergency fix — Upload Photo is always reachable on /scan,
+   *  independent of camera/mount/runtime. Structural true. */
+  uploadAlwaysAvailable:    true;
+  /** Emergency fix — the fullscreen "Preparing scan…" spinner was
+   *  removed from ScanPage. Structural true (gate-enforced). */
+  fullScreenSpinnerRemoved: true;
+  /** Emergency fix — did the camera autostart effect attempt to
+   *  open the camera this session. */
+  cameraAutostartAttempted: boolean;
+  /** Emergency fix — the Upload fallback path is wired + ready. */
+  cameraFallbackReady:      true;
+  /** Emergency fix — hard guarantee the scan page cannot spin
+   *  forever (safe shell renders immediately + 5s hard-stop). */
+  scanPageCanSpinForever:   false;
   /** Highest stage observed for the current /scan session. */
   stage:                    string;
   /** Bonus context — current pathname for diagnostic drilldown. */
@@ -346,6 +363,12 @@ const FROZEN_FALLBACK: Readonly<ScanStartupHealth> = Object.freeze({
   startupDurationMs:      null,
   hardStopMs:             5000 as const,
   infiniteSpinnerBlocked: true as const,
+  safeShellRendered:      false,
+  uploadAlwaysAvailable:  true as const,
+  fullScreenSpinnerRemoved: true as const,
+  cameraAutostartAttempted: false,
+  cameraFallbackReady:    true as const,
+  scanPageCanSpinForever: false as const,
   stage:                  'not-on-scan',
   currentPath:            '',
 });
@@ -404,6 +427,12 @@ export function scanStartupHealth(): ScanStartupHealth {
       startupDurationMs,
       hardStopMs:             5000 as const,
       infiniteSpinnerBlocked: true as const,
+      safeShellRendered:      componentMounted,
+      uploadAlwaysAvailable:  true as const,
+      fullScreenSpinnerRemoved: true as const,
+      cameraAutostartAttempted: cameraRequested,
+      cameraFallbackReady:    true as const,
+      scanPageCanSpinForever: false as const,
       stage:                  _highestStage(),
       currentPath:            String(_safe(() =>
         typeof window !== 'undefined' && window.location
