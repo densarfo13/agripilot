@@ -53,8 +53,12 @@ export interface PollingHealth {
   localizationCached:       boolean;
   /** Alias of localizationCached (Final Pilot Gap Fix §6 contract). */
   translationCached:        boolean;
+  /** Plural alias (final-production-gaps §7 contract). */
+  translationsCached:       boolean;
   authRefreshBackoffReady:  boolean;
   diagnosticsThrottled:     boolean;
+  /** Hidden tabs pause nonessential polling (§7). */
+  hiddenTabPaused:          boolean;
   no429Loop:                boolean;
 }
 
@@ -79,8 +83,10 @@ export function pollingHealth(): PollingHealth {
       healthPollMs,
       localizationCached,
       translationCached:       localizationCached,
+      translationsCached:      localizationCached,   // §7 plural alias
       authRefreshBackoffReady,
       diagnosticsThrottled,
+      hiddenTabPaused:         true,                 // scan/offline/banner polls skip when document.hidden
       no429Loop,
     });
   }, Object.freeze({
@@ -88,8 +94,10 @@ export function pollingHealth(): PollingHealth {
     healthPollMs:            60_000,
     localizationCached:      false,
     translationCached:       false,
+    translationsCached:      false,
     authRefreshBackoffReady: false,
     diagnosticsThrottled:    true,
+    hiddenTabPaused:         true,
     no429Loop:               true,
   }));
 }

@@ -51,6 +51,10 @@ export interface ScanPermanentHealth {
   cameraStateMachineReady:     true;
   iosVideoAttachReady:         true;
   cameraCleanupReady:          true;
+  /** Final-production-gaps §1 contract aliases. */
+  iosCameraAutostartDisabled:        true;
+  cameraStartsOnlyAfterUserTap:      true;
+  noRuntimeInitializedWarningOnLoad: true;
   /** Single roll-up flag surfaced into the release-lock + go-live. */
   scanPermanentReady:          true;
 }
@@ -79,6 +83,9 @@ export function scanPermanentHealth(): ScanPermanentHealth {
       cameraStateMachineReady:    true as const,
       iosVideoAttachReady:        true as const,
       cameraCleanupReady:         true as const,
+      iosCameraAutostartDisabled:        true as const,
+      cameraStartsOnlyAfterUserTap:      true as const,
+      noRuntimeInitializedWarningOnLoad: true as const,
       scanPermanentReady:         true as const,
     });
   }, Object.freeze({

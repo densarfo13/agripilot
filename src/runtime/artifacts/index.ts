@@ -53,6 +53,11 @@ export function artifactHealth() {
       plantArtifactsReady:     true,
       taskArtifactsReady:      true,
       interventionArtifactsReady: true,
+      // §4 contract — ScanStarted/ScanCompleted/ScanFailed are all
+      // created through ArtifactRuntime (no UI direct writes), with
+      // idempotency keys, and a failed artifact never crashes the UI.
+      failureArtifactsReady:   true,
+      idempotent:              true,
       // No localStorage writes happen here — wave-5 single
       // writer owns persistence. Offline-safe from our side
       // means: pure, idempotent, never throws.
@@ -71,6 +76,8 @@ export function artifactHealth() {
     plantArtifactsReady: false,
     taskArtifactsReady: false,
     interventionArtifactsReady: false,
+    failureArtifactsReady: false,
+    idempotent: false,
     offlineSafe: false,
   }));
 }

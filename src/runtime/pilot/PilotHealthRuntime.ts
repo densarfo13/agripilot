@@ -280,6 +280,8 @@ export interface OutcomeCaptureHealth {
   taskCaptured:             boolean;
   followUpScanCaptured:     boolean;
   outcomeStatusCaptured:    boolean;
+  artifactLinked?:          boolean;
+  oodaLinked?:              boolean;
   beforeAfterReady:         boolean;
   outcomeDatasetReady:      boolean;
 }
@@ -335,6 +337,10 @@ export function outcomeCaptureHealth(): OutcomeCaptureHealth {
       followUpScanCaptured,
       outcomeStatusCaptured,
       beforeAfterReady,
+      // §12 — the scan→outcome chain is recorded as artifacts via
+      // ArtifactRuntime and the recommendation comes from OODA.
+      artifactLinked:           _hasGlobal('__artifactHealth'),
+      oodaLinked:               _hasGlobal('__oodaHealth'),
       outcomeDatasetReady,
     });
   }, Object.freeze({
@@ -343,6 +349,8 @@ export function outcomeCaptureHealth(): OutcomeCaptureHealth {
     issueCaptured:            false,
     scanCaptured:             false,
     diagnosisCaptured:        false,
+    artifactLinked:           false,
+    oodaLinked:               false,
     recommendationCaptured:   false,
     taskCaptured:             false,
     followUpScanCaptured:     false,

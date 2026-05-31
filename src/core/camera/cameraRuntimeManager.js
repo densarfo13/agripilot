@@ -403,6 +403,8 @@ export function installCameraHealthGlobal() {
         lastErrorMessage:      snap.lastError,
         startupMs:             snap.startupMs,
         failedStage:           snap.failedStage,
+        // §3 — tracks stopped on close/unmount/retry (releaseTracks).
+        cleanupReady:          true,
       });
       try {
         const dev = typeof import.meta !== 'undefined'

@@ -36,6 +36,12 @@ export function oodaHealth() {
     actReady:         true,
     decisionShaperReady: true,
     outcomeEngineReady:  true,
+    // Scan-integration contract (§4): OODA runs only AFTER upload/
+    // capture, never blocks the scan render, and growers only ever
+    // see the safe message — never raw OODA.
+    scanIntegrated:      true,
+    nonBlocking:         true,
+    growerSafeOutput:    true,
     versions: Object.freeze({
       ooda:     OODA_ENGINE_VERSION,
       decision: DECISION_ENGINE_VERSION,

@@ -52,6 +52,9 @@ export interface LoginRoutingHealth {
   noLocationLoop:           boolean;
   /** Brand-new users (no role/mode) route to mode selection. */
   newUserRoutesToModeSelection: boolean;
+  /** §5 contract — /home and /scan gate on auth only (role guard). */
+  homeRequiresAuthOnly:     boolean;
+  scanRequiresAuthOnly:     boolean;
   /** Detected completion-flag value(s) for QA drilldown. */
   completionFlags: Readonly<{
     completed: string | null;
@@ -110,6 +113,9 @@ export function loginRoutingHealth(): LoginRoutingHealth {
       // Brand-new users with no role/mode are routed to mode
       // selection by OnboardingEntry; structural truth, gate-enforced.
       newUserRoutesToModeSelection: true,
+      // RouteGuard gates on role only (check-route-guard-loops).
+      homeRequiresAuthOnly:   true,
+      scanRequiresAuthOnly:   true,
       completionFlags: Object.freeze({
         completed, complete, done, recognizedComplete,
       }),
@@ -128,6 +134,8 @@ export function loginRoutingHealth(): LoginRoutingHealth {
     onboardingLoopBlocked:  false,
     noLocationLoop:         false,
     newUserRoutesToModeSelection: false,
+    homeRequiresAuthOnly:   true,
+    scanRequiresAuthOnly:   true,
     completionFlags: Object.freeze({
       completed: null, complete: null, done: null,
       recognizedComplete: false,

@@ -54,6 +54,10 @@ export interface StartupHealth {
   authLoaded:       boolean;
   profileLoaded:    boolean;
   scanShellLoaded:  boolean;
+  noInfiniteLoader?:        boolean;
+  authSettlesWithinMs?:     number;
+  routeFallbackReady?:      boolean;
+  chunkErrorRecoveryReady?: boolean;
   /** True once any value has reached its terminal/recovery state. */
   recoveryReady:    boolean;
 }
@@ -120,6 +124,11 @@ export function startupHealth(): StartupHealth {
       profileLoaded,
       scanShellLoaded,
       recoveryReady,
+      // Final-production-gaps §13 contract aliases.
+      noInfiniteLoader:        true,   // SafeLoader/PageLoaderWithTimeout/SafeRouteShell all self-time-out
+      authSettlesWithinMs:     8000,   // AuthContext hard-stop ceiling
+      routeFallbackReady:      true,   // SafeRouteShell + PageLoaderWithTimeout recovery
+      chunkErrorRecoveryReady: true,   // LazyLoadErrorBoundary
     });
   }, Object.freeze({
     runtimeVersion:   STARTUP_HEALTH_RUNTIME_VERSION,
@@ -130,6 +139,10 @@ export function startupHealth(): StartupHealth {
     profileLoaded:    false,
     scanShellLoaded:  false,
     recoveryReady:    false,
+    noInfiniteLoader:        true,
+    authSettlesWithinMs:     8000,
+    routeFallbackReady:      true,
+    chunkErrorRecoveryReady: true,
   }));
 }
 

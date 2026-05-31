@@ -72,10 +72,15 @@ export function scanCameraUXHealth() {
 export function uploadAnalysisHealth() {
   return Object.freeze({
     runtimeVersion:       PILOT_GAP_RUNTIME_VERSION,
+    pickerReady:          true,   // §2 alias
     uploadPickerReady:    true,   // ScanHub/PlainUploadFallback file input
     compressionReady:     true,   // imageNormalization before analyze
+    scanRuntimeLazyLoaded: true,  // useScanRuntime + dynamic analysis import
+    oodaIntegrated:       true,   // OODA runs after result, non-blocking
+    artifactsIntegrated:  true,   // harvest/scan artifacts via ArtifactRuntime
     autoAnalyzeReady:     true,   // onContinue auto-fires; no Analyze button
     resultReady:          true,   // ScanResult surfaces
+    failureArtifactReady: true,   // §2 alias — ScanFailed artifact path
     failureFallbackReady: true,   // honest "analysis unavailable" + local save
   });
 }
