@@ -1450,6 +1450,14 @@ export default function App() {
             await import('./runtime/scanStartup/ScanStartupHealthRuntime');
           installScanStartupHealthGlobal();
         } catch { /* never block boot */ }
+        // Login-routing fix — pins __loginRoutingHealth() so the
+        // post-login routing + optional-location contract is
+        // observable on real devices.
+        try {
+          const { installLoginRoutingHealthGlobal } =
+            await import('./runtime/loginRouting/LoginRoutingHealthRuntime');
+          installLoginRoutingHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

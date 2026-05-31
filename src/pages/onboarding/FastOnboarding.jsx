@@ -1037,6 +1037,14 @@ export default function FastOnboarding() {
               try {
                 if (typeof localStorage !== 'undefined') {
                   localStorage.setItem('farroway_location_skipped', 'true');
+                  // Login-routing fix §5 — when location is not
+                  // confirmed, persist the safe-fallback mode so
+                  // Home renders general-guidance instead of
+                  // re-prompting. GPS failure must never block.
+                  if (geoStatus !== 'ok' && !country.trim()) {
+                    localStorage.setItem('locationMode', 'general_guidance');
+                    localStorage.setItem('locationStatus', 'unavailable');
+                  }
                 }
               } catch { /* swallow */ }
               try {
@@ -1045,7 +1053,7 @@ export default function FastOnboarding() {
                   from: 'fast-onboarding/location',
                 });
               } catch { /* swallow */ }
-              navigate('/', { replace: true });
+              navigate('/home', { replace: true });
               return;
             }}
             style={S.primaryBtn}
@@ -1086,12 +1094,21 @@ export default function FastOnboarding() {
                 if (typeof localStorage !== 'undefined') {
                   localStorage.setItem('setupSkipped', 'true');
                   localStorage.setItem('farroway_location_skipped', 'true');
+                  // Login-routing fix §5 — "Use general guidance"
+                  // persists the safe-fallback mode so Home renders
+                  // general guidance and the user is never
+                  // re-prompted for location.
+                  localStorage.setItem('locationMode', 'general_guidance');
+                  localStorage.setItem('locationStatus', 'unavailable');
                 }
               } catch { /* swallow */ }
+              // Stamp onboarding complete so a returning session
+              // routes straight to Home, never back to location.
+              try { setOnboardingComplete(); } catch { /* swallow */ }
               try {
                 trackEvent('setup_skipped', { from: 'fast-onboarding/location' });
               } catch { /* swallow */ }
-              try { navigate('/dashboard', { replace: true }); }
+              try { navigate('/home', { replace: true }); }
               catch { /* swallow */ }
             }}
             style={S.skipBtn}

@@ -105,7 +105,16 @@ function _readFarms() {
 }
 
 function _onboardingCompletedFlag() {
-  return _readString('farroway_onboarding_completed') === 'true';
+  // Login-routing fix — accept BOTH 'true' and '1'. The
+  // onboardingStore.completeOnboarding() writer stamps '1' while
+  // utils/onboarding stamps 'true'; a reader that only matched
+  // 'true' treated a '1'-completed user as needing onboarding,
+  // dumping them on the location screen after login. Also honour
+  // the snake-case + done variants so any writer is recognised.
+  const done = (v) => v === 'true' || v === '1';
+  return done(_readString('farroway_onboarding_completed'))
+      || done(_readString('farroway_onboarding_complete'))
+      || done(_readString('farroway_onboarding_done'));
 }
 
 /**

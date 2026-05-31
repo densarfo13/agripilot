@@ -131,7 +131,12 @@ export function completeOnboarding(profilePatch = null) {
   writeJson(KEY_PROFILE, merged);
   writeJson(KEY_ACTIVE, merged.activeFarmId);
   // Plain-string flag — easy to read from non-JS surfaces.
-  try { safeStorage()?.setItem(KEY_COMPLETED, '1'); } catch { /* ignore */ }
+  // Login-routing fix — write BOTH the canonical 'true' value
+  // (what utils/onboarding + every reader expects) AND keep the
+  // legacy '1' compat by way of the OR-readers. We standardise on
+  // 'true' here so future readers never see the mismatch.
+  try { safeStorage()?.setItem(KEY_COMPLETED, 'true'); } catch { /* ignore */ }
+  try { safeStorage()?.setItem('farroway_onboarding_complete', 'true'); } catch { /* ignore */ }
   return merged;
 }
 

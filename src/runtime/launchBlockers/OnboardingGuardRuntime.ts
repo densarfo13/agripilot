@@ -37,9 +37,14 @@ function _read(key: string): string | null {
 }
 
 function _isComplete(): boolean {
-  return _read('farroway_onboarding_done')      === 'true'
-      || _read('farroway_onboarding_completed') === 'true'
-      || _read('farroway_onboarding_complete')  === 'true';
+  // Login-routing fix — accept BOTH 'true' and '1'.
+  // onboardingStore.completeOnboarding() stamps '1' while
+  // utils/onboarding stamps 'true'; matching only 'true' re-routed
+  // a '1'-completed user back into onboarding.
+  const done = (v: string | null) => v === 'true' || v === '1';
+  return done(_read('farroway_onboarding_done'))
+      || done(_read('farroway_onboarding_completed'))
+      || done(_read('farroway_onboarding_complete'));
 }
 
 function _hasRole(): boolean {

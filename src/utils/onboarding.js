@@ -85,13 +85,21 @@ export function setOnboardingComplete() {
   _safeSet(ONBOARDING_COMPLETE_KEY,  'true');
 }
 
+// Login-routing fix — onboardingStore.completeOnboarding() writes
+// the flag as '1' while utils/onboarding writes 'true'. Real
+// devices carry a MIX of both values depending on which completion
+// path the user went through. A reader that only accepts 'true'
+// mis-routes a '1'-flagged (genuinely completed) user back into
+// onboarding → the post-login location-screen trap. Accept BOTH.
+function _flagDone(v) { return v === 'true' || v === '1'; }
+
 export function isOnboardingComplete() {
-  // OR semantics — any of the three keys truthy means "done."
-  // Stops a writer/reader mismatch from re-routing finished
-  // users back to setup.
-  return _safeGet(ONBOARDING_DONE_KEY)      === 'true'
-      || _safeGet(ONBOARDING_COMPLETED_KEY) === 'true'
-      || _safeGet(ONBOARDING_COMPLETE_KEY)  === 'true';
+  // OR semantics — any of the three keys truthy ('true' OR '1')
+  // means "done." Stops a writer/reader mismatch from re-routing
+  // finished users back to setup.
+  return _flagDone(_safeGet(ONBOARDING_DONE_KEY))
+      || _flagDone(_safeGet(ONBOARDING_COMPLETED_KEY))
+      || _flagDone(_safeGet(ONBOARDING_COMPLETE_KEY));
 }
 
 /**

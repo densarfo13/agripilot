@@ -142,8 +142,17 @@ export default function OnboardingEntry() {
     const farm = _readActiveFarm();
     let onboarded = false;
     try {
-      onboarded = typeof localStorage !== 'undefined'
-        && localStorage.getItem('farroway_onboarding_completed') === 'true';
+      // Login-routing fix — accept BOTH 'true' and '1' across all
+      // three completion-key variants. onboardingStore writes '1',
+      // utils/onboarding writes 'true'; a reader that only matched
+      // 'true' re-routed a genuinely-completed user back into
+      // onboarding → the post-login location-screen trap.
+      if (typeof localStorage !== 'undefined') {
+        const done = (v) => v === 'true' || v === '1';
+        onboarded = done(localStorage.getItem('farroway_onboarding_completed'))
+                 || done(localStorage.getItem('farroway_onboarding_complete'))
+                 || done(localStorage.getItem('farroway_onboarding_done'));
+      }
     } catch { /* swallow */ }
     if (farm || onboarded) {
       try { trackEvent('onboarding_entry_skipped', { reason: farm ? 'has_farm' : 'completed' }); }
