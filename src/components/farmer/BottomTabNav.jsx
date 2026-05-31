@@ -333,7 +333,12 @@ export default function BottomTabNav() {
                 // "Take photo" tap. Non-iOS keeps the intent path —
                 // the safe shell still renders first there too.
                 if (_isIOSDevice()) {
-                  navigate(tab.path, {
+                  // Final Pilot Gap Fix §1 — mobile lands on the
+                  // camera-LIKE shell via ?mode=camera. NOTE: mode=camera
+                  // is NOT intent=camera — it renders the camera-style
+                  // safe shell (gesture-gated), it does NOT auto-open
+                  // getUserMedia. Keeps the iOS no-autostart protection.
+                  navigate(tab.path + '?mode=camera', {
                     state: { source: 'bottom_nav_scan' },
                   });
                 } else {

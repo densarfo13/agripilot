@@ -1920,7 +1920,18 @@ export default function ScanPage() {
     // _handleTakePhoto only flips to the capture phase (camera opens
     // then, never before), and _handleUseSavedPhoto opens the gallery
     // picker. Nothing autostarts; Upload is always available.
-    const _mobileScan = _isMobileScanSurface();
+    // Final Pilot Gap Fix §1 — the camera-LIKE shell renders on mobile
+    // OR when the nav explicitly requested ?mode=camera (the bottom-nav
+    // mobile tap routes to /scan?mode=camera). mode=camera is NOT
+    // intent=camera — it shows the camera-style safe shell, it does
+    // NOT auto-open getUserMedia.
+    const _modeCamera = (() => {
+      try {
+        const params = new URLSearchParams(location.search || '');
+        return params.get('mode') === 'camera';
+      } catch { return false; }
+    })();
+    const _mobileScan = _isMobileScanSurface() || _modeCamera;
     return (
       <>
         {_mobileScan ? (

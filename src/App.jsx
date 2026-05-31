@@ -1549,6 +1549,14 @@ export default function App() {
             await import('./runtime/polling/PollingHealthRuntime');
           installPollingHealthGlobal();
         } catch { /* never block boot */ }
+        // Final Pilot Gap Fix — pins __scanCameraUXHealth /
+        // __uploadAnalysisHealth / __captureAnalysisHealth /
+        // __inviteValidationHealth validation diagnostics.
+        try {
+          const { installPilotGapHealthGlobals } =
+            await import('./runtime/pilotGap/PilotGapHealthRuntime');
+          installPilotGapHealthGlobals();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

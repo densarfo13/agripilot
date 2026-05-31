@@ -51,6 +51,8 @@ export interface PollingHealth {
   runtimeVersion:           string;
   healthPollMs:             number;
   localizationCached:       boolean;
+  /** Alias of localizationCached (Final Pilot Gap Fix §6 contract). */
+  translationCached:        boolean;
   authRefreshBackoffReady:  boolean;
   diagnosticsThrottled:     boolean;
   no429Loop:                boolean;
@@ -76,6 +78,7 @@ export function pollingHealth(): PollingHealth {
       runtimeVersion:          POLLING_HEALTH_RUNTIME_VERSION,
       healthPollMs,
       localizationCached,
+      translationCached:       localizationCached,
       authRefreshBackoffReady,
       diagnosticsThrottled,
       no429Loop,
@@ -84,6 +87,7 @@ export function pollingHealth(): PollingHealth {
     runtimeVersion:          POLLING_HEALTH_RUNTIME_VERSION,
     healthPollMs:            60_000,
     localizationCached:      false,
+    translationCached:       false,
     authRefreshBackoffReady: false,
     diagnosticsThrottled:    true,
     no429Loop:               true,

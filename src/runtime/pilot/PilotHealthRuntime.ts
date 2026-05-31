@@ -273,6 +273,9 @@ export interface OutcomeCaptureHealth {
   runtimeVersion:           string;
   initialized:              boolean;
   issueCaptured:            boolean;
+  /** Final Pilot Gap Fix §10 aliases of issueCaptured (scan → diagnosis). */
+  scanCaptured:             boolean;
+  diagnosisCaptured:        boolean;
   recommendationCaptured:   boolean;
   taskCaptured:             boolean;
   followUpScanCaptured:     boolean;
@@ -325,6 +328,8 @@ export function outcomeCaptureHealth(): OutcomeCaptureHealth {
       runtimeVersion:           PILOT_HEALTH_RUNTIME_VERSION,
       initialized:              true,
       issueCaptured,
+      scanCaptured:             issueCaptured,
+      diagnosisCaptured:        issueCaptured,
       recommendationCaptured,
       taskCaptured,
       followUpScanCaptured,
@@ -336,6 +341,8 @@ export function outcomeCaptureHealth(): OutcomeCaptureHealth {
     runtimeVersion:           PILOT_HEALTH_RUNTIME_VERSION,
     initialized:              false,
     issueCaptured:            false,
+    scanCaptured:             false,
+    diagnosisCaptured:        false,
     recommendationCaptured:   false,
     taskCaptured:             false,
     followUpScanCaptured:     false,
