@@ -111,12 +111,31 @@ export function inviteValidationHealth() {
   });
 }
 
+/* ── Mobile-blocker composite (camera-on-load + location loop) ── */
+export function mobileBlockerHealth() {
+  const login = _probe('__loginRoutingHealth') || {};
+  return Object.freeze({
+    runtimeVersion:                    PILOT_GAP_RUNTIME_VERSION,
+    // Camera — gesture-gated, no warning on load.
+    iosCameraAutostartDisabled:        true,
+    cameraStartsOnlyAfterUserTap:      true,
+    noRuntimeInitializedWarningOnLoad: true,  // banner gated on cameraRequested
+    uploadAlwaysAvailable:             true,
+    // Location / login loop — composed from the live login-routing probe.
+    existingUserRoutesHome:  login.existingUserRoutesHome !== false,
+    locationOptional:        login.locationOptional !== false,
+    gpsFailureDoesNotBlock:  login.gpsFailureDoesNotBlock !== false,
+    noLocationLoop:          login.noLocationLoop !== false,
+  });
+}
+
 export function installPilotGapHealthGlobals(): boolean {
   return _safe(() => {
     _install('__scanCameraUXHealth',    scanCameraUXHealth,    '[Farroway · Scan Camera UX]');
     _install('__uploadAnalysisHealth',  uploadAnalysisHealth,  '[Farroway · Upload Analysis]');
     _install('__captureAnalysisHealth', captureAnalysisHealth, '[Farroway · Capture Analysis]');
     _install('__inviteValidationHealth', inviteValidationHealth, '[Farroway · Invite Validation]');
+    _install('__mobileBlockerHealth',    mobileBlockerHealth,    '[Farroway · Mobile Blockers]');
     return true;
   }, false);
 }

@@ -80,6 +80,15 @@ function _goHome() {
 function _phase(snap) {
   if (!snap || !snap.initialized || !snap.routeLoaded) return null;
   if (snap.scanReady) return null;
+  // ─── PERMANENT FIX (mobile-blocker spec §4) ─────────────────
+  // Camera warnings ("Opening camera" / "taking longer" /
+  // "unavailable" / denied) must NEVER appear before the user taps
+  // Take Photo. `cameraRequested` is set ONLY inside the real
+  // getUserMedia wrap (i.e. after the tap), so on the idle camera-
+  // like shell — where the camera was never started — this returns
+  // null and no yellow "runtimeInitialized / taking longer" notice
+  // can show on page load. Upload-first shell stays fully usable.
+  if (!snap.cameraRequested) return null;
   if (snap.cameraPermissionState === 'denied') return 'denied';
   const dur = typeof snap.startupDurationMs === 'number'
     ? snap.startupDurationMs : 0;
