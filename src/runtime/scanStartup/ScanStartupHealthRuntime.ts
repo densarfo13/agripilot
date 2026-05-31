@@ -462,7 +462,20 @@ export function installScanStartupHealthGlobal(): boolean {
     if (typeof w.__scanStartupHealth !== 'function') {
       w.__scanStartupHealth = function () {
         const out = scanStartupHealth();
-        try { console.log('[Farroway · Scan Startup]', out); } catch {}
+        // Permanent fix — the ScanStartupBanner polls this probe every
+        // ~500ms, so an unconditional console.log floods the console
+        // (the repeating "[Farroway · Scan Startup]" spam). Log only
+        // in DEV or when the operator explicitly opts in via
+        // window.__farrowayHealthLog = true. The function still
+        // RETURNS the envelope on every call, so manual DevTools
+        // inspection (and the banner) keep working.
+        try {
+          const dev = typeof import.meta !== 'undefined'
+            && (import.meta as any).env && (import.meta as any).env.DEV;
+          if (dev || (w.__farrowayHealthLog === true)) {
+            console.log('[Farroway · Scan Startup]', out);
+          }
+        } catch { /* swallow */ }
         return out;
       };
     }

@@ -330,19 +330,26 @@ function _useOfflineStatus() {
     _safe(() => (typeof navigator !== 'undefined' ? navigator.onLine : true), true));
   const [queueDepth, setQueueDepth] = useState(0);
   const refresh = useCallback(async () => {
-    const depth = await _safe(async () => {
-      const dyn = new Function('s', 'return import(s)');
-      const mod = await dyn('../../runtime/offline/queueRegistry.js');
-      if (!mod || typeof mod.getRegistrySnapshot !== 'function') return 0;
-      const snap = await mod.getRegistrySnapshot();
-      let total = 0;
-      if (snap && snap.queues) {
-        for (const q of Object.values(snap.queues)) {
-          if (q && typeof q.depth === 'number') total += q.depth;
+    // Permanent fix — was `new Function('s','return import(s)')` with a
+    // RELATIVE specifier. Vite can't statically analyze a Function-
+    // constructed import, so the chunk was never emitted and the
+    // specifier resolved against the PAGE url at runtime →
+    // GET /runtime/offline/queueRegistry.js 404 (visible in console)
+    // + an uncaught rejection (the async thunk's reject escaped the
+    // sync-only _safe wrapper). A direct import() is bundled by Vite
+    // and the await is wrapped in a real try/catch.
+    let depth = 0;
+    try {
+      const mod = await import('../../runtime/offline/queueRegistry.js');
+      if (mod && typeof mod.getRegistrySnapshot === 'function') {
+        const snap = await mod.getRegistrySnapshot();
+        if (snap && snap.queues) {
+          for (const q of Object.values(snap.queues)) {
+            if (q && typeof q.depth === 'number') depth += q.depth;
+          }
         }
       }
-      return total;
-    }, 0);
+    } catch { depth = 0; }
     setQueueDepth(typeof depth === 'number' ? depth : 0);
   }, []);
   useEffect(() => {

@@ -129,13 +129,36 @@ export default function ScanFallback({
   // photo" / "Retry camera"). Render a calm loading surface and
   // attempt window.__forceScanIdle() so the live ScanPage can
   // recover into its idle entry card.
-  const isCameraFailureReason = CAMERA_FAIL_REASONS.includes(reason);
+  // Permanent startup-deadlock fix — `page_loading` is a genuine
+  // mount-timeout RECOVERY reason (ScanPage's loadTimedOut path),
+  // NOT a "suppress the scary first-load camera card" case. It must
+  // fall through to the real recovery surface below (Camera
+  // unavailable → Upload Photo primary + Try again + Go Home), never
+  // the calm "Loading scan" block. Excluding it here is what makes
+  // that recovery reachable.
+  const isCameraFailureReason =
+    CAMERA_FAIL_REASONS.includes(reason) && reason !== 'page_loading';
   const firstLoadBlock =
     isCameraFailureReason && (!cameraAttempted || !userInitiatedCamera);
   if (firstLoadBlock) {
     if (typeof window !== 'undefined' && typeof window.__forceScanIdle === 'function') {
       try { window.__forceScanIdle(); } catch { /* swallow */ }
     }
+    // Permanent startup-deadlock fix — this surface used to carry a
+    // SINGLE "Retry" button. When the underlying failure is
+    // deterministic (a render crash caught by ScanErrorBoundary, or
+    // a chunk that keeps failing), Retry just reloads into the same
+    // failure → the user is trapped on "Loading scan" forever. The
+    // surface now ALWAYS offers two guaranteed-working escapes:
+    //   • Upload Photo → /scan?intent=upload → PlainUploadFallback,
+    //     which pulls in ZERO lazy chunks and cannot re-crash.
+    //   • Go Home → /home.
+    // Retry is kept (and demoted to secondary) for the genuinely-
+    // transient case.
+    const _go = (href) => {
+      try { if (typeof window !== 'undefined') window.location.assign(href); }
+      catch { /* swallow */ }
+    };
     return (
       <main style={S.page}
         data-testid="scan-fallback-blocked"
@@ -148,9 +171,17 @@ export default function ScanFallback({
           </h2>
           <p style={S.body}>
             {tSafe('scan.fallback.loading.body',
-              'Preparing your scan tools. Tap retry if this takes a moment.')}
+              'Preparing your scan tools. Upload a photo or go home if this takes a moment.')}
           </p>
           <div style={S.row}>
+            <button
+              type="button"
+              onClick={() => _go('/scan?intent=upload')}
+              style={S.primaryBtn}
+              data-testid="scan-fallback-blocked-upload"
+            >
+              {tSafe('scan.camera.uploadPhoto', 'Upload photo')}
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -160,10 +191,18 @@ export default function ScanFallback({
                   }
                 } catch { /* swallow */ }
               }}
-              style={S.primaryBtn}
+              style={S.secondaryBtn}
               data-testid="scan-fallback-loading-retry"
             >
               {tSafe('common.retry', 'Retry')}
+            </button>
+            <button
+              type="button"
+              onClick={() => _go('/home')}
+              style={S.secondaryBtn}
+              data-testid="scan-fallback-blocked-home"
+            >
+              {tSafe('common.goHome', 'Go Home')}
             </button>
           </div>
         </div>

@@ -182,8 +182,9 @@ export async function getAppStoreReadiness() {
   }, null);
 
   const queueRegistered = await _safeAsync(async () => {
-    const dyn = new Function('s', 'return import(s)');
-    const mod = await dyn('../offline/queueRegistry.js');
+    // Direct Vite-analyzable dynamic import (was a Function-constructed
+    // import with a relative specifier that 404'd at runtime).
+    const mod = await import('../offline/queueRegistry.js');
     if (!mod || typeof mod.getRegistrySnapshot !== 'function') return null;
     const snap = await mod.getRegistrySnapshot();
     return snap && snap.registered >= 5;

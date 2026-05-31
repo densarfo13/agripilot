@@ -46,11 +46,14 @@ const POLL_MS = 8000;
 
 async function _readDepth() {
   try {
-    // Function-constructed import keeps Rollup from bundling the
-    // entire offline graph into every page's chunk; also tolerant
-    // of build environments where the runtime path isn't shipped.
-    const dyn = new Function('s', 'return import(s)');
-    const mod = await dyn('../runtime/offline/queueRegistry.js');
+    // Direct Vite-analyzable dynamic import. The previous
+    // `new Function('s','return import(s)')` with the relative
+    // specifier resolved against the PAGE url at runtime → 404
+    // (GET /runtime/offline/queueRegistry.js) on every poll. A real
+    // import() is bundled into its own lazy chunk and resolves
+    // correctly; the offline graph still stays out of the page's
+    // initial chunk because it's a dynamic import.
+    const mod = await import('../../runtime/offline/queueRegistry.js');
     if (!mod || typeof mod.getRegistrySnapshot !== 'function') return 0;
     const snap = await mod.getRegistrySnapshot();
     let total = 0;
