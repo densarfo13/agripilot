@@ -274,6 +274,9 @@ const FieldOfficerOutcomesPage = lazy(() => import('./pages/internal/FieldOffice
 const FieldIntelligencePage = lazy(() => import('./pages/internal/FieldIntelligencePage.jsx'));
 // Wave-38 — NGO command center page (admin only).
 const NGOHealthPage = lazy(() => import('./pages/internal/NGOHealthPage.jsx'));
+// V7 — institutional command center + NGO intelligence (admin only).
+const V7CommandCenterPage = lazy(() => import('./pages/internal/V7CommandCenterPage.jsx'));
+const NGOIntelligencePage = lazy(() => import('./pages/internal/NGOIntelligencePage.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1026,6 +1029,39 @@ export default function App() {
           installRemoteSensingReadinessGlobal();
           // Composite LAST — it reads the engine probes by name.
           installIntelligenceHealthGlobals();
+        } catch { /* never block boot */ }
+        // V7 — institutional agricultural intelligence platform. Six pure,
+        // read-only engines (predictive / NGO intelligence / marketplace /
+        // remote sensing / assistant / institutional readiness) + the
+        // composite __v7Health. Each is self-contained (no project imports),
+        // explainable, and degrades honestly. None block scan/upload/camera;
+        // this only pins their diagnostic probes for the V7 command center.
+        try {
+          const [
+            { installPredictiveHealthGlobal },
+            { installNGOIntelligenceHealthGlobal },
+            { installMarketplaceIntelligenceHealthGlobal },
+            { installRemoteSensingHealthGlobal },
+            { installFarmAssistantHealthGlobal },
+            { installInstitutionalReadinessHealthGlobal },
+            { installV7HealthGlobals },
+          ] = await Promise.all([
+            import('./runtime/v7/predictive/PredictiveRiskEngine'),
+            import('./runtime/v7/ngo/NGOIntelligenceEngine'),
+            import('./runtime/v7/marketplace/MarketplaceIntelligenceEngine'),
+            import('./runtime/v7/remote/RemoteSensingEngine'),
+            import('./runtime/v7/assistant/FarmAssistantEngine'),
+            import('./runtime/v7/institutional/InstitutionalReadinessEngine'),
+            import('./runtime/v7/V7HealthRuntime'),
+          ]);
+          installPredictiveHealthGlobal();
+          installNGOIntelligenceHealthGlobal();
+          installMarketplaceIntelligenceHealthGlobal();
+          installRemoteSensingHealthGlobal();
+          installFarmAssistantHealthGlobal();
+          installInstitutionalReadinessHealthGlobal();
+          // Composite LAST — it reads the engine probes by name.
+          installV7HealthGlobals();
         } catch { /* never block boot */ }
         try {
           const { installArtifactRuntimeGlobal } =
@@ -2137,6 +2173,9 @@ export default function App() {
               org-scoped via __ngoImpactHealth; surfaces the same
               command-center page under the spec path). */}
           <Route path="/internal/ngo-impact"   element={<RoleRoute roles={ADMIN_ROLES}><NGOHealthPage /></RoleRoute>} />
+          {/* V7 — institutional command center + NGO intelligence (admin only). */}
+          <Route path="/internal/v7"               element={<RoleRoute roles={ADMIN_ROLES}><V7CommandCenterPage /></RoleRoute>} />
+          <Route path="/internal/ngo-intelligence" element={<RoleRoute roles={ADMIN_ROLES}><NGOIntelligencePage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
