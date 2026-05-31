@@ -577,6 +577,11 @@ import { SeasonProvider } from './context/SeasonContext.jsx';
 // crashing the SPA.
 import PageLoaderWithTimeout from './components/system/PageLoaderWithTimeout.jsx';
 import LazyLoadErrorBoundary from './components/system/LazyLoadErrorBoundary.jsx';
+// Wave real-device scan validation — visible 3s/5s diagnostic banner.
+// Self-hides off /scan and once scan-ready. Polls __scanStartupHealth()
+// every 500ms. Eager-loaded (NOT lazy) so the banner can render
+// even while ScanPage's chunk is in flight.
+import ScanStartupBanner from './components/scan/ScanStartupBanner.jsx';
 const PageLoader = () => <PageLoaderWithTimeout />;
 
 /**
@@ -1434,6 +1439,17 @@ export default function App() {
             await import('./runtime/routeAudit/RouteAuditRuntime');
           installRouteAuditGlobals();
         } catch { /* never block boot */ }
+        // Wave real-device scan validation — pins
+        // __scanStartupHealth() and starts a 250ms DOM-poll loop
+        // that tracks the EXACT startup stage the scan-route
+        // reached. Also transparently wraps
+        // navigator.mediaDevices.getUserMedia so cameraRequested /
+        // cameraGranted timestamps are real, not inferred.
+        try {
+          const { installScanStartupHealthGlobal } =
+            await import('./runtime/scanStartup/ScanStartupHealthRuntime');
+          installScanStartupHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
@@ -1836,6 +1852,11 @@ export default function App() {
       {/* RC1 — global persistent offline-pending banner. Self-hides
           when the queue is empty. Reads via wave-7 queueRegistry. */}
       <OfflineQueueBanner />
+      {/* Wave real-device scan validation — fixed-position banner.
+          Renders nothing unless the user is on /scan AND startup
+          has exceeded 3s. Eager-loaded above Suspense so it can
+          render even while the scan-page chunk is still loading. */}
+      <ScanStartupBanner />
       <LazyLoadErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
