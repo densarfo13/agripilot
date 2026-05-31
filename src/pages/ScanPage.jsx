@@ -352,6 +352,49 @@ export default function ScanPage() {
   // per scan). Prevents render-loops and prevents duplicate
   // timeline events / artifacts on reconnect-replay.
   const _harvestSeenRef = useRef(new Set());
+
+  // ─── TDZ FIX — production ScanPage init crash ───────────────
+  // profile / experience / activeExperience / activeFarmId /
+  // activeGardenId MUST be declared BEFORE the useEffect/useMemo
+  // blocks below that name them in their dependency arrays. A deps
+  // array is evaluated EAGERLY during render, so when these `const`
+  // / `let` bindings sat BELOW those hooks the minified production
+  // bundle threw "ReferenceError: Cannot access 'o' before
+  // initialization" — the bindings were in their Temporal Dead Zone
+  // when the weather + harvest effects' deps ([profile], [result,
+  // profile, activeFarmId, activeGardenId]) were constructed.
+  // Hoisting the declarations here resolves it with no behaviour
+  // change; the hooks stay unconditional so React's hook order is
+  // stable across renders.
+  //
+  // Read profile defensively — the page must work in a logged-out /
+  // no-active-farm state.
+  const profile = useMemo(() => {
+    try {
+      const raw = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('farroway_active_farm') : null;
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }, []);
+  const experience = useMemo(() => _readExperience(profile), [profile]);
+  // useExperience is documented never-throws (a snapshot read from
+  // the local multiExperience store); call it unconditionally and
+  // coerce the result. Calling it inside a try/catch would be the
+  // React #310 hook-counter anti-pattern.
+  const xp = useExperience();
+  let activeExperience = experience;
+  let activeGardenId = null;
+  let activeFarmId   = null;
+  try {
+    if (xp && xp.experience) {
+      activeExperience = xp.experience === xp.EXPERIENCE.GARDEN ? 'garden'
+                       : xp.experience === xp.EXPERIENCE.FARM   ? 'farm'
+                       : experience;
+      activeGardenId = xp.activeGardenId || null;
+      activeFarmId   = xp.activeFarmId   || null;
+    }
+  } catch { /* defensive — coercion shouldn't throw, but guard anyway */ }
+
   // Wave-35 H4 — keep window.__farrowayLastWeather populated even
   // when the user deep-links to /scan without visiting Home first.
   // Composes useLiveWeather indirectly: we check if the snapshot
@@ -736,46 +779,10 @@ export default function ScanPage() {
   // the next scan starts with a clean slate.
   const [analyzingFocusContext, setAnalyzingFocusContext] = useState(null);
 
-  // Read profile defensively — the page must work in a logged-out
-  // / no-active-farm state.
-  const profile = useMemo(() => {
-    try {
-      const raw = typeof localStorage !== 'undefined'
-        ? localStorage.getItem('farroway_active_farm') : null;
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
-  }, []);
-  const experience = useMemo(() => _readExperience(profile), [profile]);
-
-  // Final scan engine spec §2: prefer the canonical
-  // multi-experience selector for the active id pair so the
-  // scan attaches to whichever experience the BottomTabNav +
-  // ExperienceSwitcher are currently showing.
-  //
-  // Hook-ordering fix (May 2026 scan-crash hardening): the
-  // previous version called useExperience() inside a try/catch.
-  // That is the React #310 anti-pattern — if the hook ever
-  // throws on a re-render the surrounding catch silently
-  // shifts React's hook counter and the page crashes with
-  // "Rendered more hooks than during the previous render",
-  // surfacing as "We hit a problem rendering this page" via
-  // the global ErrorBoundary. useExperience is documented
-  // never-throws (its read is a snapshot from the local
-  // multiExperience store), so we call it unconditionally and
-  // defensively coerce the result.
-  const xp = useExperience();
-  let activeExperience = experience;
-  let activeGardenId = null;
-  let activeFarmId   = null;
-  try {
-    if (xp && xp.experience) {
-      activeExperience = xp.experience === xp.EXPERIENCE.GARDEN ? 'garden'
-                       : xp.experience === xp.EXPERIENCE.FARM   ? 'farm'
-                       : experience;
-      activeGardenId = xp.activeGardenId || null;
-      activeFarmId   = xp.activeFarmId   || null;
-    }
-  } catch { /* defensive — coercion shouldn't throw, but guard anyway */ }
+  // profile / experience / activeExperience / activeFarmId /
+  // activeGardenId are declared ABOVE the first useEffect (see the
+  // "TDZ FIX" block) so their dependency-array references can't hit
+  // the Temporal Dead Zone. Intentionally not re-declared here.
 
   // Canonical scan system lock (May 2026 §12) — `/scan` IS the
   // single canonical scan surface. The previous off-flag bounce
