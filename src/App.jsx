@@ -277,6 +277,8 @@ const NGOHealthPage = lazy(() => import('./pages/internal/NGOHealthPage.jsx'));
 // V7 — institutional command center + NGO intelligence (admin only).
 const V7CommandCenterPage = lazy(() => import('./pages/internal/V7CommandCenterPage.jsx'));
 const NGOIntelligencePage = lazy(() => import('./pages/internal/NGOIntelligencePage.jsx'));
+// V8 — next platform layer command center (admin only).
+const V8CommandCenterPage = lazy(() => import('./pages/internal/V8CommandCenterPage.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1062,6 +1064,41 @@ export default function App() {
           installInstitutionalReadinessHealthGlobal();
           // Composite LAST — it reads the engine probes by name.
           installV7HealthGlobals();
+        } catch { /* never block boot */ }
+        // V8 — regional intelligence / digital farm twin / voice readiness /
+        // NGO enterprise / supply chain / remote-sensing readiness /
+        // institutional data readiness. Seven pure, read-only engines + the
+        // composite __v8Health. Self-contained (no project imports), honest,
+        // and never block scan/upload/login — this only pins their probes.
+        try {
+          const [
+            { installRegionalIntelligenceHealthGlobal },
+            { installFarmTwinHealthGlobal },
+            { installVoiceAssistantHealthGlobal },
+            { installNGOEnterpriseHealthGlobal },
+            { installSupplyChainHealthGlobal },
+            { installRemoteSensingReadinessHealthGlobal },
+            { installInstitutionalDataHealthGlobal },
+            { installV8HealthGlobals },
+          ] = await Promise.all([
+            import('./runtime/v8/regional/RegionalIntelligenceEngine'),
+            import('./runtime/v8/farmTwin/FarmTwinEngine'),
+            import('./runtime/v8/voice/VoiceAssistantReadiness'),
+            import('./runtime/v8/ngoEnterprise/NGOEnterpriseEngine'),
+            import('./runtime/v8/supplyChain/SupplyChainIntelligenceEngine'),
+            import('./runtime/v8/remoteSensing/RemoteSensingReadinessEngine'),
+            import('./runtime/v8/institutionalData/InstitutionalDataReadiness'),
+            import('./runtime/v8/V8HealthRuntime'),
+          ]);
+          installRegionalIntelligenceHealthGlobal();
+          installFarmTwinHealthGlobal();
+          installVoiceAssistantHealthGlobal();
+          installNGOEnterpriseHealthGlobal();
+          installSupplyChainHealthGlobal();
+          installRemoteSensingReadinessHealthGlobal();
+          installInstitutionalDataHealthGlobal();
+          // Composite LAST — it reads the engine probes by name.
+          installV8HealthGlobals();
         } catch { /* never block boot */ }
         try {
           const { installArtifactRuntimeGlobal } =
@@ -2176,6 +2213,8 @@ export default function App() {
           {/* V7 — institutional command center + NGO intelligence (admin only). */}
           <Route path="/internal/v7"               element={<RoleRoute roles={ADMIN_ROLES}><V7CommandCenterPage /></RoleRoute>} />
           <Route path="/internal/ngo-intelligence" element={<RoleRoute roles={ADMIN_ROLES}><NGOIntelligencePage /></RoleRoute>} />
+          {/* V8 — next platform layer command center (admin only). */}
+          <Route path="/internal/v8"               element={<RoleRoute roles={ADMIN_ROLES}><V8CommandCenterPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
