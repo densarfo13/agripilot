@@ -1478,6 +1478,14 @@ export default function App() {
             await import('./runtime/scanStartup/ScanPermanentHealthRuntime');
           installScanPermanentHealthGlobal();
         } catch { /* never block boot */ }
+        // Option 3 — camera-like mobile shell diagnostic. Pins
+        // __scanCameraLikeShellHealth() so the "camera look, safe-shell
+        // protections preserved" contract is observable on-device.
+        try {
+          const { installScanCameraLikeShellHealthGlobal } =
+            await import('./runtime/scanStartup/ScanCameraLikeShellHealthRuntime');
+          installScanCameraLikeShellHealthGlobal();
+        } catch { /* never block boot */ }
         // Permanent Mobile Navigation Fix — pins the five new
         // diagnostics so the stale-bundle / route-reach / route-guard /
         // bottom-nav / build-version contracts are observable on real

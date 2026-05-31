@@ -45,6 +45,8 @@ export interface ScanPermanentHealth {
   chunkRecoveryReady:          true;
   gpsDoesNotBlockScan:         true;
   scanCanNeverSpinForever:     true;
+  /** Option 3 — mobile camera-like shell preserves the safe shell. */
+  cameraLikeShellReady:        true;
   /** Single roll-up flag surfaced into the release-lock + go-live. */
   scanPermanentReady:          true;
 }
@@ -69,6 +71,7 @@ export function scanPermanentHealth(): ScanPermanentHealth {
       chunkRecoveryReady:         true as const,
       gpsDoesNotBlockScan:        true as const,
       scanCanNeverSpinForever:    true as const,
+      cameraLikeShellReady:       true as const,
       scanPermanentReady:         true as const,
     });
   }, Object.freeze({
@@ -84,6 +87,7 @@ export function scanPermanentHealth(): ScanPermanentHealth {
     chunkRecoveryReady:         true as const,
     gpsDoesNotBlockScan:        true as const,
     scanCanNeverSpinForever:    true as const,
+    cameraLikeShellReady:       true as const,
     scanPermanentReady:         true as const,
   }));
 }

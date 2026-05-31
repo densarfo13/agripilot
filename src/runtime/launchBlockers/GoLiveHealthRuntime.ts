@@ -120,6 +120,14 @@ export function goLiveHealth() {
       ? !!scanPermanent.scanPermanentReady
       : true; // structural-true; gate-enforced at build time
 
+    // Option 3 — camera-like mobile shell (safe-shell preserved).
+    const scanCameraLikeShell = _probe('__scanCameraLikeShellHealth');
+    const cameraLikeShellReady = scanCameraLikeShell
+      ? !!(scanCameraLikeShell.safeShellPreserved
+           && scanCameraLikeShell.cameraAutostartDisabled
+           && scanCameraLikeShell.uploadAlwaysAvailable)
+      : true; // structural-true; gate-enforced
+
     // ─── Permanent mobile-navigation probes (spec §10) ───────────
     // Compose the new diagnostics. Each flag defaults to its
     // structural truth when the probe hasn't loaded, so an unloaded
@@ -345,6 +353,9 @@ export function goLiveHealth() {
       // Permanent scan-stability roll-up.
       scanPermanentReady,
       scanPermanent:     scanPermanent || null,
+      // Option 3 — camera-like shell roll-up.
+      cameraLikeShellReady,
+      scanCameraLikeShell: scanCameraLikeShell || null,
       // Permanent mobile-navigation roll-up (spec §10).
       mobileNavReady,
       mobileNav: Object.freeze({

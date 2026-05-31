@@ -490,6 +490,15 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         const r = w.__cacheRecoveryHealth();
         return !!(r && r.reloadSafe);
       }, false),
+      // Option 3 — camera-like mobile shell preserves the safe shell.
+      cameraLikeShellReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        if (typeof w.__scanCameraLikeShellHealth !== 'function') return false;
+        const r = w.__scanCameraLikeShellHealth();
+        return !!(r && r.safeShellPreserved && r.cameraAutostartDisabled
+          && r.uploadAlwaysAvailable && r.takePhotoUserGestureOnly);
+      }, false),
       bottomNavReady: _safe(() => {
         if (typeof window === 'undefined') return false;
         const w = window as any;

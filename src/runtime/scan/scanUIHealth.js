@@ -101,6 +101,9 @@ export function getScanUIHealth() {
     scanNavOpensCamera:              true,
     cameraAutoStartOnPlainRoute:     false,
     cameraStartsOnlyFromUserIntent:  true,
+    // Option 3 — mobile idle surface is a camera-LIKE shell
+    // (ScanCameraLikeShell) that still gesture-gates the real camera.
+    cameraLikeShellReady:            true,
     // Camera + Upload Final Fix — Upload is always reachable
     // (entry card + inside camera capture UI + permission-denied
     // fallback). Banned "Use a saved photo" wording replaced

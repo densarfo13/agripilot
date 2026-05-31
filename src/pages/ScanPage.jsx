@@ -72,6 +72,11 @@ import useExperience from '../hooks/useExperience.js';
 import ScanCapture from '../components/scan/ScanCapture.jsx';
 import ScanEntryCard from '../components/scan/ScanEntryCard.jsx';
 import ScanHub from '../components/scan/ScanHub.jsx';
+// Option 3 — mobile camera-LIKE idle shell. Presentational re-skin of
+// the safe shell (NO getUserMedia, NO ScanRuntime); the camera still
+// opens only when the user taps Take Photo (gesture-gated, same as
+// ScanHub). Desktop keeps ScanHub.
+import ScanCameraLikeShell from '../components/scan/ScanCameraLikeShell.jsx';
 import IntelligentScanResult from '../components/scan/IntelligentScanResult.jsx';
 // Wave-26 C-4 — single-result-card invariant. Gates IntelligentScanResult
 // so it is mutually exclusive with the legacy UsefulResultCard /
@@ -264,6 +269,26 @@ function _scanSupportsLiveCamera() {
     return typeof navigator !== 'undefined'
         && navigator.mediaDevices
         && typeof navigator.mediaDevices.getUserMedia === 'function';
+  } catch { return false; }
+}
+
+// Option 3 — mobile detection for the camera-LIKE idle shell. Mobile
+// gets the full-screen camera-style surface; desktop/tablet keep the
+// ScanHub card page. Detect via viewport width + touch support + UA.
+// SSR-safe (returns false when window is absent). This ONLY changes
+// which idle surface renders — the camera is still gesture-gated and
+// nothing autostarts.
+function _isMobileScanSurface() {
+  try {
+    if (typeof window === 'undefined') return false;
+    const w = window.innerWidth || (window.screen && window.screen.width) || 0;
+    const narrow = w > 0 && w <= 820;
+    const touch = (typeof navigator !== 'undefined'
+      && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window));
+    const ua = typeof navigator !== 'undefined'
+      ? /\b(iPhone|iPad|iPod|Android|Mobile)\b/i.test(String(navigator.userAgent || ''))
+      : false;
+    return ua || (narrow && touch) || narrow;
   } catch { return false; }
 }
 
@@ -1890,12 +1915,30 @@ export default function ScanPage() {
     }
   };
   if (phase === 'idle' && flagOn) {
+    // Option 3 — mobile gets the camera-LIKE shell; desktop keeps the
+    // ScanHub card page. Both call the SAME gesture handlers:
+    // _handleTakePhoto only flips to the capture phase (camera opens
+    // then, never before), and _handleUseSavedPhoto opens the gallery
+    // picker. Nothing autostarts; Upload is always available.
+    const _mobileScan = _isMobileScanSurface();
     return (
       <>
-        <ScanHub
-          onTakePhoto={_handleTakePhoto}
-          onUploadPhoto={_handleUseSavedPhoto}
-        />
+        {_mobileScan ? (
+          <ScanCameraLikeShell
+            onTakePhoto={_handleTakePhoto}
+            onUploadPhoto={_handleUseSavedPhoto}
+            onClose={() => {
+              try {
+                if (typeof window !== 'undefined') window.location.assign('/home');
+              } catch { /* swallow */ }
+            }}
+          />
+        ) : (
+          <ScanHub
+            onTakePhoto={_handleTakePhoto}
+            onUploadPhoto={_handleUseSavedPhoto}
+          />
+        )}
         <input
           ref={entryGalleryInputRef}
           type="file"
