@@ -1514,6 +1514,24 @@ export default function App() {
             await import('./runtime/authStartup/AuthStartupHealthRuntime');
           installAuthStartupHealthGlobal();
         } catch { /* never block boot */ }
+        // Auth-refresh resilience diagnostic — pins __authRefreshHealth()
+        // {refreshAttempts, refreshFailures, degradedMode, routeShellLoaded}
+        // so the soft-auth-degraded contract (429/5xx never logs out) is
+        // observable on-device.
+        try {
+          const { installAuthRefreshHealthGlobal } =
+            await import('./runtime/authRefresh/AuthRefreshHealthRuntime');
+          installAuthRefreshHealthGlobal();
+        } catch { /* never block boot */ }
+        // Composite startup probe — pins __startupHealth()
+        // {routeMatched, routeLoaded, suspenseResolved, authLoaded,
+        // profileLoaded, scanShellLoaded} so "did the app start, and
+        // if not where did it stall?" is one console line.
+        try {
+          const { installStartupHealthGlobal } =
+            await import('./runtime/startup/StartupHealthRuntime');
+          installStartupHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier

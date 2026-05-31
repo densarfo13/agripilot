@@ -161,9 +161,99 @@ function _markSessionDead() {
   _emitSessionExpired();
 }
 
+// ─── Soft-auth-degraded mode (Phase 2 — startup deadlock fix) ──
+// A refresh failure with a TRANSIENT status (429 rate-limited, or a
+// 5xx server hiccup) must NOT log the user out. Treating a momentary
+// rate-limit as a hard logout was turning `POST /auth/refresh -> 429`
+// into a full session-expired → /login bounce. Instead we enter
+// "degraded mode": the cached/offline session stays usable, the route
+// shell keeps rendering, no spinner, and a background retry with
+// exponential backoff attempts to restore a fresh access token. Only
+// a 401 (missing/invalid refresh cookie) is a genuinely dead session.
+let _degradedMode        = false;
+let _refreshFailures     = 0;        // cumulative diagnostic counter
+let _degradedTimer       = null;
+let _degradedBackoffIdx  = 0;
+const _DEGRADED_BACKOFF_MS = [5_000, 15_000, 45_000, 60_000];
+
+function _isTransientStatus(s) {
+  return s === 429 || (typeof s === 'number' && s >= 500 && s <= 504);
+}
+
+function _clearDegraded() {
+  _degradedMode       = false;
+  _degradedBackoffIdx = 0;
+  if (_degradedTimer) {
+    try { clearTimeout(_degradedTimer); } catch { /* swallow */ }
+    _degradedTimer = null;
+  }
+}
+
+// Background retry with exponential backoff. The backoff schedule IS
+// the rate limit, so each scheduled attempt resets the per-window
+// counter and is allowed to hit the network once.
+function _scheduleDegradedRetry() {
+  if (typeof setTimeout !== 'function') return;
+  if (_degradedTimer) return; // single timer in flight
+  const idx   = Math.min(_degradedBackoffIdx, _DEGRADED_BACKOFF_MS.length - 1);
+  const delay = _DEGRADED_BACKOFF_MS[idx];
+  _degradedBackoffIdx += 1;
+  _degradedTimer = setTimeout(() => {
+    _degradedTimer = null;
+    (async () => {
+      try {
+        _resetRefreshCounter();               // the backoff is the throttle
+        const res = await refreshOnce();
+        if (res && res.ok) {
+          markSessionAlive();                 // clears _sessionDead + degraded
+          try { console.log('[FARROWAY_AUTH] degraded recovered'); } catch { /* swallow */ }
+          return;
+        }
+        if (res && _isTransientStatus(res.status)) {
+          _refreshFailures += 1;
+          _scheduleDegradedRetry();           // keep trying, longer backoff
+          return;
+        }
+        // Non-transient (401) → genuine dead session.
+        _markSessionDead();
+        _clearDegraded();
+      } catch {
+        // Network error → transient; keep retrying in the background.
+        _scheduleDegradedRetry();
+      }
+    })();
+  }, delay);
+}
+
+function _enterDegraded() {
+  _refreshFailures += 1;
+  _degradedMode     = true;
+  _scheduleDegradedRetry();
+}
+
+/** Phase-4 diagnostic source for window.__authRefreshHealth(). */
+export function getAuthRefreshSnapshot() {
+  let routeShellLoaded = false;
+  try {
+    if (typeof document !== 'undefined') {
+      const root = document.getElementById('root');
+      routeShellLoaded = !!(root && root.children && root.children.length > 0
+        && typeof root.innerText === 'string'
+        && root.innerText.trim().length > 0);
+    }
+  } catch { routeShellLoaded = false; }
+  return {
+    refreshAttempts: _refreshAttempts,
+    refreshFailures: _refreshFailures,
+    degradedMode:    _degradedMode,
+    routeShellLoaded,
+  };
+}
+
 export function markSessionAlive() {
   _sessionDead = false;
   _resetRefreshCounter();
+  _clearDegraded();
 }
 
 export function isSessionDead() {
@@ -173,6 +263,7 @@ export function isSessionDead() {
 export function clearSessionDead() {
   _sessionDead = false;
   _resetRefreshCounter();
+  _clearDegraded();
 }
 
 // Dev-only console.log helper. Per the runtime-stabilization spec
@@ -237,14 +328,23 @@ export async function refreshSession() {
       _devLog('[REFRESH_SUCCESS]');
       _sessionDead = false;
       _resetRefreshCounter();
+      _clearDegraded();
       return true;
+    }
+    // Phase 2 — TRANSIENT (429 / 5xx) → degraded mode, NOT a logout.
+    // Keep the cached session usable + retry in the background.
+    if (_isTransientStatus(res.status)) {
+      try { console.warn('[REFRESH_DEGRADED]', { status: res.status }); } catch { /* swallow */ }
+      _enterDegraded();
+      return false;
     }
     try { console.warn('[REFRESH_FAILED]', { status: res.status }); } catch { /* swallow */ }
     _markSessionDead();
     return false;
   } catch (err) {
-    try { console.warn('[REFRESH_FAILED]', { reason: err && err.message }); } catch { /* swallow */ }
-    _markSessionDead();
+    // Network error is transient — degrade + retry, never hard-logout.
+    try { console.warn('[REFRESH_DEGRADED]', { reason: err && err.message }); } catch { /* swallow */ }
+    _enterDegraded();
     return false;
   }
 }
@@ -301,21 +401,28 @@ async function request(path, options = {}, allowRefresh = true) {
         _devLog('[REFRESH_SUCCESS]');
         _sessionDead = false;
         _resetRefreshCounter();
+        _clearDegraded();
         return request(path, options, false);
       }
-      // Refresh returned a non-OK status (401 = no refresh cookie,
-      // 429 = rate-limited, 5xx = server hiccup). Mark the session
-      // dead so every subsequent authenticated request short-
-      // circuits in the gate above — no more cascade. Use the
-      // helper that emits the farroway:session_expired event so
-      // AuthContext can pick up the hard-logout signal.
-      try { console.warn('[REFRESH_FAILED]', { status: refreshRes.status }); } catch { /* swallow */ }
-      _markSessionDead();
+      // Phase 2 — branch on status. A TRANSIENT failure (429 rate-
+      // limited, 5xx server hiccup) must NOT mark the session dead:
+      // that would emit session_expired → hard logout for a momentary
+      // rate-limit. Enter degraded mode (cached session stays usable,
+      // background backoff retry); the current request still returns
+      // its 401 below, which the UI handles calmly. Only a genuine
+      // 401 from refresh (no/invalid refresh cookie) is a dead session.
+      if (_isTransientStatus(refreshRes.status)) {
+        try { console.warn('[REFRESH_DEGRADED]', { status: refreshRes.status }); } catch { /* swallow */ }
+        _enterDegraded();
+      } else {
+        try { console.warn('[REFRESH_FAILED]', { status: refreshRes.status }); } catch { /* swallow */ }
+        _markSessionDead();
+      }
     } catch (refreshErr) {
-      // Refresh network failure — same outcome: short-circuit
-      // future authenticated calls until the user signs in.
-      try { console.warn('[REFRESH_FAILED]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
-      _markSessionDead();
+      // Refresh network failure is transient — degrade + retry,
+      // never a hard logout.
+      try { console.warn('[REFRESH_DEGRADED]', { reason: refreshErr && refreshErr.message }); } catch { /* swallow */ }
+      _enterDegraded();
     }
   }
 

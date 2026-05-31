@@ -95,13 +95,15 @@ async function _loadCapacitorLocal() {
     // Capacitor plugin loads lazily so we don't pull native APIs
     // into the web bundle. If the plugin isn't installed (web build)
     // the import fails and we fall back to Web Notification API.
-    // Specifier is built at runtime so Rollup's static analyzer
-    // doesn't fail the build when the optional plugin isn't yet in
-    // node_modules. When the plugin ships in package.json this
-    // continues to resolve normally.
+    // Optional Capacitor plugin. The @vite-ignore hint tells the
+    // bundler NOT to try to resolve/bundle this at build time (the
+    // plugin isn't in node_modules on the web build), so the build
+    // never fails. At runtime the native import rejects on web →
+    // _safeAsync returns null → Web Notification API fallback. This
+    // replaces the previous `new Function('s','return import(s)')`
+    // eval-style loader (banned by check-no-runtime-queue-imports).
     const specifier = '@capacitor' + '/local-notifications';
-    const dyn = new Function('s', 'return import(s)');
-    const mod = await dyn(specifier);
+    const mod = await import(/* @vite-ignore */ specifier);
     return mod && mod.LocalNotifications ? mod.LocalNotifications : null;
   }, null);
 }

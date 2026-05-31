@@ -604,25 +604,22 @@ export function installWeatherAndLanguageDiagnostics() {
     // envelope when the offline runtime hasn't been installed yet.
     if (!window.__queueHealth) {
       window.__queueHealth = function () {
-        const snap = _safe(() => {
-          const mod = _safe(() =>
-            require('../runtime/offline/queueRegistry.js'), null);
-          if (!mod || typeof mod.getRegistrySnapshot !== 'function') return null;
-          // Async API; return the Promise so callers can `await` it.
-          // For a synchronous console snapshot we still log when
-          // the Promise resolves.
-          const promise = mod.getRegistrySnapshot();
-          if (promise && typeof promise.then === 'function') {
-            promise.then((s) => {
+        // Vite-safe lazy import. Was a CommonJS require(), which is
+        // undefined in the browser ESM bundle (always returned null →
+        // permanently degraded). The resolved snapshot logs async; the
+        // sync return is a pending envelope. The real QueueHealthRuntime
+        // install (wired earlier in App boot) normally owns this global.
+        _safe(() => import('../runtime/offline/queueRegistry.js').then((mod) => {
+          if (mod && typeof mod.getRegistrySnapshot === 'function') {
+            Promise.resolve(mod.getRegistrySnapshot()).then((s) => {
               try { console.log('[Farroway · Queue Health (resolved)]', s); }
               catch { /* swallow */ }
             }).catch(() => { /* swallow */ });
           }
-          return promise;
-        }, null);
-        const out = snap || Object.freeze({
+        }).catch(() => { /* swallow */ }), null);
+        const out = Object.freeze({
           runtimeVersion: 'queue-registry-v1',
-          reason:         'offline_runtime_not_installed',
+          reason:         'offline_runtime_pending',
           generatedAt:    new Date().toISOString(),
         });
         try { console.log('[Farroway · Queue Health (pending)]', out); } catch { /* swallow */ }
@@ -631,22 +628,17 @@ export function installWeatherAndLanguageDiagnostics() {
     }
     if (!window.__replayHealth) {
       window.__replayHealth = function () {
-        const snap = _safe(() => {
-          const mod = _safe(() =>
-            require('../runtime/offline/reconcileReconnect.js'), null);
-          if (!mod || typeof mod.getReconciliationSnapshot !== 'function') return null;
-          const promise = mod.getReconciliationSnapshot();
-          if (promise && typeof promise.then === 'function') {
-            promise.then((s) => {
+        _safe(() => import('../runtime/offline/reconcileReconnect.js').then((mod) => {
+          if (mod && typeof mod.getReconciliationSnapshot === 'function') {
+            Promise.resolve(mod.getReconciliationSnapshot()).then((s) => {
               try { console.log('[Farroway · Replay Health (resolved)]', s); }
               catch { /* swallow */ }
             }).catch(() => { /* swallow */ });
           }
-          return promise;
-        }, null);
-        const out = snap || Object.freeze({
+        }).catch(() => { /* swallow */ }), null);
+        const out = Object.freeze({
           runtimeVersion: 'reconcile-reconnect-v1',
-          reason:         'offline_runtime_not_installed',
+          reason:         'offline_runtime_pending',
           generatedAt:    new Date().toISOString(),
         });
         try { console.log('[Farroway · Replay Health (pending)]', out); } catch { /* swallow */ }
@@ -656,13 +648,13 @@ export function installWeatherAndLanguageDiagnostics() {
     if (!window.__deviceResilience) {
       // Bonus diagnostic — exposes listener counts + trigger history.
       window.__deviceResilience = function () {
-        const snap = _safe(() => {
-          const mod = _safe(() =>
-            require('../runtime/offline/deviceResilience.js'), null);
-          return mod && typeof mod.getResilienceSnapshot === 'function'
-            ? mod.getResilienceSnapshot() : null;
-        }, null);
-        const out = snap || Object.freeze({
+        _safe(() => import('../runtime/offline/deviceResilience.js').then((mod) => {
+          if (mod && typeof mod.getResilienceSnapshot === 'function') {
+            try { console.log('[Farroway · Device Resilience (resolved)]',
+              mod.getResilienceSnapshot()); } catch { /* swallow */ }
+          }
+        }).catch(() => { /* swallow */ }), null);
+        const out = Object.freeze({
           runtimeVersion: 'device-resilience-v1',
           reason:         'offline_runtime_not_installed',
         });
