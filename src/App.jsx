@@ -993,6 +993,40 @@ export default function App() {
             await import('./runtime/intelligence/index');
           installOODAGlobal();
         } catch { /* never block boot */ }
+        // Intelligence Layer v1 — production-safe decision support.
+        // Each engine is a pure, read-only composition over the
+        // existing scan-history / managed-plants / event-log / weather
+        // stores. They emit explainable envelopes (value, confidence,
+        // dataSources, explanation, limitations) and degrade honestly
+        // ("Not enough data yet"). None block scan/upload/camera — the
+        // boot install only pins their diagnostic probes for QA.
+        try {
+          const [
+            { installCropMemoryHealthGlobal },
+            { installTrendHealthGlobal },
+            { installFarmHealthScoreHealthGlobal },
+            { installYieldReadinessHealthGlobal },
+            { installDailyDecisionHealthGlobal },
+            { installRemoteSensingReadinessGlobal },
+            { installIntelligenceHealthGlobals },
+          ] = await Promise.all([
+            import('./runtime/intelligence/CropMemoryEngine'),
+            import('./runtime/intelligence/TrendEngine'),
+            import('./runtime/intelligence/FarmHealthScoreEngine'),
+            import('./runtime/intelligence/YieldReadinessEngine'),
+            import('./runtime/intelligence/DailyDecisionEngine'),
+            import('./runtime/intelligence/RemoteSensingReadiness'),
+            import('./runtime/intelligence/IntelligenceHealthRuntime'),
+          ]);
+          installCropMemoryHealthGlobal();
+          installTrendHealthGlobal();
+          installFarmHealthScoreHealthGlobal();
+          installYieldReadinessHealthGlobal();
+          installDailyDecisionHealthGlobal();
+          installRemoteSensingReadinessGlobal();
+          // Composite LAST — it reads the engine probes by name.
+          installIntelligenceHealthGlobals();
+        } catch { /* never block boot */ }
         try {
           const { installArtifactRuntimeGlobal } =
             await import('./runtime/artifacts/index');
@@ -2099,6 +2133,10 @@ export default function App() {
           <Route path="/internal/intelligence" element={<RoleRoute roles={ADMIN_ROLES}><FieldIntelligencePage /></RoleRoute>} />
           {/* Wave-38 — NGO command center (admin only). */}
           <Route path="/internal/ngo-health"   element={<RoleRoute roles={ADMIN_ROLES}><NGOHealthPage /></RoleRoute>} />
+          {/* Intelligence Layer v1 — NGO impact analytics (admin only,
+              org-scoped via __ngoImpactHealth; surfaces the same
+              command-center page under the spec path). */}
+          <Route path="/internal/ngo-impact"   element={<RoleRoute roles={ADMIN_ROLES}><NGOHealthPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
