@@ -118,9 +118,20 @@ import { saveScanUseful, markTaskAdded } from '../lib/scan/scanHistoryStore.js';
 // Mounted under the result card; user MUST tap "Add to My
 // Plants" to create a managed plant record. No auto-create.
 import AddPlantConfirmationCard from '../components/plants/AddPlantConfirmationCard.jsx';
+// TDZ / circular-import fix — import the CONCRETE file, NOT the
+// '../runtime/plants/index' barrel. The barrel has a circular import
+// (index.ts ⇄ briefingComposer.ts) and re-exports the entire plant
+// knowledge + media graph (DISEASE_DB / PEST_DB / PLANT_KNOWLEDGE /
+// image + media systems). Pulling that into the ScanPage chunk
+// perturbed Rollup's module-init order and produced the production
+// "ReferenceError: Cannot access 'o' before initialization" (a const
+// in the cycle read before initialization). scanToManagedPlant.ts
+// only imports concrete siblings (PlantRuntime, PlantIntelligenceEngine),
+// so the direct import is cycle-free and chops the heavy graph out of
+// the scan chunk.
 import {
   scanToManagedPlant as _scanToManagedPlant,
-} from '../runtime/plants/index';
+} from '../runtime/plants/scanToManagedPlant';
 import {
   loadManagedPlants as _loadManagedPlants,
   appendManagedPlant as _appendManagedPlant,

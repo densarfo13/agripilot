@@ -197,17 +197,40 @@ if (sources.barrel.indexOf('timeline') === -1
   fail('barrel must re-export timeline + version');
 }
 
-// Sprint A — Daily Briefing composer
-if (!/export\s+function\s+plantsForBriefing\b/.test(sources.barrel)) {
-  fail('index.ts must export plantsForBriefing()');
+// Sprint A — Daily Briefing composer. plantsForBriefing() was moved
+// out of the barrel into its own leaf module (plantsBriefing.ts) to
+// break the index ⇄ briefingComposer circular import (TDZ-crash fix).
+// The barrel must still EXPORT it (re-export is fine); the function
+// body + envelope fields are validated in the leaf module.
+const briefingSrc = _read('src/runtime/plants/plantsBriefing.ts') || '';
+const briefingDefinedInLeaf = /export\s+function\s+plantsForBriefing\b/.test(briefingSrc);
+const briefingExportedFromBarrel =
+     /export\s+function\s+plantsForBriefing\b/.test(sources.barrel)
+  || /export\s*\{[^}]*\bplantsForBriefing\b[^}]*\}/.test(sources.barrel);
+if (!briefingExportedFromBarrel) {
+  fail('index.ts must export plantsForBriefing() (declaration or re-export)');
+}
+if (!briefingDefinedInLeaf && !/export\s+function\s+plantsForBriefing\b/.test(sources.barrel)) {
+  fail('plantsForBriefing() must be defined in plantsBriefing.ts (leaf) or the barrel');
 }
 if (!/PLANTS_BRIEFING_VERSION\b/.test(sources.barrel)) {
   fail('index.ts must export PLANTS_BRIEFING_VERSION');
 }
+// Envelope fields — check wherever the function now lives.
+const briefingBody = briefingDefinedInLeaf ? briefingSrc : sources.barrel;
 for (const k of ['needsAttention', 'attentionByCategory', 'headline']) {
-  if (sources.barrel.indexOf(k) === -1) {
+  if (briefingBody.indexOf(k) === -1) {
     fail('plantsForBriefing missing envelope field: ' + k);
   }
+}
+// The leaf must NOT import the barrel back (no cycle reintroduction).
+// Strip comments first — the docblock legitimately NAMES the old
+// "from './index'" cycle to document it.
+const briefingNoComments = briefingSrc
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/(^|\s)\/\/.*$/gm, '');
+if (briefingDefinedInLeaf && /\bimport\b[^\n]*from\s+['"]\.\/index['"]/.test(briefingNoComments)) {
+  fail('plantsBriefing.ts must NOT import from ./index (would re-create the cycle)');
 }
 
 // Lifecycle stages — 6 spec'd + DORMANT

@@ -5,26 +5,43 @@
  *     <ScanPage />
  *   </ScanErrorBoundary>
  *
- * Why scoped (not the global ErrorBoundary)
- *   The global boundary in main.jsx surfaces the calm-recovery
- *   card with "Reload page" / "Fix setup issue" / "Restart
- *   setup" buttons. That's the right surface for an unexpected
- *   crash on most pages. For /scan we'd rather degrade
- *   gracefully into a still-useful fallback (Upload photo +
- *   Retry) so the user can keep going. This boundary catches
- *   render throws inside the scan tree and renders ScanFallback
- *   in their place, then logs `scan_component_error` so the
- *   crash is greppable in DevTools / analytics.
+ * If ANYTHING in the scan tree throws (render error, or a lazy chunk
+ * whose module-init threw — e.g. a TDZ / circular-import crash like
+ * "Cannot access 'o' before initialization"), this boundary renders a
+ * DEPENDENCY-LIGHT fallback so the user is never stranded:
+ *
+ *   Title:  Scan temporarily unavailable
+ *   Text:   You can still upload a clear photo or return home.
+ *   Buttons: Upload Photo · Try Again · Go Home
+ *
+ * The fallback is <PlainUploadFallback> — it imports NOTHING from
+ * ScanPage / ScanCamera / ScanRuntime / OODA / knowledge / offline
+ * queue at module load (it dynamic-imports the analysis engine only
+ * AFTER a file is picked), so it cannot re-trigger the crash it is
+ * recovering from.
+ *
+ * Crash details are exposed (no secrets) for field diagnostics:
+ *   window.__scanCrashDetails = { message, stack, route, timestamp, buildSha }
  *
  * Strict-rule audit
  *   • Pure React class. Never throws inside its own catch.
  *   • Logs once per error type — repeated crashes don't spam.
- *   • Resets on prop change so navigating back into /scan after
- *     a fix isn't permanently stuck on the fallback.
+ *   • Resets on Retry so navigating back into /scan after a fix isn't
+ *     permanently stuck on the fallback.
  */
 
 import React from 'react';
-import ScanFallback from './ScanFallback.jsx';
+import PlainUploadFallback from './PlainUploadFallback.jsx';
+
+function _buildSha() {
+  try {
+    if (typeof window === 'undefined') return '';
+    const w = window;
+    return (typeof w.__FARROWAY_BUILD_SHA === 'string'
+      && w.__FARROWAY_BUILD_SHA.indexOf('%') !== 0)
+        ? w.__FARROWAY_BUILD_SHA : '';
+  } catch { return ''; }
+}
 
 export default class ScanErrorBoundary extends React.Component {
   constructor(props) {
@@ -40,17 +57,30 @@ export default class ScanErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Console-log the crash with a greppable prefix so engineers
-    // can filter for it in Chrome DevTools / Railway log drains.
+    // Console-log the crash with a greppable prefix so engineers can
+    // filter for it in DevTools / Railway log drains.
     try {
-       
+
       console.error('[FARROWAY_CRASH][scan_component_error]',
         error && error.message ? error.message : error,
         info && info.componentStack ? info.componentStack.slice(0, 500) : '');
     } catch { /* swallow */ }
 
-    // Fire-and-forget analytics. Dynamic import so a missing
-    // analytics module never crashes the boundary's catch handler.
+    // Expose safe crash details for field diagnostics (no secrets).
+    try {
+      if (typeof window !== 'undefined') {
+        window.__scanCrashDetails = Object.freeze({
+          message:   error && error.message ? String(error.message).slice(0, 300) : 'unknown',
+          stack:     error && error.stack ? String(error.stack).slice(0, 2000) : '',
+          route:     '/scan',
+          timestamp: new Date().toISOString(),
+          buildSha:  _buildSha(),
+        });
+      }
+    } catch { /* never throw from a catch handler */ }
+
+    // Fire-and-forget analytics. Dynamic import so a missing analytics
+    // module never crashes the boundary's catch handler.
     try {
       import('../../lib/analytics.js')
         .then((mod) => {
@@ -71,10 +101,9 @@ export default class ScanErrorBoundary extends React.Component {
   }
 
   handleRetry = () => {
-    // Reset local state first so React replaces the fallback
-    // with the children on next render, then reload so any
-    // wedged module-level state in ScanPage / ScanCapture starts
-    // fresh.
+    // Reset local state first so React replaces the fallback with the
+    // children on next render, then reload so any wedged module-level
+    // state in ScanPage / ScanCapture starts fresh.
     this.setState({ hasError: false, errorMessage: null });
     try {
       if (typeof window !== 'undefined'
@@ -87,10 +116,14 @@ export default class ScanErrorBoundary extends React.Component {
 
   render() {
     if (!this.state.hasError) return this.props.children;
+    // Dependency-light recovery — PlainUploadFallback pulls in no scan
+    // runtime / camera at module load, so it cannot re-crash.
     return (
-      <ScanFallback
-        reason="crash"
+      <PlainUploadFallback
+        title="Scan temporarily unavailable"
+        body="You can still upload a clear photo or return home."
         onRetry={this.handleRetry}
+        showUpload
       />
     );
   }

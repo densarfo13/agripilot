@@ -159,12 +159,15 @@ if (manifest.start_url !== '/?v=1.0.4') {
     + '(found: ' + manifest.start_url + ')');
 }
 
-// ─── ScanErrorBoundary remains the boundary; it renders fallback
-// with no guard props so the first-load block in ScanFallback kicks
-// in via the defaults.
-if (!/<ScanFallback[^/]*reason="crash"/.test(sources.boundary)) {
-  fail('ScanErrorBoundary must keep its <ScanFallback reason="crash" /> '
-    + 'render path (the guards default to false → blocked)');
+// ─── ScanErrorBoundary must render a dependency-light fallback.
+// Accept EITHER the legacy <ScanFallback reason="crash" /> OR the
+// hardened <PlainUploadFallback> path (TDZ-crash fix — the boundary
+// now renders PlainUploadFallback, which imports no scan runtime /
+// camera at module load so it cannot re-crash).
+if (!/<ScanFallback[^/]*reason="crash"/.test(sources.boundary)
+    && !/<PlainUploadFallback/.test(sources.boundary)) {
+  fail('ScanErrorBoundary must render a dependency-light crash fallback '
+    + '(<PlainUploadFallback> or <ScanFallback reason="crash" />)');
 }
 
 console.log(HEADER, 'PASS — first-load camera-error card hard-blocked.');

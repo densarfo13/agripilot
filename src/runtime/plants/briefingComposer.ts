@@ -29,7 +29,11 @@
  *   • Frozen envelopes.
  */
 
-import { plantsForBriefing } from './index';
+// TDZ / circular-import fix — import from the leaf module, NOT the
+// './index' barrel. Importing the barrel here created the
+// index ⇄ briefingComposer cycle that perturbed Rollup's module-init
+// order and surfaced as "Cannot access 'o' before initialization".
+import { plantsForBriefing } from './plantsBriefing';
 
 export const FULL_BRIEFING_VERSION = 'plants-briefing-composer-v1';
 

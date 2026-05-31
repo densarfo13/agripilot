@@ -63,17 +63,55 @@ export async function setLang(lang) {
   await loadTranslations(lang);
 }
 
+// ─── Localization fetch cache + 429 backoff (polling fix §7) ────
+// Without this, every component/route that calls loadTranslations
+// re-hits /api/localization/translations/{lang} → the production
+// 429 storm. We cache the successful payload per-lang, dedupe
+// in-flight requests, and refuse to refetch for 60s after a 429 /
+// failure (a successful load is then permanently cached).
+const _i18nCache    = Object.create(null);   // lang -> payload
+const _i18nInflight = Object.create(null);   // lang -> Promise
+let   _i18nBackoffUntil = 0;                  // epoch ms; no fetch before this
+const _I18N_BACKOFF_MS  = 60_000;
+
+export function isLocalizationCached(lang = currentLang) {
+  return !!_i18nCache[lang];
+}
+
 export async function loadTranslations(lang = currentLang) {
-  try {
-    const resp = await fetch(`${API_BASE}/localization/translations/${lang}`);
-    if (resp.ok) {
-      translations = await resp.json();
-      loaded = true;
-    }
-  } catch (e) {
-    console.warn('[i18n] Failed to load translations:', e);
-    // Fallbacks in each t*() function will handle this gracefully
+  // 1. Serve from cache — never refetch a language we already have.
+  if (_i18nCache[lang]) {
+    translations = _i18nCache[lang];
+    loaded = true;
+    return;
   }
+  // 2. Dedupe concurrent loads of the same language.
+  if (_i18nInflight[lang]) return _i18nInflight[lang];
+  // 3. Respect the post-429/failure backoff window — fall back to
+  //    whatever's loaded (English defaults) instead of hammering.
+  if (Date.now() < _i18nBackoffUntil) return;
+
+  _i18nInflight[lang] = (async () => {
+    try {
+      const resp = await fetch(`${API_BASE}/localization/translations/${lang}`);
+      if (resp.ok) {
+        const payload = await resp.json();
+        _i18nCache[lang] = payload;
+        translations = payload;
+        loaded = true;
+      } else {
+        // 429 / 5xx — back off so we don't loop on the rate limiter.
+        _i18nBackoffUntil = Date.now() + _I18N_BACKOFF_MS;
+      }
+    } catch (e) {
+      _i18nBackoffUntil = Date.now() + _I18N_BACKOFF_MS;
+      console.warn('[i18n] Failed to load translations:', e);
+      // Fallbacks in each t*() function will handle this gracefully
+    } finally {
+      delete _i18nInflight[lang];
+    }
+  })();
+  return _i18nInflight[lang];
 }
 
 export function t(key, fallback) {

@@ -53,6 +53,7 @@ export default function PlainUploadFallback({
   onAnalyzed,
   title,
   body,
+  onRetry,
 }) {
   const inputRef = useRef(null);
   // 'idle' | 'analyzing' | 'done' | 'saved_offline' | 'error'
@@ -68,6 +69,13 @@ export default function PlainUploadFallback({
     try { if (typeof window !== 'undefined') window.location.assign('/home'); }
     catch { /* swallow */ }
   }, []);
+
+  const retry = useCallback(() => {
+    try {
+      if (typeof onRetry === 'function') { onRetry(); return; }
+      if (typeof window !== 'undefined' && window.location) window.location.reload();
+    } catch { /* swallow */ }
+  }, [onRetry]);
 
   const handleFile = useCallback(async (ev) => {
     const file = _safe(() => ev && ev.target && ev.target.files && ev.target.files[0], null);
@@ -180,6 +188,19 @@ export default function PlainUploadFallback({
             : tSafe('scan.plainUpload.choose', 'Upload Photo')}
         </button>
 
+        {/* Try Again — shown when a parent (ScanErrorBoundary) passes
+            onRetry. Lets the user re-attempt the full scan flow after
+            a crash without leaving the page. */}
+        {typeof onRetry === 'function' ? (
+          <button
+            type="button"
+            style={S.ghost}
+            onClick={retry}
+            data-testid="plain-upload-retry"
+          >
+            {tSafe('common.retry', 'Try Again')}
+          </button>
+        ) : null}
         <button
           type="button"
           style={S.ghost}

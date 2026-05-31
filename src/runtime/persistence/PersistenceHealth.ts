@@ -78,6 +78,13 @@ export function persistenceHealth(): PersistenceHealth {
  * If the server does NOT yet emit this shape, the probe falls
  * back to the unavailable envelope — honest degradation.
  */
+// Polling fix §7 — /api/health is fetched at most once per 60s.
+// Repeated callers within the window reuse the cached envelope so
+// the health endpoint never contributes to a 429 storm.
+let _lastHealthProbeAt = 0;
+const _HEALTH_THROTTLE_MS = 60_000;
+export const HEALTH_POLL_MIN_MS = _HEALTH_THROTTLE_MS;
+
 export async function refreshPersistenceHealth(): Promise<PersistenceHealth> {
   return _safe(async () => {
     if (typeof fetch === 'undefined') {
@@ -85,6 +92,15 @@ export async function refreshPersistenceHealth(): Promise<PersistenceHealth> {
       _cache = fb;
       return fb;
     }
+    // Throttle: if we probed within the window and have a cached
+    // envelope, return it without hitting the network.
+    try {
+      const now = Date.now();
+      if (_cache && _lastHealthProbeAt && (now - _lastHealthProbeAt) < _HEALTH_THROTTLE_MS) {
+        return _cache;
+      }
+      _lastHealthProbeAt = now;
+    } catch { /* swallow — fall through to fetch */ }
     try {
       const res = await fetch('/api/health', { credentials: 'include' });
       if (!res || !res.ok) {

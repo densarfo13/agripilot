@@ -106,6 +106,71 @@ for (const rel of TARGETS) {
   if (fileViolations === 0) pass(`${rel}: no TDZ violations in hook dependency arrays`);
 }
 
+// ─── Circular-import detection across the ScanPage import tree ──
+// A barrel cycle (e.g. index.ts ⇄ briefingComposer.ts) perturbs
+// Rollup's module-init order and can surface as
+// "Cannot access 'o' before initialization" in the scan chunk. We
+// trace static imports from ScanPage and fail on any MULTI-NODE
+// cycle (single-node self-edges from type re-exports are ignored).
+(function detectCycles() {
+  const ENTRY = path.join(ROOT, 'src/pages/ScanPage.jsx');
+  if (!fs.existsSync(ENTRY)) return;
+  const EXTS = ['.js', '.jsx', '.ts', '.tsx'];
+  const resolveSpec = (fromFile, spec) => {
+    if (!spec.startsWith('.')) return null;
+    const base = path.resolve(path.dirname(fromFile), spec);
+    if (path.extname(base) && fs.existsSync(base)) return base;
+    for (const e of EXTS) { if (fs.existsSync(base + e)) return base + e; }
+    for (const e of EXTS) {
+      const idx = path.join(base, 'index' + e);
+      if (fs.existsSync(idx)) return idx;
+    }
+    return null;
+  };
+  const IMP = /(?:import|export)\s[^;'"]*?\sfrom\s*['"]([^'"]+)['"]/g;
+  const BARE = /import\s*['"]([^'"]+)['"]/g;
+  const deps = new Map();
+  const parse = (file) => {
+    if (deps.has(file)) return;
+    let src; try { src = fs.readFileSync(file, 'utf8'); } catch { deps.set(file, new Set()); return; }
+    const set = new Set();
+    for (const re of [IMP, BARE]) {
+      re.lastIndex = 0; let m;
+      while ((m = re.exec(src))) {
+        const r = resolveSpec(file, m[1]);
+        if (r && r !== file) set.add(r);   // ignore self-edges (type re-exports)
+      }
+    }
+    deps.set(file, set);
+    for (const d of set) parse(d);
+  };
+  parse(ENTRY);
+  const color = new Map(), stack = [];
+  const cyc = [];
+  const dfs = (u) => {
+    color.set(u, 1); stack.push(u);
+    for (const v of (deps.get(u) || [])) {
+      if (color.get(v) === 1) {
+        const idx = stack.indexOf(v);
+        if (idx >= 0 && stack.length - idx >= 2) cyc.push(stack.slice(idx).concat(v));
+      } else if (!color.get(v)) dfs(v);
+    }
+    stack.pop(); color.set(u, 2);
+  };
+  dfs(ENTRY);
+  const relp = (f) => path.relative(ROOT, f).replace(/\\/g, '/');
+  const seen = new Set();
+  for (const c of cyc) {
+    const key = c.map(relp).sort().join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    fail('circular import in ScanPage tree: ' + c.map(relp).join(' → '));
+  }
+  if (cyc.length === 0) {
+    pass('no multi-node circular imports reachable from ScanPage (' + deps.size + ' modules)');
+  }
+})();
+
 // ─── Report ────────────────────────────────────────────────────
 if (FAILED.length > 0) {
   console.error('[check:scan-tdz] FAIL');
@@ -113,5 +178,5 @@ if (FAILED.length > 0) {
   console.error(`\n${PASSED.length} passed, ${FAILED.length} failed.`);
   process.exit(1);
 }
-console.log('[check:scan-tdz] PASS — no hook deps array references a later-declared binding.');
+console.log('[check:scan-tdz] PASS — no later-declared hook deps + no circular imports in the scan tree.');
 for (const p of PASSED) console.log('  ✓ ' + p);

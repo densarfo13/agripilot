@@ -1532,6 +1532,15 @@ export default function App() {
             await import('./runtime/startup/StartupHealthRuntime');
           installStartupHealthGlobal();
         } catch { /* never block boot */ }
+        // Polling-discipline diagnostic — pins __pollingHealth()
+        // {healthPollMs, localizationCached, authRefreshBackoffReady,
+        // diagnosticsThrottled, no429Loop} so the 429-storm fixes are
+        // observable on-device.
+        try {
+          const { installPollingHealthGlobal } =
+            await import('./runtime/polling/PollingHealthRuntime');
+          installPollingHealthGlobal();
+        } catch { /* never block boot */ }
       } catch { /* never block app boot */ }
       try {
         // Wave 8 — app store readiness composite. Probes classifier
