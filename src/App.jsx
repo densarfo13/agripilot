@@ -1296,6 +1296,20 @@ export default function App() {
             await import('./runtime/scanMetrics/ScanMetricsRuntime');
           installScanMetricsGlobal();
         } catch { /* never block boot */ }
+        // Operating System layer — funding subsystem readiness + the unified
+        // __farrowayHealth() composite over all subsystems. Pure read-only
+        // composition (no new AI); installed LAST so the composite can read
+        // every subsystem probe. Never blocks boot.
+        try {
+          const { installFundingHealthGlobal } =
+            await import('./runtime/funding/FundingRuntime');
+          installFundingHealthGlobal();
+        } catch { /* never block boot */ }
+        try {
+          const { installFarrowayHealthGlobal } =
+            await import('./runtime/os/FarrowayHealthRuntime');
+          installFarrowayHealthGlobal();
+        } catch { /* never block boot */ }
         // Wave 22 — Launch UX health composite. Pins
         // __launchUXHealth() which mirrors the 11 grower-flow
         // gates the launch-friction CI gate enforces statically.
