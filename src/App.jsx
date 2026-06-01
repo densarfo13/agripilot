@@ -1447,6 +1447,24 @@ export default function App() {
             await import('./runtime/mobileShell/MobileShellHealthRuntime');
           installMobileShellHealthGlobal();
         } catch { /* never block boot */ }
+        // Daily Assistant — task chain runtime + composite + 4 probes.
+        // Composite reads __taskChainHealth + __postHarvestHealth by name,
+        // so install order is: chain → composite → probes. Read-only;
+        // never blocks boot.
+        try {
+          const [
+            { installTaskChainHealthGlobal },
+            { installDailyAssistantGlobal },
+            { installDailyAssistantProbeGlobals },
+          ] = await Promise.all([
+            import('./runtime/dailyAssistant/TaskChainRuntime'),
+            import('./runtime/dailyAssistant/DailyAssistantRuntime'),
+            import('./runtime/dailyAssistant/DailyAssistantProbes'),
+          ]);
+          installTaskChainHealthGlobal();
+          installDailyAssistantGlobal();
+          installDailyAssistantProbeGlobals();
+        } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
         try {

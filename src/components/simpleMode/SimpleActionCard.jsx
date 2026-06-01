@@ -118,13 +118,11 @@ export default function SimpleActionCard({
         <span style={{ ...S.priorityChip, background: color + '1A', color }}>
           ● {tSafe(PRIORITY_LABEL_KEYS[priority], PRIORITY_LABEL_DEFAULTS[priority])}
         </span>
-        {voicePrompt ? (
-          <button type="button" style={S.voiceBtn} onClick={handleVoice}
-            aria-label={tSafe('simple.voice.play', 'Play voice')}
-            data-testid="simple-action-voice">
-            🔊
-          </button>
-        ) : null}
+        {/* Per-card voice button removed (Daily Assistant spec §6).
+            One page-level Listen button on SimpleHome reads the active
+            task's voice prompt; per-card speaker icons were duplicate
+            controls and added noise. handleVoice is still defined so a
+            future surface can opt back in if needed. */}
       </header>
 
       <p style={S.actionLabel}>{tSafe('simple.label.doThisNow', 'Do this now')}</p>
