@@ -279,6 +279,8 @@ const V7CommandCenterPage = lazy(() => import('./pages/internal/V7CommandCenterP
 const NGOIntelligencePage = lazy(() => import('./pages/internal/NGOIntelligencePage.jsx'));
 // V8 — next platform layer command center (admin only).
 const V8CommandCenterPage = lazy(() => import('./pages/internal/V8CommandCenterPage.jsx'));
+// V13 — institutional data/MLOps readiness command center (admin only).
+const V13CommandCenterPage = lazy(() => import('./pages/internal/V13CommandCenterPage.jsx'));
 // U.S. Backyard onboarding (FEATURE_US_BACKYARD_FLOW). Self-
 // redirects to /dashboard when the flag is off.
 const BackyardOnboarding = lazy(() => import('./pages/onboarding/BackyardOnboarding.jsx'));
@@ -1099,6 +1101,49 @@ export default function App() {
           installInstitutionalDataHealthGlobal();
           // Composite LAST — it reads the engine probes by name.
           installV8HealthGlobals();
+        } catch { /* never block boot */ }
+        // V13 — institutional data warehouse / MLOps / outcome-learning
+        // readiness. Ten pure, read-only readiness runtimes + the composite
+        // __v13Health. Self-contained (no deep imports), honest, NEEDS_DATA-
+        // aware. None block scan/upload/login — this only pins their probes.
+        try {
+          const [
+            { installEventSourcingHealthGlobal },
+            { installOutcomeLearningHealthGlobal },
+            { installRegionalNetworkHealthGlobal },
+            { installVoiceFirstHealthGlobal },
+            { installYieldPredictionReadinessHealthGlobal },
+            { installDataWarehouseHealthGlobal },
+            { installFeatureStoreHealthGlobal },
+            { installModelRegistryHealthGlobal },
+            { installAnalyticsExportHealthGlobal },
+            { installDataGovernanceHealthGlobal },
+            { installV13HealthGlobals },
+          ] = await Promise.all([
+            import('./runtime/v13/events/EventSourcingRuntime'),
+            import('./runtime/v13/outcomeLearning/OutcomeLearningRuntime'),
+            import('./runtime/v13/regionalNetwork/RegionalNetworkRuntime'),
+            import('./runtime/v13/voice/VoiceFirstReadinessRuntime'),
+            import('./runtime/v13/yield/YieldPredictionReadinessRuntime'),
+            import('./runtime/v13/warehouse/DataWarehouseReadiness'),
+            import('./runtime/v13/featureStore/FeatureStoreReadiness'),
+            import('./runtime/v13/modelRegistry/ModelRegistryReadiness'),
+            import('./runtime/v13/exports/AnalyticsExportRuntime'),
+            import('./runtime/v13/governance/DataGovernanceRuntime'),
+            import('./runtime/v13/V13HealthRuntime'),
+          ]);
+          installEventSourcingHealthGlobal();
+          installOutcomeLearningHealthGlobal();
+          installRegionalNetworkHealthGlobal();
+          installVoiceFirstHealthGlobal();
+          installYieldPredictionReadinessHealthGlobal();
+          installDataWarehouseHealthGlobal();
+          installFeatureStoreHealthGlobal();
+          installModelRegistryHealthGlobal();
+          installAnalyticsExportHealthGlobal();
+          installDataGovernanceHealthGlobal();
+          // Composite LAST — it reads the runtime probes by name.
+          installV13HealthGlobals();
         } catch { /* never block boot */ }
         try {
           const { installArtifactRuntimeGlobal } =
@@ -2215,6 +2260,8 @@ export default function App() {
           <Route path="/internal/ngo-intelligence" element={<RoleRoute roles={ADMIN_ROLES}><NGOIntelligencePage /></RoleRoute>} />
           {/* V8 — next platform layer command center (admin only). */}
           <Route path="/internal/v8"               element={<RoleRoute roles={ADMIN_ROLES}><V8CommandCenterPage /></RoleRoute>} />
+          {/* V13 — institutional data/MLOps readiness command center (admin only). */}
+          <Route path="/internal/v13"              element={<RoleRoute roles={ADMIN_ROLES}><V13CommandCenterPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
