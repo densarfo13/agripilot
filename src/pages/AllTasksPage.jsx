@@ -73,8 +73,23 @@ import {
 // farm imagery.
 import { getPageHeroImage } from '../constants/pageHeroImages.js';
 import TaskCompletionCelebration from '../components/tasks/TaskCompletionCelebration.jsx';
+import useSimpleMode from '../hooks/useSimpleMode.js';
+import SimpleTasks from '../components/simpleMode/SimpleTasks.jsx';
 
 export default function AllTasksPage() {
+  // Simple Mode renders a DEDICATED <SimpleTasks /> surface — hard split,
+  // no shared renderer with the Standard Tasks dashboard. Return early
+  // BEFORE any other hooks so the Standard renderer's hook tree is
+  // skipped entirely when Simple Mode is on.
+  const { enabled: simpleModeEnabled } = useSimpleMode();
+  if (simpleModeEnabled) return <SimpleTasks />;
+  return <StandardTasksPageBody />;
+}
+
+// The full standard renderer's body — extracted into its own function
+// component so the hard-split branch above can return early. All hooks
+// that previously sat at the top of AllTasksPage live here unchanged.
+function StandardTasksPageBody() {
   const navigate = useNavigate();
   const { currentFarmId, profile } = useProfile();
   const { t, lang } = useTranslation();
