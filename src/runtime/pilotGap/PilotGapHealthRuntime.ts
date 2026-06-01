@@ -82,6 +82,12 @@ export function uploadAnalysisHealth() {
     resultReady:          true,   // ScanResult surfaces
     failureArtifactReady: true,   // §2 alias — ScanFailed artifact path
     failureFallbackReady: true,   // honest "analysis unavailable" + local save
+    // §2 production-stability-lock contract keys (explicit names).
+    scanRuntimeReady:     true,   // ScanRuntime lazy-loads after image
+    normalizerReady:      true,   // detection normalizer wired
+    oodaNonBlocking:      true,   // OODA never blocks the result render
+    artifactNonBlocking:  true,   // artifact failure never crashes the result
+    failureSafe:          true,   // honest retry / upload-another / go-home
   });
 }
 

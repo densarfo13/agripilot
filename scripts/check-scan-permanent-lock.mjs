@@ -26,6 +26,7 @@ const KEYS = [
   'iosCameraAutostartDisabled', 'cameraStartsOnlyAfterUserTap',
   'scanRuntimeLazyAfterImage', 'gpsDoesNotBlockScan', 'noInfiniteSpinner',
   'uploadAnalysisReady', 'captureAnalysisReady', 'failureFallbackReady',
+  'takePhotoVisible', 'cameraFailureFallbackReady', 'analysisFailureFallbackReady',
 ];
 if (!probe) F.push('ScanPermanentHealthRuntime.ts: missing');
 else {

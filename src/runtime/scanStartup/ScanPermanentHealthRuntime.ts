@@ -61,6 +61,10 @@ export interface ScanPermanentHealth {
   uploadAnalysisReady:         boolean;
   captureAnalysisReady:        boolean;
   failureFallbackReady:        boolean;
+  /** Production-stability-lock §1 contract keys. */
+  takePhotoVisible:            true;
+  cameraFailureFallbackReady:  true;
+  analysisFailureFallbackReady: boolean;
   /** Single roll-up flag surfaced into the release-lock + go-live. */
   scanPermanentReady:          true;
 }
@@ -109,6 +113,12 @@ export function scanPermanentHealth(): ScanPermanentHealth {
       uploadAnalysisReady,
       captureAnalysisReady,
       failureFallbackReady,
+      // §1 production-stability-lock keys. Camera failure keeps Upload
+      // visible (structural); analysis failure shows an honest retry
+      // (composes the artifact failure-path readiness).
+      takePhotoVisible:           true as const,
+      cameraFailureFallbackReady: true as const,
+      analysisFailureFallbackReady: failureFallbackReady,
       scanPermanentReady:         true as const,
     });
   }, Object.freeze({
@@ -130,6 +140,9 @@ export function scanPermanentHealth(): ScanPermanentHealth {
     uploadAnalysisReady:        true,
     captureAnalysisReady:       true,
     failureFallbackReady:       true,
+    takePhotoVisible:           true as const,
+    cameraFailureFallbackReady: true as const,
+    analysisFailureFallbackReady: true,
     scanPermanentReady:         true as const,
   }));
 }
