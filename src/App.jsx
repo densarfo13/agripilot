@@ -1419,6 +1419,23 @@ export default function App() {
           // Composite LAST — it reads the 4 sub-probes by name.
           installGrowShareCompositeGlobals();
         } catch { /* never block boot */ }
+        // Simple Mode — action-first, low-literacy diagnostics + voice +
+        // OODA/artifact attestation. Read-only; never blocks boot.
+        try {
+          const [
+            { installSimpleModeGlobal },
+            { installSimpleModeVoiceGlobal },
+            { installSimpleModeOODAGlobals },
+          ] = await Promise.all([
+            import('./runtime/simpleMode/SimpleModeRuntime'),
+            import('./runtime/simpleMode/SimpleModeVoiceRuntime'),
+            import('./runtime/simpleMode/SimpleModeOODARuntime'),
+          ]);
+          installSimpleModeGlobal();
+          installSimpleModeVoiceGlobal();
+          // OODA + artifact composite LAST.
+          installSimpleModeOODAGlobals();
+        } catch { /* never block boot */ }
         // Notification runtime — read-only diagnostic + contract layer over
         // the existing src/lib/notifications/* JS surface. Pins 6 globals
         // (__notificationHealth + preferences/delivery/queue/OODA/artifact).

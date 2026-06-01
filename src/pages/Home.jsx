@@ -83,6 +83,8 @@ import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import DailyFarmPlanCard          from '../components/home/DailyFarmPlanCard.jsx';
 import NotificationBell           from '../components/NotificationBell.jsx';
+import useSimpleMode              from '../hooks/useSimpleMode.js';
+import SimpleModeHomeSection      from '../components/simpleMode/SimpleModeHomeSection.jsx';
 // MemoryMomentLine removed from the lean immersive layout (the
 // hero's action band carries the "what next" line). Component
 // stays in the codebase for other surfaces that may use it.
@@ -249,6 +251,9 @@ function _resolveLocationLabel(farm) {
 
 // ─── Component ──────────────────────────────────────────────────
 export default function Home() {
+  // Simple Mode preference — when ON, render an action-first top section
+  // above the standard DailyFarmPlanCard. Never blocks the rest of Home.
+  const { enabled: simpleModeEnabled } = useSimpleMode();
   // Permanent Farmer Home spec §7 — dev-only assertion. If any
   // future commit reintroduces a parallel Home component (a new
   // PilotHome / GardenHome / SimpleHome / etc.) and that component
@@ -945,6 +950,18 @@ export default function Home() {
                   : () => { try { navigate('/tasks'); } catch { /* swallow */ } })}
           />
         </FeatureShell>
+
+        {/* ── 3a. Simple Mode top section ─────────────────────
+             When the user has Simple Mode ON (low-literacy / voice-first
+             surface), this action-first card appears above the standard
+             daily plan. ONE primary action + UP TO 2 secondary actions,
+             each with Why / When / Done + voice. Self-contained, error-
+             boundary-guarded; renders nothing when Simple Mode is OFF. */}
+        {simpleModeEnabled ? (
+          <FeatureShell name="simple-mode-home" silent>
+            <SimpleModeHomeSection />
+          </FeatureShell>
+        ) : null}
 
         {/* ── 3b. Today's Farm/Garden Plan ─────────────────────
              The day-to-day operating loop: top priority + up to

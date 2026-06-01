@@ -97,6 +97,10 @@ import { NOTIFICATION_TRANSLATIONS }           from './notificationTranslations.
 // feed filter chips, feed action labels. English base; other locales fall
 // back (translator-review).
 import { COMMUNITY_TRANSLATIONS }              from './communityTranslations.js';
+// Simple Mode action-first overlay — short, low-literacy copy for the
+// action-card UI (Home / Tasks / Daily Plan / Scan / Post-Harvest).
+// English base; other locales fall back (translator-review).
+import { SIMPLE_MODE_ACTION_TRANSLATIONS }     from './simpleModeActionTranslations.js';
 // Production-incident gap overlay (May 2026) — fills the
 // JournalPage / ImmersiveHomeHero / LiveCameraScanner keys that
 // were wrapped in tSafe() but had no entries in any locale column.
@@ -222,6 +226,17 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   // 1e1d. Community grow-share overlay. Same empty-slot merge contract.
   for (const key of Object.keys(COMMUNITY_TRANSLATIONS)) {
     const row = COMMUNITY_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e1e. Simple Mode action-first overlay. Same empty-slot merge contract.
+  for (const key of Object.keys(SIMPLE_MODE_ACTION_TRANSLATIONS)) {
+    const row = SIMPLE_MODE_ACTION_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {

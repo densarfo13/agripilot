@@ -107,7 +107,19 @@ export default function Settings() {
             helper={tSafe(t, 'settings.simpleModeHelper',
               'Bigger icons, fewer words, voice plays automatically.')}
             value={settings.simpleMode}
-            onChange={(v) => setValue('simpleMode', v)}
+            onChange={(v) => {
+              setValue('simpleMode', v);
+              // Bridge — the action-first SimpleModeRuntime reads this
+              // explicit key; legacy 'farroway_simple_mode_v1' is still
+              // honored as a fallback inside the runtime.
+              try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                  window.localStorage.setItem('farroway_simple_mode_enabled', v ? 'true' : 'false');
+                  window.localStorage.setItem('farroway_simple_mode_v1', v ? 'simple' : 'standard');
+                  try { window.dispatchEvent(new Event('farroway:simpleModeChanged')); } catch { /* swallow */ }
+                }
+              } catch { /* swallow */ }
+            }}
             testId="setting-simple-mode"
             isLast
           />
