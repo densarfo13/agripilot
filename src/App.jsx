@@ -1289,6 +1289,13 @@ export default function App() {
             await import('./runtime/scanDetection/ScanDetectionRuntime');
           installScanDetectionGlobals();
         } catch { /* never block boot */ }
+        // V13 pilot lock — scan reliability metrics (data collection only;
+        // architecture frozen). Pure read-only probe; never blocks boot.
+        try {
+          const { installScanMetricsGlobal } =
+            await import('./runtime/scanMetrics/ScanMetricsRuntime');
+          installScanMetricsGlobal();
+        } catch { /* never block boot */ }
         // Wave 22 — Launch UX health composite. Pins
         // __launchUXHealth() which mirrors the 11 grower-flow
         // gates the launch-friction CI gate enforces statically.
