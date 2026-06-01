@@ -268,6 +268,8 @@ const PerformancePage  = lazy(() => import('./pages/internal/PerformancePage.jsx
 const I18nQAPage       = lazy(() => import('./pages/internal/I18nQAPage.jsx'));
 const OfflineQAPage    = lazy(() => import('./pages/internal/OfflineQAPage.jsx'));
 const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage.jsx'));
+const CommunityFeedPage = lazy(() => import('./pages/CommunityFeedPage.jsx'));
+const CommunityModerationPage = lazy(() => import('./pages/internal/CommunityModerationPage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // Wave-36 — outcome intelligence pages (admin only).
 const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
@@ -1393,6 +1395,30 @@ export default function App() {
           // Composite LAST — it reads the 10 proof probes by name.
           installFinalPilotProofGlobals();
         } catch { /* never block boot */ }
+        // Community grow-share runtimes — private-first share + privacy
+        // guard + interaction + NGO evidence + artifact/OODA composite.
+        // All read-only diagnostics; never block app or write to DB.
+        try {
+          const [
+            { installCommunityPrivacyGuardGlobal },
+            { installGrowShareGlobal },
+            { installCommunityInteractionGlobal },
+            { installNGOEvidenceShareGlobal },
+            { installGrowShareCompositeGlobals },
+          ] = await Promise.all([
+            import('./runtime/community/CommunityPrivacyGuard'),
+            import('./runtime/community/GrowShareRuntime'),
+            import('./runtime/community/CommunityInteractionRuntime'),
+            import('./runtime/community/NGOEvidenceShareRuntime'),
+            import('./runtime/community/GrowShareCompositeRuntime'),
+          ]);
+          installCommunityPrivacyGuardGlobal();
+          installGrowShareGlobal();
+          installCommunityInteractionGlobal();
+          installNGOEvidenceShareGlobal();
+          // Composite LAST — it reads the 4 sub-probes by name.
+          installGrowShareCompositeGlobals();
+        } catch { /* never block boot */ }
         // Notification runtime — read-only diagnostic + contract layer over
         // the existing src/lib/notifications/* JS surface. Pins 6 globals
         // (__notificationHealth + preferences/delivery/queue/OODA/artifact).
@@ -2431,6 +2457,7 @@ export default function App() {
           <Route path="/internal/v13"              element={<RoleRoute roles={ADMIN_ROLES}><V13CommandCenterPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
           <Route path="/internal/qa/offline" element={<RoleRoute roles={ADMIN_ROLES}><OfflineQAPage /></RoleRoute>} />
+          <Route path="/internal/community-moderation" element={<RoleRoute roles={ADMIN_ROLES}><CommunityModerationPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
               mounted without any RoleRoute; the founder-readiness
@@ -3051,6 +3078,7 @@ export default function App() {
             */}
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+            <Route path="/community" element={<CommunityFeedPage />} />
             <Route path="/farmer-settings" element={<FarmerSettingsPage />} />
             {/* App Store launch audit: /scan-crop → /scan canonical
                 redirect per spec §8. The legacy CameraScanPage is

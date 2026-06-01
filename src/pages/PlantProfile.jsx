@@ -49,6 +49,7 @@ import { getLatestComparisonForPlant }  from '../runtime/outcomeComparison';
 // Wave-31 H5 — planting-date capture wires into the wave-30 API.
 // recordPlantingDate / getPlantingDate are pure; composition
 // over the canonical farroway.plantingDates localStorage map.
+import ShareUpdateButton           from '../components/community/ShareUpdateButton.jsx';
 import { recordPlantingDate, getPlantingDate }
   from '../runtime/growth';
 
@@ -269,6 +270,20 @@ export default function PlantProfile() {
           {tSafe('plantProfile.stage', 'Stage')}: {focused.lifecycleStage || focused.growthStage || '—'}
           {focused.subtype ? ' · ' + focused.subtype : ''}
         </p>
+        {/* Share Update — opens a guarded modal. Default visibility is
+            private; the user explicitly picks a wider tier. Never includes
+            precise GPS or private farm data. */}
+        <div style={{ marginTop: 12 }}>
+          <ShareUpdateButton
+            plantId={focused.id || catalogId}
+            plantName={focused.commonName}
+            cropKey={focused.cropKey || catalogId}
+            growthStage={focused.lifecycleStage || focused.growthStage}
+            healthStatus={focused.healthLabel || focused.healthStatus}
+            scanSummary={focused.latestScanSummary || null}
+            defaultType="plant_update"
+          />
+        </div>
       </section>
 
       <div style={S.statsRow}>

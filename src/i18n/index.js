@@ -93,6 +93,10 @@ import { DAILY_PLAN_TRANSLATIONS }             from './dailyPlanTranslations.js'
 // other locales fall back to English (translator-review). Same shape and
 // empty-slot merge contract as the overlays above.
 import { NOTIFICATION_TRANSLATIONS }           from './notificationTranslations.js';
+// Community grow-share overlay — share modal copy, visibility tiers,
+// feed filter chips, feed action labels. English base; other locales fall
+// back (translator-review).
+import { COMMUNITY_TRANSLATIONS }              from './communityTranslations.js';
 // Production-incident gap overlay (May 2026) — fills the
 // JournalPage / ImmersiveHomeHero / LiveCameraScanner keys that
 // were wrapped in tSafe() but had no entries in any locale column.
@@ -207,6 +211,17 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //       Same empty-slot merge contract.
   for (const key of Object.keys(NOTIFICATION_TRANSLATIONS)) {
     const row = NOTIFICATION_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e1d. Community grow-share overlay. Same empty-slot merge contract.
+  for (const key of Object.keys(COMMUNITY_TRANSLATIONS)) {
+    const row = COMMUNITY_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {

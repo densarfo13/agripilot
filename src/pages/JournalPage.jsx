@@ -39,6 +39,7 @@ import { PremiumPage, PremiumPageHero } from '../components/premium/index.js';
 import { resolveJournalImage } from '../lib/realVisuals.jsx';
 import usePlantTimeline from '../hooks/usePlantTimeline.js';
 import usePlantIdentity from '../hooks/usePlantIdentity.js';
+import ShareUpdateButton from '../components/community/ShareUpdateButton.jsx';
 // Elite Garden spec §2 + §7 — calm observational line above the
 // timeline. Pure module; never throws; returns null when the
 // plant is brand-new and the caller falls through to the empty
@@ -179,6 +180,20 @@ export default function JournalPage() {
         accent={heroAccent}
         testId="journal-hero"
       />
+
+      {/* Share Progress — convert a timeline moment to a community grow
+          post. Default visibility is private; user explicitly picks a
+          wider tier. Never blocks the journal render. */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '12px 0 4px' }}>
+        <ShareUpdateButton
+          plantId={plant && plant.id}
+          plantName={plant && plant.nickname}
+          cropKey={canonicalCropDisplay || (plant && plant.plantType)}
+          growthStage={plant && plant.growthStage}
+          healthStatus={plant && plant.healthStatus}
+          defaultType="plant_update"
+        />
+      </div>
 
       {/* Plant identity card — calm context line. Tap to edit. */}
       <section
