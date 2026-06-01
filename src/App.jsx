@@ -1520,6 +1520,14 @@ export default function App() {
             // Farm risk last — composes over the other 3 + predictive + weather.
             installFarmRiskGlobal();
           } catch { /* swallow */ }
+          // Command Center — single source of truth for the 9 Home fields.
+          // Installed LAST so every backing probe is already pinned and the
+          // composite reads the freshest snapshot of each.
+          try {
+            const { installCommandCenterGlobal } =
+              await import('./runtime/commandCenter/CommandCenterRuntime');
+            installCommandCenterGlobal();
+          } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.

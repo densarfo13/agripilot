@@ -13,6 +13,7 @@
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import SimpleActionCard from './SimpleActionCard.jsx';
+import CommandCenterDeck from '../commandCenter/CommandCenterDeck.jsx';
 import { useNavigate } from 'react-router-dom';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
@@ -95,6 +96,10 @@ function SimpleModeHomeSectionInner() {
       data-surface="home"
       data-active-task-id={primary ? primary.id : ''}
       data-active-task-title={primary ? primary.actionDefault : ''}>
+      {/* Command Center deck — single source of truth for the 9 Home
+          fields. Renders ABOVE Today's Action; pages consuming the same
+          envelope show identical values. */}
+      <CommandCenterDeck />
       <p style={S.eyebrow}>{tSafe('simple.home.eyebrow', "Today's Action")}</p>
       {primary ? (
         <SimpleActionCard
