@@ -82,6 +82,7 @@ import useFarmHealth             from '../hooks/useFarmHealth.js';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import DailyFarmPlanCard          from '../components/home/DailyFarmPlanCard.jsx';
+import NotificationBell           from '../components/NotificationBell.jsx';
 // MemoryMomentLine removed from the lean immersive layout (the
 // hero's action band carries the "what next" line). Component
 // stays in the codebase for other surfaces that may use it.
@@ -884,12 +885,24 @@ export default function Home() {
                 {tSafe('home.streakDayCount', '{n}-day streak').replace('{n}', habit.streak)}
               </span>
             )}
-            <span style={S.statusPill}>
-              <span style={S.statusDot} />
-              <span>{weatherLoading
-                ? tSafe('home.weatherStatusUpdating', 'Updating…')
-                : tSafe('home.weatherStatusLive', 'Live')}</span>
-            </span>
+            {/* Header actions — Notification bell + Menu. Placed in the
+                exact slot the "Updating…/Live" status pill used to occupy,
+                aligned top-right of the main content area. No status
+                badges: connection / freshness is communicated via the
+                weather card itself, never as a chrome chip. The bell
+                preserves its unread-count badge; the menu navigates to
+                the existing Settings page (no new navigation behavior). */}
+            <div style={S.headerActions} data-testid="home-header-actions">
+              <NotificationBell ariaLabel="Notifications" testId="home-bell" />
+              <Link
+                to="/settings"
+                aria-label="Menu"
+                style={S.menuBtn}
+                data-testid="home-menu"
+              >
+                <span aria-hidden="true">☰</span>
+              </Link>
+            </div>
           </div>
         </header>
 
@@ -1151,21 +1164,37 @@ const S = {
     fontWeight:    800,
     letterSpacing: '-0.01em',
   },
-  statusPill: {
+  // Header actions row — Bell + Menu cluster. Replaces the former
+  // status pill in the same top-right slot. Inline-flex so the cluster
+  // tracks the greeting baseline; gap is tight so the two buttons read
+  // as one control group; flexShrink:0 so the cluster never wraps to a
+  // new line on narrow viewports (iPhone Safari).
+  headerActions: {
     display:      'inline-flex',
     alignItems:   'center',
     gap:          '0.4rem',
-    padding:      '0.3rem 0.6rem',
-    // May 2026 token forward — was rgba(94,142,94,*) (old olive).
-    // Resolves to the locked #6E8B61 oliveSoft via greenSoft +
-    // greenBorder which both use rgba(110,139,97,*).
-    background:   T.greenSoft,
-    border:       `1px solid ${T.greenBorder}`,
-    borderRadius: '999px',
-    fontSize:     '0.75rem',
-    fontWeight:   700,
-    color:        T.greenInk,
     flexShrink:   0,
+  },
+  // Single icon button — calm chip style matching the rest of the
+  // surface. Used by the Menu link; the NotificationBell brings its
+  // own circular icon button inside.
+  menuBtn: {
+    display:         'inline-flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    width:           38,
+    height:          38,
+    borderRadius:    '50%',
+    background:      T.greenSoft,
+    border:          `1px solid ${T.greenBorder}`,
+    color:           T.greenInk,
+    fontSize:        '1.05rem',
+    fontWeight:      700,
+    textDecoration:  'none',
+    flexShrink:      0,
+    // iOS Safari tap target — ensure pointer events read cleanly.
+    cursor:          'pointer',
+    WebkitTapHighlightColor: 'transparent',
   },
   statusDot: {
     width:        8,

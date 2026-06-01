@@ -45,6 +45,11 @@ const TYPE_META = {
 export default function NotificationBell({
   userId,
   testId = 'notification-bell',
+  // Optional override for the bell button's aria-label. When unset, falls
+  // back to the existing tSafe('notifications.aria', 'Open notifications')
+  // lookup. Home passes the literal "Notifications" so the page-level
+  // header-cleanup gate can verify the accessible name unambiguously.
+  ariaLabel,
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -110,7 +115,7 @@ export default function NotificationBell({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={tSafe('notifications.aria',
+        aria-label={ariaLabel || tSafe('notifications.aria',
           'Open notifications')}
         aria-haspopup="true"
         aria-expanded={open}
