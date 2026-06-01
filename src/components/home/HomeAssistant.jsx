@@ -264,18 +264,15 @@ export default function HomeAssistant({
   return (
     <div className="home-assistant" data-testid="home-assistant">
 
-      {/* TOP BAR */}
+      {/* TOP BAR — Online badge removed app-wide (premium mobile UI spec).
+          Connectivity is surfaced only when offline, never as a passive
+          green badge. */}
       <div className="home-topbar" data-testid="home-topbar">
-        {isOnline ? (
-          <span className="home-topbar__online">
-            <span className="home-topbar__online-dot" aria-hidden="true" />
-            Online
-          </span>
-        ) : (
+        {!isOnline ? (
           <span className="home-topbar__offline">
             ● Offline
           </span>
-        )}
+        ) : null}
         <span className="home-topbar__lang">{language}</span>
       </div>
 

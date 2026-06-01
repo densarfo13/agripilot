@@ -1439,6 +1439,14 @@ export default function App() {
           installActionContextGlobal();
           installVoiceFloatingButtonGlobal();
         } catch { /* never block boot */ }
+        // Premium mobile shell composite — depends on __headerHealth +
+        // __voiceFloatingButtonHealth being installed earlier in the boot,
+        // so it MUST run after the polish-wave block above.
+        try {
+          const { installMobileShellHealthGlobal } =
+            await import('./runtime/mobileShell/MobileShellHealthRuntime');
+          installMobileShellHealthGlobal();
+        } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
         try {
