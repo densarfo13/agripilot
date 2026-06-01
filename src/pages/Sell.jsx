@@ -117,6 +117,21 @@ export default function Sell() {
     import('../runtime/dailyAssistant/DailyAssistantConsumerRuntime')
       .then((m) => { try { m.recordConsumerIntegration('sell'); } catch { /* swallow */ } })
       .catch(() => { /* swallow */ });
+    // Command Center consumer integration: Sell branches on
+    // selectSellReadiness().unlocked + selectMarketDemand() from the
+    // canonical command-center selectors. The local sellUnlocked state
+    // mirrors the CC value so existing branch logic keeps working.
+    import('../runtime/command-center/CommandCenterSelectors')
+      .then((m) => {
+        try {
+          const ccUnlocked = m.selectSellReadiness().unlocked === true;
+          if (alive && ccUnlocked) setSellUnlocked(true);
+        } catch { /* swallow */ }
+      })
+      .catch(() => { /* swallow */ });
+    import('../runtime/command-center/CommandCenterRuntime')
+      .then((m) => { try { m.recordCommandCenterIntegration('sell'); } catch { /* swallow */ } })
+      .catch(() => { /* swallow */ });
     return () => { alive = false; };
   }, []);
 
@@ -604,7 +619,9 @@ export default function Sell() {
               • !READY → "Prepare listing draft" — same form fields,
                          just calmer copy so the farmer knows the
                          harvest gate hasn't fired yet. */}
-        <p style={S.lead} data-consumes="dailyAssistant" data-surface="sell"
+        <p style={S.lead}
+          data-consumes="dailyAssistant" data-surface="sell"
+          data-cc-consumes="commandCenter" data-cc-surface="sell"
           data-sell-unlocked={sellUnlocked ? 'true' : 'false'}>
           {sellUnlocked ? (
             canonicalCropDisplay

@@ -50,6 +50,7 @@ import {
   PremiumPage, PremiumPageHero,
 } from '../components/premium/index.js';
 import FarmSnapshotCard from '../components/farm/FarmSnapshotCard.jsx';
+import FarmStatusCard from '../components/commandCenter/FarmStatusCard.jsx';
 import FarmManageSheet from '../components/farm/FarmManageSheet.jsx';
 import FarmOpportunitiesCard from '../components/farm/FarmOpportunitiesCard.jsx';
 // Strict no-English-leak alias — see useStrictTranslation.js header.
@@ -582,6 +583,11 @@ export default function MyFarmPage() {
           forceShow
         />
       </PremiumPageHero>
+
+      {/* ── Farm Status (Command Center) ──────────────────────
+          TOP card per spec. Reads ONLY through CommandCenterRuntime
+          selectors — never recomputes Crop/Stage/Health/Risk locally. */}
+      <FarmStatusCard />
 
       {/* ── Plant Companion (Garden Mode only) ─────────────────
           Compact card with the active plant's nickname + an Edit

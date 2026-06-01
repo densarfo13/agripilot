@@ -1520,13 +1520,24 @@ export default function App() {
             // Farm risk last — composes over the other 3 + predictive + weather.
             installFarmRiskGlobal();
           } catch { /* swallow */ }
-          // Command Center — single source of truth for the 9 Home fields.
-          // Installed LAST so every backing probe is already pinned and the
+          // Command Center v2 — spec-canonical 4-file split at
+          // src/runtime/command-center/. Owns __commandCenterHealth and
+          // exposes selectors that every consuming page reads. Installed
+          // LAST so every backing probe is already pinned and the
           // composite reads the freshest snapshot of each.
           try {
-            const { installCommandCenterGlobal } =
-              await import('./runtime/commandCenter/CommandCenterRuntime');
-            installCommandCenterGlobal();
+            const [
+              { installCommandCenterRuntimeGlobal },
+              { installWeeklyFarmReviewGlobal },
+              { installFieldOfficerCommandCenterGlobal },
+            ] = await Promise.all([
+              import('./runtime/command-center/CommandCenterRuntime'),
+              import('./runtime/command-center/WeeklyFarmReviewRuntime'),
+              import('./runtime/command-center/FieldOfficerCommandCenter'),
+            ]);
+            installCommandCenterRuntimeGlobal();
+            installWeeklyFarmReviewGlobal();
+            installFieldOfficerCommandCenterGlobal();
           } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +

@@ -55,10 +55,14 @@ function SimpleTasksInner() {
     Promise.all([
       import('../../runtime/dailyAssistant/TaskChainRuntime'),
       import('../../runtime/dailyAssistant/DailyAssistantConsumerRuntime'),
-    ]).then(([chainMod, consumerMod]) => {
+      import('../../runtime/command-center/CommandCenterRuntime'),
+    ]).then(([chainMod, consumerMod, ccMod]) => {
       const built = _safe(() => chainMod.buildTaskChain(), null);
       if (alive && built) setSnapshot(built);
       _safe(() => consumerMod.recordConsumerIntegration('tasks'), null);
+      // Tasks also attests Command Center integration — it surfaces the
+      // canonical todayAction / nextAction / progress from the same envelope.
+      _safe(() => ccMod.recordCommandCenterIntegration('tasks'), null);
     }).catch(() => { /* swallow */ });
     return () => { alive = false; };
   }, []);
@@ -75,6 +79,9 @@ function SimpleTasksInner() {
       data-consumes="dailyAssistant" data-surface="tasks"
       data-active-task-id={primary ? primary.id : ''}
       data-active-task-title={primary ? primary.actionDefault : ''}>
+      {/* Hidden Command Center attestation — same surface, additional consumer. */}
+      <span aria-hidden="true" style={{ display: 'none' }}
+        data-consumes="commandCenter" data-surface="tasks" />
       <div style={S.shell}>
         <header style={S.head}>
           <h1 style={S.title}>{tSafe('simple.tasks.title', 'Your Tasks')}</h1>

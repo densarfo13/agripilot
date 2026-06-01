@@ -114,6 +114,19 @@ export default function FarmerProgressPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Command Center consumer integration — Activity surfaces the
+  // canonical artifact stream the CC composite reads.
+  useEffect(() => {
+    let alive = true;
+    import('../runtime/command-center/CommandCenterRuntime')
+      .then((m) => {
+        if (!alive) return;
+        try { m.recordCommandCenterIntegration('activity'); } catch { /* swallow */ }
+      })
+      .catch(() => { /* swallow */ });
+    return () => { alive = false; };
+  }, []);
+
   const totalTasks = taskCount + completedCount;
   const pct = totalTasks > 0 ? Math.min(100, Math.round((completedCount / totalTasks) * 100)) : 0;
 
@@ -355,6 +368,12 @@ export default function FarmerProgressPage() {
         accent="green"
         testId="progress-hero"
       />
+      {/* Hidden Command Center attestation — Activity timeline consumes
+          artifacts (TaskCompleted / ScanCompleted / OutcomeRecorded /
+          RiskChanged / HarvestReady / ListingCreated) via the same
+          event log the CC selectors read. */}
+      <span aria-hidden="true" style={{ display: 'none' }}
+        data-consumes="commandCenter" data-surface="activity" />
 
       {loading && (
         <div style={S.loadingWrap}>

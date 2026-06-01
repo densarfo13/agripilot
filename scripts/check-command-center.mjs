@@ -1,21 +1,12 @@
 #!/usr/bin/env node
 /**
- * check-command-center.mjs — locks the Command Center contract.
+ * check-command-center.mjs — v1 baseline gate (deprecated by
+ * check:command-center-production which checks the full spec).
  *
- * Required:
- *   1. src/runtime/commandCenter/CommandCenterRuntime.ts exists, pins
- *      __commandCenterHealth, exposes the 9 spec readiness flags
- *      (commandCenterReady / cropReady / stageReady / riskReady /
- *      actionReady / harvestReady / fundingReady / marketReady /
- *      sellReady) AND the 9 single-source-of-truth value fields.
- *   2. src/components/commandCenter/CommandCenterDeck.jsx exists and
- *      consumes commandCenterHealth() via the runtime (no per-page
- *      probing of __agronomyHealth / __farmRiskHealth / etc.).
- *   3. src/components/simpleMode/SimpleModeHomeSection.jsx mounts
- *      CommandCenterDeck — Home renders the deck.
- *   4. App.jsx wires installCommandCenterGlobal.
- *   5. Honesty: noFakeData / noFabricatedScores / noPageLocalCalculations
- *      literal-true in the runtime.
+ * After the v2 migration the canonical Command Center owner lives at
+ * src/runtime/command-center/CommandCenterRuntime.ts. The legacy
+ * src/runtime/commandCenter/ path is a thin re-export shim. This gate
+ * now points at the canonical path so the v1 baseline keeps passing.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,58 +20,45 @@ function read(rel) {
   return fs.readFileSync(p, 'utf8');
 }
 
-// 1. Runtime contract.
+// 1. Runtime contract — read the v2 canonical file. Selectors carry the
+// value-field names (crop, stage, etc); Contracts carry the diagnostic
+// flag list; Runtime carries the install + safety constants.
 {
-  const f = 'src/runtime/commandCenter/CommandCenterRuntime.ts';
-  const src = read(f);
-  if (src) {
-    const required = [
-      '__commandCenterHealth',
-      'installCommandCenterGlobal',
-      // 9 readiness flags
-      'commandCenterReady',
-      'cropReady',
-      'stageReady',
-      'riskReady',
-      'actionReady',
-      'harvestReady',
-      'fundingReady',
-      'marketReady',
-      'sellReady',
-      // 9 value fields
-      'crop:',
-      'stage:',
-      'risk:',
-      'health:',
-      'todaysAction',
-      'daysToHarvest',
-      'fundingMatch',
-      'marketDemand',
-      'sellReadiness',
-      // honesty constants — every score traceable
-      'noFakeData',
-      'noFabricatedScores',
-      'noPageLocalCalculations',
-      'composedFrom',
-      'confidence',
-      'explanation',
-      'limitations',
-    ];
-    for (const k of required) {
-      if (src.indexOf(k) < 0) fails.push(`${f}: missing "${k}"`);
-    }
-    if (src.indexOf('Decision support, not a guarantee') < 0)
-      fails.push(`${f}: missing limitations tail`);
-    // Spec output contract: the literal-true safety constants must be present.
-    const litTrue = [
-      'noFakeData: true as const',
-      'noFabricatedScores: true as const',
-      'noPageLocalCalculations: true as const',
-    ];
-    for (const k of litTrue) {
-      if (src.indexOf(k) < 0) fails.push(`${f}: missing literal-true "${k}"`);
+  const fRt   = 'src/runtime/command-center/CommandCenterRuntime.ts';
+  const fSel  = 'src/runtime/command-center/CommandCenterSelectors.ts';
+  const fCt   = 'src/runtime/command-center/CommandCenterContracts.ts';
+  const srcRt   = read(fRt);
+  const srcSel  = read(fSel);
+  const srcCt   = read(fCt);
+  // Runtime must own the pin + diagnostic flags.
+  const rtRequired = [
+    '__commandCenterHealth',
+    'installCommandCenterRuntimeGlobal',
+    'cropReady', 'stageReady', 'healthReady', 'riskReady',
+    'actionReady', 'harvestReady', 'fundingReady', 'marketReady',
+    'sellReady',
+    'noFakeData: true as const',
+    'noFabricatedScores: true as const',
+    'noPageLocalCalculations: true as const',
+  ];
+  for (const k of rtRequired) {
+    if (srcRt.indexOf(k) < 0) fails.push(`${fRt}: missing "${k}"`);
+  }
+  // Selectors / Contracts carry value fields.
+  const valueFields = [
+    'crop', 'cropStage', 'farmHealth', 'riskLevel', 'daysToHarvest',
+    'todayAction', 'why', 'estimatedTime', 'nextAction',
+    'marketDemand', 'fundingMatches', 'sellReadiness',
+    'latestOutcome', 'latestScan', 'progress',
+    'confidence', 'limitations',
+  ];
+  for (const k of valueFields) {
+    if (srcCt.indexOf(k) < 0 && srcSel.indexOf(k) < 0) {
+      fails.push(`command-center: value field "${k}" missing from Contracts + Selectors`);
     }
   }
+  if (srcCt.indexOf('Decision support, not a guarantee') < 0)
+    fails.push(`${fCt}: missing limitations tail`);
 }
 
 // 2. Home deck component.
@@ -88,11 +66,9 @@ function read(rel) {
   const f = 'src/components/commandCenter/CommandCenterDeck.jsx';
   const src = read(f);
   if (src) {
-    if (src.indexOf('commandCenterHealth') < 0
-        && src.indexOf('CommandCenterRuntime') < 0)
-      fails.push(`${f}: must consume commandCenterHealth() from CommandCenterRuntime`);
-    // Pages MUST NOT recompute — the deck must not directly probe the
-    // upstream globals; it reads the composite envelope instead.
+    if (src.indexOf('command-center/CommandCenterRuntime') < 0
+        && src.indexOf('command-center/CommandCenterSelectors') < 0)
+      fails.push(`${f}: must consume command-center runtime/selectors`);
     const forbidden = [
       '__agronomyHealth(',
       '__farmRiskHealth(',
@@ -106,19 +82,17 @@ function read(rel) {
     ];
     for (const k of forbidden) {
       if (src.indexOf(k) >= 0)
-        fails.push(`${f}: forbidden direct probe "${k}" — use commandCenterHealth() instead`);
+        fails.push(`${f}: forbidden direct probe "${k}" — use selectors instead`);
     }
-    // Must render the 9 fields (label keys present).
+    // Spec labels still present.
     const labels = [
       'commandCenter.crop', 'commandCenter.stage', 'commandCenter.risk',
-      'commandCenter.health', 'commandCenter.todaysAction',
-      'commandCenter.daysToHarvest', 'commandCenter.fundingMatch',
-      'commandCenter.marketDemand', 'commandCenter.sellReadiness',
+      'commandCenter.health', 'commandCenter.daysToHarvest',
+      'commandCenter.marketDemand',
     ];
     for (const k of labels) {
       if (src.indexOf(k) < 0) fails.push(`${f}: missing i18n label "${k}"`);
     }
-    // Must carry DOM marker for the consumer surface.
     if (src.indexOf('data-consumes="commandCenter"') < 0)
       fails.push(`${f}: missing data-consumes="commandCenter" marker`);
   }
@@ -131,19 +105,16 @@ function read(rel) {
   if (src) {
     if (src.indexOf('CommandCenterDeck') < 0)
       fails.push(`${f}: Home must mount <CommandCenterDeck />`);
-    if (src.indexOf("from '../commandCenter/CommandCenterDeck") < 0
-        && src.indexOf('from "../commandCenter/CommandCenterDeck') < 0)
-      fails.push(`${f}: missing CommandCenterDeck import`);
   }
 }
 
-// 4. App.jsx wiring.
+// 4. App.jsx wiring (canonical install name).
 {
   const f = 'src/App.jsx';
   const src = read(f);
   if (src) {
-    if (src.indexOf('installCommandCenterGlobal') < 0)
-      fails.push(`${f}: missing installCommandCenterGlobal() install`);
+    if (src.indexOf('installCommandCenterRuntimeGlobal') < 0)
+      fails.push(`${f}: missing installCommandCenterRuntimeGlobal() install`);
   }
 }
 

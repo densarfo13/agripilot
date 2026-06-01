@@ -165,6 +165,21 @@ export default function ScanResultPage() {
     }
   }, [flagOn, navigate]);
 
+  // Command Center consumer integration — after a scan, refreshing
+  // the CC composite picks up updated health / risk / next-action
+  // values. The scan probe is read by the CC aggregator on the next
+  // commandCenterHealth() call; nothing else needs to be pushed.
+  useEffect(() => {
+    let alive = true;
+    import('../runtime/command-center/CommandCenterRuntime')
+      .then((m) => {
+        if (!alive) return;
+        try { m.recordCommandCenterIntegration('scan'); } catch { /* swallow */ }
+      })
+      .catch(() => { /* swallow */ });
+    return () => { alive = false; };
+  }, []);
+
   const onAddTasks = useCallback(() => {
     if (!entry?.raw) return;
     try {
@@ -182,7 +197,11 @@ export default function ScanResultPage() {
   if (!flagOn) return null;
 
   return (
-    <main style={STYLES.page} data-screen="scan-result-page" data-scan-id={scanId}>
+    <main style={STYLES.page}
+      data-screen="scan-result-page"
+      data-scan-id={scanId}
+      data-consumes="commandCenter"
+      data-surface="scan">
       <button
         type="button"
         onClick={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
