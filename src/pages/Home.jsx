@@ -85,6 +85,7 @@ import DailyFarmPlanCard          from '../components/home/DailyFarmPlanCard.jsx
 import NotificationBell           from '../components/NotificationBell.jsx';
 import useSimpleMode              from '../hooks/useSimpleMode.js';
 import SimpleModeHomeSection      from '../components/simpleMode/SimpleModeHomeSection.jsx';
+import SimpleHome                  from '../components/simpleMode/SimpleHome.jsx';
 // MemoryMomentLine removed from the lean immersive layout (the
 // hero's action band carries the "what next" line). Component
 // stays in the codebase for other surfaces that may use it.
@@ -862,6 +863,15 @@ export default function Home() {
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [experienceMode, _wxCondition, _wxRainChance, _wxTemp, _habitStreak]);
+
+  // Simple Mode renders a DEDICATED full-screen surface — no shared
+  // renderer with Standard. This is the obvious visual difference the
+  // differentiation spec requires: when the user is in Simple Mode they
+  // see ONLY Today's Action; the standard immersive hero / daily plan /
+  // on-track row / streak / weather card all stay behind the branch.
+  if (simpleModeEnabled) {
+    return <SimpleHome />;
+  }
 
   return (
     <div

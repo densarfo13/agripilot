@@ -51,6 +51,13 @@ export interface SimpleModeHealthEnvelope {
   // Source-of-truth probes attested by name.
   voiceProbeReady: boolean;
   oodaProbeReady: boolean;
+  // Active renderer attestation per the differentiation spec — when
+  // `enabled` is true, Home.jsx branches into <SimpleHome /> and skips
+  // the standard renderer entirely. There is NO shared renderer.
+  activeRenderer: 'simple' | 'standard';
+  homeRenderer: 'SimpleHome' | 'Home';
+  tasksRenderer: 'SimpleActionCard' | 'AllTasksPage';
+  scanRenderer: 'SimpleModeScanCard' | 'ScanResultCard';
   confidence: Confidence;
   explanation: string;
   limitations: string;
@@ -103,6 +110,10 @@ export function simpleModeHealth(): Readonly<SimpleModeHealthEnvelope> {
       userRole: role,
       voiceProbeReady: !!voiceProbe,
       oodaProbeReady: !!oodaProbe,
+      activeRenderer: (enabled ? 'simple' : 'standard') as ('simple' | 'standard'),
+      homeRenderer: (enabled ? 'SimpleHome' : 'Home') as ('SimpleHome' | 'Home'),
+      tasksRenderer: (enabled ? 'SimpleActionCard' : 'AllTasksPage') as ('SimpleActionCard' | 'AllTasksPage'),
+      scanRenderer: (enabled ? 'SimpleModeScanCard' : 'ScanResultCard') as ('SimpleModeScanCard' | 'ScanResultCard'),
       confidence: (enabled && voiceProbe && oodaProbe ? 'high' : enabled ? 'medium' : 'low') as Confidence,
       explanation:
         'Simple Mode is the action-first farmer experience: max 1 primary + 2 secondary actions per surface; ' +
@@ -122,6 +133,10 @@ export function simpleModeHealth(): Readonly<SimpleModeHealthEnvelope> {
     defaultOffFor: Object.freeze(['admin', 'super_admin', 'institutional_admin', 'ngo_admin', 'buyer', 'buyer_admin']),
     userRole: null,
     voiceProbeReady: false, oodaProbeReady: false,
+    activeRenderer: 'standard' as const,
+    homeRenderer: 'Home' as const,
+    tasksRenderer: 'AllTasksPage' as const,
+    scanRenderer: 'ScanResultCard' as const,
     confidence: 'low' as Confidence,
     explanation: 'Simple Mode runtime initialized.',
     limitations: 'Not enough data yet. ' + GUIDANCE_TAIL,
