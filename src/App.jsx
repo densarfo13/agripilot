@@ -1436,6 +1436,13 @@ export default function App() {
           // OODA + artifact composite LAST.
           installSimpleModeOODAGlobals();
         } catch { /* never block boot */ }
+        // Header health diagnostic — attests the header-duplication fix
+        // (Online badge removed, ProtectedLayout bell+menu hidden on /home,
+        // Home owns its hero actions). Read-only; never blocks boot.
+        try {
+          const { installHeaderHealthGlobal } = await import('./runtime/header/HeaderHealthRuntime');
+          installHeaderHealthGlobal();
+        } catch { /* never block boot */ }
         // Notification runtime — read-only diagnostic + contract layer over
         // the existing src/lib/notifications/* JS surface. Pins 6 globals
         // (__notificationHealth + preferences/delivery/queue/OODA/artifact).

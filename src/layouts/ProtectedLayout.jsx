@@ -181,15 +181,29 @@ export default function ProtectedLayout() {
               otherwise; one-line removal reverses the wiring. */}
           <RegionBannerHost />
           <div style={S.container}>
-            <div style={S.header}>
-              {/* Left: connectivity chip only. Language selector
-                  moved into the settings drawer per UI tightening
-                  spec section 5. */}
+            {/* HEADER DUPLICATION FIX —
+                  • Online badge removed app-wide (spec: "Remove ALL Online
+                    badges from every page"). The offline-state chip remains
+                    as a warning when the user is offline; when online,
+                    nothing is rendered.
+                  • Bell + Menu hide on /home and / (Home owns its hero
+                    actions there). All other routes still see the
+                    standard chrome bell + menu. */}
+            {(() => {
+              const path = (location && location.pathname) || '';
+              const isHome = path === '/' || path === '/home';
+              return (
+            <div style={S.header} data-route-home={isHome ? 'true' : 'false'}>
+              {/* Left: offline-state chip only. The online chip was removed
+                  per the header duplication fix — connectivity is surfaced
+                  only when offline, never as a passive green badge. */}
               <div style={S.headerLeft}>
-                <span style={isOfflineSession ? S.offlineChip : S.onlineChip}>
-                  <span style={isOfflineSession ? S.offlineDot : S.onlineDot} />
-                  {isOfflineSession ? t('farmer.offline') : t('farmer.online')}
-                </span>
+                {isOfflineSession ? (
+                  <span style={S.offlineChip}>
+                    <span style={S.offlineDot} />
+                    {t('farmer.offline')}
+                  </span>
+                ) : null}
               </div>
 
               {/* Right: notification bell + menu button. The menu
@@ -201,8 +215,12 @@ export default function ProtectedLayout() {
                   during onboarding so the user has zero distractions
                   while completing setup. The language selector
                   (left side) stays visible per spec. */}
-              <div style={S.headerRight} data-testid="layout-chrome-right">
-                {!onboarding && isSurfaceEnabled('FEATURE_NOTIFICATIONS') && (() => {
+              {/* Bell + Menu — hidden on /home (Home owns its hero
+                  actions). All other routes still get the chrome
+                  bell + menu. data-route-home attribute marks the
+                  state for the header-duplication gate. */}
+              <div style={S.headerRight} data-testid="layout-chrome-right" data-hidden-on-home={isHome ? 'true' : 'false'}>
+                {!isHome && !onboarding && isSurfaceEnabled('FEATURE_NOTIFICATIONS') && (() => {
                   try {
                     const bellUserId = String(user?.sub || user?.id || '');
                     return bellUserId
@@ -210,7 +228,7 @@ export default function ProtectedLayout() {
                       : null;
                   } catch { return null; }
                 })()}
-                {!onboarding && (
+                {!isHome && !onboarding && (
                   <button
                     type="button"
                     onClick={() => setSettingsOpen(true)}
@@ -225,6 +243,8 @@ export default function ProtectedLayout() {
                 )}
               </div>
             </div>
+              );
+            })()}
           </div>
 
           {/* Settings drawer — holds the chrome controls that used

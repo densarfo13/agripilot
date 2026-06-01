@@ -206,11 +206,15 @@ export default function CalmHomeHero({
             }}
             aria-hidden="true"
           />
-          <span style={S.onlineLabel} aria-live="polite">
-            {isOnline
-              ? tSafe('home.status.online',  'Online')
-              : tSafe('home.status.offline', 'Offline')}
-          </span>
+          {/* Header duplication fix — "Online" badge removed app-wide.
+              The label only renders when the session is offline, so the
+              user sees a warning when connectivity is degraded but never
+              a passive "Online" chip. */}
+          {!isOnline ? (
+            <span style={S.onlineLabel} aria-live="polite">
+              {tSafe('home.status.offline', 'Offline')}
+            </span>
+          ) : null}
 
           {/* Language pill */}
           {langCode && (
