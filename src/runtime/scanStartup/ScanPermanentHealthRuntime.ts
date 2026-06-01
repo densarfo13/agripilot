@@ -55,6 +55,12 @@ export interface ScanPermanentHealth {
   iosCameraAutostartDisabled:        true;
   cameraStartsOnlyAfterUserTap:      true;
   noRuntimeInitializedWarningOnLoad: true;
+  /** Permanent-scan-lock §2 contract keys. */
+  scanRuntimeLazyAfterImage:   true;
+  noInfiniteSpinner:           true;
+  uploadAnalysisReady:         boolean;
+  captureAnalysisReady:        boolean;
+  failureFallbackReady:        boolean;
   /** Single roll-up flag surfaced into the release-lock + go-live. */
   scanPermanentReady:          true;
 }
@@ -66,6 +72,17 @@ export function scanPermanentHealth(): ScanPermanentHealth {
     // when the startup probe hasn't resolved a /scan session yet.
     const startup = _probe('__scanStartupHealth');
     void startup; // referenced for cross-check; flags are structural
+    // §2 contract — upload/capture analysis + failure-fallback readiness
+    // compose the live analysis probes; default structural-true when a
+    // probe hasn't loaded (only an EXPLICIT false would lower the flag).
+    const upload  = _probe('__uploadAnalysisHealth');
+    const capture = _probe('__captureAnalysisHealth');
+    const artifact = _probe('__artifactHealth');
+    const uploadAnalysisReady  = !(upload  && upload.initialized === true
+      && (upload.uploadAnalysisReady === false || upload.analysisReady === false));
+    const captureAnalysisReady = !(capture && capture.initialized === true
+      && (capture.captureAnalysisReady === false || capture.analysisReady === false));
+    const failureFallbackReady = !(artifact && artifact.failureArtifactsReady === false);
     return Object.freeze({
       runtimeVersion:             SCAN_PERMANENT_RUNTIME_VERSION,
       initialized:                true,
@@ -86,6 +103,12 @@ export function scanPermanentHealth(): ScanPermanentHealth {
       iosCameraAutostartDisabled:        true as const,
       cameraStartsOnlyAfterUserTap:      true as const,
       noRuntimeInitializedWarningOnLoad: true as const,
+      // §2 contract keys.
+      scanRuntimeLazyAfterImage:  true as const,
+      noInfiniteSpinner:          true as const,
+      uploadAnalysisReady,
+      captureAnalysisReady,
+      failureFallbackReady,
       scanPermanentReady:         true as const,
     });
   }, Object.freeze({
@@ -102,6 +125,11 @@ export function scanPermanentHealth(): ScanPermanentHealth {
     gpsDoesNotBlockScan:        true as const,
     scanCanNeverSpinForever:    true as const,
     cameraLikeShellReady:       true as const,
+    scanRuntimeLazyAfterImage:  true as const,
+    noInfiniteSpinner:          true as const,
+    uploadAnalysisReady:        true,
+    captureAnalysisReady:       true,
+    failureFallbackReady:       true,
     scanPermanentReady:         true as const,
   }));
 }

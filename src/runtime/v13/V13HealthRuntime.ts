@@ -195,6 +195,25 @@ export function v13Health() {
       verdict,
       blockers: Object.freeze(blockers),
       warnings: Object.freeze(warnings),
+      // Permanent-scan + full-intelligence-loop lock roll-up (spec §8) —
+      // composes the live scan/OODA/artifact/loop probes; structural-true
+      // unless a probe reports an EXPLICIT breakage.
+      scanLoop: Object.freeze((() => {
+        const scan = _probe('__scanPermanentHealth');
+        const ooda = _probe('__intelligenceOODAHealth');
+        const art  = _probe('__artifactHealth');
+        const loop = _probe('__intelligenceLoopHealth');
+        return {
+          scanPermanentReady:    !(scan && scan.scanPermanentReady === false),
+          uploadAnalysisReady:   !(scan && scan.uploadAnalysisReady === false),
+          captureAnalysisReady:  !(scan && scan.captureAnalysisReady === false),
+          oodaReady:             !(ooda && (ooda.nonBlocking === false || ooda.failureSafe === false)),
+          artifactReady:         !(art && (art.failureArtifactsReady === false || art.nonBlocking === false)),
+          intelligenceLoopReady: !(loop && loop.scanToOutcomeLoopReady === false),
+          outcomeLoopReady:      !(loop && loop.outcomeTrackingReady === false)
+            && !(art && art.outcomeArtifactsReady === false),
+        };
+      })()),
       disclaimer: 'Decision support, not a guarantee.',
     });
   }, Object.freeze({

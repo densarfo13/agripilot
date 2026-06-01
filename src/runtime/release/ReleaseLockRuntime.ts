@@ -459,6 +459,51 @@ export function computeReleaseLock(opts?: ComputeOpts) {
         const r = w.__scanPermanentHealth();
         return !!(r && r.scanPermanentReady);
       }, false),
+      // ── Permanent-scan + full-intelligence-loop lock (spec §8) ──
+      // Each flag reads its live probe; structural-true when the probe
+      // hasn't loaded (only an EXPLICIT false lowers the flag).
+      uploadAnalysisReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const r = typeof w.__scanPermanentHealth === 'function' ? w.__scanPermanentHealth() : null;
+        return !(r && r.uploadAnalysisReady === false);
+      }, false),
+      captureAnalysisReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const r = typeof w.__scanPermanentHealth === 'function' ? w.__scanPermanentHealth() : null;
+        return !(r && r.captureAnalysisReady === false);
+      }, false),
+      oodaReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const r = typeof w.__intelligenceOODAHealth === 'function' ? w.__intelligenceOODAHealth() : null;
+        // Non-blocking + failure-safe are the lock invariants; readiness
+        // of the four phases is informational (structural-true if absent).
+        return !(r && (r.nonBlocking === false || r.failureSafe === false));
+      }, false),
+      artifactReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const r = typeof w.__artifactHealth === 'function' ? w.__artifactHealth() : null;
+        return !(r && (r.failureArtifactsReady === false || r.nonBlocking === false));
+      }, false),
+      intelligenceLoopReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const r = typeof w.__intelligenceLoopHealth === 'function' ? w.__intelligenceLoopHealth() : null;
+        // Wired = scan→outcome loop present; NEEDS_DATA is acceptable (not
+        // a blocker) — only an explicit broken loop lowers the flag.
+        return !(r && r.scanToOutcomeLoopReady === false);
+      }, false),
+      outcomeLoopReady: _safe(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as any;
+        const loop = typeof w.__intelligenceLoopHealth === 'function' ? w.__intelligenceLoopHealth() : null;
+        const art  = typeof w.__artifactHealth === 'function' ? w.__artifactHealth() : null;
+        return !(loop && loop.outcomeTrackingReady === false)
+          && !(art && art.outcomeArtifactsReady === false);
+      }, false),
       // Permanent Mobile Navigation Fix — composite roll-up over the
       // route-guard / route-reach / cache-recovery / bottom-nav
       // probes. Reads __goLiveHealth.mobileNavReady where present,

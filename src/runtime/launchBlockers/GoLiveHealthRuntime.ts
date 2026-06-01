@@ -120,6 +120,20 @@ export function goLiveHealth() {
       ? !!scanPermanent.scanPermanentReady
       : true; // structural-true; gate-enforced at build time
 
+    // ── Permanent-scan + full-intelligence-loop lock (spec §8) ──
+    // Each flag is structural-true unless its probe reports an EXPLICIT
+    // breakage (matching the fail-open-for-missing-probe pattern).
+    const oodaProbe     = _probe('__intelligenceOODAHealth');
+    const artifactProbe = _probe('__artifactHealth');
+    const loopProbe     = _probe('__intelligenceLoopHealth');
+    const uploadAnalysisReady  = !(scanPermanent && scanPermanent.uploadAnalysisReady === false);
+    const captureAnalysisReady = !(scanPermanent && scanPermanent.captureAnalysisReady === false);
+    const oodaReady     = !(oodaProbe && (oodaProbe.nonBlocking === false || oodaProbe.failureSafe === false));
+    const artifactReady = !(artifactProbe && (artifactProbe.failureArtifactsReady === false || artifactProbe.nonBlocking === false));
+    const intelligenceLoopReady = !(loopProbe && loopProbe.scanToOutcomeLoopReady === false);
+    const outcomeLoopReady = !(loopProbe && loopProbe.outcomeTrackingReady === false)
+      && !(artifactProbe && artifactProbe.outcomeArtifactsReady === false);
+
     // Option 3 — camera-like mobile shell (safe-shell preserved).
     const scanCameraLikeShell = _probe('__scanCameraLikeShellHealth');
     const cameraLikeShellReady = scanCameraLikeShell
@@ -235,7 +249,14 @@ export function goLiveHealth() {
       && !ngoSkipsCsvPreview
       && growerPilotReady
       // Permanent mobile-navigation RED conditions (spec §10).
-      && mobileNavReady;
+      && mobileNavReady
+      // Permanent-scan + intelligence-loop RED conditions (spec §8):
+      // scan can never spin / upload analysis broken / OODA blocks scan /
+      // artifact failure crashes scan.
+      && scanPermanentReady
+      && uploadAnalysisReady
+      && oodaReady
+      && artifactReady;
 
     const blockers: string[] = [];
     if (!c1) blockers.push('C1_onboardingGuard');
@@ -284,7 +305,13 @@ export function goLiveHealth() {
     }
     if (!outcomeCaptureReady)   warnings.push('W41_outcomeCapturePartial');
     if (!pilotCommandReady)     warnings.push('W41_pilotCommandUnavailable');
-    if (!scanPermanentReady)    warnings.push('SCAN_permanentStabilityOffline');
+    if (!scanPermanentReady)    blockers.push('SCAN_permanentStabilityBroken');
+    if (!uploadAnalysisReady)   blockers.push('SCAN_uploadAnalysisBroken');
+    if (!oodaReady)             blockers.push('OODA_blocksOrUnsafe');
+    if (!artifactReady)         blockers.push('ARTIFACT_failureCrashesScan');
+    if (!captureAnalysisReady)  warnings.push('SCAN_captureAnalysisDegraded');
+    if (!intelligenceLoopReady) warnings.push('LOOP_scanToOutcomeIncomplete');
+    if (!outcomeLoopReady)      warnings.push('LOOP_outcomeTrackingIncomplete');
 
     let verdict: 'NO_GO' | 'GO_WITH_LIMITATIONS' | 'GO';
     if (!allBlockers) verdict = 'NO_GO';
@@ -353,6 +380,13 @@ export function goLiveHealth() {
       // Permanent scan-stability roll-up.
       scanPermanentReady,
       scanPermanent:     scanPermanent || null,
+      // Permanent-scan + full-intelligence-loop lock roll-up (spec §8).
+      uploadAnalysisReady,
+      captureAnalysisReady,
+      oodaReady,
+      artifactReady,
+      intelligenceLoopReady,
+      outcomeLoopReady,
       // Option 3 — camera-like shell roll-up.
       cameraLikeShellReady,
       scanCameraLikeShell: scanCameraLikeShell || null,

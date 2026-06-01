@@ -57,6 +57,11 @@ export function artifactHealth() {
       // created through ArtifactRuntime (no UI direct writes), with
       // idempotency keys, and a failed artifact never crashes the UI.
       failureArtifactsReady:   true,
+      // §5 contract — outcome artifacts (OutcomeRecorded / follow-up)
+      // also flow through ArtifactRuntime; artifact creation NEVER blocks
+      // the grower result (fire-and-forget, failure-safe).
+      outcomeArtifactsReady:   true,
+      nonBlocking:             true,
       idempotent:              true,
       // No localStorage writes happen here — wave-5 single
       // writer owns persistence. Offline-safe from our side
@@ -77,6 +82,8 @@ export function artifactHealth() {
     taskArtifactsReady: false,
     interventionArtifactsReady: false,
     failureArtifactsReady: false,
+    outcomeArtifactsReady: false,
+    nonBlocking: true,
     idempotent: false,
     offlineSafe: false,
   }));

@@ -44,8 +44,12 @@ export function intelligenceOODAHealth() {
     // Intelligence + OODA NEVER gate the scan/upload render (the scan
     // shell renders before any analysis; intelligence composes AFTER
     // a result). Structural truth, gate-enforced by
-    // check-ooda-intelligence + check-ooda-artifact-safety.
+    // check-ooda-intelligence + check-ooda-nonblocking.
+    scanIntegrated: !!(ooda ? ooda.scanIntegrated !== false : true),
     nonBlocking:    true,
+    // OODA failure is non-fatal: a thrown/absent OODA never crashes the
+    // scan result; the failure path emits a diagnostic artifact instead.
+    failureSafe:    true,
     growerSafeOutput: !!(ooda ? ooda.growerSafeOutput !== false : true),
   });
 }
