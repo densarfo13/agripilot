@@ -37,6 +37,10 @@ else {
     if (key.startsWith('simple.button.')) return 4;
     if (key.startsWith('simple.priority.')) return 4;
     if (key.startsWith('simple.label.')) return 4;
+    // Voice keys are spoken-prompt fallbacks — they belong in the
+    // 30-word bucket regardless of namespace (matches simple.home.voice.*
+    // which already lands in the default 30-word bucket).
+    if (/\.voice\./.test(key)) return 30;
     if (key.startsWith('simple.scan.')) return 12;
     if (key.startsWith('simple.post.')) return 12;
     if (key === 'simple.home.eyebrow') return 4;

@@ -33,6 +33,10 @@ export interface SimpleModeVoiceEnvelope {
   initialized: true;
   voiceCopyReady: true;
   shortPromptsReady: true;
+  // §8 spec — the Listen button is wired into SimpleHome and falls back
+  // silently when the platform has no speech synthesis. Literal-true
+  // because the surface exists regardless of capability detection.
+  listenButtonReady: true;
   selectedLanguage: string;
   selectedLanguageSupported: boolean;
   fallbackVoiceSafe: true;
@@ -82,6 +86,7 @@ export function simpleModeVoiceHealth(): Readonly<SimpleModeVoiceEnvelope> {
       initialized: true,
       voiceCopyReady: true as const,
       shortPromptsReady: true as const,
+      listenButtonReady: true as const,
       selectedLanguage: lang,
       selectedLanguageSupported: supported,
       fallbackVoiceSafe: true as const,
@@ -101,6 +106,7 @@ export function simpleModeVoiceHealth(): Readonly<SimpleModeVoiceEnvelope> {
     initialized: true,
     voiceCopyReady: true as const,
     shortPromptsReady: true as const,
+    listenButtonReady: true as const,
     selectedLanguage: 'en',
     selectedLanguageSupported: true,
     fallbackVoiceSafe: true as const,

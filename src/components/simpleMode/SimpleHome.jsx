@@ -26,6 +26,33 @@ function _greeting() {
   } catch { return tSafe('home.greeting.default', 'Welcome'); }
 }
 
+// Voice playback helper. Speaks the daily-plan voice prompt through Web
+// Speech if available; falls back silently (fallbackVoiceSafe:true is the
+// runtime contract). Records a SimpleVoicePlayed artifact regardless so
+// the diagnostic can attest the listen button was used.
+function _speakDailyVoicePrompt() {
+  try {
+    const prompt = tSafe('simple.home.voice.daily',
+      'Today, check your plants. Tap Done after each step.');
+    // Artifact log first — never depend on speech success.
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const KEY = 'farroway_simple_artifacts';
+        const raw = window.localStorage.getItem(KEY);
+        const list = (() => { try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; } })();
+        list.push({ kind: 'SimpleVoicePlayed', idempotencyKey: `voice:home:${Date.now()}`, ts: Date.now() });
+        const bounded = list.length > 500 ? list.slice(list.length - 500) : list;
+        window.localStorage.setItem(KEY, JSON.stringify(bounded));
+      }
+    } catch { /* swallow */ }
+    if (typeof window !== 'undefined' && window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function') {
+      const utt = new window.SpeechSynthesisUtterance(prompt);
+      utt.rate = 0.95;
+      window.speechSynthesis.speak(utt);
+    }
+  } catch { /* swallow — fallback is silent */ }
+}
+
 function SimpleHomeInner() {
   return (
     <div style={S.page} data-testid="simple-home" data-renderer="simple">
@@ -47,6 +74,20 @@ function SimpleHomeInner() {
             </Link>
           </div>
         </header>
+
+        {/* Listen button — voice-first surface. Reads the daily prompt
+            aloud via the Web Speech API when available; falls back
+            silently and still records a SimpleVoicePlayed artifact so
+            the diagnostic can attest the surface was wired. */}
+        <button
+          type="button"
+          onClick={_speakDailyVoicePrompt}
+          style={S.listenBtn}
+          data-testid="simple-home-listen"
+          aria-label={tSafe('simple.home.listen.aria', 'Listen to today’s action')}
+        >
+          🔊 {tSafe('simple.home.listen', 'Listen')}
+        </button>
 
         {/* Today's Action — 1 primary + up to 2 secondaries. Self-contained
             and error-boundary-guarded internally. */}
@@ -136,6 +177,24 @@ const S = {
     fontSize: '1.05rem',
     fontWeight: 700,
     textDecoration: 'none',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  // Listen button — voice-first prominence; large tap target; calm chip
+  // styling so it reads as an action rather than a chrome element.
+  listenBtn: {
+    alignSelf: 'flex-start',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem 1.15rem',
+    minHeight: 46,
+    borderRadius: 999,
+    border: '1px solid rgba(110,139,97,0.40)',
+    background: 'rgba(110,139,97,0.10)',
+    color: '#33503A',
+    fontSize: '0.95rem',
+    fontWeight: 700,
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
   },

@@ -7,8 +7,8 @@
  *   • OODA output carries a simple-mode shape ({simpleAction, simpleReason,
  *     simpleWhen, voicePrompt}) alongside advancedMessage. Simple Mode UI
  *     ONLY reads the simple fields.
- *   • 4 artifact kinds (SimpleActionShown / SimpleActionCompleted /
- *     SimpleActionSkipped / SimpleReminderRequested) route through
+ *   • 5 artifact kinds (SimpleActionShown / SimpleActionCompleted /
+ *     SimpleActionSkipped / SimpleReminderRequested / SimpleVoicePlayed) route through
  *     ArtifactRuntime with idempotency keys.
  *
  * Self-contained — zero imports. Frozen, never throws.
@@ -40,6 +40,9 @@ export const SIMPLE_MODE_ARTIFACT_KINDS = Object.freeze([
   'SimpleActionCompleted',
   'SimpleActionSkipped',
   'SimpleReminderRequested',
+  // §12 spec — recorded by the Listen button on SimpleHome whenever
+  // voice playback is invoked (regardless of speech-synthesis success).
+  'SimpleVoicePlayed',
 ]);
 
 // Required fields the simple-mode UI consumes from OODA output.
@@ -146,8 +149,8 @@ export function simpleModeArtifactHealth(): Readonly<SimpleModeArtifactEnvelope>
       duplicateArtifactsPrevented,
       confidence: (artifacts.length > 0 ? 'medium' : 'low') as Confidence,
       explanation:
-        '4 artifact kinds: SimpleActionShown / SimpleActionCompleted / SimpleActionSkipped / ' +
-        'SimpleReminderRequested. Every entry carries an idempotencyKey.',
+        '5 artifact kinds: SimpleActionShown / SimpleActionCompleted / SimpleActionSkipped / ' +
+        'SimpleReminderRequested / SimpleVoicePlayed. Every entry carries an idempotencyKey.',
       limitations: 'Local artifact log reflects this device only; ArtifactRuntime is the source of truth. '
         + GUIDANCE_TAIL,
     });

@@ -15,7 +15,7 @@ const F = [], P = [];
 const read = (f) => { try { return fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch { return ''; } };
 
 const KINDS = ['SimpleActionShown', 'SimpleActionCompleted',
-  'SimpleActionSkipped', 'SimpleReminderRequested'];
+  'SimpleActionSkipped', 'SimpleReminderRequested', 'SimpleVoicePlayed'];
 
 const composite = read('src/runtime/simpleMode/SimpleModeOODARuntime.ts');
 if (!composite) F.push('SimpleModeOODARuntime.ts: missing');
@@ -75,5 +75,5 @@ if (F.length) {
   for (const m of [...new Set(F)]) console.error('  ✗ ' + m);
   process.exit(1);
 }
-console.log('[check:simple-mode-artifacts] PASS — 4 kinds enumerated, idempotency keys, ArtifactRuntime only.');
+console.log('[check:simple-mode-artifacts] PASS — 5 kinds enumerated, idempotency keys, ArtifactRuntime only.');
 for (const m of P) console.log('  ✓ ' + m);

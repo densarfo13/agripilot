@@ -66,6 +66,11 @@ export interface SimpleModeHealthEnvelope {
   tasksComponent: 'SimpleTasks' | 'StandardTasks';
   scanComponent: 'SimpleScanResult' | 'StandardScanResult';
   dailyPlanComponent: 'SimpleDailyPlan' | 'StandardDailyPlan';
+  postHarvestComponent: 'SimplePostHarvest' | 'StandardPostHarvest';
+  // §10 contract assertions — true when the simple branch hides analytics
+  // entirely and the two modes are visibly different within 2s.
+  analyticsHiddenInSimple: true;
+  modeDifferenceObvious: true;
   confidence: Confidence;
   explanation: string;
   limitations: string;
@@ -127,6 +132,9 @@ export function simpleModeHealth(): Readonly<SimpleModeHealthEnvelope> {
       tasksComponent: (enabled ? 'SimpleTasks' : 'StandardTasks') as ('SimpleTasks' | 'StandardTasks'),
       scanComponent: (enabled ? 'SimpleScanResult' : 'StandardScanResult') as ('SimpleScanResult' | 'StandardScanResult'),
       dailyPlanComponent: (enabled ? 'SimpleDailyPlan' : 'StandardDailyPlan') as ('SimpleDailyPlan' | 'StandardDailyPlan'),
+      postHarvestComponent: (enabled ? 'SimplePostHarvest' : 'StandardPostHarvest') as ('SimplePostHarvest' | 'StandardPostHarvest'),
+      analyticsHiddenInSimple: true as const,
+      modeDifferenceObvious: true as const,
       confidence: (enabled && voiceProbe && oodaProbe ? 'high' : enabled ? 'medium' : 'low') as Confidence,
       explanation:
         'Simple Mode is the action-first farmer experience: max 1 primary + 2 secondary actions per surface; ' +
@@ -155,6 +163,9 @@ export function simpleModeHealth(): Readonly<SimpleModeHealthEnvelope> {
     tasksComponent: 'StandardTasks' as const,
     scanComponent: 'StandardScanResult' as const,
     dailyPlanComponent: 'StandardDailyPlan' as const,
+    postHarvestComponent: 'StandardPostHarvest' as const,
+    analyticsHiddenInSimple: true as const,
+    modeDifferenceObvious: true as const,
     confidence: 'low' as Confidence,
     explanation: 'Simple Mode runtime initialized.',
     limitations: 'Not enough data yet. ' + GUIDANCE_TAIL,

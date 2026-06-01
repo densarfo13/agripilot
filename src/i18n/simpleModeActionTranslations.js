@@ -58,6 +58,26 @@ export const SIMPLE_MODE_ACTION_TRANSLATIONS = Object.freeze({
   'simple.home.empty.reason': en('You get a daily action when a plant is added.'),
   'simple.home.empty.voice': en('Add a plant today. Your daily action will start tomorrow.'),
 
+  // ── §8 listen button ─────────────────────────────────────
+  'simple.home.listen': en('Listen'),
+  'simple.home.listen.aria': en('Listen to today’s action'),
+  'simple.home.voice.daily': en('Today, check your plants. Tap Done after each step.'),
+
+  // ── §7 post-harvest copy (short, low-literacy) ───────────
+  'simple.post.title': en('Harvest soon'),
+  'simple.post.action.pickRipe': en('Pick ripe fruits today.'),
+  'simple.post.reason.fresh': en('Pick when ripe to stay fresh.'),
+  'simple.post.voice.full': en('Harvest soon. Pick ripe fruits. Sort bad ones. Store in a cool place.'),
+  'simple.post.step.do': en('Do this'),
+  'simple.post.step.do.body': en('Pick ripe fruits.'),
+  'simple.post.step.next': en('Next'),
+  'simple.post.step.next.body': en('Sort bad ones.'),
+  'simple.post.step.then': en('Then'),
+  'simple.post.step.then.body': en('Store in a cool place.'),
+  'simple.post.button.markHarvested': en('Mark Harvested'),
+  'simple.post.button.createListing': en('Create Sell Listing'),
+  'simple.post.button.remindMe': en('Remind Me'),
+
   // ── canonical sample actions (≤ 12 words each) ───────────
   'simple.action.checkPlants': en('Check on your plants today.'),
   'simple.action.checkLeaves': en('Check your tomato leaves today.'),
