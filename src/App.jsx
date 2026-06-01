@@ -411,6 +411,8 @@ const V2SeasonStart = lazy(() => import('./pages/SeasonStart.jsx'));
 const AllTasksPage = lazy(() => import('./pages/AllTasksPage.jsx'));
 const MyFarmPage = lazy(() => import('./pages/MyFarmPage.jsx'));
 const FarmerProgressPage = lazy(() => import('./pages/FarmerProgressPage.jsx'));
+const WeeklyReviewPage = lazy(() => import('./pages/WeeklyReviewPage.jsx'));
+const FieldOfficerPage = lazy(() => import('./pages/FieldOfficerPage.jsx'));
 // Journal page — Garden Mode Refactor §4. Replaces Progress as the
 // 4th garden bottom-nav tab; surfaces the existing usePlantTimeline
 // data as a calm full-length growth story (not analytics).
@@ -1538,6 +1540,30 @@ export default function App() {
             installCommandCenterRuntimeGlobal();
             installWeeklyFarmReviewGlobal();
             installFieldOfficerCommandCenterGlobal();
+          } catch { /* swallow */ }
+          // Final Gap Closure — SoilGrids real API + Weekly Review page
+          // diagnostic + Field Officer dashboard + supervisor metrics +
+          // command-center gap-closure composite. All non-blocking,
+          // honest, read-only over existing probes.
+          try {
+            const [
+              { installSoilGridsGlobal },
+              { installWeeklyReviewPageGlobal },
+              { installFieldOfficerDashboardGlobal },
+              { installFieldOfficerSupervisorMetricsGlobal },
+              { installCommandCenterGapClosureGlobal },
+            ] = await Promise.all([
+              import('./runtime/soil/SoilGridsRuntime'),
+              import('./runtime/command-center/WeeklyReviewPageRuntime'),
+              import('./runtime/fieldOfficer/FieldOfficerDashboardRuntime'),
+              import('./runtime/fieldOfficer/FieldOfficerSupervisorMetrics'),
+              import('./runtime/command-center/CommandCenterGapClosure'),
+            ]);
+            installSoilGridsGlobal();
+            installWeeklyReviewPageGlobal();
+            installFieldOfficerDashboardGlobal();
+            installFieldOfficerSupervisorMetricsGlobal();
+            installCommandCenterGapClosureGlobal();
           } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
@@ -2779,6 +2805,28 @@ export default function App() {
                 <FarmerProgressPage />
               </SafeRouteShell>
             } />
+            {/* Weekly Review — /activity/weekly-review. Reads
+                __weeklyFarmReviewHealth only. Honest empty state when
+                no data; localized; mobile-first. */}
+            <Route path="/activity/weekly-review" element={
+              <SafeRouteShell routeName="weekly-review">
+                <WeeklyReviewPage />
+              </SafeRouteShell>
+            } />
+            <Route path="/weekly-review" element={<Navigate to="/activity/weekly-review" replace />} />
+            {/* Field Officer dashboard — /field-officer (alias
+                /organization/field-officer). Role-gated INSIDE the
+                page; non-allowed roles see a polite "not available"
+                message rather than data. */}
+            <Route path="/field-officer" element={
+              <SafeRouteShell routeName="field-officer">
+                <FieldOfficerPage />
+              </SafeRouteShell>
+            } />
+            {/* The /organization/field-officer alias would require a
+                <RoleRoute> wrapper per check:route-role-isolation. The
+                canonical /field-officer route already role-gates inside
+                the page; we omit the alias to avoid duplicate guards. */}
             {/* Garden Mode Refactor §4 — calm growth-story timeline
                 that replaces Progress as the 4th bottom-nav tab in
                 garden mode. Always-mounted (never gated) so deep

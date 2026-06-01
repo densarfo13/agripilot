@@ -14,6 +14,7 @@ import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import SimpleActionCard from './SimpleActionCard.jsx';
 import CommandCenterDeck from '../commandCenter/CommandCenterDeck.jsx';
+import WeeklyReviewHomeCard from '../commandCenter/WeeklyReviewHomeCard.jsx';
 import { useNavigate } from 'react-router-dom';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
@@ -100,6 +101,9 @@ function SimpleModeHomeSectionInner() {
           fields. Renders ABOVE Today's Action; pages consuming the same
           envelope show identical values. */}
       <CommandCenterDeck />
+      {/* Weekly Review home card — visible only after at least 1
+          completed task / scan / outcome. Self-gates from the runtime. */}
+      <WeeklyReviewHomeCard />
       <p style={S.eyebrow}>{tSafe('simple.home.eyebrow', "Today's Action")}</p>
       {primary ? (
         <SimpleActionCard
