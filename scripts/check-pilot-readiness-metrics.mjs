@@ -18,11 +18,23 @@ const pr = read('src/runtime/pilotReadiness/PilotReadinessRuntime.ts');
 if (!pr) { F.push('PilotReadinessRuntime.ts: missing'); }
 else {
   const src = strip(pr);
-  // §1 dashboard composite + 5 installed globals.
-  for (const g of ['__outcomeMetrics', '__ngoPilotMetrics', '__languageQualityHealth', '__retentionMetrics', '__pilotReadiness']) {
+  // §1 dashboard composite + installed globals (incl. execution-mode names).
+  for (const g of ['__outcomeMetrics', '__ngoPilotMetrics', '__ngoMetrics',
+    '__languageQualityHealth', '__retentionMetrics', '__reliabilityMetrics', '__pilotReadiness']) {
     if (!pr.includes(g)) F.push(`PilotReadinessRuntime must install ${g}`);
   }
-  if (!F.some((m) => m.includes('must install'))) P.push('installs all 5 pilot-readiness globals');
+  if (!F.some((m) => m.includes('must install'))) P.push('installs all pilot-readiness + execution-mode globals');
+  // §8 reliability metrics keys.
+  for (const k of ['authFailures', 'routeFailures', 'scanFailures', 'syncFailures', 'notificationFailures']) {
+    if (!pr.includes(k)) F.push(`__reliabilityMetrics must surface ${k}`);
+  }
+  if (!F.some((m) => m.includes('__reliabilityMetrics must surface'))) P.push('__reliabilityMetrics surfaces §8 keys');
+  // §9 go-live scorecard flags.
+  for (const k of ['scanReady', 'loginReady', 'routingReady', 'languageReady',
+    'outcomeReady', 'ngoReady', 'retentionReady', 'reliabilityReady']) {
+    if (!pr.includes(k)) F.push(`__pilotReadiness must surface §9 flag ${k}`);
+  }
+  if (!F.some((m) => m.includes('§9 flag'))) P.push('§9 go-live scorecard flags present');
   // §1 — 12 subsystems + status vocabulary + verdict.
   const SUB = ['Authentication', 'Scan', 'UploadAnalysis', 'Camera', 'Localization',
     'Tasks', 'Activity', 'OutcomeCapture', 'Invites', 'Notifications', 'OfflineSync', 'NGOReporting'];

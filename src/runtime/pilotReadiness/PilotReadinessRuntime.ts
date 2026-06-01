@@ -174,6 +174,29 @@ export function retentionMetrics() {
   }));
 }
 
+/* ── §8 reliability metrics (exact execution-mode key names) ─── */
+export function reliabilityMetrics() {
+  return _safe(() => {
+    const rel = _probe('__reliabilityHealth') || {};
+    return Object.freeze({
+      runtimeVersion: PILOT_READINESS_RUNTIME_VERSION, initialized: true,
+      authFailures:         _num((rel as any).authFailures) || 0,
+      routeFailures:        _num((rel as any).routeErrors) || _num((rel as any).routeFailures) || 0,
+      scanFailures:         _num((rel as any).scanFailures) || 0,
+      syncFailures:         _num((rel as any).offlineSyncFailures) || _num((rel as any).syncFailures) || 0,
+      notificationFailures: _num((rel as any).notificationFailures) || 0,
+      confidence: 'medium' as const,
+      dataSources: Object.freeze(['__reliabilityHealth']),
+      limitations: 'Incident counters from the on-device reliability registry.',
+    });
+  }, Object.freeze({
+    runtimeVersion: PILOT_READINESS_RUNTIME_VERSION, initialized: false,
+    authFailures: 0, routeFailures: 0, scanFailures: 0, syncFailures: 0,
+    notificationFailures: 0, confidence: 'low' as const,
+    dataSources: Object.freeze([]), limitations: 'Not enough data yet.',
+  }));
+}
+
 /* ── §1 pilot readiness dashboard composite ──────────────────── */
 type Status = 'GREEN' | 'YELLOW' | 'RED';
 function _status(probeName: string, opts: { critical?: boolean; readyFlag?: string } = {}): Status {
@@ -207,16 +230,31 @@ export function pilotReadiness() {
     const red = vals.filter((s) => s === 'RED').length;
     const yellow = vals.filter((s) => s === 'YELLOW').length;
     const verdict = red > 0 ? 'BLOCKED' : yellow > 0 ? 'GO_WITH_LIMITATIONS' : 'GO';
+    // §9 go-live scorecard — top-level readiness booleans (RED = not ready).
+    const scanReady        = subsystems.Scan === 'GREEN';
+    const loginReady       = subsystems.Authentication === 'GREEN';
+    const routingReady     = subsystems.Authentication !== 'RED'
+                              && _status('__routeReachHealth') !== 'RED';
+    const languageReady    = subsystems.Localization !== 'RED';
+    const outcomeReady     = subsystems.OutcomeCapture !== 'RED';
+    const ngoReady         = subsystems.NGOReporting !== 'RED';
+    const retentionReady   = !!_probe('__retentionMetrics');
+    const reliabilityReady = _status('__reliabilityHealth') !== 'RED';
     return Object.freeze({
       runtimeVersion: PILOT_READINESS_RUNTIME_VERSION, initialized: true,
       subsystems, redCount: red, yellowCount: yellow,
       greenCount: vals.length - red - yellow,
+      // §9 scorecard flags.
+      scanReady, loginReady, routingReady, languageReady,
+      outcomeReady, ngoReady, retentionReady, reliabilityReady,
       verdict,
       disclaimer: 'GREEN=validated · YELLOW=needs monitoring · RED=release blocker.',
     });
   }, Object.freeze({
     runtimeVersion: PILOT_READINESS_RUNTIME_VERSION, initialized: false,
     subsystems: Object.freeze({}), redCount: 0, yellowCount: 0, greenCount: 0,
+    scanReady: false, loginReady: false, routingReady: false, languageReady: false,
+    outcomeReady: false, ngoReady: false, retentionReady: false, reliabilityReady: false,
     verdict: 'GO_WITH_LIMITATIONS' as const,
     disclaimer: 'GREEN=validated · YELLOW=needs monitoring · RED=release blocker.',
   }));
@@ -244,8 +282,10 @@ export function installPilotReadinessGlobals(): boolean {
   return _safe(() => {
     _install('__outcomeMetrics',        outcomeMetrics,        '[Farroway · Outcome Metrics]');
     _install('__ngoPilotMetrics',       ngoPilotMetrics,       '[Farroway · NGO Pilot Metrics]');
+    _install('__ngoMetrics',            ngoPilotMetrics,       '[Farroway · NGO Metrics]');
     _install('__languageQualityHealth', languageQualityHealth, '[Farroway · Language Quality]');
     _install('__retentionMetrics',      retentionMetrics,      '[Farroway · Retention Metrics]');
+    _install('__reliabilityMetrics',    reliabilityMetrics,    '[Farroway · Reliability Metrics]');
     _install('__pilotReadiness',        pilotReadiness,        '[Farroway · Pilot Readiness]');
     return true;
   }, false);

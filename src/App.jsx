@@ -2285,6 +2285,8 @@ export default function App() {
           {/* Wave-36 — outcome intelligence surfaces (admin only). */}
           <Route path="/internal/pilot-analytics"               element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
           <Route path="/internal/pilot-readiness"               element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />
+          {/* Execution Mode — pilot command center (reuses the readiness board). */}
+          <Route path="/internal/pilot-command"                 element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />
           <Route path="/internal/pilot-analytics/field-officer" element={<RoleRoute roles={ADMIN_ROLES}><FieldOfficerOutcomesPage /></RoleRoute>} />
           {/* Wave-37 — executive field-intelligence dashboard (admin only). */}
           <Route path="/internal/intelligence" element={<RoleRoute roles={ADMIN_ROLES}><FieldIntelligencePage /></RoleRoute>} />
