@@ -332,10 +332,43 @@ export default function ProtectedLayout() {
               styles). Tapping opens the existing assistant sheet —
               no separate chatbot page, no always-listening, no
               autoplay. */}
-          {!onboarding
-            && (isFarmer || String(user?.role || '').toLowerCase() === 'farmer') && (
-            <VoiceLauncher variant="floating" />
-          )}
+          {/* Polish wave (Jun 2026): floating mic was appearing on every
+              farmer page (Funding / Sell / Activity / My Farm) and
+              cluttering the UI. Gate on Simple Mode OR an explicit
+              voice-assistant-enabled preference, AND hide on the
+              specific surfaces the user called out unless either flag
+              is on. Never blocks a primary CTA. */}
+          {(() => {
+            const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
+            const isFarmerRoute = isFarmer || String(user?.role || '').toLowerCase() === 'farmer';
+            if (onboarding || !isFarmerRoute) return null;
+            const simpleOn = _safe(() => {
+              if (typeof window === 'undefined' || !window.localStorage) return false;
+              const v = window.localStorage.getItem('farroway_simple_mode_enabled');
+              return v === 'true';
+            }, false);
+            const voiceOn = _safe(() => {
+              if (typeof window === 'undefined' || !window.localStorage) return false;
+              const raw = window.localStorage.getItem('farroway_voice_assistant_enabled');
+              if (raw === 'true') return true;
+              // Honor existing voice preferences if present (best-effort).
+              const prefs = window.localStorage.getItem('farroway_voice_preferences');
+              if (prefs) {
+                try { const p = JSON.parse(prefs); if (p && p.enabled === true) return true; } catch { /* ignore */ }
+              }
+              return false;
+            }, false);
+            const path = _safe(() => (location && location.pathname) || '', '');
+            // Hide-by-default surfaces — only show when Simple Mode or
+            // voice mode is explicitly on.
+            const HIDE_PATHS = /^\/(funding|sell|activity|my-farm|my-grow)(\/|$)/i;
+            if (HIDE_PATHS.test(path) && !simpleOn && !voiceOn) return null;
+            // For all other pages, keep the prior behaviour but still
+            // require Simple Mode OR voice-on (the user explicitly asked
+            // to stop the global clutter).
+            if (!simpleOn && !voiceOn) return null;
+            return <VoiceLauncher variant="floating" />;
+          })()}
           {/* Conversational Farm Copilot (Beta). Self-gates on
               FEATURE_FARM_COPILOT_BETA — renders nothing when the
               flag is off, so this is a no-op for every farmer until

@@ -575,17 +575,19 @@ export default function Sell() {
       ) : null}
 
       <div ref={formRef} style={S.card}>
-        <BrandLogo variant="light" size="md" />
-        <h1 style={S.title}>
-          {tSafe('market.sellTitle', 'Sell your produce')}
-        </h1>
+        {/* Dedup fix (Polish wave): the PremiumPageHero above already
+            shows "Sell your produce" as the page title + subtitle.
+            Repeating the same headline + lead here was the duplicate
+            intro the user reported. Replaced with an action-first
+            prompt that names the crop when known, falls back safely
+            otherwise. No duplicate hero / no fake buyer demand. */}
         <p style={S.lead}>
           {canonicalCropDisplay
-            ? tSafe('market.sellSubtitleWithCrop',
-                'Let buyers know when your {crop} is ready.',
+            ? tSafe('market.listPromptWithCrop',
+                'No produce listed yet. List your {crop} when it is ready.',
                 { crop: canonicalCropDisplay })
-            : tSafe('market.sellSubtitle',
-                'Let buyers know when your crop is ready.')}
+            : tSafe('market.listPrompt',
+                'No produce listed yet. List your crop when it is ready.')}
         </p>
 
         {/* Phase 7B: seller trust badge — advisory indicator.

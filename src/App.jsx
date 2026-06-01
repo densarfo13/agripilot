@@ -1419,6 +1419,26 @@ export default function App() {
           // Composite LAST — it reads the 4 sub-probes by name.
           installGrowShareCompositeGlobals();
         } catch { /* never block boot */ }
+        // Polish wave (Jun 2026): notification template resolver, location
+        // display normalizer, cross-page action context, voice FAB
+        // visibility diagnostic. All read-only; never block boot.
+        try {
+          const [
+            { installNotificationTemplateGlobal },
+            { installLocationDisplayGlobal },
+            { installActionContextGlobal },
+            { installVoiceFloatingButtonGlobal },
+          ] = await Promise.all([
+            import('./runtime/notifications/NotificationTemplateRuntime'),
+            import('./runtime/location/LocationDisplayNormalizer'),
+            import('./runtime/actionContext/FarrowayActionContextRuntime'),
+            import('./runtime/voiceUI/VoiceFloatingButtonHealth'),
+          ]);
+          installNotificationTemplateGlobal();
+          installLocationDisplayGlobal();
+          installActionContextGlobal();
+          installVoiceFloatingButtonGlobal();
+        } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
         try {

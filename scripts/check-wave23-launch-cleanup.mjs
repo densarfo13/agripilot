@@ -62,14 +62,25 @@ if (!scripts['check:wave23-launch-cleanup']) {
   fail('package: "check:wave23-launch-cleanup" script missing');
 }
 
+// build:safe used to be a single `npm run x && npm run y && ...` chain.
+// The chain hit Windows' 8191-char command-line limit, so we split it
+// into a JS runner: `build:safe = node scripts/run-build-safe-checks.mjs`
+// and the canonical step list lives in `build:safe:steps` (space-separated
+// step names — no `npm run` prefix). Check either source so the contract
+// holds for both shapes.
 const safeChain = String(scripts['build:safe'] || '');
-if (!/\bnpm run clean:build\b/.test(safeChain)) {
+const safeSteps = String(scripts['build:safe:steps'] || '').split(/\s+/).filter(Boolean);
+const stepSet = new Set(safeSteps);
+const inSafe = (name) =>
+  new RegExp('\\bnpm run ' + name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&') + '\\b').test(safeChain)
+  || stepSet.has(name);
+if (!inSafe('clean:build')) {
   fail('package: build:safe must run clean:build first');
 }
-if (!/\bnpm run check:no-legacy-dashboard\b/.test(safeChain)) {
+if (!inSafe('check:no-legacy-dashboard')) {
   fail('package: build:safe must run check:no-legacy-dashboard');
 }
-if (!/\bnpm run check:wave23-launch-cleanup\b/.test(safeChain)) {
+if (!inSafe('check:wave23-launch-cleanup')) {
   fail('package: build:safe must run check:wave23-launch-cleanup');
 }
 
