@@ -1472,6 +1472,14 @@ export default function App() {
               await import('./runtime/dailyAssistant/DailyAssistantConsumerRuntime');
             installDailyAssistantConsumerGlobal();
           } catch { /* swallow */ }
+          // Single-brain composite — installed LAST so it can read every
+          // consumer probe by name. Honest false-by-default; reports per-
+          // page connectivity from the consumer envelope.
+          try {
+            const { installFarrowayBrainHealthGlobal } =
+              await import('./runtime/dailyAssistant/FarrowayBrainHealthRuntime');
+            installFarrowayBrainHealthGlobal();
+          } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
