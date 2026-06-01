@@ -1281,6 +1281,14 @@ export default function App() {
             await import('./runtime/scan/ScanAnalysisRuntime');
           installScanAnalysisGlobal();
         } catch { /* never block boot */ }
+        // Scan detection production fix — canonical detection contract +
+        // normalizer + the detection/OODA/artifact health probes. Pure
+        // diagnostics; never touch the live scan render or block boot.
+        try {
+          const { installScanDetectionGlobals } =
+            await import('./runtime/scanDetection/ScanDetectionRuntime');
+          installScanDetectionGlobals();
+        } catch { /* never block boot */ }
         // Wave 22 — Launch UX health composite. Pins
         // __launchUXHealth() which mirrors the 11 grower-flow
         // gates the launch-friction CI gate enforces statically.
