@@ -44,25 +44,37 @@ function _toAction(task, surface) {
 
 function SimpleTasksInner() {
   const navigate = useNavigate();
-  const [plan, setPlan] = React.useState(null);
+  // Consumer integration: pull the active + upcoming task from the
+  // canonical Daily Assistant task chain so Tasks renders the SAME
+  // activeTask as Home (single source of truth). Simple Mode shows
+  // ONE active + ONE upcoming — locked / completed are hidden.
+  const [snapshot, setSnapshot] = React.useState(null);
 
   React.useEffect(() => {
     let alive = true;
-    import('../../runtime/dailyPlan/DailyFarmPlanRuntime')
-      .then((m) => {
-        const built = _safe(() => m.buildDailyPlan({}), null);
-        if (alive && built) setPlan(built);
-      })
-      .catch(() => { /* swallow */ });
+    Promise.all([
+      import('../../runtime/dailyAssistant/TaskChainRuntime'),
+      import('../../runtime/dailyAssistant/DailyAssistantConsumerRuntime'),
+    ]).then(([chainMod, consumerMod]) => {
+      const built = _safe(() => chainMod.buildTaskChain(), null);
+      if (alive && built) setSnapshot(built);
+      _safe(() => consumerMod.recordConsumerIntegration('tasks'), null);
+    }).catch(() => { /* swallow */ });
     return () => { alive = false; };
   }, []);
 
-  const tasks = _safe(() => Array.isArray(plan && plan.tasks) ? plan.tasks.slice(0, 3) : [], []);
-  const actions = tasks.map((t) => _toAction(t, 'tasks')).filter(Boolean);
+  const primary = _safe(() => snapshot && snapshot.activeTask
+    ? _toAction(snapshot.activeTask, 'tasks') : null, null);
+  const upcoming = _safe(() => snapshot && snapshot.upcomingTask
+    ? _toAction(snapshot.upcomingTask, 'tasks') : null, null);
+  const actions = [primary, upcoming].filter(Boolean);
   const goScan = () => _safe(() => navigate('/scan'), null);
 
   return (
-    <div style={S.page} data-testid="simple-tasks" data-renderer="simple">
+    <div style={S.page} data-testid="simple-tasks" data-renderer="simple"
+      data-consumes="dailyAssistant" data-surface="tasks"
+      data-active-task-id={primary ? primary.id : ''}
+      data-active-task-title={primary ? primary.actionDefault : ''}>
       <div style={S.shell}>
         <header style={S.head}>
           <h1 style={S.title}>{tSafe('simple.tasks.title', 'Your Tasks')}</h1>

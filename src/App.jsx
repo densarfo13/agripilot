@@ -1464,6 +1464,14 @@ export default function App() {
           installTaskChainHealthGlobal();
           installDailyAssistantGlobal();
           installDailyAssistantProbeGlobals();
+          // Consumer integration health — tracks which pages consume the
+          // chain runtime. Honest false-by-default; pages call
+          // recordConsumerIntegration() on mount to flip their flag.
+          try {
+            const { installDailyAssistantConsumerGlobal } =
+              await import('./runtime/dailyAssistant/DailyAssistantConsumerRuntime');
+            installDailyAssistantConsumerGlobal();
+          } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.

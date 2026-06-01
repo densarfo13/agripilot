@@ -19,14 +19,19 @@ const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
 // Map a daily-plan task into a SimpleAction shape. Defaults are kept short
 // to honor the §9 copy-length rules (≤12 words action, ≤10 words reason).
+// Map a TaskChainRuntime task (or upcoming task) into the SimpleAction
+// shape the SimpleActionCard expects. The chain task carries titleDefault
+// + why + estimatedTime; the old daily-plan map kept for backward compat.
 function _toSimpleAction(task, surface) {
   return _safe(() => {
     if (!task) return null;
-    const priority = task.urgency === 'critical' ? 'red'
-      : task.urgency === 'recommended' ? 'yellow' : 'green';
-    const icon = priority === 'red' ? '⚠️' : priority === 'yellow' ? '🌿' : '🌱';
-    const actionDefault = task.title || 'Check on your plants today.';
-    const reasonDefault = task.explanation || 'Stay on track with your daily plan.';
+    // Status-aware priority — task chain emits status (active|upcoming|locked).
+    const status = task.status;
+    const priority = status === 'active' ? 'yellow'
+      : status === 'upcoming' ? 'green' : 'green';
+    const icon = status === 'active' ? '🌿' : '🌱';
+    const actionDefault = task.titleDefault || task.title || 'Check on your plants today.';
+    const reasonDefault = task.why || task.explanation || 'Stay on track with your daily plan.';
     return {
       id: String(task.id || ''),
       surface: surface || 'home',
@@ -42,34 +47,54 @@ function _toSimpleAction(task, surface) {
       voiceKey: '',
       voiceDefault: `${tSafe('simple.label.doThisNow', 'Do this now')}. ${actionDefault} ${reasonDefault}`,
       buttons: [{ id: 'done', labelKey: 'simple.button.done', labelDefault: 'Done', primary: true }],
-      source: task.source || 'daily_plan',
+      source: task.source || 'task_chain',
+      estimatedTime: task.estimatedTime || '',
+      scanRelevant: !!task.scanRelevant,
     };
   }, null);
 }
 
 function SimpleModeHomeSectionInner() {
   const navigate = useNavigate();
-  const [plan, setPlan] = React.useState(null);
+  // Consumer integration: the canonical source of "what to do now" is the
+  // Daily Assistant task chain runtime. We read its snapshot — Home and
+  // Tasks render the IDENTICAL active task because they both consume the
+  // same buildTaskChain() output (single source of truth).
+  const [snapshot, setSnapshot] = React.useState(null);
 
   React.useEffect(() => {
     let alive = true;
-    import('../../runtime/dailyPlan/DailyFarmPlanRuntime')
-      .then((m) => {
-        const built = _safe(() => m.buildDailyPlan({}), null);
-        if (alive && built) setPlan(built);
-      })
-      .catch(() => { /* swallow */ });
+    Promise.all([
+      import('../../runtime/dailyAssistant/TaskChainRuntime'),
+      import('../../runtime/dailyAssistant/DailyAssistantConsumerRuntime'),
+    ]).then(([chainMod, consumerMod]) => {
+      const built = _safe(() => chainMod.buildTaskChain(), null);
+      if (alive && built) setSnapshot(built);
+      // Record that the home surface has been integrated, so the
+      // consumer-health diagnostic flips homeIntegrated:true.
+      _safe(() => consumerMod.recordConsumerIntegration('home'), null);
+    }).catch(() => { /* swallow */ });
     return () => { alive = false; };
   }, []);
 
-  const tasks = _safe(() => Array.isArray(plan && plan.tasks) ? plan.tasks.slice(0, 3) : [], []);
-  const primary = tasks[0] ? _toSimpleAction(tasks[0], 'home') : null;
-  const secondaries = tasks.slice(1, 3).map((t) => _toSimpleAction(t, 'home')).filter(Boolean);
+  // Primary = the single 'active' task. Secondary = the immediate
+  // 'upcoming' task only (max 1 — Simple Mode shows one main + one next).
+  const primary = _safe(() => snapshot && snapshot.activeTask
+    ? _toSimpleAction(snapshot.activeTask, 'home') : null, null);
+  const upcoming = _safe(() => snapshot && snapshot.upcomingTask
+    ? _toSimpleAction(snapshot.upcomingTask, 'home') : null, null);
+  const secondaries = upcoming ? [upcoming] : [];
 
   const goScan = () => _safe(() => navigate('/scan'), null);
 
   return (
-    <section style={S.section} data-testid="simple-mode-home-section">
+    <section
+      style={S.section}
+      data-testid="simple-mode-home-section"
+      data-consumes="dailyAssistant"
+      data-surface="home"
+      data-active-task-id={primary ? primary.id : ''}
+      data-active-task-title={primary ? primary.actionDefault : ''}>
       <p style={S.eyebrow}>{tSafe('simple.home.eyebrow', "Today's Action")}</p>
       {primary ? (
         <SimpleActionCard

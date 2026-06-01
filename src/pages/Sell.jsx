@@ -98,6 +98,28 @@ export default function Sell() {
   const canonicalCropDisplay = canonicalFarm && canonicalFarm.crop
     ? resolveCropName(canonicalFarm) : null;
 
+  // Consumer integration (Daily Assistant): read the harvest-ready /
+  // sell-unlocked signal from __dailyAssistantHealth() so the primary
+  // CTA reads "List produce" only when the harvest is actually ready.
+  // Falls back to false (draft path) when the runtime is unavailable.
+  // The runtime is read-only; nothing here blocks the page.
+  const [sellUnlocked, setSellUnlocked] = React.useState(false);
+  React.useEffect(() => {
+    let alive = true;
+    try {
+      const w = window;
+      const probe = (w && typeof w.__dailyAssistantHealth === 'function')
+        ? w.__dailyAssistantHealth() : null;
+      if (alive && probe && probe.sellUnlocked === true) setSellUnlocked(true);
+    } catch { /* swallow — defaults to draft path */ }
+    // Record consumer-integration marker so __dailyAssistantConsumerHealth
+    // flips sellIntegrated:true.
+    import('../runtime/dailyAssistant/DailyAssistantConsumerRuntime')
+      .then((m) => { try { m.recordConsumerIntegration('sell'); } catch { /* swallow */ } })
+      .catch(() => { /* swallow */ });
+    return () => { alive = false; };
+  }, []);
+
   // Pick the active farm. Priority order:
   //   1. canonical farmContextEngine.activeFarm (respects
   //      farroway.activeFarmId + 3-tier fall-through)
@@ -575,19 +597,30 @@ export default function Sell() {
       ) : null}
 
       <div ref={formRef} style={S.card}>
-        {/* Dedup fix (Polish wave): the PremiumPageHero above already
-            shows "Sell your produce" as the page title + subtitle.
-            Repeating the same headline + lead here was the duplicate
-            intro the user reported. Replaced with an action-first
-            prompt that names the crop when known, falls back safely
-            otherwise. No duplicate hero / no fake buyer demand. */}
-        <p style={S.lead}>
-          {canonicalCropDisplay
-            ? tSafe('market.listPromptWithCrop',
-                'No produce listed yet. List your {crop} when it is ready.',
-                { crop: canonicalCropDisplay })
-            : tSafe('market.listPrompt',
-                'No produce listed yet. List your crop when it is ready.')}
+        {/* Daily Assistant consumer integration: the lead and primary
+            action branch on the harvest-ready signal from
+            __dailyAssistantHealth().sellUnlocked.
+              • READY  → "List produce" path (existing flow below)
+              • !READY → "Prepare listing draft" — same form fields,
+                         just calmer copy so the farmer knows the
+                         harvest gate hasn't fired yet. */}
+        <p style={S.lead} data-consumes="dailyAssistant" data-surface="sell"
+          data-sell-unlocked={sellUnlocked ? 'true' : 'false'}>
+          {sellUnlocked ? (
+            canonicalCropDisplay
+              ? tSafe('market.listPromptWithCrop',
+                  'No produce listed yet. List your {crop} when it is ready.',
+                  { crop: canonicalCropDisplay })
+              : tSafe('market.listPrompt',
+                  'No produce listed yet. List your crop when it is ready.')
+          ) : (
+            canonicalCropDisplay
+              ? tSafe('market.draftPromptWithCrop',
+                  'Your {crop} is not marked harvest-ready yet. You can still prepare a listing draft.',
+                  { crop: canonicalCropDisplay })
+              : tSafe('market.draftPrompt',
+                  'Your crop is not marked harvest-ready yet. You can still prepare a listing draft.')
+          )}
         </p>
 
         {/* Phase 7B: seller trust badge — advisory indicator.
