@@ -63,16 +63,23 @@ else {
     F.push('Home must not render the legacy <span style={S.statusPill}> chip');
   else P.push('legacy statusPill chip removed');
 
-  // PASS — notification button exists. Either NotificationBell rendered,
-  // or an explicit aria-label="Notifications" element.
-  const hasBell = /<NotificationBell\b/.test(safe) || /aria-label=['"]Notifications['"]/.test(safe);
-  if (!hasBell) F.push('Home must render a notification button (NotificationBell or aria-label="Notifications")');
+  // PASS — notification button exists. Accept any of:
+  //   • <NotificationBell /> rendered directly
+  //   • <PageActions /> (the canonical in-page action cluster — wraps
+  //     NotificationBell + Menu link, ships their aria-labels internally)
+  //   • an explicit aria-label="Notifications" element
+  const hasBell = /<NotificationBell\b/.test(safe)
+    || /<PageActions\b/.test(safe)
+    || /aria-label=['"]Notifications['"]/.test(safe);
+  if (!hasBell) F.push('Home must render a notification button (NotificationBell, PageActions, or aria-label="Notifications")');
   else P.push('notification button present');
 
-  // PASS — menu button exists. Must carry aria-label="Menu".
-  const hasMenu = /aria-label=['"]Menu['"]/.test(safe);
-  if (!hasMenu) F.push('Home must render a menu button with aria-label="Menu"');
-  else P.push('menu button present (aria-label="Menu")');
+  // PASS — menu button exists. Must carry aria-label="Menu" OR be
+  // surfaced via <PageActions /> (which ships the menu link with that
+  // aria-label internally).
+  const hasMenu = /aria-label=['"]Menu['"]/.test(safe) || /<PageActions\b/.test(safe);
+  if (!hasMenu) F.push('Home must render a menu button (PageActions or aria-label="Menu")');
+  else P.push('menu button present (PageActions or aria-label="Menu")');
 
   // Sanity — both buttons live in the header (the same top-right cluster)
   // so the page doesn't grow a stray button somewhere strange. We look for

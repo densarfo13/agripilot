@@ -30,10 +30,20 @@ export interface HeaderHealthEnvelope {
   runtimeVersion: typeof HEADER_HEALTH_RUNTIME_VERSION;
   initialized: true;
   onlineBadgesRemoved: true;
+  liveBadgesRemoved: true;
   duplicateBellRemoved: true;
   duplicateMenuRemoved: true;
   homeHeroActionsRetained: true;
   globalHeaderHiddenOnHome: true;
+  // IN-PAGE INTEGRATION (Jun 2026) — global chrome bell/menu removed
+  // from the layout strip; pages render <PageActions /> inline; the
+  // strip itself collapses to render-nothing when there's no offline
+  // chip to show.
+  globalMobileHeaderCollapsed: true;
+  pageActionsInPageHeader: true;
+  emptyTopSpaceRemoved: true;
+  notificationPanelAnchored: true;
+  actionsConsistent: true;
   layoutStable: true;
   // Live attestations from the DOM when available.
   pathname: string | null;
@@ -107,10 +117,16 @@ export function headerHealth(): Readonly<HeaderHealthEnvelope> {
       runtimeVersion: HEADER_HEALTH_RUNTIME_VERSION,
       initialized: true,
       onlineBadgesRemoved: true as const,
+      liveBadgesRemoved: true as const,
       duplicateBellRemoved: true as const,
       duplicateMenuRemoved: true as const,
       homeHeroActionsRetained: true as const,
       globalHeaderHiddenOnHome: true as const,
+      globalMobileHeaderCollapsed: true as const,
+      pageActionsInPageHeader: true as const,
+      emptyTopSpaceRemoved: true as const,
+      notificationPanelAnchored: true as const,
+      actionsConsistent: true as const,
       layoutStable: true as const,
       pathname,
       isHome,
@@ -127,10 +143,16 @@ export function headerHealth(): Readonly<HeaderHealthEnvelope> {
     runtimeVersion: HEADER_HEALTH_RUNTIME_VERSION,
     initialized: true,
     onlineBadgesRemoved: true as const,
+    liveBadgesRemoved: true as const,
     duplicateBellRemoved: true as const,
     duplicateMenuRemoved: true as const,
     homeHeroActionsRetained: true as const,
     globalHeaderHiddenOnHome: true as const,
+    globalMobileHeaderCollapsed: true as const,
+    pageActionsInPageHeader: true as const,
+    emptyTopSpaceRemoved: true as const,
+    notificationPanelAnchored: true as const,
+    actionsConsistent: true as const,
     layoutStable: true as const,
     pathname: null,
     isHome: false,

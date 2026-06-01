@@ -192,18 +192,23 @@ export default function ProtectedLayout() {
             {(() => {
               const path = (location && location.pathname) || '';
               const isHome = path === '/' || path === '/home';
+              // IN-PAGE INTEGRATION: the header strip used to reserve 36px
+              // of vertical space for the offline chip + chrome bell/menu.
+              // The bell/menu moved into each page via <PageActions />.
+              // When the user is online (the normal case), the strip would
+              // be a blank 36px band — so we render nothing at all unless
+              // the offline chip needs to show.
+              if (!isOfflineSession) return null;
               return (
-            <div style={S.header} data-route-home={isHome ? 'true' : 'false'}>
+            <div style={S.header} data-route-home={isHome ? 'true' : 'false'} data-testid="layout-chrome-strip">
               {/* Left: offline-state chip only. The online chip was removed
                   per the header duplication fix — connectivity is surfaced
                   only when offline, never as a passive green badge. */}
               <div style={S.headerLeft}>
-                {isOfflineSession ? (
-                  <span style={S.offlineChip}>
-                    <span style={S.offlineDot} />
-                    {t('farmer.offline')}
-                  </span>
-                ) : null}
+                <span style={S.offlineChip}>
+                  <span style={S.offlineDot} />
+                  {t('farmer.offline')}
+                </span>
               </div>
 
               {/* Right: notification bell + menu button. The menu
@@ -219,29 +224,13 @@ export default function ProtectedLayout() {
                   actions). All other routes still get the chrome
                   bell + menu. data-route-home attribute marks the
                   state for the header-duplication gate. */}
-              <div style={S.headerRight} data-testid="layout-chrome-right" data-hidden-on-home={isHome ? 'true' : 'false'}>
-                {!isHome && !onboarding && isSurfaceEnabled('FEATURE_NOTIFICATIONS') && (() => {
-                  try {
-                    const bellUserId = String(user?.sub || user?.id || '');
-                    return bellUserId
-                      ? <NotificationBell userId={bellUserId} testId="header-notification-bell" />
-                      : null;
-                  } catch { return null; }
-                })()}
-                {!isHome && !onboarding && (
-                  <button
-                    type="button"
-                    onClick={() => setSettingsOpen(true)}
-                    style={S.menuBtn}
-                    aria-label={t('settings.title')}
-                    data-testid="layout-settings-menu"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
+              {/* IN-PAGE INTEGRATION (Jun 2026): global chrome bell/menu
+                  removed. Pages render their own <PageActions /> inside
+                  their hero header so the cluster feels like part of the
+                  page, not a floating top bar. Empty placeholder kept
+                  so the offline chip on the left still right-aligns when
+                  shown, and collapses to zero width otherwise. */}
+              <div style={S.headerRight} data-testid="layout-chrome-right" data-empty="true" />
             </div>
               );
             })()}

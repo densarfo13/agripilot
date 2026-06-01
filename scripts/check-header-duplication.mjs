@@ -32,21 +32,26 @@ else {
   if (/isOfflineSession\s*\?\s*t\('farmer\.offline'\)\s*:\s*t\('farmer\.online'\)/.test(src))
     F.push('ProtectedLayout still renders t(\'farmer.online\') text');
   else P.push('ProtectedLayout no longer renders the "farmer.online" text');
-  // Bell + Menu must be guarded by !isHome (and the IIFE must derive isHome).
-  if (!/const\s+isHome\s*=\s*path\s*===\s*['"]\/['"]\s*\|\|\s*path\s*===\s*['"]\/home['"]/.test(src))
-    F.push('ProtectedLayout must derive isHome from location.pathname (/ or /home)');
-  else P.push('ProtectedLayout derives isHome');
-  if (!/!isHome\s*&&\s*!onboarding\s*&&\s*isSurfaceEnabled\('FEATURE_NOTIFICATIONS'\)/.test(src))
-    F.push('ProtectedLayout must hide the bell when isHome');
-  else P.push('ProtectedLayout hides the bell on /home');
-  // The menu must also be guarded by !isHome.
-  if (!/!isHome\s*&&\s*!onboarding\s*&&\s*\(/.test(src))
-    F.push('ProtectedLayout must hide the menu when isHome');
-  else P.push('ProtectedLayout hides the menu on /home');
-  // The chrome right group must mark the hidden state for the diagnostic.
-  if (!/data-hidden-on-home=\{isHome\s*\?\s*['"]true['"]\s*:\s*['"]false['"]\}/.test(proto))
-    F.push('ProtectedLayout must mark data-hidden-on-home on the chrome group');
-  else P.push('chrome group marks data-hidden-on-home');
+  // IN-PAGE INTEGRATION (Jun 2026): the previous spec required the chrome
+  // bell/menu to merely HIDE on /home. The new contract is stronger — the
+  // chrome bell/menu must be GONE from ProtectedLayout entirely (pages
+  // render their own <PageActions />), and the layout chrome strip itself
+  // must collapse (return null) when there's no offline chip to show. Both
+  // shapes are accepted here so re-running this gate against either era
+  // of the codebase still passes.
+  const bellInLayout = /testId=['"]header-notification-bell['"]/.test(src);
+  const menuInLayout = /data-testid=['"]layout-settings-menu['"]/.test(src);
+  if (bellInLayout)
+    F.push('ProtectedLayout must no longer render the chrome NotificationBell (in-page integration)');
+  else P.push('ProtectedLayout chrome NotificationBell removed');
+  if (menuInLayout)
+    F.push('ProtectedLayout must no longer render the chrome menu button (in-page integration)');
+  else P.push('ProtectedLayout chrome menu button removed');
+  // The chrome strip must collapse when there's nothing to render (no
+  // offline chip → return null) — that's the empty-top-space fix.
+  if (!/if\s*\(\s*!isOfflineSession\s*\)\s*return\s+null/.test(src))
+    F.push('ProtectedLayout chrome strip must early-return null when !isOfflineSession');
+  else P.push('chrome strip collapses when online');
 }
 
 // ── 2. CalmHomeHero: Online tSafe call removed ──────────────────────────
@@ -57,20 +62,40 @@ if (calm) {
   else P.push('CalmHomeHero no longer renders the Online label');
 }
 
-// ── 3. Home: exactly ONE NotificationBell + ONE aria-label="Menu" ───────
+// ── 3. Home: bell + menu present exactly once, via inline elements OR
+//          via the canonical <PageActions /> component which wraps them.
 const home = read('src/pages/Home.jsx');
 if (!home) F.push('src/pages/Home.jsx: missing');
 else {
-  const bells = (home.match(/<NotificationBell\b/g) || []).length;
-  if (bells !== 1) F.push(`Home must render exactly ONE NotificationBell (found ${bells})`);
-  else P.push('Home renders exactly one NotificationBell');
-  const menus = (home.match(/aria-label=['"]Menu['"]/g) || []).length;
-  if (menus !== 1) F.push(`Home must render exactly ONE aria-label="Menu" (found ${menus})`);
-  else P.push('Home renders exactly one aria-label="Menu"');
-  // The hero-actions cluster must still be present (no empty container).
+  const pageActionsCount = (home.match(/<PageActions\b/g) || []).length;
+  const inlineBells = (home.match(/<NotificationBell\b/g) || []).length;
+  const inlineMenus = (home.match(/aria-label=['"]Menu['"]/g) || []).length;
+  if (pageActionsCount >= 1) {
+    // Canonical path: <PageActions /> ships exactly one bell + one menu.
+    if (pageActionsCount > 1)
+      F.push(`Home must render exactly ONE <PageActions /> (found ${pageActionsCount})`);
+    else P.push('Home renders exactly one <PageActions />');
+    // No additional inline duplicates allowed.
+    if (inlineBells > 0)
+      F.push(`Home must not render an inline <NotificationBell /> when <PageActions /> is present (found ${inlineBells})`);
+    else P.push('no duplicate inline NotificationBell');
+    if (inlineMenus > 0)
+      F.push(`Home must not render an inline aria-label="Menu" when <PageActions /> is present (found ${inlineMenus})`);
+    else P.push('no duplicate inline aria-label="Menu"');
+  } else {
+    // Legacy inline path (pre-PageActions era) — still accept exactly
+    // one bell + one menu inline.
+    if (inlineBells !== 1) F.push(`Home must render exactly ONE NotificationBell (found ${inlineBells})`);
+    else P.push('Home renders exactly one NotificationBell (inline)');
+    if (inlineMenus !== 1) F.push(`Home must render exactly ONE aria-label="Menu" (found ${inlineMenus})`);
+    else P.push('Home renders exactly one aria-label="Menu" (inline)');
+  }
+  // The hero-actions cluster anchor must still be present so the gate /
+  // diagnostic can locate it in the DOM. PageActions ships its own
+  // data-testid via the testId prop ("home-header-actions" on Home).
   if (!/data-testid=['"]home-header-actions['"]/.test(home))
     F.push('Home must keep the header-actions cluster (data-testid="home-header-actions")');
-  else P.push('Home header-actions cluster retained');
+  else P.push('Home header-actions anchor retained');
 }
 
 // ── 4. HeaderHealth runtime + boot install ──────────────────────────────

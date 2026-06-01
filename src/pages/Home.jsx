@@ -83,6 +83,7 @@ import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
 import DailyFarmPlanCard          from '../components/home/DailyFarmPlanCard.jsx';
 import NotificationBell           from '../components/NotificationBell.jsx';
+import PageActions                 from '../components/layout/PageActions.jsx';
 import useSimpleMode              from '../hooks/useSimpleMode.js';
 import SimpleModeHomeSection      from '../components/simpleMode/SimpleModeHomeSection.jsx';
 import SimpleHome                  from '../components/simpleMode/SimpleHome.jsx';
@@ -907,17 +908,18 @@ export default function Home() {
                 weather card itself, never as a chrome chip. The bell
                 preserves its unread-count badge; the menu navigates to
                 the existing Settings page (no new navigation behavior). */}
-            <div style={S.headerActions} data-testid="home-header-actions">
-              <NotificationBell ariaLabel="Notifications" testId="home-bell" />
-              <Link
-                to="/settings"
-                aria-label="Menu"
-                style={S.menuBtn}
-                data-testid="home-menu"
-              >
-                <span aria-hidden="true">☰</span>
-              </Link>
-            </div>
+            {/* Canonical in-page action cluster — same component every
+                page renders so there is exactly one bell + menu pair
+                visible at any moment. The global layout chrome no
+                longer renders these. */}
+            {/* The canonical action cluster lives inside PageActions; we
+                also expose the data-testid="home-header-actions" anchor
+                on the wrapper so the DOM-attest path used by gates and
+                __headerHealth can find it by id without needing to
+                introspect a child component. */}
+            <span data-testid="home-header-actions" style={{ display: 'contents' }}>
+              <PageActions testId="home-page-actions" />
+            </span>
           </div>
         </header>
 
