@@ -1290,6 +1290,34 @@ export default function App() {
             await import('./runtime/scanDetection/ScanDetectionRuntime');
           installScanDetectionGlobals();
         } catch { /* never block boot */ }
+        // Post-scan intelligence layer — outcome learning loop / farm digital
+        // twin / regional readiness / scan risk scoring / NGO reporting hooks
+        // + the post-scan OODA+artifact composite. Pure read-only composition;
+        // composes AFTER a scan result and NEVER blocks the scan render/boot.
+        try {
+          const [
+            { installOutcomeLearningLoopHealthGlobal },
+            { installFarmDigitalTwinHealthGlobal },
+            { installRegionalIntelligenceReadinessGlobal },
+            { installScanRiskScoringHealthGlobal },
+            { installNGOReportingHooksHealthGlobal },
+            { installPostScanIntelligenceGlobals },
+          ] = await Promise.all([
+            import('./runtime/intelligence/outcomes/OutcomeLearningLoop'),
+            import('./runtime/intelligence/farmTwin/FarmDigitalTwinRuntime'),
+            import('./runtime/intelligence/regional/RegionalIntelligenceRuntime'),
+            import('./runtime/scanRisk/ScanRiskScoringRuntime'),
+            import('./runtime/intelligence/ngo/NGOReportingHooks'),
+            import('./runtime/intelligence/PostScanIntelligenceRuntime'),
+          ]);
+          installOutcomeLearningLoopHealthGlobal();
+          installFarmDigitalTwinHealthGlobal();
+          installRegionalIntelligenceReadinessGlobal();
+          installScanRiskScoringHealthGlobal();
+          installNGOReportingHooksHealthGlobal();
+          // Composite LAST — it reads the post-scan probes by name.
+          installPostScanIntelligenceGlobals();
+        } catch { /* never block boot */ }
         // V13 pilot lock — scan reliability metrics (data collection only;
         // architecture frozen). Pure read-only probe; never blocks boot.
         try {
