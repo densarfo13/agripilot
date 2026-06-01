@@ -23,6 +23,7 @@ const _call = (name) => _safe(() => {
 export default function I18nQAPage() {
   const [snap, setSnap] = useState(null);
   const refresh = () => setSnap({
+    review:    _call('__translationReviewHealth'),
     language:  _call('__languageHealth'),
     state:     _call('__languageState'),
     offline:   _call('__offlineLanguageHealth'),
@@ -43,6 +44,36 @@ export default function I18nQAPage() {
 
       {!snap ? <p style={S.empty}>Loading diagnostics…</p> : (
         <div style={S.grid}>
+          {(() => {
+            const r = snap.review;
+            const PD = { REVIEWED: '#10B981', IN_REVIEW: '#FBBF24', NEEDS_REVIEW: '#FBBF24', UNKNOWN: '#475569' };
+            const SD = { PASS: '#10B981', FAIL: '#F87171', NEEDS_TEST: '#FBBF24', UNKNOWN: '#475569' };
+            const locs = [['Twi (tw)', 'twReviewStatus'], ['Hausa (ha)', 'haReviewStatus'],
+              ['Swahili (sw)', 'swReviewStatus'], ['Hindi (hi)', 'hiReviewStatus']];
+            return (
+              <section style={{ ...S.card, gridColumn: '1 / -1' }} data-testid="translation-review-proof">
+                <div style={S.cardTitle}>
+                  Translation review proof —{' '}
+                  <span style={{ color: SD[(r && r.proofStatus) || 'UNKNOWN'] }}>
+                    {(r && r.proofStatus) || 'UNKNOWN'}
+                  </span>
+                </div>
+                {!r ? <p style={S.empty}>Review probe not loaded.</p> : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', gap: 8 }}>
+                    <div style={S.kv}><span>missing keys tracked</span><b>{String(!!r.missingKeysTracked)}</b></div>
+                    <div style={S.kv}><span>fallback tracked</span><b>{String(!!r.fallbackUsageTracked)}</b></div>
+                    <div style={S.kv}><span>review queue visible</span><b>{String(!!r.reviewQueueVisible)}</b></div>
+                    {locs.map(([label, key]) => (
+                      <div key={key} style={S.kv}>
+                        <span>{label}</span>
+                        <b style={{ color: PD[String(r[key] || 'UNKNOWN')] || '#94A3B8' }}>{String(r[key] || 'UNKNOWN')}</b>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })()}
           {[
             ['Language health', snap.language],
             ['Language state',  snap.state],
@@ -80,4 +111,6 @@ const S = {
     letterSpacing: '0.06em', marginBottom: 8, fontFamily: 'system-ui' },
   pre: { margin: 0, fontSize: 11, color: '#CBD5E1', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
     maxHeight: 360, overflow: 'auto' },
+  kv: { display: 'flex', flexDirection: 'column', gap: 2, background: '#0F172A', border: '1px solid #1F2937',
+    borderRadius: 8, padding: '8px 10px', fontSize: 11, color: '#94A3B8', fontFamily: 'system-ui' },
 };

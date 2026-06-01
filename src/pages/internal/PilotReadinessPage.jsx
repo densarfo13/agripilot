@@ -21,11 +21,24 @@ const _call = (name) => _safe(() => {
 
 const DOT = { GREEN: '#10B981', YELLOW: '#FBBF24', RED: '#F87171' };
 const VERDICT = { GO: '#10B981', GO_WITH_LIMITATIONS: '#FBBF24', BLOCKED: '#F87171' };
+// Proof statuses — honest colours; UNKNOWN/NEEDS are amber, never green.
+const PROOF_DOT = {
+  PASS: '#10B981', FAIL: '#F87171', NEEDS_TEST: '#FBBF24', NEEDS_DATA: '#FBBF24',
+  PILOT_READY: '#10B981', PROGRAM_READY: '#10B981', UNKNOWN: '#475569',
+};
+const PROOF_ROWS = [
+  ['Daily Plan Proof', 'dailyPlan'], ['Scan-to-Task Proof', 'scanToTask'],
+  ['Post-Harvest Proof', 'postHarvest'], ['Outcome Proof', 'outcome'],
+  ['Data Readiness', 'dataReadiness'], ['Translation Review', 'translationReview'],
+  ['Persistence Proof', 'persistence'], ['Invite Proof', 'invites'],
+  ['Offline Sync Proof', 'offlineSync'], ['Onboarding Proof', 'onboarding'],
+];
 
 export default function PilotReadinessPage() {
   const [snap, setSnap] = useState(null);
   const refresh = () => setSnap({
     readiness:   _call('__pilotReadiness'),
+    proof:       _call('__finalPilotProofHealth'),
     scan:        _call('__scanMetrics'),
     retention:   _call('__retentionMetrics'),
     outcome:     _call('__outcomeMetrics'),
@@ -67,8 +80,41 @@ export default function PilotReadinessPage() {
             ))}
           </div>
 
+          {/* Final Pilot Proof — real end-to-end proof board. No fake green:
+              NEEDS_TEST / NEEDS_DATA / UNKNOWN render amber, only real PASS
+              is green, FAIL is red. */}
+          {(() => {
+            const pf = snap.proof;
+            return (
+              <section style={S.proofWrap} data-testid="final-pilot-proof">
+                <div style={S.proofHead}>
+                  <span style={S.verdictLabel}>Final Pilot Proof</span>
+                  <span style={{ ...S.badge, background: VERDICT[pf && pf.verdict] || '#475569' }}>
+                    {(pf && pf.verdict) || 'UNKNOWN'}
+                  </span>
+                  <span style={S.scoreLabel}>{(pf && pf.scoreLabel) || '—'}</span>
+                </div>
+                {!pf ? <p style={S.empty}>Proof probes not loaded yet.</p> : (
+                  <div style={S.board}>
+                    {PROOF_ROWS.map(([label, key]) => {
+                      const st = String((pf && pf[key]) || 'UNKNOWN');
+                      return (
+                        <div key={key} style={S.cell}>
+                          <span style={{ ...S.dot, background: PROOF_DOT[st] || '#475569' }} />
+                          <span style={S.cellName}>{label}</span>
+                          <span style={{ ...S.cellStatus, color: PROOF_DOT[st] || '#94A3B8' }}>{st}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            );
+          })()}
+
           <div style={S.grid}>
             {[
+              ['Final pilot proof (raw)', snap.proof],
               ['Scan operations', snap.scan],
               ['Retention (DAU/WAU/MAU · D1/D7/D30)', snap.retention],
               ['Outcome capture', snap.outcome],
@@ -99,6 +145,9 @@ const S = {
   btn: { appearance: 'none', border: '1px solid #334155', background: '#1E293B', color: '#E5E7EB',
     fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 10, cursor: 'pointer' },
   empty: { fontSize: 13, color: '#94A3B8', fontFamily: 'system-ui' },
+  proofWrap: { background: '#0F172A', border: '1px solid #1F2937', borderRadius: 12, padding: '12px 14px', marginBottom: 16 },
+  proofHead: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 },
+  scoreLabel: { fontSize: 12, color: '#94A3B8', fontFamily: 'system-ui', marginLeft: 'auto' },
   verdictRow: { display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 16px' },
   verdictLabel: { fontSize: 12, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'system-ui' },
   badge: { fontSize: 13, fontWeight: 800, color: '#0B1220', padding: '6px 14px', borderRadius: 999, fontFamily: 'system-ui' },

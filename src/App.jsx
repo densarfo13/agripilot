@@ -266,6 +266,7 @@ const PilotCommandPage = lazy(() => import('./pages/internal/pilot/PilotCommandP
 const NGOPilotPage     = lazy(() => import('./pages/internal/pilot/NGOPilotPage.jsx'));
 const PerformancePage  = lazy(() => import('./pages/internal/PerformancePage.jsx'));
 const I18nQAPage       = lazy(() => import('./pages/internal/I18nQAPage.jsx'));
+const OfflineQAPage    = lazy(() => import('./pages/internal/OfflineQAPage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // Wave-36 — outcome intelligence pages (admin only).
 const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
@@ -1346,6 +1347,51 @@ export default function App() {
           installDailyFarmPlanHealthGlobal();
           installDailyPlanIntegrationGlobals();
         } catch { /* never block boot */ }
+        // Final Pilot Proof layer — 10 read-only proof probes that prove real
+        // end-to-end workflows happened (daily plan / scan-to-task / post-
+        // harvest / outcome / data readiness / translation review /
+        // persistence / invite / offline sync / onboarding) + the composite
+        // scorecard. Honest PASS / NEEDS_TEST / FAIL only — never a fake
+        // green. Pure diagnostics; never block boot.
+        try {
+          const [
+            { installDailyPlanProofGlobal },
+            { installScanToTaskProofGlobal },
+            { installPostHarvestProofGlobal },
+            { installOutcomeProofGlobal },
+            { installDataReadinessGlobal },
+            { installTranslationReviewProofGlobal },
+            { installPersistenceProofGlobal },
+            { installInviteProofGlobal },
+            { installOfflineSyncProofGlobal },
+            { installOnboardingProofGlobal },
+            { installFinalPilotProofGlobals },
+          ] = await Promise.all([
+            import('./runtime/proof/DailyPlanProofRuntime'),
+            import('./runtime/proof/ScanToTaskProofRuntime'),
+            import('./runtime/proof/PostHarvestProofRuntime'),
+            import('./runtime/proof/OutcomeProofRuntime'),
+            import('./runtime/proof/DataReadinessRuntime'),
+            import('./runtime/proof/TranslationReviewProofRuntime'),
+            import('./runtime/proof/PersistenceProofRuntime'),
+            import('./runtime/proof/InviteProofRuntime'),
+            import('./runtime/proof/OfflineSyncProofRuntime'),
+            import('./runtime/proof/OnboardingProofRuntime'),
+            import('./runtime/proof/FinalPilotProofRuntime'),
+          ]);
+          installDailyPlanProofGlobal();
+          installScanToTaskProofGlobal();
+          installPostHarvestProofGlobal();
+          installOutcomeProofGlobal();
+          installDataReadinessGlobal();
+          installTranslationReviewProofGlobal();
+          installPersistenceProofGlobal();
+          installInviteProofGlobal();
+          installOfflineSyncProofGlobal();
+          installOnboardingProofGlobal();
+          // Composite LAST — it reads the 10 proof probes by name.
+          installFinalPilotProofGlobals();
+        } catch { /* never block boot */ }
         // V13 pilot lock — scan reliability metrics (data collection only;
         // architecture frozen). Pure read-only probe; never blocks boot.
         try {
@@ -2360,6 +2406,7 @@ export default function App() {
           {/* V13 — institutional data/MLOps readiness command center (admin only). */}
           <Route path="/internal/v13"              element={<RoleRoute roles={ADMIN_ROLES}><V13CommandCenterPage /></RoleRoute>} />
           <Route path="/internal/qa"     element={<RoleRoute roles={ADMIN_ROLES}><QAPage /></RoleRoute>} />
+          <Route path="/internal/qa/offline" element={<RoleRoute roles={ADMIN_ROLES}><OfflineQAPage /></RoleRoute>} />
           <Route path="/internal/review" element={<RoleRoute roles={ADMIN_ROLES}><ReviewPage /></RoleRoute>} />
           {/* Wave-27 fix — /internal/production-certification was
               mounted without any RoleRoute; the founder-readiness
