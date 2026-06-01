@@ -1498,6 +1498,28 @@ export default function App() {
               await import('./runtime/agronomy/AgronomyRuntime');
             installAgronomyHealthGlobal();
           } catch { /* swallow */ }
+          // Regional + Soil + Market + FarmRisk intelligence composites.
+          // Spec-canonical surfaces under src/runtime/intelligence/. Honest
+          // false-by-default; every score/recommendation carries
+          // source/rationale/confidence/explanation.
+          try {
+            const [
+              { installRegionalIntelligenceFieldGlobal },
+              { installSoilIntelligenceGlobal },
+              { installMarketIntelligenceCompositeGlobal },
+              { installFarmRiskGlobal },
+            ] = await Promise.all([
+              import('./runtime/intelligence/RegionalIntelligenceRuntime'),
+              import('./runtime/intelligence/SoilIntelligenceRuntime'),
+              import('./runtime/intelligence/MarketIntelligenceRuntime'),
+              import('./runtime/intelligence/FarmRiskRuntime'),
+            ]);
+            installRegionalIntelligenceFieldGlobal();
+            installSoilIntelligenceGlobal();
+            installMarketIntelligenceCompositeGlobal();
+            // Farm risk last — composes over the other 3 + predictive + weather.
+            installFarmRiskGlobal();
+          } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
