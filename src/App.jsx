@@ -267,6 +267,7 @@ const NGOPilotPage     = lazy(() => import('./pages/internal/pilot/NGOPilotPage.
 const PerformancePage  = lazy(() => import('./pages/internal/PerformancePage.jsx'));
 const I18nQAPage       = lazy(() => import('./pages/internal/I18nQAPage.jsx'));
 const OfflineQAPage    = lazy(() => import('./pages/internal/OfflineQAPage.jsx'));
+const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // Wave-36 — outcome intelligence pages (admin only).
 const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
@@ -1391,6 +1392,29 @@ export default function App() {
           installOnboardingProofGlobal();
           // Composite LAST — it reads the 10 proof probes by name.
           installFinalPilotProofGlobals();
+        } catch { /* never block boot */ }
+        // Notification runtime — read-only diagnostic + contract layer over
+        // the existing src/lib/notifications/* JS surface. Pins 6 globals
+        // (__notificationHealth + preferences/delivery/queue/OODA/artifact).
+        // Notifications are OPTIONAL: nothing here blocks Home/Scan/boot;
+        // fakeDelivery is hard-coded false in the delivery envelope.
+        try {
+          const [
+            { installNotificationPreferencesGlobal },
+            { installNotificationDeliveryGlobal },
+            { installNotificationSchedulerGlobal },
+            { installNotificationRuntimeGlobals },
+          ] = await Promise.all([
+            import('./runtime/notifications/NotificationPreferences'),
+            import('./runtime/notifications/NotificationDelivery'),
+            import('./runtime/notifications/NotificationScheduler'),
+            import('./runtime/notifications/NotificationRuntime'),
+          ]);
+          installNotificationPreferencesGlobal();
+          installNotificationDeliveryGlobal();
+          installNotificationSchedulerGlobal();
+          // Composite LAST — it reads the 3 sub-probes by name.
+          installNotificationRuntimeGlobals();
         } catch { /* never block boot */ }
         // V13 pilot lock — scan reliability metrics (data collection only;
         // architecture frozen). Pure read-only probe; never blocks boot.
@@ -3026,6 +3050,7 @@ export default function App() {
               gear icon and primary route land on Settings.
             */}
             <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
             <Route path="/farmer-settings" element={<FarmerSettingsPage />} />
             {/* App Store launch audit: /scan-crop → /scan canonical
                 redirect per spec §8. The legacy CameraScanPage is

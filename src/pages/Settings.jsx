@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStrictTranslation as useTranslation } from '../i18n/useStrictTranslation.js';
 import { tSafe } from '../i18n/tSafe.js';
 import { useProfile } from '../context/ProfileContext.jsx';
@@ -146,6 +146,16 @@ export default function Settings() {
             testId="setting-missed"
             isLast
           />
+          {/* Advanced notification preferences live on a dedicated page:
+              quiet hours, timezone, per-type toggles, reminder time. */}
+          <Link
+            to="/settings/notifications"
+            style={{ ...S.h2, display: 'inline-block', marginTop: 12, fontSize: 14,
+              fontWeight: 700, color: '#3730A3', textDecoration: 'underline' }}
+            data-testid="settings-notifications-link"
+          >
+            {tSafe(t, 'notifications.title', 'Manage notification preferences')} →
+          </Link>
         </section>
 
         {/* ─── A1. Push notification preparation ────────────────

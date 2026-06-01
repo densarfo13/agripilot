@@ -88,6 +88,11 @@ import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslation
 // back to English (translator-review). Same `{key:{locale:value}}` shape and
 // empty-slot merge contract as the overlays above.
 import { DAILY_PLAN_TRANSLATIONS }             from './dailyPlanTranslations.js';
+// Notification overlay — settings UI + per-type templates for daily plan /
+// tasks / weather / harvest / NGO / buyer notifications. English base only;
+// other locales fall back to English (translator-review). Same shape and
+// empty-slot merge contract as the overlays above.
+import { NOTIFICATION_TRANSLATIONS }           from './notificationTranslations.js';
 // Production-incident gap overlay (May 2026) — fills the
 // JournalPage / ImmersiveHomeHero / LiveCameraScanner keys that
 // were wrapped in tSafe() but had no entries in any locale column.
@@ -190,6 +195,18 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //       authored value in a locale column always wins.
   for (const key of Object.keys(DAILY_PLAN_TRANSLATIONS)) {
     const row = DAILY_PLAN_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e1c. Notification overlay — settings UI + per-type templates.
+  //       Same empty-slot merge contract.
+  for (const key of Object.keys(NOTIFICATION_TRANSLATIONS)) {
+    const row = NOTIFICATION_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {
