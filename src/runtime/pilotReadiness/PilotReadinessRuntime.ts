@@ -236,17 +236,89 @@ export function pilotReadiness() {
     const routingReady     = subsystems.Authentication !== 'RED'
                               && _status('__routeReachHealth') !== 'RED';
     const languageReady    = subsystems.Localization !== 'RED';
+    const localizationReady = languageReady;  // spec alias
     const outcomeReady     = subsystems.OutcomeCapture !== 'RED';
     const ngoReady         = subsystems.NGOReporting !== 'RED';
     const retentionReady   = !!_probe('__retentionMetrics');
     const reliabilityReady = _status('__reliabilityHealth') !== 'RED';
+    const notificationReady = subsystems.Notifications !== 'RED'
+                               || _status('__notificationRuntimeHealth') !== 'RED';
+
+    // §PRIORITY-LOCKDOWN — read additional probes for spec-shape keys.
+    // These compose existing surfaces only; no new intelligence engines.
+    const onboardingReady = _safe(() => {
+      const p = _probe('__onboardingHealth');
+      if (!p) return false;
+      const v: any = (p as any).value || p;
+      return v && (v.initialized === true || v.farmerOnboardingReady === true);
+    }, false);
+    const commandCenterReady = _safe(() => {
+      const p = _probe('__commandCenterHealth');
+      if (!p) return false;
+      const v: any = (p as any).value || p;
+      return !!(v && v.initialized === true);
+    }, false);
+    const dailyAssistantReady = _safe(() => {
+      const p = _probe('__dailyAssistantHealth');
+      if (!p) return false;
+      const v: any = (p as any).value || p;
+      return !!(v && v.initialized === true);
+    }, false);
+    const fundingReady = _safe(() => {
+      const p = _probe('__fundingHealth');
+      if (!p) return false;
+      const v: any = (p as any).value || p;
+      return !!(v && (v.initialized === true || v.fundingReady === true));
+    }, false);
+    const sellReady = _safe(() => {
+      // Sell surface is "ready" when the harvest gate can resolve —
+      // post-harvest probe initialized OR daily-assistant gate present.
+      const post = _probe('__postHarvestHealth');
+      const daily = _probe('__dailyAssistantHealth');
+      const postReady = !!(post && (post as any).initialized);
+      const dailyHasSell = !!(daily && typeof (daily as any).sellUnlocked === 'boolean');
+      return postReady || dailyHasSell;
+    }, false);
+    const performanceReady = _safe(() => {
+      const p = _probe('__performanceBudgetHealth') || _probe('__performanceHealth');
+      if (!p) {
+        // Fall back to bundle/build health — the gate-locked PASS at
+        // build time is the authoritative perf signal until a live
+        // RUM probe is wired.
+        const bh = _probe('__buildHealth');
+        return !!(bh && ((bh as any).initialized === true || (bh as any).buildReady === true));
+      }
+      const v: any = (p as any).value || p;
+      return !!(v && (v.budgetWithinLimit !== false));
+    }, false);
+    const uiConsistencyReady = _safe(() => {
+      // Composite over header health + simple-mode integration markers.
+      // Both flip true once the dedup gates locked the surface.
+      const hh = _probe('__headerHealth');
+      const sm = _probe('__simpleModeHealth') || _probe('__simpleModeOODAHealth');
+      const hhOk = !!(hh && ((hh as any).value || hh).initialized === true);
+      const smOk = !!(sm && ((sm as any).value || sm).initialized === true);
+      return hhOk && smOk;
+    }, false);
+
+    // §GO-LIVE CRITERIA — pilotReady requires the 7 critical surfaces.
+    const pilotReady = loginReady && dailyAssistantReady && scanReady
+      && outcomeReady && notificationReady && uiConsistencyReady
+      && performanceReady;
+
     return Object.freeze({
       runtimeVersion: PILOT_READINESS_RUNTIME_VERSION, initialized: true,
       subsystems, redCount: red, yellowCount: yellow,
       greenCount: vals.length - red - yellow,
-      // §9 scorecard flags.
+      // §9 scorecard flags (legacy shape — preserved).
       scanReady, loginReady, routingReady, languageReady,
       outcomeReady, ngoReady, retentionReady, reliabilityReady,
+      // §PRIORITY-LOCKDOWN spec shape — 14 flags + pilotReady verdict.
+      onboardingReady, commandCenterReady, dailyAssistantReady,
+      notificationReady, localizationReady,
+      fundingReady, sellReady,
+      performanceReady, uiConsistencyReady,
+      pilotReady,
       verdict,
       disclaimer: 'GREEN=validated · YELLOW=needs monitoring · RED=release blocker.',
     });
@@ -255,6 +327,10 @@ export function pilotReadiness() {
     subsystems: Object.freeze({}), redCount: 0, yellowCount: 0, greenCount: 0,
     scanReady: false, loginReady: false, routingReady: false, languageReady: false,
     outcomeReady: false, ngoReady: false, retentionReady: false, reliabilityReady: false,
+    onboardingReady: false, commandCenterReady: false, dailyAssistantReady: false,
+    notificationReady: false, localizationReady: false,
+    fundingReady: false, sellReady: false,
+    performanceReady: false, uiConsistencyReady: false, pilotReady: false,
     verdict: 'GO_WITH_LIMITATIONS' as const,
     disclaimer: 'GREEN=validated · YELLOW=needs monitoring · RED=release blocker.',
   }));
