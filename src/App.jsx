@@ -269,6 +269,7 @@ const I18nQAPage       = lazy(() => import('./pages/internal/I18nQAPage.jsx'));
 const GrowerPilotPage  = lazy(() => import('./pages/internal/pilot/GrowerPilotPage.jsx'));
 // Wave-36 — outcome intelligence pages (admin only).
 const PilotAnalyticsPage      = lazy(() => import('./pages/internal/PilotAnalyticsPage.jsx'));
+const PilotReadinessPage      = lazy(() => import('./pages/internal/PilotReadinessPage.jsx'));
 const FieldOfficerOutcomesPage = lazy(() => import('./pages/internal/FieldOfficerOutcomesPage.jsx'));
 // Wave-37 — executive field intelligence dashboard (admin only).
 const FieldIntelligencePage = lazy(() => import('./pages/internal/FieldIntelligencePage.jsx'));
@@ -1310,6 +1311,14 @@ export default function App() {
             await import('./runtime/os/FarrowayHealthRuntime');
           installFarrowayHealthGlobal();
         } catch { /* never block boot */ }
+        // Pilot readiness metrics — outcome / NGO / language / retention
+        // metrics + the 12-subsystem readiness dashboard. Read-only
+        // composition (no engines); never blocks boot.
+        try {
+          const { installPilotReadinessGlobals } =
+            await import('./runtime/pilotReadiness/PilotReadinessRuntime');
+          installPilotReadinessGlobals();
+        } catch { /* never block boot */ }
         // Wave 22 — Launch UX health composite. Pins
         // __launchUXHealth() which mirrors the 11 grower-flow
         // gates the launch-friction CI gate enforces statically.
@@ -2275,6 +2284,7 @@ export default function App() {
           <Route path="/internal/pilot/grower" element={<RoleRoute roles={ADMIN_ROLES}><GrowerPilotPage /></RoleRoute>} />
           {/* Wave-36 — outcome intelligence surfaces (admin only). */}
           <Route path="/internal/pilot-analytics"               element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
+          <Route path="/internal/pilot-readiness"               element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />
           <Route path="/internal/pilot-analytics/field-officer" element={<RoleRoute roles={ADMIN_ROLES}><FieldOfficerOutcomesPage /></RoleRoute>} />
           {/* Wave-37 — executive field-intelligence dashboard (admin only). */}
           <Route path="/internal/intelligence" element={<RoleRoute roles={ADMIN_ROLES}><FieldIntelligencePage /></RoleRoute>} />

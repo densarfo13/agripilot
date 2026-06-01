@@ -55,6 +55,12 @@ export function reliabilityHealth() {
       apiHealthReady:        !!build,
       providerHealthReady:   _isObj(scanRuntime)
         && (scanRuntime as any).classifierAvailable !== false,
+      // §7 pilot reliability counters (from the incident signal registry).
+      routeErrors:          _num(counts.route_error)        || 0,
+      authFailures:         _num(counts.auth_failure)        || 0,
+      scanFailures:         _num(counts.scan_failure)        || 0,
+      offlineSyncFailures:  _num(counts.sync_failure)        || 0,
+      notificationFailures: _num(counts.notification_failure) || 0,
       build: build || null,
       metrics: Object.freeze({
         scanSuccessRate: _num(founder && (founder as any).scanSuccessRate),

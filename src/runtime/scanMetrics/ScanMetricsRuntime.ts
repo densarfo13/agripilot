@@ -76,6 +76,13 @@ export function scanMetrics() {
     return Object.freeze({
       runtimeVersion: SCAN_METRICS_RUNTIME_VERSION,
       initialized: true,
+      // §2 scan operations metrics (explicit contract names).
+      scanAttempts:  attempts,
+      scanSuccesses: completedTotal,
+      scanFailures:  failed,
+      uploadScans:   uploadUsage,
+      cameraScans:   cameraUsage,
+      retryCount:    retries,
       // §P2 contract.
       successRate,                 // percent (0–100) or null
       avgAnalysisTime,             // ms or null
