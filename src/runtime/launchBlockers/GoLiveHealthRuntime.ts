@@ -211,6 +211,13 @@ export function goLiveHealth() {
     const pilotCommandReady = !!(pilotCommand && pilotCommand.initialized);
     const regionalReady = !!(regional && regional.packsLoaded >= 1);
 
+    // ─── Daily Farm Plan — additive, warn-only ───────────────────
+    // The daily operating loop must NEVER block go-live; a missing
+    // probe is treated as ready (fail-open), only an EXPLICIT
+    // planReady=false is surfaced as a warning.
+    const dailyFarmPlan = _probe('__dailyFarmPlanHealth');
+    const dailyPlanReady = !(dailyFarmPlan && dailyFarmPlan.planReady === false);
+
     // Adoption-side blockers — these are TRUE blockers when their
     // probes positively report `forcedEnterpriseSetup` or
     // `noPayments=false` etc. Default to "no blocker" when the
@@ -312,6 +319,7 @@ export function goLiveHealth() {
     if (!captureAnalysisReady)  warnings.push('SCAN_captureAnalysisDegraded');
     if (!intelligenceLoopReady) warnings.push('LOOP_scanToOutcomeIncomplete');
     if (!outcomeLoopReady)      warnings.push('LOOP_outcomeTrackingIncomplete');
+    if (!dailyPlanReady)        warnings.push('DAILYPLAN_notReady');
 
     let verdict: 'NO_GO' | 'GO_WITH_LIMITATIONS' | 'GO';
     if (!allBlockers) verdict = 'NO_GO';
@@ -341,6 +349,7 @@ export function goLiveHealth() {
         w39_ngoCsvPreviewRequired:     !ngoSkipsCsvPreview,
         w39_knowledgeAtTarget:         !knowledgeBelowTarget,
         w39_retentionReady:            retentionReady,
+        dailyPlanReady,
       }),
       caveats: Object.freeze({
         knowledgeBelowTarget,

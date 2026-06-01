@@ -1318,6 +1318,34 @@ export default function App() {
           // Composite LAST — it reads the post-scan probes by name.
           installPostScanIntelligenceGlobals();
         } catch { /* never block boot */ }
+        // Daily Farm Plan — the day-to-day operating loop that tells farmers
+        // and gardeners what to do from setup → planting → care → scan →
+        // harvest → post-harvest. Engines (grow timeframe / crop lifecycle /
+        // post-harvest) install first; the DailyFarmPlan composite + the
+        // task/scan/weather/outcome integration probes install last (they
+        // read the engines by name). Pure read-only; approximate, never
+        // exact; works without weather / scan / GPS; NEVER blocks boot.
+        try {
+          const [
+            { installGrowTimeframeHealthGlobal },
+            { installCropLifecycleHealthGlobal },
+            { installPostHarvestHealthGlobal },
+            { installDailyFarmPlanHealthGlobal },
+            { installDailyPlanIntegrationGlobals },
+          ] = await Promise.all([
+            import('./runtime/dailyPlan/GrowTimeframeEngine'),
+            import('./runtime/dailyPlan/CropLifecycleEngine'),
+            import('./runtime/dailyPlan/PostHarvestEngine'),
+            import('./runtime/dailyPlan/DailyFarmPlanRuntime'),
+            import('./runtime/dailyPlan/DailyPlanIntegrationRuntime'),
+          ]);
+          installGrowTimeframeHealthGlobal();
+          installCropLifecycleHealthGlobal();
+          installPostHarvestHealthGlobal();
+          // Composite + integration LAST — they read the engines by name.
+          installDailyFarmPlanHealthGlobal();
+          installDailyPlanIntegrationGlobals();
+        } catch { /* never block boot */ }
         // V13 pilot lock — scan reliability metrics (data collection only;
         // architecture frozen). Pure read-only probe; never blocks boot.
         try {

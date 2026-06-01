@@ -81,6 +81,7 @@ import ImmersiveHomeHero         from '../components/home/ImmersiveHomeHero.jsx'
 import useFarmHealth             from '../hooks/useFarmHealth.js';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
+import DailyFarmPlanCard          from '../components/home/DailyFarmPlanCard.jsx';
 // MemoryMomentLine removed from the lean immersive layout (the
 // hero's action band carries the "what next" line). Component
 // stays in the codebase for other surfaces that may use it.
@@ -930,6 +931,18 @@ export default function Home() {
                   ? () => { try { navigate(primaryGuidance.actionRoute); } catch { /* swallow */ } }
                   : () => { try { navigate('/tasks'); } catch { /* swallow */ } })}
           />
+        </FeatureShell>
+
+        {/* ── 3b. Today's Farm/Garden Plan ─────────────────────
+             The day-to-day operating loop: top priority + up to
+             three tasks + next milestone + approximate harvest
+             timeframe, with Mark Done / Skip / Add Note / Scan
+             Plant / View Full Plan. Self-contained, guarded by its
+             own error boundary, and built from a never-throwing
+             runtime — it renders even with NO weather / GPS / scan
+             and never blocks Home. */}
+        <FeatureShell name="daily-farm-plan" silent>
+          <DailyFarmPlanCard />
         </FeatureShell>
 
         {/* ── 4. Daily status insight (Today's task or On-track) ─

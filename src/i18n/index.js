@@ -83,6 +83,11 @@ import { GARDEN_MODE_TRANSLATIONS }            from './gardenModeTranslations.js
 // recovery, delight, and beginner guidance. Consumed by the
 // reassurance engine + plant timeline UI.
 import { PLANT_COMPANION_TRANSLATIONS }        from './plantCompanionTranslations.js';
+// Daily Farm Plan overlay — daily plan / crop lifecycle / post-harvest /
+// task actions / garden care namespaces. English base; other locales fall
+// back to English (translator-review). Same `{key:{locale:value}}` shape and
+// empty-slot merge contract as the overlays above.
+import { DAILY_PLAN_TRANSLATIONS }             from './dailyPlanTranslations.js';
 // Production-incident gap overlay (May 2026) — fills the
 // JournalPage / ImmersiveHomeHero / LiveCameraScanner keys that
 // were wrapped in tSafe() but had no entries in any locale column.
@@ -172,6 +177,19 @@ import { wrapTranslationForAudit, buildLeakReport } from './audit.js';
   //     / beginner. Same shape, same merge contract.
   for (const key of Object.keys(PLANT_COMPANION_TRANSLATIONS)) {
     const row = PLANT_COMPANION_TRANSLATIONS[key];
+    if (!T[key]) {
+      T[key] = { ...row };
+    } else {
+      for (const locale of Object.keys(row)) {
+        if (!T[key][locale]) T[key][locale] = row[locale];
+      }
+    }
+  }
+  // 1e1b. Daily Farm Plan overlay — daily plan / lifecycle / post-harvest /
+  //       task actions / garden care. Empty-slot fill so any translator-
+  //       authored value in a locale column always wins.
+  for (const key of Object.keys(DAILY_PLAN_TRANSLATIONS)) {
+    const row = DAILY_PLAN_TRANSLATIONS[key];
     if (!T[key]) {
       T[key] = { ...row };
     } else {
