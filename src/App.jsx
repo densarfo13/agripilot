@@ -1480,6 +1480,16 @@ export default function App() {
               await import('./runtime/dailyAssistant/FarrowayBrainHealthRuntime');
             installFarrowayBrainHealthGlobal();
           } catch { /* swallow */ }
+          // Outcome intelligence composite — composes the existing
+          // outcome / capture / learning-loop / farm-health / yield /
+          // post-harvest / funding probes into the 8 spec flags. Honest
+          // false until each engine reports ready. No fake scores; no
+          // fabricated yield.
+          try {
+            const { installOutcomeIntelligenceCompositeGlobal } =
+              await import('./runtime/outcomes/OutcomeIntelligenceComposite');
+            installOutcomeIntelligenceCompositeGlobal();
+          } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
