@@ -1490,6 +1490,14 @@ export default function App() {
               await import('./runtime/outcomes/OutcomeIntelligenceComposite');
             installOutcomeIntelligenceCompositeGlobal();
           } catch { /* swallow */ }
+          // Agronomy composite — adaptive crop advisor over the existing
+          // crop / weather / scan / outcome / regional engines. Every
+          // recommendation carries rationale + confidence + limitations.
+          try {
+            const { installAgronomyHealthGlobal } =
+              await import('./runtime/agronomy/AgronomyRuntime');
+            installAgronomyHealthGlobal();
+          } catch { /* swallow */ }
         } catch { /* never block boot */ }
         // Simple Mode — action-first, low-literacy diagnostics + voice +
         // OODA/artifact attestation. Read-only; never blocks boot.
