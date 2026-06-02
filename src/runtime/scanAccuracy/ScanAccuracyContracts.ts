@@ -114,6 +114,7 @@ export interface UnknownHandling {
 
 export interface ScanAccuracyHealthEnvelope {
   initialized: true;
+  // Legacy field names (kept for backward compat with prior gates).
   imageQualityGateReady: boolean;
   segmentationReady: boolean;
   multiPassReady: boolean;
@@ -121,6 +122,18 @@ export interface ScanAccuracyHealthEnvelope {
   candidateRankingReady: boolean;
   unknownHandlingReady: boolean;
   followUpTaskReady: boolean;
+  // §SPEC plant-intelligence-pipeline §PHASE 14 canonical names. Same
+  // underlying probes, surfaced under the spec's mandated field names
+  // so pages can consume either style.
+  qualityGateReady: boolean;
+  consensusReady: boolean;
+  memoryReady: boolean;
+  issueDetectionReady: boolean;
+  actionEngineReady: boolean;
+  taskCreationReady: boolean;
+  followUpReady: boolean;
+  outcomeCaptureReady: boolean;
+  noDeadEnds: true;
   noFakeAccuracyClaims: true;
   noFabricatedCandidates: true;
   noFakeDiseaseConfidence: true;

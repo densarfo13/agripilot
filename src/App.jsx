@@ -1610,6 +1610,14 @@ export default function App() {
             // V2 composite LAST so every sibling probe is already pinned.
             installScanV2HealthGlobal();
           } catch { /* swallow */ }
+          // Plant Intelligence Pipeline §PHASE 13 — My Plants per-plant
+          // scan history composite. Read-only over memory + outcome
+          // logs. Honest empty when no scans recorded yet.
+          try {
+            const { installMyPlantsScanHistoryGlobal } =
+              await import('./runtime/scanAccuracy/MyPlantsScanHistoryRuntime');
+            installMyPlantsScanHistoryGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
