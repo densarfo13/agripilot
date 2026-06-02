@@ -1541,6 +1541,14 @@ export default function App() {
             installWeeklyFarmReviewGlobal();
             installFieldOfficerCommandCenterGlobal();
           } catch { /* swallow */ }
+          // Scan accuracy composite — image quality gate + segmentation
+          // + multi-pass + disease pipeline + follow-up task + unknown
+          // handling. All non-blocking, honest false-by-default.
+          try {
+            const { installScanAccuracyHealthGlobal } =
+              await import('./runtime/scanAccuracy/ScanAccuracyHealth');
+            installScanAccuracyHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
