@@ -1549,6 +1549,32 @@ export default function App() {
               await import('./runtime/scanAccuracy/ScanAccuracyHealth');
             installScanAccuracyHealthGlobal();
           } catch { /* swallow */ }
+          // Vision System §STAGES 2 / 8 / 9 / 11 / 12 — camera guide
+          // (auto-capture state), scan outcome loop (Better/Same/Worse),
+          // farm scan memory (per-plant history), context composite
+          // (soil + weather supporting evidence), and the top-level
+          // __scanProductionHealth composite over all 10 readiness flags.
+          try {
+            const [
+              { installCameraGuideGlobal },
+              { installScanOutcomeLoopGlobal },
+              { installFarmScanMemoryGlobal },
+              { installScanContextGlobal },
+              { installScanProductionHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/CameraGuideRuntime'),
+              import('./runtime/scanAccuracy/ScanOutcomeLoopRuntime'),
+              import('./runtime/scanAccuracy/FarmScanMemoryRuntime'),
+              import('./runtime/scanAccuracy/ScanContextRuntime'),
+              import('./runtime/scanAccuracy/ScanProductionHealth'),
+            ]);
+            installCameraGuideGlobal();
+            installScanOutcomeLoopGlobal();
+            installFarmScanMemoryGlobal();
+            installScanContextGlobal();
+            // Production composite LAST so every backing probe is pinned.
+            installScanProductionHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
