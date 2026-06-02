@@ -202,8 +202,18 @@ const generic = Object.freeze({
   },
 });
 
+// ── Plant.id adapter ───────────────────────────────────────────
+// Audit gap §6.1 closed — the real Plant.id v3 adapter reads
+// process.env.PLANT_ID_API_KEY DIRECTLY (no SCAN_PROVIDER_URL +
+// SCAN_API_KEY indirection trap). Lives in ./providers/ so the
+// adapter is self-contained and unit-testable.
+import { plantid } from './providers/plantIdProvider.js';
+
 // ── Registry + selector ────────────────────────────────────────
 const REGISTRY = Object.freeze({
+  // Plant.id is FIRST in the registry so auto-pick prefers it when
+  // PLANT_ID_API_KEY is set (carries the disease module).
+  plantid,
   plantnet, plantix, cropsense, generic,
 });
 
@@ -230,9 +240,13 @@ export function pickProvider() {
   const explicit = String(process.env.SCAN_PROVIDER_PROFILE || '')
     .toLowerCase().trim();
   if (explicit && REGISTRY[explicit]) return REGISTRY[explicit];
-  // Auto-pick from the most-specific alias that's set.
+  // Auto-pick from the most-specific alias that's set. Plant.id wins
+  // over PlantNet because the v3 adapter carries the disease module
+  // (audit gap §6.1 closed — previously this returned `generic` for
+  // PLANT_ID_API_KEY, which then needed SCAN_PROVIDER_URL + SCAN_API_KEY
+  // to fire, producing the silent fall-through-to-rule bug).
+  if (process.env.PLANT_ID_API_KEY)  return REGISTRY.plantid;
   if (process.env.PLANTNET_API_KEY)  return REGISTRY.plantnet;
-  if (process.env.PLANT_ID_API_KEY)  return REGISTRY.generic;
   return REGISTRY.generic;
 }
 

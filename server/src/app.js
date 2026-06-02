@@ -798,13 +798,40 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       catch { /* swallow */ }
     }
 
-    const inference = await analyzePlantImage({
+    // Scan Recovery Sprint §5 — consensus engine. Fires Plant.id AND
+    // PlantNet in parallel when both keys present; returns a weighted
+    // verdict + top-5 candidates + disease module output. Falls
+    // through to single-provider mode when only one key is set, and
+    // to rule mode when neither is set. Pure; never throws.
+    const { runConsensus } = await import('./ml/scanConsensusEngine.js');
+    const consensus = await runConsensus({
+      image:    pre.image,
+      mime:     pre.mime,
+      cropName, country, region,
+    });
+
+    // Inference orchestrator still runs for back-compat (legacy
+    // symptom / confidence path). When the consensus engine returned
+    // a real verdict, prefer those signals so safety filter +
+    // contextFusionEngine see the higher-quality input.
+    const inferenceRaw = await analyzePlantImage({
       image:    pre.image,
       mime:     pre.mime,
       cropName, plantName,
       country,  region,
       weather,
     });
+    const inference = consensus && consensus.ok ? {
+      symptom:    consensus.symptom    || inferenceRaw.symptom,
+      confidence: consensus.confidence || inferenceRaw.confidence,
+      meta: {
+        ...(inferenceRaw.meta || {}),
+        consensus:     true,
+        consensusMode: consensus.consensusMode,
+        provider:      'consensus:plantid+plantnet',
+      },
+      fallbackUsed: false,
+    } : inferenceRaw;
 
     const fused = fuseContext({
       symptom:    inference.symptom,
@@ -909,8 +936,34 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       forceLowConfidence:    !!inference.fallbackUsed,
     });
 
+    // Scan Recovery Sprint §3 — spec envelope. Single canonical
+    // shape IntelligentScanResult consumes; replaces the legacy
+    // verdict as the surface the result page renders.
+    const { buildScanRecoveryEnvelope } =
+      await import('./ml/scanRecoveryEnvelope.js');
+    const scanRecovery = buildScanRecoveryEnvelope({
+      consensus,
+      safe,
+      fused,
+      cropNameHint: cropName || plantName,
+    });
+
     return res.json({
       ok:                    true,
+      // Scan Recovery Sprint §3 — new canonical envelope. Lives at
+      // top-level + ALSO spread onto the legacy `verdict` so the
+      // IntelligentScanResult extractors find it whether they read
+      // result.plantName or result.scanRecovery.plantName.
+      scanRecovery,
+      plantName:             scanRecovery.plantName,
+      scientificName:        scanRecovery.scientificName,
+      confidence:            scanRecovery.confidence,
+      diseaseCandidates:     scanRecovery.diseaseCandidates,
+      severity:              scanRecovery.severity,
+      recommendations:       scanRecovery.recommendations,
+      nextAction:            scanRecovery.nextAction,
+      candidates:            scanRecovery.candidates,
+      consensusMode:         scanRecovery.consensusMode,
       verdict:               safe,
       verdictV2,
       verdictV3,

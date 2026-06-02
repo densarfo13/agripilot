@@ -137,6 +137,16 @@ import AddPlantConfirmationCard from '../components/plants/AddPlantConfirmationC
 import {
   scanToManagedPlant as _scanToManagedPlant,
 } from '../runtime/plants/scanToManagedPlant';
+// Scan Recovery Sprint §4 — wire the previously-dead
+// ScanAnalysisRuntime.runScanPipeline into the live path. Executes
+// OODA + ScanArtifact + (optional) human review on every scan AND
+// surfaces the spec envelope (plantName / scientificName / confidence
+// percent / diseaseCandidates / severity / recommendations /
+// nextAction) directly on the result so IntelligentScanResult reads
+// it without any further field-mapping.
+import {
+  executeScanRecovery as _executeScanRecovery,
+} from '../runtime/scanRecovery/ScanRecoveryRuntime';
 import {
   loadManagedPlants as _loadManagedPlants,
   appendManagedPlant as _appendManagedPlant,
@@ -1133,15 +1143,52 @@ export default function ScanPage() {
     const _confidenceTone = refinedOut?.confidence === 'high' ? 'high_confidence'
                           : refinedOut?.confidence === 'medium' ? 'medium_confidence'
                           : 'needs_review';
+    // Scan Recovery Sprint §4 — fire runScanPipeline() via the
+    // ScanRecoveryRuntime AND surface the spec envelope on the
+    // result. This is the single point of entry that closes audit
+    // gap §6.10 (dead runtime) and §6.3 (discarded server output).
+    // Pure / never throws — caller sees an empty envelope on fail.
+    let recovery = null;
+    try {
+      recovery = _executeScanRecovery({
+        serverResponse: refinedOut,
+        userId:   (ctx && ctx.userId) || '',
+        farmId:   (ctx && ctx.farmId) || '',
+        gardenId: (ctx && ctx.gardenId) || '',
+        location: (ctx && ctx.region) || '',
+        imageUrl: refinedOut && (refinedOut.imageUrl || refinedOut.thumbnail) || '',
+        thumbnailUrl: refinedOut && refinedOut.thumbnail || '',
+        weather:  (ctx && ctx.weatherSnapshot) || (ctx && ctx.weather) || null,
+        source:   'camera',
+      });
+    } catch { recovery = null; }
+
     return Object.freeze({
       diagnosis:      refinedOut?.possibleIssue || refinedOut?.diagnosis || 'Needs Review',
       confidenceTone: _confidenceTone,
-      severity:       refinedOut?.urgency || null,
+      severity:       refinedOut?.urgency || (recovery && recovery.severity) || null,
       recommendation: refinedOut?.recommendedActions
         ? { actions: refinedOut.recommendedActions } : null,
       // Pass-through every legacy field so downstream rendering +
       // journal save logic continues to read the same envelope shape.
       ...refinedOut,
+      // Scan Recovery Sprint §3 — spec envelope fields, ONLY when
+      // the recovery runtime produced them. Each spread is `||`-
+      // guarded so legacy values win when the server hasn't yet
+      // shipped the new envelope (mid-rollout safety).
+      ...(recovery && recovery.ok ? {
+        plantName:         recovery.plantName        || refinedOut?.plantName,
+        scientificName:    recovery.scientificName   || refinedOut?.scientificName,
+        // confidence stored as PERCENT (0..100) for IntelligentScanResult.
+        confidence:        recovery.confidence       || refinedOut?.confidence,
+        confidenceBand:    recovery.confidenceBand   || refinedOut?.confidenceBand,
+        diseaseCandidates: recovery.diseaseCandidates,
+        recommendations:   recovery.recommendations,
+        nextAction:        recovery.nextAction,
+        candidates:        recovery.candidates,
+        consensusMode:     recovery.consensusMode,
+        scanRecovery:      recovery,
+      } : {}),
     });
   }, []);
 

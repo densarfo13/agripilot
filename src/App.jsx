@@ -231,6 +231,7 @@ const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
 const FounderDashboardPage = lazy(() => import('./pages/FounderDashboardPage.jsx'));
 const FounderOSPage = lazy(() => import('./pages/FounderOSPage.jsx'));
 const ApiDiagnosticsDashboard = lazy(() => import('./diagnostics/ApiDiagnosticsDashboard.tsx'));
+const ScanHealthPage = lazy(() => import('./pages/admin/ScanHealthPage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -1813,6 +1814,16 @@ export default function App() {
               await import('./diagnostics/ApiHealthRuntime');
             installApiHealthGlobal();
           } catch { /* swallow */ }
+          // Scan Recovery (Sprint §4) — pins __scanRecoveryHealth.
+          // Reports whether the dead-no-more ScanAnalysisRuntime is
+          // wired AND whether runScanPipeline executes per scan.
+          // Composes; never owns the camera; never calls Plant.id
+          // directly (server route owns that contract).
+          try {
+            const { installScanRecoveryGlobal } =
+              await import('./runtime/scanRecovery/ScanRecoveryRuntime');
+            installScanRecoveryGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
@@ -2888,6 +2899,11 @@ export default function App() {
               Auth, Scan Pipeline + Consensus). Honest reporting:
               server-side services flagged NEEDS_SERVER_PROBE. */}
           <Route path="/admin/system-health" element={<RoleRoute roles={ADMIN_ROLES}><ApiDiagnosticsDashboard /></RoleRoute>} />
+          {/* Scan Health (Recovery Sprint §8) — admin-only. 5 rows:
+              Plant.id, PlantNet, Disease module, Consensus engine,
+              UI path. Reads __apiHealth + __scanRecoveryHealth +
+              __scanResultHealth; never throws. */}
+          <Route path="/admin/scan-health" element={<RoleRoute roles={ADMIN_ROLES}><ScanHealthPage /></RoleRoute>} />
           {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
               inside the page, plus <RoleRoute> guard so non-admins
               redirect to "/". Excludes farmer/gardener/grower. */}

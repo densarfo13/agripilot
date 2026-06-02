@@ -57,9 +57,16 @@ function _scanAnalysisInitialized(): boolean {
  * Both checks guarantee exactly one card mounts.
  */
 export function shouldRenderIntelligentResult(): boolean {
-  // Wave 26 C-4: hold the intelligent path off until it is fully
-  // mounted. The legacy path is the canonical single result.
-  return false;
+  // Scan Recovery Sprint §2 — production path enabled. The wave-21
+  // analysis runtime is now wired end-to-end (Plant.id + PlantNet
+  // consensus + spec-shaped scanRecovery envelope), so the
+  // IntelligentScanResult card consumes the rich envelope while the
+  // legacy ScanResultCard renders nothing on the same scan (single-
+  // result-card invariant preserved by ScanPage's else branch).
+  //
+  // The wave-26 C-4 gate held this off until the runtime + envelope
+  // were both in place. They are.
+  return true;
 }
 
 export function scanResultHealth() {
