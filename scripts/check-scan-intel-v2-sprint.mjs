@@ -219,8 +219,15 @@ if (!_exists(ENVELOPE)) {
     'scanRecoveryEnvelope must carry pest field (V2)');
   _has(src, 'fieldHealth',
     'scanRecoveryEnvelope must carry fieldHealth field (V2)');
-  _has(src, 'scan-recovery-envelope-v3',
-    'scanRecoveryEnvelope runtimeVersion must bump to v3 (soil added)');
+  // Accept v3 OR ANY higher version — later sprints (V3 spec) bump
+  // the envelope past v3 (e.g. v4 adds growthStage + regional +
+  // market). The minimum bar is "at least v3", i.e. the soil
+  // closure landed.
+  if (!/scan-recovery-envelope-v[3-9]/.test(src)
+      && !/scan-recovery-envelope-v\d{2,}/.test(src)) {
+    errors.push('scanRecoveryEnvelope runtimeVersion must be v3 or higher (soil + later);'
+      + ' found earlier version.');
+  }
   _has(src, 'soil',
     'scanRecoveryEnvelope must carry soil field (V3 — final 3-point gap closure)');
 }

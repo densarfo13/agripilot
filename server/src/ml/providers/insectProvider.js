@@ -45,15 +45,86 @@ const REQUEST_TIMEOUT_MS = 6000;
 // keywords so we catch most synonyms (e.g. "aphididae", "spider mite",
 // "agromyzidae"). Caller never lies — when the match is uncertain,
 // pestCategory is 'unknown'.
+// V3 spec — split spider_mites + caterpillar into their own
+// categories so the result page can render distinct treatment
+// guidance. Order matters: more-specific patterns FIRST so
+// spider_mite matches before the generic mite pattern, and
+// caterpillar matches before the armyworm pattern.
 const PEST_CATEGORY_PATTERNS = Object.freeze([
-  { key: 'aphid',      pattern: /aphid|aphididae|greenfly|blackfly/i },
-  { key: 'thrip',      pattern: /thrip|thysanoptera|frankliniella/i },
-  { key: 'whitefly',   pattern: /whitefly|aleyrodidae|bemisia|trialeurodes/i },
-  { key: 'armyworm',   pattern: /armyworm|spodoptera|cutworm/i },
-  { key: 'beetle',     pattern: /beetle|coleoptera|weevil|curculio|leptinotarsa|chrysomelidae/i },
-  { key: 'mite',       pattern: /\bmite\b|tetranychus|spider\s*mite|acari/i },
-  { key: 'leaf_miner', pattern: /leaf\s*miner|liriomyza|agromyzidae/i },
+  { key: 'aphid',        pattern: /aphid|aphididae|greenfly|blackfly/i },
+  { key: 'thrip',        pattern: /thrip|thysanoptera|frankliniella/i },
+  { key: 'whitefly',     pattern: /whitefly|aleyrodidae|bemisia|trialeurodes/i },
+  { key: 'spider_mite',  pattern: /spider\s*mite|tetranychus/i },
+  { key: 'caterpillar',  pattern: /caterpillar|larva(e)?|lepidoptera|hornworm|loopers?\b/i },
+  { key: 'armyworm',     pattern: /armyworm|spodoptera|cutworm/i },
+  { key: 'beetle',       pattern: /beetle|coleoptera|weevil|curculio|leptinotarsa|chrysomelidae/i },
+  { key: 'mite',         pattern: /\bmite\b|acari/i },
+  { key: 'leaf_miner',   pattern: /leaf\s*miner|liriomyza|agromyzidae/i },
 ]);
+
+// V3 — lifecycle stage hints per pest category. Drives the
+// `lifecycle` field on the response envelope. Honest "unknown"
+// when no signal in the provider response (we never fabricate
+// a stage from a still photo).
+function _lifecycleFor(pestCategory, scientificName) {
+  const sci = String(scientificName || '').toLowerCase();
+  // Larva-bearing pests — armyworm + caterpillar + leaf_miner.
+  if (pestCategory === 'caterpillar' || pestCategory === 'armyworm'
+      || pestCategory === 'leaf_miner') {
+    if (/larva|caterpillar|instar/.test(sci)) return 'larva';
+    if (/pupa/.test(sci))                    return 'pupa';
+    if (/moth|adult/.test(sci))               return 'adult';
+    return 'larva_or_adult';
+  }
+  // Mites + aphids + whiteflies + thrips are all incomplete-
+  // metamorphosis sap-feeders; nymph and adult look similar.
+  if (pestCategory === 'spider_mite' || pestCategory === 'mite'
+      || pestCategory === 'aphid' || pestCategory === 'thrip'
+      || pestCategory === 'whitefly') {
+    return 'nymph_or_adult';
+  }
+  if (pestCategory === 'beetle') {
+    if (/larva|grub/.test(sci)) return 'larva';
+    return 'adult';
+  }
+  return 'unknown';
+}
+
+// V3 — separate organic vs chemical treatments. Generic
+// non-chemical-first organic recommendations + chemical CLASS
+// hints only (never product names). Caller may append "consider
+// escalating" via severity gate.
+function _organicTreatmentFor(pestCategory) {
+  switch (pestCategory) {
+    case 'aphid':       return 'Spray a soap-and-water solution; release ladybugs / lacewings; prune heavily infested shoots.';
+    case 'thrip':       return 'Yellow sticky traps; introduce predatory mites (Amblyseius cucumeris); kaolin clay barrier.';
+    case 'whitefly':    return 'Yellow sticky traps; reflective mulch; release Encarsia formosa parasitoids.';
+    case 'spider_mite': return 'Mist plants daily; introduce predatory mites (Phytoseiulus persimilis); neem oil weekly.';
+    case 'caterpillar': return 'Hand-pick at dusk; Bacillus thuringiensis (Bt) spray on leaves; row covers on seedlings.';
+    case 'armyworm':    return 'Bt spray; pheromone traps for adult moths; encourage parasitoid wasps.';
+    case 'beetle':      return 'Hand-pick into soapy water; check undersides for eggs; trap crops nearby.';
+    case 'mite':        return 'Mist canopy; introduce predatory mites; neem oil rotation.';
+    case 'leaf_miner':  return 'Remove and destroy affected leaves; fine mesh row covers; sticky traps for adults.';
+    default:            return 'Photograph the pest from closer and re-scan to confirm.';
+  }
+}
+
+function _chemicalTreatmentFor(pestCategory) {
+  // CLASS hints only — never product names. Caller decides whether
+  // to escalate; gardener UI strips this branch entirely.
+  switch (pestCategory) {
+    case 'aphid':       return 'Insecticidal soap or systemic neonicotinoid (consult local extension before use).';
+    case 'thrip':       return 'Spinosad or pyrethrin contact spray; rotate IRAC groups to avoid resistance.';
+    case 'whitefly':    return 'Insecticidal soap or pyrethroid; systemic if infestation is widespread.';
+    case 'spider_mite': return 'Acaricide rotation (consult IRAC table); never use neonicotinoids alone — kills predators.';
+    case 'caterpillar': return 'Bt is the first-line "chemical"; spinosad as escalation; rotate IRAC groups.';
+    case 'armyworm':    return 'Bt subspecies kurstaki; spinosad as escalation.';
+    case 'beetle':      return 'Carbaryl or pyrethroid as escalation; consider trap crops first.';
+    case 'mite':        return 'Acaricide rotation; consult IRAC table.';
+    case 'leaf_miner':  return 'Systemic neonicotinoid for severe infestations (consult local extension).';
+    default:            return '';
+  }
+}
 
 function _imageToBase64(image) {
   if (typeof image === 'string') {
@@ -226,6 +297,11 @@ export async function detectInsect({ image, mime: _mime, cropName }) {
       confidencePct:     Math.round(score * 100),
       severity,
       recommendedAction: _recommendedActionFor(pestCategory, severity),
+      // V3 spec additions — lifecycle + per-treatment-class fields.
+      lifecycle:         _lifecycleFor(pestCategory, scientificName),
+      treatment:         _recommendedActionFor(pestCategory, severity),
+      organicTreatment:  _organicTreatmentFor(pestCategory),
+      chemicalTreatment: _chemicalTreatmentFor(pestCategory),
       candidates:        Object.freeze(candidates),
       latencyMs:         Date.now() - startedAt,
       limitations:       'Decision support, not a guarantee.',

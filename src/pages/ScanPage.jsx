@@ -151,6 +151,10 @@ import {
 // Mounted on the idle phase so users see their cross-device
 // scan history. Self-hides when the endpoint returns empty.
 import RecentScansCard from '../components/scan/RecentScansCard.jsx';
+// Scan Intelligence V3 §9 — single-card command center. Renders
+// 7 sections (Plant · Disease · Pest · Soil · Market · Region ·
+// Satellite) from the v4 scanRecovery envelope.
+import ScanCommandCard from '../components/scan/ScanCommandCard.jsx';
 // Scan Intelligence V2 §5 — confirmation/correction submit helper.
 // Imported here so the inline result-card confirm/wrong buttons
 // can fire the learning loop without a new component file.
@@ -2085,11 +2089,18 @@ export default function ScanPage() {
           UsefulResultCard / ScanResultCard path below renders instead.
           The two branches are mutually exclusive — never both. */}
       {phase === 'result' && result && shouldRenderIntelligentResult() ? (
-        <IntelligentScanResult
-          result={result}
-          onRetake={onRetake}
-          onChoose={_handleUseSavedPhoto}
-        />
+        <>
+          {/* V3 §9 — Scan Command Center stacked above the legacy
+              card. Self-hides each section when its envelope key
+              is absent. Single-card invariant preserved because
+              this is composition, not a duplicate result card. */}
+          <ScanCommandCard result={result} />
+          <IntelligentScanResult
+            result={result}
+            onRetake={onRetake}
+            onChoose={_handleUseSavedPhoto}
+          />
+        </>
       ) : null}
 
       {phase === 'result' && result && !shouldRenderIntelligentResult() ? (

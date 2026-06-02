@@ -814,6 +814,13 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
     // key-less). Composes the new soilProvider; cached in Redis
     // 7 days. Honest ok:false envelope on timeout or invalid coords.
     const { fetchSoilProfile } = await import('./ml/providers/soilProvider.js');
+    // V3 §2 + §5 + §6 — growth stage + regional intelligence +
+    // market engine. Pure / async / never throw. Composed into the
+    // unified envelope below alongside consensus + insect + soil +
+    // field health.
+    const { deriveGrowthStage } = await import('./ml/growthStageEngine.js');
+    const { getRegionalIntelligence } = await import('./ml/providers/regionalIntelligenceProvider.js');
+    const { getMarketIntelligence } = await import('./ml/marketEngine.js');
 
     // Derive farm coords from authenticated user's primary farm
     // (fire-and-forget — never blocks).
@@ -1023,6 +1030,48 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       }
     } catch { /* swallow — fall through to raw consensus */ }
 
+    // V3 §2 — growth stage. Reads planting date from the user's
+    // farm profile when present. Pure / never throws.
+    let plantingDate = null;
+    try {
+      if (req.user && req.user.id) {
+        const farm = await prisma.farm.findFirst({
+          where: { userId: req.user.id },
+          select: { plantingDate: true },
+        });
+        plantingDate = farm && farm.plantingDate
+          ? new Date(farm.plantingDate).toISOString()
+          : null;
+      }
+    } catch { /* swallow */ }
+    const growthStage = deriveGrowthStage({
+      scanCategory: consensus && consensus.identification
+        ? 'plant' : 'unknown',
+      plantType:    cropName || plantName,
+      plantingDate,
+      weather,
+      healthStatus: safe && safe.confidence,
+    });
+
+    // V3 §5 — regional intelligence. Composes user's prior local
+    // scans + weather + the planting-window table. Honest
+    // 'unknown' pressure bands when sample size <3.
+    const regional = await getRegionalIntelligence(prisma, {
+      country, region,
+      district: req.body && req.body.district,
+      latitude: farmLat, longitude: farmLng,
+      cropName,
+      weather,
+    });
+
+    // V3 §6 — market intelligence. Composes recent listings +
+    // nearby buyers + a conservative reference-price table when
+    // the marketplace module is unwired. Never fabricates.
+    const market = await getMarketIntelligence(prisma, {
+      cropName, plantName, country, region,
+      growthStage: growthStage.stage,
+    });
+
     const scanRecovery = buildScanRecoveryEnvelope({
       consensus:    _boostedConsensus,
       safe,
@@ -1030,8 +1079,27 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       pest,
       fieldHealth,
       soil,
+      growthStage,
+      regional,
+      market,
       cropNameHint: cropName || plantName,
     });
+
+    // V3 §7 — auto-create 3 / 7 / 14-day follow-up plan + persist.
+    // Fire-and-forget; the analyze response carries the plan so the
+    // client can show "Re-check in 3 days" cards immediately.
+    let followUpPlan = null;
+    try {
+      const { buildFollowUpPlan, persistFollowUpPlan } =
+        await import('./ml/followUpEngine.js');
+      followUpPlan = buildFollowUpPlan({
+        scanId,
+        severity:    (scanRecovery && scanRecovery.severity) || null,
+        growthStage: growthStage.stage,
+      });
+      persistFollowUpPlan(prisma, { scanId, plan: followUpPlan })
+        .catch(() => { /* logged inside */ });
+    } catch { followUpPlan = null; }
 
     // Scan Intelligence V2 §3 — auto-persist FULL outcome. Pure
     // helper; logs failures via console.warn (no silent training-
@@ -1078,6 +1146,12 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       fieldHealth:           scanRecovery.fieldHealth,
       soil:                  scanRecovery.soil,
       satellite:             scanRecovery.fieldHealth, // alias for IntelligentScanResult._extractSatellite
+      // V3 — growth + regional + market + follow-up. Surfaced at
+      // top level for the ScanCommandCard composer.
+      growthStage,
+      regional,
+      market,
+      followUpPlan,
       verdict:               safe,
       verdictV2,
       verdictV3,
@@ -1124,6 +1198,54 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       fallbackBody.decision  = SPEC_FALLBACK_DECISION;
     } catch { /* swallow — body still ships error code */ }
     return res.status(500).json(fallbackBody);
+  }
+});
+
+// ── Scan follow-up outcome (V3 §7) ────────────────────────────
+// POST /api/scan/follow-up
+//   body: { scanId, dayOffset (3|7|14), status (improved|same|worse) }
+//   updates the corresponding follow-up row on the existing
+//   ScanTrainingEvent.weatherSummary.followUps array.
+app.post('/api/scan/follow-up', authenticate, async (req, res) => {
+  try {
+    const { scanId, dayOffset, status } = req.body || {};
+    if (!scanId || typeof dayOffset !== 'number'
+        || typeof status !== 'string') {
+      return res.status(400).json({ error: 'invalid_input' });
+    }
+    const { recordFollowUpOutcome } =
+      await import('./ml/followUpEngine.js');
+    const out = await recordFollowUpOutcome(prisma, {
+      scanId, dayOffset, status,
+    });
+    if (!out.ok) {
+      return res.status(out.reason === 'scan_not_found' ? 404 : 400)
+        .json({ ok: false, reason: out.reason });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'follow_up_failed', message: err && err.message,
+    });
+  }
+});
+
+// GET /api/scan/follow-up/history — recent follow-up rows for the
+// signed-in user. Drives the V3 Recent Follow-ups card.
+app.get('/api/scan/follow-up/history', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const limit = Math.max(1, Math.min(Number(req.query && req.query.limit) || 20, 100));
+    const { readFollowUpHistory } =
+      await import('./ml/followUpEngine.js');
+    const items = await readFollowUpHistory(prisma, userId, limit);
+    return res.json({ ok: true, items });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'follow_up_history_failed',
+      message: err && err.message, items: [],
+    });
   }
 });
 

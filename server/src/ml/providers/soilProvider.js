@@ -131,6 +131,95 @@ function _confidenceForReading(clay, sand, ph) {
   return 'low';
 }
 
+// V3 — composite fertility score (0..100) from organic carbon
+// proxy + pH proximity to neutral + texture quality.
+// Honest null when any required signal missing.
+function _fertilityScore(soc, ph, texture) {
+  if (soc == null && ph == null && texture === 'unknown') return null;
+  let score = 0, weight = 0;
+  // Organic carbon contribution (max 40 pts). SoilGrids returns
+  // g/kg; 20+ g/kg is rich; <5 is poor.
+  if (soc != null) {
+    const ocClamped = Math.max(0, Math.min(30, soc));
+    score += (ocClamped / 30) * 40;
+    weight += 40;
+  }
+  // pH contribution (max 30 pts). 6.0..7.0 is ideal.
+  if (ph != null) {
+    const distance = Math.abs(ph - 6.5);
+    const phPts = Math.max(0, 1 - (distance / 2.5)) * 30;
+    score += phPts;
+    weight += 30;
+  }
+  // Texture contribution (max 30 pts). Loamy is ideal.
+  if (texture !== 'unknown') {
+    const texPts = texture === 'loamy' ? 30
+                 : texture === 'silty' ? 24
+                 : texture === 'clayey' ? 18
+                 : 14;
+    score += texPts;
+    weight += 30;
+  }
+  if (weight === 0) return null;
+  return Math.round((score / weight) * 100);
+}
+
+// V3 — moisture proxy from organic carbon + texture (live moisture
+// requires weather + bulk density; we report a coarse "expected
+// moisture retention" band). Honest 'unknown' when signals missing.
+function _moistureProxy(soc, textureLabel) {
+  if (soc == null && textureLabel === 'unknown') return 'unknown';
+  // Clayey + high OC retains; sandy + low OC drains fast.
+  if (textureLabel === 'sandy' && (soc == null || soc < 8)) return 'low';
+  if (textureLabel === 'clayey' || (soc != null && soc >= 20)) return 'high';
+  return 'moderate';
+}
+
+// V3 — soilRisk derivation. Flags ONE primary risk the user should
+// know about. Order = priority.
+function _soilRisk(textureLabel, drainageRisk, ph, fertilityScore) {
+  if (drainageRisk === 'high') {
+    return { level: 'high', kind: 'waterlogging',
+      detail: 'Clayey soil drains slowly — plant on raised beds or improve drainage.' };
+  }
+  if (drainageRisk === 'low' && textureLabel === 'sandy') {
+    return { level: 'medium', kind: 'drought',
+      detail: 'Sandy soil drains fast — irrigate more frequently and mulch heavily.' };
+  }
+  if (ph != null && ph < 5.5) {
+    return { level: 'medium', kind: 'acidity',
+      detail: 'Acidic soil locks out phosphorus and calcium — lime may help.' };
+  }
+  if (ph != null && ph > 7.8) {
+    return { level: 'medium', kind: 'alkalinity',
+      detail: 'Alkaline soil locks out iron and manganese — elemental sulphur may help.' };
+  }
+  if (fertilityScore != null && fertilityScore < 35) {
+    return { level: 'medium', kind: 'low_fertility',
+      detail: 'Low organic matter — add compost or manure ahead of planting.' };
+  }
+  return { level: 'low', kind: 'none', detail: 'No major soil risk flagged.' };
+}
+
+function _soilRecommendation(soilRisk, textureLabel) {
+  switch (soilRisk && soilRisk.kind) {
+    case 'waterlogging':
+      return 'Mound rows 20–30cm; add coarse organic matter; avoid working when wet.';
+    case 'drought':
+      return 'Apply 5cm organic mulch; drip-irrigate; sow drought-tolerant varieties.';
+    case 'acidity':
+      return 'Apply agricultural lime at planting; re-test pH after one season.';
+    case 'alkalinity':
+      return 'Apply elemental sulphur; use ammonium-based fertilisers; foliar-feed iron.';
+    case 'low_fertility':
+      return 'Top-dress 2–4 tonnes/ha well-rotted compost; rotate with legumes next season.';
+    default:
+      return textureLabel === 'unknown'
+        ? 'Soil reading not available — manual sample recommended.'
+        : 'Maintain current practice; re-check pH and organic matter annually.';
+  }
+}
+
 function _interpretFor(textureLabel, drainageRisk, ph) {
   if (textureLabel === 'unknown') {
     return 'Soil reading unavailable for these coordinates.';
@@ -224,6 +313,10 @@ export async function fetchSoilProfile({ latitude, longitude }) {
     const confidence   = _confidenceForReading(clay, sand, ph);
     const interpretation = _interpretFor(label, drainageRisk, ph);
 
+    const fertilityScore = _fertilityScore(soc, ph, label);
+    const moisture       = _moistureProxy(soc, label);
+    const soilRisk       = _soilRisk(label, drainageRisk, ph, fertilityScore);
+    const soilRecommendation = _soilRecommendation(soilRisk, label);
     const envelope = {
       ok: true,
       soilTexture: Object.freeze({
@@ -234,6 +327,12 @@ export async function fetchSoilProfile({ latitude, longitude }) {
       }),
       ph: ph != null ? Math.round(ph * 10) / 10 : null,
       organicMatterProxy: soc != null ? Math.round(soc * 10) / 10 : null,
+      // V3 — spec-named aliases + composite signals.
+      organicCarbon: soc != null ? Math.round(soc * 10) / 10 : null,
+      moisture,
+      fertilityScore,
+      soilRisk:       Object.freeze(soilRisk),
+      soilRecommendation,
       drainageRisk, confidence, interpretation,
       latencyMs: Date.now() - startedAt,
       limitations: 'Decision support, not a guarantee.',

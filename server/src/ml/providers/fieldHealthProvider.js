@@ -219,15 +219,23 @@ export async function fetchFieldHealth({ latitude, longitude, cropName }) {
       _writeTrendRedis(cacheKey, updated).catch(() => { /* swallow */ });
     }
 
+    const cropVigor = _cropVigorFromNDVI(ndvi);
+    const stressScore = _stressScoreFromNDVI(ndvi);
     return Object.freeze({
       ok: true,
       ndvi,
-      cropVigor:       _cropVigorFromNDVI(ndvi),
-      stressScore:     _stressScoreFromNDVI(ndvi),
+      cropVigor,
+      stressScore,
       vegetationTrend,
-      interpretation:  _interpretFor(_cropVigorFromNDVI(ndvi),
-                                     vegetationTrend, cropName),
+      interpretation:  _interpretFor(cropVigor, vegetationTrend, cropName),
       confidence:      _confidenceForReading(ndvi, prior.length),
+      // V3 — spec-named aliases for the satellite envelope.
+      vigor:           cropVigor,
+      trend:           vegetationTrend,
+      stressLevel:     stressScore != null
+                         ? (stressScore >= 65 ? 'high'
+                            : stressScore >= 35 ? 'medium' : 'low')
+                         : null,
       latencyMs:       Date.now() - startedAt,
       limitations:     'Decision support, not a guarantee.',
     });

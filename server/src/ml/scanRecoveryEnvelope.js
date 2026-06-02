@@ -181,8 +181,53 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
         })
       : null;
 
+    // V3 additions — growth stage / regional intelligence / market.
+    const growthStage = arguments[0] && arguments[0].growthStage
+      ? Object.freeze({
+          stage:             _str(arguments[0].growthStage.stage) || 'unknown',
+          confidence:        _str(arguments[0].growthStage.confidence) || 'low',
+          nextMilestone:     arguments[0].growthStage.nextMilestone
+                              ? Object.freeze({
+                                  stage:    _str(arguments[0].growthStage.nextMilestone.stage),
+                                  daysAway: _num(arguments[0].growthStage.nextMilestone.daysAway),
+                                  hint:     _str(arguments[0].growthStage.nextMilestone.hint),
+                                })
+                              : null,
+          daysSincePlanting: _num(arguments[0].growthStage.daysSincePlanting),
+        })
+      : null;
+    const regional = arguments[0] && arguments[0].regional && arguments[0].regional.ok
+      ? Object.freeze({
+          country:         _str(arguments[0].regional.country) || null,
+          region:          _str(arguments[0].regional.region) || null,
+          diseasePressure: _str(arguments[0].regional.diseasePressure) || 'unknown',
+          pestPressure:    _str(arguments[0].regional.pestPressure) || 'unknown',
+          rainfallTrend:   arguments[0].regional.rainfallTrend || null,
+          plantingWindow:  arguments[0].regional.plantingWindow || null,
+          harvestWindow:   arguments[0].regional.harvestWindow || null,
+          sampleSize:      _num(arguments[0].regional.sampleSize) || 0,
+          confidence:      _str(arguments[0].regional.confidence) || 'low',
+        })
+      : null;
+    const market = arguments[0] && arguments[0].market && arguments[0].market.ok
+      ? Object.freeze({
+          crop:                  _str(arguments[0].market.crop) || null,
+          currentPrice:          _num(arguments[0].market.currentPrice),
+          currency:              _str(arguments[0].market.currency) || 'USD',
+          unit:                  _str(arguments[0].market.unit) || 'per_kg',
+          priceSource:           _str(arguments[0].market.priceSource) || 'none',
+          referenceOnly:         !!arguments[0].market.referenceOnly,
+          priceTrend:            _str(arguments[0].market.priceTrend) || 'unknown',
+          nearbyBuyers:          Object.freeze(_arr(arguments[0].market.nearbyBuyers)
+                                  .map((b) => Object.freeze(b))),
+          recommendedSellWindow: arguments[0].market.recommendedSellWindow || null,
+          demandScore:           _num(arguments[0].market.demandScore),
+          confidence:            _str(arguments[0].market.confidence) || 'low',
+        })
+      : null;
+
     return Object.freeze({
-      runtimeVersion:    'scan-recovery-envelope-v3',
+      runtimeVersion:    'scan-recovery-envelope-v4',
       plantName,
       scientificName,
       confidence,
@@ -197,8 +242,12 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       // V2 additions — insect + field health.
       pest:              pestInfo,
       fieldHealth,
-      // Final closure — soil context (V3 envelope bump).
+      // V3 §3 — soil context.
       soil,
+      // V3 §2 + §5 + §6 — growth stage + regional + market.
+      growthStage,
+      regional,
+      market,
       // Honesty trailer — every envelope carries the limitation
       // sentence the API health contract requires.
       limitations:       'Decision support, not a guarantee.',
