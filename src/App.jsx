@@ -1532,6 +1532,15 @@ export default function App() {
               await import('./runtime/intelligence/IntelligenceIntegrationHealth');
             installIntelligenceIntegrationHealthGlobal();
           } catch { /* swallow */ }
+          // Intelligence Fabric — unified recommendation context.
+          // Composes Command Center state + IntelligenceIntegration
+          // summaries into the spec output shape so consumers don't
+          // need to read N globals individually. No new intelligence.
+          try {
+            const { installIntelligenceFabricGlobal } =
+              await import('./runtime/intelligence/IntelligenceFabricRuntime');
+            installIntelligenceFabricGlobal();
+          } catch { /* swallow */ }
           // Command Center v2 — spec-canonical 4-file split at
           // src/runtime/command-center/. Owns __commandCenterHealth and
           // exposes selectors that every consuming page reads. Installed
