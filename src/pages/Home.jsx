@@ -55,6 +55,11 @@ import { useLiveWeather }        from '../hooks/useLiveWeather.js';
 // outcome history into ONE recommendation. Self-hides on the
 // honest empty-state when no inputs are available.
 import TopActionCard from '../components/intelligence/TopActionCard.jsx';
+// Recommendation Engine V1 (daily-action variant) — focused
+// "one clear daily action" surface with explicit Start + Scan
+// buttons + estimated time + follow-up date. Renders ABOVE the
+// broader TopActionCard so the farmer sees the single action first.
+import TodaysActionCard from '../components/intelligence/TodaysActionCard.jsx';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
 // Once-per-mount calm-notification feed sync — feeds the user-facing
@@ -991,6 +996,12 @@ export default function Home() {
         <FeatureShell name="daily-farm-plan" silent>
           <DailyFarmPlanCard />
         </FeatureShell>
+
+        {/* Recommendation Engine V1 (daily-action variant) —
+            ONE clear daily action with Start + Scan buttons,
+            estimated time, follow-up date. Always renders
+            exactly 1 action per the gate-locked contract. */}
+        <TodaysActionCard />
 
         {/* Intelligence Platform V1 — single source of truth.
             Spec: 1. Highest Priority Action · 2. Why · 3. Expected

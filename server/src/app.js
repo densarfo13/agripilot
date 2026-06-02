@@ -1201,6 +1201,119 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
   }
 });
 
+// ── Recommendation Engine V1 — daily action ─────────────────
+// GET /api/daily-action
+//   Returns exactly ONE clear daily action for the signed-in
+//   farmer per the spec shape:
+//     { action, priority, reason, confidence, estimatedTime,
+//       followUpDate, topThree[<=3] }
+//   Always returns 1 action — even on internal failure the engine
+//   falls back to a conservative "walk the field" suggestion so
+//   the contract holds.
+app.get('/api/daily-action', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+
+    // Pull farm + crop + growth-stage context.
+    let farm = null;
+    try {
+      farm = await prisma.farm.findFirst({
+        where:  { userId },
+        select: { id: true, latitude: true, longitude: true,
+                  country: true, region: true, plantingDate: true,
+                  crop: true },
+      });
+    } catch { farm = null; }
+
+    const lat = farm ? Number(farm.latitude)  : null;
+    const lng = farm ? Number(farm.longitude) : null;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+    // Latest scan envelope.
+    let scan = null;
+    try {
+      const row = await prisma.scanTrainingEvent.findFirst({
+        where:   { userId },
+        orderBy: { createdAt: 'desc' },
+        select:  { weatherSummary: true, plantName: true,
+                   cropName: true, confidence: true },
+      });
+      if (row && row.weatherSummary && typeof row.weatherSummary === 'object') {
+        const ws = row.weatherSummary;
+        scan = {
+          plantName: row.plantName || row.cropName,
+          severity:  ws.severity || row.confidence,
+          diseaseCandidates: Array.isArray(ws.diseaseCandidates)
+            ? ws.diseaseCandidates : [],
+          pest: ws.pest || null,
+        };
+      }
+    } catch { scan = null; }
+
+    // Weather + growth stage in parallel.
+    const [weather, growthStage] = await Promise.all([
+      hasCoords
+        ? import('./services/weather/weatherProvider.js')
+            .then((m) => m.getWeatherForFarm({ latitude: lat, longitude: lng }))
+            .catch(() => null)
+        : Promise.resolve(null),
+      import('./ml/growthStageEngine.js')
+        .then((m) => m.deriveGrowthStage({
+          plantType: farm && farm.crop,
+          plantingDate: farm && farm.plantingDate
+            ? new Date(farm.plantingDate).toISOString() : null,
+          weather: null,
+        }))
+        .catch(() => null),
+    ]);
+
+    // Open tasks (current pending) — best-effort.
+    let openTasks = [];
+    try {
+      if (prisma.task) {
+        openTasks = await prisma.task.findMany({
+          where:   { userId, status: { not: 'completed' } },
+          orderBy: { createdAt: 'desc' },
+          take:    10,
+          select:  { title: true },
+        });
+      }
+    } catch { openTasks = []; }
+
+    // Recent recommendation outcome history (60d).
+    let outcomeHistory = [];
+    try {
+      const { computeRecommendationSuccess } =
+        await import('./ml/outcomeIntelligenceEngine.js');
+      const out = await computeRecommendationSuccess(prisma, { days: 60 });
+      if (out && out.ok) outcomeHistory = Array.from(out.rows);
+    } catch { outcomeHistory = []; }
+
+    const { computeDailyAction } = await import('./ml/dailyActionEngine.js');
+    const envelope = computeDailyAction({
+      weather, scan,
+      crop:            farm && farm.crop,
+      growthStage,
+      openTasks,
+      outcomeHistory,
+    });
+    return res.json(envelope);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'daily_action_failed', message: err && err.message,
+      // Still emit the contract-required fields so the UI never
+      // sees a missing `action`.
+      action: 'Walk the field for 5 minutes and note anything unusual.',
+      priority: 'low', reason: 'Service degraded — running on safe fallback.',
+      confidence: 30, estimatedTime: '5 minutes',
+      followUpDate: new Date(Date.now() + 14 * 24 * 3600 * 1000)
+        .toISOString().slice(0, 10),
+      topThree: [],
+    });
+  }
+});
+
 // ── Intelligence Platform V1 — unified recommendation engine ─
 // GET /api/recommendations/today
 //   Returns the Top Action + Top 3 prioritized actions for the

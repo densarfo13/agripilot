@@ -1856,6 +1856,14 @@ export default function App() {
               await import('./runtime/intelligencePlatform/IntelligencePlatformRecommendationEngine');
             installIntelligencePlatformGlobal();
           } catch { /* swallow */ }
+          // Recommendation Engine V1 (daily-action variant) — pins
+          // __dailyActionHealth. ONE clear daily action; 40/30/20/10
+          // weight model; always returns exactly 1 action.
+          try {
+            const { installDailyActionGlobal } =
+              await import('./runtime/dailyAction/RecommendationEngine');
+            installDailyActionGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
