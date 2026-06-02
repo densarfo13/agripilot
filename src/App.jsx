@@ -229,6 +229,7 @@ const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
 // `localStorage.farroway_internal === '1'` OR `?internal=1`).
 const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
 const FounderDashboardPage = lazy(() => import('./pages/FounderDashboardPage.jsx'));
+const FounderOSPage = lazy(() => import('./pages/FounderOSPage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -1794,6 +1795,14 @@ export default function App() {
               await import('./runtime/pilotObservability/PilotArchitectureGuardRuntime');
             installPilotArchitectureGuardGlobal();
           } catch { /* swallow */ }
+          // Founder OS — admin-only operating picture composite over
+          // 10+ existing observability runtimes. Pure projection; no
+          // new intelligence. Pins __founderOSHealth + pilotScore.
+          try {
+            const { installFounderOSGlobal } =
+              await import('./runtime/pilotObservability/FounderOSRuntime');
+            installFounderOSGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
@@ -2857,6 +2866,12 @@ export default function App() {
               over the 8 new pilot observability runtimes. Role-gated
               both by RoleRoute and inside the page. */}
           <Route path="/admin/founder-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><FounderDashboardPage /></RoleRoute>} />
+          {/* Founder OS — comprehensive admin-only operating picture
+              composing 10+ existing observability runtimes into the
+              spec's executive / funnel / scan / outcome / retention /
+              reliability / feedback / field-officer / intelligence /
+              pilot-score sections. RoleRoute + in-page admin gate. */}
+          <Route path="/admin/founder-os" element={<RoleRoute roles={ADMIN_ROLES}><FounderOSPage /></RoleRoute>} />
           {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
               inside the page, plus <RoleRoute> guard so non-admins
               redirect to "/". Excludes farmer/gardener/grower. */}
