@@ -1665,6 +1665,26 @@ export default function App() {
             // Top composite LAST so every backing probe is pinned.
             installScanReviewHealthGlobal();
           } catch { /* swallow */ }
+          // Scan V5 Multi-Source Plant Intelligence — consensus engine
+          // (spec-canonical {primaryMatch,confidence,alternatives,
+          // rationale,limitations}), 5-rate success metrics over real
+          // artifacts, and the top-level __plantIntelligenceHealth
+          // composite. Always returns a result; never fabricates.
+          try {
+            const [
+              { installPlantConsensusGlobal },
+              { installScanSuccessMetricsGlobal },
+              { installPlantIntelligenceHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/PlantConsensusRuntime'),
+              import('./runtime/scanAccuracy/ScanSuccessMetricsRuntime'),
+              import('./runtime/scanAccuracy/PlantIntelligenceHealth'),
+            ]);
+            installPlantConsensusGlobal();
+            installScanSuccessMetricsGlobal();
+            // Top composite LAST so every backing probe is pinned.
+            installPlantIntelligenceHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
