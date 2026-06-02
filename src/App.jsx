@@ -1541,6 +1541,14 @@ export default function App() {
             installWeeklyFarmReviewGlobal();
             installFieldOfficerCommandCenterGlobal();
           } catch { /* swallow */ }
+          // Notification panel diagnostic — attests the bell dropdown
+          // is portal-rendered, mobile-safe, template-resolved, and
+          // shows all notifications scrollably.
+          try {
+            const { installNotificationPanelHealthGlobal } =
+              await import('./runtime/notifications/NotificationPanelHealth');
+            installNotificationPanelHealthGlobal();
+          } catch { /* swallow */ }
           // Final Gap Closure — SoilGrids real API + Weekly Review page
           // diagnostic + Field Officer dashboard + supervisor metrics +
           // command-center gap-closure composite. All non-blocking,
