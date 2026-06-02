@@ -147,6 +147,16 @@ import {
 import {
   executeScanRecovery as _executeScanRecovery,
 } from '../runtime/scanRecovery/ScanRecoveryRuntime';
+// Scan Intelligence V2 §4 — server-backed Recent Scans card.
+// Mounted on the idle phase so users see their cross-device
+// scan history. Self-hides when the endpoint returns empty.
+import RecentScansCard from '../components/scan/RecentScansCard.jsx';
+// Scan Intelligence V2 §5 — confirmation/correction submit helper.
+// Imported here so the inline result-card confirm/wrong buttons
+// can fire the learning loop without a new component file.
+import {
+  submitConfirmation as _submitScanConfirmation,
+} from '../runtime/scanLearning/ScanLearningRuntime';
 import {
   loadManagedPlants as _loadManagedPlants,
   appendManagedPlant as _appendManagedPlant,
@@ -2372,6 +2382,14 @@ export default function ScanPage() {
       {/* FEATURE_SCAN_USEFULNESS: show the lightweight useful history
           (farroway_scan_history_v1); fall back to the original. */}
       {FEATURE_SCAN_USEFULNESS ? <UsefulScanHistory /> : <ScanHistory />}
+      {/* Scan Intelligence V2 §4 — server-backed Recent Scans.
+          Self-hides when the endpoint returns empty / 401. */}
+      <RecentScansCard limit={6} />
     </PremiumPage>
   );
 }
+
+/* Scan Intelligence V2 §5 — public hook so other surfaces can
+   fire the learning-loop confirm/correct calls without re-
+   importing the runtime themselves. */
+export const submitScanConfirmation = _submitScanConfirmation;

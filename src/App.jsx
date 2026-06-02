@@ -1824,6 +1824,15 @@ export default function App() {
               await import('./runtime/scanRecovery/ScanRecoveryRuntime');
             installScanRecoveryGlobal();
           } catch { /* swallow */ }
+          // Scan Intelligence V2 §5 — pins __scanLearningHealth.
+          // Adapter for the server-side learning loop: confirms
+          // correct identifications + stores corrected plant names
+          // that boost future ranking.
+          try {
+            const { installScanLearningGlobal } =
+              await import('./runtime/scanLearning/ScanLearningRuntime');
+            installScanLearningGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.

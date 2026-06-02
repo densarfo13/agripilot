@@ -804,11 +804,51 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
     // through to single-provider mode when only one key is set, and
     // to rule mode when neither is set. Pure; never throws.
     const { runConsensus } = await import('./ml/scanConsensusEngine.js');
-    const consensus = await runConsensus({
-      image:    pre.image,
-      mime:     pre.mime,
-      cropName, country, region,
-    });
+    // Scan Intelligence V2 §1 + §2 — fire insect detection AND
+    // satellite field health IN PARALLEL with consensus. Both are
+    // optional; both return ok:false when keys missing so the
+    // route never blocks on them.
+    const { detectInsect } = await import('./ml/providers/insectProvider.js');
+    const { fetchFieldHealth } = await import('./ml/providers/fieldHealthProvider.js');
+
+    // Derive farm coords from authenticated user's primary farm
+    // (fire-and-forget — never blocks).
+    let farmLat = null, farmLng = null;
+    try {
+      if (req.user && req.user.id) {
+        const farm = await prisma.farm.findFirst({
+          where:  { userId: req.user.id },
+          select: { latitude: true, longitude: true },
+        });
+        if (farm) {
+          farmLat = Number(farm.latitude);
+          farmLng = Number(farm.longitude);
+          if (!Number.isFinite(farmLat) || !Number.isFinite(farmLng)) {
+            farmLat = null; farmLng = null;
+          }
+        }
+      }
+    } catch { /* swallow — field health falls back to ok:false */ }
+
+    const [consensus, pest, fieldHealth] = await Promise.all([
+      runConsensus({
+        image:    pre.image,
+        mime:     pre.mime,
+        cropName, country, region,
+      }),
+      detectInsect({
+        image: pre.image,
+        mime:  pre.mime,
+        cropName,
+      }),
+      (farmLat != null && farmLng != null)
+        ? fetchFieldHealth({ latitude: farmLat, longitude: farmLng, cropName })
+        : Promise.resolve({ ok: false, reason: 'no_farm_coords',
+            ndvi: null, cropVigor: null, stressScore: null,
+            vegetationTrend: null, interpretation: '',
+            confidence: 'low',
+            limitations: 'Decision support, not a guarantee.' }),
+    ]);
 
     // Inference orchestrator still runs for back-compat (legacy
     // symptom / confidence path). When the consensus engine returned
@@ -939,14 +979,64 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
     // Scan Recovery Sprint §3 — spec envelope. Single canonical
     // shape IntelligentScanResult consumes; replaces the legacy
     // verdict as the surface the result page renders.
+    // V2 — also carries pest + fieldHealth signals.
     const { buildScanRecoveryEnvelope } =
       await import('./ml/scanRecoveryEnvelope.js');
+    // V2 §5 — apply learning boost to candidates using THIS user's
+    // confirmation history before envelope build. Re-rank only;
+    // never invent new candidates.
+    let _boostedConsensus = consensus;
+    try {
+      if (req.user && req.user.id && consensus && consensus.ok
+          && Array.isArray(consensus.candidates) && consensus.candidates.length > 0) {
+        const { readUserConfirmationHistory, applyLearningBoost } =
+          await import('./ml/scanLearningEngine.js');
+        const history = await readUserConfirmationHistory(prisma, req.user.id, 50);
+        if (history.length > 0) {
+          const boosted = applyLearningBoost(consensus.candidates, history);
+          // Replace candidate list; preserve everything else on the frozen object.
+          _boostedConsensus = Object.freeze({
+            ...consensus,
+            candidates: boosted,
+            identification: boosted[0] ? Object.freeze({
+              commonName:     boosted[0].commonName,
+              scientificName: boosted[0].scientificName,
+              score:          boosted[0].score,
+            }) : consensus.identification,
+            learningApplied: true,
+          });
+        }
+      }
+    } catch { /* swallow — fall through to raw consensus */ }
+
     const scanRecovery = buildScanRecoveryEnvelope({
-      consensus,
+      consensus:    _boostedConsensus,
       safe,
       fused,
+      pest,
+      fieldHealth,
       cropNameHint: cropName || plantName,
     });
+
+    // Scan Intelligence V2 §3 — auto-persist FULL outcome. Pure
+    // helper; logs failures via console.warn (no silent training-
+    // corpus leakage). Fires AFTER the response shape is built so
+    // the persistence write never delays the response.
+    try {
+      const { persistScanOutcome } =
+        await import('./ml/scanOutcomePersister.js');
+      // Fire-and-forget — never await; never block /api/scan/analyze.
+      persistScanOutcome(prisma, {
+        scanId,
+        userId:   req.user?.id || null,
+        imageUrl: imageUrl || null,
+        cropName, country, region,
+        weather,
+        recovery: scanRecovery,
+        pest,
+        fieldHealth,
+      }).catch(() => { /* swallow — already logged inside */ });
+    } catch { /* swallow */ }
 
     return res.json({
       ok:                    true,
@@ -1013,6 +1103,61 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
   }
 });
 
+// ── Scan history (V2 §4) ──────────────────────────────────────
+// GET /api/scan/history — returns the signed-in user's recent
+// scans (server-side; auto-persisted by the analyze route).
+//   Query: ?limit=20 (max 50)
+//   Returns: { scans: [{ scanId, plantName, predictedIssue,
+//                        confidence, confidencePct, imageUrl,
+//                        createdAt }] }
+app.get('/api/scan/history', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const rawLimit = Number(req.query && req.query.limit);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.max(1, Math.min(rawLimit, 50)) : 20;
+    const rows = await prisma.scanTrainingEvent.findMany({
+      where:   { userId },
+      orderBy: { createdAt: 'desc' },
+      take:    limit,
+      select: {
+        scanId: true, imageUrl: true,
+        cropName: true, plantName: true,
+        predictedIssue: true, confidence: true,
+        weatherSummary: true,
+        userFeedback: true,
+        createdAt: true,
+      },
+    });
+    const scans = rows.map((r) => {
+      const ws = r.weatherSummary && typeof r.weatherSummary === 'object' ? r.weatherSummary : {};
+      const confidencePct = (ws && typeof ws.confidencePct === 'number')
+        ? ws.confidencePct
+        : (r.confidence === 'high' ? 85
+          : r.confidence === 'medium' ? 55 : 25);
+      return {
+        scanId:         r.scanId,
+        plantName:      r.plantName || r.cropName || '',
+        predictedIssue: r.predictedIssue || '',
+        confidence:     r.confidence || 'low',
+        confidencePct,
+        imageUrl:       r.imageUrl || null,
+        userConfirmed:  r.userFeedback === 'helpful',
+        createdAt:      r.createdAt
+                          ? new Date(r.createdAt).toISOString() : null,
+      };
+    });
+    return res.json({ ok: true, scans });
+  } catch (err) {
+    return res.status(500).json({
+      error: 'scan_history_failed',
+      message: err && err.message,
+      scans: [],
+    });
+  }
+});
+
 app.post('/api/scan/feedback', authenticate, scanUserLimiter, async (req, res) => {
   try {
     const {
@@ -1021,7 +1166,35 @@ app.post('/api/scan/feedback', authenticate, scanUserLimiter, async (req, res) =
       verificationSummary,       // { matched, mismatched, confirmed, downgrade } — after checklist completes
       outcome,                   // 'recovered' | 'spread' | 'lost' | 'unknown'
       outcomeNote,
+      // Scan Intelligence V2 §5 — learning loop. When `correct` is
+      // a boolean, the route routes through the learning engine
+      // (which updates ranking signals + stores the corrected
+      // plant for future boost/demote).
+      correct,
+      correctedPlant,
     } = req.body || {};
+
+    // V2 §5 — learning-loop write-through. Runs BEFORE the legacy
+    // partial-update so the learning engine sees a consistent row.
+    if (typeof correct === 'boolean' && scanId) {
+      try {
+        const { recordConfirmation } =
+          await import('./ml/scanLearningEngine.js');
+        await recordConfirmation(prisma, {
+          scanId,
+          userId:         req.user?.id || null,
+          correct,
+          correctedPlant: correctedPlant || correctedIssue || null,
+        });
+      } catch { /* swallow — handled inside */ }
+      // Short-circuit when caller used the V2 correct/wrong shape
+      // (legacy verification answer / outcome paths still fall
+      // through below when their fields are present).
+      if (!userFeedback && !verificationAnswer
+          && !verificationSummary && !outcome) {
+        return res.json({ ok: true, learning: 'recorded' });
+      }
+    }
 
     if (!scanId) {
       return res.status(400).json({ error: 'missing_required_fields' });

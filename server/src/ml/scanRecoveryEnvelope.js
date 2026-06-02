@@ -134,8 +134,35 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       error:     src.error == null ? null : _str(src.error),
     }));
 
+    // Scan Intelligence V2 §1 + §2 — surface insect detection +
+    // satellite field health when present. Optional caller args;
+    // never overrides species data. Both envelopes already carry
+    // their own `limitations: 'Decision support, not a guarantee.'`.
+    const pestInfo = arguments[0] && arguments[0].pest && arguments[0].pest.ok
+      ? Object.freeze({
+          pest:              _str(arguments[0].pest.pest),
+          pestCategory:      _str(arguments[0].pest.pestCategory) || 'unknown',
+          scientificName:    _str(arguments[0].pest.scientificName),
+          confidence:        _num(arguments[0].pest.confidence) || 0,
+          confidencePct:     _num(arguments[0].pest.confidencePct) || 0,
+          severity:          _str(arguments[0].pest.severity) || 'low',
+          recommendedAction: _str(arguments[0].pest.recommendedAction),
+        })
+      : null;
+    const fieldHealth = arguments[0] && arguments[0].fieldHealth
+                        && arguments[0].fieldHealth.ok
+      ? Object.freeze({
+          ndvi:            _num(arguments[0].fieldHealth.ndvi),
+          cropVigor:       _str(arguments[0].fieldHealth.cropVigor) || null,
+          stressScore:     _num(arguments[0].fieldHealth.stressScore),
+          vegetationTrend: _str(arguments[0].fieldHealth.vegetationTrend) || null,
+          interpretation:  _str(arguments[0].fieldHealth.interpretation),
+          confidence:      _str(arguments[0].fieldHealth.confidence) || 'low',
+        })
+      : null;
+
     return Object.freeze({
-      runtimeVersion:    'scan-recovery-envelope-v1',
+      runtimeVersion:    'scan-recovery-envelope-v2',
       plantName,
       scientificName,
       confidence,
@@ -147,6 +174,9 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       candidates:        Object.freeze(candidates),
       consensusMode:     _str(c.consensusMode) || 'rule',
       sources:           Object.freeze(sources),
+      // V2 additions — insect + field health.
+      pest:              pestInfo,
+      fieldHealth,
       // Honesty trailer — every envelope carries the limitation
       // sentence the API health contract requires.
       limitations:       'Decision support, not a guarantee.',
