@@ -132,15 +132,22 @@ export function installMarketIntelligenceCompositeGlobal(): boolean {
   return _safe(() => {
     if (typeof window === 'undefined') return false;
     const w = window as any;
+    const reader = function () {
+      const out = marketIntelligenceCompositeHealth();
+      try {
+        const dev = typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV;
+        if (dev || w.__farrowayHealthLog === true) console.log('[Farroway · Market Intel Composite]', out);
+      } catch { /* swallow */ }
+      return out;
+    };
     if (typeof w.__marketIntelligenceCompositeHealth !== 'function') {
-      w.__marketIntelligenceCompositeHealth = function () {
-        const out = marketIntelligenceCompositeHealth();
-        try {
-          const dev = typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV;
-          if (dev || w.__farrowayHealthLog === true) console.log('[Farroway · Market Intel Composite]', out);
-        } catch { /* swallow */ }
-        return out;
-      };
+      w.__marketIntelligenceCompositeHealth = reader;
+    }
+    // §spec alias — pages and gates consume the bare canonical name
+    // alongside the legacy composite name. Both resolve to the same
+    // envelope so consumers never see two competing shapes.
+    if (typeof w.__marketIntelligenceHealth !== 'function') {
+      w.__marketIntelligenceHealth = reader;
     }
     return true;
   }, false);

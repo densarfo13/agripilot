@@ -14,6 +14,7 @@ import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import SimpleActionCard from './SimpleActionCard.jsx';
 import CommandCenterDeck from '../commandCenter/CommandCenterDeck.jsx';
+import IntelligenceStatusStrip from '../commandCenter/IntelligenceStatusStrip.jsx';
 import WeeklyReviewHomeCard from '../commandCenter/WeeklyReviewHomeCard.jsx';
 import { useNavigate } from 'react-router-dom';
 
@@ -101,6 +102,10 @@ function SimpleModeHomeSectionInner() {
           fields. Renders ABOVE Today's Action; pages consuming the same
           envelope show identical values. */}
       <CommandCenterDeck />
+      {/* Intelligence status strip — compact soil / market / regional
+          tiles. Self-collapses to null when no system reports
+          available, so it never adds clutter on day 0. */}
+      <IntelligenceStatusStrip />
       {/* Weekly Review home card — visible only after at least 1
           completed task / scan / outcome. Self-gates from the runtime. */}
       <WeeklyReviewHomeCard />

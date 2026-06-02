@@ -1523,6 +1523,15 @@ export default function App() {
             // Farm risk last — composes over the other 3 + predictive + weather.
             installFarmRiskGlobal();
           } catch { /* swallow */ }
+          // Intelligence Integration — single composite over soil +
+          // market + regional + their Command Center / Daily Assistant
+          // / Sell / Funding / Weekly Review / Notification consumers.
+          // No standalone pages; integration only.
+          try {
+            const { installIntelligenceIntegrationHealthGlobal } =
+              await import('./runtime/intelligence/IntelligenceIntegrationHealth');
+            installIntelligenceIntegrationHealthGlobal();
+          } catch { /* swallow */ }
           // Command Center v2 — spec-canonical 4-file split at
           // src/runtime/command-center/. Owns __commandCenterHealth and
           // exposes selectors that every consuming page reads. Installed
