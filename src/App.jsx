@@ -230,6 +230,7 @@ const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
 const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
 const FounderDashboardPage = lazy(() => import('./pages/FounderDashboardPage.jsx'));
 const FounderOSPage = lazy(() => import('./pages/FounderOSPage.jsx'));
+const ApiDiagnosticsDashboard = lazy(() => import('./diagnostics/ApiDiagnosticsDashboard.tsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -1803,6 +1804,15 @@ export default function App() {
               await import('./runtime/pilotObservability/FounderOSRuntime');
             installFounderOSGlobal();
           } catch { /* swallow */ }
+          // API Health & Diagnostics — pins __apiHealth. Reads cached
+          // per-service check results; admin /admin/system-health page
+          // triggers fresh checks. Honest disconnected/unconfigured
+          // status; no fake greens.
+          try {
+            const { installApiHealthGlobal } =
+              await import('./diagnostics/ApiHealthRuntime');
+            installApiHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
@@ -2872,6 +2882,12 @@ export default function App() {
               reliability / feedback / field-officer / intelligence /
               pilot-score sections. RoleRoute + in-page admin gate. */}
           <Route path="/admin/founder-os" element={<RoleRoute roles={ADMIN_ROLES}><FounderOSPage /></RoleRoute>} />
+          {/* API Health Diagnostics — admin-only. Verifies every
+              production service (Plant.id, PlantNet, Open-Meteo,
+              SoilGrids, Cloudinary, SendGrid, Twilio, Postgres, Redis,
+              Auth, Scan Pipeline + Consensus). Honest reporting:
+              server-side services flagged NEEDS_SERVER_PROBE. */}
+          <Route path="/admin/system-health" element={<RoleRoute roles={ADMIN_ROLES}><ApiDiagnosticsDashboard /></RoleRoute>} />
           {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
               inside the page, plus <RoleRoute> guard so non-admins
               redirect to "/". Excludes farmer/gardener/grower. */}
