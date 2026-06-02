@@ -74,6 +74,7 @@ export async function persistScanOutcome(prisma, args = {}) {
   const recovery = args.recovery || {};
   const pest     = args.pest || null;
   const fieldHealth = args.fieldHealth || null;
+  const soil     = args.soil || null;
 
   const plantName        = _str(recovery.plantName) || _str(args.cropName);
   const predictedIssue   = recovery.diseaseCandidates
@@ -116,7 +117,20 @@ export async function persistScanOutcome(prisma, args = {}) {
       vegetationTrend: _str(fieldHealth.vegetationTrend) || null,
       interpretation:  _str(fieldHealth.interpretation),
     } : null,
-    v: 2,
+    // Final closure — soil context persisted alongside the rest of
+    // the outcome envelope (no schema migration; rides on the
+    // existing weatherSummary JSON column).
+    soil: (soil && soil.ok) ? {
+      texture:           _str(soil.soilTexture && soil.soilTexture.label) || 'unknown',
+      clayPct:           _num(soil.soilTexture && soil.soilTexture.clayPct),
+      sandPct:           _num(soil.soilTexture && soil.soilTexture.sandPct),
+      siltPct:           _num(soil.soilTexture && soil.soilTexture.siltPct),
+      ph:                _num(soil.ph),
+      organicMatterProxy: _num(soil.organicMatterProxy),
+      drainageRisk:      _str(soil.drainageRisk) || 'unknown',
+      interpretation:    _str(soil.interpretation),
+    } : null,
+    v: 3,
   };
 
   try {

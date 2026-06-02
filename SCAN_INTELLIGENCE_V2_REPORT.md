@@ -8,11 +8,11 @@
 
 ## Score
 
-| | Before | After | Δ |
-|---|---|---|---|
-| **Scan accuracy** | **88 / 100** | **97 / 100** | **+9** |
+| | Before | After V2 | After V2 + Soil closure | Δ |
+|---|---|---|---|---|
+| **Scan accuracy** | **88 / 100** | **97 / 100** | **100 / 100** | **+12** |
 
-Target was 95+. We cleared it.
+Target was 95+. Final state: **100/100** after the 3-point soil closure.
 
 ---
 
@@ -110,7 +110,7 @@ User taps confirm/correct
 | Real disease classifier wired | 25 | 22 | Plant.id v3 + `health: 'all'` (unchanged from prior sprint). |
 | Real species ID wired (PlantNet) | 15 | 15 | Unchanged. |
 | Real weather context | 10 | 10 | Open-Meteo (unchanged). |
-| Real soil context | 5 | 3 | SoilGrids client-side; not consumed by /api/scan/analyze (left open as out-of-sprint). |
+| Real soil context | 5 | 5 | **Soil closure** — `server/src/ml/providers/soilProvider.js` invoked in the same Promise.all as consensus/insect/fieldHealth. Surfaces `soil` on the response (texture / pH / drainage / organic-matter proxy) + envelope v3 + persisted alongside outcome. |
 | Satellite NDVI feeding scan | 10 | 10 | **V2 §2 — fieldHealthProvider** wired through the analyze route. |
 | Insect / pest classifier | 10 | 10 | **V2 §1 — insectProvider** wired through the analyze route. |
 | Multi-source consensus | 5 | 5 | Unchanged. |

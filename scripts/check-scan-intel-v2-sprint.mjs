@@ -209,7 +209,7 @@ if (!_exists(APP_JSX)) {
     'App.jsx must call installScanLearningGlobal in boot');
 }
 
-// ─── 13. Recovery envelope carries V2 fields ──────────────────
+// ─── 13. Recovery envelope carries V2 + V3 fields ────────────
 const ENVELOPE = 'server/src/ml/scanRecoveryEnvelope.js';
 if (!_exists(ENVELOPE)) {
   errors.push('missing: ' + ENVELOPE);
@@ -219,8 +219,43 @@ if (!_exists(ENVELOPE)) {
     'scanRecoveryEnvelope must carry pest field (V2)');
   _has(src, 'fieldHealth',
     'scanRecoveryEnvelope must carry fieldHealth field (V2)');
-  _has(src, 'scan-recovery-envelope-v2',
-    'scanRecoveryEnvelope runtimeVersion must bump to v2');
+  _has(src, 'scan-recovery-envelope-v3',
+    'scanRecoveryEnvelope runtimeVersion must bump to v3 (soil added)');
+  _has(src, 'soil',
+    'scanRecoveryEnvelope must carry soil field (V3 — final 3-point gap closure)');
+}
+
+// ─── 14. Soil provider exists + key-less SoilGrids ────────────
+const SOIL = 'server/src/ml/providers/soilProvider.js';
+if (!_exists(SOIL)) {
+  errors.push('missing: ' + SOIL);
+} else {
+  const src = _read(SOIL);
+  _has(src, 'export async function fetchSoilProfile',
+    'soilProvider must export fetchSoilProfile');
+  _has(src, 'rest.isric.org/soilgrids',
+    'soilProvider must hit SoilGrids endpoint');
+  // No API key — public service.
+  const SIGNALS = ['soilTexture', 'drainageRisk', 'ph', 'organicMatterProxy'];
+  for (const s of SIGNALS) {
+    if (!src.includes(s)) {
+      errors.push('soilProvider missing signal: ' + s);
+    }
+  }
+}
+
+// ─── 15. /api/scan/analyze wires soil into Promise.all ────────
+const APP_FOR_SOIL = 'server/src/app.js';
+if (_exists(APP_FOR_SOIL)) {
+  const src = _read(APP_FOR_SOIL);
+  _has(src, "import('./ml/providers/soilProvider.js')",
+    'app.js must lazy-import soilProvider');
+  _has(src, 'fetchSoilProfile(',
+    'app.js must call fetchSoilProfile in the analyze route');
+  // Promise.all must include 4 readers (consensus + insect + fieldHealth + soil).
+  if (!/const\s*\[\s*consensus\s*,\s*pest\s*,\s*fieldHealth\s*,\s*soil\s*\]\s*=\s*await\s+Promise\.all/.test(src)) {
+    errors.push('app.js Promise.all must destructure to [consensus, pest, fieldHealth, soil]');
+  }
 }
 
 if (errors.length) {

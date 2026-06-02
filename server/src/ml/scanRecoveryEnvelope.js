@@ -160,9 +160,29 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
           confidence:      _str(arguments[0].fieldHealth.confidence) || 'low',
         })
       : null;
+    // Final 3-point gap closure — server-side soil context. Surfaces
+    // only when the soilProvider returned ok:true (real SoilGrids
+    // reading or cached value). Honest null when unavailable.
+    const soil = arguments[0] && arguments[0].soil && arguments[0].soil.ok
+      ? Object.freeze({
+          soilTexture: arguments[0].soil.soilTexture
+            ? Object.freeze({
+                clayPct: _num(arguments[0].soil.soilTexture.clayPct),
+                sandPct: _num(arguments[0].soil.soilTexture.sandPct),
+                siltPct: _num(arguments[0].soil.soilTexture.siltPct),
+                label:   _str(arguments[0].soil.soilTexture.label) || 'unknown',
+              })
+            : Object.freeze({ clayPct: null, sandPct: null, siltPct: null, label: 'unknown' }),
+          ph:                 _num(arguments[0].soil.ph),
+          organicMatterProxy: _num(arguments[0].soil.organicMatterProxy),
+          drainageRisk:       _str(arguments[0].soil.drainageRisk) || 'unknown',
+          confidence:         _str(arguments[0].soil.confidence) || 'low',
+          interpretation:     _str(arguments[0].soil.interpretation),
+        })
+      : null;
 
     return Object.freeze({
-      runtimeVersion:    'scan-recovery-envelope-v2',
+      runtimeVersion:    'scan-recovery-envelope-v3',
       plantName,
       scientificName,
       confidence,
@@ -177,6 +197,8 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       // V2 additions — insect + field health.
       pest:              pestInfo,
       fieldHealth,
+      // Final closure — soil context (V3 envelope bump).
+      soil,
       // Honesty trailer — every envelope carries the limitation
       // sentence the API health contract requires.
       limitations:       'Decision support, not a guarantee.',

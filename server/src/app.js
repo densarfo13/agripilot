@@ -810,6 +810,10 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
     // route never blocks on them.
     const { detectInsect } = await import('./ml/providers/insectProvider.js');
     const { fetchFieldHealth } = await import('./ml/providers/fieldHealthProvider.js');
+    // Final 3-point gap closure — server-side SoilGrids (public,
+    // key-less). Composes the new soilProvider; cached in Redis
+    // 7 days. Honest ok:false envelope on timeout or invalid coords.
+    const { fetchSoilProfile } = await import('./ml/providers/soilProvider.js');
 
     // Derive farm coords from authenticated user's primary farm
     // (fire-and-forget — never blocks).
@@ -830,7 +834,7 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       }
     } catch { /* swallow — field health falls back to ok:false */ }
 
-    const [consensus, pest, fieldHealth] = await Promise.all([
+    const [consensus, pest, fieldHealth, soil] = await Promise.all([
       runConsensus({
         image:    pre.image,
         mime:     pre.mime,
@@ -847,6 +851,16 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
             ndvi: null, cropVigor: null, stressScore: null,
             vegetationTrend: null, interpretation: '',
             confidence: 'low',
+            limitations: 'Decision support, not a guarantee.' }),
+      // Final 3-point gap closure — soil context. Same coord guard
+      // as field health; SoilGrids is key-less so we just need lat/lng.
+      (farmLat != null && farmLng != null)
+        ? fetchSoilProfile({ latitude: farmLat, longitude: farmLng })
+        : Promise.resolve({ ok: false, reason: 'no_farm_coords',
+            soilTexture: { clayPct: null, sandPct: null, siltPct: null, label: 'unknown' },
+            ph: null, organicMatterProxy: null,
+            drainageRisk: 'unknown', confidence: 'low',
+            interpretation: 'Soil reading requires farm coordinates.',
             limitations: 'Decision support, not a guarantee.' }),
     ]);
 
@@ -1015,6 +1029,7 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       fused,
       pest,
       fieldHealth,
+      soil,
       cropNameHint: cropName || plantName,
     });
 
@@ -1035,6 +1050,7 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
         recovery: scanRecovery,
         pest,
         fieldHealth,
+        soil,
       }).catch(() => { /* swallow — already logged inside */ });
     } catch { /* swallow */ }
 
@@ -1054,6 +1070,14 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       nextAction:            scanRecovery.nextAction,
       candidates:            scanRecovery.candidates,
       consensusMode:         scanRecovery.consensusMode,
+      // Final closure — pest + fieldHealth + soil surfaced at top
+      // level so IntelligentScanResult's extractors (which read
+      // result.soil / result.fieldHealth / result.pest directly)
+      // find them without traversing the scanRecovery envelope.
+      pest:                  scanRecovery.pest,
+      fieldHealth:           scanRecovery.fieldHealth,
+      soil:                  scanRecovery.soil,
+      satellite:             scanRecovery.fieldHealth, // alias for IntelligentScanResult._extractSatellite
       verdict:               safe,
       verdictV2,
       verdictV3,
