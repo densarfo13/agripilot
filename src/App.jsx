@@ -1760,6 +1760,13 @@ export default function App() {
             // Top composite LAST so every backing probe is pinned.
             installPilotHealthGlobal();
           } catch { /* swallow */ }
+          // Pilot Stabilization Verdict — single Go-Live verdict composite.
+          // Maps 9 spec checks to existing probes; no new intelligence.
+          try {
+            const { installPilotStabilizationVerdictGlobal } =
+              await import('./runtime/pilotObservability/PilotStabilizationVerdictRuntime');
+            installPilotStabilizationVerdictGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
