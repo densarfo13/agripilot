@@ -1710,6 +1710,20 @@ export default function App() {
             // Top composite LAST so every backing probe is pinned.
             installScanTrustHealthGlobal();
           } catch { /* swallow */ }
+          // Scan Pilot Freeze — KPI funnel counts + top freeze composite.
+          // Architecture frozen for pilot; no new scan engines after this.
+          try {
+            const [
+              { installScanPilotMetricsGlobal },
+              { installScanPilotFreezeHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/ScanPilotMetricsRuntime'),
+              import('./runtime/scanAccuracy/ScanPilotFreezeHealth'),
+            ]);
+            installScanPilotMetricsGlobal();
+            // Freeze composite LAST so every backing probe is pinned.
+            installScanPilotFreezeHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
