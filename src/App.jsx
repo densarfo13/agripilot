@@ -228,6 +228,7 @@ const PlantProfile       = lazy(() => import('./pages/PlantProfile.jsx'));
 // Internal-only founder dashboard (Phase 15 — gated by
 // `localStorage.farroway_internal === '1'` OR `?internal=1`).
 const FounderDashboard   = lazy(() => import('./pages/FounderDashboard.jsx'));
+const FounderDashboardPage = lazy(() => import('./pages/FounderDashboardPage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -1724,6 +1725,41 @@ export default function App() {
             // Freeze composite LAST so every backing probe is pinned.
             installScanPilotFreezeHealthGlobal();
           } catch { /* swallow */ }
+          // Pilot Analytics + Observability — 8 runtimes covering
+          // founder dashboard / retention / funnel / error monitoring /
+          // perf monitoring / pilot feedback / field-test sessions +
+          // the top __pilotHealth composite. All pure projections over
+          // existing telemetry; no PII; no fake greens.
+          try {
+            const [
+              { installFounderDashboardGlobal },
+              { installPilotRetentionAnalyticsGlobal },
+              { installPilotFunnelAnalyticsGlobal },
+              { installPilotErrorMonitoringGlobal },
+              { installPilotPerformanceMonitoringGlobal },
+              { installPilotFeedbackGlobal },
+              { installPilotFieldTestSessionGlobal },
+              { installPilotHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/pilotObservability/FounderDashboardRuntime'),
+              import('./runtime/pilotObservability/PilotRetentionAnalyticsRuntime'),
+              import('./runtime/pilotObservability/PilotFunnelAnalyticsRuntime'),
+              import('./runtime/pilotObservability/PilotErrorMonitoringRuntime'),
+              import('./runtime/pilotObservability/PilotPerformanceMonitoringRuntime'),
+              import('./runtime/pilotObservability/PilotFeedbackRuntime'),
+              import('./runtime/pilotObservability/PilotFieldTestSessionRuntime'),
+              import('./runtime/pilotObservability/PilotHealthRuntime'),
+            ]);
+            installFounderDashboardGlobal();
+            installPilotRetentionAnalyticsGlobal();
+            installPilotFunnelAnalyticsGlobal();
+            installPilotErrorMonitoringGlobal();
+            installPilotPerformanceMonitoringGlobal();
+            installPilotFeedbackGlobal();
+            installPilotFieldTestSessionGlobal();
+            // Top composite LAST so every backing probe is pinned.
+            installPilotHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
@@ -2783,6 +2819,10 @@ export default function App() {
               <RoleRoute> defence-in-depth. Restricted to admins.
               Non-farmer/gardener/grower role list. */}
           <Route path="/internal/founder" element={<RoleRoute roles={ADMIN_ROLES}><FounderDashboard /></RoleRoute>} />
+          {/* Pilot analytics + observability — admin-only dashboard
+              over the 8 new pilot observability runtimes. Role-gated
+              both by RoleRoute and inside the page. */}
+          <Route path="/admin/founder-dashboard" element={<RoleRoute roles={ADMIN_ROLES}><FounderDashboardPage /></RoleRoute>} />
           {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
               inside the page, plus <RoleRoute> guard so non-admins
               redirect to "/". Excludes farmer/gardener/grower. */}
