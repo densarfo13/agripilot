@@ -1201,6 +1201,149 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
   }
 });
 
+// ── Intelligence Platform V1 — unified recommendation engine ─
+// GET /api/recommendations/today
+//   Returns the Top Action + Top 3 prioritized actions for the
+//   signed-in farmer. Composes the most recent scan envelope, the
+//   last weather snapshot, the farm's soil + satellite + regional
+//   + market signals, and the user's recent recommendation outcome
+//   rows. Pure / never throws / honest empty-state when no inputs.
+app.get('/api/recommendations/today', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+
+    // Locate the user's primary farm + last weather snapshot.
+    let farm = null;
+    try {
+      farm = await prisma.farm.findFirst({
+        where:  { userId },
+        select: { id: true, latitude: true, longitude: true,
+                  country: true, region: true, plantingDate: true,
+                  crop: true },
+      });
+    } catch { farm = null; }
+
+    // Pull the most recent scan training event for this user as the
+    // "current scan" context. weatherSummary carries the v3 outcome
+    // envelope when present.
+    let scan = null;
+    try {
+      const row = await prisma.scanTrainingEvent.findFirst({
+        where:   { userId },
+        orderBy: { createdAt: 'desc' },
+        select:  { scanId: true, predictedIssue: true,
+                   confidence: true, weatherSummary: true,
+                   plantName: true, cropName: true },
+      });
+      if (row && row.weatherSummary && typeof row.weatherSummary === 'object') {
+        const ws = row.weatherSummary;
+        scan = {
+          scanId:    row.scanId,
+          plantName: row.plantName || row.cropName,
+          confidence: ws.confidencePct
+            || (row.confidence === 'high' ? 85
+                : row.confidence === 'medium' ? 55 : 25),
+          severity:    ws.severity || row.confidence,
+          diseaseCandidates: Array.isArray(ws.diseaseCandidates)
+            ? ws.diseaseCandidates : [],
+          pest:        ws.pest || null,
+          nextAction:  ws.followUpTask && ws.followUpTask.title,
+        };
+      }
+    } catch { scan = null; }
+
+    // Lazy-import providers — same pattern the analyze route uses.
+    const lat = farm ? Number(farm.latitude) : null;
+    const lng = farm ? Number(farm.longitude) : null;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+    const [soilEnv, satellite, regional, market] = await Promise.all([
+      hasCoords
+        ? import('./ml/providers/soilProvider.js')
+            .then((m) => m.fetchSoilProfile({ latitude: lat, longitude: lng }))
+            .catch(() => null)
+        : Promise.resolve(null),
+      hasCoords
+        ? import('./ml/providers/fieldHealthProvider.js')
+            .then((m) => m.fetchFieldHealth({ latitude: lat, longitude: lng,
+              cropName: farm && farm.crop }))
+            .catch(() => null)
+        : Promise.resolve(null),
+      import('./ml/providers/regionalIntelligenceProvider.js')
+        .then((m) => m.getRegionalIntelligence(prisma, {
+          country: farm && farm.country, region: farm && farm.region,
+          latitude: lat, longitude: lng,
+          cropName: farm && farm.crop,
+        })).catch(() => null),
+      import('./ml/marketEngine.js')
+        .then((m) => m.getMarketIntelligence(prisma, {
+          cropName: farm && farm.crop,
+          country:  farm && farm.country, region: farm && farm.region,
+        })).catch(() => null),
+    ]);
+
+    // Weather snapshot — best-effort.
+    let weather = null;
+    try {
+      if (hasCoords) {
+        const { getWeatherForFarm } = await import('./services/weather/weatherProvider.js');
+        weather = await getWeatherForFarm({ latitude: lat, longitude: lng });
+      }
+    } catch { weather = null; }
+
+    // Outcome history — last 90 days of recommendation outcomes,
+    // bucketed for the engine's boost step.
+    let outcomeHistory = [];
+    try {
+      const { computeRecommendationSuccess } =
+        await import('./ml/outcomeIntelligenceEngine.js');
+      const out = await computeRecommendationSuccess(prisma, { days: 90 });
+      if (out && out.ok) outcomeHistory = Array.from(out.rows);
+    } catch { outcomeHistory = []; }
+
+    const { computeUnifiedRecommendations } =
+      await import('./ml/recommendationPriorityEngine.js');
+    const envelope = computeUnifiedRecommendations({
+      weather,
+      scan,
+      soil:      soilEnv && soilEnv.ok ? soilEnv : null,
+      satellite: satellite && satellite.ok ? satellite : null,
+      regional:  regional && regional.ok ? regional : null,
+      market:    market && market.ok ? market : null,
+      outcomeHistory,
+    });
+    return res.json(envelope);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'unified_recommendations_failed',
+      message: err && err.message,
+      topAction: null, topThree: [],
+    });
+  }
+});
+
+// POST /api/recommendations/score — pure helper for clients that
+// already have the 4-tuple (risk, urgency, impact, confidence) and
+// just need the priority score. Useful for previewing the score
+// before persisting a custom action.
+app.post('/api/recommendations/score', authenticate, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const { scoreAction } = await import('./ml/recommendationPriorityEngine.js');
+    const score = scoreAction({
+      risk:       Number(b.risk) || 0,
+      urgency:    Number(b.urgency) || 0,
+      impact:     Number(b.impact) || 0,
+      confidence: Number(b.confidence) || 0,
+    });
+    return res.json({ ok: true, priorityScore: score });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'score_failed',
+      message: err && err.message });
+  }
+});
+
 // ── Outcome Intelligence Platform ────────────────────────────
 // POST /api/outcomes/task
 //   body: { taskId, completion ('yes'|'partial'|'no'),

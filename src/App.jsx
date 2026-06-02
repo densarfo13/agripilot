@@ -1847,6 +1847,15 @@ export default function App() {
               await import('./runtime/outcomeIntelligence/OutcomeIntelligencePlatformRuntime');
             installOutcomeIntelligencePlatformGlobal();
           } catch { /* swallow */ }
+          // Intelligence Platform V1 — pins
+          // __intelligencePlatformHealth. Single source of truth
+          // for grower recommendations; composes every upstream
+          // engine into ONE prioritized action.
+          try {
+            const { installIntelligencePlatformGlobal } =
+              await import('./runtime/intelligencePlatform/IntelligencePlatformRecommendationEngine');
+            installIntelligencePlatformGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.

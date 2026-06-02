@@ -50,6 +50,11 @@ import { resolveBackyardType }   from '../lib/backyardTypes.js';
 // (Railway), falling back to 'local-{epoch}' when running locally.
 import { FARROWAY_COMMIT_SHA }   from '../lib/forceUiReset.js';
 import { useLiveWeather }        from '../hooks/useLiveWeather.js';
+// Intelligence Platform V1 — single highest-priority action card.
+// Composes scan + soil + weather + satellite + regional + market +
+// outcome history into ONE recommendation. Self-hides on the
+// honest empty-state when no inputs are available.
+import TopActionCard from '../components/intelligence/TopActionCard.jsx';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
 // Once-per-mount calm-notification feed sync — feeds the user-facing
@@ -986,6 +991,13 @@ export default function Home() {
         <FeatureShell name="daily-farm-plan" silent>
           <DailyFarmPlanCard />
         </FeatureShell>
+
+        {/* Intelligence Platform V1 — single source of truth.
+            Spec: 1. Highest Priority Action · 2. Why · 3. Expected
+            Benefit · 4. Confidence. Self-hides when there's no
+            actionable signal. Renders above the Today's-task card
+            so the farmer sees the prioritized action FIRST. */}
+        <TopActionCard />
 
         {/* ── 4. Daily status insight (Today's task or On-track) ─
              Below the immersive hero — compact, action-oriented.
