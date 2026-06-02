@@ -1592,6 +1592,24 @@ export default function App() {
             // Production composite LAST so every backing probe is pinned.
             installScanProductionHealthGlobal();
           } catch { /* swallow */ }
+          // Scan V2 Field Assistant — timeline + CC integration + V2
+          // health composite. Read-only over the existing scan accuracy
+          // layer; honest false-by-default; no fake intelligence.
+          try {
+            const [
+              { installScanTimelineGlobal },
+              { installCommandCenterScanIntegrationGlobal },
+              { installScanV2HealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/ScanTimelineRuntime'),
+              import('./runtime/scanAccuracy/CommandCenterScanIntegration'),
+              import('./runtime/scanAccuracy/ScanV2Health'),
+            ]);
+            installScanTimelineGlobal();
+            installCommandCenterScanIntegrationGlobal();
+            // V2 composite LAST so every sibling probe is already pinned.
+            installScanV2HealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
