@@ -1785,6 +1785,15 @@ export default function App() {
               await import('./runtime/pilotObservability/PilotStabilizationVerdictRuntime');
             installPilotStabilizationVerdictGlobal();
           } catch { /* swallow */ }
+          // V1 Pilot Architecture Lock — pins the architecture as
+          // frozen via __pilotArchitectureHealth. Composes the 12
+          // allowed pilot systems and reports architectureLocked
+          // literal-true. Any new system beyond the 12 fails the gate.
+          try {
+            const { installPilotArchitectureGuardGlobal } =
+              await import('./runtime/pilotObservability/PilotArchitectureGuardRuntime');
+            installPilotArchitectureGuardGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
