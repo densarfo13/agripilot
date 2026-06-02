@@ -1618,6 +1618,25 @@ export default function App() {
               await import('./runtime/scanAccuracy/MyPlantsScanHistoryRuntime');
             installMyPlantsScanHistoryGlobal();
           } catch { /* swallow */ }
+          // Agronomist Mode V3 — farm-context bias re-rank (capped +30%),
+          // community-review bridge (admin-moderated), and the top-level
+          // __agronomistModeHealth composite. All read-only; no fake
+          // intelligence; noDeadEnds guarantee enforced by gate.
+          try {
+            const [
+              { installFarmContextBiasGlobal },
+              { installCommunityScanReviewGlobal },
+              { installAgronomistModeHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/FarmContextBiasRuntime'),
+              import('./runtime/scanAccuracy/CommunityScanReviewRuntime'),
+              import('./runtime/scanAccuracy/AgronomistModeHealth'),
+            ]);
+            installFarmContextBiasGlobal();
+            installCommunityScanReviewGlobal();
+            // Agronomist composite LAST so every backing probe is pinned.
+            installAgronomistModeHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
