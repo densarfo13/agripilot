@@ -1637,6 +1637,34 @@ export default function App() {
             // Agronomist composite LAST so every backing probe is pinned.
             installAgronomistModeHealthGlobal();
           } catch { /* swallow */ }
+          // Scan V4 Human Verification — confidence routing + 3 review
+          // queues (community / field-officer / admin) + status state
+          // machine + resolution engine + top composite. Role-gated
+          // reads; no cross-org leakage; never a dead end.
+          try {
+            const [
+              { installConfidenceRoutingGlobal },
+              { installScanReviewStatusGlobal },
+              { installFieldOfficerScanQueueGlobal },
+              { installAdminScanReviewQueueGlobal },
+              { installScanResolutionEngineGlobal },
+              { installScanReviewHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/ConfidenceRoutingRuntime'),
+              import('./runtime/scanAccuracy/ScanReviewStatusRuntime'),
+              import('./runtime/scanAccuracy/FieldOfficerScanQueueRuntime'),
+              import('./runtime/scanAccuracy/AdminScanReviewQueueRuntime'),
+              import('./runtime/scanAccuracy/ScanResolutionEngine'),
+              import('./runtime/scanAccuracy/ScanReviewHealth'),
+            ]);
+            installConfidenceRoutingGlobal();
+            installScanReviewStatusGlobal();
+            installFieldOfficerScanQueueGlobal();
+            installAdminScanReviewQueueGlobal();
+            installScanResolutionEngineGlobal();
+            // Top composite LAST so every backing probe is pinned.
+            installScanReviewHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
