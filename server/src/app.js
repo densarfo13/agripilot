@@ -1201,6 +1201,207 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
   }
 });
 
+// ── Scan Pilot Validation (admin) ─────────────────────────────
+// POST /api/admin/scan-validation
+//   body: { scanId, imageUrl?, predictedPlant, predictedDisease?,
+//            predictedPest?, confidencePct?, consensusMode?,
+//            latencyMs?, notes? }
+//   Inserts a fresh ScanValidation row (source='scan_lab').
+function _requireAdmin(req, res) {
+  if (!req.user || !['admin', 'super_admin'].includes(req.user.role)) {
+    res.status(403).json({ error: 'admin_only' });
+    return false;
+  }
+  return true;
+}
+
+app.post('/api/admin/scan-validation', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const b = req.body || {};
+    if (!b.scanId) return res.status(400).json({ error: 'scanId_required' });
+    const row = await prisma.scanValidation.create({
+      data: {
+        scanId:           String(b.scanId),
+        userId:           req.user?.id || null,
+        imageUrl:         b.imageUrl ? String(b.imageUrl) : null,
+        predictedPlant:   b.predictedPlant ? String(b.predictedPlant) : null,
+        predictedDisease: b.predictedDisease ? String(b.predictedDisease) : null,
+        predictedPest:    b.predictedPest ? String(b.predictedPest) : null,
+        confidencePct:    Number.isFinite(Number(b.confidencePct))
+                            ? Math.round(Number(b.confidencePct)) : null,
+        consensusMode:    b.consensusMode ? String(b.consensusMode) : null,
+        latencyMs:        Number.isFinite(Number(b.latencyMs))
+                            ? Math.round(Number(b.latencyMs)) : null,
+        source:           b.source ? String(b.source).slice(0, 32) : 'scan_lab',
+        notes:            b.notes ? String(b.notes).slice(0, 1000) : null,
+      },
+    });
+    return res.json({ ok: true, id: row.id });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'create_failed',
+      message: err && err.message });
+  }
+});
+
+// PATCH /api/admin/scan-validation/:id — label ground truth
+//   body: { actualPlant?, actualDisease?, actualPest?, notes? }
+app.patch('/api/admin/scan-validation/:id', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const id = String(req.params.id);
+    const b = req.body || {};
+    const existing = await prisma.scanValidation.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ error: 'not_found' });
+
+    const _matches = (predicted, actual) => {
+      const p = String(predicted || '').toLowerCase().trim();
+      const a = String(actual || '').toLowerCase().trim();
+      if (!p || !a) return null;
+      if (p === a) return true;
+      if (p.includes(a) || a.includes(p)) return true;
+      return false;
+    };
+
+    const newActualPlant   = b.actualPlant   != null ? String(b.actualPlant)   : existing.actualPlant;
+    const newActualDisease = b.actualDisease != null ? String(b.actualDisease) : existing.actualDisease;
+    const newActualPest    = b.actualPest    != null ? String(b.actualPest)    : existing.actualPest;
+
+    // Derive result if any actual is set.
+    let result = existing.result;
+    if (newActualPlant || newActualDisease || newActualPest) {
+      const plantM = _matches(existing.predictedPlant, newActualPlant);
+      const diseaseM = _matches(existing.predictedDisease, newActualDisease);
+      const pestM = _matches(existing.predictedPest, newActualPest);
+      const matches = [plantM, diseaseM, pestM].filter((x) => x !== null);
+      const trues   = matches.filter((x) => x === true).length;
+      if (matches.length === 0)              result = 'unknown';
+      else if (trues === matches.length)     result = 'correct';
+      else if (trues === 0)                  result = 'incorrect';
+      else                                   result = 'partial';
+    }
+
+    const row = await prisma.scanValidation.update({
+      where: { id },
+      data: {
+        actualPlant:   newActualPlant,
+        actualDisease: newActualDisease,
+        actualPest:    newActualPest,
+        labeledBy:     req.user?.id || existing.labeledBy,
+        labeledAt:     new Date(),
+        notes:         b.notes != null ? String(b.notes).slice(0, 1000) : existing.notes,
+        result,
+      },
+    });
+    return res.json({ ok: true, row });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'update_failed',
+      message: err && err.message });
+  }
+});
+
+// GET /api/admin/scan-validation?limit=50
+app.get('/api/admin/scan-validation', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const limit = Math.max(1, Math.min(Number(req.query?.limit) || 50, 200));
+    const rows = await prisma.scanValidation.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return res.json({ ok: true, rows });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'list_failed',
+      message: err && err.message, rows: [] });
+  }
+});
+
+// POST /api/admin/scan-validation/feedback
+//   body: { scanId, feedback ('correct'|'incorrect'|'partial'),
+//            correctedPlant?, correctedDisease?, correctedPest? }
+app.post('/api/admin/scan-validation/feedback', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const b = req.body || {};
+    if (!b.scanId || !['correct', 'incorrect', 'partial'].includes(b.feedback)) {
+      return res.status(400).json({ error: 'invalid_input' });
+    }
+    const row = await prisma.scanFeedback.create({
+      data: {
+        scanId:           String(b.scanId),
+        userId:           req.user?.id || null,
+        feedback:         String(b.feedback),
+        correctedPlant:   b.correctedPlant ? String(b.correctedPlant) : null,
+        correctedDisease: b.correctedDisease ? String(b.correctedDisease) : null,
+        correctedPest:    b.correctedPest ? String(b.correctedPest) : null,
+        source:           b.source ? String(b.source).slice(0, 32) : 'scan_lab',
+      },
+    });
+    return res.json({ ok: true, id: row.id });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'feedback_failed',
+      message: err && err.message });
+  }
+});
+
+// GET /api/admin/scan-validation/metrics?days=7
+app.get('/api/admin/scan-validation/metrics', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const { computeMetrics } = await import('./ml/scanValidationMetrics.js');
+    const days = Number(req.query?.days) || 7;
+    const m = await computeMetrics(prisma, { days });
+    return res.json(m);
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'metrics_failed',
+      message: err && err.message });
+  }
+});
+
+// GET /api/admin/scan-validation/top-failures?days=30&limit=10
+app.get('/api/admin/scan-validation/top-failures', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const { computeTopFailures } = await import('./ml/scanValidationMetrics.js');
+    const out = await computeTopFailures(prisma, {
+      days: Number(req.query?.days) || 30,
+      limit: Number(req.query?.limit) || 10,
+    });
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'top_failures_failed',
+      message: err && err.message });
+  }
+});
+
+// GET /api/admin/scan-validation/calibration?days=30
+app.get('/api/admin/scan-validation/calibration', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const { computeCalibration } = await import('./ml/scanValidationMetrics.js');
+    const out = await computeCalibration(prisma, {
+      days: Number(req.query?.days) || 30,
+    });
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'calibration_failed',
+      message: err && err.message });
+  }
+});
+
+// POST /api/admin/scan-validation/snapshot — fire the daily rollup.
+app.post('/api/admin/scan-validation/snapshot', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const { snapshotMetrics } = await import('./ml/scanValidationMetrics.js');
+    const out = await snapshotMetrics(prisma);
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'snapshot_failed',
+      message: err && err.message });
+  }
+});
+
 // ── Scan follow-up outcome (V3 §7) ────────────────────────────
 // POST /api/scan/follow-up
 //   body: { scanId, dayOffset (3|7|14), status (improved|same|worse) }

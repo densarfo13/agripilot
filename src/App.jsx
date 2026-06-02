@@ -232,6 +232,7 @@ const FounderDashboardPage = lazy(() => import('./pages/FounderDashboardPage.jsx
 const FounderOSPage = lazy(() => import('./pages/FounderOSPage.jsx'));
 const ApiDiagnosticsDashboard = lazy(() => import('./diagnostics/ApiDiagnosticsDashboard.tsx'));
 const ScanHealthPage = lazy(() => import('./pages/admin/ScanHealthPage.jsx'));
+const ScanLabPage = lazy(() => import('./pages/admin/ScanLabPage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -2913,6 +2914,10 @@ export default function App() {
               UI path. Reads __apiHealth + __scanRecoveryHealth +
               __scanResultHealth; never throws. */}
           <Route path="/admin/scan-health" element={<RoleRoute roles={ADMIN_ROLES}><ScanHealthPage /></RoleRoute>} />
+          {/* Scan Lab (Pilot Validation) — admin-only. Upload +
+              analyze + label ground truth + watch accuracy /
+              calibration / top-failure rollups. */}
+          <Route path="/admin/scan-lab" element={<RoleRoute roles={ADMIN_ROLES}><ScanLabPage /></RoleRoute>} />
           {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
               inside the page, plus <RoleRoute> guard so non-admins
               redirect to "/". Excludes farmer/gardener/grower. */}

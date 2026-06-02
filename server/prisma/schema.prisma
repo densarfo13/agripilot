@@ -3107,6 +3107,80 @@ model ScanTrainingEvent {
   @@map("scan_training_events")
 }
 
+// ─── Scan Pilot Validation framework ──────────────────
+// Append-only measurement tables. Mirror migration
+// 20260602_scan_validation/migration.sql. NEVER carries PII —
+// scanId + free-form userId only.
+model ScanValidation {
+  id                String   @id @default(cuid())
+  scanId            String   @map("scan_id")
+  userId            String?  @map("user_id")
+  imageUrl          String?  @map("image_url")
+
+  // Predictions captured at analyze time.
+  predictedPlant    String?  @map("predicted_plant")
+  predictedDisease  String?  @map("predicted_disease")
+  predictedPest     String?  @map("predicted_pest")
+  confidencePct     Int?     @map("confidence_pct")
+  consensusMode     String?  @map("consensus_mode")
+  latencyMs         Int?     @map("latency_ms")
+
+  // Ground truth — set by the lab operator after the fact.
+  actualPlant       String?  @map("actual_plant")
+  actualDisease     String?  @map("actual_disease")
+  actualPest        String?  @map("actual_pest")
+  labeledBy         String?  @map("labeled_by")
+  labeledAt         DateTime? @map("labeled_at")
+
+  // 'correct' | 'partial' | 'incorrect' | 'unknown'
+  result            String   @default("unknown")
+  source            String   @default("scan_lab")
+  notes             String?
+
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([scanId], map: "idx_scan_validation_scan")
+  @@index([result, createdAt], map: "idx_scan_validation_result_time")
+  @@index([predictedPlant], map: "idx_scan_validation_plant_pred")
+  @@index([predictedDisease], map: "idx_scan_validation_disease_pred")
+  @@map("scan_validations")
+}
+
+model ScanFeedback {
+  id               String   @id @default(cuid())
+  scanId           String   @map("scan_id")
+  userId           String?  @map("user_id")
+  // 'correct' | 'incorrect' | 'partial'
+  feedback         String
+  correctedPlant   String?  @map("corrected_plant")
+  correctedDisease String?  @map("corrected_disease")
+  correctedPest    String?  @map("corrected_pest")
+  source           String   @default("scan_lab")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([scanId], map: "idx_scan_feedback_scan")
+  @@index([userId, createdAt], map: "idx_scan_feedback_user_time")
+  @@map("scan_feedbacks")
+}
+
+model ScanAccuracy {
+  id                     String   @id @default(cuid())
+  snapshotDate           DateTime @unique @map("snapshot_date") @db.Date
+  totalValidations       Int      @default(0) @map("total_validations")
+  labeledCount           Int      @default(0) @map("labeled_count")
+  plantCorrectCount      Int      @default(0) @map("plant_correct_count")
+  diseaseCorrectCount    Int      @default(0) @map("disease_correct_count")
+  pestCorrectCount       Int      @default(0) @map("pest_correct_count")
+  unknownCount           Int      @default(0) @map("unknown_count")
+  falsePositiveCount     Int      @default(0) @map("false_positive_count")
+  averageConfidencePct   Float?   @map("average_confidence_pct")
+  confidenceInflationPct Float?   @map("confidence_inflation_pct")
+  computedAt             DateTime @default(now()) @map("computed_at")
+
+  @@index([snapshotDate], map: "idx_scan_accuracy_date")
+  @@map("scan_accuracies")
+}
+
 // ─── Global Insights Layer (Data Moat §1) ──────────────
 // Privacy-safe aggregated counts per (region × cropOrPlant ×
 // setup × condition). NO per-user data — every column is a
