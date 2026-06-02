@@ -3181,6 +3181,88 @@ model ScanAccuracy {
   @@map("scan_accuracies")
 }
 
+// ─── Outcome Intelligence Platform ────────────────────
+// Mirror migration 20260602b_outcome_intelligence/migration.sql.
+// Append-only. userId free-form (no FK).
+model TaskOutcome {
+  id             String   @id @default(cuid())
+  taskId         String   @map("task_id")
+  userId         String?  @map("user_id")
+  farmId         String?  @map("farm_id")
+  scanId         String?  @map("scan_id")
+  recommendation String?
+  // 'yes' | 'partial' | 'no'
+  completion     String
+  note           String?
+  capturedAt     DateTime @default(now()) @map("captured_at")
+
+  @@index([taskId], map: "idx_task_outcome_task")
+  @@index([userId, capturedAt], map: "idx_task_outcome_user_time")
+  @@index([recommendation], map: "idx_task_outcome_recommendation")
+  @@map("task_outcomes")
+}
+
+model RecommendationOutcome {
+  id             String   @id @default(cuid())
+  scanId         String   @map("scan_id")
+  taskId         String?  @map("task_id")
+  userId         String?  @map("user_id")
+  farmId         String?  @map("farm_id")
+  recommendation String
+  crop           String?
+  region         String?
+  season         String?
+  // 'disease' | 'pest' | 'soil' | 'other'
+  category       String   @default("other")
+  // 3 | 7 | 14
+  dayOffset      Int      @map("day_offset")
+  // 'improved' | 'same' | 'worse'
+  result         String
+  note           String?
+  capturedAt     DateTime @default(now()) @map("captured_at")
+
+  @@index([scanId], map: "idx_rec_outcome_scan")
+  @@index([recommendation, crop, region], map: "idx_rec_outcome_rec_crop_region")
+  @@index([category, capturedAt], map: "idx_rec_outcome_category_time")
+  @@map("recommendation_outcomes")
+}
+
+model PhotoComparison {
+  id              String    @id @default(cuid())
+  scanId          String    @map("scan_id")
+  userId          String?   @map("user_id")
+  farmId          String?   @map("farm_id")
+  beforeUrl       String    @map("before_url")
+  afterUrl        String?   @map("after_url")
+  beforeAt        DateTime  @default(now()) @map("before_at")
+  afterAt         DateTime? @map("after_at")
+  improvementNote String?   @map("improvement_note")
+  // 'better' | 'same' | 'worse' | null
+  verdict         String?
+
+  @@index([scanId], map: "idx_photo_pair_scan")
+  @@index([userId, beforeAt], map: "idx_photo_pair_user_time")
+  @@map("photo_comparisons")
+}
+
+model FarmHealthScore {
+  id                  String   @id @default(cuid())
+  farmId              String   @map("farm_id")
+  userId              String?  @map("user_id")
+  snapshotDate        DateTime @map("snapshot_date") @db.Date
+  score               Int
+  // 'improving' | 'stable' | 'declining' | 'unknown'
+  trend               String   @default("unknown")
+  scansInWindow       Int      @default(0) @map("scans_in_window")
+  outcomesRecorded    Int      @default(0) @map("outcomes_recorded")
+  improvementRatePct  Float?   @map("improvement_rate_pct")
+  computedAt          DateTime @default(now()) @map("computed_at")
+
+  @@unique([farmId, snapshotDate], map: "idx_farm_health_farm_date")
+  @@index([snapshotDate], map: "idx_farm_health_date")
+  @@map("farm_health_scores")
+}
+
 // ─── Global Insights Layer (Data Moat §1) ──────────────
 // Privacy-safe aggregated counts per (region × cropOrPlant ×
 // setup × condition). NO per-user data — every column is a

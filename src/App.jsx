@@ -233,6 +233,8 @@ const FounderOSPage = lazy(() => import('./pages/FounderOSPage.jsx'));
 const ApiDiagnosticsDashboard = lazy(() => import('./diagnostics/ApiDiagnosticsDashboard.tsx'));
 const ScanHealthPage = lazy(() => import('./pages/admin/ScanHealthPage.jsx'));
 const ScanLabPage = lazy(() => import('./pages/admin/ScanLabPage.jsx'));
+const FarmerOutcomesPage = lazy(() => import('./pages/FarmerOutcomesPage.jsx'));
+const OrganizationOutcomesPage = lazy(() => import('./pages/admin/OrganizationOutcomesPage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -1834,6 +1836,17 @@ export default function App() {
               await import('./runtime/scanLearning/ScanLearningRuntime');
             installScanLearningGlobal();
           } catch { /* swallow */ }
+          // Outcome Intelligence Platform — pins
+          // __outcomeIntelligencePlatformHealth. Sibling to the
+          // existing wave-36 OutcomeRuntime / OutcomeTracker; this
+          // global attests the platform-wide measurement surfaces
+          // (task / follow-up prompts, photo pair, ranking,
+          // dashboards, command-center metrics) are wired.
+          try {
+            const { installOutcomeIntelligencePlatformGlobal } =
+              await import('./runtime/outcomeIntelligence/OutcomeIntelligencePlatformRuntime');
+            installOutcomeIntelligencePlatformGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
@@ -2918,6 +2931,14 @@ export default function App() {
               analyze + label ground truth + watch accuracy /
               calibration / top-failure rollups. */}
           <Route path="/admin/scan-lab" element={<RoleRoute roles={ADMIN_ROLES}><ScanLabPage /></RoleRoute>} />
+          {/* Outcome Intelligence — farmer-facing /outcomes shows
+              the farmer's own tasks completed / improvement rate /
+              farm health score. Authenticated. */}
+          <Route path="/outcomes" element={<FarmerOutcomesPage />} />
+          {/* Organization Outcomes — admin / NGO / field officer.
+              Aggregates across all tracked farms; never includes
+              farmer names, phones, or exact coords. */}
+          <Route path="/admin/organization-outcomes" element={<RoleRoute roles={ADMIN_ROLES}><OrganizationOutcomesPage /></RoleRoute>} />
           {/* Internal release-lock dashboard. INTERNAL_FLAG_KEY gate
               inside the page, plus <RoleRoute> guard so non-admins
               redirect to "/". Excludes farmer/gardener/grower. */}

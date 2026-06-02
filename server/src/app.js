@@ -1201,6 +1201,233 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
   }
 });
 
+// ── Outcome Intelligence Platform ────────────────────────────
+// POST /api/outcomes/task
+//   body: { taskId, completion ('yes'|'partial'|'no'),
+//            scanId?, recommendation?, note? }
+app.post('/api/outcomes/task', authenticate, async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!b.taskId || !['yes', 'partial', 'no'].includes(b.completion)) {
+      return res.status(400).json({ error: 'invalid_input' });
+    }
+    let farmId = null;
+    try {
+      if (req.user && req.user.id) {
+        const farm = await prisma.farm.findFirst({
+          where: { userId: req.user.id }, select: { id: true },
+        });
+        farmId = farm ? farm.id : null;
+      }
+    } catch { /* swallow */ }
+    const row = await prisma.taskOutcome.create({
+      data: {
+        taskId:         String(b.taskId),
+        userId:         req.user?.id || null,
+        farmId,
+        scanId:         b.scanId ? String(b.scanId) : null,
+        recommendation: b.recommendation ? String(b.recommendation).slice(0, 200) : null,
+        completion:     String(b.completion),
+        note:           b.note ? String(b.note).slice(0, 500) : null,
+      },
+    });
+    return res.json({ ok: true, id: row.id });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'task_outcome_failed', message: err && err.message,
+    });
+  }
+});
+
+// POST /api/outcomes/follow-up
+//   body: { scanId, recommendation, dayOffset (3|7|14),
+//            result ('improved'|'same'|'worse'),
+//            category? ('disease'|'pest'|'soil'|'other'),
+//            crop?, region?, season?, taskId?, note? }
+app.post('/api/outcomes/follow-up', authenticate, async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!b.scanId || !b.recommendation
+        || ![3, 7, 14].includes(Number(b.dayOffset))
+        || !['improved', 'same', 'worse'].includes(b.result)) {
+      return res.status(400).json({ error: 'invalid_input' });
+    }
+    let farmId = null;
+    try {
+      if (req.user && req.user.id) {
+        const farm = await prisma.farm.findFirst({
+          where: { userId: req.user.id }, select: { id: true, region: true },
+        });
+        farmId = farm ? farm.id : null;
+      }
+    } catch { /* swallow */ }
+
+    const row = await prisma.recommendationOutcome.create({
+      data: {
+        scanId:         String(b.scanId),
+        taskId:         b.taskId ? String(b.taskId) : null,
+        userId:         req.user?.id || null,
+        farmId,
+        recommendation: String(b.recommendation).slice(0, 200),
+        crop:           b.crop ? String(b.crop).slice(0, 80) : null,
+        region:         b.region ? String(b.region).slice(0, 80) : null,
+        season:         b.season ? String(b.season).slice(0, 32) : null,
+        category:       ['disease', 'pest', 'soil', 'other'].includes(b.category)
+                          ? String(b.category) : 'other',
+        dayOffset:      Number(b.dayOffset),
+        result:         String(b.result),
+        note:           b.note ? String(b.note).slice(0, 500) : null,
+      },
+    });
+    return res.json({ ok: true, id: row.id });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'follow_up_outcome_failed', message: err && err.message,
+    });
+  }
+});
+
+// POST /api/outcomes/photo-pair
+//   body: { scanId, beforeUrl, afterUrl?, improvementNote?,
+//            verdict? ('better'|'same'|'worse') }
+app.post('/api/outcomes/photo-pair', authenticate, async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (!b.scanId || !b.beforeUrl) {
+      return res.status(400).json({ error: 'invalid_input' });
+    }
+    const existing = await prisma.photoComparison.findFirst({
+      where:   { scanId: String(b.scanId) },
+      orderBy: { beforeAt: 'desc' },
+    });
+    let farmId = null;
+    try {
+      if (req.user && req.user.id) {
+        const farm = await prisma.farm.findFirst({
+          where: { userId: req.user.id }, select: { id: true },
+        });
+        farmId = farm ? farm.id : null;
+      }
+    } catch { /* swallow */ }
+
+    if (existing && b.afterUrl && !existing.afterUrl) {
+      // Promote — second tap with the after photo.
+      const updated = await prisma.photoComparison.update({
+        where: { id: existing.id },
+        data: {
+          afterUrl:        String(b.afterUrl),
+          afterAt:         new Date(),
+          improvementNote: b.improvementNote ? String(b.improvementNote).slice(0, 500) : existing.improvementNote,
+          verdict:         ['better', 'same', 'worse'].includes(b.verdict)
+                             ? String(b.verdict) : existing.verdict,
+        },
+      });
+      return res.json({ ok: true, id: updated.id, promoted: true });
+    }
+
+    const row = await prisma.photoComparison.create({
+      data: {
+        scanId:          String(b.scanId),
+        userId:          req.user?.id || null,
+        farmId,
+        beforeUrl:       String(b.beforeUrl),
+        afterUrl:        b.afterUrl ? String(b.afterUrl) : null,
+        afterAt:         b.afterUrl ? new Date() : null,
+        improvementNote: b.improvementNote ? String(b.improvementNote).slice(0, 500) : null,
+        verdict:         ['better', 'same', 'worse'].includes(b.verdict)
+                           ? String(b.verdict) : null,
+      },
+    });
+    return res.json({ ok: true, id: row.id });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'photo_pair_failed', message: err && err.message,
+    });
+  }
+});
+
+// GET /api/outcomes/recommendation-ranking
+//   query: { category?, crop?, region?, season?, days? }
+app.get('/api/outcomes/recommendation-ranking', authenticate, async (req, res) => {
+  try {
+    const { rankRecommendations } = await import('./ml/outcomeIntelligenceEngine.js');
+    const out = await rankRecommendations(prisma, {
+      category: req.query?.category,
+      crop:     req.query?.crop,
+      region:   req.query?.region,
+      season:   req.query?.season,
+      days:     Number(req.query?.days) || 90,
+    });
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'ranking_failed', message: err && err.message,
+    });
+  }
+});
+
+// GET /api/outcomes/farmer-dashboard
+app.get('/api/outcomes/farmer-dashboard', authenticate, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+    const { computeFarmerDashboard } = await import('./ml/outcomeIntelligenceEngine.js');
+    const out = await computeFarmerDashboard(prisma, req.user.id);
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'farmer_dashboard_failed', message: err && err.message,
+    });
+  }
+});
+
+// GET /api/outcomes/organization — admin only
+app.get('/api/outcomes/organization', authenticate, async (req, res) => {
+  if (!req.user || !['admin', 'super_admin', 'ngo', 'field_officer'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'admin_only' });
+  }
+  try {
+    const { computeOrgDashboard } = await import('./ml/outcomeIntelligenceEngine.js');
+    const out = await computeOrgDashboard(prisma);
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'org_dashboard_failed', message: err && err.message,
+    });
+  }
+});
+
+// GET /api/outcomes/command-center
+app.get('/api/outcomes/command-center', authenticate, async (req, res) => {
+  try {
+    const { computeCommandCenterMetrics } = await import('./ml/outcomeIntelligenceEngine.js');
+    const out = await computeCommandCenterMetrics(prisma,
+      Number(req.query?.days) || 30);
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'command_center_failed', message: err && err.message,
+    });
+  }
+});
+
+// POST /api/outcomes/snapshot — admin: fire daily rollup
+app.post('/api/outcomes/snapshot', authenticate, async (req, res) => {
+  if (!req.user || !['admin', 'super_admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'admin_only' });
+  }
+  try {
+    const { snapshotFarmHealth } = await import('./ml/outcomeIntelligenceEngine.js');
+    const out = await snapshotFarmHealth(prisma);
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'snapshot_failed', message: err && err.message,
+    });
+  }
+});
+
 // ── Scan Pilot Validation (admin) ─────────────────────────────
 // POST /api/admin/scan-validation
 //   body: { scanId, imageUrl?, predictedPlant, predictedDisease?,
