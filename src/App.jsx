@@ -1549,6 +1549,23 @@ export default function App() {
               await import('./runtime/scanAccuracy/ScanAccuracyHealth');
             installScanAccuracyHealthGlobal();
           } catch { /* swallow */ }
+          // Honest local scan engines — close the §STAGE 3 multi-pass
+          // gap. LocalCropMatcher returns the farmer's farm-profile crop
+          // as a low-confidence (≤40%) candidate. LeafColorAnalyzer
+          // pins __leafAnalysisHealth with real pixel-ratio measurements
+          // (greenRatio / yellowRatio / brownRatio / darkRatio + leaf
+          // signals). Neither performs vision-based crop ID.
+          try {
+            const [
+              { installLocalCropMatcherGlobal },
+              { installLeafColorAnalyzerGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/LocalCropMatcherEngine'),
+              import('./runtime/scanAccuracy/LeafColorAnalyzer'),
+            ]);
+            installLocalCropMatcherGlobal();
+            installLeafColorAnalyzerGlobal();
+          } catch { /* swallow */ }
           // Vision System §STAGES 2 / 8 / 9 / 11 / 12 — camera guide
           // (auto-capture state), scan outcome loop (Better/Same/Worse),
           // farm scan memory (per-plant history), context composite
