@@ -1685,6 +1685,31 @@ export default function App() {
             // Top composite LAST so every backing probe is pinned.
             installPlantIntelligenceHealthGlobal();
           } catch { /* swallow */ }
+          // Scan V6 Trust + Accuracy — 4-band confidence labels,
+          // 7-field trust panel envelope, chemical/dosage safety
+          // guard, farm memory trend, and top-level __scanTrustHealth
+          // composite. Always explains; never overstates.
+          try {
+            const [
+              { installConfidenceBandGlobal },
+              { installActionSafetyGlobal },
+              { installFarmMemoryTrendGlobal },
+              { installScanTrustPanelGlobal },
+              { installScanTrustHealthGlobal },
+            ] = await Promise.all([
+              import('./runtime/scanAccuracy/ConfidenceBandRuntime'),
+              import('./runtime/scanAccuracy/ActionSafetyRuntime'),
+              import('./runtime/scanAccuracy/FarmMemoryTrendRuntime'),
+              import('./runtime/scanAccuracy/ScanTrustPanelRuntime'),
+              import('./runtime/scanAccuracy/ScanTrustHealth'),
+            ]);
+            installConfidenceBandGlobal();
+            installActionSafetyGlobal();
+            installFarmMemoryTrendGlobal();
+            installScanTrustPanelGlobal();
+            // Top composite LAST so every backing probe is pinned.
+            installScanTrustHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
