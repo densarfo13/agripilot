@@ -235,6 +235,7 @@ const ScanHealthPage = lazy(() => import('./pages/admin/ScanHealthPage.jsx'));
 const ScanLabPage = lazy(() => import('./pages/admin/ScanLabPage.jsx'));
 const FarmerOutcomesPage = lazy(() => import('./pages/FarmerOutcomesPage.jsx'));
 const OrganizationOutcomesPage = lazy(() => import('./pages/admin/OrganizationOutcomesPage.jsx'));
+const ScanTracePage = lazy(() => import('./pages/admin/ScanTracePage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -1864,6 +1865,15 @@ export default function App() {
               await import('./runtime/dailyAction/RecommendationEngine');
             installDailyActionGlobal();
           } catch { /* swallow */ }
+          // Permanent Scan Detection — pins window.__scanDetectionHealth
+          // with 11 spec flags + 3 literal-true safety constants.
+          // Composes existing __apiHealth + __scanRecoveryHealth +
+          // __scanResultHealth probes; never duplicates state.
+          try {
+            const { installScanDetectionHealthGlobal } =
+              await import('./runtime/scanDetectionPermanent/ScanDetectionPermanentRuntime');
+            installScanDetectionHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.
@@ -2952,6 +2962,9 @@ export default function App() {
               the farmer's own tasks completed / improvement rate /
               farm health score. Authenticated. */}
           <Route path="/outcomes" element={<FarmerOutcomesPage />} />
+          {/* Scan Trace (Permanent Detection Fix §10) — admin-only.
+              Per-scan pipeline trace with masked API keys. */}
+          <Route path="/admin/scan-trace/:scanId" element={<RoleRoute roles={ADMIN_ROLES}><ScanTracePage /></RoleRoute>} />
           {/* Organization Outcomes — admin / NGO / field officer.
               Aggregates across all tracked farms; never includes
               farmer names, phones, or exact coords. */}

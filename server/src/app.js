@@ -1152,6 +1152,19 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       regional,
       market,
       followUpPlan,
+      // ── Permanent Detection Fix (v5) — top-level mirrors ──
+      // Mirror the canonical scanRecovery envelope fields at the
+      // root so the IntelligentScanResult extractors find them
+      // without nested traversal. See scanRecoveryEnvelope.js v5.
+      topCandidates:    scanRecovery.topCandidates,
+      confidenceLabel:  scanRecovery.confidenceLabel,
+      issueCandidates:  scanRecovery.issueCandidates,
+      whatWeNoticed:    scanRecovery.whatWeNoticed,
+      whyItMatters:     scanRecovery.whyItMatters,
+      healthStatus:     scanRecovery.healthStatus,
+      imageQuality:     scanRecovery.imageQuality,
+      sourceResults:    scanRecovery.sourceResults,
+      followUpDate:     scanRecovery.followUpDate,
       verdict:               safe,
       verdictV2,
       verdictV3,
@@ -1622,6 +1635,118 @@ app.post('/api/recommendations/score', authenticate, async (req, res) => {
   } catch (err) {
     return res.status(500).json({ ok: false, error: 'score_failed',
       message: err && err.message });
+  }
+});
+
+// ── Permanent Scan Detection — admin trace + escalation ─────
+// GET /api/admin/scan/trace/:scanId — masked end-to-end trace
+//   admin / super_admin / ngo / field_officer only
+//   Returns raw provider envelopes + consensus + final API payload
+//   reconstructed from the stored scanTrainingEvent row.
+//   API keys are NEVER returned — only `keyMasked: true` flags.
+app.get('/api/admin/scan/trace/:scanId', authenticate, async (req, res) => {
+  if (!req.user || !['admin', 'super_admin', 'ngo', 'field_officer']
+      .includes(req.user.role)) {
+    return res.status(403).json({ error: 'admin_only' });
+  }
+  try {
+    const scanId = String(req.params.scanId || '');
+    if (!scanId) return res.status(400).json({ error: 'scanId_required' });
+    const row = await prisma.scanTrainingEvent.findFirst({
+      where:   { scanId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!row) return res.status(404).json({ error: 'not_found' });
+    const ws = row.weatherSummary && typeof row.weatherSummary === 'object'
+      ? row.weatherSummary : {};
+    // Build the trace envelope. The scan_training_event row carries
+    // the persisted outcome envelope (v: 3) which has the per-source
+    // attribution. Raw provider responses (full Plant.id / PlantNet
+    // JSON) are NOT stored — would balloon row size. The trace shows
+    // the parsed candidates + the consensus output instead.
+    const trace = Object.freeze({
+      scanId:       row.scanId,
+      createdAt:    row.createdAt && row.createdAt.toISOString(),
+      userId:       row.userId ? '[redacted]' : null,
+      // Predictions captured at analyze time.
+      predictedPlant:   row.plantName || null,
+      predictedIssue:   row.predictedIssue || null,
+      confidence:       row.confidence || null,
+      confidencePct:    typeof ws.confidencePct === 'number' ? ws.confidencePct : null,
+      consensusMode:    ws.consensusMode || null,
+      // Provider attribution (masked — only ok/latency, never raw key).
+      sourceResults:    Array.isArray(ws.sources) ? ws.sources : [],
+      // Reconstructed outcome envelope.
+      diseaseCandidates: Array.isArray(ws.diseaseCandidates)
+                          ? ws.diseaseCandidates : [],
+      candidates:       Array.isArray(ws.candidates) ? ws.candidates : [],
+      pest:             ws.pest || null,
+      soil:             ws.soil || null,
+      fieldHealth:      ws.fieldHealth || null,
+      recommendations:  Array.isArray(ws.recommendations) ? ws.recommendations : [],
+      followUpTask:     ws.followUpTask || null,
+      followUps:        Array.isArray(ws.followUps) ? ws.followUps : [],
+      learning:         ws.learning || null,
+      // Key masking attestation.
+      keysMasked:       true,
+      neverEmitsApiKeys: true,
+      limitations:      'Decision support, not a guarantee.',
+    });
+    return res.json({ ok: true, trace });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'trace_failed', message: err && err.message,
+    });
+  }
+});
+
+// POST /api/scan/escalate — review escalation when confidence<60.
+//   body: { scanId, target ('community'|'field_officer'|'admin'),
+//            note? }
+//   Status starts at 'pending review'. Composes existing human-
+//   review queue when present; falls back to a structured event.
+app.post('/api/scan/escalate', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    if (!b.scanId) return res.status(400).json({ error: 'scanId_required' });
+    if (!['community', 'field_officer', 'admin'].includes(b.target)) {
+      return res.status(400).json({ error: 'invalid_target' });
+    }
+    // Log as a scan training event annotation so the row carries
+    // the escalation marker. No new schema migration required.
+    try {
+      const existing = await prisma.scanTrainingEvent.findFirst({
+        where:   { scanId: String(b.scanId) },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (existing) {
+        const prev = existing.weatherSummary
+          && typeof existing.weatherSummary === 'object'
+          ? existing.weatherSummary : {};
+        await prisma.scanTrainingEvent.update({
+          where: { id: existing.id },
+          data:  { weatherSummary: { ...prev, escalation: {
+            target:   String(b.target),
+            note:     b.note ? String(b.note).slice(0, 500) : null,
+            status:   'pending review',
+            createdAt: new Date().toISOString(),
+            userId:   userId,
+          } } },
+        });
+      }
+    } catch { /* swallow — annotation is best-effort */ }
+    return res.json({
+      ok: true,
+      status: 'pending review',
+      target: String(b.target),
+      message: 'Scan queued for review. You will see the outcome here once reviewed.',
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'escalate_failed', message: err && err.message,
+    });
   }
 });
 

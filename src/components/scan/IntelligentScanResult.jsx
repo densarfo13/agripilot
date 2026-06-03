@@ -655,16 +655,117 @@ export default function IntelligentScanResult({
   const satellite      = useMemo(() => _extractSatellite(result),      [result]);
   const needsReview    = useMemo(() => _shouldShowNeedsReview(result), [result]);
 
+  // Permanent Detection Fix (v5) — pull the new envelope fields
+  // off the result. These render UNCONDITIONALLY when present so
+  // the UI never dead-ends to "Plant: —" while candidates exist.
+  const _topCandidates  = _arr(result && result.topCandidates);
+  const _whatWeNoticed  = _str(result && result.whatWeNoticed);
+  const _whyItMatters   = _str(result && result.whyItMatters);
+  const _nextActionTxt  = _str(result && result.nextAction);
+  const _confidenceLabel = _str(result && result.confidenceLabel);
+  const _imageQuality   = result && result.imageQuality;
+  const _retakeMsg      = _imageQuality && _imageQuality.retakeGuidance;
+
   return (
     <main style={STYLES.page} data-testid="intelligent-scan-result">
       <VoiceHeader result={result} />
+      {/* Photo quality guidance — non-blocking; preserves candidates */}
+      {_retakeMsg ? (
+        <section style={STYLES.card} data-testid="scan-intel-quality">
+          <h4 style={STYLES.cardTitle}>
+            {tSafe('scan.intel.quality.title', 'Photo guidance')}
+          </h4>
+          <p style={STYLES.body}>{_retakeMsg}</p>
+        </section>
+      ) : null}
       <PlantIdentificationSection identification={identification} />
+      {/* Permanent Top Matches — renders whenever there are
+          candidates so the UI never reads "Unknown Plant" / dead-end. */}
+      {_topCandidates.length > 0 ? (
+        <section style={STYLES.card} data-testid="scan-intel-top-matches">
+          <h4 style={STYLES.cardTitle}>
+            {tSafe('scan.intel.topMatches.title', 'Top matches')}
+            {_confidenceLabel ? ' — ' + _confidenceLabel : ''}
+          </h4>
+          <ol style={{ margin: 0, paddingLeft: 18 }}>
+            {_topCandidates.slice(0, 5).map((c, i) => {
+              const name  = _str(c && c.commonName) || _str(c && c.scientificName) || _str(c && c.name) || '—';
+              const sci   = _str(c && c.scientificName);
+              const score = _num(c && c.score);
+              return (
+                <li key={i} style={{ fontSize: 14, color: '#1F2933',
+                    lineHeight: 1.5 }}
+                  data-testid={'scan-intel-top-match-' + i}>
+                  <strong>{name}</strong>
+                  {sci && sci !== name ? <em style={{ color: '#64748B', fontStyle: 'italic',
+                      marginLeft: 6 }}>{sci}</em> : null}
+                  {score != null ? <span style={{ color: '#94A3B8',
+                      marginLeft: 6 }}>· {Math.round(score * 100)}%</span> : null}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ) : null}
+      {/* What we noticed / Why it matters — narrative bridge */}
+      {(_whatWeNoticed || _whyItMatters) ? (
+        <section style={STYLES.card} data-testid="scan-intel-noticed">
+          {_whatWeNoticed ? (
+            <>
+              <h4 style={STYLES.cardTitle}>
+                {tSafe('scan.intel.noticed.title', 'What we noticed')}
+              </h4>
+              <p style={STYLES.body} data-testid="scan-intel-noticed-text">
+                {_whatWeNoticed}
+              </p>
+            </>
+          ) : null}
+          {_whyItMatters ? (
+            <p style={{ ...STYLES.body, marginTop: 8, color: '#64748B' }}
+              data-testid="scan-intel-why">
+              {_whyItMatters}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
       <FlowerSection identification={identification} result={result} />
       <CropHealthSection health={health} />
       <TreatmentSection treatment={treatment} />
       <RegionSection region={region} />
       <SoilSection soil={soil} />
       <SatelliteSection satellite={satellite} />
+      {/* Permanent Action Row — Create task / Scan again / Save for review.
+          Always present after a result so the user can never reach a
+          dead-end. */}
+      <section style={STYLES.card} data-testid="scan-intel-actions">
+        {_nextActionTxt ? (
+          <p style={{ ...STYLES.body, fontWeight: 700,
+              marginBottom: 12, color: '#1F2933' }}
+            data-testid="scan-intel-next-action">
+            {tSafe('scan.intel.next.title', 'Do this next')}: {_nextActionTxt}
+          </p>
+        ) : null}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button"
+            style={STYLES.confPill('high')}
+            data-testid="scan-intel-create-task"
+            onClick={() => { /* hook for future task-creation; renders link */ }}>
+            {tSafe('scan.intel.action.task', 'Create task')}
+          </button>
+          <button type="button"
+            style={STYLES.pill}
+            data-testid="scan-intel-scan-again"
+            onClick={_isFn(onRetake) ? onRetake : undefined}>
+            {tSafe('scan.intel.action.again', 'Scan again')}
+          </button>
+          <button type="button"
+            style={STYLES.pill}
+            data-testid="scan-intel-save-review"
+            onClick={_isFn(onSaveForReview) ? onSaveForReview : undefined}>
+            {tSafe('scan.intel.action.review', 'Save for review')}
+          </button>
+        </div>
+      </section>
       {needsReview ? (
         <NeedsReviewActions
           onTakeAnother={_isFn(onRetake) ? onRetake : undefined}

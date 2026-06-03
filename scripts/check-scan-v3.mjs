@@ -233,8 +233,13 @@ if (!_exists(ENVELOPE)) {
   errors.push('missing: ' + ENVELOPE);
 } else {
   const src = _read(ENVELOPE);
-  _has(src, 'scan-recovery-envelope-v4',
-    'scanRecoveryEnvelope runtimeVersion must bump to v4');
+  // Accept v4 OR ANY higher version — the Permanent Detection Fix
+  // sprint bumps to v5; this gate's minimum bar is "at least v4"
+  // (growthStage + regional + market present), not exact v4.
+  if (!/scan-recovery-envelope-v[4-9]/.test(src)
+      && !/scan-recovery-envelope-v\d{2,}/.test(src)) {
+    errors.push('scanRecoveryEnvelope runtimeVersion must be v4 or higher; found earlier version.');
+  }
   _has(src, 'growthStage,',
     'scanRecoveryEnvelope must carry growthStage field');
   _has(src, 'regional,',

@@ -226,31 +226,170 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
         })
       : null;
 
+    // ═══════════════════════════════════════════════════════
+    // PERMANENT DETECTION FIX (envelope v5) — never dead-end.
+    // ═══════════════════════════════════════════════════════
+    //
+    // Spec §2 + §4: when consensus confidence < 80 AND we have at
+    // least one candidate, plantName flips to "Needs confirmation"
+    // (NOT "Unknown Plant") so the UI shows the candidates panel
+    // instead of a dead-end empty state.
+    //
+    // Spec §4: never show "Unknown Plant" if topCandidates.length > 0.
+    //
+    // Spec §4 confidence rules:
+    //   >= 80  likely match
+    //   60-79  needs confirmation
+    //   <  60  review recommended
+    //
+    const hasCandidates = candidates.length > 0;
+    const _topCandidates = hasCandidates ? candidates : [];
+    let _resolvedPlantName = plantName;
+    let _confidenceLabel;
+    if (confidence >= 80) {
+      _confidenceLabel = 'Likely match';
+    } else if (confidence >= 60) {
+      _confidenceLabel = 'Needs confirmation';
+      // Plant name stays as the top species, but UI surfaces the
+      // confirmation prompt because confidenceLabel is the source
+      // of truth for the headline.
+    } else {
+      _confidenceLabel = 'Review recommended';
+      // Below 60% confidence: never claim a single plant. Show
+      // candidates instead. plantName becomes the spec-mandated
+      // "Needs confirmation" placeholder ONLY when no plant name
+      // is present at all (so we never write "Needs confirmation"
+      // over a real species when candidates exist).
+      if (!plantName && hasCandidates) {
+        _resolvedPlantName = 'Needs confirmation';
+      }
+    }
+    // Hard floor — never emit empty plantName when candidates exist.
+    // This is the gate-enforced "no Plant: —" invariant.
+    if (!_resolvedPlantName && hasCandidates) {
+      _resolvedPlantName = 'Needs confirmation';
+    }
+
+    // Spec §5 "what we noticed" — single farmer-grade sentence
+    // derived from the strongest signal available (disease > pest >
+    // field-health > satellite > soil). Never claims certainty.
+    let _whatWeNoticed = '';
+    if (diseaseCandidates.length > 0) {
+      const top = diseaseCandidates[0];
+      _whatWeNoticed = 'Possible ' + (top.name || 'issue')
+        + (top.score ? ' (' + Math.round(top.score * 100) + '% match)' : '')
+        + '.';
+    } else if (pestInfo && pestInfo.pest) {
+      _whatWeNoticed = 'Possible pest activity: ' + pestInfo.pest
+        + (pestInfo.severity ? ' (' + pestInfo.severity + ' severity)' : '')
+        + '.';
+    } else if (fieldHealth && fieldHealth.stressLevel
+               && fieldHealth.stressLevel !== 'low') {
+      _whatWeNoticed = 'Satellite shows '
+        + fieldHealth.stressLevel + ' field stress.';
+    } else if (soil && soil.soilRisk && soil.soilRisk.kind !== 'none') {
+      _whatWeNoticed = soil.soilRisk.detail || 'Soil condition flagged.';
+    } else {
+      _whatWeNoticed = 'No clear issue from this photo.';
+    }
+
+    // Spec §5 "why it matters" — actionable framing.
+    let _whyItMatters = '';
+    if (severity === 'high') {
+      _whyItMatters = 'Acting in the next 24-48 hours protects yield.';
+    } else if (severity === 'medium') {
+      _whyItMatters = 'Catching this early is much easier than later.';
+    } else if (diseaseCandidates.length > 0 || (pestInfo && pestInfo.pest)) {
+      _whyItMatters = 'A second look in a few days will confirm direction.';
+    } else if (confidence < 60) {
+      _whyItMatters = 'A clearer photo or a second opinion will sharpen this.';
+    } else {
+      _whyItMatters = 'Routine monitoring keeps small problems small.';
+    }
+
+    // Spec §6 image quality — pass-through from caller when present.
+    // The route can attach quality scores after preprocessing.
+    const _imageQuality = arguments[0] && arguments[0].imageQuality
+      ? Object.freeze({
+          blur:         _num(arguments[0].imageQuality.blur),
+          focus:        _num(arguments[0].imageQuality.focus),
+          brightness:   _num(arguments[0].imageQuality.brightness),
+          shadow:       _num(arguments[0].imageQuality.shadow),
+          leafCoverage: _num(arguments[0].imageQuality.leafCoverage),
+          distance:     _str(arguments[0].imageQuality.distance) || 'unknown',
+          overall:      _str(arguments[0].imageQuality.overall) || 'good',
+          retakeGuidance: _str(arguments[0].imageQuality.retakeGuidance) || null,
+        })
+      : Object.freeze({
+          blur: null, focus: null, brightness: null, shadow: null,
+          leafCoverage: null, distance: 'unknown',
+          overall: 'unknown',
+          retakeGuidance: null,
+        });
+
+    // Spec §2 sourceResults — provider attribution (which providers
+    // contributed and their independent verdicts). Derived from the
+    // consensus.sources field + raw provider parsed outputs when
+    // present.
+    const _sourceResults = Object.freeze(_arr(c.sources).map((src) =>
+      Object.freeze({
+        source:    _str(src.source),
+        ok:        !!src.ok,
+        latencyMs: _num(src.latencyMs) || 0,
+        error:     src.error == null ? null : _str(src.error),
+      })));
+
+    // Spec §5 healthStatus — three-band derived from severity +
+    // signal presence. NEVER says "Confirmed" or "Guaranteed".
+    let _healthStatus = 'healthy';
+    if (diseaseCandidates.length > 0
+        || (pestInfo && pestInfo.pest)
+        || severity === 'high' || severity === 'medium') {
+      _healthStatus = 'attention_needed';
+    } else if (confidence < 60 && !hasCandidates) {
+      _healthStatus = 'unclear';
+    }
+
+    // Spec §8 followUpDate top-level alias (existing followUpPlan
+    // is the structured form). Derived from severity → 3/7/14 days.
+    const _fuDays = severity === 'high' ? 3
+                  : severity === 'medium' ? 7 : 14;
+    const _followUpDate = (() => {
+      const d = new Date(Date.now() + _fuDays * 24 * 3600 * 1000);
+      return d.toISOString().slice(0, 10);
+    })();
+
     return Object.freeze({
-      runtimeVersion:    'scan-recovery-envelope-v4',
-      plantName,
+      runtimeVersion:    'scan-recovery-envelope-v5',
+      // ── Required output contract (spec §2) ──────────────
+      plantName:         _resolvedPlantName,
       scientificName,
       confidence,
+      confidenceLabel:   _confidenceLabel,
+      topCandidates:     Object.freeze(_topCandidates),
+      healthStatus:      _healthStatus,
+      issueCandidates:   Object.freeze(diseaseCandidates),
+      severity,
+      whatWeNoticed:     _whatWeNoticed,
+      whyItMatters:      _whyItMatters,
+      nextAction,
+      followUpDate:      _followUpDate,
+      limitations:       'Decision support, not a guarantee.',
+      imageQuality:      _imageQuality,
+      sourceResults:     _sourceResults,
+      // ── Legacy fields preserved (back-compat) ───────────
       confidenceBand,
       diseaseCandidates: Object.freeze(diseaseCandidates),
-      severity,
       recommendations:   Object.freeze(recommendations),
-      nextAction,
       candidates:        Object.freeze(candidates),
       consensusMode:     _str(c.consensusMode) || 'rule',
       sources:           Object.freeze(sources),
-      // V2 additions — insect + field health.
       pest:              pestInfo,
       fieldHealth,
-      // V3 §3 — soil context.
       soil,
-      // V3 §2 + §5 + §6 — growth stage + regional + market.
       growthStage,
       regional,
       market,
-      // Honesty trailer — every envelope carries the limitation
-      // sentence the API health contract requires.
-      limitations:       'Decision support, not a guarantee.',
     });
   }, Object.freeze({
     runtimeVersion: 'scan-recovery-envelope-v1',
