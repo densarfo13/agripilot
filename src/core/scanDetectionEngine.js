@@ -217,7 +217,38 @@ export async function analyzeScan(input = {}) {
         const suggestedTasks = Array.isArray(apiResult.suggestedTasks) && apiResult.suggestedTasks.length
           ? apiResult.suggestedTasks
           : suggestTasksForResult(apiResult, { experience });
+        // ─── SCAN ROOT-CAUSE FIX ─────────────────────────────
+        // Pass through the V1+V2+V3+V4 envelope fields the server
+        // now emits. Prior to this fix this Object.freeze whitelisted
+        // 9 narrow fields and SILENTLY DROPPED scanRecovery /
+        // plantName / scientificName / diseaseCandidates / pest /
+        // soil / fieldHealth / satellite / growthStage / regional /
+        // market — which is why production rendered
+        // "Plant: — · Unknown Plant · Needs Review" even after the
+        // Scan Recovery Sprint shipped (the rich envelope never
+        // reached the UI extractors).
+        //
+        // Pass-through is additive: legacy callers that read the 9
+        // whitelisted fields still get them exactly as before; new
+        // callers (IntelligentScanResult, ScanRecoveryRuntime) now
+        // find plantName / scanRecovery / diseaseCandidates etc.
+        //
+        // confidencePct preserves the server's NUMERIC confidence
+        // (0..100) alongside the legacy banded `confidence` string
+        // so IntelligentScanResult's _extractIdentification can
+        // render an honest percent instead of the 25% fallback the
+        // band-string maps to.
+        const _numConfidence = typeof apiResult.confidence === 'number'
+          && Number.isFinite(apiResult.confidence)
+            ? Math.max(0, Math.min(100, Math.round(apiResult.confidence)))
+            : null;
+
         return Object.freeze({
+          // ── V1+V2+V3+V4 envelope pass-through ─────────────
+          // Spread first so any explicit override below wins;
+          // shallow copy avoids freezing the upstream object.
+          ...apiResult,
+          // ── Legacy 9-field contract preserved verbatim ────
           scanId,
           possibleIssue:      String(apiResult.possibleIssue || 'Possible issue'),
           confidence:         _coerceConfidence(apiResult.confidence),
@@ -234,6 +265,8 @@ export async function analyzeScan(input = {}) {
             cropId: safeInput.cropId || null,
             plant:  safeInput.plantName || null,
           }),
+          // ── New numeric companion for the percent display ─
+          confidencePct: _numConfidence,
         });
       }
     }

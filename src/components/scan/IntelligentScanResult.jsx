@@ -78,8 +78,17 @@ function _extractIdentification(r) {
     || '';
   // Confidence may be tone ('high'|'medium'|'low'), 0-1 number,
   // or 0-100 number. Normalize to a percent string for display.
-  const rawConf = r.confidence != null ? r.confidence
-                : r.identification && r.identification.confidence;
+  //
+  // SCAN ROOT-CAUSE FIX — prefer `r.confidencePct` (numeric 0..100)
+  // when present. scanDetectionEngine sets this alongside the legacy
+  // banded `r.confidence` string; without this preference the
+  // banded fallback would pin the UI to 25% even when the server
+  // returned a real 87% match.
+  const rawConf = (typeof r.confidencePct === 'number'
+                   && Number.isFinite(r.confidencePct))
+    ? r.confidencePct
+    : (r.confidence != null ? r.confidence
+        : r.identification && r.identification.confidence);
   let confidencePct = null;
   let confidenceTone = null;
   if (typeof rawConf === 'string') {
