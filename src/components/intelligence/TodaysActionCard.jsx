@@ -21,8 +21,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
-import { fetchDailyAction } from
-  '../../runtime/dailyAction/RecommendationEngine';
+import {
+  fetchDailyAction, startDailyAction,
+  completeDailyAction, recordDailyActionOutcome,
+} from '../../runtime/dailyAction/RecommendationEngine';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -42,6 +44,10 @@ function TodaysActionCardInner({ onStart, onScan }) {
   const navigate = useNavigate();
   const [data, setData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  // Funnel state: 'idle' | 'starting' | 'started' | 'completed'
+  //               | 'outcome_recorded'
+  const [funnelStage, setFunnelStage] = React.useState('idle');
+  const [taskId, setTaskId] = React.useState('');
 
   React.useEffect(() => {
     let cancelled = false;
@@ -53,13 +59,47 @@ function TodaysActionCardInner({ onStart, onScan }) {
     return () => { cancelled = true; };
   }, []);
 
-  const handleStart = React.useCallback(() => {
+  const handleStart = React.useCallback(async () => {
     if (typeof onStart === 'function') {
       _safe(() => onStart(data), null);
       return;
     }
-    _safe(() => navigate('/tasks'), null);
-  }, [onStart, data, navigate]);
+    if (!data || !data.action || funnelStage !== 'idle') return;
+    setFunnelStage('starting');
+    const res = await startDailyAction({
+      actionId:         data.actionId,
+      action:           data.action,
+      category:         data.category,
+      priority:         data.priority,
+      estimatedMinutes: data.estimatedMinutes,
+      followUpDate:     data.followUpDate,
+    });
+    if (res && res.ok) {
+      setTaskId(res.taskId || '');
+      setFunnelStage('started');
+    } else {
+      // Fall back to navigation if the server can't reach us.
+      _safe(() => navigate('/tasks'), null);
+      setFunnelStage('idle');
+    }
+  }, [data, funnelStage, onStart, navigate]);
+
+  const handleMarkComplete = React.useCallback(async () => {
+    if (!data || funnelStage !== 'started') return;
+    const res = await completeDailyAction({
+      actionId: data.actionId, taskId,
+    });
+    if (res && res.ok) setFunnelStage('completed');
+  }, [data, funnelStage, taskId]);
+
+  const handleOutcome = React.useCallback(async (outcome) => {
+    if (!data || funnelStage !== 'completed') return;
+    const res = await recordDailyActionOutcome({
+      actionId: data.actionId, taskId,
+      outcome,
+    });
+    if (res && res.ok) setFunnelStage('outcome_recorded');
+  }, [data, funnelStage, taskId]);
 
   const handleScan = React.useCallback(() => {
     if (typeof onScan === 'function') {
@@ -130,18 +170,75 @@ function TodaysActionCardInner({ onStart, onScan }) {
         ) : null}
       </div>
 
-      <div style={S.btnRow}>
-        <button type="button" style={S.btnStart}
-          onClick={handleStart}
-          data-testid="todays-action-start">
-          {tSafe('todaysAction.start', 'Start')}
-        </button>
-        <button type="button" style={S.btnScan}
-          onClick={handleScan}
-          data-testid="todays-action-scan">
-          {tSafe('todaysAction.scan', 'Scan')}
-        </button>
-      </div>
+      {/* Funnel-aware action row.
+          idle           → Start + Scan buttons (spec)
+          starting       → spinner / disabled state
+          started        → "Mark complete" button
+          completed      → Better / Same / Worse outcome prompt
+          outcome_recorded → green confirmation row */}
+      {funnelStage === 'idle' || funnelStage === 'starting' ? (
+        <div style={S.btnRow}>
+          <button type="button" style={S.btnStart}
+            onClick={handleStart}
+            disabled={funnelStage === 'starting'}
+            data-testid="todays-action-start">
+            {funnelStage === 'starting'
+              ? tSafe('todaysAction.starting', 'Starting…')
+              : tSafe('todaysAction.start', 'Start')}
+          </button>
+          <button type="button" style={S.btnScan}
+            onClick={handleScan}
+            data-testid="todays-action-scan">
+            {tSafe('todaysAction.scan', 'Scan')}
+          </button>
+        </div>
+      ) : null}
+
+      {funnelStage === 'started' ? (
+        <div style={S.btnRow} data-testid="todays-action-started-row">
+          <button type="button" style={S.btnStart}
+            onClick={handleMarkComplete}
+            data-testid="todays-action-complete">
+            {tSafe('todaysAction.markComplete', 'Mark complete')}
+          </button>
+          <span style={S.startedHint}>
+            {tSafe('todaysAction.taskCreated',
+              'Task + follow-up + outcome path created.')}
+          </span>
+        </div>
+      ) : null}
+
+      {funnelStage === 'completed' ? (
+        <div style={S.outcomeWrap} data-testid="todays-action-outcome-prompt">
+          <p style={S.outcomeQ}>
+            {tSafe('todaysAction.outcomeQ', 'Did conditions improve?')}
+          </p>
+          <div style={S.btnRow}>
+            <button type="button" style={S.btnBetter}
+              onClick={() => handleOutcome('better')}
+              data-testid="todays-action-outcome-better">
+              {tSafe('todaysAction.better', 'Better')}
+            </button>
+            <button type="button" style={S.btnSame}
+              onClick={() => handleOutcome('same')}
+              data-testid="todays-action-outcome-same">
+              {tSafe('todaysAction.same', 'Same')}
+            </button>
+            <button type="button" style={S.btnWorse}
+              onClick={() => handleOutcome('worse')}
+              data-testid="todays-action-outcome-worse">
+              {tSafe('todaysAction.worse', 'Worse')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {funnelStage === 'outcome_recorded' ? (
+        <p style={S.done} data-testid="todays-action-done">
+          ✓ {tSafe('todaysAction.done',
+            'Outcome recorded. See you tomorrow.')}
+        </p>
+      ) : null}
 
       <p style={S.footnote}>
         {tSafe('todaysAction.footnote', 'Decision support, not a guarantee.')}
@@ -200,4 +297,25 @@ const S = {
   loading: { margin: 0, fontSize: 12, color: 'rgba(60,72,55,0.6)' },
   footnote: { margin: 0, fontSize: 10,
     color: 'rgba(60,72,55,0.5)', textAlign: 'right' },
+  startedHint: { fontSize: 11, color: 'rgba(60,72,55,0.65)',
+    alignSelf: 'center' },
+  outcomeWrap: {
+    display: 'flex', flexDirection: 'column', gap: 8,
+    borderTop: '1px solid rgba(60,72,55,0.08)', paddingTop: 10,
+  },
+  outcomeQ: { margin: 0, fontSize: 13, fontWeight: 700,
+    color: '#1F2933' },
+  btnBetter: { minHeight: 36, padding: '0 14px', borderRadius: 8,
+    border: 'none', background: '#2f7a3a', color: '#fff',
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    flex: 1, minWidth: 80 },
+  btnSame: { minHeight: 36, padding: '0 14px', borderRadius: 8,
+    border: 'none', background: '#9a6a00', color: '#fff',
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    flex: 1, minWidth: 80 },
+  btnWorse: { minHeight: 36, padding: '0 14px', borderRadius: 8,
+    border: 'none', background: '#a13a3a', color: '#fff',
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    flex: 1, minWidth: 80 },
+  done: { margin: 0, fontSize: 13, fontWeight: 700, color: '#2f7a3a' },
 };

@@ -32,6 +32,78 @@ export interface DailyAction {
   }>;
 }
 
+/**
+ * V1 funnel adapters — Start / Complete / Outcome / KPI.
+ * Every call is best-effort + returns frozen envelopes.
+ */
+export async function startDailyAction(args: {
+  actionId?: string;
+  action: string;
+  category?: string;
+  priority?: string;
+  estimatedMinutes?: number;
+  followUpDate?: string;
+  scanId?: string;
+}): Promise<{ ok: boolean; taskId?: string;
+              outcomePathReady?: boolean;
+              followUpPlanItems?: any[] } | null> {
+  return _safe(async () => {
+    if (typeof fetch === 'undefined') return null;
+    const res = await fetch('/api/daily-action/start', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+    });
+    if (!res || !res.ok) return null;
+    return await res.json();
+  }, null) as any;
+}
+
+export async function completeDailyAction(args: {
+  actionId?: string; taskId?: string;
+}): Promise<{ ok: boolean } | null> {
+  return _safe(async () => {
+    if (typeof fetch === 'undefined') return null;
+    const res = await fetch('/api/daily-action/complete', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+    });
+    if (!res || !res.ok) return null;
+    return await res.json();
+  }, null) as any;
+}
+
+export async function recordDailyActionOutcome(args: {
+  actionId?: string; taskId?: string; scanId?: string;
+  outcome: 'better' | 'same' | 'worse'; note?: string;
+}): Promise<{ ok: boolean } | null> {
+  return _safe(async () => {
+    if (typeof fetch === 'undefined') return null;
+    const res = await fetch('/api/daily-action/outcome', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+    });
+    if (!res || !res.ok) return null;
+    return await res.json();
+  }, null) as any;
+}
+
+export async function fetchDailyActionKpi(days = 30) {
+  return _safe(async () => {
+    if (typeof fetch === 'undefined') return null;
+    const res = await fetch('/api/daily-action/kpi?days=' + String(days), {
+      credentials: 'include',
+    });
+    if (!res || !res.ok) return null;
+    return await res.json();
+  }, null) as any;
+}
+
 export async function fetchDailyAction(): Promise<DailyAction | null> {
   return _safe(async () => {
     if (typeof fetch === 'undefined') return null;

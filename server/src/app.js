@@ -1298,7 +1298,29 @@ app.get('/api/daily-action', authenticate, async (req, res) => {
       openTasks,
       outcomeHistory,
     });
-    return res.json(envelope);
+
+    // Today's Action V1 — funnel stage 1: SHOWN. Fire-and-forget.
+    // Caller can also explicitly POST /api/daily-action/shown if
+    // it wants to be sure the event landed.
+    try {
+      const { logEvent } = await import('./ml/todaysActionFunnel.js');
+      const actionId = 'ta_' + Buffer.from(String(envelope.action || ''))
+        .toString('base64').slice(0, 32);
+      logEvent(prisma, {
+        userId, actionId,
+        kind: 'shown',
+        metadata: {
+          priority: envelope.priority,
+          category: envelope.category,
+          priorityScore: envelope.priorityScore,
+        },
+      }).catch(() => { /* swallow */ });
+      // Attach the actionId to the envelope so the client can
+      // reference the same id in /start + /outcome calls.
+      return res.json({ ...envelope, actionId });
+    } catch {
+      return res.json(envelope);
+    }
   } catch (err) {
     return res.status(500).json({
       ok: false, error: 'daily_action_failed', message: err && err.message,
@@ -1310,6 +1332,152 @@ app.get('/api/daily-action', authenticate, async (req, res) => {
       followUpDate: new Date(Date.now() + 14 * 24 * 3600 * 1000)
         .toISOString().slice(0, 10),
       topThree: [],
+    });
+  }
+});
+
+// POST /api/daily-action/start
+//   body: { actionId, action, category?, priority?, followUpDate?,
+//            estimatedMinutes? }
+//   Auto-creates: task + follow-up plan + outcome path.
+//   Logs funnel stage 2: STARTED.
+app.post('/api/daily-action/start', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    if (!b.action) return res.status(400).json({ error: 'action_required' });
+
+    const { logEvent } = await import('./ml/todaysActionFunnel.js');
+    let taskId = null;
+
+    // 1. Create the real Task row when the Task model exists.
+    try {
+      if (prisma.task && typeof prisma.task.create === 'function') {
+        const taskRow = await prisma.task.create({
+          data: {
+            userId,
+            title:    String(b.action).slice(0, 200),
+            status:   'in_progress',
+            category: b.category ? String(b.category).slice(0, 32) : 'general',
+            priority: b.priority ? String(b.priority).slice(0, 16) : 'medium',
+          },
+        });
+        taskId = taskRow.id;
+      }
+    } catch { /* swallow — task creation is best-effort */ }
+
+    // 2. Create the follow-up plan (3 / 7 / 14 day) so the user
+    //    sees re-check reminders. Re-uses the V3 follow-up engine.
+    let followUpPlan = null;
+    try {
+      const { buildFollowUpPlan, persistFollowUpPlan } =
+        await import('./ml/followUpEngine.js');
+      // Mint a synthetic scanId if the action wasn't tied to one — the
+      // follow-up engine just needs a stable key.
+      const synthScan = b.scanId || ('ta_' + Date.now().toString(36));
+      followUpPlan = buildFollowUpPlan({
+        scanId:      synthScan,
+        severity:    b.priority || 'medium',
+        growthStage: b.growthStage || null,
+      });
+      persistFollowUpPlan(prisma, { scanId: synthScan, plan: followUpPlan })
+        .catch(() => { /* logged inside */ });
+    } catch { /* swallow — follow-up is best-effort */ }
+
+    // 3. Funnel stage 2 — STARTED.
+    await logEvent(prisma, {
+      userId,
+      actionId: b.actionId ? String(b.actionId).slice(0, 100) : null,
+      taskId,
+      scanId:   b.scanId  ? String(b.scanId).slice(0, 100) : null,
+      kind:     'started',
+      metadata: {
+        category: b.category || null,
+        priority: b.priority || null,
+        estimatedMinutes: b.estimatedMinutes || null,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      taskId,
+      followUpPlanItems: followUpPlan ? followUpPlan.items : null,
+      outcomePathReady:  true,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'start_failed', message: err && err.message,
+    });
+  }
+});
+
+// POST /api/daily-action/complete — funnel stage 3: COMPLETED.
+//   body: { actionId, taskId? }
+app.post('/api/daily-action/complete', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    const { logEvent } = await import('./ml/todaysActionFunnel.js');
+    await logEvent(prisma, {
+      userId,
+      actionId: b.actionId ? String(b.actionId).slice(0, 100) : null,
+      taskId:   b.taskId   ? String(b.taskId).slice(0, 100) : null,
+      kind:     'completed',
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'complete_failed', message: err && err.message,
+    });
+  }
+});
+
+// POST /api/daily-action/outcome — funnel stage 4: OUTCOME_RECORDED.
+//   body: { actionId, outcome ('better'|'same'|'worse'), taskId?,
+//            scanId?, note? }
+app.post('/api/daily-action/outcome', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    if (!['better', 'same', 'worse'].includes(b.outcome)) {
+      return res.status(400).json({ error: 'invalid_outcome' });
+    }
+    const { logEvent } = await import('./ml/todaysActionFunnel.js');
+    await logEvent(prisma, {
+      userId,
+      actionId: b.actionId ? String(b.actionId).slice(0, 100) : null,
+      taskId:   b.taskId   ? String(b.taskId).slice(0, 100) : null,
+      scanId:   b.scanId   ? String(b.scanId).slice(0, 100) : null,
+      kind:     'outcome_recorded',
+      outcome:  b.outcome,
+      metadata: { note: b.note ? String(b.note).slice(0, 500) : null },
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'outcome_failed', message: err && err.message,
+    });
+  }
+});
+
+// GET /api/daily-action/kpi?days=30 — 5-step funnel for the
+// founder analytics dashboard. Admin / super_admin / NGO only.
+app.get('/api/daily-action/kpi', authenticate, async (req, res) => {
+  if (!req.user || !['admin', 'super_admin', 'ngo', 'field_officer']
+        .includes(req.user.role)) {
+    return res.status(403).json({ error: 'admin_only' });
+  }
+  try {
+    const { computeFunnel } = await import('./ml/todaysActionFunnel.js');
+    const days = Number(req.query?.days) || 30;
+    const out = await computeFunnel(prisma, days);
+    return res.json(out);
+  } catch (err) {
+    return res.status(500).json({
+      ok: false, error: 'kpi_failed', message: err && err.message,
     });
   }
 });

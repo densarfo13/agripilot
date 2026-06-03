@@ -3245,6 +3245,28 @@ model PhotoComparison {
   @@map("photo_comparisons")
 }
 
+// ─── Today's Action funnel ────────────────────────────
+// Mirrors migration 20260603100000_todays_action_events.
+// Append-only. NO PII. userId free-form.
+model TodaysActionEvent {
+  id          String   @id @default(cuid())
+  userId      String?  @map("user_id")
+  actionId    String?  @map("action_id")
+  taskId      String?  @map("task_id")
+  scanId      String?  @map("scan_id")
+  // 'shown' | 'started' | 'completed' | 'outcome_recorded' | 'follow_up_completed'
+  kind        String
+  // 'better' | 'same' | 'worse' (only when kind='outcome_recorded')
+  outcome     String?
+  metadata    Json?
+  capturedAt  DateTime @default(now()) @map("captured_at")
+
+  @@index([kind, capturedAt], map: "idx_todays_action_kind_time")
+  @@index([userId, capturedAt], map: "idx_todays_action_user_time")
+  @@index([actionId], map: "idx_todays_action_action_id")
+  @@map("todays_action_events")
+}
+
 model FarmHealthScore {
   id                  String   @id @default(cuid())
   farmId              String   @map("farm_id")
