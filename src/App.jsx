@@ -1874,6 +1874,14 @@ export default function App() {
               await import('./runtime/scanDetectionPermanent/ScanDetectionPermanentRuntime');
             installScanDetectionHealthGlobal();
           } catch { /* swallow */ }
+          // Universal Scan (sprint #178) — pins window.__universalScanHealth
+          // with the 15 spec §11 flags. Composes __apiHealth +
+          // __scanDetectionHealth; never duplicates state.
+          try {
+            const { installUniversalScanHealthGlobal } =
+              await import('./runtime/universalScan/UniversalScanHealthRuntime');
+            installUniversalScanHealthGlobal();
+          } catch { /* swallow */ }
           // Notification panel diagnostic — attests the bell dropdown
           // is portal-rendered, mobile-safe, template-resolved, and
           // shows all notifications scrollably.

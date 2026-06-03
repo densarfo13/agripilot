@@ -1165,6 +1165,13 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       imageQuality:     scanRecovery.imageQuality,
       sourceResults:    scanRecovery.sourceResults,
       followUpDate:     scanRecovery.followUpDate,
+      // ── Universal Scan (v6) — sprint #178 ──────────────────
+      // Mirror universal-scan additions at the root so the
+      // IntelligentScanResult Type chip + issue-aware actions
+      // surface without nested traversal. objectType ∈ 11 categories;
+      // issueType ∈ 18 labels + 'no_visible_issue'.
+      objectType:       scanRecovery.objectType,
+      issueType:        scanRecovery.issueType,
       verdict:               safe,
       verdictV2,
       verdictV3,

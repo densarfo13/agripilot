@@ -30,6 +30,69 @@ function _num(v) { return Number.isFinite(Number(v)) ? Number(v) : null; }
 function _arr(v) { return Array.isArray(v) ? v : []; }
 function _safe(fn, fb) { try { return fn(); } catch { return fb; } }
 
+// Universal Scan (sprint #178) — classify object type + issue from
+// the consensus output. Lazy-imported on first call so the rest of
+// the module never pays the cost when this path is unused.
+let _universalAnalyzer = null;
+async function _loadUniversalAnalyzer() {
+  if (_universalAnalyzer) return _universalAnalyzer;
+  try {
+    const m = await import('./issueAnalysisEngine.js');
+    _universalAnalyzer = {
+      classifyObjectType: m.classifyObjectType,
+      classifyIssue:      m.classifyIssue,
+      safeNextAction:     m.safeNextAction,
+    };
+  } catch {
+    _universalAnalyzer = {
+      classifyObjectType: () => 'unknown',
+      classifyIssue:      () => null,
+      safeNextAction:     () => 'Keep monitoring. Scan again in 7 days.',
+    };
+  }
+  return _universalAnalyzer;
+}
+// Synchronous fallback classifier — small inline copy so the envelope
+// can populate objectType + issueType WITHOUT awaiting. The async
+// loader above gives the route layer a way to upgrade the result.
+function _syncClassifyObjectType(plantName, scientificName, candidates) {
+  const hay = ([plantName, scientificName]
+    .concat(_arr(candidates).map((c) => c && (c.commonName || c.name)))
+    .concat(_arr(candidates).map((c) => c && c.scientificName))
+    .filter(Boolean).join(' | ') + '').toLowerCase();
+  if (!hay) return _arr(candidates).length > 0 ? 'leaf' : 'unknown';
+  if (/(tomato|pepper|onion|garlic|okra|cabbage|lettuce|carrot|cucumber|eggplant|spinach|amaranth|kale|pumpkin|sweet\s*potato)/.test(hay)) return 'vegetable';
+  if (/(mango|banana|plantain|orange|lemon|lime|avocado|pineapple|papaya|apple|pear|strawberry|grape|watermelon|pomegranate|fig|guava)/.test(hay)) return 'fruit';
+  if (/(cassava|maize|corn|rice|bean|cowpea|chickpea|soybean|yam|potato|cocoa|coffee|sugarcane|sorghum|millet|wheat|barley)/.test(hay)) return 'crop';
+  if (/(rose|hibiscus|tulip|lily|sunflower|marigold|jasmine|orchid|gerbera|chrysanthemum|dahlia|petunia|zinnia|lavender)/.test(hay)) return 'flower';
+  if (/(basil|mint|oregano|thyme|rosemary|sage|parsley|coriander|aloe|lemongrass|moringa)/.test(hay)) return 'herb';
+  if (/(oak|pine|eucalyptus|baobab|acacia|neem|tamarind|mahogany|teak|jacaranda|cedar|palm)/.test(hay)) return 'tree';
+  if (/(dandelion|crabgrass|pigweed|thistle|nutsedge|chickweed|quackgrass|johnsongrass)/.test(hay)) return 'weed';
+  if (/(seedling|sprout|germinat)/.test(hay)) return 'seedling';
+  if (/^soil$|bare\s*ground/.test(hay)) return 'soil_surface';
+  return 'leaf';
+}
+function _syncClassifyIssue(text) {
+  const s = _str(text).toLowerCase().trim();
+  if (!s) return null;
+  const RULES = [
+    ['leaf_spot', /spot|lesion/], ['blight', /blight|alternaria|phytophthora/],
+    ['rust', /rust|puccinia|uromyces/], ['mildew', /mildew|powdery|downy/],
+    ['mosaic', /mosaic|virus/], ['rot', /\brot\b|botrytis|fusarium/],
+    ['wilt', /wilt(?!ing)|verticillium/],
+    ['holes', /hole|chewed|notch/], ['chewing', /chew|bite\s*mark/],
+    ['leaf_miners', /leaf\s*miner|liriomyza/], ['mites', /\bmite\b|tetranychus/],
+    ['aphids', /aphid|greenfly/], ['whiteflies', /whitefly|aleyrodidae|bemisia/],
+    ['thrips', /thrip|frankliniella/], ['armyworm', /armyworm|spodoptera/],
+    ['yellowing', /yellow|chloros/], ['curling', /curl|leaf\s*roll/],
+    ['sun_scorch', /scorch|sunburn|sun\s*burn/],
+  ];
+  for (const [type, pat] of RULES) {
+    if (pat.test(s)) return type;
+  }
+  return null;
+}
+
 function _severityFromSafeVerdict(safe) {
   const urgency = String(safe && (safe.urgency || safe.hybridUrgency) || '')
     .toLowerCase();
@@ -367,15 +430,45 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       return d.toISOString().slice(0, 10);
     })();
 
+    // ═══════════════════════════════════════════════════════
+    // UNIVERSAL SCAN (envelope v6) — adds objectType + issueType.
+    // ═══════════════════════════════════════════════════════
+    //
+    // Spec §1 + §5: every scan must return objectType (one of 11
+    // categories) AND issueType (one of 18 issue labels or
+    // 'no_visible_issue'). These derive from the consensus signal —
+    // never fabricated.
+    const _objectType = _syncClassifyObjectType(
+      _resolvedPlantName, scientificName, _topCandidates);
+    // Issue type: derive from disease/pest text. Fall back to
+    // 'no_visible_issue' when no issue text exists, NEVER null —
+    // the contract requires a string value.
+    let _issueType = 'no_visible_issue';
+    if (diseaseCandidates.length > 0) {
+      const tagged = _syncClassifyIssue(diseaseCandidates[0].name);
+      if (tagged) _issueType = tagged;
+    } else if (pestInfo && pestInfo.pest) {
+      const tagged = _syncClassifyIssue(pestInfo.pest);
+      if (tagged) _issueType = tagged;
+    } else if (_str(s.possibleIssue)) {
+      const tagged = _syncClassifyIssue(s.possibleIssue);
+      if (tagged) _issueType = tagged;
+    }
+
+    // Envelope version upgrade path:
+    //   scan-recovery-envelope-v5 → scan-recovery-envelope-v6
+    // (v6 adds objectType + issueType for universal-scan sprint).
     return Object.freeze({
-      runtimeVersion:    'scan-recovery-envelope-v5',
-      // ── Required output contract (spec §2) ──────────────
+      runtimeVersion:    'scan-recovery-envelope-v6',
+      // ── Required output contract (spec §2 + universal §1) ─
+      objectType:        _objectType,
       plantName:         _resolvedPlantName,
       scientificName,
       confidence,
       confidenceLabel:   _confidenceLabel,
       topCandidates:     Object.freeze(_topCandidates),
       healthStatus:      _healthStatus,
+      issueType:         _issueType,
       issueCandidates:   Object.freeze(diseaseCandidates),
       severity,
       whatWeNoticed:     _whatWeNoticed,
@@ -401,16 +494,18 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
     });
   }, Object.freeze({
     // Permanent Detection Fix — the _safe fallback MUST emit the
-    // full v5 contract so a thrown exception inside the engine
-    // doesn't degrade the UI to "Plant: —". Every spec §2 field
-    // present; plantName uses the honest placeholder.
-    runtimeVersion: 'scan-recovery-envelope-v5',
+    // full v6 contract so a thrown exception inside the engine
+    // doesn't degrade the UI to "Plant: —". Every spec §2 + universal
+    // §1 field present; plantName uses the honest placeholder.
+    runtimeVersion: 'scan-recovery-envelope-v6',
+    objectType: 'unknown',
     plantName: 'Scan unclear',
     scientificName: '',
     confidence: 0,
     confidenceLabel: 'Review recommended',
     topCandidates: Object.freeze([]),
     healthStatus: 'unclear',
+    issueType: 'no_visible_issue',
     issueCandidates: Object.freeze([]),
     severity: null,
     whatWeNoticed: 'We could not analyze this photo.',

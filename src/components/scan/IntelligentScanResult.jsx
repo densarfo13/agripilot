@@ -646,6 +646,7 @@ export default function IntelligentScanResult({
   onRetake,
   onChoose,
   onSaveForReview,
+  onSavePlant,
 }) {
   const identification = useMemo(() => _extractIdentification(result), [result]);
   const health         = useMemo(() => _extractHealth(result),         [result]);
@@ -666,6 +667,23 @@ export default function IntelligentScanResult({
   const _imageQuality   = result && result.imageQuality;
   const _retakeMsg      = _imageQuality && _imageQuality.retakeGuidance;
 
+  // Universal Scan (v6) — sprint #178. objectType labels the scan as
+  // one of 11 categories (fruit/vegetable/leaf/crop/flower/herb/tree/
+  // weed/soil_surface/seedling/unknown); issueType labels the issue
+  // as one of 18 categories OR 'no_visible_issue'. Rendered as a
+  // Type chip + issue chip on the identification card.
+  const _objectType = _str(result && result.objectType);
+  const _issueType  = _str(result && result.issueType);
+  const _humanObjectType = (t) => {
+    if (!t || t === 'unknown') return '';
+    if (t === 'soil_surface') return 'soil surface';
+    return t.replace(/_/g, ' ');
+  };
+  const _humanIssueType = (t) => {
+    if (!t || t === 'no_visible_issue') return '';
+    return t.replace(/_/g, ' ');
+  };
+
   return (
     <main style={STYLES.page} data-testid="intelligent-scan-result">
       <VoiceHeader result={result} />
@@ -679,6 +697,31 @@ export default function IntelligentScanResult({
         </section>
       ) : null}
       <PlantIdentificationSection identification={identification} />
+      {/* Universal Scan Type chip — labels what was scanned. Always
+          renders when an objectType is present so the user sees the
+          category (fruit / vegetable / leaf / crop / flower / herb /
+          tree / weed / seedling / soil_surface). */}
+      {_objectType && _objectType !== 'unknown' ? (
+        <section style={{ ...STYLES.card, padding: '10px 14px' }}
+          data-testid="scan-intel-type-chip">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap',
+              alignItems: 'center' }}>
+            <span style={STYLES.cardTitle}>
+              {tSafe('scan.intel.type.label', 'Type')}
+            </span>
+            <span style={STYLES.pill}
+              data-testid="scan-intel-type-chip-value">
+              {_humanObjectType(_objectType)}
+            </span>
+            {_issueType && _issueType !== 'no_visible_issue' ? (
+              <span style={STYLES.confPill('medium')}
+                data-testid="scan-intel-issue-chip">
+                {_humanIssueType(_issueType)}
+              </span>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
       {/* Permanent Top Matches — renders whenever there are
           candidates so the UI never reads "Unknown Plant" / dead-end. */}
       {_topCandidates.length > 0 ? (
@@ -764,6 +807,18 @@ export default function IntelligentScanResult({
             onClick={_isFn(onSaveForReview) ? onSaveForReview : undefined}>
             {tSafe('scan.intel.action.review', 'Save for review')}
           </button>
+          {/* Universal Scan §7 — Save plant. Adds the identified
+              plant to the grower's "My Plants" log so they can
+              build a record of what's growing. Renders whenever a
+              plant signal exists (any objectType besides 'unknown'). */}
+          {_objectType && _objectType !== 'unknown' ? (
+            <button type="button"
+              style={STYLES.pill}
+              data-testid="scan-intel-save-plant"
+              onClick={_isFn(onSavePlant) ? onSavePlant : undefined}>
+              {tSafe('scan.intel.action.savePlant', 'Save plant')}
+            </button>
+          ) : null}
         </div>
       </section>
       {needsReview ? (
