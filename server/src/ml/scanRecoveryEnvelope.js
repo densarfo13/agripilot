@@ -269,6 +269,14 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
     if (!_resolvedPlantName && hasCandidates) {
       _resolvedPlantName = 'Needs confirmation';
     }
+    // STRONGER floor — even when there are NO candidates (provider
+    // failure / unconfigured keys), plantName must never be blank.
+    // The UI dead-end pattern was: providers silently fail → empty
+    // candidates → empty plantName → "Plant: —". Replace with an
+    // honest placeholder that explains what to do.
+    if (!_resolvedPlantName) {
+      _resolvedPlantName = 'Scan unclear';
+    }
 
     // Spec §5 "what we noticed" — single farmer-grade sentence
     // derived from the strongest signal available (disease > pest >
@@ -392,17 +400,40 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       market,
     });
   }, Object.freeze({
-    runtimeVersion: 'scan-recovery-envelope-v1',
-    plantName: '', scientificName: '',
-    confidence: 0, confidenceBand: 'low',
-    diseaseCandidates: Object.freeze([]),
+    // Permanent Detection Fix — the _safe fallback MUST emit the
+    // full v5 contract so a thrown exception inside the engine
+    // doesn't degrade the UI to "Plant: —". Every spec §2 field
+    // present; plantName uses the honest placeholder.
+    runtimeVersion: 'scan-recovery-envelope-v5',
+    plantName: 'Scan unclear',
+    scientificName: '',
+    confidence: 0,
+    confidenceLabel: 'Review recommended',
+    topCandidates: Object.freeze([]),
+    healthStatus: 'unclear',
+    issueCandidates: Object.freeze([]),
     severity: null,
+    whatWeNoticed: 'We could not analyze this photo.',
+    whyItMatters: 'A clearer photo or a second opinion will help.',
+    nextAction: 'Retake the photo in good light, focused on one leaf.',
+    followUpDate: new Date(Date.now() + 14 * 24 * 3600 * 1000)
+      .toISOString().slice(0, 10),
+    limitations: 'Decision support, not a guarantee.',
+    imageQuality: Object.freeze({
+      blur: null, focus: null, brightness: null, shadow: null,
+      leafCoverage: null, distance: 'unknown',
+      overall: 'unknown', retakeGuidance: null,
+    }),
+    sourceResults: Object.freeze([]),
+    // Legacy fields preserved.
+    confidenceBand: 'low',
+    diseaseCandidates: Object.freeze([]),
     recommendations: Object.freeze([]),
-    nextAction: 'Check this plant again tomorrow.',
     candidates: Object.freeze([]),
     consensusMode: 'rule',
     sources: Object.freeze([]),
-    limitations: 'Decision support, not a guarantee.',
+    pest: null, fieldHealth: null, soil: null,
+    growthStage: null, regional: null, market: null,
   }));
 }
 
