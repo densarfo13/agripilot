@@ -42,7 +42,7 @@ function _stageLabel(stage) {
 function ScanCommandCardInner({ result }) {
   if (!_isObj(result)) return null;
 
-  const plantName      = _str(result.plantName) || _str(result.commonName);
+  const rawPlantName   = _str(result.plantName) || _str(result.commonName);
   const scientificName = _str(result.scientificName);
   const confidencePct  = _num(result.confidence);
   const confidenceBand = _str(result.confidenceBand)
@@ -50,6 +50,27 @@ function ScanCommandCardInner({ result }) {
         ? (confidencePct >= 75 ? 'high'
            : confidencePct >= 45 ? 'medium' : 'low')
         : 'low');
+
+  // PRODUCTION ROOT-CAUSE FIX (sprint #179):
+  //   The legacy `plantName || '—'` pattern caused production
+  //   to render "Plant: —" whenever the v5 envelope mirror dropped
+  //   plantName. Replace with the spec invariant — honest fallback
+  //   ALWAYS, never bare dash, never "Unknown Plant".
+  //
+  // Resolution order:
+  //   1. real plantName (any non-empty species name)
+  //   2. top candidate common/scientific name (if candidates present)
+  //   3. 'Needs confirmation' (when candidates exist but no name)
+  //   4. 'Scan unclear'      (when no signal at all)
+  //
+  // The component NEVER renders bare '—' or 'Unknown Plant'.
+  const _topCandidates = _arr(result.topCandidates);
+  const _topCand = _topCandidates[0] || null;
+  const plantName =
+       rawPlantName
+    || _str(_topCand && (_topCand.commonName || _topCand.name))
+    || _str(_topCand && _topCand.scientificName)
+    || (_topCandidates.length > 0 ? 'Needs confirmation' : 'Scan unclear');
 
   const diseaseCandidates = _arr(result.diseaseCandidates);
   const topDisease = diseaseCandidates[0] || null;
@@ -70,15 +91,16 @@ function ScanCommandCardInner({ result }) {
     >
       <header style={S.header}>
         <p style={S.eyebrow}>{tSafe('scanCommand.eyebrow', 'Scan Command Center')}</p>
-        <h2 style={S.title}>{plantName || tSafe('scanCommand.unknownPlant', 'Plant')}</h2>
+        <h2 style={S.title}>{plantName}</h2>
         {scientificName ? <p style={S.scientific}>{scientificName}</p> : null}
       </header>
 
-      {/* Plant + confidence */}
+      {/* Plant + confidence — `plantName` is the resolved fallback
+          ladder above, NEVER bare '—' (sprint #179 production fix). */}
       <div style={S.row} data-testid="scan-command-plant">
         <span style={S.rowLabel}>{tSafe('scanCommand.row.plant', 'Plant')}</span>
         <span style={S.rowValue}>
-          {plantName || '—'}
+          {plantName}
           {confidencePct != null ? (
             <span style={{ ...S.confBadge, color: _confidenceColor(confidenceBand) }}>
               {' · '}{_fmtPct(confidencePct)}

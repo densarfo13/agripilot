@@ -208,7 +208,48 @@ if (!_exists(RESULT)) {
   }
 }
 
-// ─── 7. App.jsx wires install ────────────────────────────────
+// ─── 7b. Repo-wide scan UI: forbid Plant: — and Unknown Plant
+// dead-end fallbacks anywhere under src/components/scan/ or
+// src/pages/scan*. Spec §12 build-fails rule. Sprint #179 root
+// cause was ScanCommandCard.jsx baking `plantName || '—'` — the
+// IntelligentScanResult-only gate let that regression ship to
+// production.
+const SCAN_UI_FILES = [
+  'src/components/scan/ScanCommandCard.jsx',
+  'src/components/scan/ScanResult.jsx',
+  'src/components/scan/IntelligentScanResult.jsx',
+  'src/components/scan/NeedsReviewActions.jsx',
+  'src/pages/ScanPage.jsx',
+  'src/pages/ScanResultPage.jsx',
+];
+for (const rel of SCAN_UI_FILES) {
+  if (!_exists(rel)) continue; // ok — file may not exist in this repo
+  const src = _read(rel);
+  // Strip comments so JSDoc/inline rationale doesn't false-flag.
+  let stripped = src.replace(new RegExp('/\\*[\\s\\S]*?\\*/', 'g'), '');
+  stripped = stripped.replace(
+    new RegExp('\\{/\\*[\\s\\S]*?\\*/\\}', 'g'), '');
+  stripped = stripped.replace(new RegExp('//[^\\n]*', 'g'), '');
+  // Forbid `plantName || '—'` / `plantName || "—"` (em-dash fallback).
+  if (/plantName\s*\|\|\s*['"]—['"]/.test(stripped)
+      || /commonName\s*\|\|\s*['"]—['"]/.test(stripped)) {
+    errors.push(rel + ' must NOT use `plantName || "—"` — render '
+      + 'a real fallback ("Needs confirmation" / "Scan unclear")');
+  }
+  // Forbid `plantName || "Unknown Plant"`.
+  if (/plantName\s*\|\|\s*['"]Unknown Plant['"]/i.test(stripped)
+      || /commonName\s*\|\|\s*['"]Unknown Plant['"]/i.test(stripped)) {
+    errors.push(rel + ' must NOT use `plantName || "Unknown Plant"` — '
+      + 'use "Needs confirmation" / "Scan unclear" placeholders');
+  }
+  // Forbid literal "Plant: —" / "Plant : —" in any JSX text.
+  if (/['"]Plant:\s*—['"]/i.test(stripped)
+      || /['"]Plant\s+:\s*—['"]/i.test(stripped)) {
+    errors.push(rel + ' must NOT contain literal "Plant: —" string');
+  }
+}
+
+// ─── 8. App.jsx wires install ────────────────────────────────
 const APP_JSX = 'src/App.jsx';
 if (!_exists(APP_JSX)) {
   errors.push('missing: ' + APP_JSX);
