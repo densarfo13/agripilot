@@ -349,7 +349,8 @@
     "check:todays-action-engine": "node scripts/check-todays-action-engine.mjs",
     "check:scan-envelope-passthrough": "node scripts/check-scan-envelope-passthrough.mjs",
     "check:scan-detection-permanent": "node scripts/check-scan-detection-permanent.mjs",
-    "check:universal-scan": "node scripts/check-universal-scan.mjs"
+    "check:universal-scan": "node scripts/check-universal-scan.mjs",
+    "check:ui-design-system": "node scripts/check-ui-design-system.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
