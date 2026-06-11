@@ -1874,6 +1874,14 @@ export default function App() {
               await import('./runtime/scanDetectionPermanent/ScanDetectionPermanentRuntime');
             installScanDetectionHealthGlobal();
           } catch { /* swallow */ }
+          // Sprint #182 — pins window.__languageHealth() with the
+          // 5 spec flags (selectorVisible / selectorClickable /
+          // languageSwitchWorks / translationsLoaded / mobileReady).
+          try {
+            const { installLanguageHealthGlobal } =
+              await import('./runtime/i18n/LanguageHealthRuntime');
+            installLanguageHealthGlobal();
+          } catch { /* swallow */ }
           // Universal Scan (sprint #178) — pins window.__universalScanHealth
           // with the 15 spec §11 flags. Composes __apiHealth +
           // __scanDetectionHealth; never duplicates state.

@@ -14,6 +14,12 @@ import PhoneInput from '../components/PhoneInput.jsx';
 import { tSafe } from '../i18n/tSafe.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { FARROWAY_BRAND } from '../brand/farrowayBrand.js';
+// Sprint #182 — language selector mounted on the login screen so
+// pre-login users can pick a language before signing in. Fixes the
+// "language selector not visible" gap. Lives inside the brand row
+// for 1-tap reach; the same component is also inside SettingsDrawer
+// (post-login, 2-tap reach via the hamburger menu).
+import LanguageSelector from '../components/LanguageSelector.jsx';
 
 // Lightweight, user-safe email shape check. The server still
 // validates strictly — this just catches obvious typos before submit.
@@ -412,8 +418,13 @@ export default function Login() {
         {/* v3 brand header — logo + Farroway wordmark + tagline.
             Sits above the existing welcome heading so the page
             opens with the brand voice before the auth controls. */}
-        <div style={S.brandRow}>
+        <div style={{ ...S.brandRow, justifyContent: 'space-between' }}>
           <BrandLogo variant="light" size="md" />
+          {/* Sprint #182 — pre-login language picker. Top-of-card,
+              1-tap reach, native select for mobile compatibility. */}
+          <div data-testid="login-language-selector" style={{ marginLeft: 12 }}>
+            <LanguageSelector />
+          </div>
         </div>
         <p style={S.brandTagline}>{FARROWAY_BRAND.tagline}</p>
 

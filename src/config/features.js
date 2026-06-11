@@ -72,11 +72,13 @@ const DEFAULTS = Object.freeze({
   // being set on Railway prod. classifierAvailability runtime
   // reports honestly via __scanRuntimeHealthV8().
   scanApiEnabled: true,
-  // RC1 — Hindi gate. Hindi launch-locale exposure depends on this
-  // flag. Coverage is 54.3% per check:translations; locale stays
-  // available in supportedLocales for testing but pickers honor
-  // this flag for the public launch.
-  enableHindiLocale: false,
+  // Sprint #182 — Hindi is part of the user-facing language spec
+  // (6 supported languages). Coverage is partial (~54% per
+  // check:translations); the i18n fallback chain returns English
+  // for missing keys, which is honest graceful degradation. Flag
+  // stays here so a future strict-mode build can toggle it off
+  // until full coverage lands.
+  enableHindiLocale: true,
   // Scan-to-task: enables the "Add to Today's Plan" button on
   // the result card and creates follow-up tasks from a scan.
   // Enabled with FEATURE_SCAN_USEFULNESS (2026-05-07) — the
