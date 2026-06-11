@@ -60,6 +60,11 @@ import TopActionCard from '../components/intelligence/TopActionCard.jsx';
 // buttons + estimated time + follow-up date. Renders ABOVE the
 // broader TopActionCard so the farmer sees the single action first.
 import TodaysActionCard from '../components/intelligence/TodaysActionCard.jsx';
+// Sprint #192 — Agronomist hero (Module 7). The Command Center deck
+// (#141/#142) becomes Home's single personalized hero: Crop / Stage /
+// Health / Risk / Harvest tiles + Today's Action + market strip.
+// Class-component error boundary inside — never blocks Home.
+import CommandCenterDeck from '../components/commandCenter/CommandCenterDeck.jsx';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
 // Once-per-mount calm-notification feed sync — feeds the user-facing
@@ -985,30 +990,52 @@ export default function Home() {
           </FeatureShell>
         ) : null}
 
-        {/* ── 3b. Today's Farm/Garden Plan ─────────────────────
-             The day-to-day operating loop: top priority + up to
-             three tasks + next milestone + approximate harvest
-             timeframe, with Mark Done / Skip / Add Note / Scan
-             Plant / View Full Plan. Self-contained, guarded by its
-             own error boundary, and built from a never-throwing
-             runtime — it renders even with NO weather / GPS / scan
-             and never blocks Home. */}
-        <FeatureShell name="daily-farm-plan" silent>
-          <DailyFarmPlanCard />
-        </FeatureShell>
+        {/* ── 3b. AGRONOMIST HERO (sprint #192 / Module 7) ─────
+             The ONE personalized command center on Home: Crop /
+             Stage / Health Score / Risk / Days-to-Harvest tiles +
+             Today's Action (Start + Scan) + Market strip. Built in
+             #141/#142, mounted here for the first time. Error-
+             boundary-wrapped internally — renders nothing on
+             failure, never blocks Home. Its cc-btn-start testid is
+             Home's single primary action (Design System §5 /
+             check-ui-design-system trusted set).
 
-        {/* Recommendation Engine V1 (daily-action variant) —
-            ONE clear daily action with Start + Scan buttons,
-            estimated time, follow-up date. Always renders
-            exactly 1 action per the gate-locked contract. */}
-        <TodaysActionCard />
+             This closes the H3.1 finding (UX_FRICTION_REPORT /
+             RELEASE_READINESS_AUDIT): the three recommendation
+             cards below no longer compete above the fold — they
+             demote into the collapsed "More for today" section. */}
+        {/* Wrapper testid marks Home's single primary action (the
+            deck's Start button, cc-btn-start) for the
+            check-ui-design-system trusted set — the gate scans
+            per-page source and can't see into the deck component. */}
+        <section data-testid="home-hero-start">
+          <CommandCenterDeck />
+        </section>
 
-        {/* Intelligence Platform V1 — single source of truth.
-            Spec: 1. Highest Priority Action · 2. Why · 3. Expected
-            Benefit · 4. Confidence. Self-hides when there's no
-            actionable signal. Renders above the Today's-task card
-            so the farmer sees the prioritized action FIRST. */}
-        <TopActionCard />
+        {/* ── 3c. More for today (demoted recommendation cards) ─
+             DailyFarmPlanCard + TodaysActionCard + TopActionCard
+             carry overlapping "do this" guidance. They stay
+             reachable for farmers who want the longer plan, one
+             tap away, without competing with the hero. <details>
+             is a11y-correct disclosure with zero JS state. */}
+        <details data-testid="home-more-today" style={{ marginBottom: 12 }}>
+          <summary
+            className="ff-tap"
+            data-testid="home-more-today-toggle"
+            style={{
+              cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600,
+              color: '#33503A', padding: '0.6rem 0.25rem',
+              listStyle: 'none', WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {tSafe('home.moreToday', 'More for today')} ▾
+          </summary>
+          <FeatureShell name="daily-farm-plan" silent>
+            <DailyFarmPlanCard />
+          </FeatureShell>
+          <TodaysActionCard />
+          <TopActionCard />
+        </details>
 
         {/* ── 4. Daily status insight (Today's task or On-track) ─
              Below the immersive hero — compact, action-oriented.
