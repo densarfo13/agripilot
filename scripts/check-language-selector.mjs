@@ -113,10 +113,66 @@ if (!_exists(FEATURES)) {
   }
 }
 
+// ─── 7. Sprint #183 — global 🌐 button in PageActions ────────
+const PAGE_ACTIONS = 'src/components/layout/PageActions.jsx';
+if (!_exists(PAGE_ACTIONS)) {
+  errors.push('missing: ' + PAGE_ACTIONS);
+} else {
+  const src = _read(PAGE_ACTIONS);
+  _has(src, 'LanguageBottomSheet',
+    'PageActions.jsx must import LanguageBottomSheet');
+  _has(src, 'data-testid={`${testId}-language`}',
+    'PageActions.jsx must expose the 🌐 button with the *-language testid');
+  _has(src, '🌐',
+    'PageActions.jsx must render the 🌐 glyph for the language button');
+}
+
+// ─── 8. Sprint #183 — LanguageBottomSheet component ──────────
+const SHEET = 'src/components/i18n/LanguageBottomSheet.jsx';
+if (!_exists(SHEET)) {
+  errors.push('missing: ' + SHEET);
+} else {
+  const src = _read(SHEET);
+  _has(src, 'data-testid="language-bottom-sheet"',
+    'LanguageBottomSheet must expose data-testid="language-bottom-sheet"');
+  _has(src, 'data-testid="language-sheet-search"',
+    'LanguageBottomSheet must expose search input testid');
+  _has(src, 'data-testid="language-sheet-recent"',
+    'LanguageBottomSheet must expose the recently-used section testid');
+  _has(src, 'farroway:recentLanguages',
+    'LanguageBottomSheet must persist recents to localStorage key farroway:recentLanguages');
+  _has(src, 'createPortal',
+    'LanguageBottomSheet must portal to document.body so it overlays bottom nav');
+  _has(src, 'safe-area-inset-bottom',
+    'LanguageBottomSheet must honor iOS safe-area-inset-bottom');
+}
+
+// ─── 9. Sprint #183 — /admin/i18n-health page + route ────────
+const I18N_PAGE = 'src/pages/admin/I18nHealthPage.jsx';
+if (!_exists(I18N_PAGE)) {
+  errors.push('missing: ' + I18N_PAGE);
+} else {
+  const src = _read(I18N_PAGE);
+  _has(src, 'data-testid="i18n-health-page"',
+    'I18nHealthPage must expose data-testid="i18n-health-page"');
+  _has(src, 'data-testid="i18n-health-current"',
+    'I18nHealthPage must surface current language card');
+  _has(src, 'data-testid="i18n-health-coverage"',
+    'I18nHealthPage must surface translation coverage card');
+}
+if (_exists(APP_JSX)) {
+  const src = _read(APP_JSX);
+  _has(src, "import('./pages/admin/I18nHealthPage.jsx')",
+    'App.jsx must lazy-import I18nHealthPage');
+  if (!/path="\/admin\/i18n-health"\s+element=\{<RoleRoute roles=\{ADMIN_ROLES\}>/.test(src)) {
+    errors.push('App.jsx /admin/i18n-health route must wrap in <RoleRoute roles={ADMIN_ROLES}>');
+  }
+}
+
 if (errors.length) {
   console.error('[check:language-selector] FAIL — ' + errors.length + ' violation(s):');
   for (const e of errors) console.error('  - ' + e);
   process.exit(1);
 }
 
-console.log('[check:language-selector] PASS — language selector mounted on login + protected layout, 6 spec languages registered, Hindi visible, health runtime wired.');
+console.log('[check:language-selector] PASS — language selector mounted on login + protected layout, 6 spec languages registered, Hindi visible, health runtime wired, 🌐 button + bottom sheet + /admin/i18n-health all wired.');

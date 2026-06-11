@@ -236,6 +236,7 @@ const ScanLabPage = lazy(() => import('./pages/admin/ScanLabPage.jsx'));
 const FarmerOutcomesPage = lazy(() => import('./pages/FarmerOutcomesPage.jsx'));
 const OrganizationOutcomesPage = lazy(() => import('./pages/admin/OrganizationOutcomesPage.jsx'));
 const ScanTracePage = lazy(() => import('./pages/admin/ScanTracePage.jsx'));
+const I18nHealthPage = lazy(() => import('./pages/admin/I18nHealthPage.jsx'));
 // Internal-only Release Lock dashboard (Wave 9 — gated by the
 // same `localStorage.farroway_internal === '1'` flag).
 const ReleaseLockPage    = lazy(() => import('./pages/internal/ReleaseLock.jsx'));
@@ -2981,6 +2982,10 @@ export default function App() {
           {/* Scan Trace (Permanent Detection Fix §10) — admin-only.
               Per-scan pipeline trace with masked API keys. */}
           <Route path="/admin/scan-trace/:scanId" element={<RoleRoute roles={ADMIN_ROLES}><ScanTracePage /></RoleRoute>} />
+          {/* Sprint #183 — i18n diagnostics dashboard for admin/NGO/field
+              officers. Surfaces current language, available locales,
+              translation coverage %, and review-required list. */}
+          <Route path="/admin/i18n-health" element={<RoleRoute roles={ADMIN_ROLES}><I18nHealthPage /></RoleRoute>} />
           {/* Organization Outcomes — admin / NGO / field officer.
               Aggregates across all tracked farms; never includes
               farmer names, phones, or exact coords. */}

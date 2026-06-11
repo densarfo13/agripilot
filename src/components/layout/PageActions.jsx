@@ -18,9 +18,10 @@
  * flexShrink:0 so the cluster never wraps onto a second line.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import NotificationBell from '../NotificationBell.jsx';
+import LanguageBottomSheet from '../i18n/LanguageBottomSheet.jsx';
 import { tSafe } from '../../i18n/tSafe.js';
 
 export default function PageActions({
@@ -33,17 +34,31 @@ export default function PageActions({
   bellAriaLabel = 'Notifications',
   // Optional override for the menu's accessible label.
   menuAriaLabel = 'Menu',
+  // Optional override for the language button's accessible label.
+  languageAriaLabel = 'Change language',
   // Style override so dark heroes can pass a translucent variant.
   variant = 'light',
 }) {
   const isDark = variant === 'dark';
   const buttonStyle = isDark ? S.menuBtnDark : S.menuBtn;
+  // Sprint #183 — language sheet state, owned at the cluster level
+  // so the 🌐 button can open it from any page header.
+  const [langOpen, setLangOpen] = useState(false);
   return (
     <div style={S.cluster} data-testid={testId}>
       <NotificationBell
         ariaLabel={tSafe('header.actions.notifications', bellAriaLabel)}
         testId={`${testId}-bell`}
       />
+      <button
+        type="button"
+        onClick={() => setLangOpen(true)}
+        aria-label={tSafe('header.actions.language', languageAriaLabel)}
+        style={buttonStyle}
+        data-testid={`${testId}-language`}
+      >
+        <span aria-hidden="true">🌐</span>
+      </button>
       <Link
         to={menuTo}
         aria-label={tSafe('header.actions.menu', menuAriaLabel)}
@@ -52,6 +67,10 @@ export default function PageActions({
       >
         <span aria-hidden="true">☰</span>
       </Link>
+      <LanguageBottomSheet
+        open={langOpen}
+        onClose={() => setLangOpen(false)}
+      />
     </div>
   );
 }
