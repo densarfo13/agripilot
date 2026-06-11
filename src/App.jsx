@@ -1866,6 +1866,14 @@ export default function App() {
               await import('./runtime/dailyAction/RecommendationEngine');
             installDailyActionGlobal();
           } catch { /* swallow */ }
+          // Sprint #188 — pilot analytics measurement. Pins
+          // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
+          // for QA + the existing /internal/pilot-analytics page.
+          try {
+            const { installPilotAnalyticsHealthGlobal } =
+              await import('./runtime/analytics/PilotMetricsAggregator');
+            installPilotAnalyticsHealthGlobal();
+          } catch { /* swallow */ }
           // Permanent Scan Detection — pins window.__scanDetectionHealth
           // with 11 spec flags + 3 literal-true safety constants.
           // Composes existing __apiHealth + __scanRecoveryHealth +

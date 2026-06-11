@@ -351,7 +351,8 @@
     "check:scan-detection-permanent": "node scripts/check-scan-detection-permanent.mjs",
     "check:universal-scan": "node scripts/check-universal-scan.mjs",
     "check:ui-design-system": "node scripts/check-ui-design-system.mjs",
-    "check:language-selector": "node scripts/check-language-selector.mjs"
+    "check:language-selector": "node scripts/check-language-selector.mjs",
+    "check:pilot-analytics": "node scripts/check-pilot-analytics.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
