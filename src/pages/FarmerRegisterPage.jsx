@@ -5,6 +5,10 @@ import api from '../runtime/apiRuntime.js';
 import CountrySelect from '../components/CountrySelect.jsx';
 import CropSelect from '../components/CropSelect.jsx';
 import BrandLogo from '../components/BrandLogo.jsx';
+// Sprint #184 — pre-signup language selector. Signup is the second
+// public entry point after Login; sign-up users need the same 1-tap
+// reach to the language picker.
+import LanguageSelector from '../components/LanguageSelector.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
 import LocationDetect from '../components/LocationDetect.jsx';
@@ -132,8 +136,13 @@ export default function FarmerRegisterPage() {
   return (
     <div style={styles.container}>
       <div style={{ ...styles.card, maxWidth: '480px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', marginBottom: '0.5rem' }}>
           <BrandLogo variant="light" size="md" />
+          {/* Sprint #184 — pre-signup language picker. 1-tap reach. */}
+          <div data-testid="signup-language-selector" style={{ marginLeft: 12 }}>
+            <LanguageSelector />
+          </div>
         </div>
         <p style={styles.subtitle}>{tSafe('register.subtitle', 'Farmer Registration')}</p>
 

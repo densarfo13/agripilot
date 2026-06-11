@@ -11,6 +11,10 @@ import CropSelect from '../components/CropSelect.jsx';
 import CountrySelect from '../components/CountrySelect.jsx';
 import InlineAlert from '../components/InlineAlert.jsx';
 import FarmerUuidBadge from '../components/FarmerUuidBadge.jsx';
+// Sprint #184 — profile-setup language picker. SettingsDrawer is
+// suppressed during the !onboarding window, so this page needs its
+// own 1-tap reach to the language selector.
+import LanguageSelector from '../components/LanguageSelector.jsx';
 
 // Top crops for quick selection (same as OnboardingWizard)
 const TOP_CROPS = [
@@ -187,8 +191,17 @@ export default function ProfileSetupPage() {
 
         {/* Header */}
         <div style={S.header}>
-          <h1 style={S.title}>Complete Your Farm Profile</h1>
-          <p style={S.subtitle}>Fill in the details below to unlock all features.</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between',
+              alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <h1 style={S.title}>Complete Your Farm Profile</h1>
+              <p style={S.subtitle}>Fill in the details below to unlock all features.</p>
+            </div>
+            {/* Sprint #184 — profile-setup language picker. */}
+            <div data-testid="profile-language-selector">
+              <LanguageSelector />
+            </div>
+          </div>
         </div>
 
         {/* Progress bar */}
