@@ -147,6 +147,48 @@ if (!_exists(SHEET)) {
     'LanguageBottomSheet must honor iOS safe-area-inset-bottom');
 }
 
+// ─── 9b. Sprint #186 — key parity across 6 locales ───────────
+// Every key in T-en.js MUST exist in every non-en column. Build
+// fails if any locale has a deficit (we don't enforce SURPLUS — a
+// locale may carry locale-specific keys with no English equivalent).
+const COLS = ['en', 'fr', 'sw', 'ha', 'tw', 'hi'];
+const keyCounts = {};
+let enKeyList = null;
+for (const code of COLS) {
+  const file = 'src/i18n/columns/T-' + code + '.js';
+  if (!_exists(file)) {
+    errors.push('missing locale column: ' + file);
+    continue;
+  }
+  const src = _read(file);
+  // Match `"key.path": "value"` lines. Robust enough for the
+  // auto-generated columns; ignores trailing-comma + comments.
+  const re = /^\s*"([^"\\]+)"\s*:\s*"/gm;
+  const keys = new Set();
+  let m;
+  while ((m = re.exec(src)) !== null) keys.add(m[1]);
+  keyCounts[code] = keys.size;
+  if (code === 'en') enKeyList = keys;
+}
+if (enKeyList && enKeyList.size > 0) {
+  for (const code of COLS) {
+    if (code === 'en') continue;
+    const count = keyCounts[code] || 0;
+    if (count < enKeyList.size) {
+      errors.push('locale ' + code + ' is missing keys (count '
+        + count + ' < en ' + enKeyList.size + '). '
+        + 'Run `node scripts/fill-language-parity.mjs` to fill stubs.');
+    }
+  }
+}
+
+// ─── 9c. Sprint #186 — translator-review sidecar present ─────
+const SIDECAR = 'src/i18n/columns/_translator-review-pending.json';
+if (!_exists(SIDECAR)) {
+  errors.push('missing: ' + SIDECAR
+    + ' (run `node scripts/fill-language-parity.mjs` to generate)');
+}
+
 // ─── 9. Sprint #183 — /admin/i18n-health page + route ────────
 const I18N_PAGE = 'src/pages/admin/I18nHealthPage.jsx';
 if (!_exists(I18N_PAGE)) {
