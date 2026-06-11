@@ -52,6 +52,13 @@ export function AppPrefsProvider({ children }) {
       try { setI18nLanguage(languageCode); } catch { /* swallow */ }
     }
     await savePreference('language', languageCode);
+    // Sprint #189 — pilot analytics: language_selected event.
+    // Lazy import so the analytics chunk never blocks a language
+    // switch; failures swallow (analytics must never break UX).
+    try {
+      const { trackPilotEvent } = await import('../runtime/analytics/PilotAnalyticsRuntime');
+      trackPilotEvent({ eventType: 'language_selected', language: languageCode });
+    } catch { /* swallow */ }
   }
 
   async function setAutoVoice(value) {

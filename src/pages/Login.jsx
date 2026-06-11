@@ -213,6 +213,12 @@ export default function Login() {
       }
 
       safeTrackEvent('auth.login.success', {});
+      // Sprint #189 — pilot analytics: login_completed. Lazy import
+      // so analytics never blocks auth; failures swallow.
+      try {
+        const { trackPilotEvent } = await import('../runtime/analytics/PilotAnalyticsRuntime');
+        trackPilotEvent({ eventType: 'login_completed' });
+      } catch { /* swallow */ }
     } catch (err) {
       safeTrackEvent('auth.login.failed', {});
       // Login error path now handles three shapes defensively

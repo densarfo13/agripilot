@@ -181,6 +181,14 @@ export default function NotificationBell({
     }
     setOpen(false);
     refresh();
+    // Sprint #189 — pilot analytics: notification_opened.
+    // Fire-and-forget; failures swallow.
+    import('../runtime/analytics/PilotAnalyticsRuntime')
+      .then(({ trackPilotEvent }) => trackPilotEvent({
+        eventType: 'notification_opened',
+        metadata: { notificationType: item.type || 'unknown' },
+      }))
+      .catch(() => { /* swallow */ });
     const route = (TYPE_META[item.type] && TYPE_META[item.type].route)
                   || '/dashboard';
     navigate(route);

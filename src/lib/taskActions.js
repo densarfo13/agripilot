@@ -66,6 +66,15 @@ export async function completeTask(task, opts = {}) {
   // 1. Optimistic local flip.
   markTaskDone(id, { title: t.title, category: t.category });
 
+  // Sprint #189 — pilot analytics: task_completed. Fire-and-forget;
+  // lazy import; failures swallow so analytics never breaks tasks.
+  import('../runtime/analytics/PilotAnalyticsRuntime')
+    .then(({ trackPilotEvent }) => trackPilotEvent({
+      eventType: 'task_completed',
+      metadata: { taskKind: t.category || 'unknown' },
+    }))
+    .catch(() => { /* swallow */ });
+
   // 2. Success toast — fires before the network call so the
   //    user gets immediate feedback.
   if (opts.suppressToast !== true) {

@@ -3013,6 +3013,10 @@ export default function App() {
           <Route path="/internal/pilot/grower" element={<RoleRoute roles={ADMIN_ROLES}><GrowerPilotPage /></RoleRoute>} />
           {/* Wave-36 — outcome intelligence surfaces (admin only). */}
           <Route path="/internal/pilot-analytics"               element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
+          {/* Sprint #189 — spec-canonical alias. Same page, same
+              role gate; the pilot-analytics spec names the route
+              /admin/pilot-analytics. */}
+          <Route path="/admin/pilot-analytics"                  element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
           <Route path="/internal/pilot-readiness"               element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />
           {/* Execution Mode — pilot command center (reuses the readiness board). */}
           <Route path="/internal/pilot-command"                 element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />

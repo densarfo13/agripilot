@@ -121,6 +121,38 @@ if (!_exists(DASHBOARD)) {
     + ' (sprint #157 dashboard required by §3)');
 }
 
+// 5b. Sprint #189 — event call sites actually wired. The contract
+// alone isn't tracking; these files must invoke trackPilotEvent
+// (directly or via lazy import) with the named event.
+const CALL_SITES = [
+  ['src/context/AppPrefsContext.jsx',      'language_selected'],
+  ['src/pages/Login.jsx',                  'login_completed'],
+  ['src/pages/FarmerRegisterPage.jsx',     'signup_completed'],
+  ['src/core/scanDetectionEngine.js',      'scan_started'],
+  ['src/core/scanDetectionEngine.js',      'scan_completed'],
+  ['src/core/scanDetectionEngine.js',      'scan_unknown_result'],
+  ['src/lib/taskActions.js',               'task_completed'],
+  ['src/components/NotificationBell.jsx',  'notification_opened'],
+];
+for (const [rel, eventName] of CALL_SITES) {
+  const src = _read(rel);
+  if (!src) { errors.push('missing call-site file: ' + rel); continue; }
+  if (!src.includes("'" + eventName + "'")) {
+    errors.push(rel + ' must track pilot event: ' + eventName);
+  }
+  if (!src.includes('PilotAnalyticsRuntime')) {
+    errors.push(rel + ' must import runtime/analytics/PilotAnalyticsRuntime');
+  }
+}
+
+// 5c. Sprint #189 — /admin/pilot-analytics alias route.
+if (_exists(APP_JSX)) {
+  const src = _read(APP_JSX);
+  if (!/path="\/admin\/pilot-analytics"\s+element=\{<RoleRoute roles=\{ADMIN_ROLES\}>/.test(src)) {
+    errors.push('App.jsx must mount /admin/pilot-analytics wrapped in <RoleRoute roles={ADMIN_ROLES}>');
+  }
+}
+
 // 6. Report doc exists.
 if (!_exists('PILOT_ANALYTICS_REPORT.md')) {
   errors.push('missing PILOT_ANALYTICS_REPORT.md '

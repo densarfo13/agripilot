@@ -100,6 +100,12 @@ export default function FarmerRegisterPage() {
       });
       clearDraft();
       setSuccess(true);
+      // Sprint #189 — pilot analytics: signup_completed. Lazy
+      // import; failures swallow so analytics never breaks signup.
+      try {
+        const { trackPilotEvent } = await import('../runtime/analytics/PilotAnalyticsRuntime');
+        trackPilotEvent({ eventType: 'signup_completed', role: 'farmer' });
+      } catch { /* swallow */ }
     } catch (err) {
       setError(err.response?.data?.error || tSafe('register.error.generic', 'Registration failed. Please try again.'));
     } finally {

@@ -200,9 +200,19 @@ export function suggestTasksForResult(result, { experience = 'generic' } = {}) {
  * @param {ScanInput} input
  * @returns {Promise<ScanResult>}
  */
+// Sprint #189 — pilot analytics. Fire-and-forget; lazy import so
+// the analytics chunk never blocks scan analysis; failures swallow.
+async function _trackScanEvent(eventType, metadata) {
+  try {
+    const { trackPilotEvent } = await import('../runtime/analytics/PilotAnalyticsRuntime');
+    trackPilotEvent({ eventType, metadata });
+  } catch { /* swallow */ }
+}
+
 export async function analyzeScan(input = {}) {
   // Defensive — accept null/undefined input.
   const safeInput = input && typeof input === 'object' ? input : {};
+  _trackScanEvent('scan_started', {});
   try {
     // Lazy import the service so this module stays test-friendly.
     const mod = await import('../services/scanApiService.js');
@@ -242,6 +252,18 @@ export async function analyzeScan(input = {}) {
           && Number.isFinite(apiResult.confidence)
             ? Math.max(0, Math.min(100, Math.round(apiResult.confidence)))
             : null;
+
+        // Sprint #189 — scan_completed vs scan_unknown_result.
+        // "Unknown" = no plant name AND no candidates (the honest
+        // "Scan unclear" path); anything with a name or candidates
+        // is a completed detection.
+        const _hasSignal = !!(apiResult.plantName
+          || (Array.isArray(apiResult.topCandidates) && apiResult.topCandidates.length > 0));
+        _trackScanEvent(_hasSignal ? 'scan_completed' : 'scan_unknown_result', {
+          topCandidateCount: Array.isArray(apiResult.topCandidates)
+            ? apiResult.topCandidates.length : 0,
+          confidenceBand: _coerceConfidence(apiResult.confidence),
+        });
 
         return Object.freeze({
           // ── V1+V2+V3+V4 envelope pass-through ─────────────
