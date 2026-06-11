@@ -5,6 +5,7 @@ import { useProfile } from '../context/ProfileContext.jsx';
 import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { computeLandSizeFields, UNIT_OPTIONS } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { detectAndResolveLocation, GPS_ERROR } from '../utils/geolocation.js';
 import { parseCropValue } from '../utils/crops.js';
 import CropSelect from '../components/CropSelect.jsx';
@@ -173,7 +174,7 @@ export default function ProfileSetupPage() {
     return (
       <div style={S.page}>
         <div style={S.container}>
-          <div style={S.card}><p style={{ color: '#A1A1AA' }}>Loading profile...</p></div>
+          <div style={S.card}><p style={{ color: '#A1A1AA' }}>{tSafe('profileSetup.loading', 'Loading profile...')}</p></div>
         </div>
       </div>
     );
@@ -194,8 +195,8 @@ export default function ProfileSetupPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between',
               alignItems: 'flex-start', gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <h1 style={S.title}>Complete Your Farm Profile</h1>
-              <p style={S.subtitle}>Fill in the details below to unlock all features.</p>
+              <h1 style={S.title}>{tSafe('profileSetup.title', 'Complete Your Farm Profile')}</h1>
+              <p style={S.subtitle}>{tSafe('profileSetup.subtitle', 'Fill in the details below to unlock all features.')}</p>
             </div>
             {/* Sprint #184 — profile-setup language picker. */}
             <div data-testid="profile-language-selector">
@@ -233,28 +234,28 @@ export default function ProfileSetupPage() {
               labelled but not programmatically associated. */}
           {/* Farmer Name */}
           <div style={S.field}>
-            <label style={S.label} htmlFor="profile-farmer-name">Farmer Name</label>
+            <label style={S.label} htmlFor="profile-farmer-name">{tSafe('profileSetup.field.farmerName', 'Farmer Name')}</label>
             <input
               id="profile-farmer-name"
               name="farmerName"
               style={S.input}
               value={form.farmerName}
               onChange={(e) => handleChange('farmerName', e.target.value)}
-              placeholder="Your full name"
+              placeholder={tSafe('profileSetup.placeholder.farmerName', 'Your full name')}
             />
             {fieldErrors.farmerName && <p style={S.fieldError}>{fieldErrors.farmerName}</p>}
           </div>
 
           {/* Farm Name */}
           <div style={S.field}>
-            <label style={S.label} htmlFor="profile-farm-name">Farm Name</label>
+            <label style={S.label} htmlFor="profile-farm-name">{tSafe('profileSetup.field.farmName', 'Farm Name')}</label>
             <input
               id="profile-farm-name"
               name="farmName"
               style={S.input}
               value={form.farmName}
               onChange={(e) => handleChange('farmName', e.target.value)}
-              placeholder="e.g. Green Valley Farm"
+              placeholder={tSafe('profileSetup.placeholder.farmName', 'e.g. Green Valley Farm')}
             />
             {fieldErrors.farmName && <p style={S.fieldError}>{fieldErrors.farmName}</p>}
           </div>
@@ -265,7 +266,7 @@ export default function ProfileSetupPage() {
               section heading; DevTools may still flag the
               custom component but that's a separate fix. */}
           <div style={S.field}>
-            <label style={S.label} htmlFor="profile-country">Country</label>
+            <label style={S.label} htmlFor="profile-country">{tSafe('profileSetup.field.country', 'Country')}</label>
             <CountrySelect
               id="profile-country"
               value={form.countryCode}
@@ -276,21 +277,21 @@ export default function ProfileSetupPage() {
 
           {/* Location */}
           <div style={S.field}>
-            <label style={S.label} htmlFor="profile-location">Location / Village</label>
+            <label style={S.label} htmlFor="profile-location">{tSafe('profileSetup.field.location', 'Location / Village')}</label>
             <input
               id="profile-location"
               name="locationName"
               style={S.input}
               value={form.locationName}
               onChange={(e) => handleChange('locationName', e.target.value)}
-              placeholder="e.g. Kitale, Trans-Nzoia"
+              placeholder={tSafe('profileSetup.placeholder.location', 'e.g. Kitale, Trans-Nzoia')}
             />
             {fieldErrors.locationName && <p style={S.fieldError}>{fieldErrors.locationName}</p>}
           </div>
 
           {/* Farm Size */}
           <div style={S.field}>
-            <label style={S.label} htmlFor="profile-land-size-value">Farm Size</label>
+            <label style={S.label} htmlFor="profile-land-size-value">{tSafe('profileSetup.field.farmSize', 'Farm Size')}</label>
             <div style={S.sizeRow}>
               <input
                 id="profile-land-size-value"
@@ -301,12 +302,12 @@ export default function ProfileSetupPage() {
                 step="0.1"
                 value={form.landSizeValue}
                 onChange={(e) => handleChange('landSizeValue', e.target.value)}
-                placeholder="e.g. 5"
+                placeholder={tSafe('profileSetup.placeholder.farmSize', 'e.g. 5')}
               />
               <select
                 id="profile-land-size-unit"
                 name="landSizeUnit"
-                aria-label="Land size unit"
+                aria-label={tSafe('profileSetup.aria.landSizeUnit', 'Land size unit')}
                 style={S.unitSelect}
                 value={form.landSizeUnit}
                 onChange={(e) => handleChange('landSizeUnit', e.target.value)}
@@ -321,7 +322,7 @@ export default function ProfileSetupPage() {
 
           {/* Crop Type */}
           <div style={S.field}>
-            <label style={S.label}>Primary Crop</label>
+            <label style={S.label}>{tSafe('profileSetup.field.primaryCrop', 'Primary Crop')}</label>
             <div style={S.cropGrid}>
               {TOP_CROPS.map((c) => (
                 <button
