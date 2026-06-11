@@ -173,6 +173,15 @@ for (const rel of TARGETS) {
   all.push(r);
 }
 
+// Sprint #190 — `npm run audit:i18n` enforcement mode. The build
+// fails when findings EXCEED the ratcheted baseline (the 10 known
+// findings documented in HARDCODED_STRINGS_AUDIT.md: 5 deferred
+// true positives + 5 false positives the regex can't distinguish).
+// New hardcoded strings push the count past the baseline and break
+// the build; fixing deferred items lets the baseline ratchet down.
+const enforce = process.argv.includes('--enforce');
+const BASELINE_ALLOWED = 10;
+
 if (asJson) {
   console.log(JSON.stringify({ files: all }, null, 2));
 } else {
@@ -193,4 +202,15 @@ if (asJson) {
   console.log('\n[audit-hardcoded-strings] ' + totalFindings
     + ' potential findings across ' + totalFiles + ' file(s)');
   console.log('[audit-hardcoded-strings] heuristic scanner — review for false positives');
+  if (enforce) {
+    if (totalFindings > BASELINE_ALLOWED) {
+      console.error('[audit:i18n] FAIL — ' + totalFindings
+        + ' findings exceed ratcheted baseline of ' + BASELINE_ALLOWED
+        + '. A new hardcoded English string was introduced; route it '
+        + 'through tSafe(key, fallback).');
+      process.exit(1);
+    }
+    console.log('[audit:i18n] PASS — ' + totalFindings + ' findings ≤ baseline '
+      + BASELINE_ALLOWED + ' (5 deferred + 5 known false positives).');
+  }
 }

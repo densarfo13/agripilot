@@ -2,32 +2,72 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6421,
-      "missingFilled": 0,
+      "totalKeys": 6430,
+      "missingFilled": 9,
       "coveragePct": 100,
-      "translatorReviewPending": []
+      "translatorReviewPending": [
+        "scan.calm.crop",
+        "scan.calm.garden",
+        "scan.calm.grass",
+        "scan.calm.nonPlant",
+        "scan.calm.unclear",
+        "scan.urgency.stable",
+        "scan.urgency.monitor",
+        "scan.urgency.attention",
+        "scan.urgency.urgent"
+      ]
     },
     "sw": {
-      "totalKeys": 6421,
-      "missingFilled": 0,
+      "totalKeys": 6430,
+      "missingFilled": 9,
       "coveragePct": 100,
-      "translatorReviewPending": []
+      "translatorReviewPending": [
+        "scan.calm.crop",
+        "scan.calm.garden",
+        "scan.calm.grass",
+        "scan.calm.nonPlant",
+        "scan.calm.unclear",
+        "scan.urgency.stable",
+        "scan.urgency.monitor",
+        "scan.urgency.attention",
+        "scan.urgency.urgent"
+      ]
     },
     "ha": {
-      "totalKeys": 6421,
-      "missingFilled": 0,
+      "totalKeys": 6430,
+      "missingFilled": 9,
       "coveragePct": 100,
-      "translatorReviewPending": []
+      "translatorReviewPending": [
+        "scan.calm.crop",
+        "scan.calm.garden",
+        "scan.calm.grass",
+        "scan.calm.nonPlant",
+        "scan.calm.unclear",
+        "scan.urgency.stable",
+        "scan.urgency.monitor",
+        "scan.urgency.attention",
+        "scan.urgency.urgent"
+      ]
     },
     "tw": {
-      "totalKeys": 6421,
-      "missingFilled": 0,
+      "totalKeys": 6430,
+      "missingFilled": 9,
       "coveragePct": 100,
-      "translatorReviewPending": []
+      "translatorReviewPending": [
+        "scan.calm.crop",
+        "scan.calm.garden",
+        "scan.calm.grass",
+        "scan.calm.nonPlant",
+        "scan.calm.unclear",
+        "scan.urgency.stable",
+        "scan.urgency.monitor",
+        "scan.urgency.attention",
+        "scan.urgency.urgent"
+      ]
     },
     "hi": {
-      "totalKeys": 6421,
-      "missingFilled": 2934,
+      "totalKeys": 6430,
+      "missingFilled": 9,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -2963,7 +3003,16 @@
         "market.noInterestsMessage",
         "market.status.expressed",
         "market.status.matched",
-        "market.status.withdrawn"
+        "market.status.withdrawn",
+        "scan.calm.crop",
+        "scan.calm.garden",
+        "scan.calm.grass",
+        "scan.calm.nonPlant",
+        "scan.calm.unclear",
+        "scan.urgency.stable",
+        "scan.urgency.monitor",
+        "scan.urgency.attention",
+        "scan.urgency.urgent"
       ]
     }
   }

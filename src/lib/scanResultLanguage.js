@@ -44,6 +44,10 @@
  */
 
 import { hasForbiddenWording } from './confidenceLanguage.js';
+// Sprint #190 — translation completeness. tSafe reads the active
+// locale at call time, so pure helpers re-resolve on language
+// switch without React context.
+import { tSafe } from '../i18n/tSafe.js';
 
 // ─── Categories ───────────────────────────────────────────────
 
@@ -150,28 +154,42 @@ export function getScanCategory(result) {
  */
 export function getCalmStatus(result, category) {
   const cat = category || getScanCategory(result);
+  // Sprint #190 — i18n completeness: every grower-facing status
+  // string routes through tSafe so language switches re-resolve.
   switch (cat) {
     case SCAN_CATEGORIES.CROP:
-      return 'Leaf condition may need review';
+      return tSafe('scan.calm.crop', 'Leaf condition may need review');
     case SCAN_CATEGORIES.GARDEN:
-      return 'This plant may need attention';
+      return tSafe('scan.calm.garden', 'This plant may need attention');
     case SCAN_CATEGORIES.GRASS:
-      return 'This area may need a closer look';
+      return tSafe('scan.calm.grass', 'This area may need a closer look');
     case SCAN_CATEGORIES.NON_PLANT:
-      return 'Try scanning a leaf, fruit, or plant stem';
+      return tSafe('scan.calm.nonPlant', 'Try scanning a leaf, fruit, or plant stem');
     case SCAN_CATEGORIES.UNCLEAR:
     default:
-      return 'More detail needed';
+      return tSafe('scan.calm.unclear', 'More detail needed');
   }
 }
 
 // ─── Urgency tone ────────────────────────────────────────────
 
+// Sprint #190 — labels resolve at LOOKUP time (function, not a
+// frozen module-scope map) so a language switch mid-session
+// re-resolves; a frozen constant would capture boot language.
+function _urgencyLabel(tone) {
+  switch (tone) {
+    case 'GREEN':  return tSafe('scan.urgency.stable',    'Looks stable');
+    case 'YELLOW': return tSafe('scan.urgency.monitor',   'Monitor');
+    case 'ORANGE': return tSafe('scan.urgency.attention', 'Attention needed');
+    case 'RED':    return tSafe('scan.urgency.urgent',    'Urgent review recommended');
+    default:       return tSafe('scan.urgency.monitor',   'Monitor');
+  }
+}
 const _URGENCY_LABEL = Object.freeze({
-  GREEN:  'Looks stable',
-  YELLOW: 'Monitor',
-  ORANGE: 'Attention needed',
-  RED:    'Urgent review recommended',
+  get GREEN()  { return _urgencyLabel('GREEN'); },
+  get YELLOW() { return _urgencyLabel('YELLOW'); },
+  get ORANGE() { return _urgencyLabel('ORANGE'); },
+  get RED()    { return _urgencyLabel('RED'); },
 });
 
 /**

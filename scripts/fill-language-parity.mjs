@@ -59,6 +59,15 @@ async function main() {
   const enKeys = Object.keys(enData);
   console.log(`[fill-parity] EN canonical column: ${enKeys.length} keys`);
 
+  // Merge with the existing sidecar so previously-stubbed keys stay
+  // in the translator queue. Without this, each run CLOBBERED the
+  // pending list down to just that run's fills — losing e.g. the
+  // 2934-key Hindi queue (sprint #190 bug fix).
+  const sidecarPath = path.join(COLS_DIR, '_translator-review-pending.json');
+  let prior = { perLocale: {} };
+  try { prior = JSON.parse(fs.readFileSync(sidecarPath, 'utf8')); }
+  catch { /* first run */ }
+
   const summary = { generatedAt: new Date(0).toISOString(), perLocale: {} };
 
   for (const code of LOCALES) {
@@ -78,33 +87,41 @@ async function main() {
     for (const k of Object.keys(data)) ordered[k] = data[k];
     for (const k of enKeys) if (!(k in data)) ordered[k] = enData[k];
 
-    if (missing.length === 0) {
-      console.log(`[fill-parity] ${code}: OK — 0 missing (${before} keys)`);
-      summary.perLocale[code] = {
-        totalKeys: before,
-        missingFilled: 0,
-        coveragePct: 100,
-        translatorReviewPending: [],
-      };
-      continue;
+    // Union this run's fills with the prior pending queue, dropping
+    // any key that has since received a REAL translation (value in
+    // the column differs from the English value).
+    const priorPending = (prior.perLocale && prior.perLocale[code]
+      && Array.isArray(prior.perLocale[code].translatorReviewPending))
+      ? prior.perLocale[code].translatorReviewPending : [];
+    const pendingSet = new Set([...priorPending, ...missing]);
+    for (const k of [...pendingSet]) {
+      if (!(k in enData)) { pendingSet.delete(k); continue; } // key removed from EN
+      const localeVal = (k in ordered) ? ordered[k] : data[k];
+      if (localeVal !== undefined && localeVal !== enData[k]) {
+        pendingSet.delete(k); // real translation landed
+      }
     }
+    const pending = [...pendingSet];
 
-    fs.writeFileSync(file, serializeColumn(code, ordered), 'utf8');
+    if (missing.length > 0) {
+      fs.writeFileSync(file, serializeColumn(code, ordered), 'utf8');
+    }
     const after = Object.keys(ordered).length;
-    const pct = Math.round(((after - missing.length) / after) * 100);
-    console.log(`[fill-parity] ${code}: filled ${missing.length} keys ` +
-      `(${before} → ${after}); real-translation coverage ${pct}%`);
+    const pct = after > 0
+      ? Math.round(((after - pending.length) / after) * 100) : 100;
+    console.log(`[fill-parity] ${code}: filled ${missing.length} new keys ` +
+      `(${before} → ${after}); real-translation coverage ${pct}% ` +
+      `(${pending.length} pending review)`);
     summary.perLocale[code] = {
       totalKeys: after,
       missingFilled: missing.length,
       coveragePct: pct,
-      translatorReviewPending: missing,
+      translatorReviewPending: pending,
     };
   }
 
-  const sidecar = path.join(COLS_DIR, '_translator-review-pending.json');
-  fs.writeFileSync(sidecar, JSON.stringify(summary, null, 2), 'utf8');
-  console.log(`[fill-parity] wrote sidecar: ${path.relative(ROOT, sidecar)}`);
+  fs.writeFileSync(sidecarPath, JSON.stringify(summary, null, 2), 'utf8');
+  console.log(`[fill-parity] wrote sidecar: ${path.relative(ROOT, sidecarPath)}`);
 }
 
 main().catch((err) => {

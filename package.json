@@ -352,7 +352,8 @@
     "check:universal-scan": "node scripts/check-universal-scan.mjs",
     "check:ui-design-system": "node scripts/check-ui-design-system.mjs",
     "check:language-selector": "node scripts/check-language-selector.mjs",
-    "check:pilot-analytics": "node scripts/check-pilot-analytics.mjs"
+    "check:pilot-analytics": "node scripts/check-pilot-analytics.mjs",
+    "audit:i18n": "node scripts/audit-hardcoded-strings.mjs --enforce"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

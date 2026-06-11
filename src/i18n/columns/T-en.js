@@ -6424,5 +6424,14 @@ export default {
   "market.noInterestsMessage": "Express interest to connect with buyers for your crops.",
   "market.status.expressed": "Expressed",
   "market.status.matched": "Matched",
-  "market.status.withdrawn": "Withdrawn"
+  "market.status.withdrawn": "Withdrawn",
+  "scan.calm.crop": "Leaf condition may need review",
+  "scan.calm.garden": "This plant may need attention",
+  "scan.calm.grass": "This area may need a closer look",
+  "scan.calm.nonPlant": "Try scanning a leaf, fruit, or plant stem",
+  "scan.calm.unclear": "More detail needed",
+  "scan.urgency.stable": "Looks stable",
+  "scan.urgency.monitor": "Monitor",
+  "scan.urgency.attention": "Attention needed",
+  "scan.urgency.urgent": "Urgent review recommended"
 };
