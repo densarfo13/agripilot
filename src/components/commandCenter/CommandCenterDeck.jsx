@@ -71,6 +71,40 @@ function CommandCenterDeckInner() {
   const startAction = () => _safe(() => navigate('/tasks'), null);
   const scanAction = () => _safe(() => navigate('/scan'), null);
 
+  // Sprint #193 — Farm Health breakout. Read the FarmRisk composite's
+  // sub-risk categories (weather / disease / soil≈water / market)
+  // straight from the pinned global so the deck shows WHY the risk
+  // level is what it is. Honest: categories the composite reports as
+  // 'unknown' render the neutral band, never a fabricated level.
+  const subRisks = _safe(() => {
+    const fn = typeof window !== 'undefined' && window.__farmRiskHealth;
+    if (typeof fn !== 'function') return [];
+    const fr = fn();
+    if (!fr || typeof fr !== 'object') return [];
+    const cats = fr.categories || fr.subRisks || fr;
+    const pick = (k, label) => {
+      const v = cats && (cats[k + 'Risk'] || cats[k]);
+      const level = typeof v === 'string' ? v
+        : (v && typeof v.level === 'string' ? v.level : null);
+      return level ? { key: k, label, level } : null;
+    };
+    return [
+      pick('disease', tSafe('commandCenter.risk.disease', 'Disease')),
+      pick('weather', tSafe('commandCenter.risk.weather', 'Weather')),
+      pick('soil',    tSafe('commandCenter.risk.water',   'Water')),
+      pick('market',  tSafe('commandCenter.risk.market',  'Market')),
+    ].filter(Boolean);
+  }, []);
+
+  // Action confidence — the DailyAction envelope carries 0-100; the
+  // deck never surfaced it. Display only when present and < 100
+  // (never claim certainty; banned-wording gates forbid 100% claims).
+  const actionConfidence = _safe(() => {
+    const c = action && action.confidence;
+    return (typeof c === 'number' && Number.isFinite(c) && c > 0 && c < 100)
+      ? Math.round(c) : null;
+  }, null);
+
   const Tile = ({ label, value, sub, band, testId }) => (
     <div style={S.tile} data-testid={testId}>
       <p style={S.tileLabel}>{label}</p>
@@ -123,6 +157,24 @@ function CommandCenterDeckInner() {
           testId="cc-harvest" />
       </div>
 
+      {/* SUB-RISK CHIPS (sprint #193) — why the Risk tile says what
+          it says. Inverted band like the Risk tile: high risk = red. */}
+      {subRisks.length > 0 ? (
+        <div style={S.chipRow} data-testid="cc-sub-risks">
+          {subRisks.map((r) => {
+            const chipBand = r.level === 'high' ? 'low'
+              : r.level === 'medium' ? 'medium'
+              : r.level === 'low' ? 'high' : 'unknown';
+            return (
+              <span key={r.key} style={{ ...S.chip, color: BAND[chipBand] }}
+                data-testid={'cc-risk-' + r.key}>
+                {r.label}: {r.level}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
+
       {/* TODAY'S ACTION card with Start + Scan */}
       <div style={S.actionCard} data-testid="cc-today-action">
         <p style={S.actionLabel}>{tSafe('commandCenter.todaysAction', "Today's Action")}</p>
@@ -135,6 +187,11 @@ function CommandCenterDeckInner() {
         {action.estimatedTime ? (
           <p style={S.actionTime}>
             {tSafe('commandCenter.timeRequired', 'Time required')}: {action.estimatedTime}
+          </p>
+        ) : null}
+        {actionConfidence !== null ? (
+          <p style={S.actionTime} data-testid="cc-action-confidence">
+            {tSafe('commandCenter.confidence', 'Confidence')}: {actionConfidence}%
           </p>
         ) : null}
         <div style={S.btnRow}>
@@ -221,6 +278,17 @@ const S = {
     margin: 0, fontSize: 11, fontWeight: 500, lineHeight: 1.3,
     color: 'rgba(60,72,55,0.65)', overflow: 'hidden', textOverflow: 'ellipsis',
     display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+  },
+  // Sprint #193 — sub-risk chips (Disease / Weather / Water / Market).
+  chipRow: {
+    display: 'flex', flexWrap: 'wrap', gap: 6,
+  },
+  chip: {
+    fontSize: 11, fontWeight: 700,
+    padding: '4px 10px', borderRadius: 999,
+    background: 'rgba(255,255,255,0.85)',
+    border: '1px solid rgba(60,72,55,0.10)',
+    textTransform: 'capitalize',
   },
   actionCard: {
     background: 'rgba(255,255,255,0.95)',
