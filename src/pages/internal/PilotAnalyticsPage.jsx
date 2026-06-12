@@ -49,20 +49,104 @@ function Metric({ label, value, sublabel }) {
   );
 }
 
+// Sprint #195 — drop-off ranking derived from the existing
+// __pilotMetrics() funnel. Each stage pair yields a loss count;
+// stages are ranked by absolute loss. With zero events everything
+// reads NEEDS_DATA — never a fabricated ranking.
+const FUNNEL_STAGES = [
+  ['signup',               'Signup'],
+  ['farmOrGardenCreated',  'Farm / Garden created'],
+  ['cropOrPlantAdded',     'Crop / Plant added'],
+  ['todayActionStarted',   "Today's Action started"],
+  ['todayActionCompleted', "Today's Action completed"],
+  ['scanCompleted',        'Scan completed'],
+  ['outcomeRecorded',      'Outcome recorded'],
+  ['followupCompleted',    'Follow-up completed'],
+];
+
+function _dropOffs(funnel) {
+  if (!funnel || typeof funnel !== 'object') return [];
+  const out = [];
+  for (let i = 1; i < FUNNEL_STAGES.length; i++) {
+    const [prevKey, prevLabel] = FUNNEL_STAGES[i - 1];
+    const [curKey, curLabel] = FUNNEL_STAGES[i];
+    const prev = Number(funnel[prevKey]) || 0;
+    const cur = Number(funnel[curKey]) || 0;
+    if (prev <= 0) continue; // no data at this stage — honest skip
+    const lost = Math.max(0, prev - cur);
+    out.push({
+      from: prevLabel, to: curLabel, lost,
+      lossPct: Math.round((lost / prev) * 100),
+    });
+  }
+  return out.sort((a, b) => b.lost - a.lost);
+}
+
 export default function PilotAnalyticsPage() {
   const snap = useMemo(() => _probe('__pilotAnalytics') || {}, []);
+  // Sprint #195 — KPI envelope from the #188 aggregator. Rates are
+  // null (render NEEDS_DATA) until events exist.
+  const kpi = useMemo(() => _probe('__pilotMetrics') || {}, []);
+  const drops = useMemo(() => _dropOffs(kpi.funnel), [kpi]);
   const window = snap.windowDays || 7;
+
+  const _kpiPct = (v) => (v == null ? 'NEEDS_DATA' : v + '%');
 
   return (
     <div style={S.page} data-testid="pilot-analytics-page">
       <header style={S.header}>
-        <p style={S.eyebrow}>Internal · Pilot Analytics</p>
-        <h1 style={S.title}>Pilot Analytics</h1>
+        <p style={S.eyebrow}>Internal · Pilot Command Center</p>
+        <h1 style={S.title}>Pilot Command Center</h1>
         <p style={S.subtitle}>
           Real metrics from the last {window} days. Rows showing
-          "—" have not yet recorded data.
+          "—" or NEEDS_DATA have not yet recorded data.
         </p>
       </header>
+
+      {/* Sprint #195 — the 8 policy KPIs, straight from __pilotMetrics().
+          North-star metrics only; vanity metrics intentionally absent. */}
+      <section style={S.section} data-testid="pilot-kpi-cards">
+        <h2 style={S.sectionTitle}>North-star KPIs (last {kpi.windowDays || 7}d)</h2>
+        <div style={S.grid}>
+          <Metric label="Today's Action started"
+                  value={_fmt(kpi.funnel && kpi.funnel.todayActionStarted)} />
+          <Metric label="Today's Action completed"
+                  value={_fmt(kpi.funnel && kpi.funnel.todayActionCompleted)} />
+          <Metric label="Scan success %"     value={_kpiPct(kpi.scanSuccessRate)}
+                  sublabel="completed ÷ started" />
+          <Metric label="Unknown scan %"     value={_kpiPct(kpi.unknownScanRate)}
+                  sublabel="unknown ÷ completed" />
+          <Metric label="Outcome capture %"  value={_kpiPct(kpi.outcomeCaptureRate)}
+                  sublabel="outcomes ÷ scans" />
+          <Metric label="Follow-up completion %" value={_kpiPct(kpi.followupCompletionRate)}
+                  sublabel="completed ÷ created" />
+          <Metric label="D1 retention %"     value={_kpiPct(kpi.d1Retention)}
+                  sublabel="client-side proxy" />
+          <Metric label="D7 retention %"     value={_kpiPct(kpi.d7Retention)}
+                  sublabel="client-side proxy" />
+        </div>
+      </section>
+
+      {/* Sprint #195 — Top user drop-offs from the funnel. */}
+      <section style={S.section} data-testid="pilot-drop-offs">
+        <h2 style={S.sectionTitle}>Top user drop-offs</h2>
+        {drops.length === 0 ? (
+          <p style={S.subtitle}>
+            NEEDS_DATA — no funnel events recorded yet. Drop-offs
+            appear once pilot users move through signup → action →
+            scan → outcome.
+          </p>
+        ) : (
+          <div style={S.grid}>
+            {drops.slice(0, 5).map((d, i) => (
+              <Metric key={i}
+                label={d.from + ' → ' + d.to}
+                value={d.lost + ' lost'}
+                sublabel={d.lossPct + '% of stage'} />
+            ))}
+          </div>
+        )}
+      </section>
 
       <section style={S.section}>
         <h2 style={S.sectionTitle}>Counts (last {window}d)</h2>

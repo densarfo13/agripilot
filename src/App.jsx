@@ -3017,6 +3017,10 @@ export default function App() {
               role gate; the pilot-analytics spec names the route
               /admin/pilot-analytics. */}
           <Route path="/admin/pilot-analytics"                  element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
+          {/* Sprint #195 — Execution Policy command center. Alias to
+              the SAME page (frozen-list rule: no duplicate dashboards);
+              the page now carries the 8 KPI cards + drop-off ranking. */}
+          <Route path="/admin/pilot-command-center"             element={<RoleRoute roles={ADMIN_ROLES}><PilotAnalyticsPage /></RoleRoute>} />
           <Route path="/internal/pilot-readiness"               element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />
           {/* Execution Mode — pilot command center (reuses the readiness board). */}
           <Route path="/internal/pilot-command"                 element={<RoleRoute roles={ADMIN_ROLES}><PilotReadinessPage /></RoleRoute>} />

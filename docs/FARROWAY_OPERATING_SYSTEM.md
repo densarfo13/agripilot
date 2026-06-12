@@ -87,3 +87,22 @@ still settling) or **BLOCKED** (a real wiring failure). At pilot start it
 reports NEEDS_DATA on the data-dependent subsystems by design; all engineering
 is in place. Locked by `check-operating-system` in `build:safe`. No new AI;
 no payments; no fabricated metrics; governance event-sourced + artifact-backed.
+
+## 11. Post-OS additions (sprints #188–#194, June 2026)
+
+Layers added on top of the OS foundation after this doc's original
+wave — each follows the same composite-over-existing pattern:
+
+| Addition | Probe | Sprint |
+|---|---|---|
+| Pilot analytics write-side (24-event contract, privacy sanitizer, localStorage log) | `__pilotAnalyticsHealth` / `__pilotMetrics(days)` | #188–#189 |
+| Language system completion (6-locale key parity, 🌐 bottom sheet, `/admin/i18n-health`, `audit:i18n` ≥98% gate) | `__languageHealth` (extended) | #182–#191 |
+| Home Command Center hero (single primary action; Health / Risk / Stage / Days-to-Harvest tiles) | `__commandCenterHealth` (now home-mounted) | #192 |
+| Farm Health sub-risk breakout + action confidence | `__farmRiskHealth` (deck chips) | #193 |
+| Digital Agronomist brief (score + attested contributors + risks) | `__farmHealthBrief` | #194 |
+
+Gate count at this writing: **286 sequential `build:safe` steps**,
+including `check-pilot-analytics` and `check-digital-agronomist`
+(both permanent as of #194). The Home hero contract — exactly one
+primary Start action, score never shown without explanation — is
+locked by `check-digital-agronomist`.
