@@ -101,7 +101,7 @@ const RETRY_COPY = Object.freeze({
   // Spec §7 — surface-specific outcomes the FSM emits.
   upload_failed:      { title: 'Upload failed',               body: 'Try a smaller photo, or check your connection and retry.' },
   analysis_delayed:   { title: 'Analysis is delayed',          body: 'Your photo was saved for retry — you can keep using the app.' },
-  ai_unavailable:     { title: 'AI check unavailable',         body: 'You can still pick what you see manually and save it to your journal.' },
+  ai_unavailable:     { title: 'Smart check unavailable',      body: 'You can still pick what you see manually and save it to your journal.' },
   low_confidence:     { title: 'Photo is hard to read',        body: 'Retake the photo in better light, or pick a symptom below.' },
   network_unavailable: { title: 'You appear to be offline',    body: 'Your photo will retry automatically when you reconnect.' },
 });

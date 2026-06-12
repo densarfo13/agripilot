@@ -35,6 +35,8 @@ import { useWeather } from '../context/WeatherContext.jsx';
 // nav owns those actions exclusively now — no FAB clutter on the
 // task surface.
 import { getFarmTasks, completeTask } from '../runtime/auth.js';
+// Sprint #198 — farmer-facing outcome loop (Did this help?).
+import OutcomePrompt from '../components/tasks/OutcomePrompt.jsx';
 import { safeTrackEvent } from '../lib/analytics.js';
 // Structured event log for the NGO impact dashboard. logEvent
 // writes to localStorage under `farroway_events`, the same
@@ -113,6 +115,8 @@ function StandardTasksPageBody() {
   const [completing, setCompleting] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [taskCompletionState, setTaskCompletionState] = useState(null);
+  // Sprint #198 — the task we just completed, for the outcome prompt.
+  const [lastCompletedTask, setLastCompletedTask] = useState(null);
   // Streak snapshot captured at the moment of completion — drives
   // the optional "🔥 N-day streak" + "Keep it going!" lines on
   // the success surface. Cleared when the user advances or
@@ -344,6 +348,7 @@ function StandardTasksPageBody() {
       nextTaskTitle: nextTitle,
     });
     setTaskCompletionState(cs);
+    setLastCompletedTask(task);
 
     // Haptic
     if (navigator.vibrate) {
@@ -575,6 +580,13 @@ function StandardTasksPageBody() {
             onLater={handleCompletionLater}
             variant="standard"
           />
+          {/* Sprint #198 — outcome loop last mile. Asks "Did this
+              help?" (Better/Same/Worse) right after completion;
+              feeds outcome_recorded (north-star KPI #4) + the
+              knowledge graph with the farmer's real answer. */}
+          {lastCompletedTask && (
+            <OutcomePrompt task={lastCompletedTask} farmId={currentFarmId} />
+          )}
           {/* Streak chip (Apr 2026): subtle "🔥 N-day streak" line
               + optional "Keep it going!" / "New streak started"
               encouragement. Hidden when the streak is 0 so a

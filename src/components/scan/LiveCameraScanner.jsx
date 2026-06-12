@@ -981,7 +981,7 @@ export default function LiveCameraScanner({
               {guideTipIdx === 0 && tSafe('scan.camera.guideCenter',   'Center crop or leaf')}
               {guideTipIdx === 1 && tSafe('scan.camera.guideLighting', 'Good lighting helps analysis')}
               {guideTipIdx === 2 && tSafe('scan.camera.guideSteady',   'Hold steady')}
-              {guideTipIdx === 3 && tSafe('scan.camera.guideReady',    'AI ready')}
+              {guideTipIdx === 3 && tSafe('scan.camera.guideReady',    'Ready to scan')}
             </p>
           </>
         )}

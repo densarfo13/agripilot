@@ -402,7 +402,7 @@ function PlantIdentificationSection({ identification }) {
             style={STYLES.confPill(confidenceTone || 'low')}
             data-testid="scan-intel-plant-confidence"
           >
-            {confidencePct}% {tSafe('scan.intel.plant.confidence', 'confidence')}
+            {confidencePct}% {tSafe('scan.intel.plant.confidence', 'sure')}
           </span>
         ) : null}
       </div>

@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6437,
-      "missingFilled": 4,
+      "totalKeys": 6442,
+      "missingFilled": 5,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -21,12 +21,17 @@
         "commandCenter.healthBand.excellent",
         "commandCenter.healthBand.good",
         "commandCenter.healthBand.watch",
-        "commandCenter.healthBand.critical"
+        "commandCenter.healthBand.critical",
+        "outcome.question",
+        "outcome.better",
+        "outcome.same",
+        "outcome.worse",
+        "outcome.thanks"
       ]
     },
     "sw": {
-      "totalKeys": 6437,
-      "missingFilled": 4,
+      "totalKeys": 6442,
+      "missingFilled": 5,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -44,12 +49,17 @@
         "commandCenter.healthBand.excellent",
         "commandCenter.healthBand.good",
         "commandCenter.healthBand.watch",
-        "commandCenter.healthBand.critical"
+        "commandCenter.healthBand.critical",
+        "outcome.question",
+        "outcome.better",
+        "outcome.same",
+        "outcome.worse",
+        "outcome.thanks"
       ]
     },
     "ha": {
-      "totalKeys": 6437,
-      "missingFilled": 4,
+      "totalKeys": 6442,
+      "missingFilled": 5,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -67,12 +77,17 @@
         "commandCenter.healthBand.excellent",
         "commandCenter.healthBand.good",
         "commandCenter.healthBand.watch",
-        "commandCenter.healthBand.critical"
+        "commandCenter.healthBand.critical",
+        "outcome.question",
+        "outcome.better",
+        "outcome.same",
+        "outcome.worse",
+        "outcome.thanks"
       ]
     },
     "tw": {
-      "totalKeys": 6437,
-      "missingFilled": 4,
+      "totalKeys": 6442,
+      "missingFilled": 5,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -90,12 +105,17 @@
         "commandCenter.healthBand.excellent",
         "commandCenter.healthBand.good",
         "commandCenter.healthBand.watch",
-        "commandCenter.healthBand.critical"
+        "commandCenter.healthBand.critical",
+        "outcome.question",
+        "outcome.better",
+        "outcome.same",
+        "outcome.worse",
+        "outcome.thanks"
       ]
     },
     "hi": {
-      "totalKeys": 6437,
-      "missingFilled": 4,
+      "totalKeys": 6442,
+      "missingFilled": 5,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3047,7 +3067,12 @@
         "commandCenter.healthBand.excellent",
         "commandCenter.healthBand.good",
         "commandCenter.healthBand.watch",
-        "commandCenter.healthBand.critical"
+        "commandCenter.healthBand.critical",
+        "outcome.question",
+        "outcome.better",
+        "outcome.same",
+        "outcome.worse",
+        "outcome.thanks"
       ]
     }
   }

@@ -6440,5 +6440,10 @@ export default {
   "commandCenter.healthBand.excellent": "Excellent",
   "commandCenter.healthBand.good": "Good",
   "commandCenter.healthBand.watch": "Watch",
-  "commandCenter.healthBand.critical": "Critical"
+  "commandCenter.healthBand.critical": "Critical",
+  "outcome.question": "Did this help?",
+  "outcome.better": "Better",
+  "outcome.same": "Same",
+  "outcome.worse": "Worse",
+  "outcome.thanks": "Thanks — this helps your next plan."
 };
