@@ -26,6 +26,7 @@
 
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { tSafe } from '../../i18n/tSafe.js';
 
 export default function SettingsDrawer({
   open,
@@ -82,7 +83,7 @@ export default function SettingsDrawer({
             type="button"
             onClick={() => { try { onClose && onClose(); } catch { /* swallow */ } }}
             style={S.closeBtn}
-            aria-label="Close settings"
+            aria-label={tSafe('settings.close', 'Close settings')}
             data-testid={`${testId}-close`}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

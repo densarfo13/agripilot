@@ -63,10 +63,12 @@ function SimpleHomeInner() {
             <h1 style={S.title}>{tSafe('simple.home.eyebrow', "Today's Action")}</h1>
           </div>
           <div style={S.headerActions} data-testid="home-header-actions">
-            <NotificationBell ariaLabel="Notifications" testId="simple-home-bell" />
+            <NotificationBell
+              ariaLabel={tSafe('header.actions.notifications', 'Notifications')}
+              testId="simple-home-bell" />
             <Link
               to="/settings"
-              aria-label="Menu"
+              aria-label={tSafe('header.actions.menu', 'Menu')}
               style={S.menuBtn}
               data-testid="simple-home-menu"
             >

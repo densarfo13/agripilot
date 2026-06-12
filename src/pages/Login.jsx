@@ -356,7 +356,7 @@ export default function Login() {
               </svg>
             </span>
           </div>
-          <h1 style={S.title}>Two-Factor Authentication</h1>
+          <h1 style={S.title}>{tSafe('login.mfa.title', 'Two-Factor Authentication')}</h1>
           <p style={S.subtitle}>
             Enter the 6-digit code from your authenticator app.
           </p>
@@ -439,7 +439,7 @@ export default function Login() {
 
         <AuthFormMessage tone="info" message={sessionNotice} testId="login-session-notice" />
         {/* Email / Phone method toggle */}
-        <div style={S.methodRow} role="tablist" aria-label="Sign-in method">
+        <div style={S.methodRow} role="tablist" aria-label={tSafe('login.method.label', 'Sign-in method')}>
           <button
             type="button"
             role="tab"

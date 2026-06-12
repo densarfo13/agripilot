@@ -6,22 +6,18 @@
 
 | Locale | Keys | Structural coverage | Pending review | Real-translation coverage |
 |---|---:|---:|---:|---:|
-| en | 6430 | 100% | 0 | 100% |
-| fr | 6430 | 100% | 9 | 99.9% |
-| sw | 6430 | 100% | 9 | 99.9% |
-| ha | 6430 | 100% | 9 | 99.9% |
-| tw | 6430 | 100% | 9 | 99.9% |
-| hi | 6430 | 100% | 2943 | 54.2% |
+| en | 6433 | 100% | 0 | 100% |
+| fr | 6433 | 100% | 12 | 99.8% |
+| sw | 6433 | 100% | 12 | 99.8% |
+| ha | 6433 | 100% | 12 | 99.8% |
+| tw | 6433 | 100% | 12 | 99.8% |
+| hi | 6433 | 100% | 2946 | 54.2% |
 
 Structural coverage = keys present vs the English canonical column.
 Real-translation coverage subtracts translator-review stubs that
 still carry English values (queue: `_translator-review-pending.json`).
 
-## Hardcoded-string findings (10)
-
-### src/components/simpleMode/SimpleHome.jsx (2)
-- L55 [prop:ariaLabel] "Notifications"
-- L58 [prop:label] "Menu"
+## Hardcoded-string findings (5)
 
 ### src/components/scan/IntelligentScanResult.jsx (4)
 - L471 [prop:titleDefault] "Recommended actions"
@@ -32,18 +28,11 @@ still carry English values (queue: `_translator-review-pending.json`).
 ### src/pages/ScanPage.jsx (1)
 - L294 [jsx-text] "0 && w"
 
-### src/components/system/SettingsDrawer.jsx (1)
-- L61 [prop:label] "Close settings"
-
-### src/pages/Login.jsx (2)
-- L359 [jsx-text] "Two-Factor Authentication"
-- L439 [prop:label] "Sign-in method"
-
-Baseline allowance: 10 (deferred + known false positives — see HARDCODED_STRINGS_AUDIT.md).
+Baseline allowance: 5 (deferred + known false positives — see HARDCODED_STRINGS_AUDIT.md).
 
 ## Enforcement
 
 - Structural coverage must be ≥ 98% per locale (build fails otherwise).
-- Hardcoded findings must be ≤ 10 (build fails otherwise).
+- Hardcoded findings must be ≤ 5 (build fails otherwise).
 - Real-translation coverage is reported, not gated — English
   fallback with translator-review flag is the honest contract.

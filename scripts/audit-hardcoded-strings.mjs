@@ -180,7 +180,11 @@ for (const rel of TARGETS) {
 // New hardcoded strings push the count past the baseline and break
 // the build; fixing deferred items lets the baseline ratchet down.
 const enforce = process.argv.includes('--enforce');
-const BASELINE_ALLOWED = 10;
+// Sprint #196 — ratcheted 10 → 5. The 5 deferred true positives
+// (SimpleHome ×2, SettingsDrawer ×1, Login ×2) were externalized;
+// only the 5 known false positives remain (4 tSafe-fallback args
+// in IntelligentScanResult + 1 logic fragment in ScanPage).
+const BASELINE_ALLOWED = 5;
 
 // Sprint #191 — per-locale key coverage + LANGUAGE_COVERAGE_REPORT.md.
 // Structural coverage = (locale keys present / en keys). Enforcement
