@@ -89,6 +89,15 @@ function CommandCenterDeckInner() {
   }, []);
   const whyKeys = (brief && Array.isArray(brief.contributors))
     ? brief.contributors : [];
+  // Sprint #197 (spec #192) — 4-tier band label (Excellent / Good /
+  // Watch / Critical) from the engine. Prefer it over the legacy
+  // 3-band aggregator label; falls back when no score.
+  const healthBandLabel = _safe(() => {
+    const b = brief && brief.healthBand;
+    if (!b || b === 'Unknown') return null;
+    const key = 'commandCenter.healthBand.' + b.toLowerCase();
+    return tSafe(key, b);
+  }, null);
   const WHY_FALLBACKS = {
     'farmHealth.why.healthyScans':   'Healthy recent scans',
     'farmHealth.why.tasksCompleted': 'Tasks completed this week',
@@ -162,7 +171,8 @@ function CommandCenterDeckInner() {
           testId="cc-stage" />
         <Tile
           label={tSafe('commandCenter.health', 'Health')}
-          value={health.label || tSafe('commandCenter.empty', 'Not enough data yet')}
+          value={healthBandLabel || health.label
+            || tSafe('commandCenter.empty', 'Not enough data yet')}
           sub={typeof health.score === 'number' ? `${health.score}/100` : ''}
           band={health.band || 'unknown'}
           testId="cc-health" />

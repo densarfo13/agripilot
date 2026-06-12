@@ -58,10 +58,25 @@ function _num(v: unknown): number | null {
 export interface FarmHealthBrief {
   runtimeVersion: string;
   healthScore: number | null;
+  // Sprint #197 — spec #192 4-tier band naming. Derived purely from
+  // healthScore; 'Unknown' when no score (never a fabricated band).
+  healthBand: 'Excellent' | 'Good' | 'Watch' | 'Critical' | 'Unknown';
   confidence: 'high' | 'medium' | 'low';
   contributors: ReadonlyArray<string>;
   risks: ReadonlyArray<Readonly<{ key: string; level: string }>>;
   neverFabricatesReasons: true;
+}
+
+// Spec #192 thresholds: Excellent ≥85 · Good 65-84 · Watch 40-64 ·
+// Critical <40. Stronger urgency framing than the prior 3-band
+// label — "Critical" reads more actionable than "Needs attention".
+function _healthBand(score: number | null):
+  'Excellent' | 'Good' | 'Watch' | 'Critical' | 'Unknown' {
+  if (score == null) return 'Unknown';
+  if (score >= 85) return 'Excellent';
+  if (score >= 65) return 'Good';
+  if (score >= 40) return 'Watch';
+  return 'Critical';
 }
 
 export function getFarmHealthBrief(): Readonly<FarmHealthBrief> {
@@ -127,6 +142,7 @@ export function getFarmHealthBrief(): Readonly<FarmHealthBrief> {
     return Object.freeze({
       runtimeVersion: FARM_HEALTH_ENGINE_VERSION,
       healthScore: boundedScore,
+      healthBand: _healthBand(boundedScore),
       confidence,
       contributors: Object.freeze(contributors),
       risks: Object.freeze(risks),
@@ -135,6 +151,7 @@ export function getFarmHealthBrief(): Readonly<FarmHealthBrief> {
   }, Object.freeze({
     runtimeVersion: FARM_HEALTH_ENGINE_VERSION,
     healthScore: null,
+    healthBand: 'Unknown' as const,
     confidence: 'low' as const,
     contributors: Object.freeze([] as string[]),
     risks: Object.freeze([] as Array<{ key: string; level: string }>),

@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6433,
-      "missingFilled": 3,
+      "totalKeys": 6437,
+      "missingFilled": 4,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -17,12 +17,16 @@
         "scan.urgency.urgent",
         "farmHealth.why.healthyScans",
         "farmHealth.why.tasksCompleted",
-        "farmHealth.why.goodWeather"
+        "farmHealth.why.goodWeather",
+        "commandCenter.healthBand.excellent",
+        "commandCenter.healthBand.good",
+        "commandCenter.healthBand.watch",
+        "commandCenter.healthBand.critical"
       ]
     },
     "sw": {
-      "totalKeys": 6433,
-      "missingFilled": 3,
+      "totalKeys": 6437,
+      "missingFilled": 4,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -36,12 +40,16 @@
         "scan.urgency.urgent",
         "farmHealth.why.healthyScans",
         "farmHealth.why.tasksCompleted",
-        "farmHealth.why.goodWeather"
+        "farmHealth.why.goodWeather",
+        "commandCenter.healthBand.excellent",
+        "commandCenter.healthBand.good",
+        "commandCenter.healthBand.watch",
+        "commandCenter.healthBand.critical"
       ]
     },
     "ha": {
-      "totalKeys": 6433,
-      "missingFilled": 3,
+      "totalKeys": 6437,
+      "missingFilled": 4,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -55,12 +63,16 @@
         "scan.urgency.urgent",
         "farmHealth.why.healthyScans",
         "farmHealth.why.tasksCompleted",
-        "farmHealth.why.goodWeather"
+        "farmHealth.why.goodWeather",
+        "commandCenter.healthBand.excellent",
+        "commandCenter.healthBand.good",
+        "commandCenter.healthBand.watch",
+        "commandCenter.healthBand.critical"
       ]
     },
     "tw": {
-      "totalKeys": 6433,
-      "missingFilled": 3,
+      "totalKeys": 6437,
+      "missingFilled": 4,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -74,12 +86,16 @@
         "scan.urgency.urgent",
         "farmHealth.why.healthyScans",
         "farmHealth.why.tasksCompleted",
-        "farmHealth.why.goodWeather"
+        "farmHealth.why.goodWeather",
+        "commandCenter.healthBand.excellent",
+        "commandCenter.healthBand.good",
+        "commandCenter.healthBand.watch",
+        "commandCenter.healthBand.critical"
       ]
     },
     "hi": {
-      "totalKeys": 6433,
-      "missingFilled": 3,
+      "totalKeys": 6437,
+      "missingFilled": 4,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3027,7 +3043,11 @@
         "scan.urgency.urgent",
         "farmHealth.why.healthyScans",
         "farmHealth.why.tasksCompleted",
-        "farmHealth.why.goodWeather"
+        "farmHealth.why.goodWeather",
+        "commandCenter.healthBand.excellent",
+        "commandCenter.healthBand.good",
+        "commandCenter.healthBand.watch",
+        "commandCenter.healthBand.critical"
       ]
     }
   }

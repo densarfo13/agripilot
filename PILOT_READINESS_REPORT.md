@@ -77,3 +77,45 @@ Each item is < 1-day effort; none blocks the pilot.
   ran into a problem"
 
 All suppressions verified by `build:safe` (283 sequential gates green).
+
+---
+
+## Addendum — Farmer Decision Engine readiness (sprint #197, spec #192)
+
+The spec's 9 decision-engine modules were already shipped across
+prior sprints; this addendum scores them and records the one delta
+landed this sprint (4-tier Farm Health band).
+
+| Module | Status | Where |
+|---|---|---|
+| Home hero (Health · Stage · Risk · Action · Confidence, no-scroll) | Ready | CommandCenterDeck (#192-#194), above the fold |
+| Farm Health Engine (0-100 + 4-tier band) | **Ready (band added #197)** | FarmHealthEngine.healthBand: Excellent ≥85 / Good 65-84 / Watch 40-64 / Critical <40 |
+| Today's Action (ONE action + why + time + urgency + confidence) | Ready | RecommendationEngine #172/#173; Start in deck, Done/Skip on task cards |
+| Top Risk (risk + severity + reason + confidence) | Ready | FarmRisk composite #140 + sub-risk chips #193 |
+| Outcome Engine (Better/Same/Worse) | Ready | followUpEngine #168/#173, gate-locked |
+| Follow-Up Engine | Ready | FOLLOWUP_OFFSETS_DAYS = [3,7,14], gate-locked (kept — not [1,3,7]: changing breaks check-scan-v3 §7 and has no KPI justification) |
+
+### Spec-named metrics
+
+| Metric | Reading | Source |
+|---|---|---|
+| Farm Health Accuracy | Score derives only from real `__farmHealthScoreHealth`; "Unknown"/Critical-band never fabricated. Accuracy bounded by the satellite/vegetation probe; no synthetic score. | FarmHealthEngine |
+| Today's Action Quality | ONE action, gate-enforced (check-digital-agronomist: exactly one cc-btn-start); every action carries why + confidence | RecommendationEngine |
+| Outcome Capture Rate | `__pilotMetrics().outcomeCaptureRate` — NEEDS_DATA until pilot events flow | #188 |
+| Risk Engine Coverage | 4 categories (disease/weather/water/market); pest folded into predictive disease channel; `unknown` categories omitted | FarmRisk #140 |
+| Pilot Readiness % | Engine layer 100% built + gate-locked; data layer NEEDS_DATA pre-pilot. Engineering-ready, awaiting users. | — |
+
+### Success criterion
+
+"Within 5 seconds, Farm Health + Top Risk + Today's Action without
+scrolling" — **MET** since #192: the CommandCenterDeck is the Home
+hero, rendering all three in the first viewport.
+
+### KPI Impact (this sprint)
+
+4-tier band naming (Excellent/Good/Watch/Critical) replaces the
+prior 3-band label. "Critical" frames at-risk farms more urgently
+than "Needs attention" → plausible lift in **Today's Action
+completion** for at-risk farms; "Excellent" gives positive
+reinforcement → plausible **D7 retention** lift. Additive field;
+no engine rebuilt.

@@ -6436,5 +6436,9 @@ export default {
   "scan.urgency.urgent": "Urgent review recommended",
   "farmHealth.why.healthyScans": "Healthy recent scans",
   "farmHealth.why.tasksCompleted": "Tasks completed this week",
-  "farmHealth.why.goodWeather": "Favorable weather"
+  "farmHealth.why.goodWeather": "Favorable weather",
+  "commandCenter.healthBand.excellent": "Excellent",
+  "commandCenter.healthBand.good": "Good",
+  "commandCenter.healthBand.watch": "Watch",
+  "commandCenter.healthBand.critical": "Critical"
 };
