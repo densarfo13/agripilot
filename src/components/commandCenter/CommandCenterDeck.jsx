@@ -71,6 +71,30 @@ function CommandCenterDeckInner() {
   const startAction = () => _safe(() => navigate('/tasks'), null);
   const scanAction = () => _safe(() => navigate('/scan'), null);
 
+  // Sprint #194 — "never show score without explanation". Read the
+  // FarmHealthEngine brief (composer over real probes); contributors
+  // are i18n keys included ONLY when the underlying probe attests
+  // the signal. Empty → the Why line renders nothing.
+  const [brief, setBrief] = React.useState(null);
+  React.useEffect(() => {
+    let alive = true;
+    import('../../runtime/farmHealth/FarmHealthEngine')
+      .then((mod) => {
+        _safe(() => mod.installFarmHealthBriefGlobal(), null);
+        const b = _safe(() => mod.getFarmHealthBrief(), null);
+        if (alive) setBrief(b);
+      })
+      .catch(() => { /* swallow — never block Home */ });
+    return () => { alive = false; };
+  }, []);
+  const whyKeys = (brief && Array.isArray(brief.contributors))
+    ? brief.contributors : [];
+  const WHY_FALLBACKS = {
+    'farmHealth.why.healthyScans':   'Healthy recent scans',
+    'farmHealth.why.tasksCompleted': 'Tasks completed this week',
+    'farmHealth.why.goodWeather':    'Favorable weather',
+  };
+
   // Sprint #193 — Farm Health breakout. Read the FarmRisk composite's
   // sub-risk categories (weather / disease / soil≈water / market)
   // straight from the pinned global so the deck shows WHY the risk
@@ -156,6 +180,19 @@ function CommandCenterDeckInner() {
           band={env.harvestReady ? (daysToHarvest <= 14 ? 'medium' : 'high') : 'unknown'}
           testId="cc-harvest" />
       </div>
+
+      {/* WHY line (sprint #194) — positive contributors behind the
+          health score. Only renders factors a real probe attested. */}
+      {whyKeys.length > 0 ? (
+        <div style={S.chipRow} data-testid="cc-health-why">
+          {whyKeys.map((k) => (
+            <span key={k} style={{ ...S.chip, color: BAND.high }}
+              data-testid={'cc-why-' + k.split('.').pop()}>
+              + {tSafe(k, WHY_FALLBACKS[k] || k)}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {/* SUB-RISK CHIPS (sprint #193) — why the Risk tile says what
           it says. Inverted band like the Risk tile: high risk = red. */}

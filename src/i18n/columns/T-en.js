@@ -6433,5 +6433,8 @@ export default {
   "scan.urgency.stable": "Looks stable",
   "scan.urgency.monitor": "Monitor",
   "scan.urgency.attention": "Attention needed",
-  "scan.urgency.urgent": "Urgent review recommended"
+  "scan.urgency.urgent": "Urgent review recommended",
+  "farmHealth.why.healthyScans": "Healthy recent scans",
+  "farmHealth.why.tasksCompleted": "Tasks completed this week",
+  "farmHealth.why.goodWeather": "Favorable weather"
 };

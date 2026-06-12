@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6430,
-      "missingFilled": 9,
+      "totalKeys": 6433,
+      "missingFilled": 3,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -14,12 +14,15 @@
         "scan.urgency.stable",
         "scan.urgency.monitor",
         "scan.urgency.attention",
-        "scan.urgency.urgent"
+        "scan.urgency.urgent",
+        "farmHealth.why.healthyScans",
+        "farmHealth.why.tasksCompleted",
+        "farmHealth.why.goodWeather"
       ]
     },
     "sw": {
-      "totalKeys": 6430,
-      "missingFilled": 9,
+      "totalKeys": 6433,
+      "missingFilled": 3,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -30,12 +33,15 @@
         "scan.urgency.stable",
         "scan.urgency.monitor",
         "scan.urgency.attention",
-        "scan.urgency.urgent"
+        "scan.urgency.urgent",
+        "farmHealth.why.healthyScans",
+        "farmHealth.why.tasksCompleted",
+        "farmHealth.why.goodWeather"
       ]
     },
     "ha": {
-      "totalKeys": 6430,
-      "missingFilled": 9,
+      "totalKeys": 6433,
+      "missingFilled": 3,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -46,12 +52,15 @@
         "scan.urgency.stable",
         "scan.urgency.monitor",
         "scan.urgency.attention",
-        "scan.urgency.urgent"
+        "scan.urgency.urgent",
+        "farmHealth.why.healthyScans",
+        "farmHealth.why.tasksCompleted",
+        "farmHealth.why.goodWeather"
       ]
     },
     "tw": {
-      "totalKeys": 6430,
-      "missingFilled": 9,
+      "totalKeys": 6433,
+      "missingFilled": 3,
       "coveragePct": 100,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -62,12 +71,15 @@
         "scan.urgency.stable",
         "scan.urgency.monitor",
         "scan.urgency.attention",
-        "scan.urgency.urgent"
+        "scan.urgency.urgent",
+        "farmHealth.why.healthyScans",
+        "farmHealth.why.tasksCompleted",
+        "farmHealth.why.goodWeather"
       ]
     },
     "hi": {
-      "totalKeys": 6430,
-      "missingFilled": 9,
+      "totalKeys": 6433,
+      "missingFilled": 3,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3012,7 +3024,10 @@
         "scan.urgency.stable",
         "scan.urgency.monitor",
         "scan.urgency.attention",
-        "scan.urgency.urgent"
+        "scan.urgency.urgent",
+        "farmHealth.why.healthyScans",
+        "farmHealth.why.tasksCompleted",
+        "farmHealth.why.goodWeather"
       ]
     }
   }
