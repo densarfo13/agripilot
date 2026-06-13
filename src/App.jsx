@@ -1866,6 +1866,14 @@ export default function App() {
               await import('./runtime/dailyAction/RecommendationEngine');
             installDailyActionGlobal();
           } catch { /* swallow */ }
+          // Sprint #202 — language consistency probe. Pins
+          // __languageConsistencyHealth() (read-only composite over
+          // the existing i18n machinery; counts live {key} leaks).
+          try {
+            const { installLanguageConsistencyGlobal } =
+              await import('./runtime/i18n/LanguageConsistencyRuntime');
+            installLanguageConsistencyGlobal();
+          } catch { /* swallow */ }
           // Sprint #200 — Mythos scan composition layer. Pins
           // __scanMythosHealth + __multiPhotoScanHealth +
           // __scanMythosDecision. Composition over the existing

@@ -702,7 +702,7 @@ export default function Sell() {
               name="crop"
               value={crop}
               onChange={(e) => setCrop(e.target.value)}
-              placeholder="e.g. maize"
+              placeholder={tSafe('sell.cropPlaceholder', 'e.g. maize')}
               style={S.input}
               data-testid="sell-crop"
               required
@@ -824,7 +824,7 @@ export default function Sell() {
                 // auto-suggestion never overwrites again.
                 setPriceTouched(true);
               }}
-              placeholder="e.g. 250–300 GHS / kg"
+              placeholder={tSafe('sell.pricePlaceholder', 'e.g. 250-300 per kg')}
               style={S.input}
               data-testid="sell-price"
             />

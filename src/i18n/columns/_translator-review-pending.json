@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6467,
-      "missingFilled": 25,
+      "totalKeys": 6469,
+      "missingFilled": 2,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -51,12 +51,14 @@
         "scan.action.confirm",
         "scan.followUp.tomorrow",
         "scan.followUp.3days",
-        "scan.followUp.7days"
+        "scan.followUp.7days",
+        "sell.cropPlaceholder",
+        "sell.pricePlaceholder"
       ]
     },
     "sw": {
-      "totalKeys": 6467,
-      "missingFilled": 25,
+      "totalKeys": 6469,
+      "missingFilled": 2,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -104,12 +106,14 @@
         "scan.action.confirm",
         "scan.followUp.tomorrow",
         "scan.followUp.3days",
-        "scan.followUp.7days"
+        "scan.followUp.7days",
+        "sell.cropPlaceholder",
+        "sell.pricePlaceholder"
       ]
     },
     "ha": {
-      "totalKeys": 6467,
-      "missingFilled": 25,
+      "totalKeys": 6469,
+      "missingFilled": 2,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -157,12 +161,14 @@
         "scan.action.confirm",
         "scan.followUp.tomorrow",
         "scan.followUp.3days",
-        "scan.followUp.7days"
+        "scan.followUp.7days",
+        "sell.cropPlaceholder",
+        "sell.pricePlaceholder"
       ]
     },
     "tw": {
-      "totalKeys": 6467,
-      "missingFilled": 25,
+      "totalKeys": 6469,
+      "missingFilled": 2,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -210,12 +216,14 @@
         "scan.action.confirm",
         "scan.followUp.tomorrow",
         "scan.followUp.3days",
-        "scan.followUp.7days"
+        "scan.followUp.7days",
+        "sell.cropPlaceholder",
+        "sell.pricePlaceholder"
       ]
     },
     "hi": {
-      "totalKeys": 6467,
-      "missingFilled": 25,
+      "totalKeys": 6469,
+      "missingFilled": 2,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3197,7 +3205,9 @@
         "scan.action.confirm",
         "scan.followUp.tomorrow",
         "scan.followUp.3days",
-        "scan.followUp.7days"
+        "scan.followUp.7days",
+        "sell.cropPlaceholder",
+        "sell.pricePlaceholder"
       ]
     }
   }

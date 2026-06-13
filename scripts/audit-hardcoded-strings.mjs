@@ -65,8 +65,10 @@ const TARGETS = [
   'src/pages/JournalPage.jsx',
   // Funding
   'src/pages/ngo/FundingReadiness.jsx',
-  // Sell
-  'src/pages/SellPage.jsx',
+  // Sell — sprint #202 coverage fix: the real file is Sell.jsx;
+  // the prior SellPage.jsx target never existed so the surface was
+  // silently skipped.
+  'src/pages/Sell.jsx',
   // Profile
   'src/pages/ProfileSetupPage.jsx',
   // Settings

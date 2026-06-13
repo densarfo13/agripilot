@@ -6470,5 +6470,7 @@ export default {
   "scan.action.confirm": "Retake closer or choose a possible match from the list.",
   "scan.followUp.tomorrow": "Scan again tomorrow.",
   "scan.followUp.3days": "Scan again in 3 days.",
-  "scan.followUp.7days": "Scan again in 7 days."
+  "scan.followUp.7days": "Scan again in 7 days.",
+  "sell.cropPlaceholder": "e.g. maize",
+  "sell.pricePlaceholder": "e.g. 250-300 per kg"
 };
