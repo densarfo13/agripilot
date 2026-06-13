@@ -667,6 +667,15 @@ export default function IntelligentScanResult({
   const _imageQuality   = result && result.imageQuality;
   const _retakeMsg      = _imageQuality && _imageQuality.retakeGuidance;
 
+  // Sprint #201 — Mythos trust card: when the composer produced a
+  // decision, surface its multi-reason "why" + "limitations" lists
+  // (these carry the farm-context rationale the single-sentence
+  // whatWeNoticed can't). Additive; renders nothing when absent so
+  // the gate-locked card below is unaffected.
+  const _mythos        = result && result.mythosDecision;
+  const _mythosWhy     = _arr(_mythos && _mythos.why);
+  const _mythosLimits  = _arr(_mythos && _mythos.limitations);
+
   // Universal Scan (v6) — sprint #178. objectType labels the scan as
   // one of 11 categories (fruit/vegetable/leaf/crop/flower/herb/tree/
   // weed/soil_surface/seedling/unknown); issueType labels the issue
@@ -768,6 +777,36 @@ export default function IntelligentScanResult({
               data-testid="scan-intel-why">
               {_whyItMatters}
             </p>
+          ) : null}
+        </section>
+      ) : null}
+      {/* Sprint #201 — Mythos "Why we think this" + "Good to know".
+          Multi-reason explainability incl. farm-context rationale. */}
+      {(_mythosWhy.length > 0 || _mythosLimits.length > 0) ? (
+        <section style={STYLES.card} data-testid="scan-intel-mythos-why">
+          {_mythosWhy.length > 0 ? (
+            <>
+              <h4 style={STYLES.cardTitle}>
+                {tSafe('scan.why', 'Why we think this')}
+              </h4>
+              <ul style={STYLES.list} data-testid="scan-intel-mythos-why-list">
+                {_mythosWhy.slice(0, 5).map((w, i) => (
+                  <li key={'mw-' + i}>{_str(w)}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {_mythosLimits.length > 0 ? (
+            <>
+              <div style={STYLES.subhead}>
+                {tSafe('scan.limitations', 'Good to know')}
+              </div>
+              <ul style={STYLES.list} data-testid="scan-intel-mythos-limits-list">
+                {_mythosLimits.slice(0, 4).map((l, i) => (
+                  <li key={'ml-' + i} style={{ color: '#64748B' }}>{_str(l)}</li>
+                ))}
+              </ul>
+            </>
           ) : null}
         </section>
       ) : null}

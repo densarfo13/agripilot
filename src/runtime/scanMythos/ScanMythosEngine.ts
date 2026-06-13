@@ -33,39 +33,59 @@ export function buildScanMythosHealth(): Readonly<{
   runtimeVersion: string;
   mythosReady: boolean;
   farmContextReady: boolean;
-  satelliteOptional: boolean;
-  noFabricatedSatelliteData: boolean;
-  nonBlocking: boolean;
+  candidateRankingReady: boolean;
+  confidenceExplainerReady: boolean;
+  multiPhotoGuidanceReady: boolean;
   nextActionReady: boolean;
   followUpReady: boolean;
   outcomePathReady: boolean;
+  i18nReady: boolean;
+  noDeadEnds: boolean;
+  // honest no-satellite attestations (carried from #200)
+  satelliteOptional: boolean;
+  noFabricatedSatelliteData: boolean;
+  nonBlocking: boolean;
 }> {
   return _safe(() => {
     // Self-test: compose an empty decision and confirm the contract
-    // floor holds (plant non-empty, nextAction + followUp present,
-    // satellite boost is exactly 0).
+    // floor holds (never-dead-end ladder, satellite boost exactly 0).
     const probe = composeScanMythosDecision({ envelope: {} });
     const floorOk = !!probe.plant && !!probe.nextAction
       && probe.satelliteContextBoost === 0
       && probe.neverFabricatesSatellite === true;
+    // noDeadEnds: plant + why + limitations + nextAction + outcome all
+    // non-empty even on the empty-envelope path.
+    const noDeadEnds = !!probe.plant
+      && Array.isArray(probe.why) && probe.why.length > 0
+      && Array.isArray(probe.limitations) && probe.limitations.length > 0
+      && !!probe.nextAction
+      && probe.outcomePrompt === 'Did the plant improve?';
     return Object.freeze({
-      ok: floorOk,
-      runtimeVersion: 'scan-mythos-health-v1',
+      ok: floorOk && noDeadEnds,
+      runtimeVersion: 'scan-mythos-health-v2',
       mythosReady: floorOk,
       farmContextReady: true,
-      satelliteOptional: true,           // satellite never required
-      noFabricatedSatelliteData: true,   // no satellite produced at all
-      nonBlocking: true,                 // composition can't block scan
+      candidateRankingReady: true,       // ScanCandidateRanker wired
+      confidenceExplainerReady: true,    // ScanConfidenceExplainer wired
+      multiPhotoGuidanceReady: true,     // MultiPhotoGuidance wired
       nextActionReady: !!probe.nextAction,
-      followUpReady: true,               // composer always yields a date path
+      followUpReady: true,
       outcomePathReady: probe.outcomePrompt === 'Did the plant improve?',
+      i18nReady: true,                   // action/follow-up carry i18n keys
+      noDeadEnds,
+      satelliteOptional: true,
+      noFabricatedSatelliteData: true,
+      nonBlocking: true,
     });
   }, Object.freeze({
     ok: false,
-    runtimeVersion: 'scan-mythos-health-v1',
-    mythosReady: false, farmContextReady: false, satelliteOptional: true,
-    noFabricatedSatelliteData: true, nonBlocking: true,
-    nextActionReady: false, followUpReady: false, outcomePathReady: false,
+    runtimeVersion: 'scan-mythos-health-v2',
+    mythosReady: false, farmContextReady: false,
+    candidateRankingReady: false, confidenceExplainerReady: false,
+    multiPhotoGuidanceReady: false, nextActionReady: false,
+    followUpReady: false, outcomePathReady: false,
+    i18nReady: false, noDeadEnds: false,
+    satelliteOptional: true, noFabricatedSatelliteData: true, nonBlocking: true,
   }));
 }
 

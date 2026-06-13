@@ -29,7 +29,11 @@ const MODULES = {
   'FarmScanContextRuntime.ts':['export function buildFarmScanContext'],
   'ScanConfidenceExplainer.ts':['export function buildWhy', 'export function buildLimitations', 'export function confidenceLabelFor'],
   'MultiPhotoGuidance.ts':    ['export function getMultiPhotoStatus'],
-  'ScanDecisionComposer.ts':  ['export function composeScanMythosDecision'],
+  // Sprint #201 — candidate ranker + action/follow-up generators.
+  'ScanCandidateRanker.ts':   ['export function rankCandidates'],
+  'ScanActionGenerator.ts':   ['export function generateScanAction'],
+  'ScanFollowUpGenerator.ts': ['export function generateScanFollowUp'],
+  'ScanDecisionComposer.ts':  ['export function composeScanMythosDecision', 'rankCandidates', 'generateScanFollowUp'],
   'ScanMythosEngine.ts':      ['export function installScanMythosHealthGlobals', 'export function buildScanMythosHealth', 'export function buildMultiPhotoScanHealth'],
 };
 for (const [file, needles] of Object.entries(MODULES)) {
@@ -59,12 +63,22 @@ if (/ndvi\s*[:=]\s*[0-9]/i.test(CONTRACTS) || /ndvi\s*[:=]\s*[0-9]/i.test(COMPOS
   errors.push('scanMythos must NOT contain a fabricated NDVI numeric literal');
 }
 
-// Health flags (spec §9).
+// Health flags (spec §12 — the 10 Mythos-core flags).
 const ENGINE = _read(BASE + 'ScanMythosEngine.ts');
-for (const flag of ['mythosReady', 'farmContextReady', 'satelliteOptional',
-  'noFabricatedSatelliteData', 'nonBlocking', 'nextActionReady',
-  'followUpReady', 'outcomePathReady']) {
+for (const flag of ['mythosReady', 'farmContextReady', 'candidateRankingReady',
+  'confidenceExplainerReady', 'multiPhotoGuidanceReady', 'nextActionReady',
+  'followUpReady', 'outcomePathReady', 'i18nReady', 'noDeadEnds']) {
   _has(ENGINE, flag, 'ScanMythosEngine health must expose flag: ' + flag);
+}
+
+// Sprint #201 — §10 i18n keys present in the EN canonical column.
+const TEN = _read('src/i18n/columns/T-en.js');
+for (const k of ['plant.possible', 'scan.why', 'scan.limitations',
+  'scan.nextAction', 'scan.followUp', 'scan.needsConfirmation',
+  'scan.sendForReview', 'outcome.didImprove']) {
+  if (!TEN.includes('"' + k + '"')) {
+    errors.push('T-en.js missing Mythos i18n key: ' + k);
+  }
 }
 
 // Boot install.

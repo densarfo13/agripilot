@@ -15,6 +15,8 @@ import {
   confidenceLabelFor, buildWhy, buildLimitations,
 } from './ScanConfidenceExplainer';
 import { getMultiPhotoStatus } from './MultiPhotoGuidance';
+import { rankCandidates } from './ScanCandidateRanker';
+import { generateScanFollowUp } from './ScanFollowUpGenerator';
 import {
   FORBIDDEN_PROVIDER_NAMES, FORBIDDEN_DOSAGE_TOKENS,
 } from './ScanMythosContracts';
@@ -71,11 +73,22 @@ export function composeScanMythosDecision(input: {
     const env = (input.envelope && typeof input.envelope === 'object')
       ? input.envelope : {};
 
-    const topCandidates = _arr(env.topCandidates).slice(0, 5).map((c) =>
+    // Sprint #201 — re-rank the provider candidates with farm signals
+    // (re-order only; never invents a candidate).
+    const ranked = rankCandidates({
+      candidates: _arr(env.topCandidates),
+      activeCrop: input.activeCrop,
+      cropStage: input.cropStage,
+      previousScans: input.previousScans,
+      visibleIssue: _str(env.issueType),
+    });
+    const topCandidates = (ranked.length > 0
+      ? ranked
+      : _arr(env.topCandidates).slice(0, 5)).map((c) =>
       Object.freeze({
-        commonName:     _str(c && (c.commonName || c.name)),
-        scientificName: _str(c && c.scientificName),
-        score:          _num(c && c.score) || 0,
+        commonName:     _str((c as any).commonName || (c as any).name),
+        scientificName: _str((c as any).scientificName),
+        score:          _num((c as any).score) || 0,
       }));
 
     // ── plant ladder — NEVER empty, never "Unknown Plant" w/ cands ─
@@ -128,9 +141,10 @@ export function composeScanMythosDecision(input: {
     const nextAction = _scrub(_str(env.nextAction)
       || 'Check a few nearby plants today.');
 
-    // ── follow-up (envelope date or +3d default) ───────────────────
-    const followUpDate = _str(env.followUpDate)
-      || _addDays(null, severity === 'high' ? 3 : severity === 'medium' ? 3 : 7);
+    // ── follow-up (severity-driven generator; envelope date wins) ──
+    const fu = generateScanFollowUp({ severity });
+    const followUpDate = _str(env.followUpDate) || fu.followUpDate
+      || _addDays(null, fu.offsetDays);
 
     return Object.freeze({
       runtimeVersion: 'scan-mythos-decision-v1',
