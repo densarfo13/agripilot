@@ -209,6 +209,28 @@ async function _trackScanEvent(eventType, metadata) {
   } catch { /* swallow */ }
 }
 
+// Sprint #200 — compose the Mythos trust-card decision from the
+// envelope + farm context. Async (lazy import); ALWAYS returns null
+// on any failure so the scan result is never affected.
+async function _composeMythosDecisionSafe(envelope, input) {
+  try {
+    const mod = await import('../runtime/scanMythos/ScanDecisionComposer');
+    if (mod && typeof mod.composeScanMythosDecision === 'function') {
+      return mod.composeScanMythosDecision({
+        envelope,
+        activeCrop: input.activeCrop || input.cropName || input.crop || '',
+        cropStage: input.cropStage || '',
+        location: input.location || '',
+        weatherNote: input.weatherNote || '',
+        previousScans: Array.isArray(input.previousScans) ? input.previousScans : [],
+        previousOutcomes: Array.isArray(input.previousOutcomes) ? input.previousOutcomes : [],
+        photosUsed: Array.isArray(input.photosUsed) ? input.photosUsed : [],
+      });
+    }
+  } catch { /* swallow — composition is decorative, never required */ }
+  return null;
+}
+
 export async function analyzeScan(input = {}) {
   // Defensive — accept null/undefined input.
   const safeInput = input && typeof input === 'object' ? input : {};
@@ -289,6 +311,14 @@ export async function analyzeScan(input = {}) {
           }),
           // ── New numeric companion for the percent display ─
           confidencePct: _numConfidence,
+          // ── Sprint #200 — Mythos trust-card decision ──────
+          // Additive composition over the envelope we just built.
+          // Lazy + try/catch so a composer fault can NEVER break
+          // the scan result. Composition only; no provider call,
+          // no satellite, no fabrication.
+          mythosDecision: _composeMythosDecisionSafe({
+            ...apiResult, confidencePct: _numConfidence,
+          }, safeInput),
         });
       }
     }

@@ -1866,6 +1866,15 @@ export default function App() {
               await import('./runtime/dailyAction/RecommendationEngine');
             installDailyActionGlobal();
           } catch { /* swallow */ }
+          // Sprint #200 — Mythos scan composition layer. Pins
+          // __scanMythosHealth + __multiPhotoScanHealth +
+          // __scanMythosDecision. Composition over the existing
+          // scan envelope; no new ML, no satellite. Never blocks scan.
+          try {
+            const { installScanMythosHealthGlobals } =
+              await import('./runtime/scanMythos/ScanMythosEngine');
+            installScanMythosHealthGlobals();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.
