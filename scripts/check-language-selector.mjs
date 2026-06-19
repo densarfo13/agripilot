@@ -100,16 +100,23 @@ if (!_exists(LOCALES)) {
   }
 }
 
-// ─── 6. Hindi feature flag enabled ───────────────────────────
+// ─── 6. Hindi feature flag present + explicitly set ──────────
+// Sprint #205 (founder decision, option 2): Hindi is HIDDEN from
+// the public picker until its 2987 keys are translated (real
+// coverage 53.9% would show ~46% English to a Hindi user). The
+// gate no longer demands `true`; it demands the flag EXISTS and is
+// an explicit boolean, so the decision is never silently lost.
+// The Hindi column files stay on disk + isSupportedLocale('hi')
+// stays flag-independent, so existing-Hindi users are not broken.
+// Flip back to true (one line) once translation lands.
 const FEATURES = 'src/config/features.js';
 if (!_exists(FEATURES)) {
   errors.push('missing: ' + FEATURES);
 } else {
   const src = _read(FEATURES);
-  // Match `enableHindiLocale: true` literally (could have whitespace).
-  if (!/enableHindiLocale\s*:\s*true/.test(src)) {
-    errors.push('features.js must set enableHindiLocale: true '
-      + '(user spec lists Hindi as one of 6 supported languages)');
+  if (!/enableHindiLocale\s*:\s*(true|false)/.test(src)) {
+    errors.push('features.js must declare enableHindiLocale as an '
+      + 'explicit boolean (currently false — Hindi hidden until translated, sprint #205)');
   }
 }
 
@@ -217,4 +224,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[check:language-selector] PASS — language selector mounted on login + protected layout, 6 spec languages registered, Hindi visible, health runtime wired, 🌐 button + bottom sheet + /admin/i18n-health all wired.');
+console.log('[check:language-selector] PASS — language selector mounted on login + protected layout, 6 spec languages registered, Hindi gated (hidden until translated, sprint #205), health runtime wired, 🌐 button + bottom sheet + /admin/i18n-health all wired.');

@@ -78,7 +78,19 @@ const DEFAULTS = Object.freeze({
   // for missing keys, which is honest graceful degradation. Flag
   // stays here so a future strict-mode build can toggle it off
   // until full coverage lands.
-  enableHindiLocale: true,
+  //
+  // Sprint #205 (2026-06-19) — FLIPPED OFF (founder decision,
+  // option 2 "hide Hindi until translated"). At 53.9% real
+  // coverage Hindi would show ~46% English to a Hindi user; per
+  // the FOS-1 north-star (D7 retention for non-English growers)
+  // we hide it from the chooser rather than ship a half-English
+  // experience. fr/sw/ha/tw stay (99.2%). This gates BOTH the
+  // pickers (getLaunchLocales) AND the column chunk (columnLoader),
+  // so the Hindi bundle no longer loads. Existing-Hindi users are
+  // NOT broken: isSupportedLocale('hi') is flag-independent, so a
+  // persisted 'hi' selection still resolves (English fallback).
+  // Re-enable in one line once the 2987 hi keys are translated.
+  enableHindiLocale: false,
   // Scan-to-task: enables the "Add to Today's Plan" button on
   // the result card and creates follow-up tasks from a scan.
   // Enabled with FEATURE_SCAN_USEFULNESS (2026-05-07) — the
