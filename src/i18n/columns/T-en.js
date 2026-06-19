@@ -6446,6 +6446,7 @@ export default {
   "outcome.same": "Same",
   "outcome.worse": "Worse",
   "outcome.thanks": "Thanks — this helps your next plan.",
+  "scan.evidence.against": "What could change this",
   "common.today": "Today",
   "role.farmer": "Farmer",
   "role.gardener": "Gardener",

@@ -676,6 +676,13 @@ export default function IntelligentScanResult({
   const _mythosWhy     = _arr(_mythos && _mythos.why);
   const _mythosLimits  = _arr(_mythos && _mythos.limitations);
 
+  // Sprint #206 — two-sided evidence fusion. The supporting list
+  // overlaps the why list (kept there); the NEW value is the
+  // contradicting list — honest "what argues against this guess".
+  // Renders nothing when absent so the gate-locked card is unaffected.
+  const _fusion        = result && result.evidenceFusion;
+  const _fusionAgainst = _arr(_fusion && _fusion.contradictingObservations);
+
   // Universal Scan (v6) — sprint #178. objectType labels the scan as
   // one of 11 categories (fruit/vegetable/leaf/crop/flower/herb/tree/
   // weed/soil_surface/seedling/unknown); issueType labels the issue
@@ -808,8 +815,32 @@ export default function IntelligentScanResult({
               </ul>
             </>
           ) : null}
+          {/* Sprint #206 — contradicting observations (honest doubts). */}
+          {_fusionAgainst.length > 0 ? (
+            <>
+              <div style={STYLES.subhead}>
+                {tSafe('scan.evidence.against', 'What could change this')}
+              </div>
+              <ul style={STYLES.list} data-testid="scan-intel-evidence-against-list">
+                {_fusionAgainst.slice(0, 4).map((c, i) => (
+                  <li key={'ea-' + i} style={{ color: '#92400E' }}>{_str(c)}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </section>
-      ) : null}
+      ) : (_fusionAgainst.length > 0 ? (
+        <section style={STYLES.card} data-testid="scan-intel-evidence-against">
+          <div style={STYLES.subhead}>
+            {tSafe('scan.evidence.against', 'What could change this')}
+          </div>
+          <ul style={STYLES.list} data-testid="scan-intel-evidence-against-list">
+            {_fusionAgainst.slice(0, 4).map((c, i) => (
+              <li key={'ea2-' + i} style={{ color: '#92400E' }}>{_str(c)}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null)}
       <FlowerSection identification={identification} result={result} />
       <CropHealthSection health={health} />
       <TreatmentSection treatment={treatment} />

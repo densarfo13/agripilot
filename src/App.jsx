@@ -1901,6 +1901,15 @@ export default function App() {
               await import('./runtime/scanMythos/ScanMythosEngine');
             installScanMythosHealthGlobals();
           } catch { /* swallow */ }
+          // Sprint #206 — scan evidence fusion (Layer 1). Pins
+          // __scanEvidenceFusionHealth. Two-sided evidence
+          // (supporting + contradicting); composition only, never
+          // inflates confidence, satellite never used (Layer 2 frozen).
+          try {
+            const { installScanEvidenceFusionHealthGlobal } =
+              await import('./runtime/scanMythos/ScanEvidenceFusionEngine');
+            installScanEvidenceFusionHealthGlobal();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

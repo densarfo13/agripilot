@@ -231,6 +231,24 @@ async function _composeMythosDecisionSafe(envelope, input) {
   return null;
 }
 
+// Sprint #206 — fuse the composed decision into a two-sided evidence
+// view (supporting + contradicting observations). Async (lazy import);
+// ALWAYS returns null on any failure. Composition only; no provider,
+// no satellite, no fabrication, never inflates confidence.
+async function _fuseScanEvidenceSafe(decision, input) {
+  if (!decision || typeof decision !== 'object') return null;
+  try {
+    const mod = await import('../runtime/scanMythos/ScanEvidenceFusionEngine');
+    if (mod && typeof mod.fuseScanEvidence === 'function') {
+      return mod.fuseScanEvidence({
+        decision,
+        photosUsed: Array.isArray(input.photosUsed) ? input.photosUsed : [],
+      });
+    }
+  } catch { /* swallow — decorative, never required */ }
+  return null;
+}
+
 export async function analyzeScan(input = {}) {
   // Defensive — accept null/undefined input.
   const safeInput = input && typeof input === 'object' ? input : {};
@@ -287,6 +305,16 @@ export async function analyzeScan(input = {}) {
           confidenceBand: _coerceConfidence(apiResult.confidence),
         });
 
+        // Sprint #200/#206 — compose the Mythos decision, then fuse it
+        // into the two-sided evidence view. Awaited (not assigned as a
+        // bare Promise) so the result carries resolved objects the UI
+        // can read directly. Both helpers swallow faults → null, so a
+        // composition error can NEVER break the scan result.
+        const _mythosDecision = await _composeMythosDecisionSafe({
+          ...apiResult, confidencePct: _numConfidence,
+        }, safeInput);
+        const _evidenceFusion = await _fuseScanEvidenceSafe(_mythosDecision, safeInput);
+
         return Object.freeze({
           // ── V1+V2+V3+V4 envelope pass-through ─────────────
           // Spread first so any explicit override below wins;
@@ -313,12 +341,14 @@ export async function analyzeScan(input = {}) {
           confidencePct: _numConfidence,
           // ── Sprint #200 — Mythos trust-card decision ──────
           // Additive composition over the envelope we just built.
-          // Lazy + try/catch so a composer fault can NEVER break
-          // the scan result. Composition only; no provider call,
-          // no satellite, no fabrication.
-          mythosDecision: _composeMythosDecisionSafe({
-            ...apiResult, confidencePct: _numConfidence,
-          }, safeInput),
+          // Composition only; no provider call, no satellite, no
+          // fabrication. Resolved above so the UI reads it directly.
+          mythosDecision: _mythosDecision,
+          // ── Sprint #206 — two-sided evidence fusion ───────
+          // Supporting + contradicting observations derived from the
+          // decision. Honest decision support; never inflates
+          // confidence; satellite never used (Layer 2 frozen).
+          evidenceFusion: _evidenceFusion,
         });
       }
     }
