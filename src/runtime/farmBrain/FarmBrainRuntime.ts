@@ -16,6 +16,9 @@ import { inferCropStage } from './CropStageEngine';
 import { generatePrimaryTask } from './AdaptiveTaskGenerator';
 import { buildFarmScanMemory } from './FarmScanMemory';
 import { buildSatelliteFoundationHealth } from './SatelliteCorrelationEngine';
+import { buildDecisionTrace } from './DecisionTraceEngine';
+import { buildFarmTimeline } from './FarmTimeline';
+import { buildFarmDataQuality } from './FarmDataQualityEngine';
 import type { FarmBrainRecord, FarmBrainReadiness } from './FarmBrainContracts';
 
 export const FARM_BRAIN_RUNTIME_VERSION = 'farm-brain-runtime-v1';
@@ -107,6 +110,10 @@ export function buildFarmBrainReadiness(): Readonly<FarmBrainReadiness> {
       // Outcome learning shipped #36/#198.
       outcomeLearningReady: true,
       satelliteFoundationReady: !!satFoundation.ok && !satFoundation.fabricatesReadings,
+      // Sprint #209 — trace / timeline / data-quality engines.
+      decisionTraceReady: typeof buildDecisionTrace === 'function',
+      timelineReady: typeof buildFarmTimeline === 'function',
+      dataQualityReady: typeof buildFarmDataQuality === 'function',
       satelliteUsed: false as const,
       readOnly: true as const,
       neverFabricates: true as const,
@@ -115,6 +122,7 @@ export function buildFarmBrainReadiness(): Readonly<FarmBrainReadiness> {
     farmBrainReady: false, cropStageReady: false, farmHealthReady: false,
     adaptiveTasksReady: false, scanMemoryReady: false,
     outcomeLearningReady: false, satelliteFoundationReady: false,
+    decisionTraceReady: false, timelineReady: false, dataQualityReady: false,
     satelliteUsed: false as const, readOnly: true as const,
     neverFabricates: true as const,
   }));

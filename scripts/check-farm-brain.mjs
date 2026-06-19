@@ -169,12 +169,77 @@ if (!_exists(UI)) {
     'IntelligentScanResult must render the confidence breakdown list');
 }
 
+// 6a. Sprint #209 — Decision Trace + Timeline + Data Quality engines.
+const TRACE = 'src/runtime/farmBrain/DecisionTraceEngine.ts';
+if (!_exists(TRACE)) {
+  errors.push('missing: ' + TRACE);
+} else {
+  const src = _read(TRACE);
+  _has(src, 'export function buildDecisionTrace',
+    'DecisionTraceEngine must export buildDecisionTrace');
+  for (const f of ['recommendation', 'confidence', 'evidence', 'risks', 'contributors']) {
+    _has(src, f, 'DecisionTrace output must include: ' + f);
+  }
+  // "No recommendation without reason" — the guarantee must be present.
+  _has(src, 'hasReason',
+    'DecisionTraceEngine must expose hasReason (no recommendation without reason)');
+  // Honesty — confidence echoed, never recomputed.
+  _has(src, '_num(input.confidence)',
+    'DecisionTraceEngine must echo input.confidence (never recompute)');
+}
+const TL = 'src/runtime/farmBrain/FarmTimeline.ts';
+if (!_exists(TL)) {
+  errors.push('missing: ' + TL);
+} else {
+  const src = _read(TL);
+  _has(src, 'export function buildFarmTimeline',
+    'FarmTimeline must export buildFarmTimeline');
+  for (const k of ['farm_created', 'crop_added', 'planting_date_added',
+    'scan_completed', 'issue_detected', 'task_completed',
+    'outcome_recorded', 'weather_alert', 'health_score_changed']) {
+    _has(src, k, 'FarmTimeline must track kind: ' + k);
+  }
+}
+const DQ = 'src/runtime/farmBrain/FarmDataQualityEngine.ts';
+if (!_exists(DQ)) {
+  errors.push('missing: ' + DQ);
+} else {
+  const src = _read(DQ);
+  _has(src, 'export function buildFarmDataQuality',
+    'FarmDataQualityEngine must export buildFarmDataQuality');
+  for (const f of ['score', 'missingData', 'nextBestAction']) {
+    _has(src, f, 'FarmDataQuality output must include: ' + f);
+  }
+}
+
+// 6b. Readiness flags for the 3 new engines.
+{
+  const fbr = _read('src/runtime/farmBrain/FarmBrainRuntime.ts');
+  for (const f of ['decisionTraceReady', 'timelineReady', 'dataQualityReady']) {
+    _has(fbr, f, 'FarmBrainRuntime readiness must expose flag: ' + f);
+  }
+}
+
+// 6c. Home below-fold renders Timeline + Quality.
+const BF = 'src/components/farmBrain/FarmBrainBelowFold.jsx';
+if (!_exists(BF)) {
+  errors.push('missing: ' + BF);
+} else {
+  const src = _read(BF);
+  _has(src, 'farm-timeline-card', 'FarmBrainBelowFold must render the timeline card');
+  _has(src, 'farm-quality-card', 'FarmBrainBelowFold must render the quality card');
+}
+_has(_read('src/pages/Home.jsx'), 'FarmBrainBelowFold',
+  'Home.jsx must render FarmBrainBelowFold below the hero');
+
 // 7. i18n keys.
 const TEN = _read('src/i18n/columns/T-en.js');
 for (const k of [
   'scan.evidence.breakdown', 'scan.evidence.image', 'scan.evidence.farmHistory',
   'farmBrain.next.addCrop.title', 'farmBrain.next.firstScan.title',
   'farmBrain.next.startAction.title',
+  'farmQuality.title', 'farmQuality.improveBy', 'farmTimeline.title',
+  'farmTimeline.empty', 'farmTimeline.kind.crop_added',
 ]) {
   if (!TEN.includes('"' + k + '"')) errors.push('T-en.js missing key: ' + k);
 }

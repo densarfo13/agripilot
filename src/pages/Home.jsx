@@ -65,6 +65,7 @@ import TodaysActionCard from '../components/intelligence/TodaysActionCard.jsx';
 // Health / Risk / Harvest tiles + Today's Action + market strip.
 // Class-component error boundary inside — never blocks Home.
 import CommandCenterDeck from '../components/commandCenter/CommandCenterDeck.jsx';
+import FarmBrainBelowFold from '../components/farmBrain/FarmBrainBelowFold.jsx';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
 // Once-per-mount calm-notification feed sync — feeds the user-facing
@@ -426,6 +427,29 @@ export default function Home() {
     const locationObj = (farmCtx && farmCtx.location) || _resolveLocationObj(farm);
     return { userType, farm, crop, locationObj };
   }, [farmCtx]);
+
+  // Sprint #209 — Farm Brain below-fold signals. Real milestones
+  // derived from the farm record (no fabrication): an entry exists
+  // only when the underlying data exists. Quality reflects which
+  // fields are actually present.
+  const _farmBrainSignals = useMemo(() => {
+    const f = (local && local.farm) || {};
+    const cropName = (local.crop && local.crop !== 'crop') ? local.crop : (f.crop || null);
+    const plantingDate = f.plantingDate || f.plantedAt || f.plantingDateISO || null;
+    const locationStr = (local.locationObj && (local.locationObj.label || local.locationObj.name))
+      || f.location || f.region || null;
+    const timelineEntries = [];
+    if (f && (f.id || f.createdAt || f.name)) {
+      timelineEntries.push({ kind: 'farm_created', at: f.createdAt || '' });
+    }
+    if (cropName) timelineEntries.push({ kind: 'crop_added', at: f.cropAddedAt || '' });
+    if (plantingDate) timelineEntries.push({ kind: 'planting_date_added', at: plantingDate });
+    return {
+      crop: cropName, location: locationStr, plantingDate,
+      scans: [], tasks: [], outcomes: [],
+      timelineEntries, pilotEvents: [],
+    };
+  }, [local]);
 
   // ─── Live weather pipeline ───────────────────────────────────
   const { weather, loading: weatherLoading, refetch: refetchWeather } =
@@ -1011,6 +1035,12 @@ export default function Home() {
         <section data-testid="home-hero-start">
           <CommandCenterDeck />
         </section>
+
+        {/* ── 3b. Below fold — Farm Timeline + Farm Quality (#209).
+             Read-only composites over the farm's existing data; show
+             next-best action instead of a bare empty state. */}
+        <FarmBrainBelowFold farmSignals={_farmBrainSignals} />
+
 
         {/* ── 3c. More for today (demoted recommendation cards) ─
              DailyFarmPlanCard + TodaysActionCard + TopActionCard

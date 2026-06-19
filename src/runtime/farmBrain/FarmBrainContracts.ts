@@ -38,6 +38,10 @@ export interface FarmBrainReadiness {
   scanMemoryReady:          boolean;
   outcomeLearningReady:     boolean;
   satelliteFoundationReady: boolean;
+  // sprint #209 — trace / timeline / data-quality
+  decisionTraceReady:       boolean;
+  timelineReady:            boolean;
+  dataQualityReady:         boolean;
   // honesty fields (kept from #207)
   satelliteUsed:            false;
   readOnly:                 true;
