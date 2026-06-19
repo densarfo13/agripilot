@@ -6,12 +6,12 @@
 
 | Locale | Keys | Structural coverage | Pending review | Real-translation coverage |
 |---|---:|---:|---:|---:|
-| en | 6433 | 100% | 0 | 100% |
-| fr | 6433 | 100% | 12 | 99.8% |
-| sw | 6433 | 100% | 12 | 99.8% |
-| ha | 6433 | 100% | 12 | 99.8% |
-| tw | 6433 | 100% | 12 | 99.8% |
-| hi | 6433 | 100% | 2946 | 54.2% |
+| en | 6474 | 100% | 0 | 100% |
+| fr | 6474 | 100% | 53 | 99.2% |
+| sw | 6474 | 100% | 53 | 99.2% |
+| ha | 6474 | 100% | 53 | 99.2% |
+| tw | 6474 | 100% | 53 | 99.2% |
+| hi | 6474 | 100% | 2987 | 53.9% |
 
 Structural coverage = keys present vs the English canonical column.
 Real-translation coverage subtracts translator-review stubs that
