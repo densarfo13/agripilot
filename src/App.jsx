@@ -1883,6 +1883,15 @@ export default function App() {
               await import('./runtime/i18n/LanguageLeakDetector');
             installLanguageLeakDetector();
           } catch { /* swallow */ }
+          // Sprint #204 — unified language-health composite. Pins
+          // __farrowayLanguageHealth() over the 3 i18n probes (must
+          // install AFTER them). Two honest axes: structural (code)
+          // + translation (translator); never folded into a fake 100.
+          try {
+            const { installMythosLanguageGuard } =
+              await import('./i18n/MythosLanguageGuard');
+            installMythosLanguageGuard();
+          } catch { /* swallow */ }
           // Sprint #200 — Mythos scan composition layer. Pins
           // __scanMythosHealth + __multiPhotoScanHealth +
           // __scanMythosDecision. Composition over the existing

@@ -65,6 +65,28 @@ if (!_exists(LLD)) {
 _has(APP, 'installLanguageLeakDetector',
   'App.jsx must call installLanguageLeakDetector at boot');
 
+// 1d. Sprint #204 — MythosLanguageGuard composite + master index.
+const GUARD = 'src/i18n/MythosLanguageGuard.ts';
+if (!_exists(GUARD)) {
+  errors.push('missing: ' + GUARD);
+} else {
+  const src = _read(GUARD);
+  _has(src, 'export function installMythosLanguageGuard',
+    'MythosLanguageGuard must export installMythosLanguageGuard');
+  _has(src, '__farrowayLanguageHealth',
+    'MythosLanguageGuard must pin __farrowayLanguageHealth');
+  _has(src, 'structuralScore',
+    'MythosLanguageGuard must report structuralScore (engineering axis)');
+  _has(src, 'translationScore',
+    'MythosLanguageGuard must report translationScore separately (never fold into 100)');
+}
+_has(APP, 'installMythosLanguageGuard',
+  'App.jsx must call installMythosLanguageGuard at boot');
+if (!_exists('LANGUAGE_MASTER_INDEX.md')) {
+  errors.push('missing LANGUAGE_MASTER_INDEX.md '
+    + '(run node scripts/generate-language-master-index.mjs)');
+}
+
 // 1c. Sprint #203 — the leaked role/today keys must exist + the
 // fixed render sites must route through them (no raw 'Farmer'/'Today'
 // regressions in the three fixed files).
