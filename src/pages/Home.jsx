@@ -646,10 +646,10 @@ export default function Home() {
         return tSafe('gardenMode.userLabel', 'Gardener');
       }
       const ut = local.userType;
-      if (typeof ut !== 'string' || !ut.trim()) return 'Farmer';
-      if (ut === 'farmer') return 'Farmer';
+      if (typeof ut !== 'string' || !ut.trim()) return tSafe('role.farmer', 'Farmer');
+      if (ut === 'farmer') return tSafe('role.farmer', 'Farmer');
       return ut.charAt(0).toUpperCase() + ut.slice(1);
-    } catch { return 'Farmer'; }
+    } catch { return tSafe('role.farmer', 'Farmer'); }
   })();
 
   // Mark-as-done — persisted across reloads via FEATURE_DAILY_HABIT.

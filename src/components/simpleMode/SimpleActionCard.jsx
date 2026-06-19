@@ -84,8 +84,8 @@ export default function SimpleActionCard({
     ? tSafe(action.reasonKey, action.reasonDefault || '')
     : (action.reasonDefault || '');
   const renderWhen = action.whenKey
-    ? tSafe(action.whenKey, action.whenDefault || 'Today')
-    : (action.whenDefault || 'Today');
+    ? tSafe(action.whenKey, action.whenDefault || tSafe('common.today', 'Today'))
+    : (action.whenDefault || tSafe('common.today', 'Today'));
   const voicePrompt = action.voiceKey
     ? tSafe(action.voiceKey, action.voiceDefault || '')
     : (action.voiceDefault || '');

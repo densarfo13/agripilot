@@ -213,7 +213,7 @@ export default function FarmerDashboardPage() {
             profileComplete: false,
             role:     'farmer',
             userType: 'farmer',
-            name:     'Farmer',
+            name:     tSafe('role.farmer', 'Farmer'),
             farm:     null,
             crop:     null,
             location: null,

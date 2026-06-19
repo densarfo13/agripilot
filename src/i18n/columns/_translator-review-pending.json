@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6469,
-      "missingFilled": 2,
+      "totalKeys": 6474,
+      "missingFilled": 5,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -53,12 +53,17 @@
         "scan.followUp.3days",
         "scan.followUp.7days",
         "sell.cropPlaceholder",
-        "sell.pricePlaceholder"
+        "sell.pricePlaceholder",
+        "common.today",
+        "role.farmer",
+        "role.gardener",
+        "role.grower",
+        "role.fieldOfficer"
       ]
     },
     "sw": {
-      "totalKeys": 6469,
-      "missingFilled": 2,
+      "totalKeys": 6474,
+      "missingFilled": 5,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -108,12 +113,17 @@
         "scan.followUp.3days",
         "scan.followUp.7days",
         "sell.cropPlaceholder",
-        "sell.pricePlaceholder"
+        "sell.pricePlaceholder",
+        "common.today",
+        "role.farmer",
+        "role.gardener",
+        "role.grower",
+        "role.fieldOfficer"
       ]
     },
     "ha": {
-      "totalKeys": 6469,
-      "missingFilled": 2,
+      "totalKeys": 6474,
+      "missingFilled": 5,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -163,12 +173,17 @@
         "scan.followUp.3days",
         "scan.followUp.7days",
         "sell.cropPlaceholder",
-        "sell.pricePlaceholder"
+        "sell.pricePlaceholder",
+        "common.today",
+        "role.farmer",
+        "role.gardener",
+        "role.grower",
+        "role.fieldOfficer"
       ]
     },
     "tw": {
-      "totalKeys": 6469,
-      "missingFilled": 2,
+      "totalKeys": 6474,
+      "missingFilled": 5,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -218,12 +233,17 @@
         "scan.followUp.3days",
         "scan.followUp.7days",
         "sell.cropPlaceholder",
-        "sell.pricePlaceholder"
+        "sell.pricePlaceholder",
+        "common.today",
+        "role.farmer",
+        "role.gardener",
+        "role.grower",
+        "role.fieldOfficer"
       ]
     },
     "hi": {
-      "totalKeys": 6469,
-      "missingFilled": 2,
+      "totalKeys": 6474,
+      "missingFilled": 5,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3207,7 +3227,12 @@
         "scan.followUp.3days",
         "scan.followUp.7days",
         "sell.cropPlaceholder",
-        "sell.pricePlaceholder"
+        "sell.pricePlaceholder",
+        "common.today",
+        "role.farmer",
+        "role.gardener",
+        "role.grower",
+        "role.fieldOfficer"
       ]
     }
   }

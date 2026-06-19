@@ -1874,6 +1874,15 @@ export default function App() {
               await import('./runtime/i18n/LanguageConsistencyRuntime');
             installLanguageConsistencyGlobal();
           } catch { /* swallow */ }
+          // Sprint #203 — runtime language-leak detector. Pins
+          // __farrowayLanguageLeaks() (live DOM scan for {key} leaks,
+          // blank labels, and Latin-English while a non-Latin locale
+          // is active).
+          try {
+            const { installLanguageLeakDetector } =
+              await import('./runtime/i18n/LanguageLeakDetector');
+            installLanguageLeakDetector();
+          } catch { /* swallow */ }
           // Sprint #200 — Mythos scan composition layer. Pins
           // __scanMythosHealth + __multiPhotoScanHealth +
           // __scanMythosDecision. Composition over the existing

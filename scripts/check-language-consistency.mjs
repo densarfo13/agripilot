@@ -48,6 +48,33 @@ const APP = _read('src/App.jsx');
 _has(APP, 'installLanguageConsistencyGlobal',
   'App.jsx must call installLanguageConsistencyGlobal at boot');
 
+// 1b. Sprint #203 — runtime leak detector wired.
+const LLD = 'src/runtime/i18n/LanguageLeakDetector.ts';
+if (!_exists(LLD)) {
+  errors.push('missing: ' + LLD);
+} else {
+  const src = _read(LLD);
+  _has(src, 'export function installLanguageLeakDetector',
+    'LanguageLeakDetector must export installLanguageLeakDetector');
+  _has(src, '__farrowayLanguageLeaks',
+    'LanguageLeakDetector must pin __farrowayLanguageLeaks');
+  for (const f of ['keyLeaks', 'blankLabels', 'englishSuspectCount']) {
+    _has(src, f, 'LanguageLeakDetector must expose §6 field: ' + f);
+  }
+}
+_has(APP, 'installLanguageLeakDetector',
+  'App.jsx must call installLanguageLeakDetector at boot');
+
+// 1c. Sprint #203 — the leaked role/today keys must exist + the
+// fixed render sites must route through them (no raw 'Farmer'/'Today'
+// regressions in the three fixed files).
+const TEN203 = _read('src/i18n/columns/T-en.js');
+for (const k of ['role.farmer', 'common.today']) {
+  if (!TEN203.includes('"' + k + '"')) {
+    errors.push('T-en.js missing leak-fix key: ' + k);
+  }
+}
+
 // 2. Crop localization layer.
 if (!_exists('src/config/crops.js')) {
   errors.push('missing crop localization source src/config/crops.js');
