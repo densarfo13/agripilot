@@ -135,39 +135,12 @@ export function nextRecommendedAction(
   }, null);
 }
 
-export function buildFarmBrainHealth(): Readonly<{
-  ok: boolean;
-  runtimeVersion: string;
-  readOnly: true;
-  composesExistingHistories: true;
-  satelliteUsed: false;
-  neverFabricates: true;
-}> {
-  return Object.freeze({
-    ok: true,
-    runtimeVersion: FARM_BRAIN_VERSION,
-    readOnly: true as const,
-    composesExistingHistories: true as const,
-    satelliteUsed: false as const,
-    neverFabricates: true as const,
-  });
-}
-
-let _installed = false;
-export function installFarmBrainHealthGlobal(): void {
-  if (_installed) return;
-  if (_safe(() => typeof window === 'undefined', true)) return;
-  _safe(() => {
-    Object.defineProperty(window as any, '__farmBrainHealth', {
-      configurable: true, enumerable: false, writable: false,
-      value: () => buildFarmBrainHealth(),
-    });
-    _installed = true;
-  }, undefined);
-}
+// NOTE: __farmBrainHealth is pinned by FarmBrainRuntime (sprint #208)
+// with the spec's 7 readiness flags. This module stays the pure
+// state+next-action composite; the health install lives in the
+// runtime to avoid two modules racing on the same global.
 
 export const _internal = Object.freeze({
   buildFarmBrain, nextRecommendedAction,
-  buildFarmBrainHealth, installFarmBrainHealthGlobal,
 });
 export default buildFarmBrain;

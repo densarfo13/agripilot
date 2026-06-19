@@ -26,7 +26,7 @@ const _exists = (rel) => { try { return fs.existsSync(path.join(ROOT, rel)); } c
 const _read = (rel) => { try { return fs.readFileSync(path.join(ROOT, rel), 'utf8'); } catch { return ''; } };
 const _has = (s, n, m) => { if (!s.includes(n)) errors.push(m); };
 
-// 1-2. FarmBrain composite + honesty.
+// 1. FarmBrain state composite (#207) — state + next-action.
 const FB = 'src/runtime/farmBrain/FarmBrain.ts';
 if (!_exists(FB)) {
   errors.push('missing: ' + FB);
@@ -36,15 +36,98 @@ if (!_exists(FB)) {
     'FarmBrain must export buildFarmBrain');
   _has(src, 'export function nextRecommendedAction',
     'FarmBrain must export nextRecommendedAction (empty-state next step)');
-  _has(src, 'export function installFarmBrainHealthGlobal',
-    'FarmBrain must export installFarmBrainHealthGlobal');
   _has(src, 'satelliteHistory', 'FarmBrain must declare satelliteHistory');
-  _has(src, 'satelliteUsed: false',
-    'FarmBrain health must assert satelliteUsed:false (satellite frozen)');
-  _has(src, 'readOnly: true', 'FarmBrain must be read-only');
-  if (/import .*(SatelliteCorrelation|Sentinel|NDVI|NDMI)/i.test(src)) {
-    errors.push('FarmBrain must NOT import satellite/Sentinel/NDVI (frozen)');
+}
+
+// 1a. Sprint #208 — Farm Brain Runtime: getFarmBrain + 7-flag health.
+const FBR = 'src/runtime/farmBrain/FarmBrainRuntime.ts';
+if (!_exists(FBR)) {
+  errors.push('missing: ' + FBR);
+} else {
+  const src = _read(FBR);
+  _has(src, 'export function getFarmBrain',
+    'FarmBrainRuntime must export getFarmBrain(farmId)');
+  _has(src, 'export function installFarmBrainHealthGlobal',
+    'FarmBrainRuntime must export installFarmBrainHealthGlobal');
+  _has(src, 'export function buildFarmBrainReadiness',
+    'FarmBrainRuntime must export buildFarmBrainReadiness');
+  for (const f of ['farmBrainReady', 'cropStageReady', 'farmHealthReady',
+    'adaptiveTasksReady', 'scanMemoryReady', 'outcomeLearningReady',
+    'satelliteFoundationReady']) {
+    _has(src, f, 'FarmBrainRuntime readiness must expose flag: ' + f);
   }
+  _has(src, 'satelliteUsed: false',
+    'FarmBrainRuntime must assert satelliteUsed:false (frozen)');
+  _has(src, 'readOnly: true', 'FarmBrainRuntime must be read-only');
+  _has(src, 'satelliteHistory: Object.freeze([])',
+    'FarmBrainRuntime must keep satelliteHistory empty (frozen)');
+}
+
+// 1b. Sprint #208 — CropStageEngine (10 crops, honest confidence).
+const CS = 'src/runtime/farmBrain/CropStageEngine.ts';
+if (!_exists(CS)) {
+  errors.push('missing: ' + CS);
+} else {
+  const src = _read(CS);
+  _has(src, 'export function inferCropStage',
+    'CropStageEngine must export inferCropStage');
+  for (const c of ['onion', 'tomato', 'pepper', 'okra', 'maize',
+    'cassava', 'rice', 'beans', 'cabbage', 'cucumber']) {
+    _has(src, c + ':', 'CropStageEngine must support crop: ' + c);
+  }
+  _has(src, 'confidence: null',
+    'CropStageEngine must return confidence null when not computable (no faked stage)');
+}
+
+// 1c. Sprint #208 — Satellite foundation: UNCONFIGURED, never fake.
+for (const f of [
+  'src/runtime/farmBrain/SatelliteContracts.ts',
+  'src/runtime/farmBrain/SatelliteProvider.ts',
+  'src/runtime/farmBrain/SatelliteCorrelationEngine.ts',
+]) {
+  if (!_exists(f)) { errors.push('missing: ' + f); continue; }
+  const src = _read(f);
+  _has(src, 'UNCONFIGURED', f + ' must use the UNCONFIGURED status');
+  // No fabricated numeric NDVI / vegetation value.
+  if (/\b(ndvi|ndmi|vegetationStress|waterStress)\s*[:=]\s*-?\d/i.test(src)) {
+    errors.push(f + ' must NOT assign a numeric NDVI/stress value (no fake satellite)');
+  }
+}
+{
+  const sce = _read('src/runtime/farmBrain/SatelliteCorrelationEngine.ts');
+  _has(sce, 'satelliteConfidence: null',
+    'SatelliteCorrelationEngine must return satelliteConfidence null (never faked)');
+}
+
+// 1d. Sprint #208 — AdaptiveTaskGenerator: ONE task, reason+confidence.
+const ATG = 'src/runtime/farmBrain/AdaptiveTaskGenerator.ts';
+if (!_exists(ATG)) {
+  errors.push('missing: ' + ATG);
+} else {
+  const src = _read(ATG);
+  _has(src, 'export function generatePrimaryTask',
+    'AdaptiveTaskGenerator must export generatePrimaryTask');
+  _has(src, 'reason:', 'AdaptiveTaskGenerator task must carry a reason');
+  _has(src, 'confidence:', 'AdaptiveTaskGenerator task must carry a confidence');
+  _has(src, 'followUp:', 'AdaptiveTaskGenerator task must carry a followUp');
+}
+
+// 1e. Sprint #208 — FarmScanMemory.
+const FSM = 'src/runtime/farmBrain/FarmScanMemory.ts';
+if (!_exists(FSM)) {
+  errors.push('missing: ' + FSM);
+} else {
+  _has(_read(FSM), 'export function buildFarmScanMemory',
+    'FarmScanMemory must export buildFarmScanMemory');
+}
+
+// 1f. Sprint #208 — FarmBrainContracts (7-flag readiness shape).
+const FBC = 'src/runtime/farmBrain/FarmBrainContracts.ts';
+if (!_exists(FBC)) {
+  errors.push('missing: ' + FBC);
+} else {
+  _has(_read(FBC), 'satelliteHistory',
+    'FarmBrainContracts must declare satelliteHistory (always [])');
 }
 
 // 3. Honest confidence breakdown.
