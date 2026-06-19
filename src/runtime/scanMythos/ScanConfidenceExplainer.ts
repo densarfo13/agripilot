@@ -96,6 +96,35 @@ export function buildLimitations(input: {
   }, Object.freeze(['This is guidance from one photo, not a lab test.']));
 }
 
+/**
+ * Build an HONEST numeric confidence breakdown (sprint #207).
+ *
+ * The spec asked for "Image 55% / Weather 15% / Satellite 7% / Farm
+ * history 5%". We only emit the contributors that ACTUALLY produced
+ * the displayed number:
+ *   • image evidence  = base provider confidence (= confidence − boost)
+ *   • farm history    = the explainable farmContextBoost (a real number)
+ * Weather is qualitative (it appears in the `why` list, not as a scored
+ * slice) and satellite is FROZEN → neither is invented here. The slices
+ * therefore SUM to the displayed confidence — no fabricated points.
+ */
+export function buildConfidenceBreakdown(input: {
+  confidencePct?: number | null;
+  farmContextBoost?: number | null;
+}): ReadonlyArray<Readonly<{ source: string; label: string; points: number }>> {
+  return _safe(() => {
+    const total = Math.max(0, Math.min(100, _num(input.confidencePct) ?? 0));
+    const boost = Math.max(0, Math.min(total, _num(input.farmContextBoost) ?? 0));
+    const image = Math.max(0, total - boost);
+    const out: Array<{ source: string; label: string; points: number }> = [];
+    if (image > 0) out.push({ source: 'image', label: 'Image evidence', points: image });
+    if (boost > 0) out.push({ source: 'farmHistory', label: 'Farm history', points: boost });
+    // Deliberately NO satellite slice — satellite is frozen; emitting
+    // points for it would fabricate evidence.
+    return Object.freeze(out.map((o) => Object.freeze(o)));
+  }, Object.freeze([]));
+}
+
 export const _internal = Object.freeze({
-  confidenceLabelFor, buildWhy, buildLimitations,
+  confidenceLabelFor, buildWhy, buildLimitations, buildConfidenceBreakdown,
 });

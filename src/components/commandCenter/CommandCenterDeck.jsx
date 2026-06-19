@@ -16,6 +16,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
+import { buildFarmBrain, nextRecommendedAction } from '../../runtime/farmBrain/FarmBrain';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -70,6 +71,16 @@ function CommandCenterDeckInner() {
 
   const startAction = () => _safe(() => navigate('/tasks'), null);
   const scanAction = () => _safe(() => navigate('/scan'), null);
+
+  // Sprint #207 — Farm Brain onboarding guidance. When there is no
+  // real today-action yet, show the single most useful next step
+  // (add crop → scan → start) instead of a bare "Not enough data yet".
+  // Read-only; null once a real action exists.
+  const _brain = _safe(() => buildFarmBrain({
+    crop: s.crop, growthStage: s.cropStage,
+  }), null);
+  const _emptyNext = (!s.todayAction || !s.todayAction.title)
+    ? _safe(() => nextRecommendedAction(_brain), null) : null;
 
   // Sprint #194 — "never show score without explanation". Read the
   // FarmHealthEngine brief (composer over real probes); contributors
@@ -225,12 +236,19 @@ function CommandCenterDeckInner() {
       {/* TODAY'S ACTION card with Start + Scan */}
       <div style={S.actionCard} data-testid="cc-today-action">
         <p style={S.actionLabel}>{tSafe('commandCenter.todaysAction', "Today's Action")}</p>
-        <p style={S.actionTitle}>
-          {action.title || tSafe('commandCenter.empty', 'Not enough data yet')}
+        <p style={S.actionTitle} data-testid="cc-action-title">
+          {action.title
+            || (_emptyNext
+              ? tSafe(_emptyNext.titleKey, _emptyNext.title)
+              : tSafe('commandCenter.empty', 'Not enough data yet'))}
         </p>
         {action.why ? (
           <p style={S.actionWhy}>{action.why}</p>
-        ) : null}
+        ) : (_emptyNext ? (
+          <p style={S.actionWhy} data-testid="cc-action-onboarding-guide">
+            {tSafe(_emptyNext.guideKey, _emptyNext.guide)}
+          </p>
+        ) : null)}
         {action.estimatedTime ? (
           <p style={S.actionTime}>
             {tSafe('commandCenter.timeRequired', 'Time required')}: {action.estimatedTime}

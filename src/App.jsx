@@ -1910,6 +1910,14 @@ export default function App() {
               await import('./runtime/scanMythos/ScanEvidenceFusionEngine');
             installScanEvidenceFusionHealthGlobal();
           } catch { /* swallow */ }
+          // Sprint #207 — Farm Brain (read-only farm-state composite).
+          // Pins __farmBrainHealth. Composes existing histories; never
+          // fabricates satellite (satelliteHistory always []).
+          try {
+            const { installFarmBrainHealthGlobal } =
+              await import('./runtime/farmBrain/FarmBrain');
+            installFarmBrainHealthGlobal();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

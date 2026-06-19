@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6475,
-      "missingFilled": 1,
+      "totalKeys": 6484,
+      "missingFilled": 9,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -59,12 +59,21 @@
         "role.gardener",
         "role.grower",
         "role.fieldOfficer",
-        "scan.evidence.against"
+        "scan.evidence.against",
+        "scan.evidence.breakdown",
+        "scan.evidence.image",
+        "scan.evidence.farmHistory",
+        "farmBrain.next.addCrop.title",
+        "farmBrain.next.addCrop.guide",
+        "farmBrain.next.firstScan.title",
+        "farmBrain.next.firstScan.guide",
+        "farmBrain.next.startAction.title",
+        "farmBrain.next.startAction.guide"
       ]
     },
     "sw": {
-      "totalKeys": 6475,
-      "missingFilled": 1,
+      "totalKeys": 6484,
+      "missingFilled": 9,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -120,12 +129,21 @@
         "role.gardener",
         "role.grower",
         "role.fieldOfficer",
-        "scan.evidence.against"
+        "scan.evidence.against",
+        "scan.evidence.breakdown",
+        "scan.evidence.image",
+        "scan.evidence.farmHistory",
+        "farmBrain.next.addCrop.title",
+        "farmBrain.next.addCrop.guide",
+        "farmBrain.next.firstScan.title",
+        "farmBrain.next.firstScan.guide",
+        "farmBrain.next.startAction.title",
+        "farmBrain.next.startAction.guide"
       ]
     },
     "ha": {
-      "totalKeys": 6475,
-      "missingFilled": 1,
+      "totalKeys": 6484,
+      "missingFilled": 9,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -181,12 +199,21 @@
         "role.gardener",
         "role.grower",
         "role.fieldOfficer",
-        "scan.evidence.against"
+        "scan.evidence.against",
+        "scan.evidence.breakdown",
+        "scan.evidence.image",
+        "scan.evidence.farmHistory",
+        "farmBrain.next.addCrop.title",
+        "farmBrain.next.addCrop.guide",
+        "farmBrain.next.firstScan.title",
+        "farmBrain.next.firstScan.guide",
+        "farmBrain.next.startAction.title",
+        "farmBrain.next.startAction.guide"
       ]
     },
     "tw": {
-      "totalKeys": 6475,
-      "missingFilled": 1,
+      "totalKeys": 6484,
+      "missingFilled": 9,
       "coveragePct": 99,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -242,12 +269,21 @@
         "role.gardener",
         "role.grower",
         "role.fieldOfficer",
-        "scan.evidence.against"
+        "scan.evidence.against",
+        "scan.evidence.breakdown",
+        "scan.evidence.image",
+        "scan.evidence.farmHistory",
+        "farmBrain.next.addCrop.title",
+        "farmBrain.next.addCrop.guide",
+        "farmBrain.next.firstScan.title",
+        "farmBrain.next.firstScan.guide",
+        "farmBrain.next.startAction.title",
+        "farmBrain.next.startAction.guide"
       ]
     },
     "hi": {
-      "totalKeys": 6475,
-      "missingFilled": 1,
+      "totalKeys": 6484,
+      "missingFilled": 9,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3237,7 +3273,16 @@
         "role.gardener",
         "role.grower",
         "role.fieldOfficer",
-        "scan.evidence.against"
+        "scan.evidence.against",
+        "scan.evidence.breakdown",
+        "scan.evidence.image",
+        "scan.evidence.farmHistory",
+        "farmBrain.next.addCrop.title",
+        "farmBrain.next.addCrop.guide",
+        "farmBrain.next.firstScan.title",
+        "farmBrain.next.firstScan.guide",
+        "farmBrain.next.startAction.title",
+        "farmBrain.next.startAction.guide"
       ]
     }
   }

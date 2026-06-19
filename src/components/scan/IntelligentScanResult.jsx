@@ -683,6 +683,22 @@ export default function IntelligentScanResult({
   const _fusion        = result && result.evidenceFusion;
   const _fusionAgainst = _arr(_fusion && _fusion.contradictingObservations);
 
+  // Sprint #207 — honest numeric confidence breakdown. Only the two
+  // real contributors (image base + farm-history boost) that summed to
+  // the displayed confidence. NO satellite slice (frozen → would
+  // fabricate). Mirrors ScanConfidenceExplainer.buildConfidenceBreakdown.
+  const _mythosConf  = _num(_mythos && _mythos.confidence);
+  const _mythosBoost = _num(_mythos && _mythos.farmContextBoost);
+  const _confBreakdown = (() => {
+    const total = (typeof _mythosConf === 'number') ? Math.max(0, Math.min(100, _mythosConf)) : 0;
+    const boost = (typeof _mythosBoost === 'number') ? Math.max(0, Math.min(total, _mythosBoost)) : 0;
+    const image = Math.max(0, total - boost);
+    const out = [];
+    if (image > 0) out.push({ k: 'scan.evidence.image', label: 'Image evidence', points: image });
+    if (boost > 0) out.push({ k: 'scan.evidence.farmHistory', label: 'Farm history', points: boost });
+    return out;
+  })();
+
   // Universal Scan (v6) — sprint #178. objectType labels the scan as
   // one of 11 categories (fruit/vegetable/leaf/crop/flower/herb/tree/
   // weed/soil_surface/seedling/unknown); issueType labels the issue
@@ -799,6 +815,22 @@ export default function IntelligentScanResult({
               <ul style={STYLES.list} data-testid="scan-intel-mythos-why-list">
                 {_mythosWhy.slice(0, 5).map((w, i) => (
                   <li key={'mw-' + i}>{_str(w)}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {/* Sprint #207 — honest confidence breakdown (real
+              contributors only; no fabricated satellite slice). */}
+          {_confBreakdown.length > 0 ? (
+            <>
+              <div style={STYLES.subhead}>
+                {tSafe('scan.evidence.breakdown', 'How sure we are')}
+              </div>
+              <ul style={STYLES.list} data-testid="scan-intel-confidence-breakdown">
+                {_confBreakdown.map((b, i) => (
+                  <li key={'cb-' + i}>
+                    {tSafe(b.k, b.label)}: {b.points}%
+                  </li>
                 ))}
               </ul>
             </>
