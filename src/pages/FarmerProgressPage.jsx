@@ -25,6 +25,18 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import { useNetwork } from '../context/NetworkContext.jsx';
 import { getFarmTasks } from '../runtime/auth.js';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
+import { buildFarmJourney } from '../runtime/farmTimeline/FarmTimelineEngine';
+
+// Sprint #212 §7 — never throw out of render; journey is decorative.
+function _buildFarmJourneySafe(items) {
+  try {
+    const entries = (Array.isArray(items) ? items : []).map((e) => ({
+      kind: (e && (e.kind || e.type)) || 'task_completed',
+      at: (e && (e.at || e.date || e.createdAt)) || '',
+    }));
+    return buildFarmJourney({ entries });
+  } catch { return null; }
+}
 import { STAGE_EMOJIS, STAGE_KEYS } from '../utils/cropStages.js';
 import { SECTION_ICONS } from '../lib/farmerIcons.js';
 import { calculateMomentum } from '../engine/momentumCalculator.js';
@@ -337,6 +349,12 @@ export default function FarmerProgressPage() {
     }
   })();
 
+  // Sprint #212 §7 — engine-backed farm journey (read-only). Derived
+  // from the merged timeline's items; empty → existing guided card.
+  const _farmJourney = _buildFarmJourneySafe(
+    (_mergedTimeline && Array.isArray(_mergedTimeline.items)) ? _mergedTimeline.items : [],
+  );
+
   if (!profile) return null;
 
   return (
@@ -421,6 +439,24 @@ export default function FarmerProgressPage() {
             {tSafe('activity.recent.title', 'Recent activity')}
           </div>
           <PlantTimeline timeline={_mergedTimeline} />
+        </div>
+      ) : null}
+
+      {/* Sprint #212 §7 — Farm journey timeline (engine-backed). When
+          there are no events yet, the guided "farm story" + scan CTA
+          render instead of a dead empty state. */}
+      {!loading && _farmJourney && _farmJourney.active ? (
+        <div style={S.activitySection} data-testid="activity-farm-journey">
+          <div style={S.activityHeader}>
+            {tSafe('farmTimeline.activityTitle', 'Your farm story')}
+          </div>
+          {_farmJourney.entries.slice(0, 10).map((e, i) => (
+            <div key={'fj-' + i} data-testid="farm-journey-entry"
+              style={{ display: 'flex', gap: 8, padding: '4px 0' }}>
+              <span>{tSafe('farmTimeline.kind.' + e.kind, e.label)}</span>
+              {e.at ? <span style={{ marginLeft: 'auto', color: '#9AA690', fontSize: 11 }}>{String(e.at).slice(0, 10)}</span> : null}
+            </div>
+          ))}
         </div>
       ) : null}
 

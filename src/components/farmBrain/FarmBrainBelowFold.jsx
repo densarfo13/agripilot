@@ -12,6 +12,8 @@ import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { buildFarmTimeline } from '../../runtime/farmBrain/FarmTimeline';
 import { buildFarmDataQuality } from '../../runtime/farmBrain/FarmDataQualityEngine';
+import { buildFarmerCompletion } from '../../runtime/farmerCompletion/FarmerCompletionEngine';
+import { buildFarmBrainExplanation } from '../../runtime/farmBrain/FarmBrainExplanation';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 const _arr = (v) => (Array.isArray(v) ? v : []);
@@ -50,8 +52,73 @@ export default function FarmBrainBelowFold({ farmSignals = {} } = {}) {
     scans: _arr(sig.scans), tasks: _arr(sig.tasks), outcomes: _arr(sig.outcomes),
   }), null);
 
+  // Sprint #212 — completion + FarmBrain confidence (compose the
+  // farmer-completion engine; no new data).
+  const _completionInput = {
+    farmExists: _arr(sig.timelineEntries).some((e) => e && e.kind === 'farm_created') || !!sig.crop,
+    location: sig.location, crop: sig.crop, plantingDate: sig.plantingDate,
+    scanHistory: _arr(sig.scans), taskCompletedCount: _arr(sig.tasks).length,
+    outcomeHistory: _arr(sig.outcomes), harvestOrSellDrafts: _arr(sig.harvestOrSellDrafts),
+  };
+  const completion = _safe(() => buildFarmerCompletion(_completionInput), null);
+  const explanation = _safe(() => buildFarmBrainExplanation(_completionInput), null);
+
   return (
     <div style={S.wrap} data-testid="farm-brain-below-fold">
+      {/* FARM SETUP PROGRESS (§1/§3) — guided, never a dead empty state */}
+      {completion && !completion.allComplete ? (
+        <section style={S.card} data-testid="farm-setup-progress-card">
+          <h3 style={S.title}>{tSafe('farm.setup.title', 'Farm Setup')}</h3>
+          <div>
+            <span style={S.qScore} data-testid="farm-setup-percent">{completion.percentComplete}%</span>
+            <span style={S.qLevel}>{tSafe('farm.setup.complete', 'Complete')}</span>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            {completion.completedSteps.slice(0, 8).map((st, i) => (
+              <div key={'st-' + i} style={S.miss}>
+                {st.done ? '✓' : '○'} {tSafe(st.labelKey, st.key)}
+              </div>
+            ))}
+          </div>
+          {completion.nextBestStepKey ? (
+            <>
+              <div style={S.next} data-testid="farm-setup-next">
+                {tSafe('farm.setup.next', 'Next')}: {tSafe(completion.nextBestStepKey, completion.nextBestStep)}
+              </div>
+              {completion.nextBestStepReason ? (
+                <div style={S.miss}>
+                  {tSafe('farm.setup.reason', 'Reason')}: {String(completion.nextBestStepReason)}
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* FARMBRAIN CONFIDENCE (§8) — no score without explanation */}
+      {explanation && explanation.hasExplanation ? (
+        <section style={S.card} data-testid="farmbrain-confidence-card">
+          <h3 style={S.title}>{tSafe('farmBrain.confidence.title', 'FarmBrain Confidence')}</h3>
+          <span style={S.qScore} data-testid="farmbrain-confidence-score">{explanation.confidence}%</span>
+          {_arr(explanation.why).length > 0 ? (
+            <div style={{ marginTop: 8 }}>
+              <div style={S.qLevel}>{tSafe('farmBrain.confidence.why', 'Why')}</div>
+              {explanation.why.slice(0, 5).map((k, i) => (
+                <div key={'why-' + i} style={S.miss}>✓ {tSafe(k, k)}</div>
+              ))}
+            </div>
+          ) : null}
+          {_arr(explanation.missing).length > 0 ? (
+            <div style={{ marginTop: 6 }}>
+              <div style={S.qLevel}>{tSafe('farmBrain.confidence.missing', 'Missing')}</div>
+              {explanation.missing.slice(0, 5).map((k, i) => (
+                <div key={'ms-' + i} style={{ ...S.miss, color: '#92400E' }}>○ {tSafe(k, k)}</div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {/* FARM QUALITY */}
       {quality ? (
         <section style={S.card} data-testid="farm-quality-card">

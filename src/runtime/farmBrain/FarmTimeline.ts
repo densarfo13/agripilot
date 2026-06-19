@@ -30,6 +30,8 @@ export const TIMELINE_KINDS = Object.freeze({
   outcome_recorded:    'Outcome recorded',
   weather_alert:       'Weather alert',
   health_score_changed:'Health score changed',
+  harvest_draft_created:'Harvest draft created',
+  sell_listing_created: 'Sell listing created',
 } as const);
 export type TimelineKind = keyof typeof TIMELINE_KINDS;
 
@@ -43,6 +45,8 @@ const EVENT_TO_KIND: Readonly<Record<string, TimelineKind>> = Object.freeze({
   scan_unknown_result: 'issue_detected',
   task_completed: 'task_completed',
   outcome_recorded: 'outcome_recorded',
+  sell_listing_created: 'sell_listing_created',
+  funding_viewed: 'farm_created', // not shown; mapped away from timeline noise
 });
 
 export interface TimelineEntry {

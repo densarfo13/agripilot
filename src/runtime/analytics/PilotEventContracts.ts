@@ -58,6 +58,14 @@ export const PILOT_EVENTS = Object.freeze({
   // Marketplace + funding
   SELL_LISTING_CREATED:    'sell_listing_created',
   FUNDING_VIEWED:          'funding_viewed',
+  // Sprint #212 — farmer completion system
+  FARM_COMPLETION_STEP_DONE:        'farm_completion_step_done',
+  FARM_COMPLETION_NEXT_STEP_CLICKED:'farm_completion_next_step_clicked',
+  EMPTY_STATE_CTA_CLICKED:          'empty_state_cta_clicked',
+  DUPLICATE_TASK_SUPPRESSED:        'duplicate_task_suppressed',
+  DUPLICATE_NOTIFICATION_SUPPRESSED:'duplicate_notification_suppressed',
+  FARM_TIMELINE_EVENT_CREATED:      'farm_timeline_event_created',
+  FARMBRAIN_CONFIDENCE_VIEWED:      'farmbrain_confidence_viewed',
 } as const);
 
 export type PilotEventName = (typeof PILOT_EVENTS)[keyof typeof PILOT_EVENTS];

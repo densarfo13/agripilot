@@ -1920,6 +1920,30 @@ export default function App() {
               await import('./runtime/farmBrain/FarmBrainRuntime');
             installFarmBrainHealthGlobal();
           } catch { /* swallow */ }
+          // Sprint #212 — farmer completion system globals.
+          // __farmerCompletionHealth / __taskDedupHealth /
+          // __notificationDedupHealth / __farmTimelineHealth /
+          // __farmBrainExplanationHealth. Read-only; never block boot.
+          try {
+            const m = await import('./runtime/farmerCompletion/FarmerCompletionEngine');
+            m.installFarmerCompletionHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/tasks/TaskDeduper');
+            m.installTaskDedupHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/notifications/NotificationDeduper');
+            m.installNotificationDedupHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/farmTimeline/FarmTimelineEngine');
+            m.installFarmTimelineHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/farmBrain/FarmBrainExplanation');
+            m.installFarmBrainExplanationHealthGlobal();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

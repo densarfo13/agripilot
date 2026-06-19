@@ -32,6 +32,12 @@ import { useDynamicGreeting } from '../../hooks/useDynamicGreeting.js';
 import useFarmContext from '../../hooks/useFarmContext.js';
 import { deriveWeatherRisk } from '../../runtime/intelligence/weatherRiskModel.js';
 import { tStrict } from '../../i18n/strictT.js';
+import { dedupeTasks } from '../../runtime/tasks/TaskDeduper';
+
+// Sprint #212 — never throw out of the render path; dedupe is decorative.
+function _dedupeTasksSafe(tasks) {
+  try { return dedupeTasks(tasks).tasks; } catch { return Array.isArray(tasks) ? tasks : []; }
+}
 import { CloudRain, AlertTriangle } from '../../components/icons/lucide.jsx';
 import { getTodayFeed, completeCycleTask, skipCycleTask, reportCycleIssue, submitCycleHarvest, listCropCycles } from '../../hooks/useCropCycles.js';
 import { withBootstrapTimeout } from '../../utils/withBootstrapTimeout.js';
@@ -432,7 +438,11 @@ export default function FarmerTodayPage() {
       // emitted titles that lack an explicit titleKey — fixes the
       // "Clear your field" leak in fr/ha pilots.
       primaryTask: today.primaryTask ? localizeServerTask(today.primaryTask, t, language) : null,
-      secondaryTasks: (today.secondaryTasks || []).map((task) => localizeServerTask(task, t, language)),
+      // Sprint #212 — dedupe before render (no duplicate "Care for your
+      // plants" / "Add planting date"). Highest priority kept, notes preserved.
+      secondaryTasks: _dedupeTasksSafe(
+        (today.secondaryTasks || []).map((task) => localizeServerTask(task, t, language)),
+      ),
       riskAlerts: today.riskAlerts || [],
       weatherAlerts: today.weatherAlerts || [],
       weatherBadge: badge,

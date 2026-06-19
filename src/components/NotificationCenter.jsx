@@ -23,6 +23,14 @@ import {
   markAllAsRead as storeMarkAll,
 } from '../lib/notifications/notificationStore.js';
 import { formatRelativeTime } from '../lib/time/relativeTime.js';
+import { dedupeNotifications } from '../runtime/notifications/NotificationDeduper';
+
+// Sprint #212 — collapse same-day duplicate notifications before render
+// ("Today on your farm" ×4 → one row with duplicateCount). Never throws.
+function _dedupeNotificationsSafe(items) {
+  try { return dedupeNotifications(items).notifications; }
+  catch { return Array.isArray(items) ? items : []; }
+}
 import { tSafe } from '../i18n/tSafe.js';
 
 function resolveMessage(t, n) {
@@ -107,7 +115,7 @@ export default function NotificationCenter({
       )}
 
       <ul style={S.list}>
-        {list.map((n) => {
+        {_dedupeNotificationsSafe(list).map((n) => {
           if (!n) return null;
           const text = resolveMessage(t, n);
           const age  = formatRelativeTime(n.createdAt);
