@@ -1944,6 +1944,14 @@ export default function App() {
             const m = await import('./runtime/farmBrain/FarmBrainExplanation');
             m.installFarmBrainExplanationHealthGlobal();
           } catch { /* swallow */ }
+          // Sprint #213 — pilot premortem composite. Pins
+          // __pilotPremortemHealth (8-dimension launch verdict over
+          // the failure-prevention probes). Installed LAST so the
+          // probes it reads are already pinned.
+          try {
+            const m = await import('./runtime/premortem/PilotPremortemRuntime');
+            m.installPilotPremortemHealthGlobal();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

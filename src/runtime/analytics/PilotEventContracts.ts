@@ -66,6 +66,11 @@ export const PILOT_EVENTS = Object.freeze({
   DUPLICATE_NOTIFICATION_SUPPRESSED:'duplicate_notification_suppressed',
   FARM_TIMELINE_EVENT_CREATED:      'farm_timeline_event_created',
   FARMBRAIN_CONFIDENCE_VIEWED:      'farmbrain_confidence_viewed',
+  // Sprint #213 — premortem critical-action events
+  PLANTING_DATE_ADDED:              'planting_date_added',
+  LOCATION_ADDED:                   'location_added',
+  SCAN_UNCLEAR:                     'scan_unclear',
+  RETURN_VISIT:                     'return_visit',
 } as const);
 
 export type PilotEventName = (typeof PILOT_EVENTS)[keyof typeof PILOT_EVENTS];
