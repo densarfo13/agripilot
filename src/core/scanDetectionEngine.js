@@ -60,6 +60,18 @@ function _mintScanId() {
   return 'scan_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
 }
 
+// FARM_BRAIN_RUNTIME_V2 — pure composition runtime. Every scan result is
+// returned through _withFarmBrain() (below), so there is NO bypass path:
+// both the API result and the rule fallback carry result.farmBrain.
+import { runFarmBrainV2 } from '../runtime/farmBrain/FarmBrainRuntimeV2';
+
+function _withFarmBrain(result, input) {
+  try {
+    if (!result || typeof result !== 'object') return result;
+    return Object.freeze({ ...result, farmBrain: runFarmBrainV2(result, input || {}) });
+  } catch { return result; }
+}
+
 /**
  * Per-experience action sets for the fallback path. Wording is
  * deliberately conservative — every line is something a farmer
@@ -350,15 +362,19 @@ export async function analyzeScan(input = {}) {
           // confidence; satellite never used (Layer 2 frozen).
           evidenceFusion: _evidenceFusion,
         });
+        // FARM_BRAIN_RUNTIME_V2 — every result passes through FarmBrain.
+        const _final = _withFarmBrain(_result, safeInput);
         // Sprint #219 — capture the end-to-end pipeline state for
         // __scanDebug() so a "Scan unclear" can be root-caused with
         // real data (esp. whether the classifier was available).
-        await _recordScanDebugSafe(_result, safeInput);
-        return _result;
+        await _recordScanDebugSafe(_final, safeInput);
+        return _final;
       }
     }
   } catch { /* fall through to safe fallback */ }
-  return getRuleBasedFallback(safeInput);
+  // FARM_BRAIN_RUNTIME_V2 — the fallback path is NOT a bypass: it is
+  // returned through FarmBrain too.
+  return _withFarmBrain(getRuleBasedFallback(safeInput), safeInput);
 }
 
 // Sprint #219 — lazy, fault-isolated scan-debug capture. Computes the
