@@ -110,22 +110,72 @@ function _ruleClassify({ cropName, plantName, weather }) {
 // Selected via SCAN_PROVIDER_PROFILE env. SCAN_API_KEY required
 // for any external profile; per-provider URLs documented in
 // scanProviders.js.
+// Sprint #221 — last-call provider diagnostics (no secrets). Surfaced
+// via getScanProviderDiagnostics() + /api/scan/diagnostics so a P0
+// "every clear photo reads unclear" can be root-caused in production
+// without guessing. NEVER stores the key — only its presence/length.
+const _lastProviderDiag = {
+  providerName: null,
+  httpStatus: null,
+  candidateCount: null,
+  confidence: null,
+  failureReason: null,
+  latencyMs: null,
+  at: null,
+};
+function _recordDiag(patch) {
+  try { Object.assign(_lastProviderDiag, patch, { at: new Date().toISOString() }); }
+  catch { /* never throw from diagnostics */ }
+}
+
+/** Is the Plant.id (or any scan) provider configured at runtime? */
+export function getScanProviderDiagnostics() {
+  const key = process.env.PLANT_ID_API_KEY || '';
+  return Object.freeze({
+    providerConfigured: !!key,
+    // Presence + length ONLY — never the value. A common failure is a
+    // key that is set but truncated/whitespace; length reveals that.
+    keyPresent: !!key,
+    keyLength: key ? key.trim().length : 0,
+    keyLooksTruncated: !!key && key.trim().length < 20,
+    anyScanKey: _hasAnyScanKey(),
+    providerName: _lastProviderDiag.providerName,
+    lastHttpStatus: _lastProviderDiag.httpStatus,
+    lastCandidateCount: _lastProviderDiag.candidateCount,
+    lastConfidence: _lastProviderDiag.confidence,
+    lastFailureReason: _lastProviderDiag.failureReason,
+    lastLatencyMs: _lastProviderDiag.latencyMs,
+    lastCallAt: _lastProviderDiag.at,
+  });
+}
+
 async function _externalClassify(input) {
   const { pickProvider } = await import('./scanProviders.js');
   const adapter = pickProvider();
-  if (!adapter) return { ok: false, error: 'provider_unconfigured' };
+  if (!adapter) {
+    _recordDiag({ providerName: null, failureReason: 'provider_unconfigured', httpStatus: null });
+    return { ok: false, error: 'provider_unconfigured', serviceUnavailable: false, providerConfigured: false };
+  }
+  const providerConfigured = !!process.env.PLANT_ID_API_KEY;
 
   let req;
   try { req = adapter.buildRequest(input); }
   catch (err) {
+    _recordDiag({ providerName: adapter.name, failureReason: 'adapter_request_build_failed' });
     return { ok: false, error: 'adapter_request_build_failed', message: err && err.message };
   }
   if (!req || !req.url) {
+    _recordDiag({ providerName: adapter.name, failureReason: 'adapter_url_missing' });
     return { ok: false, error: 'adapter_url_missing' };
   }
+  // Outbound log — URL + whether an Api-Key was actually attached. NO
+  // key value, NO image bytes.
+  const _hasAuth = !!(req.headers && (req.headers['Api-Key'] || req.headers.Authorization));
+  console.log('[scan.provider] →', adapter.name, req.url, 'auth=' + (_hasAuth ? 'yes' : 'MISSING'));
 
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), INFERENCE_TIMEOUT_MS);
+  const _t0 = Date.now();
   try {
     const res = await fetch(req.url, {
       method:  'POST',
@@ -134,15 +184,41 @@ async function _externalClassify(input) {
       signal:  ctrl.signal,
     });
     clearTimeout(t);
+    const latencyMs = Date.now() - _t0;
     if (!res || !res.ok) {
-      return { ok: false, error: `provider_http_${res ? res.status : 'no_response'}` };
+      const status = res ? res.status : 0;
+      // Read a short body snippet for the log (auth errors carry a
+      // useful message); never log more than 240 chars.
+      let bodySnip = '';
+      try { bodySnip = (await res.text()).slice(0, 240); } catch { /* ignore */ }
+      console.error('[scan.provider] ← HTTP', status, adapter.name, 'latency=' + latencyMs + 'ms', bodySnip);
+      _recordDiag({
+        providerName: adapter.name, httpStatus: status, candidateCount: 0,
+        confidence: null, latencyMs,
+        failureReason: `provider_http_${status || 'no_response'}`,
+      });
+      // configured-but-failing → service unavailable (NOT "unknown plant").
+      return {
+        ok: false, error: `provider_http_${status || 'no_response'}`,
+        serviceUnavailable: providerConfigured, httpStatus: status, providerConfigured,
+      };
     }
     const data = await res.json();
     const parsed = adapter.parseResponse(data) || {};
+    const candidateCount = Array.isArray(parsed.candidates) ? parsed.candidates.length : 0;
     const symptom = _normalizeSymptom(parsed.symptom);
     const conf    = _normalizeConfidence(parsed.confidence);
+    console.log('[scan.provider] ←', adapter.name, 'HTTP 200 candidates=' + candidateCount,
+      'conf=' + conf, 'latency=' + latencyMs + 'ms');
+    _recordDiag({
+      providerName: adapter.name, httpStatus: 200, candidateCount,
+      confidence: conf, latencyMs, failureReason: candidateCount > 0 ? null : 'zero_candidates',
+    });
     return {
       ok: true,
+      httpStatus: 200,
+      candidateCount,
+      providerConfigured,
       result: {
         symptom,
         confidence: conf,
@@ -154,9 +230,18 @@ async function _externalClassify(input) {
       },
     };
   } catch (err) {
-    return { ok: false, error: 'provider_exception', message: err && err.message };
-  } finally {
     clearTimeout(t);
+    const aborted = err && err.name === 'AbortError';
+    console.error('[scan.provider] ✗', adapter.name, aborted ? 'timeout' : (err && err.message));
+    _recordDiag({
+      providerName: adapter.name, httpStatus: null,
+      failureReason: aborted ? 'provider_timeout' : 'provider_exception',
+      latencyMs: Date.now() - _t0,
+    });
+    return {
+      ok: false, error: aborted ? 'provider_timeout' : 'provider_exception',
+      message: err && err.message, serviceUnavailable: providerConfigured, providerConfigured,
+    };
   }
 }
 
@@ -233,7 +318,15 @@ export async function analyzePlantImage(input = {}) {
         latencyMs:    _now() - t0,
         fallbackFrom: provider,
         fallbackReason: attempt && attempt.error,
+        // Sprint #221 — surface provider availability so the route +
+        // envelope can distinguish "service temporarily unavailable"
+        // (provider configured but the call failed) from "unknown plant".
+        providerConfigured: !!(attempt && attempt.providerConfigured),
+        providerHttpStatus: (attempt && attempt.httpStatus) ?? null,
       },
+      // True when a configured provider FAILED (401/403/429/5xx/timeout),
+      // NOT when it's simply unconfigured or returned a clean no-result.
+      serviceUnavailable: !!(attempt && attempt.serviceUnavailable),
       fallbackUsed: provider !== 'rule',
     };
   }

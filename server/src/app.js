@@ -684,6 +684,36 @@ _registerScanProviderHealth(app);
 //     → save user feedback for future ML training
 // Both endpoints are auth-only — the global /api limiter +
 // scanLimiter (regex-matched) cap volume.
+// Sprint #221 — emergency scan-provider diagnostics. Auth-only.
+// Reveals whether the Plant.id provider is CONFIGURED + the last call's
+// HTTP status / candidate count / failure reason, so a P0 "every clear
+// photo reads unclear" is root-caused in prod without redeploying. It
+// NEVER returns the key value — only presence + length.
+app.get('/api/scan/diagnostics', authenticate, async (_req, res) => {
+  try {
+    const { getScanProviderDiagnostics } = await import('./ml/scanInferenceService.js');
+    const diag = getScanProviderDiagnostics();
+    return res.json({
+      ok: true,
+      providerConfigured: diag.providerConfigured,
+      providerAvailable: diag.lastHttpStatus === 200
+        || (diag.providerConfigured && diag.lastHttpStatus == null),
+      keyPresent: diag.keyPresent,
+      keyLength: diag.keyLength,
+      keyLooksTruncated: diag.keyLooksTruncated,
+      httpStatus: diag.lastHttpStatus,
+      candidateCount: diag.lastCandidateCount,
+      confidence: diag.lastConfidence,
+      failureReason: diag.lastFailureReason,
+      latencyMs: diag.lastLatencyMs,
+      lastCallAt: diag.lastCallAt,
+      providerName: diag.providerName,
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'diagnostics_failed', message: err && err.message });
+  }
+});
+
 app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) => {
   try {
     const {
