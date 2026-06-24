@@ -28,7 +28,7 @@ function _detectProvider() {
       || profile === 'plantnet'
       || profile === 'generic') return profile;
   // Implicit: if a Plant.id key exists but no profile, treat as plantid.
-  if (_truthy(process.env.PLANT_ID_API_KEY)) return 'plantid';
+  if (_truthy((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY))) return 'plantid';
   if (_truthy(process.env.PLANTNET_API_KEY)) return 'plantnet';
   if (_truthy(process.env.SCAN_API_KEY)) return 'generic';
   return 'unknown';
@@ -36,7 +36,7 @@ function _detectProvider() {
 
 function _isConfigured(provider) {
   switch (provider) {
-    case 'plantid':  return _truthy(process.env.PLANT_ID_API_KEY);
+    case 'plantid':  return _truthy((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY));
     case 'plantnet': return _truthy(process.env.PLANTNET_API_KEY);
     case 'generic':  return _truthy(process.env.SCAN_API_KEY)
                           && _truthy(process.env.SCAN_PROVIDER_URL);

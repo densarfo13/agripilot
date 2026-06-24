@@ -689,18 +689,32 @@ _registerScanProviderHealth(app);
 // HTTP status / candidate count / failure reason, so a P0 "every clear
 // photo reads unclear" is root-caused in prod without redeploying. It
 // NEVER returns the key value — only presence + length.
-app.get('/api/scan/diagnostics', authenticate, async (_req, res) => {
+app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
   try {
-    const { getScanProviderDiagnostics } = await import('./ml/scanInferenceService.js');
+    const { getScanProviderDiagnostics, pingScanProvider } =
+      await import('./ml/scanInferenceService.js');
     const diag = getScanProviderDiagnostics();
+    // ?live=1 → execute a REAL authenticated provider call (Kindwise
+    // usage_info) to prove the key works, without consuming credits.
+    let live = null;
+    if (String(req.query.live || '') === '1') {
+      live = await pingScanProvider();
+    }
     return res.json({
       ok: true,
       providerConfigured: diag.providerConfigured,
-      providerAvailable: diag.lastHttpStatus === 200
-        || (diag.providerConfigured && diag.lastHttpStatus == null),
+      providerAvailable: live
+        ? live.httpStatus === 200
+        : (diag.lastHttpStatus === 200 || (diag.providerConfigured && diag.lastHttpStatus == null)),
+      // Env-var NAME audit (the #221 root cause was a name mismatch).
+      envVarUsed: diag.envVarUsed,
+      plantIdApiKeyLength: diag.plantIdApiKeyLength,   // PLANT_ID_API_KEY (canonical)
+      plantApiKeyLength: diag.plantApiKeyLength,       // PLANT_API_KEY (alias)
+      keyFingerprint: diag.keyFingerprint,             // first 6 chars only
       keyPresent: diag.keyPresent,
       keyLength: diag.keyLength,
       keyLooksTruncated: diag.keyLooksTruncated,
+      // Last real /analyze call.
       httpStatus: diag.lastHttpStatus,
       candidateCount: diag.lastCandidateCount,
       confidence: diag.lastConfidence,
@@ -708,6 +722,8 @@ app.get('/api/scan/diagnostics', authenticate, async (_req, res) => {
       latencyMs: diag.lastLatencyMs,
       lastCallAt: diag.lastCallAt,
       providerName: diag.providerName,
+      // Live authenticated provider ping (only when ?live=1).
+      live,
     });
   } catch (err) {
     return res.status(500).json({ ok: false, error: 'diagnostics_failed', message: err && err.message });

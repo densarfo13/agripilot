@@ -62,7 +62,7 @@ function _normalizeConfidence(raw) {
 // /  OPENAI_API_KEY can wire the external scan path; the first
 // alias matched in priority order wins. Pure read; never throws.
 function _resolveScanApiKey() {
-  return process.env.PLANT_ID_API_KEY
+  return (process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY)
       || process.env.PLANTNET_API_KEY
       || process.env.SCAN_API_KEY
       || process.env.OPENAI_API_KEY
@@ -204,7 +204,7 @@ const generic = Object.freeze({
 
 // ── Plant.id adapter ───────────────────────────────────────────
 // Audit gap §6.1 closed — the real Plant.id v3 adapter reads
-// process.env.PLANT_ID_API_KEY DIRECTLY (no SCAN_PROVIDER_URL +
+// (process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY) DIRECTLY (no SCAN_PROVIDER_URL +
 // SCAN_API_KEY indirection trap). Lives in ./providers/ so the
 // adapter is self-contained and unit-testable.
 import { plantid } from './providers/plantIdProvider.js';
@@ -245,7 +245,7 @@ export function pickProvider() {
   // (audit gap §6.1 closed — previously this returned `generic` for
   // PLANT_ID_API_KEY, which then needed SCAN_PROVIDER_URL + SCAN_API_KEY
   // to fire, producing the silent fall-through-to-rule bug).
-  if (process.env.PLANT_ID_API_KEY)  return REGISTRY.plantid;
+  if ((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY))  return REGISTRY.plantid;
   if (process.env.PLANTNET_API_KEY)  return REGISTRY.plantnet;
   return REGISTRY.generic;
 }

@@ -8,7 +8,7 @@
  * the rule-based fallback no matter how many "Plant.id" keys were
  * set on Railway.
  *
- * This adapter reads process.env.PLANT_ID_API_KEY DIRECTLY and
+ * This adapter reads (process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY) DIRECTLY and
  * POSTs to https://plant.id/api/v3/identification with:
  *   - Header: Api-Key: <key>
  *   - Body:   { images: [base64], similar_images: true,
@@ -43,7 +43,7 @@
  *   - No PII forwarded (image bytes + crop/country/region only).
  *   - Never throws. Bad responses normalize to
  *     { symptom: 'unclear', confidence: 'low' }.
- *   - Uses ONLY process.env.PLANT_ID_API_KEY — no fallback aliases
+ *   - Uses ONLY (process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY) — no fallback aliases
  *     at the auth layer, so an operator who set the canonical name
  *     gets the canonical behaviour.
  */
@@ -97,7 +97,7 @@ export const plantid = Object.freeze({
    * scanInferenceService caller fetches with these directly.
    */
   buildRequest({ image, mime: _mime, cropName, country: _country, region: _region }) {
-    const key = process.env.PLANT_ID_API_KEY;
+    const key = (process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY);
     const b64 = _imageToBase64(image);
     const body = JSON.stringify({
       // Plant.id v3 accepts `images` as an array of base64 strings.
@@ -228,7 +228,7 @@ export const plantid = Object.freeze({
 /** Boolean — does the PLANT_ID_API_KEY env var have a value? Pure;
  *  never throws. Consumed by pickProvider() in scanProviders.js. */
 export function plantIdKeyPresent() {
-  try { return !!(process.env.PLANT_ID_API_KEY && String(process.env.PLANT_ID_API_KEY).trim()); }
+  try { return !!((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY) && String((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY)).trim()); }
   catch { return false; }
 }
 

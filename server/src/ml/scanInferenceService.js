@@ -57,7 +57,7 @@ function _now() { return Date.now(); }
 // scanProviders.js resolves the actual adapter + reads the right
 // key (via _resolveScanApiKey() below).
 function _hasAnyScanKey() {
-  return !!(process.env.PLANT_ID_API_KEY
+  return !!((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY)
          || process.env.PLANTNET_API_KEY
          || process.env.SCAN_API_KEY
          || process.env.OPENAI_API_KEY);
@@ -128,16 +128,35 @@ function _recordDiag(patch) {
   catch { /* never throw from diagnostics */ }
 }
 
+// First-6-char fingerprint, never more. Lets the operator compare the
+// runtime key against the one configured in Kindwise without exposing it.
+function _fingerprint(v) {
+  const s = (v == null ? '' : String(v)).trim();
+  return s ? s.slice(0, 6) : null;
+}
+
 /** Is the Plant.id (or any scan) provider configured at runtime? */
 export function getScanProviderDiagnostics() {
-  const key = process.env.PLANT_ID_API_KEY || '';
+  // Sprint #221b — the P0 was an env-var NAME mismatch: code read
+  // PLANT_ID_API_KEY, the key was set as PLANT_API_KEY. Report BOTH so a
+  // name mismatch is impossible to miss. Resolver prefers the canonical
+  // PLANT_ID_API_KEY, then falls back to the PLANT_API_KEY alias.
+  const idVal    = (process.env.PLANT_ID_API_KEY || '').trim();
+  const aliasVal = (process.env.PLANT_API_KEY || '').trim();
+  const key = idVal || aliasVal;
+  const envVarUsed = idVal ? 'PLANT_ID_API_KEY' : (aliasVal ? 'PLANT_API_KEY' : null);
   return Object.freeze({
     providerConfigured: !!key,
-    // Presence + length ONLY — never the value. A common failure is a
-    // key that is set but truncated/whitespace; length reveals that.
+    // Which env var actually supplied the key at runtime.
+    envVarUsed,
+    // Presence + length for BOTH accepted names (value never exposed).
+    plantIdApiKeyLength: idVal.length,       // PLANT_ID_API_KEY (canonical)
+    plantApiKeyLength:   aliasVal.length,    // PLANT_API_KEY (alias)
     keyPresent: !!key,
-    keyLength: key ? key.trim().length : 0,
-    keyLooksTruncated: !!key && key.trim().length < 20,
+    keyLength: key ? key.length : 0,
+    keyLooksTruncated: !!key && key.length < 20,
+    // First 6 chars ONLY — compare against the Kindwise dashboard key.
+    keyFingerprint: _fingerprint(key),
     anyScanKey: _hasAnyScanKey(),
     providerName: _lastProviderDiag.providerName,
     lastHttpStatus: _lastProviderDiag.httpStatus,
@@ -149,6 +168,51 @@ export function getScanProviderDiagnostics() {
   });
 }
 
+/**
+ * Execute a REAL authenticated provider call (Kindwise usage_info) to
+ * prove the key works — WITHOUT consuming identification credits.
+ *   200 → key valid + mounted   401/403 → key invalid/expired
+ *   no key → not_configured
+ * Returns { provider, httpStatus, candidateCount, responseBody, failureReason }.
+ */
+export async function pingScanProvider() {
+  const key = (process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY || '').trim();
+  const out = {
+    provider: 'plantid',
+    httpStatus: null,
+    candidateCount: null,   // usage_info is a key-validation ping, not an identification
+    responseBody: null,
+    failureReason: null,
+    keyFingerprint: _fingerprint(key),
+    envVarUsed: process.env.PLANT_ID_API_KEY ? 'PLANT_ID_API_KEY'
+              : (process.env.PLANT_API_KEY ? 'PLANT_API_KEY' : null),
+  };
+  if (!key) { out.failureReason = 'not_configured'; return out; }
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), INFERENCE_TIMEOUT_MS);
+  try {
+    const res = await fetch('https://plant.id/api/v3/usage_info', {
+      method: 'GET', headers: { 'Api-Key': key }, signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    out.httpStatus = res.status;
+    let body = '';
+    try { body = (await res.text()).slice(0, 300); } catch { /* ignore */ }
+    out.responseBody = body;
+    out.failureReason = res.ok ? null : `provider_http_${res.status}`;
+    console.log('[scan.provider.ping] HTTP', res.status, 'fp=' + (out.keyFingerprint || 'none'),
+      'via=' + out.envVarUsed);
+  } catch (err) {
+    clearTimeout(t);
+    const aborted = err && err.name === 'AbortError';
+    out.failureReason = aborted ? 'provider_timeout' : 'provider_exception';
+    out.responseBody = err && err.message ? String(err.message).slice(0, 200) : null;
+  } finally {
+    clearTimeout(t);
+  }
+  return out;
+}
+
 async function _externalClassify(input) {
   const { pickProvider } = await import('./scanProviders.js');
   const adapter = pickProvider();
@@ -156,7 +220,7 @@ async function _externalClassify(input) {
     _recordDiag({ providerName: null, failureReason: 'provider_unconfigured', httpStatus: null });
     return { ok: false, error: 'provider_unconfigured', serviceUnavailable: false, providerConfigured: false };
   }
-  const providerConfigured = !!process.env.PLANT_ID_API_KEY;
+  const providerConfigured = !!(process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY);
 
   let req;
   try { req = adapter.buildRequest(input); }

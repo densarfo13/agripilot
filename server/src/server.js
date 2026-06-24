@@ -133,7 +133,7 @@ async function main() {
   // verdicts. The pipeline degrades gracefully (rule classifier) so
   // this is informational, not fatal — match the email/sms tone.
   try {
-    const hasScanKey = !!(process.env.PLANT_ID_API_KEY
+    const hasScanKey = !!((process.env.PLANT_ID_API_KEY || process.env.PLANT_API_KEY)
                        || process.env.PLANTNET_API_KEY
                        || process.env.SCAN_API_KEY
                        || process.env.OPENAI_API_KEY);
