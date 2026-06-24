@@ -379,6 +379,7 @@
     "check:farmbrain-memory-quality": "node scripts/check-farmbrain-memory-quality.mjs",
     "check:farm-os": "node scripts/check-farm-os.mjs",
     "check:activation-retention": "node scripts/check-activation-retention.mjs",
+    "report:weekly-pilot": "node scripts/generate-weekly-pilot-report.mjs",
     "check:language-consistency": "node scripts/check-language-consistency.mjs"
   },
   "dependencies": {
