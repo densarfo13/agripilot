@@ -503,6 +503,13 @@ export default function ScanCapture({ onContinue, onCancel, experience = 'generi
     // boxed preview wrapper was removed). Any file the user picks
     // should advance to analysis immediately; matching the
     // in-overlay capture + in-overlay upload behaviour.
+    // Premortem fix: build the preview URL locally (mirrors the
+    // capture/upload handlers above). Previously this referenced an
+    // undeclared `url`, throwing a ReferenceError on the upload-
+    // fallback path (camera-unsupported browsers) and silently
+    // dead-ending the scan.
+    let url = '';
+    try { url = URL.createObjectURL(next); } catch { /* swallow */ }
     if (continueAnalysisRef.current) {
       continueAnalysisRef.current(next, url);
     }

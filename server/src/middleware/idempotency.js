@@ -39,7 +39,11 @@ export function idempotencyCheck(req, res, next) {
   // Only apply to mutation methods
   if (!['POST', 'PUT', 'PATCH'].includes(req.method)) return next();
 
-  const userId = req.user?.sub || 'anon';
+  // Pilot hardening: v2 cookie auth sets req.user.id (no `sub`); the
+  // legacy path sets `sub`. Read both so the key is scoped PER USER —
+  // previously this collapsed to a shared `anon:` namespace on every
+  // v2 route, letting one user replay another user's cached response.
+  const userId = req.user?.id || req.user?.sub || 'anon';
   const cacheKey = `${userId}:${idempotencyKey}`;
   const now = Date.now();
 

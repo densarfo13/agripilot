@@ -193,7 +193,10 @@ router.get('/list', authenticate, async (req, res) => {
 // ─── Create / Update Profile ────────────────────────────
 router.post('/', authenticate, async (req, res) => {
   try {
-    console.log('[FARM-SAVE] userId:', req.user?.id, 'body keys:', Object.keys(req.body || {}), 'farmerName:', JSON.stringify(req.body?.farmerName), 'farmName:', JSON.stringify(req.body?.farmName));
+    // PII-safe: log presence of name fields, never the values (no farmer
+    // name / farm name to stdout — the app's no-PII-in-logs rule).
+    console.log('[FARM-SAVE] userId:', req.user?.id, 'body keys:', Object.keys(req.body || {}),
+      'hasFarmerName:', !!req.body?.farmerName, 'hasFarmName:', !!req.body?.farmName);
     const validation = validateFarmProfilePayload(req.body || {});
     if (!validation.isValid) {
       console.log('[FARM-SAVE] Validation failed:', JSON.stringify(validation.errors));

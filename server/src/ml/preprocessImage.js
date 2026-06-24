@@ -60,6 +60,36 @@ function _bufferFromBase64(b64) {
   catch { return null; }
 }
 
+// SSRF denylist — true when a URL points at a private / reserved /
+// loopback / link-local (incl. cloud-metadata) host. Unparseable → block.
+function _isBlockedFetchHost(rawUrl) {
+  try {
+    const u = new URL(rawUrl);
+    const host = (u.hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+    if (!host) return true;
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host === '0.0.0.0' || host === '::' || host === '::1') return true;
+    const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (m) {
+      const o = m.slice(1).map(Number);
+      if (o.some((n) => n > 255)) return true;
+      const [a, b] = o;
+      if (a === 0 || a === 127) return true;             // unspecified / loopback
+      if (a === 10) return true;                          // RFC1918
+      if (a === 192 && b === 168) return true;            // RFC1918
+      if (a === 172 && b >= 16 && b <= 31) return true;   // RFC1918
+      if (a === 169 && b === 254) return true;            // link-local + metadata
+      if (a === 100 && b >= 64 && b <= 127) return true;  // CGNAT
+      return false;
+    }
+    if (host.includes(':')) {                            // IPv6 literal
+      if (host === '::1') return true;
+      if (host.startsWith('fe80') || host.startsWith('fc') || host.startsWith('fd')) return true;
+    }
+    return false;
+  } catch { return true; }
+}
+
 /**
  * preprocessImage(input) → { ok, image?, mime?, bytes?, reason?, metadataStripped? }
  *
@@ -81,6 +111,14 @@ export async function preprocessImage(input = {}) {
     buf = _bufferFromBase64(input.base64);
     if (!buf) return { ok: false, reason: 'invalid_base64' };
   } else if (typeof input.url === 'string' && /^https?:\/\//.test(input.url)) {
+    // SSRF guard (pilot hardening) — an authenticated user must NOT be
+    // able to make the server fetch internal hosts (cloud metadata
+    // 169.254.169.254, loopback, RFC1918, link-local, ULA). Block IP-
+    // literal + localhost targets before the fetch. (DNS-rebind via a
+    // hostname resolving to a private IP is a documented follow-up.)
+    if (_isBlockedFetchHost(input.url)) {
+      return { ok: false, reason: 'url_not_allowed' };
+    }
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 5000);
