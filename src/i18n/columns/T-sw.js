@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Piga picha, au chagua kutoka kwenye galeria yako.",
   "scan.captureHelper": "Kidokezo: piga picha karibu kwenye mwanga wa mchana. Lenga jani au eneo lililoathiriwa.",
   "scan.retake": "Piga tena",
+  "offline.active": "Hali ya nje ya mtandao",
+  "offline.queued": "Uchunguzi na kazi zako zitasawazishwa utakapounganisha tena.",
   "scanObs.eyebrow": "Ufuatiliaji wa Uchunguzi",
   "scanObs.title": "Takwimu za Uchunguzi",
   "scanObs.refresh": "Onyesha upya",

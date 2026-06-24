@@ -2540,6 +2540,8 @@ export default {
   "scan.previewPlaceholder": "फोटो लें, या अपनी गैलरी से चुनें।",
   "scan.captureHelper": "टिप: तेज़ दिन की रोशनी में पास से फोटो लें। प्रभावित पत्ते या जगह पर निशाना लगाएं।",
   "scan.retake": "फिर से लें",
+  "offline.active": "ऑफ़लाइन मोड सक्रिय",
+  "offline.queued": "दोबारा कनेक्ट होने पर आपके स्कैन और कार्य सिंक हो जाएंगे।",
   "scanObs.eyebrow": "स्कैन अवलोकन",
   "scanObs.title": "स्कैन विश्लेषण",
   "scanObs.refresh": "ताज़ा करें",

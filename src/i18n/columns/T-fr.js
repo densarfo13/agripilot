@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Prenez une photo ou choisissez-en une dans votre galerie.",
   "scan.captureHelper": "Astuce : prenez un gros plan en plein jour. Visez la feuille ou la zone affectée.",
   "scan.retake": "Reprendre",
+  "offline.active": "Mode hors ligne actif",
+  "offline.queued": "Vos scans et tâches se synchroniseront à la reconnexion.",
   "scanObs.eyebrow": "Observabilité des scans",
   "scanObs.title": "Analyse des scans",
   "scanObs.refresh": "Actualiser",

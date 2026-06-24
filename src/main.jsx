@@ -147,6 +147,11 @@ import { setOnboardingComplete } from './utils/onboarding.js';
 import { logStartup } from './core/runtime/logger.js';
 const _farrowayResettingUi = ensureUiVersion();
 killServiceWorkerAndCaches();
+// OFFLINE_SHELL_V1 — register the offline-shell service worker (after the
+// legacy-cache cleanup above, which now SPARES the shell). Best-effort.
+import('./lib/offline/serviceWorkerManager.js').then((m) => {
+  try { m.installOfflineShellHealth(); m.registerOfflineShell(); } catch { /* swallow */ }
+}).catch(() => {});
 // Idempotent — safe to call ahead of React mount; the cache
 // listens to the typed bus and writes whenever farm state
 // changes. The initial mirror runs synchronously.

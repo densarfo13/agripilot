@@ -239,24 +239,21 @@
       }
     </script>
     -->
-    <!-- Defensive in-page cleanup, runs IMMEDIATELY before main.jsx
-         loads so the bundle never races a stale SW. The same
-         logic also runs from forceUiReset.js for non-web hosts. -->
+    <!-- OFFLINE_SHELL_V1: the service worker is now an INTENTIONAL offline
+         shell (registered from main.jsx via serviceWorkerManager). This
+         in-page cleanup therefore NO LONGER unregisters service workers
+         (that would kill the shell on every load). It still purges LEGACY
+         farroway/workbox caches for hygiene; the shell's own caches use
+         fwshell-/fwassets-/fwdata- prefixes and are deliberately spared. -->
     <script>
       (function () {
-        try {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              regs.forEach(function (r) { try { r.unregister(); } catch (e) {} });
-            }).catch(function () {});
-          }
-        } catch (e) {}
         try {
           if ('caches' in window) {
             caches.keys().then(function (keys) {
               keys.forEach(function (k) {
                 if (typeof k !== 'string') return;
                 var l = k.toLowerCase();
+                if (l.indexOf('fwshell') >= 0 || l.indexOf('fwassets') >= 0 || l.indexOf('fwdata') >= 0) return;
                 if (l.indexOf('farroway') >= 0 || l.indexOf('workbox') >= 0) {
                   try { caches.delete(k); } catch (e) {}
                 }

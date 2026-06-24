@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Twa mfoni, anaa yi bi firi w'akatadeɛ mu.",
   "scan.captureHelper": "Afotuo: twa mfoni a ɛbɛn wɔ awia mu. Kyerɛ ahaban anaa beaeɛ a haw aba.",
   "scan.retake": "San twa",
+  "offline.active": "Ɛntanɛt nni hɔ",
+  "offline.queued": "Wo nhwehwɛmu ne nnwuma bɛsan aba bere a ɛntanɛt bɛba.",
   "scanObs.eyebrow": "Nhwehwɛmu Nhwɛsoɔ",
   "scanObs.title": "Nhwehwɛmu Akontaabuo",
   "scanObs.refresh": "San hwɛ",

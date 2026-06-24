@@ -62,6 +62,10 @@
 // AdminDashboard + NgoDashboardV1 + ProtectedLayout flipped to
 // the warm beige palette and remaining neon-green hex codes
 // purged from the high-leverage files.
+// OFFLINE_SHELL_V1 — used by killServiceWorkerAndCaches() to SPARE the
+// intentional offline-shell SW + caches while still purging legacy ones.
+import { OFFLINE_SHELL_ENABLED, isOfflineShellCache } from './offline/offlineShellConfig.js';
+
 export const FARROWAY_BUILD_VERSION = 'immersive-hero-2026-05-12-v7';
 
 // Bump only when client state must be wiped. When this changes the
@@ -438,46 +442,40 @@ function _clearLegacyHomeFlags() {
 }
 
 export function killServiceWorkerAndCaches() {
-  // Home Persistence Cleanup §2 — purge legacy Home-variant
-  // flags BEFORE the SW unregister + cache drop so the boot
-  // sequence is: clear stale flags → drop caches → unregister
-  // workers. Order matters: if a flag was set by a stale SW,
-  // the unregister might race the read; clearing flags first
-  // guarantees the canonical Home renders with a clean slate.
   _clearLegacyHomeFlags();
 
-  // SW unregister — fire and forget. Logs the count per spec
-  // wording so engineers can confirm the cleanup fired.
-  try {
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        if (!Array.isArray(regs)) return;
-        regs.forEach((r) => { try { r.unregister(); } catch { /* tolerate */ } });
-        try {
-           
-          console.log('Service workers unregistered:', regs.length);
-        } catch { /* swallow */ }
-      }).catch(() => { /* tolerate */ });
-    }
-  } catch { /* swallow */ }
+  // OFFLINE_SHELL_V1 — the SW is now an INTENTIONAL offline shell. When
+  // it's enabled we must NOT unregister it or delete its caches here
+  // (that would nuke the shell on every boot). We still purge LEGACY
+  // caches (anything not owned by the offline shell) for hygiene. Flip
+  // OFFLINE_SHELL_ENABLED=false to restore the old unconditional purge.
+  const offlineShellEnabled = !!OFFLINE_SHELL_ENABLED;
 
-  // Cache purge — service worker is permanently removed, so
-  // there is no Farroway-owned cache we want to keep. Drop
-  // EVERY entry per the May 2026 SW-removal spec; the spec-
-  // named "Cache cleanup complete" log fires after the keys()
-  // promise resolves so engineers can confirm the sweep ran.
+  // SW unregister — ONLY when the offline shell is disabled.
+  if (!offlineShellEnabled) {
+    try {
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          if (!Array.isArray(regs)) return;
+          regs.forEach((r) => { try { r.unregister(); } catch { /* tolerate */ } });
+          try { console.log('Service workers unregistered:', regs.length); } catch { /* swallow */ }
+        }).catch(() => { /* tolerate */ });
+      }
+    } catch { /* swallow */ }
+  }
+
+  // Cache purge — drop legacy caches; SPARE the offline-shell caches
+  // when the shell is enabled (else delete everything as before).
   try {
     if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
       caches.keys().then((keys) => {
         if (!Array.isArray(keys)) return;
         let dropped = 0;
         keys.forEach((k) => {
+          if (offlineShellEnabled && isOfflineShellCache(k)) return; // keep the shell
           try { caches.delete(k); dropped += 1; } catch { /* tolerate */ }
         });
-        try {
-           
-          console.log('Cache cleanup complete (' + dropped + ' deleted)');
-        } catch { /* swallow */ }
+        try { console.log('Cache cleanup complete (' + dropped + ' deleted)'); } catch { /* swallow */ }
       }).catch(() => { /* tolerate */ });
     }
   } catch { /* swallow */ }

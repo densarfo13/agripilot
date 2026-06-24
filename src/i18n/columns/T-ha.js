@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Ɗauki hoto, ko zaɓi daga gidan hotunanku.",
   "scan.captureHelper": "Shawara: ɗauki kusa-kusa cikin hasken rana. Kwana ga ganye ko wurin da abin ya shafa.",
   "scan.retake": "Sake ɗauka",
+  "offline.active": "Babu intanet",
+  "offline.queued": "Binciken ka da ayyukanka za su daidaita sa'ad da ka sake haɗawa.",
   "scanObs.eyebrow": "Sa-ido Bincike",
   "scanObs.title": "Nazarin Bincike",
   "scanObs.refresh": "Sabunta",

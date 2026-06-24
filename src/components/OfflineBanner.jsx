@@ -100,8 +100,8 @@ export default function OfflineBanner({ transport = null } = {}) {
 
   const tone = !online ? S.offline : syncing ? S.syncing : S.synced;
   const label = !online
-    ? (t('offline.banner.offline')
-        || 'Offline mode — actions will sync when connection returns.')
+    // OFFLINE_SHELL_V1 — display the canonical "Offline mode active".
+    ? (t('offline.active') || 'Offline mode active')
     : syncing
       ? (t('offline.banner.syncing')
           || 'Back online — syncing now\u2026')
