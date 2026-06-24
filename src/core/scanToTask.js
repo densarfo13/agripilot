@@ -207,6 +207,16 @@ export function addScanTasks(suggestedTasks, context = {}) {
     });
   } catch { /* fire-and-forget */ }
 
+  // SCAN_OBSERVABILITY_V1 — report taskCreated for the funnel (best-effort).
+  try {
+    const _sid = (context && context.scanId) || (candidates[0] && candidates[0].scanId);
+    if (_sid) {
+      import('../lib/scan/observabilityReporter.js')
+        .then((m) => m.reportScanOutcome(_sid, { taskCreated: true }))
+        .catch(() => {});
+    }
+  } catch { /* never block task creation */ }
+
   return candidates;
 }
 

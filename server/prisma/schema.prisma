@@ -3107,6 +3107,35 @@ model ScanTrainingEvent {
   @@map("scan_training_events")
 }
 
+// SCAN_OBSERVABILITY_V1 — one durable row per scan. scanId is UNIQUE
+// (no duplicate rows, unlike ScanTrainingEvent). Append/upsert only;
+// free-form userId (no FK), matching the ML-table convention. No PII.
+model ScanObservabilityEvent {
+  id             String   @id @default(uuid())
+  scanId         String   @unique @map("scan_id")
+  userId         String?  @map("user_id")
+  photoQuality   String?  @map("photo_quality")
+  provider       String?
+  cropName       String?  @map("crop_name")
+  confidence     Int? // 0..100 numeric (null when unknown)
+  confidenceBand String?  @map("confidence_band") // low | medium | high
+  healthDetected Boolean  @default(false) @map("health_detected")
+  detectedIssue  String?  @map("detected_issue") // disease label (for ranking)
+  insectDetected Boolean  @default(false) @map("insect_detected")
+  detectedInsect String?  @map("detected_insect") // insect label (for ranking)
+  taskCreated    Boolean  @default(false) @map("task_created")
+  plantSaved     Boolean  @default(false) @map("plant_saved")
+  durationMs     Int?     @map("duration_ms")
+  success        Boolean  @default(false)
+  failureReason  String?  @map("failure_reason")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt], map: "idx_scan_obs_created")
+  @@index([cropName], map: "idx_scan_obs_crop")
+  @@index([detectedIssue], map: "idx_scan_obs_issue")
+  @@map("scan_observability_events")
+}
+
 // ─── Scan Pilot Validation framework ──────────────────
 // Append-only measurement tables. Mirror migration
 // 20260602_scan_validation/migration.sql. NEVER carries PII —

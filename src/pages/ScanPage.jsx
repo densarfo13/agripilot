@@ -2281,6 +2281,14 @@ export default function ScanPage() {
               try { trackEvent('plant_created_from_scan',
                 { plantId: plant.id, scanId: sr?.scanId || null }); }
               catch { /* ignore */ }
+              // SCAN_OBSERVABILITY_V1 — report plantSaved (best-effort).
+              try {
+                if (sr?.scanId) {
+                  import('../lib/scan/observabilityReporter.js')
+                    .then((m) => m.reportScanOutcome(sr.scanId, { plantSaved: true }))
+                    .catch(() => {});
+                }
+              } catch { /* never crash the scan page */ }
               if (wf.route) {
                 try { navigate(wf.route); } catch { /* ignore */ }
               }

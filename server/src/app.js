@@ -748,7 +748,52 @@ app.get('/api/admin/scan-credits', authenticate, async (req, res) => {
   }
 });
 
+// SCAN_OBSERVABILITY_V1 — client reports a downstream outcome (task
+// created / plant saved) for a scan it owns. Auth-only, best-effort.
+app.post('/api/scan/observability/outcome', authenticate, async (req, res) => {
+  try {
+    const { scanId, taskCreated, plantSaved } = req.body || {};
+    if (!scanId) return res.status(400).json({ ok: false, error: 'scanId_required' });
+    const { recordScanOutcome } = await import('./ml/scanObservability.js');
+    const ok = await recordScanOutcome(prisma, scanId, { taskCreated, plantSaved });
+    return res.json({ ok });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'observability_outcome_failed', message: err && err.message });
+  }
+});
+
+// GET /api/admin/scan-observability — aggregate dashboard (auth-only):
+// totals, success/fail, avg confidence, most-scanned crops, most-common
+// diseases + insects. ?sinceDays=N&limit=N to scope the window.
+app.get('/api/admin/scan-observability', authenticate, async (req, res) => {
+  try {
+    const { getScanObservability } = await import('./ml/scanObservability.js');
+    const data = await getScanObservability(prisma, {
+      sinceDays: req.query.sinceDays, limit: req.query.limit,
+    });
+    return res.json({ ok: true, ...data });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'scan_observability_failed', message: err && err.message });
+  }
+});
+
+// GET /api/admin/scan-observability/export.csv — full per-scan CSV.
+app.get('/api/admin/scan-observability/export.csv', authenticate, async (req, res) => {
+  try {
+    const { buildObservabilityCsv } = await import('./ml/scanObservability.js');
+    const csv = await buildObservabilityCsv(prisma, {
+      sinceDays: req.query.sinceDays, limit: req.query.limit,
+    });
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.set('Content-Disposition', 'attachment; filename="scan-observability.csv"');
+    return res.send(csv);
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'scan_observability_csv_failed', message: err && err.message });
+  }
+});
+
 app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) => {
+  const _obsT0 = Date.now(); // SCAN_OBSERVABILITY_V1 — per-scan duration
   try {
     const {
       imageBase64, imageUrl,
@@ -1023,6 +1068,36 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
         },
       });
     } catch { /* swallow — analytics row is best-effort */ }
+
+    // SCAN_OBSERVABILITY_V1 — one durable row per scan (fire-and-forget,
+    // never blocks the response). scanId @unique → no duplicate rows.
+    try {
+      const _INSECTS = new Set(['holes', 'chewing', 'aphids', 'mites', 'whiteflies',
+        'armyworm', 'caterpillar', 'beetle', 'thrips', 'mealybug', 'pest']);
+      const _issue = String(safe.possibleIssue || '').toLowerCase();
+      const _isInsect = [..._INSECTS].some((w) => _issue.includes(w));
+      const _real = !(inference && inference.fallbackUsed);
+      const _identified = _issue && _issue !== 'unclear';
+      const _band = safe.confidence; // low | medium | high
+      const _confPct = _band === 'high' ? 85 : _band === 'medium' ? 55 : _band === 'low' ? 25 : null;
+      const { recordScanObservation } = await import('./ml/scanObservability.js');
+      recordScanObservation(prisma, {
+        scanId,
+        userId:         req.user?.id || null,
+        photoQuality:   req.body?.photoQuality || req.body?.imageQuality || null,
+        provider:       (inference && inference.meta && inference.meta.provider) || (_real ? 'external' : 'rule'),
+        cropName:       cropName || plantName || null,
+        confidence:     _confPct,            // band-derived numeric (V1)
+        confidenceBand: _band || null,
+        healthDetected: !!(_identified && !_isInsect && _issue !== 'healthy'),
+        detectedIssue:  (_identified && !_isInsect && _issue !== 'healthy') ? safe.possibleIssue : null,
+        insectDetected: !!_isInsect,
+        detectedInsect: _isInsect ? safe.possibleIssue : null,
+        durationMs:     Date.now() - _obsT0,
+        success:        !!(_real && _identified),
+        failureReason:  _real ? null : ((inference && inference.meta && inference.meta.fallbackReason) || 'rule_fallback'),
+      }).catch(() => {});
+    } catch { /* swallow — observability is best-effort */ }
 
     // Smart Scan AI Backend §3 — strict-shape verdict for
     // ML / analytics / partner consumers. Existing rich
