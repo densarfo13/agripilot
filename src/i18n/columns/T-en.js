@@ -6446,6 +6446,8 @@ export default {
   "outcome.same": "Same",
   "outcome.worse": "Worse",
   "outcome.thanks": "Thanks — this helps your next plan.",
+  "scan.unidentified.title": "We couldn't confidently identify this plant.",
+  "scan.unidentified.short": "Plant not identified",
   "day2.farmBrief.title": "Today's farm brief",
   "scanQuality.photoNeedsClearerView": "Photo needs a clearer view",
   "scanQuality.whatWentWrong": "What went wrong",

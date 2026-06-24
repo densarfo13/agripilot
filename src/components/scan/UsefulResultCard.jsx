@@ -474,6 +474,25 @@ export default function UsefulResultCard({
   const category = (result && result.category) ? String(result.category) : 'needs_review';
   const guidance  = GUIDANCE[category] || _FALLBACK;
 
+  // P0 BUG FIX (sprint #220) — canCreateTask. A scan that did not
+  // identify a plant / has low confidence / has no usable diagnosis
+  // must NOT offer "Create task". This card previously rendered the
+  // task block unconditionally, which is how an unknown/needs-review
+  // scan showed a Create Task button. Rule (spec):
+  //   canCreateTask = plantKnown && confidence >= 0.70 && diagnosisKnown
+  const _r = result || {};
+  const _plantName = String(_r.plantName || '').trim().toLowerCase();
+  const _UNKNOWN = ['', 'scan unclear', 'unknown', 'unknown plant', 'needs review', 'needs_review'];
+  const _plantKnown = (!_UNKNOWN.includes(_plantName))
+    || (Array.isArray(_r.topCandidates) && _r.topCandidates.length > 0);
+  const _confPct = (typeof _r.confidencePct === 'number' && Number.isFinite(_r.confidencePct))
+    ? _r.confidencePct
+    : (String(_r.confidence).toLowerCase() === 'high' ? 80
+       : String(_r.confidence).toLowerCase() === 'medium' ? 55 : 0);
+  const _diagnosisKnown = category !== 'needs_review'
+    && !!(_r.possibleIssue || _r.diagnosis || _r.issueType);
+  const canCreateTask = _plantKnown && _confPct >= 70 && _diagnosisKnown;
+
   // ── Result image (Final Scan Preview Fix §1, §4) ──────────────
   // The farmer's OWN captured photo is the primary evidence on the
   // result and MUST be shown — including on a low-confidence
@@ -700,7 +719,20 @@ export default function UsefulResultCard({
         </div>
       )}
 
-      {/* Suggested task */}
+      {/* Suggested task — sprint #220: rendered ONLY when the trust
+          rule allows it (plant known + confidence ≥70 + diagnosis
+          known). When it doesn't, show the unidentified explanation
+          instead of a Create Task button. */}
+      {!canCreateTask ? (
+        <div style={S.taskBlock} data-testid="useful-result-unidentified">
+          <div style={S.sectionLabel}>
+            {tSafe('scan.unidentified.title', "We couldn't confidently identify this plant.")}
+          </div>
+          <div style={S.taskText} data-testid="useful-result-better-photo">
+            {tSafe('scanTrust.betterPhotoNeeded', 'Better photo needed before creating a task.')}
+          </div>
+        </div>
+      ) : (
       <div style={S.taskBlock} data-testid="useful-result-task-block">
         <div style={S.sectionLabel}>
           {tSafe('scan.section.task', 'Suggested task')}
@@ -734,6 +766,7 @@ export default function UsefulResultCard({
           )}
         </div>
       </div>
+      )}
 
       {/* Action buttons */}
       <div style={S.buttonsRow}>

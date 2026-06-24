@@ -485,6 +485,20 @@ export default function ScanResultCard({
   const [_taskAdded, _setTaskAdded] = useState(false);
 
   if (!result) return null;
+  // P0 BUG FIX (sprint #220) — canCreateTask gate (same rule as
+  // UsefulResultCard): a scan with no identified plant / low confidence
+  // / no usable diagnosis must NOT offer "Add to Tasks".
+  const _r220 = result;
+  const _pn220 = String(_r220.plantName || '').trim().toLowerCase();
+  const _plantKnown220 = !['', 'scan unclear', 'unknown', 'unknown plant', 'needs review', 'needs_review'].includes(_pn220)
+    || (Array.isArray(_r220.topCandidates) && _r220.topCandidates.length > 0);
+  const _conf220 = (typeof _r220.confidencePct === 'number' && Number.isFinite(_r220.confidencePct))
+    ? _r220.confidencePct
+    : (String(_r220.confidence).toLowerCase() === 'high' ? 80
+       : String(_r220.confidence).toLowerCase() === 'medium' ? 55 : 0);
+  const canCreateTask = _plantKnown220 && _conf220 >= 70
+    && String(_r220.category || 'needs_review') !== 'needs_review'
+    && !!(_r220.possibleIssue || _r220.diagnosis || _r220.issueType);
   const scanToTaskOn = isFeatureEnabled('scanToTask');
   const mlScanOn     = isFeatureEnabled('mlScan');
   // Phase 7F — surface-level gate (featureFlags.js, not config/features.js).
@@ -676,7 +690,7 @@ export default function ScanResultCard({
           block is self-contained; it also fires onAddTasks (if provided)
           to keep the parent scan pipeline in sync. On success the button
           swaps to a green "✅ Task added" inline toast — no page reload. */}
-      {scanTaskSuggestionOn && result.category && TASK_SUGGESTIONS[result.category] ? (
+      {canCreateTask && scanTaskSuggestionOn && result.category && TASK_SUGGESTIONS[result.category] ? (
         <div style={STYLES.suggestionBlock} data-testid="scan-task-suggestion">
           <span style={STYLES.metaLabel}>
             {tStrict('scan.suggestion.label', 'Suggested follow-up')}

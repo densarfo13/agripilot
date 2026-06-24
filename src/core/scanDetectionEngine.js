@@ -315,7 +315,7 @@ export async function analyzeScan(input = {}) {
         }, safeInput);
         const _evidenceFusion = await _fuseScanEvidenceSafe(_mythosDecision, safeInput);
 
-        return Object.freeze({
+        const _result = Object.freeze({
           // ── V1+V2+V3+V4 envelope pass-through ─────────────
           // Spread first so any explicit override below wins;
           // shallow copy avoids freezing the upstream object.
@@ -350,10 +350,38 @@ export async function analyzeScan(input = {}) {
           // confidence; satellite never used (Layer 2 frozen).
           evidenceFusion: _evidenceFusion,
         });
+        // Sprint #219 — capture the end-to-end pipeline state for
+        // __scanDebug() so a "Scan unclear" can be root-caused with
+        // real data (esp. whether the classifier was available).
+        await _recordScanDebugSafe(_result, safeInput);
+        return _result;
       }
     }
   } catch { /* fall through to safe fallback */ }
   return getRuleBasedFallback(safeInput);
+}
+
+// Sprint #219 — lazy, fault-isolated scan-debug capture. Computes the
+// trust gate + photo quality the UI will use, and records the trace.
+// Never throws; a capture fault can NEVER affect the scan result.
+async function _recordScanDebugSafe(result, input) {
+  try {
+    const [tgMod, pqMod, dbgMod] = await Promise.all([
+      import('../runtime/scanTrust/ScanTrustGate'),
+      import('../runtime/scanQuality/PhotoQualityEngine'),
+      import('../runtime/scanDebug/ScanDebugRuntime'),
+    ]);
+    const photoQuality = pqMod.evaluatePhotoQuality({
+      imageQuality: result.imageQuality, objectType: result.objectType,
+    });
+    const trustGate = tgMod.evaluateScanTrust({
+      confidencePct: result.confidencePct, confidence: result.confidence,
+      topCandidates: result.topCandidates, plantName: result.plantName,
+      issueType: result.issueType, status: result.status,
+      hasPhoto: !!(result.imageUrl || result.scanId), photoQuality,
+    });
+    dbgMod.recordScanDebug({ env: result, photoQuality, trustGate });
+  } catch { /* swallow — debug capture never affects the scan */ }
 }
 
 function _looksValid(result) {

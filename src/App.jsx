@@ -2003,6 +2003,8 @@ export default function App() {
           try { (await import('./runtime/onboarding/FirstFiveMinutesEngine')).installFirstFiveMinutesHealthGlobal(); } catch { /* swallow */ }
           try { (await import('./runtime/retention/Day2RetentionEngine')).installDay2RetentionHealthGlobal(); } catch { /* swallow */ }
           try { (await import('./runtime/farmBrain/FarmSuccessEngine')).installFarmSuccessHealthGlobal(); } catch { /* swallow */ }
+          // Sprint #219 — scan debug trace (window.__scanDebug()).
+          try { (await import('./runtime/scanDebug/ScanDebugRuntime')).installScanDebugGlobal(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

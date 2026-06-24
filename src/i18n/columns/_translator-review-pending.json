@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6567,
-      "missingFilled": 1,
+      "totalKeys": 6569,
+      "missingFilled": 2,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -150,12 +150,14 @@
         "scanReview.saveForReview",
         "scanReview.pendingReview",
         "scanReview.promotedToPlant",
-        "day2.farmBrief.title"
+        "day2.farmBrief.title",
+        "scan.unidentified.title",
+        "scan.unidentified.short"
       ]
     },
     "sw": {
-      "totalKeys": 6567,
-      "missingFilled": 1,
+      "totalKeys": 6569,
+      "missingFilled": 2,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -302,12 +304,14 @@
         "scanReview.saveForReview",
         "scanReview.pendingReview",
         "scanReview.promotedToPlant",
-        "day2.farmBrief.title"
+        "day2.farmBrief.title",
+        "scan.unidentified.title",
+        "scan.unidentified.short"
       ]
     },
     "ha": {
-      "totalKeys": 6567,
-      "missingFilled": 1,
+      "totalKeys": 6569,
+      "missingFilled": 2,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -454,12 +458,14 @@
         "scanReview.saveForReview",
         "scanReview.pendingReview",
         "scanReview.promotedToPlant",
-        "day2.farmBrief.title"
+        "day2.farmBrief.title",
+        "scan.unidentified.title",
+        "scan.unidentified.short"
       ]
     },
     "tw": {
-      "totalKeys": 6567,
-      "missingFilled": 1,
+      "totalKeys": 6569,
+      "missingFilled": 2,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -606,12 +612,14 @@
         "scanReview.saveForReview",
         "scanReview.pendingReview",
         "scanReview.promotedToPlant",
-        "day2.farmBrief.title"
+        "day2.farmBrief.title",
+        "scan.unidentified.title",
+        "scan.unidentified.short"
       ]
     },
     "hi": {
-      "totalKeys": 6567,
-      "missingFilled": 1,
+      "totalKeys": 6569,
+      "missingFilled": 2,
       "coveragePct": 53,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3692,7 +3700,9 @@
         "scanReview.saveForReview",
         "scanReview.pendingReview",
         "scanReview.promotedToPlant",
-        "day2.farmBrief.title"
+        "day2.farmBrief.title",
+        "scan.unidentified.title",
+        "scan.unidentified.short"
       ]
     }
   }
