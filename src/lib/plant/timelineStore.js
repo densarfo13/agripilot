@@ -188,7 +188,27 @@ export function appendTimelineEntry(input) {
   list.push(entry);
   _write(list);
   _emit('append', entry);
+  // FARM_PERSISTENCE_V1 — mirror the timeline entry (without image bytes).
+  try {
+    const slim = Object.assign({}, entry); delete slim.thumbDataUrl;
+    import('../sync/farmSync.js').then((m) => m.mirror('timeline', entry.id, slim)).catch(() => {});
+  } catch { /* never block the timeline */ }
   return entry;
+}
+
+/** FARM_PERSISTENCE_V1 — hydrate the timeline cache from server records. */
+export function hydrateTimeline(records) {
+  try {
+    const recs = Array.isArray(records) ? records : [];
+    if (recs.length === 0) return false;
+    const byId = new Map();
+    for (const e of _read()) if (e && e.id) byId.set(e.id, e);
+    for (const r of recs) { const e = r && r.payload; if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); }
+    const merged = [...byId.values()].sort(
+      (a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    _write(merged);
+    return true;
+  } catch { return false; }
 }
 
 /**

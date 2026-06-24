@@ -129,7 +129,27 @@ export function recordOutcome(input = {}) {
   // Cap so long-running devices don't blow past quota.
   const trimmed = list.length > MAX_ROWS ? list.slice(-MAX_ROWS) : list;
   writeRaw(trimmed);
+  // FARM_PERSISTENCE_V1 — mirror the outcome to the durable store.
+  try {
+    import('../sync/farmSync.js').then((m) => m.mirror('outcomes', row.id, row)).catch(() => {});
+  } catch { /* never block outcome capture */ }
   return Object.freeze(row);
+}
+
+/** FARM_PERSISTENCE_V1 — hydrate the outcome cache from server records. */
+export function hydrateOutcomes(records) {
+  try {
+    const recs = Array.isArray(records) ? records : [];
+    if (recs.length === 0) return false;
+    const byId = new Map();
+    for (const r of readRaw()) if (r && r.id) byId.set(r.id, r);
+    for (const rec of recs) {
+      const row = rec && rec.payload;
+      if (row && row.id) byId.set(row.id, row);
+    }
+    writeRaw([...byId.values()]);
+    return true;
+  } catch { return false; }
 }
 
 /**

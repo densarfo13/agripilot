@@ -69,6 +69,22 @@ function _writeList(list) {
   } catch { /* quota / private mode — ignore */ }
 }
 
+/** FARM_PERSISTENCE_V1 — hydrate the task cache from server records. */
+export function hydrateScanTasks(records) {
+  try {
+    const recs = Array.isArray(records) ? records : [];
+    if (recs.length === 0) return false;
+    const byId = new Map();
+    for (const t of _readList()) if (t && t.id) byId.set(t.id, t);
+    for (const r of recs) {
+      const t = r && r.payload;
+      if (t && t.id) byId.set(t.id, t); // server wins
+    }
+    _writeList([...byId.values()]);
+    return true;
+  } catch { return false; }
+}
+
 /**
  * Persist scan-derived tasks. Returns the actually-stored entries.
  * When the flag is off, returns an empty array without writing.
@@ -197,6 +213,13 @@ export function addScanTasks(suggestedTasks, context = {}) {
   if (candidates.length === 0) return [];
   list.push(...candidates);
   _writeList(list);
+
+  // FARM_PERSISTENCE_V1 — mirror each new task to the durable store.
+  try {
+    import('../lib/sync/farmSync.js').then((m) => {
+      for (const t of candidates) if (t && t.id) m.mirror('tasks', t.id, t);
+    }).catch(() => {});
+  } catch { /* never block task creation */ }
 
   // Feed the intelligence loop — new follow-up tasks exist.
   try {

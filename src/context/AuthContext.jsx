@@ -142,6 +142,20 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // FARM_PERSISTENCE_V1 — when a user becomes authenticated (login or a
+  // restored session), recover their durable farm state from PostgreSQL
+  // into the local caches. Fires once per authenticated user id. Fully
+  // best-effort: a failure leaves the app on its localStorage cache.
+  useEffect(() => {
+    const uid = user && (user.id || user.userId);
+    if (!uid) return undefined;
+    let cancelled = false;
+    import('../runtime/sync/farmPersistenceBoot.js')
+      .then((m) => { if (!cancelled) return m.bootFarmPersistence(); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user && (user.id || user.userId)]);
+
   // Redirect-to-/login effect. Fires once when sessionExpired
   // flips true.
   //

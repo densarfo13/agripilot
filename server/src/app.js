@@ -792,6 +792,36 @@ app.get('/api/admin/scan-observability/export.csv', authenticate, async (req, re
   }
 });
 
+// FARM_PERSISTENCE_V1 — durable farmer state (plants/scanHistory/tasks/
+// outcomes/timeline). Client mirrors writes here; recovers on login.
+// POST /api/farm-state/sync — batch upsert (last-write-wins).
+app.post('/api/farm-state/sync', authenticate, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ ok: false, error: 'unauthenticated' });
+    const { syncRecords } = await import('./services/farmStateService.js');
+    const result = await syncRecords(prisma, userId, (req.body && req.body.records) || []);
+    return res.json({ ...result, serverTime: Date.now() });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'farm_state_sync_failed', message: err && err.message });
+  }
+});
+
+// GET /api/farm-state?domains=plants,tasks&since=ms — recovery read.
+app.get('/api/farm-state', authenticate, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ ok: false, error: 'unauthenticated' });
+    const { getRecords } = await import('./services/farmStateService.js');
+    const domains = typeof req.query.domains === 'string' && req.query.domains
+      ? req.query.domains.split(',').map((d) => d.trim()).filter(Boolean) : undefined;
+    const data = await getRecords(prisma, userId, { domains, since: req.query.since });
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'farm_state_get_failed', message: err && err.message });
+  }
+});
+
 app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) => {
   const _obsT0 = Date.now(); // SCAN_OBSERVABILITY_V1 — per-scan duration
   try {

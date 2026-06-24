@@ -73,6 +73,25 @@ function _isoNow() {
   try { return new Date().toISOString(); } catch { return ''; }
 }
 
+/** FARM_PERSISTENCE_V1 — hydrate the journal cache from server records. */
+export function hydrateScanHistory(records) {
+  try {
+    const recs = Array.isArray(records) ? records : [];
+    if (recs.length === 0) return false;
+    const byId = new Map();
+    for (const e of _read()) if (e && e.id) byId.set(e.id, e);
+    for (const r of recs) {
+      const e = r && r.payload;
+      if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); // keep local (has thumbnail); add missing
+    }
+    // Newest-last ordering preserved by createdAt where present.
+    const merged = [...byId.values()].sort(
+      (a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    _write(merged);
+    return true;
+  } catch { return false; }
+}
+
 function _makeId() {
   try {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -224,6 +243,15 @@ export function saveScanUseful(result, ctx = {}) {
 
   list.push(entry);
   _write(list);
+
+  // FARM_PERSISTENCE_V1 — mirror the journal entry to the durable store
+  // WITHOUT the image bytes (the server already has the scan image; the
+  // thumbnail dataURL would blow the payload cap). Best-effort.
+  try {
+    const slim = Object.assign({}, entry);
+    delete slim.thumbnail; delete slim.imageUrl;
+    import('../sync/farmSync.js').then((m) => m.mirror('scanHistory', entry.id, slim)).catch(() => {});
+  } catch { /* never block the scan journal */ }
 
   // Feed the intelligence loop — the scan is now journalled. Both
   // events carry only summary fields (no image bytes, no PII).

@@ -3136,6 +3136,30 @@ model ScanObservabilityEvent {
   @@map("scan_observability_events")
 }
 
+// FARM_PERSISTENCE_V1 — durable source of truth for farmer state that
+// used to live only in localStorage (silent data loss on cache-clear /
+// new device). One generic row per (user, domain, record) so all five
+// domains — plants | scanHistory | tasks | outcomes | timeline — share
+// one table + one sync API. localStorage is now only a cache; this is
+// the recovery source. Last-write-wins by clientUpdatedAt. No PII beyond
+// the payload the client already stored locally.
+model FarmStateRecord {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  domain          String // plants | scanHistory | tasks | outcomes | timeline
+  recordId        String   @map("record_id")
+  payload         Json
+  deleted         Boolean  @default(false)
+  clientUpdatedAt Float?   @map("client_updated_at") // ms epoch from the client
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, domain, recordId], map: "uq_farm_state_user_domain_record")
+  @@index([userId, domain], map: "idx_farm_state_user_domain")
+  @@index([updatedAt], map: "idx_farm_state_updated")
+  @@map("farm_state_records")
+}
+
 // ─── Scan Pilot Validation framework ──────────────────
 // Append-only measurement tables. Mirror migration
 // 20260602_scan_validation/migration.sql. NEVER carries PII —

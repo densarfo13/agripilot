@@ -66,6 +66,33 @@ function _write(list) {
   }, false);
 }
 
+// FARM_PERSISTENCE_V1 — mirror a plant write to the durable store
+// (best-effort; localStorage above stays the cache). Never throws.
+function _mirror(plant, deleted) {
+  _safe(() => {
+    if (!_isObj(plant) || !_str(plant.id)) return;
+    import('../lib/sync/farmSync.js')
+      .then((m) => m.mirror('plants', plant.id, plant, { deleted: !!deleted }))
+      .catch(() => {});
+  }, undefined);
+}
+
+/** Hydrate the cache from authoritative server records (recovery on login). */
+export function hydrateManagedPlants(records) {
+  return _safe(() => {
+    const recs = _arr(records);
+    if (recs.length === 0) return false;
+    const byId = new Map();
+    for (const p of _read()) if (_isObj(p) && _str(p.id)) byId.set(p.id, p);
+    for (const r of recs) {
+      const plant = r && r.payload;
+      if (_isObj(plant) && _str(plant.id)) byId.set(plant.id, plant); // server wins
+    }
+    _write([...byId.values()]);
+    return true;
+  }, false);
+}
+
 /**
  * Return the full list. Always an array (never null).
  */
@@ -86,6 +113,7 @@ export function appendManagedPlant(plant) {
     const filtered = current.filter((p) => !_isObj(p) || p.id !== id);
     filtered.push(plant);
     _write(filtered);
+    _mirror(plant);
     return Object.freeze(filtered.slice());
   }, loadManagedPlants());
 }
@@ -124,7 +152,7 @@ export function updateManagedPlantById(id, patch) {
         updatedAt: _safe(() => new Date().toISOString(), p.updatedAt),
       });
     });
-    if (touched) _write(next);
+    if (touched) { _write(next); _mirror(next.find((p) => _isObj(p) && p.id === key)); }
     return Object.freeze(next.slice());
   }, loadManagedPlants());
 }
@@ -139,6 +167,7 @@ export function removeManagedPlantById(id) {
     const filtered = _read().filter(
       (p) => !_isObj(p) || p.id !== key);
     _write(filtered);
+    _mirror({ id: key }, true);
     return Object.freeze(filtered);
   }, loadManagedPlants());
 }
