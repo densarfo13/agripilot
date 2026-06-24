@@ -27,3 +27,7 @@ Thumbs.db
 # is tracked so pipelines can see the expected shape.
 reports/*.json
 !reports/*.template.json
+
+# Scan-credit monitor snapshot history (best-effort, ephemeral)
+.cache/
+server/.cache/

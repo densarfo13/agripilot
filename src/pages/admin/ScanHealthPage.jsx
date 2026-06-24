@@ -20,6 +20,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import ScanCreditCard from '../../components/admin/ScanCreditCard.jsx';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -210,6 +211,11 @@ function ScanHealthInner() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Kindwise scan-credit monitor — remaining credits + burn + alerts. */}
+      <section style={S.section} data-testid="scan-health-credits">
+        <ScanCreditCard />
       </section>
 
       <p style={S.note}>

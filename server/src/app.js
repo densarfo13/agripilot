@@ -730,6 +730,24 @@ app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/admin/scan-credits — Kindwise credit monitor (auth-only).
+// Remaining credits for plant.id / crop.health / insect.id, per-provider
+// alert level (<100 low, <50 warning, <20 critical), daily burn rate +
+// estimated days remaining. Reads usage_info (does NOT spend credits) and
+// never returns the key value. ?refresh=1 forces a fresh poll.
+app.get('/api/admin/scan-credits', authenticate, async (req, res) => {
+  try {
+    const { getScanCredits, refreshScanCredits } =
+      await import('./ml/scanCreditMonitor.js');
+    const data = String(req.query.refresh || '') === '1'
+      ? await refreshScanCredits()
+      : await getScanCredits();
+    return res.json({ ok: true, ...data });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'scan_credits_failed', message: err && err.message });
+  }
+});
+
 app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) => {
   try {
     const {
