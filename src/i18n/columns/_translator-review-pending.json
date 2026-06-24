@@ -2,8 +2,8 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6566,
-      "missingFilled": 22,
+      "totalKeys": 6567,
+      "missingFilled": 1,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -149,12 +149,13 @@
         "scanReview.queue",
         "scanReview.saveForReview",
         "scanReview.pendingReview",
-        "scanReview.promotedToPlant"
+        "scanReview.promotedToPlant",
+        "day2.farmBrief.title"
       ]
     },
     "sw": {
-      "totalKeys": 6566,
-      "missingFilled": 22,
+      "totalKeys": 6567,
+      "missingFilled": 1,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -300,12 +301,13 @@
         "scanReview.queue",
         "scanReview.saveForReview",
         "scanReview.pendingReview",
-        "scanReview.promotedToPlant"
+        "scanReview.promotedToPlant",
+        "day2.farmBrief.title"
       ]
     },
     "ha": {
-      "totalKeys": 6566,
-      "missingFilled": 22,
+      "totalKeys": 6567,
+      "missingFilled": 1,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -451,12 +453,13 @@
         "scanReview.queue",
         "scanReview.saveForReview",
         "scanReview.pendingReview",
-        "scanReview.promotedToPlant"
+        "scanReview.promotedToPlant",
+        "day2.farmBrief.title"
       ]
     },
     "tw": {
-      "totalKeys": 6566,
-      "missingFilled": 22,
+      "totalKeys": 6567,
+      "missingFilled": 1,
       "coveragePct": 98,
       "translatorReviewPending": [
         "scan.calm.crop",
@@ -602,12 +605,13 @@
         "scanReview.queue",
         "scanReview.saveForReview",
         "scanReview.pendingReview",
-        "scanReview.promotedToPlant"
+        "scanReview.promotedToPlant",
+        "day2.farmBrief.title"
       ]
     },
     "hi": {
-      "totalKeys": 6566,
-      "missingFilled": 22,
+      "totalKeys": 6567,
+      "missingFilled": 1,
       "coveragePct": 53,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3687,7 +3691,8 @@
         "scanReview.queue",
         "scanReview.saveForReview",
         "scanReview.pendingReview",
-        "scanReview.promotedToPlant"
+        "scanReview.promotedToPlant",
+        "day2.farmBrief.title"
       ]
     }
   }

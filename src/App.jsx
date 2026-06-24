@@ -1993,6 +1993,16 @@ export default function App() {
             const m = await import('./runtime/pilot/PilotReadinessDashboard');
             m.installPilotReadinessDashboardGlobal();
           } catch { /* swallow */ }
+          // Sprint #216 — Farm OS composites.
+          try { (await import('./runtime/farm/FarmLifecycleEngine')).installFarmLifecycleHealthGlobal(); } catch { /* swallow */ }
+          try { (await import('./runtime/tasks/TaskOrchestrator')).installTaskOrchestratorHealthGlobal(); } catch { /* swallow */ }
+          try { (await import('./runtime/trust/RecommendationTrustScore')).installRecommendationTrustHealthGlobal(); } catch { /* swallow */ }
+          try { (await import('./runtime/grower/GrowerMemoryEngine')).installGrowerMemoryHealthGlobal(); } catch { /* swallow */ }
+          try { (await import('./runtime/scanReview/ExpertReviewEngine')).installExpertReviewHealthGlobal(); } catch { /* swallow */ }
+          // Sprint #217 — activation + retention engines.
+          try { (await import('./runtime/onboarding/FirstFiveMinutesEngine')).installFirstFiveMinutesHealthGlobal(); } catch { /* swallow */ }
+          try { (await import('./runtime/retention/Day2RetentionEngine')).installDay2RetentionHealthGlobal(); } catch { /* swallow */ }
+          try { (await import('./runtime/farmBrain/FarmSuccessEngine')).installFarmSuccessHealthGlobal(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

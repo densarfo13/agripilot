@@ -6446,6 +6446,7 @@ export default {
   "outcome.same": "Same",
   "outcome.worse": "Worse",
   "outcome.thanks": "Thanks — this helps your next plan.",
+  "day2.farmBrief.title": "Today's farm brief",
   "scanQuality.photoNeedsClearerView": "Photo needs a clearer view",
   "scanQuality.whatWentWrong": "What went wrong",
   "scanQuality.moveCloser": "Move closer to one leaf.",
