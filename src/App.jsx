@@ -1952,6 +1952,47 @@ export default function App() {
             const m = await import('./runtime/premortem/PilotPremortemRuntime');
             m.installPilotPremortemHealthGlobal();
           } catch { /* swallow */ }
+          // Sprint #214 — scan trust gate + photo quality + review
+          // queue + FarmBrain ingestion guard. The ingestion guard also
+          // pins __farrowayShouldIngestScan so the core persistence
+          // bridge can block low-confidence scans without an import cycle.
+          try {
+            const m = await import('./runtime/scanTrust/ScanTrustGate');
+            m.installScanTrustGateHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/scanQuality/PhotoQualityEngine');
+            m.installPhotoQualityHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/scanReview/ScanReviewQueue');
+            m.installScanReviewQueueHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/scanTrust/FarmBrainIngestionGuard');
+            m.installFarmBrainIngestionHealthGlobal();
+          } catch { /* swallow */ }
+          // Sprint #215 — data-integrity lockdown globals.
+          try {
+            const m = await import('./runtime/plants/DuplicatePlantDetector');
+            m.installDuplicatePlantHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/timeline/TimelineWriteGate');
+            m.installTimelineHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/offline/OfflineSyncGuardian');
+            m.installOfflineSyncHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/i18n/LanguageSessionLock');
+            m.installLanguageSessionLockHealthGlobal();
+          } catch { /* swallow */ }
+          try {
+            const m = await import('./runtime/pilot/PilotReadinessDashboard');
+            m.installPilotReadinessDashboardGlobal();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.
