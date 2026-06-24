@@ -77,6 +77,21 @@ export function persistScanToJournal(result, opts) {
         bridgeVersion: BRIDGE_VERSION,
       });
     }
+    // Sprint #214 — trust gate. A low-confidence / poor-quality scan
+    // must NOT enter the journal/FarmBrain; it is routed to the review
+    // queue instead (synchronous require-free check via the global the
+    // guard pins; falls open only if the guard is unavailable).
+    const ingest = _safe(() => {
+      const g = (typeof window !== 'undefined') && window.__farrowayShouldIngestScan;
+      return typeof g === 'function' ? g(result) : null;
+    }, null);
+    if (ingest && ingest.skipped) {
+      return Object.freeze({
+        ok: false, entry: null, reason: ingest.skipReason || 'FarmBrainIngestionSkipped',
+        skipped: true, toReviewQueue: !!ingest.toReviewQueue,
+        bridgeVersion: BRIDGE_VERSION,
+      });
+    }
     const safeOpts = _isObj(opts) ? opts : {};
     const entry = _safe(() => saveScanEntry(result, safeOpts), null);
     return Object.freeze({

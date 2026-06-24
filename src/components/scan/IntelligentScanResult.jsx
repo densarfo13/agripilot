@@ -40,6 +40,9 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useTranslation } from '../../i18n/index.js';
 import NeedsReviewActions from './NeedsReviewActions.jsx';
+import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
+import { evaluatePhotoQuality } from '../../runtime/scanQuality/PhotoQualityEngine';
+import { explainPhotoQuality } from '../../runtime/scanQuality/PhotoQualityExplainer';
 import {
   speakText, stop as voiceStop, isAvailable as voiceAvailable,
   isSpeaking as voiceIsSpeaking,
@@ -683,6 +686,26 @@ export default function IntelligentScanResult({
   const _fusion        = result && result.evidenceFusion;
   const _fusionAgainst = _arr(_fusion && _fusion.contradictingObservations);
 
+  // Sprint #214 — trust gate. A low-confidence / poor-quality scan
+  // may NOT create a plant or a task; it shows the photo coach card +
+  // a Save-for-Review path instead. Pure derivation from real fields.
+  const _photoQuality = _safe(() => evaluatePhotoQuality({
+    imageQuality: result && result.imageQuality, objectType: result && result.objectType,
+  }), null);
+  const _trust = _safe(() => evaluateScanTrust({
+    confidencePct: result && result.confidencePct,
+    confidence: result && result.confidence,
+    topCandidates: result && result.topCandidates,
+    plantName: result && result.plantName,
+    issueType: result && result.issueType,
+    status: result && result.status,
+    nextAction: result && (result.nextAction || (_mythos && _mythos.nextAction)),
+    hasPhoto: !!(result && (result.imageUrl || result.scanId)),
+    photoQuality: _photoQuality,
+  }), null);
+  const _trustBlocked = !!(_trust && !_trust.allowPlantCreation);
+  const _coach = _trustBlocked ? _safe(() => explainPhotoQuality(_photoQuality), null) : null;
+
   // Sprint #207 — honest numeric confidence breakdown. Only the two
   // real contributors (image base + farm-history boost) that summed to
   // the displayed confidence. NO satellite slice (frozen → would
@@ -890,13 +913,63 @@ export default function IntelligentScanResult({
             {tSafe('scan.intel.next.title', 'Do this next')}: {_nextActionTxt}
           </p>
         ) : null}
+        {/* Sprint #214 — photo quality coach card. When the trust
+            gate blocks plant creation, replace the identification CTAs
+            with coaching + a Save-for-Review path. Never "Add to My
+            Plants" for an unidentified/unclear scan. */}
+        {_trustBlocked ? (
+          <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA',
+            borderRadius: 12, padding: '12px 14px' }}
+            data-testid="scan-photo-coach-card">
+            <p style={{ margin: 0, fontWeight: 700, color: '#9A3412' }}>
+              {tSafe('scanQuality.photoNeedsClearerView', 'Photo needs a clearer view')}
+            </p>
+            <p style={{ margin: '6px 0', fontSize: 13, color: '#7C2D12' }}>
+              {tSafe('scanTrust.cannotCreatePlant', 'We could not identify this plant yet.')}
+            </p>
+            {_coach && _arr(_coach.whatWentWrong).length > 0 ? (
+              <ul style={{ margin: '4px 0 8px', paddingLeft: 18, fontSize: 13, color: '#7C2D12' }}
+                data-testid="scan-photo-coach-reasons">
+                {_coach.whatWentWrong.slice(0, 4).map((k, i) => (
+                  <li key={'cw-' + i}>{tSafe(k, k)}</li>
+                ))}
+              </ul>
+            ) : null}
+            {_coach ? (
+              <p style={{ margin: '4px 0 10px', fontSize: 13, fontWeight: 600, color: '#1f6a3a' }}>
+                {tSafe(_coach.doThisKey, 'Move closer to one leaf and retake in daylight.')}
+              </p>
+            ) : null}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" style={STYLES.confPill('high')}
+                data-testid="scan-coach-retake"
+                onClick={_isFn(onRetake) ? onRetake : undefined}>
+                {tSafe('scanQuality.retakePhoto', 'Retake Photo')}
+              </button>
+              <button type="button" style={STYLES.pill}
+                data-testid="scan-coach-upload"
+                onClick={_isFn(onChoose) ? onChoose : undefined}>
+                {tSafe('scanQuality.uploadAnother', 'Upload Another Photo')}
+              </button>
+              <button type="button" style={STYLES.pill}
+                data-testid="scan-coach-save-review"
+                onClick={_isFn(onSaveForReview) ? onSaveForReview : undefined}>
+                {tSafe('scanReview.saveForReview', 'Save for Review')}
+              </button>
+            </div>
+          </div>
+        ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button"
-            style={STYLES.confPill('high')}
-            data-testid="scan-intel-create-task"
-            onClick={() => { /* hook for future task-creation; renders link */ }}>
-            {tSafe('scan.intel.action.task', 'Create task')}
-          </button>
+          {/* Create task — gated by the trust gate (#214). Hidden when
+              the scan is unclear / low-confidence. */}
+          {_trust && _trust.allowTaskCreation ? (
+            <button type="button"
+              style={STYLES.confPill('high')}
+              data-testid="scan-intel-create-task"
+              onClick={() => { /* hook for future task-creation; renders link */ }}>
+              {tSafe('scan.intel.action.task', 'Create task')}
+            </button>
+          ) : null}
           <button type="button"
             style={STYLES.pill}
             data-testid="scan-intel-scan-again"
@@ -910,10 +983,9 @@ export default function IntelligentScanResult({
             {tSafe('scan.intel.action.review', 'Save for review')}
           </button>
           {/* Universal Scan §7 — Save plant. Adds the identified
-              plant to the grower's "My Plants" log so they can
-              build a record of what's growing. Renders whenever a
-              plant signal exists (any objectType besides 'unknown'). */}
-          {_objectType && _objectType !== 'unknown' ? (
+              plant to the grower's "My Plants" log. Sprint #214: also
+              requires the trust gate to allow plant creation. */}
+          {_objectType && _objectType !== 'unknown' && _trust && _trust.allowPlantCreation ? (
             <button type="button"
               style={STYLES.pill}
               data-testid="scan-intel-save-plant"
@@ -922,6 +994,7 @@ export default function IntelligentScanResult({
             </button>
           ) : null}
         </div>
+        )}
       </section>
       {needsReview ? (
         <NeedsReviewActions

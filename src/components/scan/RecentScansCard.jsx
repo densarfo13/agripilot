@@ -20,8 +20,28 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import { fetchScanHistory } from '../../runtime/scanLearning/ScanLearningRuntime';
+import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
+
+// Sprint #214 — Recent Scans shows only trusted scans. A row that the
+// trust gate would not display (low confidence / unknown plant /
+// needs-review) is collapsed into the Review Queue count instead of
+// rendering a repeated "Unclear photo".
+function _isTrustedRow(r) {
+  return _safe(() => {
+    const g = evaluateScanTrust({
+      confidencePct: r && r.confidencePct,
+      confidence: r && r.confidence,
+      topCandidates: (r && (r.topCandidates || (r.plantName ? [{ commonName: r.plantName }] : []))),
+      plantName: r && r.plantName,
+      issueType: r && (r.issueType || r.predictedIssue),
+      status: r && r.status,
+      hasPhoto: !!(r && (r.imageUrl || r.scanId)),
+    });
+    return !!g.allowRecentScanDisplay;
+  }, true);
+}
 
 function _formatDate(iso) {
   if (!iso) return '';
@@ -76,8 +96,25 @@ function RecentScansCardInner({ limit = 6 }) {
           {tSafe('recentScans.loading', 'Loading…')}
         </p>
       ) : null}
-      <ul style={S.list}>
-        {rows.map((r) => (
+      {(() => {
+        const _trusted = rows.filter(_isTrustedRow);
+        const _reviewCount = rows.length - _trusted.length;
+        return (
+        <>
+        {_reviewCount > 0 ? (
+          <button
+            type="button"
+            style={S.reviewPill || { display: 'block', width: '100%', textAlign: 'left',
+              background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10,
+              padding: '8px 12px', marginBottom: 8, color: '#9A3412', fontWeight: 600,
+              fontSize: 13, cursor: 'pointer' }}
+            data-testid="recent-scans-review-queue"
+            onClick={() => _safe(() => navigate('/scan/review'), null)}>
+            {tSafe('scanReview.queue', 'Review Queue')} ({_reviewCount})
+          </button>
+        ) : null}
+        <ul style={S.list}>
+        {_trusted.map((r) => (
           <li key={r.scanId || r.createdAt}>
             <button
               type="button"
@@ -110,7 +147,10 @@ function RecentScansCardInner({ limit = 6 }) {
             </button>
           </li>
         ))}
-      </ul>
+        </ul>
+        </>
+        );
+      })()}
     </section>
   );
 }
