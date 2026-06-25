@@ -259,9 +259,12 @@ if (_exists(APP_FOR_SOIL)) {
     'app.js must lazy-import soilProvider');
   _has(src, 'fetchSoilProfile(',
     'app.js must call fetchSoilProfile in the analyze route');
-  // Promise.all must include 4 readers (consensus + insect + fieldHealth + soil).
-  if (!/const\s*\[\s*consensus\s*,\s*pest\s*,\s*fieldHealth\s*,\s*soil\s*\]\s*=\s*await\s+Promise\.all/.test(src)) {
-    errors.push('app.js Promise.all must destructure to [consensus, pest, fieldHealth, soil]');
+  // Promise.all must still run consensus + insect + fieldHealth + soil in
+  // parallel. Tolerant of ADDITIONAL providers inserted between them (the
+  // multi-provider sprint added crop.health + mushroom) — the intent is that
+  // these four readers remain in the same parallel group, in order.
+  if (!/const\s*\[\s*consensus\s*,\s*pest\s*,[\s\S]{0,80}?fieldHealth\s*,\s*soil\s*\]\s*=\s*await\s+Promise\.all/.test(src)) {
+    errors.push('app.js Promise.all must still run [consensus, pest, …, fieldHealth, soil] in parallel');
   }
 }
 

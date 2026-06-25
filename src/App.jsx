@@ -2031,6 +2031,9 @@ export default function App() {
           // FARROWAY DECISION ENGINE — window.__decisionEngineHealth() (one daily
           // decision from FarmBrainState; reason + confidence + task + outcome).
           try { (await import('./runtime/decision/FarrowayDecisionEngine')).installDecisionEngineHealth(); } catch { /* swallow */ }
+          // MULTI-PROVIDER CONSENSUS — window.__scanConsensusHealth() (merges
+          // plant/health/pest/mushroom; 70% floor; never a mushroom safe claim).
+          try { (await import('./runtime/scan/consensus/ScanProviderConsensus')).installScanConsensusHealth(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

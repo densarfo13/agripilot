@@ -15,6 +15,8 @@
  */
 import { getScanProviderDiagnostics } from './scanInferenceService.js';
 import { insectKeyPresent } from './providers/insectProvider.js';
+import { cropHealthKeyPresent } from './providers/cropHealthProvider.js';
+import { mushroomKeyPresent } from './providers/mushroomProvider.js';
 
 function _fingerprint(key) {
   if (!key || typeof key !== 'string') return null;
@@ -38,9 +40,9 @@ function _resolve(envNames) {
  */
 const PROVIDERS = [
   { providerName: 'plant.id',    expectedEnvNames: ['PLANT_ID_API_KEY', 'PLANT_API_KEY'], wired: true },
-  { providerName: 'crop.health', expectedEnvNames: ['CROP_HEALTH_API_KEY', 'CROP_ID_API_KEY'], wired: false },
+  { providerName: 'crop.health', expectedEnvNames: ['CROP_HEALTH_API_KEY', 'CROP_ID_API_KEY'], wired: true },
   { providerName: 'insect.id',   expectedEnvNames: ['INSECT_ID_API_KEY'], wired: true },
-  { providerName: 'mushroom.id', expectedEnvNames: ['MUSHROOM_ID_API_KEY'], wired: false },
+  { providerName: 'mushroom.id', expectedEnvNames: ['MUSHROOM_ID_API_KEY'], wired: true },
 ];
 
 /**
@@ -75,10 +77,13 @@ function _lastFor(providerName) {
 
 export function getProviderRuntimeStatus() {
   return PROVIDERS.map((p) => {
-    // insect.id key presence has its own reader; otherwise resolve generically.
+    // Providers with a dedicated key-present reader use it; otherwise resolve generically.
     const resolved = _resolve(p.expectedEnvNames);
-    const envPresent = p.providerName === 'insect.id'
-      ? (insectKeyPresent() || !!resolved.value) : !!resolved.value;
+    const readerPresent =
+      (p.providerName === 'insect.id' && insectKeyPresent())
+      || (p.providerName === 'crop.health' && cropHealthKeyPresent())
+      || (p.providerName === 'mushroom.id' && mushroomKeyPresent());
+    const envPresent = readerPresent || !!resolved.value;
     const value = resolved.value;
     const keyLength = value.length;
     const last = _lastFor(p.providerName);

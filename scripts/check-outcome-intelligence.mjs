@@ -179,6 +179,10 @@ const ALLOWED_EXCEPTIONS = [
   // classifier + specialized engines to these NEW paths. Founder-authorized.
   'src/runtime/scan/AgriculturalObjectClassifier.ts',
   'src/runtime/scan/universal/',
+  // MULTI-PROVIDER ADAPTERS — the spec explicitly directs the client provider
+  // contracts + consensus to these NEW paths. Founder-authorized.
+  'src/runtime/scan/providers/',
+  'src/runtime/scan/consensus/',
 ];
 let gitAvailable = false;
 let diff = '';

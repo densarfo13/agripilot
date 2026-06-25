@@ -958,6 +958,11 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
     // optional; both return ok:false when keys missing so the
     // route never blocks on them.
     const { detectInsect } = await import('./ml/providers/insectProvider.js');
+    // Provider adapters — crop.health (disease) + mushroom.id (edibility).
+    // Best-effort: both return an honest UNSUPPORTED/ok:false envelope when the
+    // key is missing or the API is unreachable, so they NEVER block a scan.
+    const { detectCropHealth } = await import('./ml/providers/cropHealthProvider.js');
+    const { detectMushroom } = await import('./ml/providers/mushroomProvider.js');
     const { fetchFieldHealth } = await import('./ml/providers/fieldHealthProvider.js');
     // Final 3-point gap closure — server-side SoilGrids (public,
     // key-less). Composes the new soilProvider; cached in Redis
@@ -990,7 +995,13 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       }
     } catch { /* swallow — field health falls back to ok:false */ }
 
-    const [consensus, pest, fieldHealth, soil] = await Promise.all([
+    // ScanPipeline order: Plant.id (consensus) → Crop.health → Insect.id →
+    // Mushroom.id → FarmBrain. Run in parallel (failure-isolated) and merge in
+    // that precedence. Mushroom only fires on a mushroom-relevant scan (cost-
+    // aware) — otherwise it short-circuits UNSUPPORTED without an API call.
+    const _isMushroom = /mushroom|fungi|toadstool/i.test(String(cropName || '')
+      + ' ' + String((req.body && req.body.scanMode) || ''));
+    const [consensus, pest, cropHealth, mushroom, fieldHealth, soil] = await Promise.all([
       runConsensus({
         image:    pre.image,
         mime:     pre.mime,
@@ -1001,6 +1012,11 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
         mime:  pre.mime,
         cropName,
       }),
+      detectCropHealth({ image: pre.image, mime: pre.mime, cropName }),
+      _isMushroom
+        ? detectMushroom({ image: pre.image, mime: pre.mime })
+        : Promise.resolve({ ok: false, status: 'UNSUPPORTED', reason: 'not_mushroom_scan',
+            species: '', edibility: 'unknown', confidence: 0, warnings: [] }),
       (farmLat != null && farmLng != null)
         ? fetchFieldHealth({ latitude: farmLat, longitude: farmLng, cropName })
         : Promise.resolve({ ok: false, reason: 'no_farm_coords',
@@ -1325,6 +1341,18 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       fieldHealth:           scanRecovery.fieldHealth,
       soil:                  scanRecovery.soil,
       satellite:             scanRecovery.fieldHealth, // alias for IntelligentScanResult._extractSatellite
+      // Provider adapters — crop.health (disease) + mushroom.id (edibility),
+      // merged into the result. FarmBrain consumes these alongside plant/pest.
+      cropHealth:            cropHealth,
+      mushroom:              mushroom,
+      // Per-provider runtime status this scan (READY/AUTH_FAILED/RATE_LIMITED/
+      // NO_RESULT/UNSUPPORTED) — the live truth, never assumed.
+      providerStatuses: {
+        plantId:    (consensus && consensus.ok) ? 'READY' : (consensus && consensus.status) || 'NO_RESULT',
+        cropHealth: (cropHealth && cropHealth.status) || 'UNSUPPORTED',
+        insectId:   (pest && pest.ok) ? 'READY' : ((pest && pest.status) || 'NO_RESULT'),
+        mushroom:   (mushroom && mushroom.status) || 'UNSUPPORTED',
+      },
       // V3 — growth + regional + market + follow-up. Surfaced at
       // top level for the ScanCommandCard composer.
       growthStage,
