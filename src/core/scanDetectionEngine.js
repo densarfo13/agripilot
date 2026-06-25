@@ -68,6 +68,8 @@ import { detectScanType } from '../runtime/scan/router/ScanTypeRouter';
 import { dispatchFarmEvent } from '../runtime/farmBrain/FarmBrainStateStore';
 import { evaluateScanTrust } from '../runtime/scanTrust/ScanTrustGate';
 import { decideFarmBrainIngestion, ingestionInputFromScan } from '../runtime/farmBrain/FarmBrainScanIngestion';
+import { classifyAgriculturalObject, recordClassification } from '../runtime/scan/AgriculturalObjectClassifier';
+import { specializedEngineFor } from '../runtime/scan/universal/ScanSpecializedEngines';
 
 function _withFarmBrain(result, input) {
   try {
@@ -97,10 +99,26 @@ function _withFarmBrain(result, input) {
       }));
     } catch { /* safe default: do not ingest */ }
 
+    // UNIVERSAL SCANNER — one-button classification (leaf/fruit/flower/tree/
+    // seedling/insect/soil/…) + the matching specialized engine's honest
+    // guidance. The farmer never pre-selects a scan type.
+    let agri = null; let specialized = null;
+    try {
+      agri = classifyAgriculturalObject({
+        scanResult: result, objectType: result.objectType,
+        plantName: result.cropName || result.plantName,
+        confidencePct: fb.confidenceScore, scanMode: input && input.scanMode,
+      });
+      recordClassification(agri);
+      specialized = specializedEngineFor(agri.objectType, { ...result, farmBrain: fb });
+    } catch { /* classifier never blocks a scan */ }
+
     const out = Object.freeze({
       ...result, farmBrain: fb,
       scanType: decision.scanType, scanRoute: decision.route, scanTypeDecision: decision,
       farmBrainIngest: ingest,   // observability: ingested vs held + reasons
+      agriObject: agri,          // universal scanner: objectType + routing
+      specialized,               // universal scanner: per-object honest guidance
     });
 
     // RULE 4 + RULE 6 — the single chokepoint both result exits pass through

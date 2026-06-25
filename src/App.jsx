@@ -2023,6 +2023,8 @@ export default function App() {
             const m = await import('./runtime/scan/credits/ScanCreditMonitor');
             m.installScanCreditHealth(); m.refreshScanCredits();
           } catch { /* swallow */ }
+          // UNIVERSAL SCANNER — window.__agriClassifierHealth() (one-button scan).
+          try { (await import('./runtime/scan/AgriculturalObjectClassifier')).installAgriClassifierHealth(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

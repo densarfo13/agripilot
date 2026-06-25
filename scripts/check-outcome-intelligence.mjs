@@ -171,9 +171,14 @@ const FORBIDDEN_PATHS = [
 const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/router/',
   // P0 SCAN ACCEPTANCE — the spec explicitly directs the provider acceptance
-  // gate to src/runtime/scan/acceptance/, another NEW subpath the founder
-  // authorized. Existing scan-runtime files stay locked.
+  // gate + client credit monitor to these NEW subpaths, founder-authorized.
+  // Existing scan-runtime files stay locked.
   'src/runtime/scan/acceptance/',
+  'src/runtime/scan/credits/',
+  // UNIVERSAL SCANNER — the spec explicitly directs the agricultural object
+  // classifier + specialized engines to these NEW paths. Founder-authorized.
+  'src/runtime/scan/AgriculturalObjectClassifier.ts',
+  'src/runtime/scan/universal/',
 ];
 let gitAvailable = false;
 let diff = '';
