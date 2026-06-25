@@ -60,15 +60,23 @@ function _mintScanId() {
   return 'scan_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
 }
 
-// FARM_BRAIN_RUNTIME_V2 — pure composition runtime. Every scan result is
-// returned through _withFarmBrain() (below), so there is NO bypass path:
-// both the API result and the rule fallback carry result.farmBrain.
+// FARM_BRAIN_RUNTIME_V2 + SCAN TYPE ROUTER — every scan result is returned
+// through _withFarmBrain() (below), so there is NO bypass path: both the
+// API result and the rule fallback carry result.farmBrain AND result.scanType.
 import { runFarmBrainV2 } from '../runtime/farmBrain/FarmBrainRuntimeV2';
+import { detectScanType } from '../runtime/scan/router/ScanTypeRouter';
 
 function _withFarmBrain(result, input) {
   try {
     if (!result || typeof result !== 'object') return result;
-    return Object.freeze({ ...result, farmBrain: runFarmBrainV2(result, input || {}) });
+    const fb = runFarmBrainV2(result, input || {});
+    // SCAN TYPE ROUTER — classify + route every result (leaf/fruit/insect/
+    // soil/…). scanType is always present so the UI can pick the right card.
+    const decision = detectScanType({ scanResult: result, scanMode: input && input.scanMode });
+    return Object.freeze({
+      ...result, farmBrain: fb,
+      scanType: decision.scanType, scanRoute: decision.route, scanTypeDecision: decision,
+    });
   } catch { return result; }
 }
 

@@ -27,7 +27,9 @@ const parse = (s) => {
 const _universal = (v) => /^[\s\d\W]*$/.test(v) || /^(pH|OK|NDVI|GPS|SMS|Farroway|km|kg|ha|°c|°f)$/i.test(v.trim());
 
 // Baselines = the count measured the day this gate was added. Ceilings only.
-const BASELINE = { tw: 175, ha: 157, fr: 316, sw: 212 };
+// fr=317: "fruit" is the same word in English and French (a true cognate,
+// not a leak) — added by the SCAN TYPE ROUTER scanType.fruit key.
+const BASELINE = { tw: 175, ha: 157, fr: 317, sw: 212 };
 
 const en = parse(rd('en'));
 const errors = [];

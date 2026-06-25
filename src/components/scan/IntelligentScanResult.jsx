@@ -40,6 +40,10 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useTranslation } from '../../i18n/index.js';
 import NeedsReviewActions from './NeedsReviewActions.jsx';
+// SCAN TYPE ROUTER — fruit/veg + insect get their own result cards, not
+// the plant-only path. Direct imports (small, must render with the result).
+import FruitVegResultCard from './FruitVegResultCard.jsx';
+import InsectResultCard from './InsectResultCard.jsx';
 import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
 import { evaluatePhotoQuality } from '../../runtime/scanQuality/PhotoQualityEngine';
 import { explainPhotoQuality } from '../../runtime/scanQuality/PhotoQualityExplainer';
@@ -738,6 +742,19 @@ export default function IntelligentScanResult({
     if (!t || t === 'no_visible_issue') return '';
     return t.replace(/_/g, ' ');
   };
+
+  // SCAN TYPE ROUTER — route to the right result card. A fruit/vegetable
+  // scan gets the quality card; an insect scan gets the pest card. Neither
+  // renders the plant-only path (so "Unknown plant" / crop-health-only is
+  // impossible here). All hooks above already ran, so this early return is
+  // rules-of-hooks safe.
+  const _scanType = _str(result && result.scanType);
+  if (_scanType === 'fruit' || _scanType === 'vegetable') {
+    return <FruitVegResultCard result={result} />;
+  }
+  if (_scanType === 'insect') {
+    return <InsectResultCard result={result} />;
+  }
 
   return (
     <main style={STYLES.page} data-testid="intelligent-scan-result">
