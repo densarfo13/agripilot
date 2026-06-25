@@ -2025,6 +2025,9 @@ export default function App() {
           } catch { /* swallow */ }
           // UNIVERSAL SCANNER — window.__agriClassifierHealth() (one-button scan).
           try { (await import('./runtime/scan/AgriculturalObjectClassifier')).installAgriClassifierHealth(); } catch { /* swallow */ }
+          // FARMBRAIN X — window.__farmBrainXHealth() (15-section certification +
+          // computed pilot verdict; attests FarmBrain as the single source of truth).
+          try { (await import('./runtime/farmBrain/FarmBrainXRuntime')).installFarmBrainXHealth(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

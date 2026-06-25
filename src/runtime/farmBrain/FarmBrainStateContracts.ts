@@ -62,6 +62,12 @@ export interface Recommendation {
   urgency: 'low' | 'medium' | 'high';
   timeRequiredMin: number | null;
   expectedBenefit: string; // "Prevents yield loss."
+  // FarmBrain X §4 — fuller rationale. Optional + honest: cost/risk are
+  // qualitative bands (no fabricated currency), nextReviewDate is null until
+  // a real cadence is known.
+  cost?: 'none' | 'low' | 'medium' | 'high' | null;
+  risk?: 'low' | 'medium' | 'high' | null;
+  nextReviewDate?: string | null;   // ISO date, or null when not scheduled
 }
 
 export type HealthBand = 'excellent' | 'good' | 'watch' | 'needs_attention' | 'critical' | 'unknown';
@@ -110,6 +116,7 @@ export function metric(
 }
 
 export function recommendation(r: Partial<Recommendation>): Recommendation {
+  const band = (v: any, set: string[]): any => (set.includes(v) ? v : null);
   return Object.freeze({
     id: String(r.id || ''),
     action: String(r.action || ''),
@@ -118,6 +125,10 @@ export function recommendation(r: Partial<Recommendation>): Recommendation {
     urgency: (r.urgency === 'high' || r.urgency === 'low') ? r.urgency : 'medium',
     timeRequiredMin: typeof r.timeRequiredMin === 'number' ? r.timeRequiredMin : null,
     expectedBenefit: String(r.expectedBenefit || ''),
+    // §4 — honest bands only; null when unknown (never a fabricated figure).
+    cost: band(r.cost, ['none', 'low', 'medium', 'high']),
+    risk: band(r.risk, ['low', 'medium', 'high']),
+    nextReviewDate: typeof r.nextReviewDate === 'string' ? r.nextReviewDate : null,
   });
 }
 
