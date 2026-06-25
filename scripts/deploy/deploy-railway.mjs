@@ -232,7 +232,11 @@ const upMessage = `${deployShaShort} ${commitSubject}`.slice(0, 200);
 // build even starts. Retry those with exponential backoff; fail fast on a
 // genuine error (auth/invalid project) where retrying is pointless.
 const UP_MAX_ATTEMPTS = Number(process.env.RAILWAY_UP_RETRIES || 4);
-const TRANSIENT_RE = /BadRecordMac|connection error|SendRequest|client error|timed? out|timeout|reset by peer|EOF|tls|handshake|temporarily|503|502|504/i;
+// Retry by DEFAULT on any upload failure — a TLS abort (BadRecordMac) often
+// aborts the process before it prints a matchable error, surfacing as a null
+// exit code with empty output. Only fail FAST on a clearly non-transient error
+// (auth/config) where retrying is pointless.
+const NON_TRANSIENT_RE = /unauthorized|not logged in|please login|no linked project|project not found|invalid (token|project)|forbidden|permission denied|account/i;
 let upResult = null;
 let upOutput = '';
 for (let attempt = 1; attempt <= UP_MAX_ATTEMPTS; attempt += 1) {
@@ -242,11 +246,11 @@ for (let attempt = 1; attempt <= UP_MAX_ATTEMPTS; attempt += 1) {
   ], { cwd: ROOT, encoding: 'utf8', stdio: ['inherit', 'pipe', 'pipe'] });
   upOutput = (upResult.stdout || '') + (upResult.stderr || '');
   if (upResult.status === 0) break;
-  const transient = TRANSIENT_RE.test(upOutput);
-  if (!transient || attempt === UP_MAX_ATTEMPTS) {
+  const nonTransient = NON_TRANSIENT_RE.test(upOutput);
+  if (nonTransient || attempt === UP_MAX_ATTEMPTS) {
     fail(2, `railway up failed (exit ${upResult.status}, attempt ${attempt}/${UP_MAX_ATTEMPTS}`
-      + (transient ? ', transient — exhausted retries' : ', non-transient — not retrying') + '):\n'
-      + (upResult.stderr || upResult.stdout || '(no output)'));
+      + (nonTransient ? ', non-transient auth/config error — not retrying' : ', exhausted retries') + '):\n'
+      + (upResult.stderr || upResult.stdout || '(no output — likely a TLS/network abort)'));
   }
   const backoffMs = Math.min(30000, 2000 * 2 ** (attempt - 1));
   warn(`railway up attempt ${attempt}/${UP_MAX_ATTEMPTS} hit a transient network/TLS fault — `
