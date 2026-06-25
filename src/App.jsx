@@ -2010,6 +2010,19 @@ export default function App() {
           // FARM_BRAIN_STATE_V1 — window.__farmBrainStateHealth(); the single
           // FarmBrain cache that every event updates and every screen reads.
           try { (await import('./runtime/farmBrain/FarmBrainStateStore')).installFarmBrainStateHealth(); } catch { /* swallow */ }
+          // P0 SCAN ACCEPTANCE — window.__scanAcceptanceHealth() (honest per-
+          // provider readiness from /api/scan/diagnostics).
+          try {
+            const m = await import('./runtime/scan/acceptance/ScanAcceptanceGate');
+            m.installScanAcceptanceHealth(); m.refreshScanAcceptance();
+          } catch { /* swallow */ }
+          // P0 SAFE FARMBRAIN INGESTION — window.__farmBrainIngestionHealth().
+          try { (await import('./runtime/farmBrain/FarmBrainScanIngestion')).installFarmBrainIngestionHealth(); } catch { /* swallow */ }
+          // P0 CREDIT MONITORING — window.__scanCreditHealth().
+          try {
+            const m = await import('./runtime/scan/credits/ScanCreditMonitor');
+            m.installScanCreditHealth(); m.refreshScanCredits();
+          } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

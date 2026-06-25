@@ -170,6 +170,10 @@ const FORBIDDEN_PATHS = [
 // that one folder. Every EXISTING scan-runtime file stays protected.
 const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/router/',
+  // P0 SCAN ACCEPTANCE — the spec explicitly directs the provider acceptance
+  // gate to src/runtime/scan/acceptance/, another NEW subpath the founder
+  // authorized. Existing scan-runtime files stay locked.
+  'src/runtime/scan/acceptance/',
 ];
 let gitAvailable = false;
 let diff = '';

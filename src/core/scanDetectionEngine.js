@@ -66,6 +66,8 @@ function _mintScanId() {
 import { runFarmBrainV2 } from '../runtime/farmBrain/FarmBrainRuntimeV2';
 import { detectScanType } from '../runtime/scan/router/ScanTypeRouter';
 import { dispatchFarmEvent } from '../runtime/farmBrain/FarmBrainStateStore';
+import { evaluateScanTrust } from '../runtime/scanTrust/ScanTrustGate';
+import { decideFarmBrainIngestion, ingestionInputFromScan } from '../runtime/farmBrain/FarmBrainScanIngestion';
 
 function _withFarmBrain(result, input) {
   try {
@@ -74,20 +76,45 @@ function _withFarmBrain(result, input) {
     // SCAN TYPE ROUTER — classify + route every result (leaf/fruit/insect/
     // soil/…). scanType is always present so the UI can pick the right card.
     const decision = detectScanType({ scanResult: result, scanMode: input && input.scanMode });
+
+    // P0 SAFE FARMBRAIN INGESTION — decide BEFORE dispatch (RULE 6). A scan
+    // updates FarmBrain ONLY if plant known + confidence ≥ 70 + trust passed +
+    // provider auth ok + photo quality ok. A real provider response (not the
+    // rule fallback) proves auth succeeded. Weak scans are HELD for review —
+    // never dispatched — so the canonical state never sees weak data.
+    let ingest = Object.freeze({ shouldIngest: false, blockers: ['not_evaluated'] });
+    try {
+      const trust = evaluateScanTrust({
+        confidence: fb.confidenceScore, topCandidates: result.topCandidates,
+        plantName: result.cropName || result.plantName, issueType: result.detectedIssue,
+        status: result.status, nextAction: fb.nextAction,
+        hasPhoto: true, photoQuality: result.photoQuality,
+      });
+      const prov = String(result.provider || '').toLowerCase();
+      const providerAuthOk = !!prov && !/^(rule|fallback)\b/.test(prov);
+      ingest = decideFarmBrainIngestion(ingestionInputFromScan(result, {
+        trustPassed: trust.allowFarmBrainIngestion, providerAuthOk,
+      }));
+    } catch { /* safe default: do not ingest */ }
+
     const out = Object.freeze({
       ...result, farmBrain: fb,
       scanType: decision.scanType, scanRoute: decision.route, scanTypeDecision: decision,
+      farmBrainIngest: ingest,   // observability: ingested vs held + reasons
     });
-    // FARM_BRAIN_STATE_V1 — RULE 4: every successful scan updates FarmBrain,
-    // no user interaction. This is the single chokepoint both result exits
-    // pass through, so there is NO bypass. Best-effort, never blocks a scan.
-    try {
-      dispatchFarmEvent('scan', {
-        farmBrain: fb,
-        cropName: (result.cropName || result.plantName || null),
-        timelineEntry: { kind: 'scan', label: 'Scan completed' },
-      }, { scanType: decision.scanType });
-    } catch { /* analytics must never break a scan */ }
+
+    // RULE 4 + RULE 6 — the single chokepoint both result exits pass through
+    // (no bypass), but the dispatch is GATED: only a strong scan updates
+    // FarmBrain. Best-effort; never blocks a scan.
+    if (ingest && ingest.shouldIngest) {
+      try {
+        dispatchFarmEvent('scan', {
+          farmBrain: fb,
+          cropName: (result.cropName || result.plantName || null),
+          timelineEntry: { kind: 'scan', label: 'Scan completed' },
+        }, { scanType: decision.scanType });
+      } catch { /* analytics must never break a scan */ }
+    }
     return out;
   } catch { return result; }
 }
