@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Prenez une photo ou choisissez-en une dans votre galerie.",
   "scan.captureHelper": "Astuce : prenez un gros plan en plein jour. Visez la feuille ou la zone affectée.",
   "scan.retake": "Reprendre",
+  "scanObs.failureRate": "Taux d'échec",
+  "scanObs.creditsConsumed": "Crédits utilisés",
   "scanType.fruit": "fruit",
   "scanType.vegetable": "légume",
   "scanType.card.fruit": "Vérification du fruit",

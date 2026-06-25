@@ -3120,6 +3120,9 @@ export default function App() {
               UI path. Reads __apiHealth + __scanRecoveryHealth +
               __scanResultHealth; never throws. */}
           <Route path="/admin/scan-health" element={<RoleRoute roles={ADMIN_ROLES}><ScanHealthPage /></RoleRoute>} />
+          {/* SCAN_ANALYTICS_V1 — alias to the scan-health page (credit monitor
+              + observability dashboard with Failure % + Credits consumed). */}
+          <Route path="/admin/scan-analytics" element={<RoleRoute roles={ADMIN_ROLES}><ScanHealthPage /></RoleRoute>} />
           {/* Scan Lab (Pilot Validation) — admin-only. Upload +
               analyze + label ground truth + watch accuracy /
               calibration / top-failure rollups. */}

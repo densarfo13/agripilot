@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Twa mfoni, anaa yi bi firi w'akatadeɛ mu.",
   "scan.captureHelper": "Afotuo: twa mfoni a ɛbɛn wɔ awia mu. Kyerɛ ahaban anaa beaeɛ a haw aba.",
   "scan.retake": "San twa",
+  "scanObs.failureRate": "Nkogudie dodoɔ",
+  "scanObs.creditsConsumed": "Sika a wɔde diiɛ",
   "scanType.fruit": "aduaba",
   "scanType.vegetable": "atosodeɛ",
   "scanType.card.fruit": "Aduaba nhwɛ",

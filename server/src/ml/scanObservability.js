@@ -109,6 +109,11 @@ export async function getScanObservability(prisma, opts = {}) {
     totals: Object.freeze({
       total, successful, failed,
       successRate: total ? Math.round((successful / total) * 1000) / 10 : null,
+      // SCAN_ANALYTICS_V1 — Failure % + Credits consumed. A provider-backed
+      // scan (provider not 'rule'/empty) consumes ~1 Kindwise credit, so
+      // this count is the analytics-window credit spend.
+      failureRate: total ? Math.round((failed / total) * 1000) / 10 : null,
+      creditsConsumed: rows.filter((r) => r.provider && !/^rule\b/i.test(String(r.provider))).length,
       avgConfidence,
       tasksCreated: rows.filter((r) => r.taskCreated).length,
       plantsSaved:  rows.filter((r) => r.plantSaved).length,

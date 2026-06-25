@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Take a photo, or pick one from your gallery.",
   "scan.captureHelper": "Tip: take a close-up in bright daylight. Aim at the affected leaf or area.",
   "scan.retake": "Retake",
+  "scanObs.failureRate": "Failure rate",
+  "scanObs.creditsConsumed": "Credits used",
   "scanType.fruit": "fruit",
   "scanType.vegetable": "vegetable",
   "scanType.card.fruit": "Fruit check",

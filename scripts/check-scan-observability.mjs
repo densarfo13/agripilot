@@ -32,6 +32,8 @@ if (!x(SVC)) E.push('missing: ' + SVC); else { const s = rd(SVC);
   h(s, 'mostCommonDiseases', 'aggregate must include mostCommonDiseases');
   h(s, 'mostCommonInsects', 'aggregate must include mostCommonInsects');
   h(s, 'avgConfidence', 'aggregate must include avgConfidence');
+  h(s, 'failureRate', 'aggregate must include failureRate (SCAN_ANALYTICS_V1)');
+  h(s, 'creditsConsumed', 'aggregate must include creditsConsumed (SCAN_ANALYTICS_V1)');
 }
 
 // Endpoints + capture.

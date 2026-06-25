@@ -164,6 +164,13 @@ const FORBIDDEN_PATHS = [
   'src/runtime/organization/',
   'src/runtime/buyer/',
 ];
+// Authorized exceptions to the locked prefixes. The SCAN_TYPE_ROUTER spec
+// (sprint #231) explicitly directed new code to src/runtime/scan/router/,
+// a NEW subpath — a deliberate founder override of the wave-36 lock for
+// that one folder. Every EXISTING scan-runtime file stays protected.
+const ALLOWED_EXCEPTIONS = [
+  'src/runtime/scan/router/',
+];
 let gitAvailable = false;
 let diff = '';
 try {
@@ -178,6 +185,7 @@ if (gitAvailable) {
   for (const line of diff.split(/\r?\n/)) {
     const f = line.trim();
     if (!f) continue;
+    if (ALLOWED_EXCEPTIONS.some((a) => f.startsWith(a))) continue; // founder-authorized subpath
     for (const p of FORBIDDEN_PATHS) {
       if (f === p || f.startsWith(p)) touchedForbidden.push(f);
     }

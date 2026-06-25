@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Ɗauki hoto, ko zaɓi daga gidan hotunanku.",
   "scan.captureHelper": "Shawara: ɗauki kusa-kusa cikin hasken rana. Kwana ga ganye ko wurin da abin ya shafa.",
   "scan.retake": "Sake ɗauka",
+  "scanObs.failureRate": "Adadin gazawa",
+  "scanObs.creditsConsumed": "Kuɗin da aka yi amfani",
   "scanType.fruit": "'ya'ya",
   "scanType.vegetable": "kayan lambu",
   "scanType.card.fruit": "Dubawar 'ya'ya",

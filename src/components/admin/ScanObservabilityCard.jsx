@@ -117,8 +117,12 @@ function ScanObservabilityCardInner() {
             <_Stat label={tSafe('scanObs.failed', 'Failed')} value={t.failed} />
             <_Stat label={tSafe('scanObs.successRate', 'Success rate')}
               value={t.successRate == null ? null : t.successRate + '%'} />
+            <_Stat label={tSafe('scanObs.failureRate', 'Failure rate')}
+              value={t.failureRate == null ? null : t.failureRate + '%'} />
             <_Stat label={tSafe('scanObs.avgConfidence', 'Avg confidence')}
               value={t.avgConfidence == null ? null : t.avgConfidence + '%'} />
+            <_Stat label={tSafe('scanObs.creditsConsumed', 'Credits used')}
+              value={t.creditsConsumed} />
           </div>
           <div style={S.statRow}>
             <_Stat label={tSafe('scanObs.tasksCreated', 'Tasks created')} value={t.tasksCreated} />

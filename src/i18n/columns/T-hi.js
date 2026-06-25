@@ -2540,6 +2540,8 @@ export default {
   "scan.previewPlaceholder": "फोटो लें, या अपनी गैलरी से चुनें।",
   "scan.captureHelper": "टिप: तेज़ दिन की रोशनी में पास से फोटो लें। प्रभावित पत्ते या जगह पर निशाना लगाएं।",
   "scan.retake": "फिर से लें",
+  "scanObs.failureRate": "विफलता दर",
+  "scanObs.creditsConsumed": "उपयोग किए क्रेडिट",
   "scanType.fruit": "फल",
   "scanType.vegetable": "सब्ज़ी",
   "scanType.card.fruit": "फल जाँच",

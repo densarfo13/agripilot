@@ -5425,6 +5425,8 @@ export default {
   "scan.previewPlaceholder": "Piga picha, au chagua kutoka kwenye galeria yako.",
   "scan.captureHelper": "Kidokezo: piga picha karibu kwenye mwanga wa mchana. Lenga jani au eneo lililoathiriwa.",
   "scan.retake": "Piga tena",
+  "scanObs.failureRate": "Kiwango cha kushindwa",
+  "scanObs.creditsConsumed": "Salio zilizotumika",
   "scanType.fruit": "tunda",
   "scanType.vegetable": "mboga",
   "scanType.card.fruit": "Ukaguzi wa tunda",
