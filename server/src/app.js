@@ -785,6 +785,37 @@ app.get('/api/environment/health', async (req, res) => {
   }
 });
 
+// POST /api/admin/scan/certify — PRODUCTION CERTIFICATION (admin/auth only).
+// Runs the certification across every provider from LIVE runtime evidence,
+// stores the result rows, and returns the scorecard + overall verdict. Never
+// infers readiness from env vars; never fabricates provider health.
+app.post('/api/admin/scan/certify', authenticate, async (req, res) => {
+  try {
+    const { runProductionCertification } = await import('./services/scan/certification/productionCertification.js');
+    const liveCall = (req.body && typeof req.body.liveCall === 'object') ? req.body.liveCall : {};
+    const result = await runProductionCertification({ liveCall });
+
+    // Store results (best-effort — certification must not fail on a DB hiccup).
+    try {
+      if (prisma && prisma.scanProviderCertification) {
+        for (const c of result.certifications) {
+          await prisma.scanProviderCertification.create({ data: {
+            provider: c.provider, status: c.status, latency: c.latencyMs,
+            confidence: c.avgConfidence, auth: c.authenticated, credits: c.creditsOk,
+            environment: c.environment, buildSha: c.buildVersion, apiVersion: c.apiVersion,
+            lastSuccess: c.lastSuccessfulCall ? new Date(c.lastSuccessfulCall) : null,
+            failureReason: c.failureReason,
+          } }).catch(() => { /* swallow per-row */ });
+        }
+      }
+    } catch { /* persistence is best-effort */ }
+
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'certify_failed', message: err && err.message });
+  }
+});
+
 // GET /api/admin/scan-credits — Kindwise credit monitor (auth-only).
 // Remaining credits for plant.id / crop.health / insect.id, per-provider
 // alert level (<100 low, <50 warning, <20 critical), daily burn rate +

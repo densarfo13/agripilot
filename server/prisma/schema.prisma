@@ -3136,6 +3136,29 @@ model ScanObservabilityEvent {
   @@map("scan_observability_events")
 }
 
+// PRODUCTION CERTIFICATION — one row per provider per certify run, from LIVE
+// runtime evidence (POST /api/admin/scan/certify). Readiness is measured, never
+// inferred from env vars; status is one of NOT_CONFIGURED/READY/DEGRADED/FAILED/DISABLED.
+model ScanProviderCertification {
+  id            String   @id @default(uuid())
+  provider      String
+  status        String   // NOT_CONFIGURED | READY | DEGRADED | FAILED | DISABLED
+  latency       Int?     // ms (-1 when no live call)
+  confidence    Int?     // avg 0..100
+  auth          Boolean  @default(false)
+  credits       Boolean  @default(true)
+  environment   String?
+  buildSha      String?  @map("build_sha")
+  apiVersion    String?  @map("api_version")
+  lastSuccess   DateTime? @map("last_success")
+  failureReason String?  @map("failure_reason")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([provider], map: "idx_scan_cert_provider")
+  @@index([createdAt], map: "idx_scan_cert_created")
+  @@map("scan_provider_certifications")
+}
+
 // FARM_PERSISTENCE_V1 — durable source of truth for farmer state that
 // used to live only in localStorage (silent data loss on cache-clear /
 // new device). One generic row per (user, domain, record) so all five
