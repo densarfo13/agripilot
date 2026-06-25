@@ -11,15 +11,43 @@
  * confidence, never hardcode READY, never infer readiness from env vars.
  */
 
-/** @typedef {'NOT_CONFIGURED'|'READY'|'DEGRADED'|'FAILED'|'DISABLED'} CertStatus */
-
+/** The exact certification states (CERTIFICATION RUNTIME TRUTH). */
 export const CERT_STATUS = Object.freeze({
-  NOT_CONFIGURED: 'NOT_CONFIGURED',
+  NOT_RUN: 'NOT_RUN',
+  LOCAL_SECRETS_UNAVAILABLE: 'LOCAL_SECRETS_UNAVAILABLE',  // can't see secrets here ≠ keys missing
+  NOT_CONFIGURED: 'NOT_CONFIGURED',                        // keys genuinely missing (only valid on Railway)
+  AUTH_FAILED: 'AUTH_FAILED',
+  CREDITS_EXHAUSTED: 'CREDITS_EXHAUSTED',
+  RATE_LIMITED: 'RATE_LIMITED',
+  TIMEOUT: 'TIMEOUT',
+  SCHEMA_INVALID: 'SCHEMA_INVALID',
+  FARMBRAIN_REJECTED: 'FARMBRAIN_REJECTED',
   READY: 'READY',
   DEGRADED: 'DEGRADED',
-  FAILED: 'FAILED',
   DISABLED: 'DISABLED',
 });
+
+/** Per-provider expected env names (canonical first). */
+export const PROVIDER_ENV = Object.freeze({
+  'plant.id':     ['PLANT_ID_API_KEY', 'PLANT_API_KEY'],
+  'crop.health':  ['CROP_HEALTH_API_KEY', 'CROP_ID_API_KEY'],
+  'insect.id':    ['INSECT_ID_API_KEY'],
+  'mushroom.id':  ['MUSHROOM_ID_API_KEY'],
+  'soil':         ['AMBEE_API_KEY'],
+  'weather':      ['WEATHER_API_KEY'],   // or a configured public weather provider
+  'sentinel_hub': ['SENTINEL_HUB_API_KEY'],
+});
+
+/** Read a provider's key by length + fingerprint ONLY (never the full value). */
+export function checkProviderKey(provider) {
+  const names = PROVIDER_ENV[provider] || [];
+  for (const n of names) {
+    let v = '';
+    try { v = (process.env[n] || '').trim(); } catch { v = ''; }
+    if (v) return { envNameUsed: n, keyPresent: true, keyLength: v.length, fingerprintFirst6: v.slice(0, 6) };
+  }
+  return { envNameUsed: null, keyPresent: false, keyLength: 0, fingerprintFirst6: null };
+}
 
 /** Per-provider SLA latency ceilings (ms) + min confidence + required/optional. */
 export const PROVIDER_SLA = Object.freeze({
@@ -65,17 +93,24 @@ export function certifyProvider(provider, evidence = {}) {
   const farmBrainAccepted = e.farmBrainAccepted === true;
   const underSla = latencyMs == null ? false : latencyMs <= sla.maxLatencyMs;
 
-  // ── Status — strictly from evidence. ──
+  // ── Status — strictly from evidence, with the exact CERTIFICATION states. ──
+  const s = e.lastHttpStatus;
+  const fr = String(e.failureReason || '').toLowerCase();
   let status;
   if (disabled) status = CERT_STATUS.DISABLED;
-  else if (!configured) status = CERT_STATUS.NOT_CONFIGURED;
+  // CRITICAL honesty: "I can't see the secrets here" is NOT "keys are missing".
+  else if (e.localSecretsUnavailable === true) status = CERT_STATUS.LOCAL_SECRETS_UNAVAILABLE;
+  else if (!configured) status = CERT_STATUS.NOT_CONFIGURED;   // genuinely missing (only on Railway)
   else if (
     authenticated && schemaValid && parsedOk && farmBrainAccepted && underSla &&
     avgConfidence >= sla.minConfidence && creditsOk
   ) status = CERT_STATUS.READY;
-  else if (e.lastHttpStatus === 401 || e.lastHttpStatus === 403 || e.creditsOk === false ||
-    (e.lastHttpStatus != null && e.lastHttpStatus >= 400))
-    status = CERT_STATUS.FAILED;        // a REAL failure: auth rejected / credits / http error
+  else if (s === 401 || s === 403) status = CERT_STATUS.AUTH_FAILED;
+  else if (s === 402 || creditsOk === false || /credit|quota|insufficient/.test(fr)) status = CERT_STATUS.CREDITS_EXHAUSTED;
+  else if (s === 429 || /rate.?limit/.test(fr)) status = CERT_STATUS.RATE_LIMITED;
+  else if (/timeout/.test(fr)) status = CERT_STATUS.TIMEOUT;
+  else if (schemaValid === false || parsedOk === false || /schema|parse|map/.test(fr)) status = CERT_STATUS.SCHEMA_INVALID;
+  else if (authenticated && farmBrainAccepted === false) status = CERT_STATUS.FARMBRAIN_REJECTED;
   else status = CERT_STATUS.DEGRADED;   // keyed but not yet PROVEN by a live call
 
   return Object.freeze({

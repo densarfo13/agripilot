@@ -810,7 +810,17 @@ app.post('/api/admin/scan/certify', authenticate, async (req, res) => {
       }
     } catch { /* persistence is best-effort */ }
 
-    return res.json({ ok: true, ...result });
+    return res.json({
+      ok: true,
+      runtimeContext: result.runtimeContext,
+      overallVerdict: result.overall,
+      providers: result.certifications,
+      scorecard: result.scorecard,
+      // Honest next action when the certify ran where secrets aren't reachable.
+      nextAction: result.nextAction
+        || (result.runtimeContext && !result.runtimeContext.isRailway
+          ? 'Run `railway run npm run scan:certify` from the linked project.' : null),
+    });
   } catch (err) {
     return res.status(500).json({ ok: false, error: 'certify_failed', message: err && err.message });
   }

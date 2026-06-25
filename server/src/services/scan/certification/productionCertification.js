@@ -7,10 +7,11 @@
  * but READY additionally requires a proven live call (auth + schema + parse +
  * SLA + FarmBrain-accepted). Sentinel Hub is OPTIONAL and never blocks.
  */
-import { certifyProvider, PROVIDER_SLA, CERT_STATUS } from './providerCertification.js';
+import { certifyProvider, PROVIDER_SLA, CERT_STATUS, checkProviderKey } from './providerCertification.js';
 import { validateProviderResponse } from './providerValidator.js';
 import { providerHealthStats } from './providerHealthMonitor.js';
 import { buildScorecard } from './providerScorecard.js';
+import { detectRuntimeContext, certificationNextAction } from './runtimeContext.js';
 
 /** Pull config + last-call truth for a provider from the runtime status. */
 async function _runtimeEvidence(provider) {
@@ -40,24 +41,34 @@ async function _soilEvidence() {
  */
 export async function runProductionCertification(opts = {}) {
   const live = (opts && opts.liveCall) || {};
+  const ctx = detectRuntimeContext();
   const certifications = [];
 
   for (const provider of Object.keys(PROVIDER_SLA)) {
     let ev;
     if (live[provider]) {
-      // Real call captured by the certify endpoint.
+      // Real call captured by the certify endpoint — authoritative evidence.
       ev = validateProviderResponse(provider, live[provider]);
     } else if (provider === 'sentinel_hub') {
       ev = { configured: false, disabled: true, failureReason: 'optional_not_integrated' };
+    } else if (!ctx.canAccessProviderSecrets) {
+      // CRITICAL: outside Railway with no injected secrets, we CANNOT see the
+      // keys — that is LOCAL_SECRETS_UNAVAILABLE, NOT "keys missing".
+      ev = { localSecretsUnavailable: true, configured: false,
+        failureReason: 'local_secrets_unavailable' };
     } else if (provider === 'soil') {
       const s = await _soilEvidence();
-      ev = validateProviderResponse('soil', s || { configured: false });
+      ev = validateProviderResponse('soil', s || { configured: checkProviderKey('soil').keyPresent });
     } else if (provider === 'weather') {
-      // Weather has no secret; configured, but READY still needs a live call.
       ev = validateProviderResponse('weather', { configured: true, httpStatus: live.weather ? 200 : null });
     } else {
+      // Railway runtime (or injected secrets): readiness from real key presence
+      // (length only) + the last live call status — never the env var alone.
       const rt = await _runtimeEvidence(provider);
-      ev = validateProviderResponse(provider, rt || { configured: false });
+      const key = checkProviderKey(provider);
+      ev = validateProviderResponse(provider, {
+        configured: key.keyPresent, httpStatus: (rt && rt.httpStatus) ?? null,
+      });
     }
     // Fold in rolling health stats.
     const stats = providerHealthStats(provider);
@@ -73,6 +84,8 @@ export async function runProductionCertification(opts = {}) {
   const scorecard = buildScorecard(certifications);
   return Object.freeze({
     generatedAt: new Date().toISOString(),
+    runtimeContext: ctx,
+    nextAction: certificationNextAction(ctx),
     certifications: Object.freeze(certifications),
     scorecard,
     overall: scorecard.overall,
