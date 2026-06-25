@@ -3159,6 +3159,27 @@ model ScanProviderCertification {
   @@map("scan_provider_certifications")
 }
 
+// PROVIDER RELIABILITY — one row per provider CALL (live runtime evidence). The
+// 24h scorecard (uptime / latency p50/p95/p99 / reliability / health score) is
+// computed from these rows — never fabricated.
+model ScanProviderMetric {
+  id               String   @id @default(uuid())
+  provider         String
+  status           String
+  latency          Int?
+  confidence       Int?
+  farmbrainAccepted Boolean @default(false) @map("farmbrain_accepted")
+  retryCount       Int      @default(0) @map("retry_count")
+  failureReason    String?  @map("failure_reason")
+  httpStatus       Int?     @map("http_status")
+  cacheHit         Boolean  @default(false) @map("cache_hit")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([provider], map: "idx_scan_metric_provider")
+  @@index([createdAt], map: "idx_scan_metric_created")
+  @@map("scan_provider_metrics")
+}
+
 // FARM_PERSISTENCE_V1 — durable source of truth for farmer state that
 // used to live only in localStorage (silent data loss on cache-clear /
 // new device). One generic row per (user, domain, record) so all five

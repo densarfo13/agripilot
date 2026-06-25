@@ -826,6 +826,20 @@ app.post('/api/admin/scan/certify', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/admin/scan/reliability — PROVIDER RELIABILITY 24h scorecard (admin).
+// Uptime / latency p50-p99 / error breakdown / health score, computed from the
+// scan_provider_metrics rows. Never fabricated; empty when there are no calls.
+app.get('/api/admin/scan/reliability', authenticate, async (req, res) => {
+  try {
+    const { getReliabilityScorecard } = await import('./services/scan/certification/providerReliability.js');
+    const hours = Number(req.query.hours) || 24;
+    const scorecard = await getReliabilityScorecard(prisma, { sinceHours: hours });
+    return res.json({ ok: true, ...scorecard });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'reliability_failed', message: err && err.message });
+  }
+});
+
 // GET /api/admin/scan-credits — Kindwise credit monitor (auth-only).
 // Remaining credits for plant.id / crop.health / insect.id, per-provider
 // alert level (<100 low, <50 warning, <20 critical), daily burn rate +
