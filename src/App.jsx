@@ -2046,6 +2046,10 @@ export default function App() {
           try { (await import('./runtime/quality/DataQualityEngine')).installDataQualityHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/quality/DecisionQualityEngine')).installDecisionQualityHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/quality/EnterpriseCertificationRuntime')).installEnterpriseCertificationHealth(); } catch { /* swallow */ }
+          // TRUST + EVIDENCE PLATFORM — __evidenceEngineHealth (explainable ✓ evidence)
+          // + __trustScoreHealth (High/Medium/Low recommendation trust).
+          try { (await import('./runtime/evidence/EvidenceEngine')).installEvidenceEngineHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/trust/TrustScoreEngine')).installTrustScoreHealth(); } catch { /* swallow */ }
           // MULTI-PROVIDER CONSENSUS — window.__scanConsensusHealth() (merges
           // plant/health/pest/mushroom; 70% floor; never a mushroom safe claim).
           try { (await import('./runtime/scan/consensus/ScanProviderConsensus')).installScanConsensusHealth(); } catch { /* swallow */ }
