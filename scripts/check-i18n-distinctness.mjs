@@ -29,7 +29,9 @@ const _universal = (v) => /^[\s\d\W]*$/.test(v) || /^(pH|OK|NDVI|GPS|SMS|Farrowa
 // Baselines = the count measured the day this gate was added. Ceilings only.
 // fr=317: "fruit" is the same word in English and French (a true cognate,
 // not a leak) — added by the SCAN TYPE ROUTER scanType.fruit key.
-const BASELINE = { tw: 175, ha: 157, fr: 317, sw: 212 };
+// fr=318: decision.minutes "min" is the same unit abbreviation in en + fr
+// (shared token, not an English leak) — added by the Decision Engine.
+const BASELINE = { tw: 175, ha: 157, fr: 318, sw: 212 };
 
 const en = parse(rd('en'));
 const errors = [];

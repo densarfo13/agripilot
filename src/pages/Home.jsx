@@ -66,6 +66,7 @@ import TodaysActionCard from '../components/intelligence/TodaysActionCard.jsx';
 // Class-component error boundary inside — never blocks Home.
 import CommandCenterDeck from '../components/commandCenter/CommandCenterDeck.jsx';
 import FarmBrainBelowFold from '../components/farmBrain/FarmBrainBelowFold.jsx';
+import DecisionHero from '../components/home/DecisionHero.jsx';
 import useDailyHabit             from '../hooks/useDailyHabit.js';
 import useContextIntelligence    from '../hooks/useContextIntelligence.js';
 // Once-per-mount calm-notification feed sync — feeds the user-facing
@@ -979,6 +980,11 @@ export default function Home() {
             </span>
           </div>
         </header>
+
+        {/* ── FARROWAY DECISION ENGINE §2 — the ONE daily decision,
+             above the fold. Reads the canonical FarmBrainState; empty
+             states show a localized CTA. Self-contained + error-boundaried. */}
+        <DecisionHero farm={local.farm} />
 
         {/* ── 2. Farm switcher (compact strip) ─────────────────
              Only purpose: switch between multiple farms/gardens

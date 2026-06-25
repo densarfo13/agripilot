@@ -2028,6 +2028,9 @@ export default function App() {
           // FARMBRAIN X — window.__farmBrainXHealth() (15-section certification +
           // computed pilot verdict; attests FarmBrain as the single source of truth).
           try { (await import('./runtime/farmBrain/FarmBrainXRuntime')).installFarmBrainXHealth(); } catch { /* swallow */ }
+          // FARROWAY DECISION ENGINE — window.__decisionEngineHealth() (one daily
+          // decision from FarmBrainState; reason + confidence + task + outcome).
+          try { (await import('./runtime/decision/FarrowayDecisionEngine')).installDecisionEngineHealth(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.
