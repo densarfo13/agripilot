@@ -23,3 +23,15 @@ Thumbs.db
 *.jpg
 *.jpeg
 app
+
+# Deployment reliability — keep the railway up snapshot lean (faster, more
+# resilient upload). None of the below is needed for the Docker image build
+# (vite build + tsc + prisma generate); excluding them shrinks the tarball and
+# the file count without touching application logic.
+*.md
+reports
+coverage
+.cache
+server/.cache
+.nyc_output
+*.tsbuildinfo

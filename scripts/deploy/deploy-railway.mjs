@@ -225,16 +225,35 @@ if (DRY_RUN) {
 log('');
 log('Triggering railway up (detached)…');
 const upMessage = `${deployShaShort} ${commitSubject}`.slice(0, 200);
-const upResult = spawnSync('railway', [
-  'up', '--detach',
-  '--message', upMessage,
-], { cwd: ROOT, encoding: 'utf8', stdio: ['inherit', 'pipe', 'pipe'] });
 
-if (upResult.status !== 0) {
-  fail(2, `railway up failed (exit ${upResult.status}):\n`
-    + (upResult.stderr || upResult.stdout || '(no output)'));
+// Deployment reliability: `railway up` uploads a code snapshot over TLS to
+// backboard.railway.com. Transient network/TLS faults (e.g. "BadRecordMac",
+// "connection error", "SendRequest", timeouts) can abort the upload before the
+// build even starts. Retry those with exponential backoff; fail fast on a
+// genuine error (auth/invalid project) where retrying is pointless.
+const UP_MAX_ATTEMPTS = Number(process.env.RAILWAY_UP_RETRIES || 4);
+const TRANSIENT_RE = /BadRecordMac|connection error|SendRequest|client error|timed? out|timeout|reset by peer|EOF|tls|handshake|temporarily|503|502|504/i;
+let upResult = null;
+let upOutput = '';
+for (let attempt = 1; attempt <= UP_MAX_ATTEMPTS; attempt += 1) {
+  upResult = spawnSync('railway', [
+    'up', '--detach',
+    '--message', upMessage,
+  ], { cwd: ROOT, encoding: 'utf8', stdio: ['inherit', 'pipe', 'pipe'] });
+  upOutput = (upResult.stdout || '') + (upResult.stderr || '');
+  if (upResult.status === 0) break;
+  const transient = TRANSIENT_RE.test(upOutput);
+  if (!transient || attempt === UP_MAX_ATTEMPTS) {
+    fail(2, `railway up failed (exit ${upResult.status}, attempt ${attempt}/${UP_MAX_ATTEMPTS}`
+      + (transient ? ', transient — exhausted retries' : ', non-transient — not retrying') + '):\n'
+      + (upResult.stderr || upResult.stdout || '(no output)'));
+  }
+  const backoffMs = Math.min(30000, 2000 * 2 ** (attempt - 1));
+  warn(`railway up attempt ${attempt}/${UP_MAX_ATTEMPTS} hit a transient network/TLS fault — `
+    + `retrying in ${Math.round(backoffMs / 1000)}s…`);
+  // Blocking sleep without a busy-wait or extra deps.
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, backoffMs);
 }
-const upOutput = (upResult.stdout || '') + (upResult.stderr || '');
 process.stdout.write(upOutput);
 
 // Extract the new deployment ID from `railway up` output. The CLI
