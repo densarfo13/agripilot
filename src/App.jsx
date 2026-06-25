@@ -2034,6 +2034,12 @@ export default function App() {
           // ENVIRONMENT ORCHESTRATOR — __environmentProviderHealth / __ambeePollenHealth
           // / __farmBrainEnvironmentHealth (Soil-first pluggable provider layer).
           try { (await import('./runtime/environment/EnvironmentOrchestrator')).installEnvironmentHealth(); } catch { /* swallow */ }
+          // SCAN CERTIFICATION — __scanCertificationHealth() (deterministic safety
+          // certified; live crop-photo provider accuracy PENDING operator run).
+          try { (await import('./runtime/scan/certification/ScanCertificationRuntime')).installScanCertificationHealth(); } catch { /* swallow */ }
+          // PILOT CERTIFICATION v1.0 — __pilotCertificationHealth() (8-phase umbrella;
+          // computed verdict, feature freeze; live field evidence PENDING, never faked).
+          try { (await import('./runtime/scan/certification/PilotCertificationRuntime')).installPilotCertificationHealth(); } catch { /* swallow */ }
           // MULTI-PROVIDER CONSENSUS — window.__scanConsensusHealth() (merges
           // plant/health/pest/mushroom; 70% floor; never a mushroom safe claim).
           try { (await import('./runtime/scan/consensus/ScanProviderConsensus')).installScanConsensusHealth(); } catch { /* swallow */ }

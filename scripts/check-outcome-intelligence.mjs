@@ -183,6 +183,8 @@ const ALLOWED_EXCEPTIONS = [
   // contracts + consensus to these NEW paths. Founder-authorized.
   'src/runtime/scan/providers/',
   'src/runtime/scan/consensus/',
+  // SCAN CERTIFICATION — founder-directed certification composite path.
+  'src/runtime/scan/certification/',
 ];
 let gitAvailable = false;
 let diff = '';
