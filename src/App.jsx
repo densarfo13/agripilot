@@ -2007,6 +2007,9 @@ export default function App() {
           try { (await import('./runtime/scanDebug/ScanDebugRuntime')).installScanDebugGlobal(); } catch { /* swallow */ }
           // SCAN TYPE ROUTER — window.__scanTypeRouterHealth().
           try { (await import('./runtime/scan/router/ScanTypeRouter')).installScanTypeRouterHealth(); } catch { /* swallow */ }
+          // FARM_BRAIN_STATE_V1 — window.__farmBrainStateHealth(); the single
+          // FarmBrain cache that every event updates and every screen reads.
+          try { (await import('./runtime/farmBrain/FarmBrainStateStore')).installFarmBrainStateHealth(); } catch { /* swallow */ }
           // Sprint #188 — pilot analytics measurement. Pins
           // window.__pilotAnalyticsHealth() + window.__pilotMetrics()
           // for QA + the existing /internal/pilot-analytics page.

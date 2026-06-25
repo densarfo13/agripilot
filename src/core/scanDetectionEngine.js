@@ -65,6 +65,7 @@ function _mintScanId() {
 // API result and the rule fallback carry result.farmBrain AND result.scanType.
 import { runFarmBrainV2 } from '../runtime/farmBrain/FarmBrainRuntimeV2';
 import { detectScanType } from '../runtime/scan/router/ScanTypeRouter';
+import { dispatchFarmEvent } from '../runtime/farmBrain/FarmBrainStateStore';
 
 function _withFarmBrain(result, input) {
   try {
@@ -73,10 +74,21 @@ function _withFarmBrain(result, input) {
     // SCAN TYPE ROUTER — classify + route every result (leaf/fruit/insect/
     // soil/…). scanType is always present so the UI can pick the right card.
     const decision = detectScanType({ scanResult: result, scanMode: input && input.scanMode });
-    return Object.freeze({
+    const out = Object.freeze({
       ...result, farmBrain: fb,
       scanType: decision.scanType, scanRoute: decision.route, scanTypeDecision: decision,
     });
+    // FARM_BRAIN_STATE_V1 — RULE 4: every successful scan updates FarmBrain,
+    // no user interaction. This is the single chokepoint both result exits
+    // pass through, so there is NO bypass. Best-effort, never blocks a scan.
+    try {
+      dispatchFarmEvent('scan', {
+        farmBrain: fb,
+        cropName: (result.cropName || result.plantName || null),
+        timelineEntry: { kind: 'scan', label: 'Scan completed' },
+      }, { scanType: decision.scanType });
+    } catch { /* analytics must never break a scan */ }
+    return out;
   } catch { return result; }
 }
 
