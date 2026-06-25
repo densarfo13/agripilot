@@ -694,6 +694,14 @@ app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
     const { getScanProviderDiagnostics, pingScanProvider } =
       await import('./ml/scanInferenceService.js');
     const diag = getScanProviderDiagnostics();
+    // P0 PROVIDER RUNTIME STATUS — read the ACTUAL env for crop.health/insect.id/
+    // mushroom.id at runtime (was Plant.id-only, which made the client always
+    // report them false regardless of Railway). Never logs full secrets.
+    let providerFlags = {};
+    try {
+      const { getProviderAcceptanceFlags } = await import('./ml/providerRuntimeStatus.js');
+      providerFlags = getProviderAcceptanceFlags();
+    } catch { /* keep core diagnostics working even if this fails */ }
     // ?live=1 → execute a REAL authenticated provider call (Kindwise
     // usage_info) to prove the key works, without consuming credits.
     let live = null;
@@ -722,6 +730,8 @@ app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
       latencyMs: diag.lastLatencyMs,
       lastCallAt: diag.lastCallAt,
       providerName: diag.providerName,
+      // P0 — per-provider runtime truth (crop.health / insect.id / mushroom.id).
+      ...providerFlags,
       // Live authenticated provider ping (only when ?live=1).
       live,
     });

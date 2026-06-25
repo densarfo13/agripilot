@@ -161,6 +161,14 @@ async function main() {
     try { logProductionStartupBanner(); }
     catch { /* never throw from a banner */ }
 
+    // P0 PROVIDER RUNTIME STATUS — log the runtime truth for every scan
+    // provider at boot (envPresent / keyLen / fingerprint / wired / reason).
+    // No full secrets. This is how Railway logs show whether a key is really
+    // present, mis-wired, or auth-failing — instead of assuming "missing".
+    import('./ml/providerRuntimeStatus.js')
+      .then((m) => m.logProviderStartupStatus(console))
+      .catch(() => { /* never throw from a diagnostic */ });
+
     // Next-Stage Readiness §18 — single greppable build marker.
     // Pulls Railway / Render / Source-commit env vars in priority
     // order; falls back to the boot timestamp when no commit

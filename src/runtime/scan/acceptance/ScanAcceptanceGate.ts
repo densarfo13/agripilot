@@ -25,7 +25,7 @@ const _num = (v: any): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-/** The raw shape we read from GET /api/scan/diagnostics (Plant.id focused). */
+/** The raw shape we read from GET /api/scan/diagnostics. */
 export interface DiagnosticsEnvelope {
   providerConfigured?: boolean;
   providerAvailable?: boolean;
@@ -33,11 +33,15 @@ export interface DiagnosticsEnvelope {
   candidateCount?: number | null;
   confidence?: number | null;
   failureReason?: string | null;
-  // Optional sibling-provider config flags, when the server reports them.
+  // P0 — sibling-provider runtime truth (now populated by the server).
   cropHealthConfigured?: boolean;
   cropHealthHttpStatus?: number | null;
+  cropHealthFailureReason?: string | null;
   insectIdConfigured?: boolean;
   insectIdHttpStatus?: number | null;
+  insectIdFailureReason?: string | null;
+  plantIdFailureReason?: string | null;
+  providers?: ReadonlyArray<any>;          // full per-provider runtime status
 }
 
 function _plantId(d: DiagnosticsEnvelope): ProviderAcceptance {
@@ -115,7 +119,17 @@ export function evaluateScanAcceptance(
       providers: Object.freeze([plant, crop, insect]),
       pendingActions: Object.freeze(pendingActions),
       checkedAt: _safe(() => Date.now(), null),
-    });
+      // P0 — the authoritative per-provider runtime status from the server
+      // (envPresent / keyLength / fingerprint / failureReason taxonomy). This is
+      // the "do not assume missing" truth: a keyed provider that fails reports
+      // auth_failed_401 / credits_exhausted / not_wired, never missing_env.
+      runtimeStatus: Object.freeze({
+        providers: (d.providers && Array.isArray(d.providers)) ? d.providers : Object.freeze([]),
+        cropHealthFailureReason: d.cropHealthFailureReason || null,
+        insectIdFailureReason: d.insectIdFailureReason || null,
+        plantIdFailureReason: d.plantIdFailureReason || null,
+      }),
+    } as any);
   }, Object.freeze({
     ok: false, version: SCAN_ACCEPTANCE_VERSION,
     plantIdReady: false, cropHealthReady: false, insectIdReady: false,
