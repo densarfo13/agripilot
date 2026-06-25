@@ -2031,6 +2031,9 @@ export default function App() {
           // FARROWAY DECISION ENGINE — window.__decisionEngineHealth() (one daily
           // decision from FarmBrainState; reason + confidence + task + outcome).
           try { (await import('./runtime/decision/FarrowayDecisionEngine')).installDecisionEngineHealth(); } catch { /* swallow */ }
+          // ENVIRONMENT ORCHESTRATOR — __environmentProviderHealth / __ambeePollenHealth
+          // / __farmBrainEnvironmentHealth (Soil-first pluggable provider layer).
+          try { (await import('./runtime/environment/EnvironmentOrchestrator')).installEnvironmentHealth(); } catch { /* swallow */ }
           // MULTI-PROVIDER CONSENSUS — window.__scanConsensusHealth() (merges
           // plant/health/pest/mushroom; 70% floor; never a mushroom safe claim).
           try { (await import('./runtime/scan/consensus/ScanProviderConsensus')).installScanConsensusHealth(); } catch { /* swallow */ }

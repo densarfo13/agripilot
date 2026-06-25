@@ -740,6 +740,51 @@ app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
   }
 });
 
+// ── Environment Provider Orchestrator diagnostics ──
+// GET /api/environment/diagnostics — admin/auth only. Per-provider readiness
+// (soil now; pluggable). Safe info only: no full keys, no raw provider payload.
+app.get('/api/environment/diagnostics', authenticate, async (req, res) => {
+  try {
+    const { getSoilProviderDiagnostics } = await import('./services/soil/ambeeSoilService.js');
+    const soil = getSoilProviderDiagnostics();
+    return res.json({
+      ok: true,
+      configuredProviders: [soil.providerName].filter(() => soil.envPresent),
+      providers: [
+        // Soil — the first production provider (real readiness from telemetry).
+        { provider: 'soil', envName: soil.envName, envPresent: soil.envPresent,
+          keyLength: soil.keyLength, keyFingerprint: soil.keyFingerprint,
+          status: soil.status, httpStatus: soil.httpStatus, failureReason: soil.failureReason,
+          latencyMs: soil.latencyMs, cacheTtlMs: soil.cacheTtlMs,
+          cacheHits: soil.cacheHits, calls: soil.calls, failures: soil.failures },
+        // Pollen — honest disabled stub (no live dependency; never fabricated).
+        { provider: 'pollen', envPresent: false, status: 'not_configured',
+          failureReason: 'no_pollen_provider', note: 'disabled stub' },
+      ],
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: 'environment_diagnostics_failed', message: err && err.message });
+  }
+});
+
+// GET /api/environment/health — PUBLIC, safe readiness only. No secrets, no
+// credits, no raw payloads, no provider internals.
+app.get('/api/environment/health', async (req, res) => {
+  try {
+    const { getSoilProviderDiagnostics } = await import('./services/soil/ambeeSoilService.js');
+    const soil = getSoilProviderDiagnostics();
+    return res.json({
+      environmentReady: true,           // orchestrator always yields a recommendation
+      weatherReady: true,               // weather derives from request context
+      soilSignalAvailable: !!soil.envPresent,
+      pollenSignalAvailable: false,     // honest: no live pollen provider
+    });
+  } catch {
+    return res.json({ environmentReady: true, weatherReady: true,
+      soilSignalAvailable: false, pollenSignalAvailable: false });
+  }
+});
+
 // GET /api/admin/scan-credits — Kindwise credit monitor (auth-only).
 // Remaining credits for plant.id / crop.health / insect.id, per-provider
 // alert level (<100 low, <50 warning, <20 critical), daily burn rate +

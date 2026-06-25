@@ -41,6 +41,62 @@
 export const AMBEE_SOIL_ENDPOINT = 'https://api.ambeedata.com/soil/latest/by-lat-lng';
 export const CACHE_TTL_MS = 6 * 60 * 60 * 1000;   // 6 hours per spec
 const COORD_PRECISION = 2;                         // ~1km city-block precision
+const REQUEST_TIMEOUT_MS = 6000;
+
+// ─── Telemetry (Environment Orchestrator hardening) ───────────
+// The service still returns the calm 4-field-or-null shape (the farmer never
+// sees an error). Telemetry records WHY a call failed without changing the
+// return value or the call count — read via getSoilProviderDiagnostics().
+const _diag = {
+  lastStatus: 'unknown', lastHttpStatus: null, lastFailureReason: null,
+  lastLatencyMs: null, lastCallAt: null, calls: 0, failures: 0, cacheHits: 0,
+};
+// Failure taxonomy (mirrors the scan provider taxonomy for consistency).
+function _classify({ httpStatus, errorKind }) {
+  if (errorKind === 'timeout') return 'timeout';
+  if (errorKind === 'network') return 'provider_error';
+  if (httpStatus === 401) return 'auth_failed_401';
+  if (httpStatus === 403) return 'forbidden_403';
+  if (httpStatus === 429) return 'rate_limited_429';
+  if (typeof httpStatus === 'number' && httpStatus >= 500) return 'provider_error';
+  if (typeof httpStatus === 'number' && httpStatus >= 400) return 'provider_error';
+  return null;
+}
+function _recordFailure(reason, httpStatus, latencyMs, nowMs) {
+  _diag.lastStatus = reason || 'provider_error';
+  _diag.lastFailureReason = reason || 'provider_error';
+  _diag.lastHttpStatus = httpStatus ?? null;
+  _diag.lastLatencyMs = latencyMs ?? null;
+  _diag.lastCallAt = nowMs ?? null;
+  _diag.failures += 1;
+}
+function _recordSuccess(httpStatus, latencyMs, nowMs) {
+  _diag.lastStatus = 'ready';
+  _diag.lastFailureReason = null;
+  _diag.lastHttpStatus = httpStatus ?? 200;
+  _diag.lastLatencyMs = latencyMs ?? null;
+  _diag.lastCallAt = nowMs ?? null;
+}
+
+/** Provider diagnostics — safe to surface to admin (no secrets, no raw payload). */
+export function getSoilProviderDiagnostics() {
+  const key = _readApiKey();
+  return Object.freeze({
+    providerName: 'soil',
+    envName: 'AMBEE_API_KEY',
+    envPresent: !!key,
+    keyLength: key ? key.length : 0,
+    keyFingerprint: key ? key.slice(0, 6) : null,   // first 6 only, never the secret
+    endpoint: AMBEE_SOIL_ENDPOINT,
+    status: _diag.lastStatus,
+    httpStatus: _diag.lastHttpStatus,
+    failureReason: _diag.lastFailureReason,
+    latencyMs: _diag.lastLatencyMs,
+    lastCallAt: _diag.lastCallAt,
+    calls: _diag.calls, failures: _diag.failures, cacheHits: _diag.cacheHits,
+    cacheTtlMs: CACHE_TTL_MS,
+  });
+}
 
 // ─── Cache ────────────────────────────────────────────────────
 
@@ -230,7 +286,7 @@ export async function fetchSoilFromAmbee(lat, lng, options) {
   const key = _cacheKey(lat, lng);
   if (!opts.bypassCache) {
     const cached = _cacheGet(key, nowMs);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) { _diag.cacheHits += 1; return cached; }
   }
 
   // ── 4. Fetcher resolution ──────────────────────────────
@@ -239,34 +295,51 @@ export async function fetchSoilFromAmbee(lat, lng, options) {
     : (typeof fetch === 'function' ? fetch : null);
   if (!fetcher) return null;
 
-  // ── 5. Request ─────────────────────────────────────────
+  // ── 5. Request (timeout-guarded; telemetry-recorded) ───
   const url = `${AMBEE_SOIL_ENDPOINT}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
+  const t0 = nowMs;
+  _diag.calls += 1;
+  // AbortController timeout — never lets a hung Ambee call stall the caller.
+  let signal; let timer = null;
+  try {
+    if (typeof AbortController === 'function') {
+      const ac = new AbortController(); signal = ac.signal;
+      timer = setTimeout(() => { try { ac.abort(); } catch { /* */ } }, REQUEST_TIMEOUT_MS);
+    }
+  } catch { /* no timeout available */ }
+  const _lat = () => (typeof Date !== 'undefined' && Date.now ? Date.now() - t0 : null);
+
   let response;
   try {
     response = await fetcher(url, {
       method:  'GET',
-      headers: {
-        'x-api-key':    apiKey,
-        'Content-type': 'application/json',
-      },
+      headers: { 'x-api-key': apiKey, 'Content-type': 'application/json' },
+      ...(signal ? { signal } : {}),
     });
-  } catch {
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    const kind = (err && (err.name === 'AbortError')) ? 'timeout' : 'network';
+    _recordFailure(_classify({ errorKind: kind }), null, _lat(), nowMs);
     return null;
   }
+  if (timer) clearTimeout(timer);
 
   if (!response || typeof response !== 'object' || response.ok !== true) {
+    const status = response && typeof response.status === 'number' ? response.status : null;
+    _recordFailure(_classify({ httpStatus: status }) || 'provider_error', status, _lat(), nowMs);
     return null;
   }
 
   // ── 6. Parse + normalise ───────────────────────────────
   let json = null;
   try { json = await response.json(); }
-  catch { return null; }
+  catch { _recordFailure('mapping_error', response.status || 200, _lat(), nowMs); return null; }
 
   const normalised = normalizeAmbeeResponse(json);
-  if (!normalised) return null;
+  if (!normalised) { _recordFailure('mapping_error', response.status || 200, _lat(), nowMs); return null; }
 
   // ── 7. Cache + return ─────────────────────────────────
+  _recordSuccess(response.status || 200, _lat(), nowMs);
   if (!opts.bypassCache) _cacheSet(key, normalised, nowMs);
   return normalised;
 }
