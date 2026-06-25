@@ -1,12 +1,15 @@
 node_modules
 server/node_modules
 backend/node_modules
-mobile
-backend
-website
-docs
-android
-ios
+# Root-anchored: these are top-level platform/docs dirs (siblings of src/).
+# Bare names would also strip src/core/mobile, src/docs, etc. (gitignore matches
+# at any depth) and break the build — see check-railwayignore-safe.
+/mobile/
+/backend/
+/website/
+/docs/
+/android/
+/ios/
 .git
 .github
 .claude
@@ -28,9 +31,14 @@ app
 # resilient upload). None of the below is needed for the Docker image build
 # (vite build + tsc + prisma generate); excluding them shrinks the tarball and
 # the file count without touching application logic.
+#
+# IMPORTANT: bare dir names match at ANY depth (gitignore semantics). The
+# top-level artifact dirs MUST be root-anchored (leading slash) so they don't
+# also strip real source like src/runtime/reports or server/src/modules/reports
+# — doing so broke `vite build` ("Could not resolve ./runtime/reports/index").
 *.md
-reports
-coverage
+/reports/
+/coverage/
 .cache
 server/.cache
 .nyc_output
