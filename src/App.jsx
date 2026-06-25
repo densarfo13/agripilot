@@ -2040,6 +2040,12 @@ export default function App() {
           // PILOT CERTIFICATION v1.0 — __pilotCertificationHealth() (8-phase umbrella;
           // computed verdict, feature freeze; live field evidence PENDING, never faked).
           try { (await import('./runtime/scan/certification/PilotCertificationRuntime')).installPilotCertificationHealth(); } catch { /* swallow */ }
+          // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
+          // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
+          // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
+          try { (await import('./runtime/quality/DataQualityEngine')).installDataQualityHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/quality/DecisionQualityEngine')).installDecisionQualityHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/quality/EnterpriseCertificationRuntime')).installEnterpriseCertificationHealth(); } catch { /* swallow */ }
           // MULTI-PROVIDER CONSENSUS — window.__scanConsensusHealth() (merges
           // plant/health/pest/mushroom; 70% floor; never a mushroom safe claim).
           try { (await import('./runtime/scan/consensus/ScanProviderConsensus')).installScanConsensusHealth(); } catch { /* swallow */ }
