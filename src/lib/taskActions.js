@@ -75,6 +75,14 @@ export async function completeTask(task, opts = {}) {
     }))
     .catch(() => { /* swallow */ });
 
+  // FARM_BRAIN_STATE_V1 — RULE 1: a completed task is an event that updates
+  // FarmBrain (beyond scans). Fire-and-forget; never blocks the completion.
+  import('../runtime/farmBrain/FarmBrainStateStore')
+    .then(({ dispatchFarmEvent }) => dispatchFarmEvent('task_completed', {
+      timelineEntry: { kind: 'task_completed', label: t.title || 'Task completed' },
+    }, { taskKind: t.category || 'unknown' }))
+    .catch(() => { /* swallow */ });
+
   // 2. Success toast — fires before the network call so the
   //    user gets immediate feedback.
   if (opts.suppressToast !== true) {

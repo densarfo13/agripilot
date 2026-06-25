@@ -101,6 +101,7 @@ import DailyFarmPlanCard          from '../components/home/DailyFarmPlanCard.jsx
 import NotificationBell           from '../components/NotificationBell.jsx';
 import PageActions                 from '../components/layout/PageActions.jsx';
 import useSimpleMode              from '../hooks/useSimpleMode.js';
+import useFarmBrainState          from '../hooks/useFarmBrainState.js';
 import SimpleModeHomeSection      from '../components/simpleMode/SimpleModeHomeSection.jsx';
 import SimpleHome                  from '../components/simpleMode/SimpleHome.jsx';
 // MemoryMomentLine removed from the lean immersive layout (the
@@ -272,6 +273,11 @@ export default function Home() {
   // Simple Mode preference — when ON, render an action-first top section
   // above the standard DailyFarmPlanCard. Never blocks the rest of Home.
   const { enabled: simpleModeEnabled } = useSimpleMode();
+  // FARM_BRAIN_STATE_V1 — RULE 2: Home reads the single canonical FarmBrain
+  // state (the one updated by every scan / task event), the first adopter of
+  // "every screen reads FarmBrainState only". Merged into the below-fold
+  // signals below; honest empty state until the first scan.
+  const _farmBrainState = useFarmBrainState();
   // Permanent Farmer Home spec §7 — dev-only assertion. If any
   // future commit reintroduces a parallel Home component (a new
   // PilotHome / GardenHome / SimpleHome / etc.) and that component
@@ -444,12 +450,24 @@ export default function Home() {
     }
     if (cropName) timelineEntries.push({ kind: 'crop_added', at: f.cropAddedAt || '' });
     if (plantingDate) timelineEntries.push({ kind: 'planting_date_added', at: plantingDate });
+    // FARM_BRAIN_STATE_V1 — RULE 2: fold the canonical state in when it has
+    // advanced past the empty waiting state (i.e. after a real scan). Honest:
+    // we only attach fields that carry a real value — never a fabricated one.
+    const fb = _farmBrainState && _farmBrainState.hasFirstScan ? _farmBrainState : null;
+    const canonical = fb ? {
+      healthBand: (fb.farmHealth && fb.farmHealth.band) || null,
+      healthScore: (fb.farmHealth && fb.farmHealth.value != null) ? fb.farmHealth.value : null,
+      confidence: typeof fb.confidence === 'number' ? fb.confidence : null,
+      nextAction: (fb.todaysTasks && fb.todaysTasks[0] && fb.todaysTasks[0].action) || null,
+      updatedAt: fb.updatedAt || null,
+    } : null;
     return {
       crop: cropName, location: locationStr, plantingDate,
       scans: [], tasks: [], outcomes: [],
       timelineEntries, pilotEvents: [],
+      farmBrainState: canonical,   // RULE 2 — canonical read (honest, may be null)
     };
-  }, [local]);
+  }, [local, _farmBrainState]);
 
   // ─── Live weather pipeline ───────────────────────────────────
   const { weather, loading: weatherLoading, refetch: refetchWeather } =
