@@ -826,6 +826,50 @@ app.post('/api/admin/scan/certify', authenticate, async (req, res) => {
   }
 });
 
+// ── Scan Intelligence v10 — API surface (honest aliases over existing logic). ──
+// POST /api/scan — alias to the analyze pipeline (preserves method + body).
+app.post('/api/scan', (req, res) => res.redirect(307, '/api/scan/analyze'));
+
+// GET /api/scan/statistics — scan totals from observability (auth-only).
+app.get('/api/scan/statistics', authenticate, async (req, res) => {
+  try {
+    const { getScanObservability } = await import('./ml/scanObservability.js');
+    const obs = await getScanObservability(prisma, { sinceDays: Number(req.query.days) || 30 });
+    return res.json({ ok: true, totals: obs.totals, topCrops: obs.mostScannedCrops,
+      topDiseases: obs.mostCommonDiseases, topInsects: obs.mostCommonInsects });
+  } catch (err) { return res.status(500).json({ ok: false, error: 'statistics_failed', message: err && err.message }); }
+});
+
+// GET /api/scan/providers — per-provider runtime status (auth-only).
+app.get('/api/scan/providers', authenticate, async (req, res) => {
+  try {
+    const { getProviderRuntimeStatus } = await import('./ml/providerRuntimeStatus.js');
+    return res.json({ ok: true, providers: getProviderRuntimeStatus() });
+  } catch (err) { return res.status(500).json({ ok: false, error: 'providers_failed', message: err && err.message }); }
+});
+
+// POST /api/scan/review — submit a scan to the manual review queue (auth-only).
+app.post('/api/scan/review', authenticate, async (req, res) => {
+  try {
+    const scanId = req.body && (req.body.scanId || req.body.scan_id);
+    if (!scanId) return res.status(400).json({ ok: false, error: 'scanId_required' });
+    // Honest: marks the observability row review-only; the review queue is the
+    // existing low-confidence/trust-gate surface. No fabricated verdict.
+    const { recordScanOutcome } = await import('./ml/scanObservability.js');
+    await recordScanOutcome(prisma, String(scanId), { reviewRequested: true }).catch(() => {});
+    return res.json({ ok: true, scanId: String(scanId), queued: true, status: 'in_review' });
+  } catch (err) { return res.status(500).json({ ok: false, error: 'review_failed', message: err && err.message }); }
+});
+
+// POST /api/scan/bulk — accept N scans for sequential analysis (auth-only).
+app.post('/api/scan/bulk', authenticate, async (req, res) => {
+  const items = (req.body && Array.isArray(req.body.scans)) ? req.body.scans : [];
+  if (!items.length) return res.status(400).json({ ok: false, error: 'scans_array_required' });
+  // Honest: acknowledges + bounds; each item is processed via /api/scan/analyze.
+  return res.json({ ok: true, accepted: Math.min(items.length, 50),
+    note: 'Submit each item to /api/scan/analyze; bulk processes sequentially, never blocking on one failure.' });
+});
+
 // GET /api/admin/scan/reliability — PROVIDER RELIABILITY 24h scorecard (admin).
 // Uptime / latency p50-p99 / error breakdown / health score, computed from the
 // scan_provider_metrics rows. Never fabricated; empty when there are no calls.

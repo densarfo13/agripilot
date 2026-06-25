@@ -21,11 +21,17 @@ export const AGRI_CONFIDENCE_MIN = 70;
 
 export type AgriObjectType =
   | 'leaf' | 'wholePlant' | 'fruit' | 'vegetable' | 'flower'
-  | 'tree' | 'seedling' | 'insect' | 'soil' | 'unknown';
+  | 'tree' | 'seedling' | 'insect' | 'soil'
+  // v10 — extended object coverage (no redesign; same classify→route contract).
+  | 'herb' | 'seed' | 'grass' | 'shrub' | 'houseplant'
+  | 'hydroponic' | 'greenhouse' | 'weed'
+  | 'unknown';
 
 export const AGRI_OBJECT_TYPES: ReadonlyArray<AgriObjectType> = Object.freeze([
   'leaf', 'wholePlant', 'fruit', 'vegetable', 'flower',
-  'tree', 'seedling', 'insect', 'soil', 'unknown',
+  'tree', 'seedling', 'insect', 'soil',
+  'herb', 'seed', 'grass', 'shrub', 'houseplant', 'hydroponic', 'greenhouse', 'weed',
+  'unknown',
 ]);
 
 /** Ordered provider/engine steps per object type (Phase 2). */
@@ -39,6 +45,15 @@ export const AGRI_ROUTING: Readonly<Record<AgriObjectType, ReadonlyArray<string>
   seedling:   Object.freeze(['plant.id', 'crop.health']),
   insect:     Object.freeze(['insect.id', 'insect_engine']),
   soil:       Object.freeze(['soil_visual']),
+  // v10 routes — identify via plant.id where applicable; weed → identify + advise.
+  herb:       Object.freeze(['plant.id', 'crop.health']),
+  seed:       Object.freeze(['plant.id']),
+  grass:      Object.freeze(['plant.id']),
+  shrub:      Object.freeze(['plant.id', 'crop.health']),
+  houseplant: Object.freeze(['plant.id', 'crop.health']),
+  hydroponic: Object.freeze(['plant.id', 'crop.health']),
+  greenhouse: Object.freeze(['plant.id', 'crop.health']),
+  weed:       Object.freeze(['plant.id', 'weed_engine']),
   unknown:    Object.freeze(['review']),
 });
 
@@ -65,6 +80,15 @@ const _str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const FLOWER_RE = /\b(flower|bloom|blossom|petal|rose|hibiscus|marigold|sunflower|orchid|lily|inflorescence)\b/i;
 const TREE_RE = /\b(tree|trunk|sapling|mango tree|orchard|canopy|bark|cocoa tree|citrus tree)\b/i;
 const SEEDLING_RE = /\b(seedling|sprout|germinat|nursery|transplant|cotyledon|young plant)\b/i;
+// v10 extended-object detectors. Ordered most-specific first in the classify flow.
+const SEED_RE = /\b(seed|seeds|grain|kernel|pip|bean seed)\b/i;
+const HYDRO_RE = /\b(hydroponic|hydroponics|nft|deep water culture|nutrient film|aeroponic)\b/i;
+const GREENHOUSE_RE = /\b(greenhouse|polytunnel|poly tunnel|glasshouse|hoop house|tunnel crop)\b/i;
+const HOUSEPLANT_RE = /\b(houseplant|house plant|indoor plant|potted plant|pot plant|monstera|pothos|succulent)\b/i;
+const HERB_RE = /\b(herb|basil|mint|coriander|cilantro|parsley|thyme|rosemary|oregano|sage|chive)\b/i;
+const WEED_RE = /\b(weed|weeds|invasive|nutgrass|amaranth weed|striga|witchweed|pigweed|crabgrass)\b/i;
+const GRASS_RE = /\b(grass|lawn|turf|pasture|fodder grass|napier|brachiaria)\b/i;
+const SHRUB_RE = /\b(shrub|bush|hedge|woody bush)\b/i;
 
 function _hintFrom(input: any): string {
   const r = (input && typeof input === 'object') ? input : {};
@@ -102,8 +126,19 @@ export function classifyAgriculturalObject(input: any = {}): AgriClassification 
       leaf: 'leaf', wholeplant: 'wholePlant', plant: 'wholePlant',
       fruit: 'fruit', vegetable: 'vegetable', flower: 'flower',
       tree: 'tree', seedling: 'seedling', insect: 'insect', soil: 'soil',
+      herb: 'herb', seed: 'seed', grass: 'grass', shrub: 'shrub',
+      houseplant: 'houseplant', hydroponic: 'hydroponic', greenhouse: 'greenhouse', weed: 'weed',
     };
     if (DIRECT[ot]) return _build(DIRECT[ot], confHint ?? 70, 'objectType:' + ot);
+
+    // v10 — extended-object hints (specific → general). These win over the generic
+    // router only on an explicit keyword; otherwise the router still decides.
+    const V10: Array<[RegExp, AgriObjectType]> = [
+      [SEED_RE, 'seed'], [HYDRO_RE, 'hydroponic'], [GREENHOUSE_RE, 'greenhouse'],
+      [HOUSEPLANT_RE, 'houseplant'], [HERB_RE, 'herb'], [WEED_RE, 'weed'],
+      [GRASS_RE, 'grass'], [SHRUB_RE, 'shrub'],
+    ];
+    for (const [re, t] of V10) if (re.test(hint)) return _build(t, confHint ?? 62, t + '_signal');
 
     // 1. The three router-uncovered classes take priority on a specific hint.
     //    Seedling before tree (a "young mango tree" is a seedling), flower next.
