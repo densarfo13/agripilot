@@ -2057,6 +2057,11 @@ export default function App() {
           // registry (__v14CapabilityHealth — nothing predictive/market/banking faked live).
           try { (await import('./runtime/farmos14/AgentRegistry')).installAgentRegistryHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/farmos14/V14CapabilityRegistry')).installV14CapabilityHealth(); } catch { /* swallow */ }
+          // FARROWAY v15 — Farmer Copilot (__farmerCopilotHealth: routes plain
+          // questions to real engines, declines profit at confidence 0) + capability
+          // registry (__v15CapabilityHealth — nothing optimization/financial faked live).
+          try { (await import('./runtime/farmos15/FarmerCopilot')).installFarmerCopilotHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/farmos15/V15CapabilityRegistry')).installV15CapabilityHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
