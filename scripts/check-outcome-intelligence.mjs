@@ -189,6 +189,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/field/',
   // SCAN INTELLIGENCE v12 — founder-directed unified orchestrator path.
   'src/runtime/scan/v12/',
+  // EVIDENCE TIERS — founder-directed evidence-tier classifier path.
+  'src/runtime/scan/evidence/',
 ];
 let gitAvailable = false;
 let diff = '';

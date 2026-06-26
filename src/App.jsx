@@ -2062,6 +2062,11 @@ export default function App() {
           // registry (__v15CapabilityHealth — nothing optimization/financial faked live).
           try { (await import('./runtime/farmos15/FarmerCopilot')).installFarmerCopilotHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/farmos15/V15CapabilityRegistry')).installV15CapabilityHealth(); } catch { /* swallow */ }
+          // EVIDENCE TIERS — __evidenceTierHealth(): classifies each scan field by how
+          // a real value would be obtained (DIRECT_MEASURED/MODEL_ESTIMATED/FUSED/
+          // LIVE_PROVIDER/LAB_REQUIRED/UNKNOWN); calendar+weather produce real
+          // estimated/live values, CV/lab fields stay null (never fabricated).
+          try { (await import('./runtime/scan/evidence/EvidenceTierEngine')).installEvidenceTierHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
