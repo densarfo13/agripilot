@@ -19,3 +19,19 @@ android
 ios
 .DS_Store
 Thumbs.db
+
+# Generated report/scorecard/certification artifacts — never read at deploy time
+# (the Dockerfile build does not run build:safe). Keeps the build context slim.
+*_REPORT.md
+*_SCORECARD.md
+*_CERTIFICATION.md
+*_AUDIT.md
+*_VALIDATION.md
+*_RUNBOOK.md
+*_READINESS.md
+*_CRITIQUE.md
+*_PREMORTEM.md
+*_HARDENING.md
+*_SIMULATION.md
+*_PROOF.md
+*_SUMMARY.md
