@@ -1,36 +1,35 @@
-# PILOT_READINESS_REPORT.md
+# PILOT_READINESS_REPORT
 
-**Sprint #215 — pilot readiness (data-integrity lockdown).**
-Date: 2026-06-19.
+Supersedes the sprint #215 edition (2026-06-19). Updated for the production-hardening
+sprint.
 
-## North-star dashboard (`__pilotReadinessDashboard`)
+## Ready
+- **Security:** every `/api/admin` route role-gated server-side (`check:admin-route-auth`).
+- **Provider keys:** all set on Railway (verified via `scan:certify` runtime).
+- **Reliability observability:** `ProviderReliabilityCard` on the admin Scan Health page
+  shows per-provider 24h latency/success/error/uptime/confidence from real metrics.
+- **Credit protection:** duplicate-scan guard + too-small-photo rejection cut wasted
+  provider calls.
+- **Failure visibility:** structured swallow telemetry + global error capture
+  (`window.__swallowedErrors()`) — silent failures are now counted/categorized.
+- **build:safe:** 363 gates green; deployed.
 
-Read-only composite over existing probes — never re-measures, never
-fabricates:
+## The one threshold left to cross (operator action)
+Providers read `DEGRADED` (keyed, configured, unproven) until a REAL scan exercises
+them. **Do one real scan in the deployed app** (or `SCAN_API_BASE=<url> npm run
+scan:acceptance`), then re-run `railway run npm run scan:certify` → providers lift
+`DEGRADED → READY` → overall `PRODUCTION_CERTIFIED`. If a provider instead shows a
+genuine `AUTH_FAILED` / `CREDITS_EXHAUSTED`, that is now a true signal to fix.
 
-| Metric | Source |
-|---|---|
-| Scan Success | `__scanMythosHealth` |
-| FarmBrain Confidence | `__farmBrainExplanationHealth` |
-| Task Completion | `__taskDedupHealth` |
-| Review Queue Size | `__scanReviewQueueHealth.pendingCount` |
-| Localization Health | `__languageConsistencyHealth` |
-| Trust Gate Health | `__scanTrustGateHealth` |
-
-## Acceptance (§14) — structural
-
-| Test | Lock |
-|---|---|
-| duplicate scan | OfflineSyncGuardian idempotency |
-| duplicate task | TaskDeduper (#212) |
-| duplicate notification | NotificationDeduper (#212) |
-| offline sync | idempotency key |
-| language switching | LanguageSessionLock (frozen until explicit) |
-| review queue | ReviewLifecycleManager (30/60d) |
-| empty farm | setup guidance only |
+## Honest PENDING (not blockers, not faked)
+- **Accuracy benchmark:** `golden-dataset/manifest.json` empty → accuracy `PENDING`
+  until populated with verified images.
+- **CV measurements** (counts/severity): `awaiting_model` until a segmentation model
+  is deployed — never fabricated.
+- **Scan UX polish (#2) + boot perf (#3):** scoped, staged as the next focused,
+  preview-verified batch.
 
 ## Verdict
-**READY_FOR_PILOT (data integrity).** Every one of the 10 named risks
-has a code-side lock + a build gate. The remaining open items are
-unchanged and non-code: onboard the Phase-1 cohort (analytics stay
-NEEDS_DATA until they act) + the translator's Twi/regional queue (#211).
+**Production-ready for a small (5–10 farmer) pilot.** The platform is honest end-to-end,
+secured, and observable. The pilot's first real scan is both the proof step and the
+first farmer value.

@@ -22,6 +22,7 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import ScanCreditCard from '../../components/admin/ScanCreditCard.jsx';
 import ScanObservabilityCard from '../../components/admin/ScanObservabilityCard.jsx';
+import ProviderReliabilityCard from '../../components/admin/ProviderReliabilityCard.jsx';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -222,6 +223,12 @@ function ScanHealthInner() {
       {/* SCAN_OBSERVABILITY_V1 — per-scan analytics dashboard + CSV. */}
       <section style={S.section} data-testid="scan-health-observability">
         <ScanObservabilityCard />
+      </section>
+
+      {/* P0+ Production Health — per-provider 24h reliability (latency/success/
+          error/uptime/confidence) from scan_provider_metrics. Honest empty state. */}
+      <section style={S.section} data-testid="scan-health-reliability">
+        <ProviderReliabilityCard />
       </section>
 
       <p style={S.note}>
