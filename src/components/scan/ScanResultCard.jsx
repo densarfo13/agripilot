@@ -59,6 +59,7 @@ import { detectScanPattern } from '../../lib/scanPatternDetection.js';
 import { classifyPlantSafety } from '../../runtime/scan/safety/PlantSafetyEngine.ts';
 import { treatmentForIssue } from '../../runtime/scan/treatment/DiseaseTreatmentEngine.ts';
 import { controlForPest } from '../../runtime/scan/treatment/PestTreatmentEngine.ts';
+import { nutrientGuidanceForIssue } from '../../runtime/scan/treatment/NutrientDeficiencyEngine.ts';
 import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
@@ -772,6 +773,53 @@ export default function ScanResultCard({
             {_pc.chemicalNote ? (
               <p style={{ fontSize: 12, color: '#8a6a12', marginTop: 8, marginBottom: 0 }}>
                 ⚠️ {tStrict('scan.pestControl.chemical', _pc.chemicalNote)}
+              </p>
+            ) : null}
+          </div>
+        );
+      })()}
+
+      {/* Nutrient deficiency — SAFE guidance from the curated nutrient library on a
+          confident match. Only farmer-safe amendments are shown; synthetic fertiliser
+          and doses are NEVER surfaced (deferred to an extension officer + soil test).
+          Self-hides when there is no confident match. */}
+      {(() => {
+        const _nx = (() => { try { return nutrientGuidanceForIssue(result?.possibleIssue || result?.issue || policy?.possibleIssue, _conf220); } catch { return null; } })();
+        if (!_nx || !_nx.matched) return null;
+        return (
+          <div data-testid="scan-nutrient" data-nutrient={_nx.nutrientId || ''}
+               style={{ marginTop: 10, padding: '12px 14px', borderRadius: 12, background: 'rgba(47,122,58,0.08)', border: '1px solid rgba(47,122,58,0.18)' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#256b30', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span aria-hidden="true" style={{ fontSize: 18 }}>🌱</span>
+              <span>{tStrict('scan.nutrient.title', 'What helps')}</span>
+            </div>
+            {_nx.organic.length > 0 ? (
+              <ul style={{ margin: '0 0 4px', paddingLeft: 20 }}>
+                {_nx.organic.map((s, i) => (
+                  <li key={i} style={{ fontSize: 14, color: '#1f3326', marginBottom: 4, lineHeight: 1.45 }}>{s}</li>
+                ))}
+              </ul>
+            ) : null}
+            {_nx.prevention.length > 0 ? (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#5a6472', letterSpacing: 0.3, marginTop: 8, marginBottom: 3 }}>
+                  {tStrict('scan.nutrient.prevent', 'Stop it coming back')}
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {_nx.prevention.map((s, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#3a4a3e', marginBottom: 3, lineHeight: 1.45 }}>{s}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {_nx.followUpDays ? (
+              <p style={{ fontSize: 13, color: '#3a4a3e', marginTop: 8, marginBottom: 0 }}>
+                🔁 {tStrict('scan.nutrient.followUp', 'Check the plant again in {days} days').replace('{days}', String(_nx.followUpDays))}
+              </p>
+            ) : null}
+            {_nx.fertiliserDeferred ? (
+              <p style={{ fontSize: 12, color: '#8a6a12', marginTop: 8, marginBottom: 0 }}>
+                ⚠️ {tStrict('scan.nutrient.fertiliser', 'Confirm with a soil test. For fertiliser amounts, ask your local extension officer.')}
               </p>
             ) : null}
           </div>

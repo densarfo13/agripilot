@@ -2095,6 +2095,10 @@ export default function App() {
           // library's organic control + prevention on a confident scan match
           // (pesticides deferred to an officer; no control without a match).
           try { (await import('./runtime/scan/treatment/PestTreatmentEngine')).installPestTreatmentHealth(); } catch { /* swallow */ }
+          // NUTRIENT DEFICIENCY — __nutrientGuidanceHealth(): surfaces SAFE amendment
+          // guidance from the curated nutrient library on a confident match
+          // (synthetic fertiliser/doses NEVER shown — deferred to officer + soil test).
+          try { (await import('./runtime/scan/treatment/NutrientDeficiencyEngine')).installNutrientGuidanceHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
