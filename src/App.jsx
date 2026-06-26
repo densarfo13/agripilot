@@ -2046,6 +2046,12 @@ export default function App() {
           // SCAN INTELLIGENCE v12 — __scanV12Health() (unified orchestrator; CV
           // unavailable, market no_live_feed, NPK unknown — never fabricated).
           try { (await import('./runtime/scan/v12/ScanIntelligenceV12')).installScanV12Health(); } catch { /* swallow */ }
+          // FARROWAY v13 — digital twin (__digitalTwinHealth), farm agent morning
+          // planner (__farmAgentHealth), honest capability registry
+          // (__v13CapabilityHealth — nothing predictive/market/satellite faked live).
+          try { (await import('./runtime/v13/DigitalTwin')).installDigitalTwinHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/v13/FarmAgent')).installFarmAgentHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/v13/V13CapabilityRegistry')).installV13CapabilityHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
