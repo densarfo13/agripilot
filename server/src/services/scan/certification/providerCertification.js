@@ -109,7 +109,15 @@ export function certifyProvider(provider, evidence = {}) {
   else if (s === 402 || creditsOk === false || /credit|quota|insufficient/.test(fr)) status = CERT_STATUS.CREDITS_EXHAUSTED;
   else if (s === 429 || /rate.?limit/.test(fr)) status = CERT_STATUS.RATE_LIMITED;
   else if (/timeout/.test(fr)) status = CERT_STATUS.TIMEOUT;
-  else if (schemaValid === false || parsedOk === false || /schema|parse|map/.test(fr)) status = CERT_STATUS.SCHEMA_INVALID;
+  // SCHEMA_INVALID must mean a response we ACTUALLY received then failed to
+  // validate — NOT "no live call was made". A configured, keyed provider with no
+  // response yet (authenticated false AND no http status) is not "broken schema";
+  // it falls through to DEGRADED ("keyed, awaiting a proven live call"). Without
+  // this guard, certifying an absent response (schemaValid:false) falsely reports
+  // every provider as SCHEMA_INVALID — a fabricated failure that violates the
+  // no-fabrication doctrine.
+  else if (/schema|parse|map/.test(fr) || ((authenticated || s != null) && (schemaValid === false || parsedOk === false)))
+    status = CERT_STATUS.SCHEMA_INVALID;
   else if (authenticated && farmBrainAccepted === false) status = CERT_STATUS.FARMBRAIN_REJECTED;
   else status = CERT_STATUS.DEGRADED;   // keyed but not yet PROVEN by a live call
 

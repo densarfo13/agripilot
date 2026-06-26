@@ -42,8 +42,19 @@ export function detectRuntimeContext() {
 }
 
 /** The honest next action for a given context. */
-export function certificationNextAction(ctx) {
-  if (ctx && ctx.canAccessProviderSecrets) return null;
-  return 'No local provider secrets available. Run live certification inside the Railway runtime: '
-    + '`railway run npm run scan:certify` (from the linked project).';
+export function certificationNextAction(ctx, overall) {
+  if (!ctx || !ctx.canAccessProviderSecrets) {
+    return 'No local provider secrets available. Run live certification inside the Railway runtime: '
+      + '`railway run npm run scan:certify` (from the linked project).';
+  }
+  // Secrets ARE reachable (on Railway / injected). If not yet certified, the
+  // remaining step is PROOF: a provider is READY only from a real live call.
+  // DEGRADED means "keyed + configured, awaiting a proven call" — exercise the
+  // providers with one real scan, then re-certify.
+  if (overall && overall !== 'PRODUCTION_CERTIFIED') {
+    return 'Keys are configured ✓. Providers stay DEGRADED until a REAL scan proves them — '
+      + 'run one scan in the app (plant photo), or `SCAN_API_BASE=<your-app-url> npm run scan:acceptance`, '
+      + 'then re-run certify. Live calls accumulate and lift DEGRADED → READY.';
+  }
+  return null;
 }

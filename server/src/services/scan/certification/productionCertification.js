@@ -85,7 +85,7 @@ export async function runProductionCertification(opts = {}) {
   return Object.freeze({
     generatedAt: new Date().toISOString(),
     runtimeContext: ctx,
-    nextAction: certificationNextAction(ctx),
+    nextAction: certificationNextAction(ctx, scorecard.overall),
     certifications: Object.freeze(certifications),
     scorecard,
     overall: scorecard.overall,
