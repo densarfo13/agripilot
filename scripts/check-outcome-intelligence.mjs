@@ -185,6 +185,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/consensus/',
   // SCAN CERTIFICATION — founder-directed certification composite path.
   'src/runtime/scan/certification/',
+  // FIELD INTELLIGENCE v11 — founder-directed scan field-estimate path.
+  'src/runtime/scan/field/',
 ];
 let gitAvailable = false;
 let diff = '';

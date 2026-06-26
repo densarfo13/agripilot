@@ -2040,6 +2040,9 @@ export default function App() {
           // PILOT CERTIFICATION v1.0 — __pilotCertificationHealth() (8-phase umbrella;
           // computed verdict, feature freeze; live field evidence PENDING, never faked).
           try { (await import('./runtime/scan/certification/PilotCertificationRuntime')).installPilotCertificationHealth(); } catch { /* swallow */ }
+          // FIELD INTELLIGENCE v11 — __fieldIntelligenceHealth() (calendar estimates
+          // real; CV counts/yield honest 'unavailable', never fabricated).
+          try { (await import('./runtime/scan/field/FieldIntelligenceEngine')).installFieldIntelligenceHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
