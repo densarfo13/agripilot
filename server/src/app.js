@@ -1466,7 +1466,7 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       }).catch(() => { /* swallow — already logged inside */ });
     } catch { /* swallow */ }
 
-    return res.json({
+    const _scanResponse = {
       ok:                    true,
       // Scan Recovery Sprint §3 — new canonical envelope. Lives at
       // top-level + ALSO spread onto the legacy `verdict` so the
@@ -1554,7 +1554,27 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       // visible. Pure pass-through — the snapshot shape is opaque
       // to this route; consumers read what's there.
       landHealth,
-    });
+    };
+
+    // PLANT SAFETY ENGINE (feature-flagged: plantSafetyEngine) — attach structured,
+    // non-fabricated edibility/toxicity guidance for a CONFIDENT known plant. When the
+    // flag is OFF the response is byte-identical to before (client falls back to its
+    // local safety badge), so this is fully backward compatible. Pure in-memory lookup
+    // → no provider call, no I/O, no scan-latency cost. Additive + never blocks a scan.
+    try {
+      const [{ attachSafety }, { isFeatureEnabled }] = await Promise.all([
+        import('./ml/safety/plantSafetyEngine.js'),
+        import('./config/features.js'),
+      ]);
+      attachSafety(
+        _scanResponse,
+        scanRecovery.plantName,
+        scanRecovery.confidence,
+        isFeatureEnabled('plantSafetyEngine'),
+      );
+    } catch { /* swallow — safety is additive, never blocks the scan result */ }
+
+    return res.json(_scanResponse);
   } catch (err) {
     // Smart Scan AI Backend §8 — total-failure fallback. We
     // never return an empty body or a raw 500; the client

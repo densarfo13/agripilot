@@ -14,6 +14,11 @@
 
 const DEFAULTS = Object.freeze({
   marketplace: false,
+  // Production-grade server-side Plant Safety Engine on /api/scan/analyze.
+  // Ships OFF; enable with FARROWAY_FEATURE_PLANTSAFETYENGINE=1. When off, the
+  // scan response is byte-identical to before (client falls back to its local
+  // safety badge), so it is fully backward compatible.
+  plantSafetyEngine: false,
 });
 
 function envOverride(name) {

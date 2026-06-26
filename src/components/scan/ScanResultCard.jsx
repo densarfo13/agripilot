@@ -669,6 +669,66 @@ export default function ScanResultCard({
           the normal i18n flow. Self-hides on UNKNOWN / low confidence — never a
           fabricated safety claim (a wrong "safe to eat" could harm a farmer). */}
       {(() => {
+        // Prefer the production server-side Plant Safety Engine result (structured:
+        // Safety + Important warnings + Recommended action + Evidence + Disclaimer).
+        // It carries translation KEYS + English fallback, so the client stays
+        // taxonomy-agnostic and language is added in i18n without code changes. Falls
+        // back to the local badge when the server flag is off / offline.
+        const _srv = result?.safety;
+        if (_srv && _srv.confident && _srv.category !== 'UNKNOWN') {
+          const danger = _srv.severity === 'DANGER';
+          const warn = danger || _srv.severity === 'WARNING' || _srv.severity === 'CAUTION';
+          const head = danger ? '#9a1b1b' : (warn ? '#8a4a12' : '#256b30');
+          const ev = _srv.evidence || {};
+          const evParts = [
+            ev.scientificName,
+            ev.confidence != null ? (ev.confidence + '%') : null,
+            ev.certainty ? tStrict('scan.safety.certainty.' + ev.certainty, ev.certainty.toLowerCase() + ' certainty') : null,
+            ev.lastReviewed ? (tStrict('scan.safety.reviewedLabel', 'reviewed') + ' ' + ev.lastReviewed) : null,
+          ].filter(Boolean);
+          return (
+            <div
+              data-testid="scan-safety" data-safety-source="server" data-safety-category={_srv.category}
+              role="note" aria-label={tStrict(_srv.categoryKey, _srv.categoryLabel)}
+              style={{
+                marginTop: 8, padding: '12px 14px', borderRadius: 12,
+                background: danger ? 'rgba(154,27,27,0.07)' : (warn ? 'rgba(192,89,15,0.08)' : 'rgba(47,122,58,0.08)'),
+                border: '1px solid ' + (danger ? 'rgba(154,27,27,0.22)' : (warn ? 'rgba(192,89,15,0.20)' : 'rgba(47,122,58,0.20)')),
+              }}
+            >
+              {/* Safety */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 28, fontSize: 16, fontWeight: 800, color: head }}>
+                <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>{_srv.icon}</span>
+                <span>{tStrict(_srv.categoryKey, _srv.categoryLabel)}</span>
+              </div>
+              {/* Recommended action */}
+              {_srv.recommendedAction ? (
+                <p style={{ fontSize: 14, color: '#2a2f25', margin: '6px 0 0', lineHeight: 1.45 }}>
+                  {tStrict(_srv.recommendedActionKey, _srv.recommendedAction)}
+                </p>
+              ) : null}
+              {/* Important warnings */}
+              {Array.isArray(_srv.warnings) && _srv.warnings.length > 0 ? (
+                <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                  {_srv.warnings.map((w, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#8a4a12', marginBottom: 3, lineHeight: 1.4 }}>{tStrict(w.key, w.text)}</li>
+                  ))}
+                </ul>
+              ) : null}
+              {/* Evidence */}
+              {evParts.length > 0 ? (
+                <p style={{ fontSize: 11, color: '#5a6472', margin: '8px 0 0' }}>
+                  <span style={{ fontWeight: 700 }}>{tStrict('scan.safety.evidenceLabel', 'Evidence')}:</span> {evParts.join(' · ')}
+                </p>
+              ) : null}
+              {/* Disclaimer — always shown */}
+              <p style={{ fontSize: 11, color: '#6a7280', margin: '6px 0 0', fontStyle: 'italic' }}>
+                {tStrict(_srv.disclaimerKey, _srv.disclaimer)}
+              </p>
+            </div>
+          );
+        }
+        // Fallback — local badge (server flag off / offline). Existing behavior.
         const _sf = (() => { try { return classifyPlantSafety(result?.plantName || result?.crop || result?.cropName, _conf220); } catch { return null; } })();
         if (!_sf || !_sf.confident || _sf.category === 'UNKNOWN') return null;
         const _msg = {
@@ -683,6 +743,7 @@ export default function ScanResultCard({
         return (
           <div
             data-testid="scan-safety"
+            data-safety-source="local"
             data-safety-category={_sf.category}
             role="note"
             aria-label={tStrict('scan.safety.' + _sf.category, _msg)}
