@@ -44,6 +44,38 @@ describe('cropDurationRegistry', () => {
     expect(getDurationDays('chili').cropKey).toBe('pepper');
   });
 
+  it('covers the expanded smallholder staple set with sensible ranges', () => {
+    const added = ['cowpea', 'soybean', 'sweet_potato', 'plantain', 'cocoa', 'cocoyam',
+      'pumpkin', 'eggplant', 'watermelon', 'pineapple', 'sugarcane', 'wheat', 'sesame',
+      'sunflower', 'ginger', 'garlic', 'kale', 'amaranth', 'moringa', 'chickpea', 'pea'];
+    for (const crop of added) {
+      const d = getDurationDays(crop);
+      expect(d, crop).not.toBeNull();
+      expect(d.min).toBeGreaterThan(0);
+      expect(d.max).toBeGreaterThanOrEqual(d.min);
+    }
+    expect(KNOWN_CROPS.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it('resolves expanded aliases without mis-matching (peanut→groundnut, sweet potato, plantain≠banana)', () => {
+    expect(getDurationDays('peanut').cropKey).toBe('groundnut');     // not the generic "pea"
+    expect(getDurationDays('cowpea').cropKey).toBe('cowpea');         // not "pea"
+    expect(getDurationDays('sweet potato').cropKey).toBe('sweet_potato');
+    expect(getDurationDays('plantain').cropKey).toBe('plantain');     // distinct from banana now
+    expect(getDurationDays('taro').cropKey).toBe('cocoyam');
+    expect(getDurationDays('garden egg').cropKey).toBe('eggplant');
+    // An unknown crop still honestly returns null (no fabricated duration).
+    expect(getDurationDays('made-up-crop-xyz')).toBeNull();
+  });
+
+  it('produces a real harvest window for a newly-covered crop (cowpea)', () => {
+    const w = estimateHarvestWindow('cowpea', '2026-01-01', { nowMs: NOW });
+    expect(w.ok).toBe(true);
+    expect(w.cropKey).toBe('cowpea');
+    expect(w.earliest).toBeTruthy();
+    expect(w.durationDays.min).toBe(60);
+  });
+
   it('returns null for an unknown crop', () => {
     expect(getDurationDays('xyzfruit')).toBe(null);
   });
@@ -219,11 +251,12 @@ describe('cropDurationRegistry — extension crops', () => {
     }
   });
 
-  it('aliases plantain → banana and citrus species + non-basil herbs', () => {
+  it('aliases citrus species + non-basil herbs (plantain is now its own crop)', () => {
     // basil has its own entry; mint / cilantro / thyme fall back
     // through the herbs catch-all.
     expect(getDurationDays('mint').cropKey).toBe('herbs');
-    expect(getDurationDays('plantain').cropKey).toBe('banana');
+    // plantain split from banana — distinct, longer duration. See expansion test.
+    expect(getDurationDays('plantain').cropKey).toBe('plantain');
     expect(getDurationDays('orange').cropKey).toBe('citrus');
     expect(getDurationDays('lemon').cropKey).toBe('citrus');
   });

@@ -51,6 +51,29 @@ const REGISTRY = Object.freeze({
   avocado:   Object.freeze({ min: 1095, max: 2555 }),  // 3–7 years
   citrus:    Object.freeze({ min: 1095, max: 1825 }),  // 3–5 years
   herbs:     Object.freeze({ min: 30, max: 80 }),
+  // Coverage expansion — common smallholder staples with standard,
+  // conservative days-to-maturity ranges. Wider windows over false precision.
+  cowpea:       Object.freeze({ min: 60, max: 90 }),
+  soybean:      Object.freeze({ min: 90, max: 120 }),
+  sweet_potato: Object.freeze({ min: 90, max: 120 }),
+  plantain:     Object.freeze({ min: 300, max: 400 }),
+  cocoa:        Object.freeze({ min: 1095, max: 1825 }),  // 3–5 years to first pod
+  cocoyam:      Object.freeze({ min: 180, max: 270 }),
+  pumpkin:      Object.freeze({ min: 90, max: 120 }),
+  eggplant:     Object.freeze({ min: 70, max: 100 }),
+  watermelon:   Object.freeze({ min: 80, max: 100 }),
+  pineapple:    Object.freeze({ min: 450, max: 540 }),
+  sugarcane:    Object.freeze({ min: 300, max: 365 }),
+  wheat:        Object.freeze({ min: 100, max: 130 }),
+  sesame:       Object.freeze({ min: 90, max: 120 }),
+  sunflower:    Object.freeze({ min: 90, max: 120 }),
+  ginger:       Object.freeze({ min: 240, max: 300 }),
+  garlic:       Object.freeze({ min: 120, max: 150 }),
+  kale:         Object.freeze({ min: 50, max: 70 }),
+  amaranth:     Object.freeze({ min: 40, max: 60 }),
+  moringa:      Object.freeze({ min: 60, max: 90 }),   // leaf harvest
+  chickpea:     Object.freeze({ min: 90, max: 120 }),
+  pea:          Object.freeze({ min: 60, max: 90 }),
 });
 
 export const KNOWN_CROPS = Object.freeze(Object.keys(REGISTRY));
@@ -88,8 +111,32 @@ function _normalizeCrop(cropOrId) {
   if (s.includes('bean')) return 'beans';
   if (s.includes('cucumber')) return 'cucumber';
   if (s.includes('carrot')) return 'carrot';
-  if (s.includes('potato') && !s.includes('sweet')) return 'potato';
-  if (s.includes('banana') || s.includes('plantain')) return 'banana';
+  if (s.includes('sweet') && s.includes('potato')) return 'sweet_potato';
+  if (s.includes('potato')) return 'potato';
+  if (s.includes('plantain')) return 'plantain';
+  if (s.includes('banana')) return 'banana';
+  // Coverage expansion aliases. Order matters — specific before generic so e.g.
+  // "cowpea"/"peanut" never fall through to the generic "pea" match.
+  if (s.includes('cowpea') || s.includes('black-eyed') || s.includes('black eyed')) return 'cowpea';
+  if (s.includes('groundnut') || s.includes('peanut')) return 'groundnut';
+  if (s.includes('soy')) return 'soybean';
+  if (s.includes('cocoa') || s.includes('cacao')) return 'cocoa';
+  if (s.includes('cocoyam') || s.includes('taro') || s.includes('dasheen')) return 'cocoyam';
+  if (s.includes('pumpkin') || s.includes('squash') || s.includes('gourd')) return 'pumpkin';
+  if (s.includes('eggplant') || s.includes('aubergine') || s.includes('garden egg')) return 'eggplant';
+  if (s.includes('watermelon')) return 'watermelon';
+  if (s.includes('pineapple')) return 'pineapple';
+  if (s.includes('sugarcane') || s.includes('sugar cane')) return 'sugarcane';
+  if (s.includes('wheat')) return 'wheat';
+  if (s.includes('sesame') || s.includes('benniseed') || s.includes('beniseed')) return 'sesame';
+  if (s.includes('sunflower')) return 'sunflower';
+  if (s.includes('ginger')) return 'ginger';
+  if (s.includes('garlic')) return 'garlic';
+  if (s.includes('kale')) return 'kale';
+  if (s.includes('amaranth')) return 'amaranth';
+  if (s.includes('moringa')) return 'moringa';
+  if (s.includes('chickpea') || s.includes('chick pea') || s.includes('gram')) return 'chickpea';
+  if (s === 'pea' || s === 'peas' || s.includes('garden pea') || s.includes('green pea') || s.includes('field pea')) return 'pea';
   if (s.includes('mango')) return 'mango';
   if (s.includes('avocado') || s.includes('pear')) return 'avocado';
   if (s.includes('orange') || s.includes('lemon') || s.includes('lime') || s.includes('citrus')) return 'citrus';
