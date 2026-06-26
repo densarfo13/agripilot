@@ -62,7 +62,28 @@ export const PREFLIGHT_THRESHOLDS = Object.freeze({
   MAX_LUMINANCE: 0.95,
   MIN_SHARPNESS: 0.30,
   CANVAS_SIDE:   80,
+  // Minimum usable resolution (shortest side, px). A heavily-cropped thumbnail or
+  // a tiny gallery upload has too few pixels for a reliable provider ID — it costs a
+  // provider credit and returns a weak verdict. Real phone photos are far larger
+  // even after the 2048px normalize downscale, so this only catches genuinely-small
+  // images. Calibrated conservatively to avoid false rejects of legitimate photos.
+  MIN_DIMENSION: 256,
 });
+
+/**
+ * Pure resolution check — exported so it is unit-testable without a DOM. Returns
+ * true when the image is large enough to scan, false when it is too small. Unknown
+ * dimensions (null) are treated as OK so legacy/SSR paths never block.
+ *
+ * @param {number|null} width
+ * @param {number|null} height
+ * @returns {boolean}
+ */
+export function resolutionOk(width, height) {
+  const w = Number(width), h = Number(height);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return true;
+  return Math.min(w, h) >= PREFLIGHT_THRESHOLDS.MIN_DIMENSION;
+}
 
 /**
  * Score an image File / Blob / dataURL and return a quality
@@ -137,6 +158,17 @@ export async function scoreImageQuality(input) {
       return {
         ok: false,
         hint: 'The photo looks blurry. Hold the camera steady and try again.',
+        stats,
+      };
+    }
+    // Resolution — a too-small image (heavy crop / thumbnail) has too few pixels
+    // for a reliable identification. Blocks BEFORE the provider call (saves a
+    // credit + a weak verdict) and asks the farmer to move closer / use a larger
+    // photo. Runs last so dark/blurry hints take priority.
+    if (!resolutionOk(stats.width, stats.height)) {
+      return {
+        ok: false,
+        hint: 'Move a little closer or use a larger photo — this one is too small to read clearly.',
         stats,
       };
     }
