@@ -2091,6 +2091,10 @@ export default function App() {
           // disease library's organic treatment + prevention on a confident scan
           // match (chemicals deferred to an officer; no treatment without a match).
           try { (await import('./runtime/scan/treatment/DiseaseTreatmentEngine')).installDiseaseTreatmentHealth(); } catch { /* swallow */ }
+          // PEST TREATMENT — __pestTreatmentHealth(): surfaces the curated pest
+          // library's organic control + prevention on a confident scan match
+          // (pesticides deferred to an officer; no control without a match).
+          try { (await import('./runtime/scan/treatment/PestTreatmentEngine')).installPestTreatmentHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.

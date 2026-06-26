@@ -58,6 +58,7 @@ import { composeAgronomistReply } from '../../lib/agronomistReply.js';
 import { detectScanPattern } from '../../lib/scanPatternDetection.js';
 import { classifyPlantSafety } from '../../runtime/scan/safety/PlantSafetyEngine.ts';
 import { treatmentForIssue } from '../../runtime/scan/treatment/DiseaseTreatmentEngine.ts';
+import { controlForPest } from '../../runtime/scan/treatment/PestTreatmentEngine.ts';
 import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
@@ -731,6 +732,46 @@ export default function ScanResultCard({
             {_tx.chemicalNote ? (
               <p style={{ fontSize: 12, color: '#8a6a12', marginTop: 8, marginBottom: 0 }}>
                 ⚠️ {tStrict('scan.treatment.chemical', _tx.chemicalNote)}
+              </p>
+            ) : null}
+          </div>
+        );
+      })()}
+
+      {/* How to control it — REAL organic + cultural pest control + prevention from
+          the curated pest library, surfaced ONLY on a confident scan + a real KB
+          match. Self-hides otherwise (never a guessed control). Pesticides are
+          deferred to an extension officer — never prescribed to the farmer here. */}
+      {(() => {
+        const _pc = (() => { try { return controlForPest(result?.possibleIssue || result?.issue || policy?.possibleIssue, _conf220); } catch { return null; } })();
+        if (!_pc || !_pc.matched) return null;
+        return (
+          <div data-testid="scan-pest-control" data-pest={_pc.pestId || ''}
+               style={{ marginTop: 10, padding: '12px 14px', borderRadius: 12, background: 'rgba(47,122,58,0.08)', border: '1px solid rgba(47,122,58,0.18)' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#256b30', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span aria-hidden="true" style={{ fontSize: 18 }}>🐛</span>
+              <span>{tStrict('scan.pestControl.title', 'How to control it')}</span>
+            </div>
+            <ul style={{ margin: '0 0 4px', paddingLeft: 20 }}>
+              {_pc.organic.map((s, i) => (
+                <li key={i} style={{ fontSize: 14, color: '#1f3326', marginBottom: 4, lineHeight: 1.45 }}>{s}</li>
+              ))}
+            </ul>
+            {_pc.prevention.length > 0 ? (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#5a6472', letterSpacing: 0.3, marginTop: 8, marginBottom: 3 }}>
+                  {tStrict('scan.pestControl.prevent', 'Keep it away next time')}
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {_pc.prevention.map((s, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#3a4a3e', marginBottom: 3, lineHeight: 1.45 }}>{s}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {_pc.chemicalNote ? (
+              <p style={{ fontSize: 12, color: '#8a6a12', marginTop: 8, marginBottom: 0 }}>
+                ⚠️ {tStrict('scan.pestControl.chemical', _pc.chemicalNote)}
               </p>
             ) : null}
           </div>
