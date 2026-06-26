@@ -95,6 +95,8 @@ import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.
 // that absorbs the previous CropPlantHero + WeatherHeroActionCard
 // + LandHealthCard. The dashboard-card layout is gone.
 import ImmersiveHomeHero         from '../components/home/ImmersiveHomeHero.jsx';
+import LocationFlowStatus        from '../components/home/LocationFlowStatus.jsx';
+import { LOCATION_STATUS, shouldIgnoreLocationTap } from '../components/home/locationFlowState.js';
 import useFarmHealth             from '../hooks/useFarmHealth.js';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
@@ -480,17 +482,30 @@ export default function Home() {
   // transitions from the calm prompt to live data without a page
   // reload. Pure best-effort: a denied prompt leaves the prompt
   // visible and the user can tap again.
+  // Farmer-First Home §1 — location flow state. Drives the loading line while
+  // detecting and the never-stuck fallback (explain + manual + continue-general)
+  // when location is denied/unavailable. Ref mirrors state so the memoised handler
+  // guards against re-entry without a stale closure.
+  const [locStatus, setLocStatus] = useState(LOCATION_STATUS.IDLE);
+  const locStatusRef = useRef(LOCATION_STATUS.IDLE);
+  const _setLoc = (s) => { locStatusRef.current = s; setLocStatus(s); };
   const handleUseMyLocation = useMemo(() => async () => {
+    if (shouldIgnoreLocationTap(locStatusRef.current)) return;   // already detecting
+    _setLoc(LOCATION_STATUS.DETECTING);
     try {
       const mod = await import('../lib/locationSafe.js');
       const row = await mod.requestUserLocation();
       if (row && row.hasLocation) {
+        _setLoc(LOCATION_STATUS.IDLE);
         try { trackSafeEvent('home_use_my_location_granted'); } catch { /* swallow */ }
         try { refetchWeather && refetchWeather(); } catch { /* swallow */ }
       } else {
+        _setLoc(LOCATION_STATUS.DENIED);   // denied / position unavailable → show fallback
         try { trackSafeEvent('home_use_my_location_denied'); } catch { /* swallow */ }
       }
-    } catch { /* swallow — UI must not crash */ }
+    } catch {
+      _setLoc(LOCATION_STATUS.DENIED);     // unexpected failure still shows a way forward
+    }
   }, [refetchWeather]);
 
   // Debug console — DEV ONLY. Fires once when loading settles
@@ -1025,6 +1040,15 @@ export default function Home() {
                   : () => { try { navigate('/tasks'); } catch { /* swallow */ } })}
           />
         </FeatureShell>
+
+        {/* Farmer-First Home §1 — location loading + never-stuck fallback. Renders
+            nothing unless detecting (loading line) or denied (explain + manual +
+            continue-with-general-guidance). The farmer can always move forward. */}
+        <LocationFlowStatus
+          status={locStatus}
+          onEnterManually={() => { try { navigate('/onboarding/fast'); } catch { /* swallow */ } }}
+          onContinueGeneral={() => _setLoc(LOCATION_STATUS.DISMISSED)}
+        />
 
         {/* ── 3a. Simple Mode top section ─────────────────────
              When the user has Simple Mode ON (low-literacy / voice-first
