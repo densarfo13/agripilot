@@ -97,6 +97,9 @@ import FarmGardenProfileCard     from '../components/home/FarmGardenProfileCard.
 import ImmersiveHomeHero         from '../components/home/ImmersiveHomeHero.jsx';
 import LocationFlowStatus        from '../components/home/LocationFlowStatus.jsx';
 import { LOCATION_STATUS, shouldIgnoreLocationTap } from '../components/home/locationFlowState.js';
+import HomeNextStepCard          from '../components/home/HomeNextStepCard.jsx';
+import { homeNextStep }          from '../components/home/homeNextStep.js';
+import { buildFarmerCompletion } from '../runtime/farmerCompletion/FarmerCompletionEngine.ts';
 import useFarmHealth             from '../hooks/useFarmHealth.js';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
 import ScanRowCard               from '../components/home/ScanRowCard.jsx';
@@ -682,6 +685,25 @@ export default function Home() {
   );
   const showLocationHint = !weatherLoading && !hasLocation;
 
+  // Daily Decision §2 — onboarding ladder for an incomplete farm. Composes the
+  // existing FarmerCompletion engine (single source of truth for what's done) into
+  // the spec's priority order: create farm → add crop → add location. Self-hides once
+  // those are set up (the live decision/hero owns it then). The first-scan rung is
+  // marked satisfied here — reading scan history would cross the ui→service layer
+  // boundary; the hero's live decision handles scan nudges.
+  const _farmerCompletion = useMemo(() => {
+    try {
+      return buildFarmerCompletion({
+        farmExists:   !!local.farm,
+        crop:         local.farm?.crop || local.farm?.cropId || '',
+        location:     hasLocation ? 'set' : '',
+        plantingDate: local.farm?.plantingDate || '',
+        scanHistory:  [1],   // scan nudges are owned by the live hero decision
+      });
+    } catch { return null; }
+  }, [local.farm, hasLocation]);
+  const homeOnboardingStep = useMemo(() => homeNextStep(_farmerCompletion), [_farmerCompletion]);
+
   const greeting = (() => {
     try {
       const h = now.getHours();
@@ -1048,6 +1070,14 @@ export default function Home() {
           status={locStatus}
           onEnterManually={() => { try { navigate('/onboarding/fast'); } catch { /* swallow */ } }}
           onContinueGeneral={() => _setLoc(LOCATION_STATUS.DISMISSED)}
+        />
+
+        {/* Daily Decision §2 — onboarding ladder ("do this next"). Additive: renders
+            only for an incomplete farm and self-hides once set up. Never touches the
+            hero's live decision. */}
+        <HomeNextStepCard
+          step={homeOnboardingStep}
+          onAct={() => { try { navigate(homeOnboardingStep.route); } catch { /* swallow */ } }}
         />
 
         {/* ── 3a. Simple Mode top section ─────────────────────
