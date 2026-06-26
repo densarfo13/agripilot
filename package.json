@@ -413,7 +413,7 @@
     "check:field-intelligence-v11": "node scripts/check-field-intelligence-v11.mjs",
     "check:scan-v12": "node scripts/check-scan-v12.mjs",
     "check:v13": "node scripts/check-v13.mjs",
-    "test:v13": "npx tsx src/runtime/v13/__tests__/V13.test.ts",
+    "test:v13": "npx tsx src/runtime/farmos13/__tests__/V13.test.ts",
     "test:scan-v12": "npx tsx src/runtime/scan/v12/__tests__/ScanV12.test.ts",
     "test:field-intelligence-v11": "npx tsx src/runtime/scan/field/__tests__/FieldIntelligence.test.ts",
     "check:certification-runtime-truth": "node scripts/check-certification-runtime-truth.mjs",

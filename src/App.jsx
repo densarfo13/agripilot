@@ -2049,9 +2049,9 @@ export default function App() {
           // FARROWAY v13 — digital twin (__digitalTwinHealth), farm agent morning
           // planner (__farmAgentHealth), honest capability registry
           // (__v13CapabilityHealth — nothing predictive/market/satellite faked live).
-          try { (await import('./runtime/v13/DigitalTwin')).installDigitalTwinHealth(); } catch { /* swallow */ }
-          try { (await import('./runtime/v13/FarmAgent')).installFarmAgentHealth(); } catch { /* swallow */ }
-          try { (await import('./runtime/v13/V13CapabilityRegistry')).installV13CapabilityHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/farmos13/DigitalTwin')).installDigitalTwinHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/farmos13/FarmAgent')).installFarmAgentHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/farmos13/V13CapabilityRegistry')).installV13CapabilityHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.

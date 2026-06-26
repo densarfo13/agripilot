@@ -15,10 +15,10 @@ const x = (r) => { try { return fs.existsSync(path.join(R, r)); } catch { return
 const rd = (r) => { try { return fs.readFileSync(path.join(R, r), 'utf8'); } catch { return ''; } };
 const h = (s, n, m) => { if (!s.includes(n)) E.push(m); };
 
-const TWIN = 'src/runtime/v13/DigitalTwin.ts';
-const AGENT = 'src/runtime/v13/FarmAgent.ts';
-const REG = 'src/runtime/v13/V13CapabilityRegistry.ts';
-const TEST = 'src/runtime/v13/__tests__/V13.test.ts';
+const TWIN = 'src/runtime/farmos13/DigitalTwin.ts';
+const AGENT = 'src/runtime/farmos13/FarmAgent.ts';
+const REG = 'src/runtime/farmos13/V13CapabilityRegistry.ts';
+const TEST = 'src/runtime/farmos13/__tests__/V13.test.ts';
 for (const ff of [TWIN, AGENT, REG, TEST]) if (!x(ff)) E.push('missing: ' + ff);
 
 const twin = rd(TWIN);
