@@ -315,6 +315,25 @@ describe('plantingWindowEngine — region-aware windows', () => {
     expect(getPlantingWindow({ country: 'xyz', crop: 'tomato' }).reason).toBe('no_data');
   });
 
+  it('covers the expanded staple set for Ghana + Kenya', () => {
+    for (const crop of ['groundnut', 'cowpea', 'soybean', 'sorghum', 'millet', 'sweet potato', 'plantain', 'cocoa', 'cocoyam']) {
+      expect(getPlantingWindow({ country: 'ghana', crop }).ok, 'ghana ' + crop).toBe(true);
+    }
+    for (const crop of ['cowpea', 'soybean', 'groundnut', 'sorghum', 'kale', 'sweet potato', 'banana']) {
+      expect(getPlantingWindow({ country: 'kenya', crop }).ok, 'kenya ' + crop).toBe(true);
+    }
+  });
+
+  it('resolves expanded aliases without mis-matching (soybean≠beans, cocoyam≠yam, guinea corn→sorghum)', () => {
+    // These would mis-route to beans/yam/maize without specific-before-generic ordering.
+    expect(getPlantingWindow({ country: 'ghana', crop: 'soybean' }).cropKey).toBe('soybean');      // not beans
+    expect(getPlantingWindow({ country: 'ghana', crop: 'cocoyam' }).cropKey).toBe('cocoyam');      // not yam
+    expect(getPlantingWindow({ country: 'ghana', crop: 'guinea corn' }).cropKey).toBe('sorghum');  // not maize
+    expect(getPlantingWindow({ country: 'ghana', crop: 'peanut' }).cropKey).toBe('groundnut');     // → groundnut
+    // A crop with no window for a region still honestly returns no_data.
+    expect(getPlantingWindow({ country: 'india', crop: 'cocoa' }).reason).toBe('no_data');
+  });
+
   it('exposes the 4 supported regions', () => {
     expect(PLANTING_REGIONS).toEqual(['usa', 'ghana', 'kenya', 'india']);
   });

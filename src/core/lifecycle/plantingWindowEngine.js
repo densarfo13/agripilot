@@ -61,6 +61,17 @@ const REGISTRY = Object.freeze({
     onion:    Object.freeze({ start: 10, end: 2, note: 'cooler_dry_window' }), // wraps
     rice:     Object.freeze({ start: 5, end: 7,  note: 'main_rains' }),
     yam:      Object.freeze({ start: 2, end: 4,  note: 'early_rains' }),
+    // Coverage expansion — rainfed staples planted with the main rains.
+    groundnut:    Object.freeze({ start: 5, end: 7, note: 'main_rains' }),
+    cowpea:       Object.freeze({ start: 5, end: 8, note: 'rainy_season' }),
+    soybean:      Object.freeze({ start: 6, end: 7, note: 'main_rains' }),
+    sorghum:      Object.freeze({ start: 5, end: 7, note: 'main_rains' }),
+    millet:       Object.freeze({ start: 5, end: 7, note: 'main_rains' }),
+    sweet_potato: Object.freeze({ start: 3, end: 6, note: 'rainy_season' }),
+    plantain:     Object.freeze({ start: 3, end: 6, note: 'rainy_season' }),
+    cocoa:        Object.freeze({ start: 4, end: 6, note: 'rainy_season' }),
+    cocoyam:      Object.freeze({ start: 3, end: 6, note: 'rainy_season' }),
+    eggplant:     Object.freeze({ start: 3, end: 6, note: 'rainy_season' }),
   }),
   kenya: Object.freeze({
     tomato:   Object.freeze({ start: 3, end: 5,  note: 'long_rains_start' }),
@@ -69,6 +80,17 @@ const REGISTRY = Object.freeze({
     pepper:   Object.freeze({ start: 3, end: 5,  note: 'long_rains_start' }),
     cabbage:  Object.freeze({ start: 3, end: 6,  note: 'long_rains' }),
     onion:    Object.freeze({ start: 6, end: 9,  note: 'short_dry' }),
+    // Coverage expansion — planted with the long rains (Mar–May).
+    cowpea:       Object.freeze({ start: 3, end: 5, note: 'long_rains' }),
+    soybean:      Object.freeze({ start: 3, end: 5, note: 'long_rains' }),
+    groundnut:    Object.freeze({ start: 3, end: 5, note: 'long_rains' }),
+    sorghum:      Object.freeze({ start: 3, end: 5, note: 'long_rains' }),
+    millet:       Object.freeze({ start: 3, end: 5, note: 'long_rains' }),
+    sweet_potato: Object.freeze({ start: 3, end: 5, note: 'long_rains' }),
+    kale:         Object.freeze({ start: 3, end: 6, note: 'long_rains' }),
+    potato:       Object.freeze({ start: 3, end: 5, note: 'long_rains_start' }),
+    carrot:       Object.freeze({ start: 3, end: 6, note: 'long_rains' }),
+    banana:       Object.freeze({ start: 3, end: 5, note: 'long_rains_start' }),
   }),
   india: Object.freeze({
     tomato:   Object.freeze({ start: 6, end: 8,  note: 'kharif_season' }),
@@ -139,6 +161,20 @@ function _normalizeCountry(country) {
 function _normalizeCrop(crop) {
   const s = _norm(crop);
   if (!s) return '';
+  // Specific-before-generic — these MUST precede the broad matches below so e.g.
+  // "soybean" never resolves to beans, "cocoyam"/"guinea corn" never to yam/maize.
+  if (s.includes('soy')) return 'soybean';
+  if (s.includes('cowpea') || s.includes('black-eyed') || s.includes('black eyed')) return 'cowpea';
+  if (s.includes('groundnut') || s.includes('peanut')) return 'groundnut';
+  if (s.includes('cocoyam') || s.includes('taro') || s.includes('dasheen')) return 'cocoyam';
+  if (s.includes('sorghum') || s.includes('guinea')) return 'sorghum';
+  if (s.includes('millet')) return 'millet';
+  if (s.includes('sweet') && s.includes('potato')) return 'sweet_potato';
+  if (s.includes('plantain')) return 'plantain';
+  if (s.includes('banana')) return 'banana';
+  if (s.includes('eggplant') || s.includes('aubergine') || s.includes('garden egg')) return 'eggplant';
+  if (s.includes('cocoa') || s.includes('cacao')) return 'cocoa';
+  if (s.includes('kale')) return 'kale';
   if (s.includes('maize') || s.includes('corn')) return 'maize';
   if (s.includes('tomato')) return 'tomato';
   if (s.includes('pepper') || s.includes('chili')) return 'pepper';
