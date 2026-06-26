@@ -195,6 +195,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/quality/',
   // PLANT SAFETY — founder-directed scan safety-classifier path.
   'src/runtime/scan/safety/',
+  // DISEASE TREATMENT — founder-directed scan treatment-surfacing path.
+  'src/runtime/scan/treatment/',
 ];
 let gitAvailable = false;
 let diff = '';

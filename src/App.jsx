@@ -2087,6 +2087,10 @@ export default function App() {
           // botanical reference → a language-neutral safety category + icon, only on
           // a confident known ID (never a fabricated safety claim).
           try { (await import('./runtime/scan/safety/PlantSafetyEngine')).installPlantSafetyHealth(); } catch { /* swallow */ }
+          // DISEASE TREATMENT — __diseaseTreatmentHealth(): surfaces the curated
+          // disease library's organic treatment + prevention on a confident scan
+          // match (chemicals deferred to an officer; no treatment without a match).
+          try { (await import('./runtime/scan/treatment/DiseaseTreatmentEngine')).installDiseaseTreatmentHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.

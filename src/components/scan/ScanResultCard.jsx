@@ -57,6 +57,7 @@ import { composeAgronomistReply } from '../../lib/agronomistReply.js';
 // recurrence from this device's own scan history. Pure read.
 import { detectScanPattern } from '../../lib/scanPatternDetection.js';
 import { classifyPlantSafety } from '../../runtime/scan/safety/PlantSafetyEngine.ts';
+import { treatmentForIssue } from '../../runtime/scan/treatment/DiseaseTreatmentEngine.ts';
 import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
@@ -692,6 +693,46 @@ export default function ScanResultCard({
           >
             <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>{_sf.icon}</span>
             <span>{tStrict('scan.safety.' + _sf.category, _msg)}</span>
+          </div>
+        );
+      })()}
+
+      {/* How to treat it — REAL organic + cultural treatment + prevention from the
+          curated disease library, surfaced ONLY on a confident scan + a real KB
+          match. Self-hides otherwise (never a guessed treatment). Chemicals are
+          deferred to an extension officer — never prescribed to the farmer here. */}
+      {(() => {
+        const _tx = (() => { try { return treatmentForIssue(result?.possibleIssue || result?.issue || policy?.possibleIssue, _conf220); } catch { return null; } })();
+        if (!_tx || !_tx.matched) return null;
+        return (
+          <div data-testid="scan-treatment" data-disease={_tx.diseaseId || ''}
+               style={{ marginTop: 10, padding: '12px 14px', borderRadius: 12, background: 'rgba(47,122,58,0.08)', border: '1px solid rgba(47,122,58,0.18)' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#256b30', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span aria-hidden="true" style={{ fontSize: 18 }}>🌿</span>
+              <span>{tStrict('scan.treatment.title', 'How to treat it')}</span>
+            </div>
+            <ul style={{ margin: '0 0 4px', paddingLeft: 20 }}>
+              {_tx.organic.map((s, i) => (
+                <li key={i} style={{ fontSize: 14, color: '#1f3326', marginBottom: 4, lineHeight: 1.45 }}>{s}</li>
+              ))}
+            </ul>
+            {_tx.prevention.length > 0 ? (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#5a6472', letterSpacing: 0.3, marginTop: 8, marginBottom: 3 }}>
+                  {tStrict('scan.treatment.prevent', 'Prevent it next time')}
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  {_tx.prevention.map((s, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#3a4a3e', marginBottom: 3, lineHeight: 1.45 }}>{s}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {_tx.chemicalNote ? (
+              <p style={{ fontSize: 12, color: '#8a6a12', marginTop: 8, marginBottom: 0 }}>
+                ⚠️ {tStrict('scan.treatment.chemical', _tx.chemicalNote)}
+              </p>
+            ) : null}
           </div>
         );
       })()}
