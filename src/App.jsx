@@ -2067,6 +2067,12 @@ export default function App() {
           // LIVE_PROVIDER/LAB_REQUIRED/UNKNOWN); calendar+weather produce real
           // estimated/live values, CV/lab fields stay null (never fabricated).
           try { (await import('./runtime/scan/evidence/EvidenceTierEngine')).installEvidenceTierHealth(); } catch { /* swallow */ }
+          // EVIDENCE RESOLVER + IMAGE QUALITY GATE — __evidenceResolverHealth()
+          // (8-field contract + farmer labels + tier-ingestion policy) and
+          // __imageQualityGateHealth() (low photo blocks diagnose/ingest/task; CV
+          // factors not fabricated). Compose the existing engine + preflight scorer.
+          try { (await import('./runtime/scan/evidence/EvidenceFieldResolver')).installEvidenceResolverHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/scan/quality/ImageQualityGate')).installImageQualityGateHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.

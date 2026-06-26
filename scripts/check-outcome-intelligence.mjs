@@ -191,6 +191,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/v12/',
   // EVIDENCE TIERS — founder-directed evidence-tier classifier path.
   'src/runtime/scan/evidence/',
+  // IMAGE QUALITY GATE — founder-directed scan quality-gate path.
+  'src/runtime/scan/quality/',
 ];
 let gitAvailable = false;
 let diff = '';
