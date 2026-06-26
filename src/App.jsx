@@ -2043,6 +2043,9 @@ export default function App() {
           // FIELD INTELLIGENCE v11 — __fieldIntelligenceHealth() (calendar estimates
           // real; CV counts/yield honest 'unavailable', never fabricated).
           try { (await import('./runtime/scan/field/FieldIntelligenceEngine')).installFieldIntelligenceHealth(); } catch { /* swallow */ }
+          // SCAN INTELLIGENCE v12 — __scanV12Health() (unified orchestrator; CV
+          // unavailable, market no_live_feed, NPK unknown — never fabricated).
+          try { (await import('./runtime/scan/v12/ScanIntelligenceV12')).installScanV12Health(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.

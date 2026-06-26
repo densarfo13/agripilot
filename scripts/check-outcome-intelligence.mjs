@@ -187,6 +187,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/certification/',
   // FIELD INTELLIGENCE v11 — founder-directed scan field-estimate path.
   'src/runtime/scan/field/',
+  // SCAN INTELLIGENCE v12 — founder-directed unified orchestrator path.
+  'src/runtime/scan/v12/',
 ];
 let gitAvailable = false;
 let diff = '';
