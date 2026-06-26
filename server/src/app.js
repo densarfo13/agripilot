@@ -790,6 +790,7 @@ app.get('/api/environment/health', async (req, res) => {
 // stores the result rows, and returns the scorecard + overall verdict. Never
 // infers readiness from env vars; never fabricates provider health.
 app.post('/api/admin/scan/certify', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;   // admin-only: certify makes real provider calls (burns credits)
   try {
     const { runProductionCertification } = await import('./services/scan/certification/productionCertification.js');
     const liveCall = (req.body && typeof req.body.liveCall === 'object') ? req.body.liveCall : {};
@@ -874,6 +875,7 @@ app.post('/api/scan/bulk', authenticate, async (req, res) => {
 // Uptime / latency p50-p99 / error breakdown / health score, computed from the
 // scan_provider_metrics rows. Never fabricated; empty when there are no calls.
 app.get('/api/admin/scan/reliability', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;   // admin-only: exposes provider reliability metrics
   try {
     const { getReliabilityScorecard } = await import('./services/scan/certification/providerReliability.js');
     const hours = Number(req.query.hours) || 24;
@@ -884,12 +886,13 @@ app.get('/api/admin/scan/reliability', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/admin/scan-credits — Kindwise credit monitor (auth-only).
+// GET /api/admin/scan-credits — Kindwise credit monitor (admin-only).
 // Remaining credits for plant.id / crop.health / insect.id, per-provider
 // alert level (<100 low, <50 warning, <20 critical), daily burn rate +
 // estimated days remaining. Reads usage_info (does NOT spend credits) and
 // never returns the key value. ?refresh=1 forces a fresh poll.
 app.get('/api/admin/scan-credits', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;   // admin-only: exposes provider credit balances
   try {
     const { getScanCredits, refreshScanCredits } =
       await import('./ml/scanCreditMonitor.js');
@@ -916,10 +919,11 @@ app.post('/api/scan/observability/outcome', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/admin/scan-observability — aggregate dashboard (auth-only):
+// GET /api/admin/scan-observability — aggregate dashboard (admin-only):
 // totals, success/fail, avg confidence, most-scanned crops, most-common
 // diseases + insects. ?sinceDays=N&limit=N to scope the window.
 app.get('/api/admin/scan-observability', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;   // admin-only: aggregates farmer scan data
   try {
     const { getScanObservability } = await import('./ml/scanObservability.js');
     const data = await getScanObservability(prisma, {
@@ -931,8 +935,9 @@ app.get('/api/admin/scan-observability', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/admin/scan-observability/export.csv — full per-scan CSV.
+// GET /api/admin/scan-observability/export.csv — full per-scan CSV (admin-only).
 app.get('/api/admin/scan-observability/export.csv', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;   // admin-only: exports full per-scan farmer data
   try {
     const { buildObservabilityCsv } = await import('./ml/scanObservability.js');
     const csv = await buildObservabilityCsv(prisma, {
