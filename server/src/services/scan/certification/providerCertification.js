@@ -20,6 +20,7 @@ export const CERT_STATUS = Object.freeze({
   CREDITS_EXHAUSTED: 'CREDITS_EXHAUSTED',
   RATE_LIMITED: 'RATE_LIMITED',
   TIMEOUT: 'TIMEOUT',
+  NETWORK: 'NETWORK',                                      // connection error / 5xx — reached-but-failed transport
   SCHEMA_INVALID: 'SCHEMA_INVALID',
   FARMBRAIN_REJECTED: 'FARMBRAIN_REJECTED',
   READY: 'READY',

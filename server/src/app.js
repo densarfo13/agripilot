@@ -1304,6 +1304,44 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       }).catch(() => {});
     } catch { /* swallow — observability is best-effort */ }
 
+    // PRODUCTION VALIDATION — persist ONE durable ScanProviderMetric row per provider
+    // call on every real scan, so the Reliability Dashboard + certification have real
+    // evidence from production traffic (previously written only during certify runs).
+    // Failures are classified into the 7 canonical buckets. Fire-and-forget + total —
+    // metric recording must NEVER block or fail a scan.
+    try {
+      const [{ recordProviderMetric }, { classifyProviderFailure }] = await Promise.all([
+        import('./services/scan/certification/providerReliability.js'),
+        import('./services/scan/certification/providerFailure.js'),
+      ]);
+      const _haveCoords = (farmLat != null && farmLng != null);
+      const _calls = [
+        { provider: 'plant.id',    r: consensus,  run: true },
+        { provider: 'insect.id',   r: pest,       run: true },
+        { provider: 'crop.health', r: cropHealth, run: true },
+        { provider: 'mushroom.id', r: mushroom,   run: _isMushroom },
+        { provider: 'soil',        r: soil,       run: _haveCoords },
+      ];
+      for (const _c of _calls) {
+        if (!_c.run) continue;                       // provider was not invoked this scan
+        const r = _c.r || {};
+        const ok = r.ok === true;
+        const httpStatus = (typeof r.httpStatus === 'number') ? r.httpStatus : (ok ? 200 : null);
+        const failCat = ok ? null : classifyProviderFailure({ httpStatus, reason: r.reason, status: r.status });
+        recordProviderMetric(prisma, {
+          provider:          _c.provider,
+          status:            ok ? 'READY' : (failCat || r.status || 'UNKNOWN'),
+          latency:           r.latencyMs,
+          confidence:        r.confidence,
+          httpStatus,
+          failureReason:     ok ? null : (failCat || r.reason || r.status || null),
+          retryCount:        r.retryCount,
+          farmbrainAccepted: ok,                     // this provider produced a usable signal
+          cacheHit:          r.cacheHit === true,
+        });
+      }
+    } catch { /* swallow — provider-metric persistence is best-effort, never blocks a scan */ }
+
     // Smart Scan AI Backend §3 — strict-shape verdict for
     // ML / analytics / partner consumers. Existing rich
     // `verdict` field stays untouched so the frontend

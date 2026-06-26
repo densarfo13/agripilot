@@ -31,3 +31,4 @@ reports/*.json
 # Scan-credit monitor snapshot history (best-effort, ephemeral)
 .cache/
 server/.cache/
+PRODUCTION_VALIDATION.md
