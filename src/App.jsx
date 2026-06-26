@@ -2052,6 +2052,11 @@ export default function App() {
           try { (await import('./runtime/farmos13/DigitalTwin')).installDigitalTwinHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/farmos13/FarmAgent')).installFarmAgentHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/farmos13/V13CapabilityRegistry')).installV13CapabilityHealth(); } catch { /* swallow */ }
+          // FARROWAY v14 — multi-agent advisor (__agentRegistryHealth: 3 live agents
+          // advise from real engines, 9 decline at confidence 0) + capability
+          // registry (__v14CapabilityHealth — nothing predictive/market/banking faked live).
+          try { (await import('./runtime/farmos14/AgentRegistry')).installAgentRegistryHealth(); } catch { /* swallow */ }
+          try { (await import('./runtime/farmos14/V14CapabilityRegistry')).installV14CapabilityHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.
