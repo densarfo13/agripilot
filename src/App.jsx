@@ -829,10 +829,20 @@ export default function App() {
     // health monitor + scan-to-farm continuity bridge so screens
     // stay in lock-step with the canonical store.
     (async () => {
+      // Production hardening §4 — install structured swallow telemetry FIRST so
+      // every subsequent boot failure is counted + categorized (never crashes the
+      // UI). Inspect with window.__swallowedErrors().
+      let _swallow = null;
+      try {
+        const t = await import('./lib/swallowTelemetry.js');
+        t.installSwallowTelemetry();
+        _swallow = t;
+      } catch { /* telemetry is best-effort */ }
+      const _report = (sev, src, err) => { try { if (_swallow) _swallow.reportSwallowed(sev, src, err); } catch { /* never throw */ } };
       try {
         const { migrateLegacyFarmState } = await import('./bootstrap/migrateLegacyFarmState.js');
         migrateLegacyFarmState();
-      } catch { /* never block app boot */ }
+      } catch (e) { _report('WARNING', 'boot:migrateLegacyFarmState', e); }
       try {
         const { installFarmAuditDiagnostics } = await import('./lib/farmAuditDiagnostics.js');
         installFarmAuditDiagnostics();

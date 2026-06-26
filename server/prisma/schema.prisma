@@ -3177,6 +3177,10 @@ model ScanProviderMetric {
 
   @@index([provider], map: "idx_scan_metric_provider")
   @@index([createdAt], map: "idx_scan_metric_created")
+  // Composite for getReliabilityScorecard(): WHERE provider = ? AND created_at >= ?
+  // — lets the 24h per-provider scorecard use one index instead of a growing scan.
+  // Additive; no data change.
+  @@index([provider, createdAt], map: "idx_scan_metric_provider_time")
   @@map("scan_provider_metrics")
 }
 

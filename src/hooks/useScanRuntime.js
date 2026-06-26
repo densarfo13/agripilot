@@ -44,6 +44,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   createScanRuntime, SCAN_STATE,
 } from '../core/scan/ScanRuntime.js';
+import { beginScan, endScan } from '../lib/scanIdempotency.js';
 
 const _isObj = (v) => v != null && typeof v === 'object';
 const _safe  = (fn, fb) => { try { return fn(); } catch { return fb; } };
@@ -172,7 +173,19 @@ export function useScanRuntime(cfg) {
       restartCamera: rt.restartCamera,
       choosePhoto:   rt.choosePhoto,
       capturePhoto:  rt.capturePhoto,
-      analyzeImage:  rt.analyzeImage,
+      // Duplicate-scan guard (protects provider credits). FAIL-OPEN: only an
+      // immediate duplicate of the SAME session — a double-tap or re-fired submit
+      // — is ignored; any legitimate scan (new session / different key) proceeds.
+      analyzeImage:  (...args) => {
+        const key = String(snapshot.activeSessionId || (rt.getSessionId && _safe(() => rt.getSessionId(), '')) || '').trim();
+        if (key && beginScan(key) === false) {
+          return Promise.resolve({ ok: false, reason: 'duplicate_ignored' });
+        }
+        let p;
+        try { p = rt.analyzeImage(...args); }
+        catch (e) { if (key) _safe(() => endScan(key)); throw e; }
+        return Promise.resolve(p).finally(() => { if (key) _safe(() => endScan(key)); });
+      },
       retryStage:    rt.retryStage,
       saveToJournal: rt.saveToJournal,
       createFollowUp:rt.createFollowUp,
