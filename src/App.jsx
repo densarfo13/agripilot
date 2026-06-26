@@ -2083,6 +2083,10 @@ export default function App() {
           // factors not fabricated). Compose the existing engine + preflight scorer.
           try { (await import('./runtime/scan/evidence/EvidenceFieldResolver')).installEvidenceResolverHealth(); } catch { /* swallow */ }
           try { (await import('./runtime/scan/quality/ImageQualityGate')).installImageQualityGateHealth(); } catch { /* swallow */ }
+          // PLANT SAFETY — __plantSafetyHealth(): real toxicity/edibility from the
+          // botanical reference → a language-neutral safety category + icon, only on
+          // a confident known ID (never a fabricated safety claim).
+          try { (await import('./runtime/scan/safety/PlantSafetyEngine')).installPlantSafetyHealth(); } catch { /* swallow */ }
           // ENTERPRISE CERTIFICATION — data quality + decision quality engines +
           // 13-phase umbrella (__dataQualityHealth / __decisionQualityHealth /
           // __enterpriseCertificationHealth). Verdict computed; field evidence PENDING.

@@ -193,6 +193,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/evidence/',
   // IMAGE QUALITY GATE — founder-directed scan quality-gate path.
   'src/runtime/scan/quality/',
+  // PLANT SAFETY — founder-directed scan safety-classifier path.
+  'src/runtime/scan/safety/',
 ];
 let gitAvailable = false;
 let diff = '';

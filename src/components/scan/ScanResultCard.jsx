@@ -56,6 +56,7 @@ import { composeAgronomistReply } from '../../lib/agronomistReply.js';
 // §5 + §6 pattern detection — derives before/after + local
 // recurrence from this device's own scan history. Pure read.
 import { detectScanPattern } from '../../lib/scanPatternDetection.js';
+import { classifyPlantSafety } from '../../runtime/scan/safety/PlantSafetyEngine.ts';
 import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
@@ -658,6 +659,42 @@ export default function ScanResultCard({
           </span>
         </div>
       </div>
+
+      {/* Plant safety — real edibility/toxicity from the botanical reference,
+          shown ONLY on a confident, known identification. The icon (⚠️/✅) carries
+          the safety signal language-neutrally; the short phrase is translated through
+          the normal i18n flow. Self-hides on UNKNOWN / low confidence — never a
+          fabricated safety claim (a wrong "safe to eat" could harm a farmer). */}
+      {(() => {
+        const _sf = (() => { try { return classifyPlantSafety(result?.plantName || result?.crop || result?.cropName, _conf220); } catch { return null; } })();
+        if (!_sf || !_sf.confident || _sf.category === 'UNKNOWN') return null;
+        const _msg = {
+          PROCESS_BEFORE_EATING: 'Process before eating',
+          PARTS_NOT_EDIBLE:      'Some parts are not safe to eat',
+          TOXIC_TO_ANIMALS:      'Keep away from animals',
+          ALLERGEN:              'Common allergen — handle with care',
+          CAUTION:               'Handle with care',
+          EDIBLE:                'Safe to eat',
+        }[_sf.category] || 'Handle with care';
+        const caution = _sf.severity === 'caution';
+        return (
+          <div
+            data-testid="scan-safety"
+            data-safety-category={_sf.category}
+            role="note"
+            aria-label={tStrict('scan.safety.' + _sf.category, _msg)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, marginTop: 8,
+              padding: '10px 12px', borderRadius: 12, minHeight: 44,
+              background: caution ? 'rgba(192,89,15,0.10)' : 'rgba(47,122,58,0.10)',
+              color: caution ? '#8a4a12' : '#256b30', fontSize: 15, fontWeight: 700,
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>{_sf.icon}</span>
+            <span>{tStrict('scan.safety.' + _sf.category, _msg)}</span>
+          </div>
+        );
+      })()}
 
       {/* Phase 7E — ML category chip + cautious observation message.
           Rendered when mlScan flag is on AND the result carries a
