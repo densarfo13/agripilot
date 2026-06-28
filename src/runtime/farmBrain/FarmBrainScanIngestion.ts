@@ -70,8 +70,12 @@ export function ingestionInputFromScan(result: any, ctx: {
     const fb = r.farmBrain || {};
     const plantName = String(r.cropName || r.plantName || '').trim().toLowerCase();
     const unknownTokens = ['', 'unknown', 'unknown plant', 'scan unclear', 'needs_review', 'plant: —'];
-    const plantKnown = !unknownTokens.includes(plantName)
-      && Array.isArray(r.topCandidates) ? r.topCandidates.length > 0 : !unknownTokens.includes(plantName);
+    // A known plant name, not contradicted by an EMPTY candidate list. Rewritten from
+    // a precedence trap (mixed && / ?: ) to this equivalent, refactor-safe form so a
+    // future edit can't silently let an unknown scan into the Digital Twin.
+    const nameKnown = !unknownTokens.includes(plantName);
+    const candidatesNotEmpty = !Array.isArray(r.topCandidates) || r.topCandidates.length > 0;
+    const plantKnown = nameKnown && candidatesNotEmpty;
     const confidencePct = typeof fb.confidenceScore === 'number' ? fb.confidenceScore
       : (typeof r.confidence === 'number' ? (r.confidence <= 1 ? r.confidence * 100 : r.confidence) : 0);
     const photoQualityFailed = !!(r.photoQuality && r.photoQuality.failed);
