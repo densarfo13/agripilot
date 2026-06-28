@@ -230,7 +230,12 @@ export async function runConsensus(input = {}) {
   if (!pidParsed && !pntParsed) {
     return Object.freeze({
       ok: false,
-      consensusMode: havePlantId && havePlantNet ? 'multi' : 'single',
+      // Neither provider produced a usable parse → rule-based fallback. Use the SAME
+      // derivation as the success path (single source of truth). The old key-based ternary
+      // wrongly reported 'multi'/'single' here, contradicting both this module's documented
+      // contract and the success path — a caller would think two providers corroborated a
+      // result when in fact both failed and there is no identification at all.
+      consensusMode: _consensusMode(pidParsed, pntParsed),
       sources,
       identification: null,
       confidence: 'low',
@@ -244,10 +249,8 @@ export async function runConsensus(input = {}) {
     });
   }
 
-  // Determine consensus mode.
-  const consensusMode = (pidParsed && pntParsed) ? 'multi'
-    : (pidParsed || pntParsed) ? 'single'
-    : 'rule';
+  // Determine consensus mode (same helper the failure branch uses).
+  const consensusMode = _consensusMode(pidParsed, pntParsed);
 
   // Pick top identification (highest single-provider score wins
   // for the "which species" question — averaging names doesn't
@@ -317,8 +320,20 @@ export function consensusEngineInfo() {
   });
 }
 
+/**
+ * Single source of truth for consensusMode, derived from which providers actually
+ * PARSED a result (not from which API keys are configured):
+ *   both parsed → 'multi' · one parsed → 'single' · neither parsed → 'rule'.
+ * Used by both the success path and the both-failed early return.
+ */
+function _consensusMode(pidParsed, pntParsed) {
+  if (pidParsed && pntParsed) return 'multi';
+  if (pidParsed || pntParsed) return 'single';
+  return 'rule';
+}
+
 export const _internal = Object.freeze({
-  _confToScore, _scoreToBand, _mergeCandidates, _pickTopIdentification,
+  _confToScore, _scoreToBand, _mergeCandidates, _pickTopIdentification, _consensusMode,
   WEIGHT_PLANTID, WEIGHT_PLANTNET, CONSENSUS_TIMEOUT_MS,
 });
 
