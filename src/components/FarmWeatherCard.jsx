@@ -13,11 +13,13 @@ import { useStrictTranslation as useTranslation } from '../i18n/useStrictTransla
 import { getFarmWeather } from '../runtime/auth.js';
 import { useNetwork } from '../context/NetworkContext.jsx';
 import VoiceLauncher from './voice/VoiceLauncher.jsx';
+import useTemperatureUnit from '../hooks/useTemperatureUnit.js';
 
 export default function FarmWeatherCard() {
   const { currentFarmId, profile } = useProfile();
   const { isOnline } = useNetwork();
   const { t } = useTranslation();
+  const { format: formatTemp } = useTemperatureUnit();
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -88,7 +90,9 @@ export default function FarmWeatherCard() {
 
   if (!weather) return null;
 
-  const tempDisplay = weather.temperatureC != null ? `${Math.round(weather.temperatureC)}` : '--';
+  // Render in the farmer's resolved unit (°C/°F per preference → country → fallback).
+  // formatTemp returns the value WITH the degree+unit suffix (e.g. "28°C" / "82°F").
+  const tempDisplay = weather.temperatureC != null ? formatTemp(weather.temperatureC) : '--';
   const humidityDisplay = weather.humidityPct != null ? `${Math.round(weather.humidityPct)}%` : '--';
   const rainDisplay = weather.rainForecastMm != null ? `${weather.rainForecastMm} mm` : '--';
 
@@ -104,7 +108,7 @@ export default function FarmWeatherCard() {
       <div style={S.metricsRow}>
         <div style={S.metric}>
           <span style={S.metricIcon}>🌡</span>
-          <span style={S.metricValue}>{tempDisplay}°C</span>
+          <span style={S.metricValue}>{tempDisplay}</span>
           <span style={S.metricLabel}>{t('farmWeather.temp')}</span>
         </div>
         <div style={S.metric}>

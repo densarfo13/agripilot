@@ -7,6 +7,7 @@ import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.j
 import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 import { useTranslation, LANGUAGES } from '../i18n/index.js';
 import { formatDate } from '../i18n/format.js';
+import useTemperatureUnit from '../hooks/useTemperatureUnit.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
 import BrandLogo from '../components/BrandLogo.jsx';
 import AccountLoadFallback from '../components/AccountLoadFallback.jsx';
@@ -358,6 +359,7 @@ export default function FarmerDashboardPage() {
   }, []);   // once on mount — never loop
 
   const { t, lang, setLang: switchLang } = useTranslation();
+  const { format: formatTemp } = useTemperatureUnit();
 
   // Fetch recommendations + weather when farm profile is loaded
   useEffect(() => {
@@ -727,7 +729,7 @@ export default function FarmerDashboardPage() {
                     </div>
                     {tempC !== null && (
                       <div style={S.heroWeather}>
-                        <span style={S.heroTemp}>{tempC}°C</span>
+                        <span style={S.heroTemp}>{formatTemp(weather.temperatureC)}</span>
                         {rainMm != null && <span style={S.heroRain}>{rainMm}mm rain</span>}
                       </div>
                     )}
@@ -1119,7 +1121,7 @@ export default function FarmerDashboardPage() {
               <ExpandableSection title={t('home.weatherDetails')} icon="🌦️" testId="weather-section">
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   <div style={styles.weatherStat}>
-                    <span style={styles.weatherValue}>{Math.round(weather.temperatureC)}°C</span>
+                    <span style={styles.weatherValue}>{formatTemp(weather.temperatureC)}</span>
                     <span style={styles.weatherLabel}>{t('home.temp')}</span>
                   </div>
                   <div style={styles.weatherStat}>
