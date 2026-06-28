@@ -115,6 +115,23 @@ function _plantnetCandidates(parsed) {
   });
 }
 
+// A "real" common name is present AND is not just the scientific name echoed back
+// (PlantNet leaves commonNames empty for many species, so the candidate's commonName
+// falls back to the Latin name).
+function _hasRealCommonName(c) {
+  const cn = String((c && c.commonName) || '').trim();
+  const sn = String((c && c.scientificName) || '').trim();
+  return cn !== '' && cn.toLowerCase() !== sn.toLowerCase();
+}
+
+// Keep `primary` (the higher-scoring candidate) but never lose a human-readable common
+// name: if primary only carries the Latin name, backfill the common name from `secondary`
+// (the same species from the other provider). Never fabricates — only copies a real name.
+function _withBestCommonName(primary, secondary) {
+  if (_hasRealCommonName(primary) || !_hasRealCommonName(secondary)) return primary;
+  return Object.freeze({ ...primary, commonName: secondary.commonName });
+}
+
 // Merge two candidate lists, prefer higher score on duplicate matches,
 // cap at 5 with per-source attribution preserved.
 function _mergeCandidates(a, b) {
@@ -124,7 +141,11 @@ function _mergeCandidates(a, b) {
     const k = _key(c);
     if (!k) continue;
     const existing = seen.get(k);
-    if (!existing || c.score > existing.score) seen.set(k, c);
+    if (!existing) { seen.set(k, c); continue; }
+    // Higher score wins, but the human-readable common name survives either way.
+    const winner = c.score > existing.score ? c : existing;
+    const loser  = c.score > existing.score ? existing : c;
+    seen.set(k, _withBestCommonName(winner, loser));
   }
   return Object.freeze(
     Array.from(seen.values())
