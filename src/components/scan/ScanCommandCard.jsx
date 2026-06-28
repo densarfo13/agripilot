@@ -18,11 +18,11 @@
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { scanUnclearReason } from '../../runtime/scan/failure/scanUnclearReason';
+import { normalizeScanConfidence } from '../../runtime/scan/confidence/normalizeScanConfidence';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 const _isObj = (v) => v != null && typeof v === 'object';
 const _str   = (v) => (typeof v === 'string' ? v : '');
-const _num   = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const _arr   = (v) => (Array.isArray(v) ? v : []);
 
 function _fmtPct(n) {
@@ -45,12 +45,13 @@ function ScanCommandCardInner({ result }) {
 
   const rawPlantName   = _str(result.plantName) || _str(result.commonName);
   const scientificName = _str(result.scientificName);
-  const confidencePct  = _num(result.confidence);
-  const confidenceBand = _str(result.confidenceBand)
-    || (confidencePct != null
-        ? (confidencePct >= 75 ? 'high'
-           : confidencePct >= 45 ? 'medium' : 'low')
-        : 'low');
+  // Confidence arrives OVERLOADED — a 0–100 number on the recovery path, a string tone
+  // ('high'|'medium'|'low') on the refined path, sometimes a 0–1 float. normalizeScanConfidence
+  // collapses all shapes to one honest { pct, band } so a high-confidence scan is never
+  // rendered as red 'low' just because the confidence came through as a string.
+  const _conf = normalizeScanConfidence(result);
+  const confidencePct  = _conf.pct;
+  const confidenceBand = _conf.band || 'low';
 
   // PRODUCTION ROOT-CAUSE FIX (sprint #179):
   //   The legacy `plantName || '—'` pattern caused production

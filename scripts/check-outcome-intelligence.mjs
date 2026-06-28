@@ -199,6 +199,9 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/treatment/',
   // FAILURE REASONS — founder-directed honest scan-failure path (no generic "unclear").
   'src/runtime/scan/failure/',
+  // CONFIDENCE NORMALIZE — bug-hunter fix: collapse the overloaded confidence field
+  // (string tone / 0–1 float / 0–100 number) to one honest { pct, band }.
+  'src/runtime/scan/confidence/',
 ];
 let gitAvailable = false;
 let diff = '';
