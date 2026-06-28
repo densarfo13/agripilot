@@ -689,6 +689,20 @@ _registerScanProviderHealth(app);
 // HTTP status / candidate count / failure reason, so a P0 "every clear
 // photo reads unclear" is root-caused in prod without redeploying. It
 // NEVER returns the key value — only presence + length.
+// GET /api/admin/scan/last-trace — ADMIN-ONLY. The most recent scan's REDACTED trace
+// (provider HTTP status + latency, raw vs normalized candidate count, top candidate,
+// rejection reason, final verdict). No secrets, no image bytes. Lets an operator
+// root-cause "why did this scan return unknown?" from real production data.
+app.get('/api/admin/scan/last-trace', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const { getLastScanTrace } = await import('./ml/scanLastTrace.js');
+    return res.json({ ok: true, trace: getLastScanTrace() });
+  } catch {
+    return res.status(500).json({ ok: false, error: 'last_trace_unavailable' });
+  }
+});
+
 app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
   try {
     const { getScanProviderDiagnostics, pingScanProvider } =
@@ -1611,6 +1625,38 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
         isFeatureEnabled('plantSafetyEngine'),
       );
     } catch { /* swallow — safety is additive, never blocks the scan result */ }
+
+    // LAST-SCAN TRACE — record a REDACTED trace (no secrets, no image bytes) so an
+    // admin can root-cause "why did this scan return unknown?" via /api/admin/scan/
+    // last-trace. Whitelist-only by construction; fire-and-forget; never blocks.
+    try {
+      const { recordScanTrace } = await import('./ml/scanLastTrace.js');
+      const _top = (Array.isArray(scanRecovery.topCandidates) && scanRecovery.topCandidates[0]) || {};
+      const _b64 = typeof imageBase64 === 'string' ? imageBase64 : '';
+      recordScanTrace({
+        scanId,
+        imageMime: (req.body && (req.body.imageMime || req.body.mime)) || null,
+        imageBytes: _b64 ? Math.round(_b64.length * 0.75) : null,   // base64 → byte estimate, NOT the bytes
+        imageDims: scanRecovery.imageQuality && scanRecovery.imageQuality.stats
+          ? { width: scanRecovery.imageQuality.stats.width, height: scanRecovery.imageQuality.stats.height } : null,
+        qualityScore: (scanRecovery.imageQuality && (scanRecovery.imageQuality.score ?? scanRecovery.imageQuality.qualityScore)) ?? null,
+        providers: [
+          { name: 'plant.id',   status: (consensus && consensus.ok) ? 'READY' : (consensus && consensus.status) || 'NO_RESULT', latencyMs: consensus && consensus.latencyMs, httpStatus: consensus && consensus.httpStatus },
+          { name: 'crop.health', status: (cropHealth && cropHealth.status) || 'UNSUPPORTED', latencyMs: cropHealth && cropHealth.latencyMs },
+          { name: 'insect.id',  status: (pest && pest.ok) ? 'READY' : (pest && pest.status) || 'NO_RESULT', latencyMs: pest && pest.latencyMs },
+        ],
+        rawCandidateCount: Array.isArray(consensus && consensus.candidates) ? consensus.candidates.length : null,
+        normalizedCandidateCount: Array.isArray(scanRecovery.topCandidates) ? scanRecovery.topCandidates.length : null,
+        topScientificName: _top.scientificName || scanRecovery.scientificName || null,
+        topCommonName: _top.commonName || _top.name || scanRecovery.plantName || null,
+        topConfidence: typeof scanRecovery.confidence === 'number' ? scanRecovery.confidence : null,
+        cropHealthStatus: (cropHealth && cropHealth.status) || null,
+        rejectionReason: (Array.isArray(scanRecovery.topCandidates) && scanRecovery.topCandidates.length === 0)
+          ? 'no_candidates'
+          : (scanRecovery.confidenceLabel === 'low' ? 'low_confidence' : null),
+        finalVerdict: scanRecovery.plantName || scanRecovery.possibleIssue || 'unknown',
+      }, new Date().toISOString());
+    } catch { /* swallow — tracing must never affect a scan */ }
 
     return res.json(_scanResponse);
   } catch (err) {
