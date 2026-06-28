@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import { useTranslation } from '../i18n/index.js';
 import { tSafe } from '../i18n/tSafe.js';
+import { formatDate } from '../i18n/format.js';
 import api, { formatApiError } from '../runtime/apiRuntime.js';
 import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -170,7 +171,7 @@ export default function FarmerActivitiesTab() {
                   <tbody>
                     {activities.map(a => (
                       <tr key={a.id}>
-                        <td className="text-sm">{new Date(a.activityDate).toLocaleDateString()}</td>
+                        <td className="text-sm">{formatDate(a.activityDate, lang, { dateStyle: 'medium' })}</td>
                         <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
                         <td>{a.cropType ? getCropLabelSafe(a.cropType, lang) : '-'}</td>
                         <td>{a.quantityKg ? `${a.quantityKg} kg` : '-'}</td>

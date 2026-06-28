@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useTranslation } from '../../i18n/index.js';
+import { formatDate as formatDateI18n } from '../../i18n/format.js';
 import {
   getIssuesForRole,
   subscribeIssues,
@@ -47,7 +48,7 @@ function useFarmerIssues() {
 }
 
 export default function MyIssuesPage() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const issues = useFarmerIssues();
 
   // Clear the "unseen update" mark for every issue we render. This
@@ -94,9 +95,9 @@ export default function MyIssuesPage() {
                 <p style={S.desc}>{issue.description}</p>
               )}
               <div style={S.metaRow}>
-                <span>{resolve(t, 'issues.my.reported', 'Reported')}: {formatDate(issue.createdAt)}</span>
+                <span>{resolve(t, 'issues.my.reported', 'Reported')}: {formatDate(issue.createdAt, lang)}</span>
                 {issue.updatedAt !== issue.createdAt && (
-                  <span>{resolve(t, 'issues.my.updated', 'Updated')}: {formatDate(issue.updatedAt)}</span>
+                  <span>{resolve(t, 'issues.my.updated', 'Updated')}: {formatDate(issue.updatedAt, lang)}</span>
                 )}
               </div>
               {latestVisibleNote(issue) && (
@@ -116,8 +117,10 @@ function humanize(s) {
   return String(s || '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 }
 
-function formatDate(ts) {
-  try { return new Date(ts).toLocaleDateString(); } catch { return ''; }
+function formatDate(ts, lang) {
+  // Use the app's selected language, not the device OS locale, so a farmer who picked
+  // Hausa/Swahili/Hindi in-app sees the date in that locale (incl. Hindi native digits).
+  try { return formatDateI18n(ts, lang, { dateStyle: 'medium' }); } catch { return ''; }
 }
 
 /**

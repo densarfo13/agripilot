@@ -6,6 +6,7 @@ import api from '../runtime/apiRuntime.js';
 import { calculateFarmScore, getMissingProfileItems } from '../utils/farmScore.js';
 import { tLifecycleStage, tStatus } from '../utils/i18n.js';
 import { useTranslation, LANGUAGES } from '../i18n/index.js';
+import { formatDate } from '../i18n/format.js';
 import OnboardingWizard from '../components/OnboardingWizard.jsx';
 import BrandLogo from '../components/BrandLogo.jsx';
 import AccountLoadFallback from '../components/AccountLoadFallback.jsx';
@@ -893,7 +894,7 @@ export default function FarmerDashboardPage() {
                         <div style={S.lastActivityLabel}>{t('home.lastUpdate')}</div>
                         <div style={S.lastActivityDate}>
                           {daysSince === 0 ? t('home.today') : daysSince === 1 ? t('home.yesterday') : `${daysSince} ${t('home.daysAgo')}`}
-                          {' · '}{new Date(lastDate).toLocaleDateString()}
+                          {' · '}{formatDate(lastDate, lang)}
                         </div>
                       </div>
                       {daysSince >= 14 && <span style={S.staleBadge}>⚠ {t('home.overdue')}</span>}
@@ -1068,7 +1069,7 @@ export default function FarmerDashboardPage() {
                     <span style={{ color: '#C8944D' }}>{s.status}</span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#A1A1AA' }}>
-                    {formatLandSize(s.landSizeValue || s.farmSizeAcres, s.landSizeUnit)} · Planted {new Date(s.plantingDate).toLocaleDateString()}
+                    {formatLandSize(s.landSizeValue || s.farmSizeAcres, s.landSizeUnit)} · Planted {formatDate(s.plantingDate, lang)}
                   </div>
                 </div>
               ))}

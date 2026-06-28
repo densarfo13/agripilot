@@ -6,6 +6,7 @@ import CropSelect from '../components/CropSelect.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import { formatDate } from '../i18n/format.js';
 import { tSafe } from '../i18n/tSafe.js';
 import SellReadinessInput from '../components/SellReadinessInput.jsx';
 
@@ -270,7 +271,7 @@ export default function FarmerMarketTab() {
                           {tSafe(t, `market.status.${interest.status}`, interest.status)}
                         </span>
                       </td>
-                      <td className="text-sm text-muted">{new Date(interest.createdAt).toLocaleDateString()}</td>
+                      <td className="text-sm text-muted">{formatDate(interest.createdAt, lang)}</td>
                       <td>
                         {interest.status === 'expressed' && (
                           <button className="btn btn-outline-danger btn-sm" onClick={() => withdrawInterest(interest.id)}>

@@ -3,6 +3,8 @@ import { useFarmerContext } from './FarmerHomePage.jsx';
 import { useFarmerNotificationsRuntime }
   from '../hooks/useFarmerNotificationsRuntime.js';
 import EmptyState from '../components/EmptyState.jsx';
+import { useTranslation } from '../i18n/index.js';
+import { formatDate } from '../i18n/format.js';
 
 /**
  * FarmerNotificationsTab — pure subscriber to
@@ -38,6 +40,7 @@ const TYPE_COLORS = {
 };
 
 export default function FarmerNotificationsTab() {
+  const { lang } = useTranslation();
   const { farmerId, refresh: refreshFarmerContext } = useFarmerContext();
   const {
     notifications, loading, loadError,
@@ -107,7 +110,7 @@ export default function FarmerNotificationsTab() {
                     <p style={{ margin: 0, fontSize: '0.9rem', color: '#A1A1AA' }}>{n.message}</p>
                   </div>
                   <span className="text-sm text-muted" style={{ whiteSpace: 'nowrap', marginLeft: '1rem' }}>
-                    {new Date(n.createdAt).toLocaleDateString()}
+                    {formatDate(n.createdAt, lang, { dateStyle: 'medium' })}
                   </span>
                 </div>
               </div>

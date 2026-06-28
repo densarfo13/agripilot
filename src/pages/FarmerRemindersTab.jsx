@@ -4,6 +4,7 @@ import api, { formatApiError } from '../runtime/apiRuntime.js';
 import EmptyState from '../components/EmptyState.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { useTranslation } from '../i18n/index.js';
+import { formatDate } from '../i18n/format.js';
 
 export default function FarmerRemindersTab() {
   const { lang } = useTranslation();
@@ -218,7 +219,7 @@ export default function FarmerRemindersTab() {
                     {reminders.map(r => (
                       <tr key={r.id} style={{ background: isOverdue(r) ? 'var(--danger-light)' : r.completed ? 'var(--success-light)' : undefined }}>
                         <td className="text-sm" style={{ color: isOverdue(r) ? '#dc2626' : undefined, fontWeight: isOverdue(r) ? 600 : 400 }}>
-                          {new Date(r.dueDate).toLocaleDateString()}
+                          {formatDate(r.dueDate, lang)}
                           {isOverdue(r) && <span style={{ display: 'block', fontSize: '0.75rem' }}>OVERDUE</span>}
                         </td>
                         <td><span className={`badge badge-${r.reminderType}`}>{r.reminderType?.replace(/_/g, ' ')}</span></td>

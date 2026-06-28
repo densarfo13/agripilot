@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
+import { formatDate } from '../i18n/format.js';
 import { useFarmerContext } from './FarmerHomePage.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -334,7 +335,7 @@ export default function FarmerOverviewTab() {
                   {reminderSummary.upcoming.map(r => (
                     <tr key={r.id}>
                       <td style={{ fontWeight: 500 }}>{r.title}</td>
-                      <td className="text-sm text-muted">{new Date(r.dueDate).toLocaleDateString()}</td>
+                      <td className="text-sm text-muted">{formatDate(r.dueDate, lang)}</td>
                       <td><span className={`badge badge-${r.reminderType}`}>{r.reminderType?.replace(/_/g, ' ')}</span></td>
                     </tr>
                   ))}
@@ -360,7 +361,7 @@ export default function FarmerOverviewTab() {
                     <tr key={a.id}>
                       <td><span className={`badge badge-${a.activityType}`}>{a.activityType?.replace(/_/g, ' ')}</span></td>
                       <td>{a.cropType ? getCropLabelSafe(a.cropType, lang) : '-'}</td>
-                      <td className="text-sm text-muted">{new Date(a.activityDate).toLocaleDateString()}</td>
+                      <td className="text-sm text-muted">{formatDate(a.activityDate, lang)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -390,7 +391,7 @@ export default function FarmerOverviewTab() {
                         <td>{getCropLabelSafe(app.cropType, lang)}</td>
                         <td>{app.currencyCode || 'KES'} {app.requestedAmount?.toLocaleString()}</td>
                         <td><StatusBadge value={app.status} /></td>
-                        <td className="text-sm text-muted">{new Date(app.createdAt).toLocaleDateString()}</td>
+                        <td className="text-sm text-muted">{formatDate(app.createdAt, lang)}</td>
                       </tr>
                     ))}
                   </tbody>

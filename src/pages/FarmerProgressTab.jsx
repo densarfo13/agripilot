@@ -12,6 +12,7 @@ import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { trackPilotEvent } from '../utils/pilotTracker.js';
 import { UNIT_OPTIONS, formatLandSize } from '../utils/landSize.js';
 import { useTranslation } from '../i18n/index.js';
+import { formatDate } from '../i18n/format.js';
 import VoiceBar from '../components/VoiceBar.jsx';
 import { getFarmerLifecycleState, canStartSeason, FARMER_STATE } from '../utils/farmerLifecycle.js';
 // UI tightening pass §9 — replaces inline emoji glyphs with
@@ -496,8 +497,8 @@ export default function FarmerProgressTab() {
             </div>
             <div className="card-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.planted')}</span><div style={{ fontWeight: 600 }}>{new Date(activeSeason.plantingDate).toLocaleDateString()}</div></div>
-                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.expectedHarvest')}</span><div style={{ fontWeight: 600 }}>{activeSeason.expectedHarvestDate ? new Date(activeSeason.expectedHarvestDate).toLocaleDateString() : '—'}</div></div>
+                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.planted')}</span><div style={{ fontWeight: 600 }}>{formatDate(activeSeason.plantingDate, lang)}</div></div>
+                <div><span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.expectedHarvest')}</span><div style={{ fontWeight: 600 }}>{activeSeason.expectedHarvestDate ? formatDate(activeSeason.expectedHarvestDate, lang) : '—'}</div></div>
                 <div>
                   <span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('progress.progressEntries')}</span>
                   <div style={{ fontWeight: 600 }}>{activeSeason._count?.progressEntries || entries.length}</div>
@@ -962,7 +963,7 @@ export default function FarmerProgressTab() {
                     <tbody>
                       {entries.slice(0, 15).map(e => (
                         <tr key={e.id}>
-                          <td className="text-sm">{new Date(e.entryDate).toLocaleDateString()}</td>
+                          <td className="text-sm">{formatDate(e.entryDate, lang)}</td>
                           <td>{e.entryType}</td>
                           <td>{e.activityType || '—'}{e.description ? `: ${e.description}` : ''}</td>
                           <td>{e.cropCondition ? <span style={{ color: CONDITION_COLORS[e.cropCondition], fontWeight: 600 }}>{e.cropCondition}</span> : '—'}</td>
@@ -995,7 +996,7 @@ export default function FarmerProgressTab() {
                   {seasons.filter(s => s.status !== 'active').map(s => (
                     <tr key={s.id}>
                       <td style={{ fontWeight: 500 }}>{getCropLabelSafe(s.cropType, lang)}</td>
-                      <td className="text-sm">{new Date(s.plantingDate).toLocaleDateString()}</td>
+                      <td className="text-sm">{formatDate(s.plantingDate, lang)}</td>
                       <td><span style={{ textTransform: 'capitalize' }}>{s.status}</span></td>
                       <td>{s.harvestReport ? `${s.harvestReport.totalHarvestKg} kg` : '—'}</td>
                       <td>{s.progressScore ? (
@@ -1045,7 +1046,7 @@ export default function FarmerProgressTab() {
 // ─── SoD: Reopen Season Modal ────────────────────────────────────────────────
 // Two-phase: (1) create ApprovalRequest, (2) execute reopen with approved ID
 function ReopenSeasonModal({ season, onClose, onReopened }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [mode, setMode]         = useState('request');
   const [reason, setReason]     = useState('');
   const [approvalId, setApprovalId] = useState('');
@@ -1193,7 +1194,7 @@ function ReopenSeasonModal({ season, onClose, onReopened }) {
               </div>
               <div style={{ background: 'rgba(14,165,233,0.15)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 6, padding: '0.5rem 0.75rem', fontSize: '0.83rem', color: '#0EA5E9', marginBottom: '0.75rem' }}>
                 This will reopen the <strong>{getCropLabelSafe(season.cropType, lang)}</strong> season (planted{' '}
-                {new Date(season.plantingDate).toLocaleDateString()}) for further data entry.
+                {formatDate(season.plantingDate, lang)}) for further data entry.
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                 <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
