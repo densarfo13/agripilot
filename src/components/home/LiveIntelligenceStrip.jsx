@@ -40,6 +40,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import useFarmHealth from '../../hooks/useFarmHealth.js';
+import useTemperatureUnit from '../../hooks/useTemperatureUnit.js';
 
 // ─── Glyph palette ────────────────────────────────────────────
 
@@ -132,12 +133,12 @@ function _moistureChip(landHealth) {
   };
 }
 
-function _weatherShiftChip(weather) {
+function _weatherShiftChip(weather, formatTemp) {
   if (!weather || typeof weather !== 'object') return null;
   const source = String(weather.source || '');
   if (source !== 'weather-api') return null;
   const rain = Number(weather.rainChance);
-  const temp = Number(weather.temp);
+  const temp = Number(weather.temp);   // Celsius (thresholds 32/36 are °C)
   if (Number.isFinite(rain) && rain >= 60) {
     return {
       key: 'weather',
@@ -154,7 +155,10 @@ function _weatherShiftChip(weather) {
       tone: temp >= 36 ? 'critical' : 'watch',
       icon: _SunGlyph,
       label: tSafe('live.weather.heatLabel', 'Heat spike'),
-      value: `${Math.round(temp)}°`,
+      // Display in the farmer's resolved unit (Celsius value → °C/°F). Never a bare-degree
+      // Celsius render: if no formatter was threaded in, show nothing rather than a value
+      // that a °F user would misread.
+      value: typeof formatTemp === 'function' ? formatTemp(temp) : '',
       to:    '/tasks',
     };
   }
@@ -257,18 +261,19 @@ export default function LiveIntelligenceStrip({
   // hasCoords:false) when no coordinates are present.
   const isFarm = String(mode || 'farm').toLowerCase() !== 'garden';
   const { health: landHealth } = useFarmHealth(isFarm ? location : null);
+  const { format: formatTemp } = useTemperatureUnit();
 
   const chips = useMemo(() => {
     const all = [
       _diseaseChip(recentScans),
       _moistureChip(landHealth),
-      _weatherShiftChip(weather),
+      _weatherShiftChip(weather, formatTemp),
       _landHealthChip(landHealth, mode),
       _growthChip(tasks),
       _timingChip(weather),
     ].filter(Boolean);
     return all.slice(0, 6);
-  }, [mode, weather, landHealth, recentScans, tasks]);
+  }, [mode, weather, landHealth, recentScans, tasks, formatTemp]);
 
   // Self-suppress when fewer than two signals qualify — we'd
   // rather show nothing than paint a single lonely chip.

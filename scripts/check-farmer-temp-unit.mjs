@@ -8,17 +8,22 @@
  * these through useTemperatureUnit().format(valueC), which converts + rounds + labels in
  * the resolved unit (and returns '' for null — never "NaN°C").
  *
- * Invariant for these weather screens: import useTemperatureUnit AND no hardcoded
- * `}°C` / `}°F` render pattern. (LiveIntelligenceStrip's compact bare-`°` heat chip uses a
- * different field and is tracked separately — not covered here.)
+ * Invariant for these weather screens: import useTemperatureUnit, no hardcoded `}°C`/`}°F`
+ * render, and no bare-degree `Math.round(temp)}°` render (the LiveIntelligenceStrip heat
+ * chip showed a Celsius value as a bare ° to °F users).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const R = process.cwd();
 const E = [];
-const FILES = ['src/components/FarmWeatherCard.jsx', 'src/pages/FarmerDashboardPage.jsx'];
-const RENDER_UNIT = /\}\s*°[CF]/;   // a JSX value brace immediately followed by a hardcoded unit
+const FILES = [
+  'src/components/FarmWeatherCard.jsx',
+  'src/pages/FarmerDashboardPage.jsx',
+  'src/components/home/LiveIntelligenceStrip.jsx',
+];
+const RENDER_UNIT = /\}\s*°[CF]/;                 // value brace immediately followed by a hardcoded unit
+const BARE_TEMP   = /Math\.round\(\s*temp\s*\)\s*\}\s*°/;  // bare-degree Celsius render (no unit conversion)
 
 for (const rel of FILES) {
   let s = '';
@@ -30,6 +35,10 @@ for (const rel of FILES) {
   if (m) {
     E.push(`${rel}: hardcoded unit in render ("${m[0]}") — use useTemperatureUnit().format(valueC) instead of {value}°C`);
   }
+  const b = s.match(BARE_TEMP);
+  if (b) {
+    E.push(`${rel}: bare-degree temp render ("${b[0]}") — use the resolved-unit formatter so the value matches the farmer's unit`);
+  }
 }
 
 if (E.length) {
@@ -37,5 +46,5 @@ if (E.length) {
   for (const e of E) console.error('  - ' + e);
   process.exit(1);
 }
-console.log('[check:farmer-temp-unit] PASS — the farmer weather card + dashboard hero render temperature via '
-  + 'useTemperatureUnit().format() in the resolved unit, never a hardcoded °C.');
+console.log('[check:farmer-temp-unit] PASS — farmer weather card, dashboard hero + live-intelligence heat chip '
+  + 'render temperature via useTemperatureUnit().format() in the resolved unit, never a hardcoded °C / bare °.');
