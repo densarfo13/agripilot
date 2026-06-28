@@ -156,27 +156,44 @@ export async function reverseGeocode(latitude, longitude) {
  *
  * @returns {Promise<{countryCode: string|null, country: string|null, region: string|null, method: 'ip'}>}
  */
+/**
+ * The free ip-api.com endpoint is HTTP-only. A fetch to an http:// URL from an HTTPS page
+ * is blocked by the browser as mixed content and can NEVER succeed — it only throws and
+ * wastes the attempt before we fall through to the HTTPS providers. So only attempt the
+ * HTTP provider when the page itself is served over HTTP (e.g. local dev). Defaults to
+ * "not allowed" for any unknown / non-http protocol — never issue an insecure request in
+ * an unknown context.
+ */
+export function _httpProviderAllowed(protocol) {
+  return typeof protocol === 'string' && protocol === 'http:';
+}
+
 export async function detectCountryByIP() {
   const fallback = { countryCode: null, country: null, region: null, method: 'ip' };
+  const _proto = (typeof location !== 'undefined' && location && location.protocol) || 'https:';
 
-  // Provider 1: ip-api.com (free, no key, 45 req/min)
-  try {
-    const res = await fetch('http://ip-api.com/json/?fields=status,countryCode,country,regionName', {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === 'success' && data.countryCode) {
-        gpsLog('IP detection (ip-api):', { country: data.country, code: data.countryCode });
-        return {
-          countryCode: data.countryCode.toUpperCase(),
-          country: data.country || null,
-          region: data.regionName || null,
-          method: 'ip',
-        };
+  // Provider 1: ip-api.com (free, no key, 45 req/min) — HTTP-only on the free tier, so it is
+  // mixed-content-blocked (and always fails) on an HTTPS page. Only attempt it on http://
+  // origins (local dev); production falls straight through to the HTTPS providers below.
+  if (_httpProviderAllowed(_proto)) {
+    try {
+      const res = await fetch('http://ip-api.com/json/?fields=status,countryCode,country,regionName', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'success' && data.countryCode) {
+          gpsLog('IP detection (ip-api):', { country: data.country, code: data.countryCode });
+          return {
+            countryCode: data.countryCode.toUpperCase(),
+            country: data.country || null,
+            region: data.regionName || null,
+            method: 'ip',
+          };
+        }
       }
-    }
-  } catch { /* try next provider */ }
+    } catch { /* try next provider */ }
+  }
 
   // Provider 2: ipapi.co (free tier, 1k/day)
   try {
