@@ -42,7 +42,8 @@ const CHIP_KEY_BY_CATEGORY = Object.freeze({
   needs_review:             'gardenMode.scanChip.needsReview',
 });
 const CHIP_FALLBACK = Object.freeze({
-  healthy:                  'Looks healthy',
+  // Trust layer — a scan confirms the absence of VISIBLE disease, not "health".
+  healthy:                  'No disease seen',
   yellowing:                'Possible leaf stress',
   holes_or_pest_damage:     'Possible pest damage',
   spots_or_disease_concern: 'Possible leaf stress',

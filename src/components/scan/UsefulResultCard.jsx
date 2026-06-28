@@ -52,9 +52,9 @@ import SafeImage from '../common/SafeImage.jsx';
 const GUIDANCE = Object.freeze({
   healthy: Object.freeze({
     iconName:     'leaf',
-    label:        'Looks Healthy',
+    label:        'No obvious disease detected',
     confidence:   'low',
-    noticed:      'Your crop appears healthy. No obvious issues detected.',
+    noticed:      'No obvious disease in this photo. Keep checking your crop as it grows.',
     checks: [
       'Continue daily crop monitoring.',
       'Check that water and nutrients are sufficient.',

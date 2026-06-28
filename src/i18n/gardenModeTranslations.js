@@ -120,7 +120,7 @@ export const GARDEN_MODE_TRANSLATIONS = Object.freeze({
   },
 
   // ── Status chips (Garden-friendly variant — spec §7) ──────
-  'gardenMode.scanChip.healthy':       { en: 'Looks healthy',          fr: 'Semble en bonne santé',   sw: 'Inaonekana yenye afya',    ha: 'Tana da lafiya',          tw: 'Apɔw',              hi: 'स्वस्थ दिखती है' },
+  'gardenMode.scanChip.healthy':       { en: 'No disease seen',         fr: 'Semble en bonne santé',   sw: 'Inaonekana yenye afya',    ha: 'Tana da lafiya',          tw: 'Apɔw',              hi: 'स्वस्थ दिखती है' },
   'gardenMode.scanChip.needsReview':   { en: 'Needs review',           fr: 'À vérifier',              sw: 'Inahitaji ukaguzi',        ha: 'Buƙatar bita',            tw: 'Ɛhia hwɛyie',       hi: 'समीक्षा की आवश्यकता' },
   'gardenMode.scanChip.leafStress':    { en: 'Possible leaf stress',   fr: 'Stress foliaire possible',sw: 'Mfadhaiko wa majani',      ha: 'Yiwuwar matsalar ganye',  tw: 'Aba haw',           hi: 'पत्तियों पर तनाव संभव' },
   'gardenMode.scanChip.pestDamage':    { en: 'Possible pest damage',   fr: 'Dégâts de ravageurs',     sw: 'Uharibifu wa wadudu',      ha: 'Lalacewa ta kwari',       tw: 'Mmoawa sɛe',        hi: 'कीट क्षति संभव' },

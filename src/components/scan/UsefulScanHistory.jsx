@@ -27,7 +27,7 @@ import { SCAN_HISTORY_KEY } from '../../lib/scan/scanHistoryStore.js';
 // labels and emojis. Unknown categories still fall through the
 // _meta() default below.
 const CATEGORY_META = Object.freeze({
-  healthy:                  { emoji: '✅', label: 'Healthy' },
+  healthy:                  { emoji: '✅', label: 'No disease seen' },
   yellowing:                { emoji: '🌿', label: 'Yellowing' },
   holes_or_pest_damage:     { emoji: '🐛', label: 'Pest damage' },
   spots_or_disease_concern: { emoji: '🍂', label: 'Leaf spots' },
