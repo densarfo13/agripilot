@@ -1,0 +1,11 @@
+{
+  "_comment": "Minimum acceptable REAL translation coverage per locale (percent of keys whose value differs from English). The coverage ratchet (scripts/check-i18n-coverage-ratchet.mjs) fails the build if any active locale drops below these floors — so adding untranslated English keys can never silently lower coverage. Floors sit ~1 point below the measured coverage to tolerate small churn. Raise them as real translations land; never lower them. Hindi is intentionally hidden (enableHindiLocale=false) until its column is completed, so its floor is informational.",
+  "measuredAt": "2026-06-26",
+  "floors": {
+    "fr": 94,
+    "tw": 96,
+    "sw": 95,
+    "ha": 96,
+    "hi": 53
+  }
+}
