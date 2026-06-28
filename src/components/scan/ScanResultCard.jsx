@@ -60,6 +60,7 @@ import { classifyPlantSafety } from '../../runtime/scan/safety/PlantSafetyEngine
 import { treatmentForIssue } from '../../runtime/scan/treatment/DiseaseTreatmentEngine.ts';
 import { controlForPest } from '../../runtime/scan/treatment/PestTreatmentEngine.ts';
 import { nutrientGuidanceForIssue } from '../../runtime/scan/treatment/NutrientDeficiencyEngine.ts';
+import { detectEvidenceConflict } from '../../runtime/intelligence/evidenceConflict.ts';
 import { getScanUsefulHistory } from '../../lib/scan/scanHistoryStore.js';
 // Plant Identification v1.1 — drop-in card rendered ABOVE the
 // existing health surface when the server supplied a
@@ -883,6 +884,41 @@ export default function ScanResultCard({
                 ⚠️ {tStrict('scan.nutrient.fertiliser', 'Confirm with a soil test. For fertiliser amounts, ask your local extension officer.')}
               </p>
             ) : null}
+          </div>
+        );
+      })()}
+
+      {/* Cross-source conflict (FIP ConflictEngine) — when the photo and the soil
+          reading make OPPOSITE moisture claims, surface the disagreement and ask the
+          farmer to verify rather than guessing. Self-hides when the signals agree or
+          are insufficient. Acting on the wrong half (watering a waterlogged crop)
+          causes harm, so an honest flag beats a confident guess. */}
+      {(() => {
+        const _claims = (() => {
+          try {
+            const out = [];
+            const _src = (k, en) => tStrict(k, en);
+            const issue = String(result?.possibleIssue || result?.issue || policy?.possibleIssue || '').toLowerCase();
+            if (/waterlog|root rot|over.?water|too wet|soggy/.test(issue)) out.push({ source: _src('scan.conflict.src.photo', 'the photo'), axis: 'moisture', polarity: 'wet' });
+            else if (/wilt|drought|water.?stress|thirst|needs water|under.?water|\bdry\b/.test(issue)) out.push({ source: _src('scan.conflict.src.photo', 'the photo'), axis: 'moisture', polarity: 'dry' });
+            const soil = (result?.soil && typeof result.soil === 'object') ? result.soil : {};
+            const soilText = String(soil.drainage || soil.note || soil.interpretation || soil.moistureRisk || '').toLowerCase();
+            if (/waterlog|poor drainage|soggy|\bwet\b|saturated/.test(soilText)) out.push({ source: _src('scan.conflict.src.soil', 'your soil reading'), axis: 'moisture', polarity: 'wet' });
+            else if (/very dry|low moisture|drought/.test(soilText)) out.push({ source: _src('scan.conflict.src.soil', 'your soil reading'), axis: 'moisture', polarity: 'dry' });
+            return out;
+          } catch { return []; }
+        })();
+        const _cf = (() => { try { return detectEvidenceConflict(_claims); } catch { return null; } })();
+        if (!_cf || !_cf.hasConflict) return null;
+        return (
+          <div data-testid="scan-evidence-conflict" style={{ marginTop: 10, padding: '12px 14px', borderRadius: 12, background: 'rgba(192,89,15,0.08)', border: '1px solid rgba(192,89,15,0.2)' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#8a4a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span aria-hidden="true" style={{ fontSize: 16 }}>⚠️</span>
+              <span>{tStrict('scan.conflict.title', 'These signals disagree')}</span>
+            </div>
+            <p style={{ fontSize: 13, color: '#5a4632', margin: '4px 0 0', lineHeight: 1.45 }}>
+              {tStrict(_cf.messageKey, _cf.message)}
+            </p>
           </div>
         );
       })()}
