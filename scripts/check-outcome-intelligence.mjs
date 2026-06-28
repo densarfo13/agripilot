@@ -197,6 +197,8 @@ const ALLOWED_EXCEPTIONS = [
   'src/runtime/scan/safety/',
   // DISEASE TREATMENT — founder-directed scan treatment-surfacing path.
   'src/runtime/scan/treatment/',
+  // FAILURE REASONS — founder-directed honest scan-failure path (no generic "unclear").
+  'src/runtime/scan/failure/',
 ];
 let gitAvailable = false;
 let diff = '';

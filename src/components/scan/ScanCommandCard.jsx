@@ -17,6 +17,7 @@
  */
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
+import { scanUnclearReason } from '../../runtime/scan/failure/scanUnclearReason';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 const _isObj = (v) => v != null && typeof v === 'object';
@@ -61,16 +62,29 @@ function ScanCommandCardInner({ result }) {
   //   1. real plantName (any non-empty species name)
   //   2. top candidate common/scientific name (if candidates present)
   //   3. 'Needs confirmation' (when candidates exist but no name)
-  //   4. 'Scan unclear'      (when no signal at all)
+  //   4. a SPECIFIC honest failure headline (when no signal at all) — never a
+  //      generic collapse. scanUnclearReason composes the real failure signals.
   //
   // The component NEVER renders bare '—' or 'Unknown Plant'.
   const _topCandidates = _arr(result.topCandidates);
   const _topCand = _topCandidates[0] || null;
+  // Honest, specific reason + next action for a no-result scan (composed from image
+  // quality / provider status / object type). Used as the headline when there is no
+  // plant signal, so the farmer always learns WHAT happened and WHAT to do next.
+  const _unclear = scanUnclearReason(result);
+  const _hasName = !!(
+       rawPlantName
+    || _str(_topCand && (_topCand.commonName || _topCand.name))
+    || _str(_topCand && _topCand.scientificName)
+    || _topCandidates.length > 0
+  );
   const plantName =
        rawPlantName
     || _str(_topCand && (_topCand.commonName || _topCand.name))
     || _str(_topCand && _topCand.scientificName)
-    || (_topCandidates.length > 0 ? 'Needs confirmation' : 'Scan unclear');
+    || (_topCandidates.length > 0
+          ? 'Needs confirmation'
+          : tSafe(_unclear.headlineKey, _unclear.headline));
 
   const diseaseCandidates = _arr(result.diseaseCandidates);
   const topDisease = diseaseCandidates[0] || null;
@@ -93,6 +107,12 @@ function ScanCommandCardInner({ result }) {
         <p style={S.eyebrow}>{tSafe('scanCommand.eyebrow', 'Scan Command Center')}</p>
         <h2 style={S.title}>{plantName}</h2>
         {scientificName ? <p style={S.scientific}>{scientificName}</p> : null}
+        {/* No plant identified → tell the farmer WHAT TO DO next (honest, specific). */}
+        {!_hasName ? (
+          <p style={S.scientific} data-testid="scan-command-next-action">
+            {tSafe(_unclear.nextActionKey, _unclear.nextAction)}
+          </p>
+        ) : null}
       </header>
 
       {/* Plant + confidence — `plantName` is the resolved fallback
