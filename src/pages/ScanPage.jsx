@@ -2215,6 +2215,9 @@ export default function ScanPage() {
             : isAlready
             ? tStrict('scan.addPlant.already',
                       'Already in My Plants — opened your plant.')
+            : (reason === 'unknown_plant' || reason === 'low_confidence')
+              ? tStrict('scan.addPlant.unconfirmed',
+                  'We’re not sure what this is yet, so we didn’t add it. Take a clearer photo of one leaf, or save the scan for review.')
             : reason === 'plant_not_in_catalog'
               ? tStrict('scan.addPlant.notInCatalog',
                   'We don’t recognize this plant yet — the scan was saved to your history. Once we add this plant we’ll surface it on the plant page.')

@@ -30,6 +30,7 @@
 
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
+import { isUnconfirmedScan } from '../../runtime/plants/scanToManagedPlant';
 // Real Plant Image System — one component, 4-tier fallback.
 import PlantImage from './PlantImage.jsx';
 // Note: this UI layer DOES NOT import the plant DB directly
@@ -100,6 +101,31 @@ export default function AddPlantConfirmationCard({
   onSaveForReview,
 }) {
   if (!_isObj(scanResult)) return null;
+
+  // P0 SAFETY — an unknown / low-confidence scan must NOT offer "Add to My Plants".
+  // Render the safe recovery path instead (save for review / scan again). The store
+  // (scanToManagedPlant) enforces the same rule, so this is defense-in-depth.
+  if (isUnconfirmedScan(scanResult)) {
+    return (
+      <div style={STYLES.card} data-testid="add-plant-unconfirmed">
+        <h3 style={STYLES.header}>{tSafe('plant.confirm.unsureTitle', "We're not sure what this is yet")}</h3>
+        <p style={STYLES.meta}>{tSafe('plant.confirm.unsureBody', 'Take a clearer photo of one leaf, or save this scan for review. We won’t add an unidentified plant to My Plants.')}</p>
+        <div style={STYLES.actions}>
+          {_isFn(onScanAgain) ? (
+            <button type="button" style={STYLES.btnPrimary} data-testid="add-plant-unconfirmed-retake" onClick={onScanAgain}>
+              {tSafe('plant.confirm.retake', 'Take another photo')}
+            </button>
+          ) : null}
+          {_isFn(onSaveForReview) ? (
+            <button type="button" style={STYLES.btnSecondary} data-testid="add-plant-unconfirmed-review" onClick={onSaveForReview}>
+              {tSafe('plant.confirm.saveReview', 'Save for review')}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   // Read enriched fields written by the scan runtime; never reach
   // into the plant catalog from this UI layer.
   const name     = _str(scanResult.plantName)

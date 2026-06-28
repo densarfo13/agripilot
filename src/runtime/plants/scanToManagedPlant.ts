@@ -78,6 +78,30 @@ interface WorkflowCtx {
   now?:          number;
 }
 
+// P0 SAFETY — the canonical "is this scan too unconfirmed to become an identified
+// plant?" guard. An unknown/placeholder name, or a present-but-low confidence, must
+// NEVER create a My Plants entity (and so never feed FarmBrain or spawn tasks). Same
+// unknown-name set the result card uses, so the UI and the store agree.
+const _UNKNOWN_PLANT_NAMES = Object.freeze([
+  '', '-', '—', 'unknown', 'unknown plant', 'plant', 'scan unclear', 'unclear',
+  'needs review', 'needs_review', 'not sure', 'unidentified',
+]);
+export function isUnconfirmedScan(scan: unknown): boolean {
+  if (!_isObj(scan)) return true;
+  const name = (_str((scan as any).plantName) || _str((scan as any).commonName) || _str((scan as any).label)).trim().toLowerCase();
+  if (_UNKNOWN_PLANT_NAMES.includes(name)) return true;
+  // Low confidence ONLY blocks when a numeric/labelled confidence is actually present
+  // — never block a confident scan that simply omits the field.
+  const raw = (scan as any).confidence;
+  let pct = NaN;
+  if (typeof raw === 'number' && Number.isFinite(raw)) pct = raw <= 1 ? raw * 100 : raw;
+  else {
+    const label = _str((scan as any).confidenceLabel || (typeof raw === 'string' ? raw : '')).toLowerCase();
+    if (label === 'high') pct = 85; else if (label === 'medium') pct = 60; else if (label === 'low') pct = 30;
+  }
+  return Number.isFinite(pct) && pct < 70;
+}
+
 export function scanToManagedPlant(ctx: WorkflowCtx) {
   return _safe(() => {
     const c    = _isObj(ctx) ? ctx : {} as WorkflowCtx;
@@ -95,6 +119,20 @@ export function scanToManagedPlant(ctx: WorkflowCtx) {
         runtimeVersion: SCAN_TO_MANAGED_PLANT_VERSION,
         eligible:       false,
         reason:         'scan_has_no_plant_id',
+        scanId:         _str(scan.scanId),
+      });
+    }
+
+    // P0 SAFETY — refuse to create a managed plant from an UNCONFIRMED scan. Unknown
+    // name or low confidence → ineligible, so the farmer is steered to "Save for
+    // review" instead of an unsafe identified entry. This is the single chokepoint
+    // every add-path funnels through, so it holds regardless of which button is shown.
+    if (isUnconfirmedScan(scan)) {
+      const _name = (_str(scan.plantName) || _str((scan as any).commonName) || _str((scan as any).label)).trim().toLowerCase();
+      return Object.freeze({
+        runtimeVersion: SCAN_TO_MANAGED_PLANT_VERSION,
+        eligible:       false,
+        reason:         _UNKNOWN_PLANT_NAMES.includes(_name) ? 'unknown_plant' : 'low_confidence',
         scanId:         _str(scan.scanId),
       });
     }
