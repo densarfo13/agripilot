@@ -116,7 +116,7 @@ export async function computeRecommendationSuccess(prisma, opts = {}) {
         successRate,
         confidence: _confidenceForSample(sampleSize),
       });
-    }).sort((a, b) => (b.successRate || -1) - (a.successRate || -1));
+    }).sort(_rankBySuccess);
 
     return Object.freeze({
       ok: true,
@@ -460,8 +460,17 @@ export function outcomeIntelligenceEngineInfo() {
   });
 }
 
+/**
+ * Rank by successRate DESCENDING, with unknown (null sample) rows last. Uses ?? not ||
+ * so a proven 0% success rate (real data, enough samples) ranks ABOVE an unknown:
+ * `0 || -1` collapses "this never worked" into "we have no data" and loses the signal.
+ */
+function _rankBySuccess(a, b) {
+  return (b.successRate ?? -1) - (a.successRate ?? -1);
+}
+
 export const _internal = Object.freeze({
-  _pct, _confidenceForSample, _seasonHint,
+  _pct, _confidenceForSample, _seasonHint, _rankBySuccess,
   MIN_SAMPLE_SIZE, MIN_RANKING_SAMPLE,
 });
 
