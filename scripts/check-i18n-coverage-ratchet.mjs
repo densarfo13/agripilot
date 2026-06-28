@@ -29,6 +29,27 @@ let baseline = {};
 try { baseline = JSON.parse(fs.readFileSync(path.join(R, 'src/i18n/coverage-baseline.json'), 'utf8')).floors || {}; }
 catch { E.push('missing/invalid src/i18n/coverage-baseline.json'); }
 
+// DUPLICATE-KEY scan (spec #4). A duplicate key in a JS object literal is SILENTLY
+// overwritten — no parse error, and by the time it is an object the duplicate is gone.
+// Only a text scan of the column source catches it. Currently 0; this locks that.
+const ALL_LOCALES = ['en', 'fr', 'tw', 'sw', 'ha', 'hi'];
+for (const locale of ALL_LOCALES) {
+  const rel = 'src/i18n/columns/T-' + locale + '.js';
+  let src = '';
+  try { src = fs.readFileSync(path.join(R, rel), 'utf8'); } catch { continue; }
+  const seen = new Set();
+  const dups = new Set();
+  const re = /^\s*(['"])((?:\\.|(?!\1).)*)\1\s*:/gm;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const key = m[2];
+    if (seen.has(key)) dups.add(key); else seen.add(key);
+  }
+  if (dups.size > 0) {
+    E.push(`duplicate key(s) in ${rel}: ${[...dups].slice(0, 5).join(', ')}${dups.size > 5 ? ` (+${dups.size - 5} more)` : ''} — a duplicate silently overwrites the first value`);
+  }
+}
+
 const en = await loadColumn('en');
 const enKeys = Object.keys(en);
 if (enKeys.length < 100) E.push('English column looks empty (' + enKeys.length + ' keys) — measurement aborted');
@@ -55,5 +76,5 @@ if (E.length) {
   process.exit(1);
 }
 const summary = Object.entries(results).map(([l, p]) => `${l} ${p}%≥${baseline[l]}%`).join(' · ');
-console.log('[check:i18n-coverage-ratchet] PASS — real per-locale coverage holds above the floor (' + summary
-  + '). Adding untranslated English keys can no longer silently lower coverage.');
+console.log('[check:i18n-coverage-ratchet] PASS — no duplicate keys in any column; real per-locale coverage holds above the floor ('
+  + summary + '). Untranslated keys can no longer silently lower coverage, and a silently-overwriting duplicate key can no longer slip in.');
