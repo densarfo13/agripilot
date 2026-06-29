@@ -18,6 +18,12 @@ for (const f of [ENG, TEST]) if (!fs.existsSync(path.join(R, f))) E.push('missin
 const s = rd(ENG);
 if (!s.includes('function _withBestCommonName(')) E.push('must define _withBestCommonName (the common-name backfill)');
 if (!s.includes('_withBestCommonName(winner, loser)')) E.push('_mergeCandidates must backfill the common name onto the higher-score winner');
+// PlantNet candidates + top-pick must be chosen by SCORE, not array position.
+if (!s.includes('function _sortedPlantnetResults(')) E.push('must define _sortedPlantnetResults (choose by score, not array position)');
+if (!/_plantnetCandidates[^]*?_sortedPlantnetResults\(parsed\)\.slice\(0, 5\)/.test(s))
+  E.push('_plantnetCandidates must slice the SORTED results (top-5 by score)');
+if (!/_pickTopIdentification[^]*?_sortedPlantnetResults\(plantNetParsed\)\[0\]/.test(s))
+  E.push('_pickTopIdentification must pick the highest-score PlantNet result, not results[0] by position');
 
 if (E.length === 0) {
   try {

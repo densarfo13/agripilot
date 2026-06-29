@@ -99,11 +99,19 @@ async function _callProvider(adapter, input) {
   }
 }
 
+// PlantNet returns results ordered by score, but we do NOT rely on that array order — sort
+// by score DESC ourselves so "top candidate" and "top 5" are chosen by score, not by array
+// position. Keeps this consistent with _mergeCandidates (which also sorts) and removes a
+// latent misidentification should a provider ever return unsorted results.
+function _sortedPlantnetResults(parsed) {
+  const results = parsed && parsed.raw && Array.isArray(parsed.raw.results) ? parsed.raw.results : [];
+  return results.slice().sort((a, b) => _safeNum(b && b.score, 0) - _safeNum(a && a.score, 0));
+}
+
 // Adapt PlantNet's species result into the candidate shape.
 function _plantnetCandidates(parsed) {
   if (!parsed || !parsed.raw) return [];
-  const results = Array.isArray(parsed.raw.results) ? parsed.raw.results : [];
-  return results.slice(0, 5).map((r) => {
+  return _sortedPlantnetResults(parsed).slice(0, 5).map((r) => {
     const species = r && r.species || {};
     const commonNames = Array.isArray(species.commonNames) ? species.commonNames : [];
     return Object.freeze({
@@ -158,16 +166,14 @@ function _mergeCandidates(a, b) {
 function _pickTopIdentification(plantIdParsed, plantNetParsed) {
   const pidScore = plantIdParsed && plantIdParsed.identification
     ? _safeNum(plantIdParsed.identification.score, 0) : 0;
-  const pntScore = plantNetParsed && plantNetParsed.raw
-    && Array.isArray(plantNetParsed.raw.results)
-    && plantNetParsed.raw.results[0]
-    ? _safeNum(plantNetParsed.raw.results[0].score, 0) : 0;
+  const pntTop = _sortedPlantnetResults(plantNetParsed)[0] || null; // highest score, not array position 0
+  const pntScore = pntTop ? _safeNum(pntTop.score, 0) : 0;
   if (pidScore === 0 && pntScore === 0) return null;
   if (pidScore >= pntScore) {
     return plantIdParsed && plantIdParsed.identification
       ? plantIdParsed.identification : null;
   }
-  const r0 = plantNetParsed.raw.results[0];
+  const r0 = pntTop;
   const species = r0 && r0.species || {};
   const commonNames = Array.isArray(species.commonNames) ? species.commonNames : [];
   return Object.freeze({
@@ -355,6 +361,7 @@ function _consensusMode(pidParsed, pntParsed) {
 
 export const _internal = Object.freeze({
   _confToScore, _scoreToBand, _mergeCandidates, _pickTopIdentification, _consensusMode,
+  _plantnetCandidates, _sortedPlantnetResults,
   WEIGHT_PLANTID, WEIGHT_PLANTNET, CONSENSUS_TIMEOUT_MS,
 });
 
