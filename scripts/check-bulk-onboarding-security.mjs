@@ -350,6 +350,35 @@ if (!appSrc) {
   }
 }
 
+// ─── J. Runtime barrel re-exports the provisioner ──────────────
+// AddFarmerPage._resolveProvisioner() reads
+// orgRuntime.provisionFarmerFromRow off the runtime barrel
+// src/runtime/organization/index.ts. If the barrel imports the
+// onboarding runtime but forgets to re-export the provisioner, the
+// page silently falls back to a "feature not available" state and
+// the runtime provisioning path goes dormant (and vite/rollup emits
+// an "is not exported" warning). Assert the barrel re-exports it.
+const ORG_BARREL_PATH = path.join(ROOT, 'src/runtime/organization/index.ts');
+const orgBarrelSrc = read(ORG_BARREL_PATH);
+if (!orgBarrelSrc) {
+  fail('bulk-onboarding: missing src/runtime/organization/index.ts');
+} else {
+  const clean = stripComments(orgBarrelSrc);
+  const importsProvisioner =
+    /import\s*\{[^}]*\bprovisionFarmerFromRow\b[^}]*\}\s*from\s*['"`]\.\/onboarding\/FarmerProvisioningRuntime['"`]/.test(clean);
+  const reExportsProvisioner =
+    /export\s*\{[^}]*\bprovisionFarmerFromRow\b[^}]*\}/.test(clean);
+  if (!importsProvisioner) {
+    fail('bulk-onboarding: src/runtime/organization/index.ts does not import provisionFarmerFromRow from ./onboarding/FarmerProvisioningRuntime');
+  }
+  if (!reExportsProvisioner) {
+    fail('bulk-onboarding: src/runtime/organization/index.ts does not re-export provisionFarmerFromRow — AddFarmerPage._resolveProvisioner() would resolve undefined and the single-farmer add path goes dormant');
+  }
+  if (importsProvisioner && reExportsProvisioner) {
+    pass('bulk-onboarding: runtime barrel src/runtime/organization/index.ts re-exports provisionFarmerFromRow so AddFarmerPage can resolve it');
+  }
+}
+
 // ─── Summary ───────────────────────────────────────────────────
 if (FAILED.length > 0) {
   console.error('[check:bulk-onboarding-security] FAIL');

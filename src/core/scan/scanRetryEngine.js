@@ -37,6 +37,33 @@ export function _setDelayForTests(fn) {
 }
 export function _resetDelayForTests() { _delay = _defaultDelay; }
 
+/**
+ * isRetriableScanFailure — should a failed provider attempt be retried?
+ *
+ * Resilience rule: retry ONLY transient failures. A terminal failure cannot
+ * succeed on retry, so hammering it 3× with backoff just makes the farmer wait
+ * longer — and for CREDITS it is actively wasteful. Mirrors the server-side
+ * FAILURE_CATEGORY semantics (services/scan/certification/providerFailure.js):
+ *   TERMINAL  → AUTH (401/403), CREDITS (402), INVALID_RESPONSE (parse/malformed),
+ *               and an empty result (same photo → same empty candidate list).
+ *   TRANSIENT → TIMEOUT, NETWORK/5xx, RATE_LIMIT (429), and anything unknown.
+ *
+ * Safe asymmetry: returns true (retry) for anything not CLEARLY terminal, so it
+ * can only skip pointless retries — it never blocks a transient one. Pure, total.
+ *
+ * @param {string} reason  failure reason / error message (any provider shape)
+ * @returns {boolean}
+ */
+export function isRetriableScanFailure(reason) {
+  const r = String(reason == null ? '' : reason).toLowerCase();
+  if (!r) return true; // unknown → allow retry (safe default)
+  if (/http[_\s-]?40[13]\b|unauthor|forbidden|invalid.?key|credential|\bapi.?key\b|\bauth\b/.test(r)) return false; // AUTH
+  if (/http[_\s-]?402\b|credit|quota|insufficient|payment|exhaust|out of/.test(r)) return false;                    // CREDITS
+  if (/parse|malformed|invalid.?response|unexpected token|unexpected end|bad.?json|schema|map_error/.test(r)) return false; // bad body
+  if (/no.?candidate|empty.?candidate|no.?plant|no.?match|unsupported.?object/.test(r)) return false;              // empty result
+  return true; // timeout / network / 5xx / 429 / unknown → transient
+}
+
 export const DEFAULT_RETRY_OPTS = Object.freeze({
   maxAttempts: 3,
   baseDelayMs: 200,
@@ -84,6 +111,10 @@ export async function withScanRetry(fn, opts) {
   const isStale = typeof o.isStale === 'function' ? o.isStale : () => false;
   const activeSessionId = o.activeSessionId || null;
   const onAttempt = typeof o.onAttempt === 'function' ? o.onAttempt : null;
+  // Optional resilience gate: a predicate (reason, attempt) => boolean. When it
+  // returns false the failure is terminal and we stop retrying immediately.
+  // Absent → retry every failure (backward-compatible). Pass isRetriableScanFailure.
+  const shouldRetry = typeof o.shouldRetry === 'function' ? o.shouldRetry : null;
   const timings = [];
   let lastError = '';
   if (typeof fn !== 'function') {
@@ -137,6 +168,15 @@ export async function withScanRetry(fn, opts) {
       });
     }
     lastError = reason;
+    // Terminal failure (auth / credits / malformed body / empty result) → retrying
+    // cannot succeed; give up now rather than waste the farmer's time on backoff.
+    if (shouldRetry && !shouldRetry(reason, attempt)) {
+      return Object.freeze({
+        ok: false, value: null, attempts: attempt,
+        totalLatencyMs: Date.now() - t0, lastError: reason,
+        stale: false, gaveUp: 'terminal', timings: Object.freeze(timings.slice()),
+      });
+    }
     if (attempt < maxAttempts) {
       // Re-check stale before sleeping so a fresh cancel skips the
       // wasted backoff.
@@ -159,7 +199,7 @@ export async function withScanRetry(fn, opts) {
 }
 
 const _module = {
-  DEFAULT_RETRY_OPTS, withScanRetry,
+  DEFAULT_RETRY_OPTS, withScanRetry, isRetriableScanFailure,
   _setDelayForTests, _resetDelayForTests,
 };
 export default _module;

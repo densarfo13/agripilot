@@ -51,6 +51,11 @@ import {
   listOrgReports, ORG_REPORT_ENGINE_VERSION,
 } from './OrganizationReportEngine';
 
+import {
+  provisionFarmerFromRow, provisioningSnapshot,
+  FARMER_PROVISIONING_VERSION,
+} from './onboarding/FarmerProvisioningRuntime';
+
 const _safe = <T,>(fn: () => T, fb: T): T => {
   try { return fn(); } catch { return fb; }
 };
@@ -137,8 +142,15 @@ export {
   // Reports
   generateOrganizationReport, exportOrganizationReportCSV,
   listOrgReports, ORG_REPORT_ENGINE_VERSION,
+  // Farmer provisioning (bulk-onboarding) — the single-farmer
+  // AddFarmerPage resolves provisionFarmerFromRow off this barrel.
+  provisionFarmerFromRow, provisioningSnapshot,
+  FARMER_PROVISIONING_VERSION,
 };
 
 export type { MemberRole, ReportKind } from './organizationContracts';
 export type { OrganizationMember } from './OrganizationRuntime';
 export type { OrgReportRecord } from './OrganizationReportEngine';
+export type {
+  ProvisionFromRowCtx, ProvisioningRow,
+} from './onboarding/FarmerProvisioningRuntime';
