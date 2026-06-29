@@ -44,6 +44,17 @@ describe('classifyProviderFailure — every provider failure shape', () => {
     expect(classifyProviderFailure({ httpStatus: 200 })).toBe(FAILURE_CATEGORY.INVALID_RESPONSE);
   });
 
+  it('THE FIX: 400/404/408/502/504 classify (were UNKNOWN)', () => {
+    expect(classifyProviderFailure({ httpStatus: 408 })).toBe(FAILURE_CATEGORY.TIMEOUT);   // request timeout — retriable
+    expect(classifyProviderFailure({ httpStatus: 504 })).toBe(FAILURE_CATEGORY.TIMEOUT);   // gateway timeout — retriable
+    expect(classifyProviderFailure({ httpStatus: 400 })).toBe(FAILURE_CATEGORY.INVALID_RESPONSE); // bad request — terminal
+    expect(classifyProviderFailure({ httpStatus: 404 })).toBe(FAILURE_CATEGORY.INVALID_RESPONSE); // not found — terminal
+    expect(classifyProviderFailure({ httpStatus: 502 })).toBe(FAILURE_CATEGORY.NETWORK);   // bad gateway
+    expect(classifyProviderFailure({ httpStatus: 503 })).toBe(FAILURE_CATEGORY.NETWORK);   // unavailable
+    expect(classifyProviderFailure({ reason: 'http_408' })).toBe(FAILURE_CATEGORY.TIMEOUT); // recovered from token
+    expect(classifyProviderFailure({ reason: 'http_400' })).toBe(FAILURE_CATEGORY.INVALID_RESPONSE);
+  });
+
   it('text reasons still classify (auth / credits / rate-limit / parse)', () => {
     expect(classifyProviderFailure({ reason: 'invalid api key' })).toBe(FAILURE_CATEGORY.AUTH);
     expect(classifyProviderFailure({ reason: 'quota exhausted' })).toBe(FAILURE_CATEGORY.CREDITS);

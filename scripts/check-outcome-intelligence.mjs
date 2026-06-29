@@ -202,6 +202,11 @@ const ALLOWED_EXCEPTIONS = [
   // CONFIDENCE NORMALIZE — bug-hunter fix: collapse the overloaded confidence field
   // (string tone / 0–1 float / 0–100 number) to one honest { pct, band }.
   'src/runtime/scan/confidence/',
+  // ORG BARREL RE-EXPORT — reviewed fix (production-certification finding): the org barrel
+  // must re-export provisionFarmerFromRow so AddFarmerPage's provisioner is live (was
+  // resolving to undefined). Scoped to the single index.ts barrel file, NOT the whole
+  // organization/ runtime — every other org-runtime file stays locked.
+  'src/runtime/organization/index.ts',
 ];
 let gitAvailable = false;
 let diff = '';

@@ -57,9 +57,10 @@ export function classifyProviderFailure(info = {}) {
   if (s === 401 || s === 403 || /\bauth\b|unauthor|forbidden|invalid.?key|api.?key|credential/.test(r)) return FAILURE_CATEGORY.AUTH;
   if (s === 402 || /credit|quota|insufficient|payment|exhaust|out of/.test(r)) return FAILURE_CATEGORY.CREDITS;
   if (s === 429 || /rate.?limit|too many|throttl/.test(r)) return FAILURE_CATEGORY.RATE_LIMIT;
-  if (/timeout|timed.?out|abort|deadline|etimedout/.test(r)) return FAILURE_CATEGORY.TIMEOUT;
+  if (s === 408 || s === 504 || /timeout|timed.?out|abort|deadline|etimedout/.test(r)) return FAILURE_CATEGORY.TIMEOUT;
   if (/network|econn|enotfound|eai_again|dns|socket|fetch failed|fetch_error|connect|unreachable|getaddrinfo|tls|ssl|no.?response/.test(r)) return FAILURE_CATEGORY.NETWORK;
   if (/schema|parse|invalid.?response|malformed|unexpected token|unexpected end|bad.?json|mapping|map_error/.test(r)) return FAILURE_CATEGORY.INVALID_RESPONSE;
+  if (s === 400 || s === 404) return FAILURE_CATEGORY.INVALID_RESPONSE;      // client/endpoint error (our request/URL) — terminal, retry won't help
   if (Number.isFinite(s) && s >= 500) return FAILURE_CATEGORY.NETWORK;       // upstream/infra error reached but failed
   if (Number.isFinite(s) && s >= 200 && s < 300) return FAILURE_CATEGORY.INVALID_RESPONSE; // 2xx but no usable body
   return FAILURE_CATEGORY.UNKNOWN;

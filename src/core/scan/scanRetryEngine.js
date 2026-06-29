@@ -59,6 +59,7 @@ export function isRetriableScanFailure(reason) {
   if (!r) return true; // unknown → allow retry (safe default)
   if (/http[_\s-]?40[13]\b|unauthor|forbidden|invalid.?key|credential|\bapi.?key\b|\bauth\b/.test(r)) return false; // AUTH
   if (/http[_\s-]?402\b|credit|quota|insufficient|payment|exhaust|out of/.test(r)) return false;                    // CREDITS
+  if (/http[_\s-]?40[04]\b/.test(r)) return false; // 400 bad request / 404 not found — our request/endpoint, retry won't help
   if (/parse|malformed|invalid.?response|unexpected token|unexpected end|bad.?json|schema|map_error/.test(r)) return false; // bad body
   if (/no.?candidate|empty.?candidate|no.?plant|no.?match|unsupported.?object/.test(r)) return false;              // empty result
   return true; // timeout / network / 5xx / 429 / unknown → transient

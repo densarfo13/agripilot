@@ -29,6 +29,9 @@ const run = (fn: any, opts: any = {}) => withScanRetry(fn, { maxAttempts: 3, jit
   ok(isRetriableScanFailure('http_500') === true, 'http 500 is transient');
   ok(isRetriableScanFailure('fetch failed') === true, 'network is transient');
   ok(isRetriableScanFailure('http_429 rate limit') === true, 'rate-limit is transient (retry w/ backoff)');
+  ok(isRetriableScanFailure('http_408') === true, '408 request timeout is transient');
+  ok(isRetriableScanFailure('http_502') === true, '502 bad gateway is transient');
+  ok(isRetriableScanFailure('http_504') === true, '504 gateway timeout is transient');
   ok(isRetriableScanFailure('') === true, 'unknown/empty reason → retry (safe default)');
 
   // ── isRetriableScanFailure: TERMINAL → do NOT retry ────────────────
@@ -37,6 +40,8 @@ const run = (fn: any, opts: any = {}) => withScanRetry(fn, { maxAttempts: 3, jit
   ok(isRetriableScanFailure('http_402 credits exhausted') === false, 'credits 402 is terminal');
   ok(isRetriableScanFailure('unexpected token in JSON') === false, 'malformed body is terminal');
   ok(isRetriableScanFailure('no_candidates') === false, 'empty candidates is terminal (same photo → same empty)');
+  ok(isRetriableScanFailure('http_400') === false, '400 bad request is terminal (our request)');
+  ok(isRetriableScanFailure('http_404') === false, '404 not found is terminal (wrong endpoint)');
 
   // ── RETRY: a transient failure is retried, then succeeds ───────────
   const r1 = await run(failsThenSucceeds(2, 'timeout'), { shouldRetry: isRetriableScanFailure });
