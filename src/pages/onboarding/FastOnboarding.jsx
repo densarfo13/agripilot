@@ -44,6 +44,8 @@ import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../core/analytics.js';
 import { stampOnboardingStart } from '../../core/onboardingTiming.js';
 import { classifyLocationError, locationContext } from '../../runtime/location/classifyLocationError';
+import { reverseGeocode } from '../../utils/geolocation.js';
+import { saveLocation } from '../../lib/locationSafe.js';
 // BYPASS_SETUP_FOR_PILOT removed in the May 2026 permanent-
 // PilotHome-removal pass. The Continue path below is now
 // always the direct "stamp complete + navigate to /" path
@@ -479,6 +481,9 @@ export default function FastOnboarding() {
   const [region,     setRegion]     = useState('');
   const [geoStatus,  setGeoStatus]  = useState('idle'); // idle|requesting|granted|denied
   const [geoVerdict, setGeoVerdict] = useState(null);   // specific failure verdict (classifyLocationError)
+  const [geoPlace,   setGeoPlace]   = useState(null);   // reverse-geocoded place for the success preview
+  const autoAdvancedRef = useRef(false);                // auto-continue scheduled once on success
+  const finishedRef = useRef(false);                    // navigation fires once (tap OR auto)
   // High-Conversion Onboarding §1 — manual entry on the
   // location-confirm screen sits behind a link. Default false so
   // typical users never see the country/region inputs. Toggled by
@@ -512,8 +517,46 @@ export default function FastOnboarding() {
     // no-throw no-op when geolocation is unsupported / denied,
     // so this can run unconditionally on every mount.
     try { requestLocation(); } catch { /* swallow */ }
-     
+
   }, []);
+
+  // Persist completion + leave the location step. Shared by the Continue tap and the
+  // auto-advance on a successful fix, so both behave identically and navigation fires once.
+  function finishLocation(source) {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    try {
+      trackEvent('location_confirmed', {
+        geoStatus, hasManualCountry: !!country.trim(), hasManualRegion: !!region.trim(),
+      });
+    } catch { /* swallow */ }
+    try { setOnboardingComplete(); } catch { /* swallow */ }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        // Only fall back to general-guidance when we did NOT get a real fix and the user
+        // typed nothing. A successful GPS grant ('granted') saved real coords via
+        // saveLocation, so it must never be marked skipped/unavailable (the old guard used
+        // 'ok', which never matched 'granted' — so every success was mislabeled).
+        if (geoStatus !== 'granted' && !country.trim()) {
+          localStorage.setItem('farroway_location_skipped', 'true');
+          localStorage.setItem('locationMode', 'general_guidance');
+          localStorage.setItem('locationStatus', 'unavailable');
+        }
+      }
+    } catch { /* swallow */ }
+    try { trackEvent('onboarding_location_continue', { geoStatus, from: 'fast-onboarding/location', source }); } catch { /* swallow */ }
+    navigate('/home', { replace: true });
+  }
+
+  // Auto-continue once, ~1.8s after a successful fix — long enough to show the farm preview,
+  // short enough to keep the whole step under 15s with no manual tap (spec items 4 + 9).
+  useEffect(() => {
+    if (geoStatus !== 'granted' || autoAdvancedRef.current) return;
+    autoAdvancedRef.current = true;
+    const id = setTimeout(() => finishLocation('auto'), 1800);
+    return () => clearTimeout(id);
+
+  }, [geoStatus]);
 
   const isGarden = experience === 'garden';
   const totalSteps = 4;
@@ -606,13 +649,22 @@ export default function FastOnboarding() {
     setGeoStatus('requesting');
     try {
       navigator.geolocation.getCurrentPosition(
-        () => {
-          // Spec §3 — "Do not block if location fails." We only
-          // record granted-state for the analytics event; the
-          // user can still type country/region manually below.
-          // We deliberately don't run a reverse-geocode here:
-          // the spec says "if available" — it's optional context.
+        (pos) => {
+          // SUCCESS — persist the real fix (previously the coords were discarded, so a
+          // "successful" grant still left the farm with no usable location). saveLocation
+          // is the canonical store; reverse-geocode is best-effort and only enriches the
+          // preview + region label — a failure there never downgrades the saved fix.
           setGeoVerdict(null);
+          const lat = pos && pos.coords && pos.coords.latitude;
+          const lng = pos && pos.coords && pos.coords.longitude;
+          try { saveLocation({ lat, lng, source: 'gps' }); } catch { /* swallow */ }
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            reverseGeocode(lat, lng).then((geo) => {
+              if (!geo) return;
+              setGeoPlace(geo);
+              try { saveLocation({ lat, lng, country: geo.country, region: geo.region, label: geo.displayName, source: 'gps' }); } catch { /* swallow */ }
+            }).catch(() => { /* coords already saved; preview just stays generic */ });
+          }
           setGeoStatus('granted');
         },
         (err) => {
@@ -954,6 +1006,8 @@ export default function FastOnboarding() {
             {tStrict('fastOnboarding.locationConfirm.subtitle',
               'We use this for weather-aware tips.')}
           </p>
+          {/* Pulse animation for the "Finding your farm…" search icon. */}
+          <style>{'@keyframes farrowayLocPulse{0%,100%{transform:scale(1);opacity:.65}50%{transform:scale(1.18);opacity:1}}'}</style>
 
           {/* Status card — communicates the current geo state at
               a glance. Tapping it (when idle) re-triggers the
@@ -970,15 +1024,21 @@ export default function FastOnboarding() {
             data-testid="fast-onboarding-location-card"
             data-geo-status={geoStatus}
           >
-            <span style={S.locationCardIcon} aria-hidden="true">
+            <span
+              style={geoStatus === 'requesting'
+                ? { ...S.locationCardIcon, animation: 'farrowayLocPulse 1.1s ease-in-out infinite' }
+                : S.locationCardIcon}
+              aria-hidden="true"
+            >
               {geoStatus === 'granted' ? '\u2705'
                : geoStatus === 'denied' ? '\u26A0\uFE0F'
+               : geoStatus === 'requesting' ? '\uD83D\uDD0D'
                : '\uD83D\uDCCD'}
             </span>
             <span style={S.locationCardText}>
               {geoStatus === 'requesting'
-                ? tStrict('fastOnboarding.locationConfirm.detecting',
-                    'Detecting your location\u2026')
+                ? tSafe('fastOnboarding.locationConfirm.finding',
+                    'Finding your farm\u2026')
                 : geoStatus === 'granted'
                 ? tStrict('fastOnboarding.locationConfirm.granted',
                     'Location detected')
@@ -1002,8 +1062,9 @@ export default function FastOnboarding() {
           {geoStatus === 'granted' ? (
             <span style={S.locationConfidence} data-testid="fast-onboarding-location-confidence">
               <span aria-hidden="true">{'\u2714'}</span>{' '}
-              {tStrict('fastOnboarding.locationConfirm.looksCorrect',
-                'Looks correct')}
+              {geoPlace && (geoPlace.locality || geoPlace.region || geoPlace.country)
+                ? `${geoPlace.locality || geoPlace.region || geoPlace.country} \u00b7 ${tSafe('fastOnboarding.locationConfirm.weatherReady', 'Weather ready')}`
+                : tSafe('fastOnboarding.locationConfirm.weatherReady', 'Weather ready')}
             </span>
           ) : null}
 
@@ -1021,61 +1082,18 @@ export default function FastOnboarding() {
               missing crop / location / weather and exposes a
               non-blocking "Complete setup" card so the user
               can return to fill in details on their own time. */}
+          {/* On a successful fix we auto-continue (~1.8s) — the button is then redundant
+              and shows "Continuing…". For idle/requesting/denied the farmer taps it to
+              proceed (location is never blocking). Single shared finishLocation handler. */}
           <button
             type="button"
-            onClick={() => {
-              // User Behavior Tracking §1 — fire location_confirmed
-              // on Continue tap. Carries the geo state so the
-              // funnel can split on auto-detect-success vs
-              // manual-entry vs skipped paths.
-              try {
-                trackEvent('location_confirmed', {
-                  geoStatus,
-                  hasManualCountry: !!country.trim(),
-                  hasManualRegion:  !!region.trim(),
-                });
-              } catch { /* swallow */ }
-
-              // Pilot bypass: skip the rest of the wizard.
-              //
-              // Routes to "/" (the canonical landing) rather
-              // than "/home". /home mounts RoleHomeRedirect,
-              // which for farmers used to resolve back to
-              // /home → infinite loop → blank screen. /
-              // renders <ProtectedRoute><Layout /></...> with
-              // <DashboardPage /> at the index — direct paint,
-              // no redirect indirection.
-              // Continue → always stamp completion + navigate to /.
-              // The earlier conditional (and the crash-prone
-              // setStepIdx(1) fallback it gated) was removed in
-              // the May 2026 permanent-PilotHome-removal pass.
-              try { setOnboardingComplete(); } catch { /* swallow */ }
-              try {
-                if (typeof localStorage !== 'undefined') {
-                  localStorage.setItem('farroway_location_skipped', 'true');
-                  // Login-routing fix §5 — when location is not
-                  // confirmed, persist the safe-fallback mode so
-                  // Home renders general-guidance instead of
-                  // re-prompting. GPS failure must never block.
-                  if (geoStatus !== 'ok' && !country.trim()) {
-                    localStorage.setItem('locationMode', 'general_guidance');
-                    localStorage.setItem('locationStatus', 'unavailable');
-                  }
-                }
-              } catch { /* swallow */ }
-              try {
-                trackEvent('onboarding_location_continue', {
-                  geoStatus,
-                  from: 'fast-onboarding/location',
-                });
-              } catch { /* swallow */ }
-              navigate('/home', { replace: true });
-              return;
-            }}
+            onClick={() => finishLocation('tap')}
             style={S.primaryBtn}
             data-testid="fast-onboarding-location-continue"
           >
-            {tStrict('fastOnboarding.continue', 'Continue')}
+            {geoStatus === 'granted'
+              ? tSafe('fastOnboarding.locationConfirm.continuing', 'Continuing…')
+              : tStrict('fastOnboarding.continue', 'Continue')}
           </button>
 
           {/* Manual entry behind a link per spec §1 ("hide manual

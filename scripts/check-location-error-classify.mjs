@@ -36,6 +36,10 @@ const fast = rd('src/pages/onboarding/FastOnboarding.jsx');
 if (fast) {
   if (!fast.includes('classifyLocationError')) E.push('FastOnboarding must classify the location failure (not collapse every cause to "denied")');
   if (!fast.includes('geoVerdict')) E.push('FastOnboarding must render the specific verdict (geoVerdict) on a location failure');
+  // A successful fix must actually be PERSISTED + auto-continue, and never mislabeled.
+  if (!fast.includes('saveLocation(')) E.push('FastOnboarding must persist a successful GPS fix via saveLocation (coords were previously discarded)');
+  if (!fast.includes('finishLocation(')) E.push('FastOnboarding must use the shared finishLocation handler (tap + auto-continue)');
+  if (/geoStatus !== 'ok'/.test(fast)) E.push("FastOnboarding still uses the geoStatus !== 'ok' guard — a successful 'granted' fix gets mislabeled general_guidance/skipped");
 }
 
 if (E.length === 0) {
