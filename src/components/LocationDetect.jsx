@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { detectAndResolveLocation, checkLocationPermission } from '../utils/geolocation.js';
 import { tSafe } from '../i18n/tSafe.js';
+import api from '../runtime/apiRuntime.js';
 import {
   classifyLocationError,
   locationContext,
@@ -46,13 +47,21 @@ export default function LocationDetect({ onDetected, onManual, onZip, label, com
       isSecureContext: ctx.isSecureContext, hasGeolocation: ctx.hasGeolocation,
       browser: ctx.browser, platform: ctx.platform,
     };
+    // Record locally (window.__locationLastAttempt) AND fire-and-forget to the operator
+    // debug endpoint. The record is already redacted (coarse coords); reporting never blocks
+    // and never throws.
+    const record = (a) => {
+      const rec = recordLocationAttempt(a, new Date().toISOString());
+      try { api.post('/location/attempt', rec).catch(() => {}); } catch { /* never block location */ }
+      return rec;
+    };
 
     try {
       const perm = await checkLocationPermission();
       if (perm === 'denied') {
         const v = classifyLocationError({ code: 'access_denied' }, ctx);
         setVerdict(v);
-        recordLocationAttempt({ ...base, outcome: 'error', code: v.code, permission: perm, latencyMs: elapsed() }, new Date().toISOString());
+        record({ ...base, outcome: 'error', code: v.code, permission: perm, latencyMs: elapsed() });
         return;
       }
 
@@ -60,14 +69,15 @@ export default function LocationDetect({ onDetected, onManual, onZip, label, com
       onDetected(result);
       setDone(true);
       setTimeout(() => setDone(false), 3000);
-      recordLocationAttempt({
+      record({
         ...base, outcome: 'success', permission: perm, latencyMs: elapsed(),
         accuracyM: result && result.accuracy, coarseLat: result && result.latitude, coarseLng: result && result.longitude,
-      }, new Date().toISOString());
+        reverseGeocoded: !!(result && (result.country || result.region || result.locality)),
+      });
     } catch (err) {
       const v = classifyLocationError(err, ctx);
       setVerdict(v);
-      recordLocationAttempt({ ...base, outcome: 'error', code: v.code, latencyMs: elapsed(), errorMessage: err && err.message }, new Date().toISOString());
+      record({ ...base, outcome: 'error', code: v.code, latencyMs: elapsed(), errorMessage: err && err.message });
     } finally {
       setDetecting(false);
       busyRef.current = false;

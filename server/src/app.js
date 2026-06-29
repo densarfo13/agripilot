@@ -703,6 +703,33 @@ app.get('/api/admin/scan/last-trace', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/location/attempt — the client reports a REDACTED location acquisition attempt
+// (verdict code, permission, https, browser/platform, latency, accuracy, COARSE coords).
+// Location runs client-side, so this is how the operator debug view gets real field data.
+// No secrets; precise coordinates are never stored (the store keeps only coarse coords).
+app.post('/api/location/attempt', authenticate, async (req, res) => {
+  try {
+    const { recordLocationDebug } = await import('./ml/locationLastAttempt.js');
+    recordLocationDebug({ ...(req.body || {}), userId: req.user && req.user.id }, new Date().toISOString());
+    return res.json({ ok: true });
+  } catch {
+    return res.status(200).json({ ok: false });   // diagnostics must never break the flow
+  }
+});
+
+// GET /api/admin/location/debug — ADMIN-ONLY. Recent location attempts (most recent + a
+// short ring), redacted. Lets an operator see WHY field location fails (denied / timeout /
+// insecure / low-accuracy) without any secrets or precise positions.
+app.get('/api/admin/location/debug', authenticate, async (req, res) => {
+  if (!_requireAdmin(req, res)) return;
+  try {
+    const { getLocationDebug } = await import('./ml/locationLastAttempt.js');
+    return res.json({ ok: true, ...getLocationDebug() });
+  } catch {
+    return res.status(500).json({ ok: false, error: 'location_debug_unavailable' });
+  }
+});
+
 app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
   try {
     const { getScanProviderDiagnostics, pingScanProvider } =
