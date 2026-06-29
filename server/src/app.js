@@ -1341,7 +1341,18 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
         const r = _c.r || {};
         const ok = r.ok === true;
         const httpStatus = (typeof r.httpStatus === 'number') ? r.httpStatus : (ok ? 200 : null);
-        const failCat = ok ? null : classifyProviderFailure({ httpStatus, reason: r.reason, status: r.status });
+        // Pass EVERY failure signal: providers variously use reason / error; a timeout lives
+        // only in message; and plant.id's per-provider detail lives in consensus.sources[].error.
+        // Without this, real HTTP/timeout failures all classified as UNKNOWN.
+        const _sourceErrs = Array.isArray(r.sources)
+          ? r.sources.filter((sc) => sc && sc.ok === false && sc.error).map((sc) => sc.error).join(' ')
+          : '';
+        const failCat = ok ? null : classifyProviderFailure({
+          httpStatus,
+          reason: r.reason || r.error,
+          status: r.status,
+          message: [r.message, _sourceErrs].filter(Boolean).join(' '),
+        });
         recordProviderMetric(prisma, {
           provider:          _c.provider,
           status:            ok ? 'READY' : (failCat || r.status || 'UNKNOWN'),
