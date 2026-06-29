@@ -1,5 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { detectAndResolveLocation, checkLocationPermission } from '../utils/geolocation.js';
+import { tSafe } from '../i18n/tSafe.js';
+import {
+  classifyLocationError,
+  locationContext,
+  recordLocationAttempt,
+} from '../runtime/location/classifyLocationError';
 
 /**
  * LocationDetect — mobile-hardened "Get My Location" button.
@@ -9,52 +15,76 @@ import { detectAndResolveLocation, checkLocationPermission } from '../utils/geol
  *   - HTTPS enforced by the platform
  *   - Permission pre-check where Permissions API is available
  *
+ * On failure it shows a SPECIFIC reason + the right buttons (never one collapsed
+ * "we couldn't get your location") via classifyLocationError, and records a redaction-safe
+ * attempt to window.__locationLastAttempt for in-field diagnostics.
+ *
  * Props:
- *   onDetected(result)  — called with { latitude, longitude, accuracy, capturedAt,
- *                          country, countryCode, region, district, locality, displayName }
- *   label               — button text (default: "Get My Location")
- *   compact             — smaller styling for inline use
- *   disabled            — disable the button externally
- *   style               — additional wrapper styles
+ *   onDetected(result)  — { latitude, longitude, accuracy, capturedAt, country, ... }
+ *   onManual()          — optional: open manual region entry (enables the "Enter manually" button)
+ *   onZip()             — optional: open ZIP/postal entry (enables the "ZIP code" button)
+ *   label, compact, disabled, style
  */
-export default function LocationDetect({ onDetected, label, compact, disabled, style }) {
+export default function LocationDetect({ onDetected, onManual, onZip, label, compact, disabled, style }) {
   const [detecting, setDetecting] = useState(false);
-  const [softMsg, setSoftMsg] = useState('');
+  const [verdict, setVerdict] = useState(null);
   const [done, setDone] = useState(false);
   const busyRef = useRef(false); // prevent double-trigger on fast taps
 
   const handleClick = async () => {
-    // Double-tap guard — busyRef is synchronous, survives React batching
     if (busyRef.current) return;
     busyRef.current = true;
     setDetecting(true);
-    setSoftMsg('');
+    setVerdict(null);
     setDone(false);
 
-    try {
-      // Pre-check permission (non-blocking — falls back to 'unknown' on iOS Safari)
-      const perm = await checkLocationPermission();
+    const ctx = locationContext();
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : null;
+    const elapsed = () => (t0 != null && typeof performance !== 'undefined' && performance.now)
+      ? performance.now() - t0 : null;
+    const base = {
+      isSecureContext: ctx.isSecureContext, hasGeolocation: ctx.hasGeolocation,
+      browser: ctx.browser, platform: ctx.platform,
+    };
 
+    try {
+      const perm = await checkLocationPermission();
       if (perm === 'denied') {
-        setSoftMsg('Please allow location access in your browser settings.');
+        const v = classifyLocationError({ code: 'access_denied' }, ctx);
+        setVerdict(v);
+        recordLocationAttempt({ ...base, outcome: 'error', code: v.code, permission: perm, latencyMs: elapsed() }, new Date().toISOString());
         return;
       }
 
-      // Call detectAndResolveLocation directly — getCurrentPosition inside it
-      // fires navigator.geolocation.getCurrentPosition() synchronously within
-      // the same call stack as the user gesture.
       const result = await detectAndResolveLocation();
       onDetected(result);
       setDone(true);
       setTimeout(() => setDone(false), 3000);
-    } catch {
-      // Single calm message — no technical codes shown to users
-      setSoftMsg("We couldn't get your exact location. You can continue with your village or region.");
+      recordLocationAttempt({
+        ...base, outcome: 'success', permission: perm, latencyMs: elapsed(),
+        accuracyM: result && result.accuracy, coarseLat: result && result.latitude, coarseLng: result && result.longitude,
+      }, new Date().toISOString());
+    } catch (err) {
+      const v = classifyLocationError(err, ctx);
+      setVerdict(v);
+      recordLocationAttempt({ ...base, outcome: 'error', code: v.code, latencyMs: elapsed(), errorMessage: err && err.message }, new Date().toISOString());
     } finally {
       setDetecting(false);
       busyRef.current = false;
     }
   };
+
+  const runAction = (key) => {
+    if (key === 'retry' || key === 'enable') { handleClick(); return; }
+    if (key === 'manual' && typeof onManual === 'function') { onManual(); return; }
+    if (key === 'zip' && typeof onZip === 'function') { onZip(); return; }
+  };
+  // Only show buttons that actually do something: retry/enable always re-attempt;
+  // manual/zip only when the parent wired a handler (never a dead button).
+  const _actionable = (a) =>
+    a.key === 'retry' || a.key === 'enable'
+    || (a.key === 'manual' && typeof onManual === 'function')
+    || (a.key === 'zip' && typeof onZip === 'function');
 
   const btnStyle = compact ? compactBtn : fullBtn;
 
@@ -67,15 +97,24 @@ export default function LocationDetect({ onDetected, label, compact, disabled, s
         style={{ ...btnStyle, opacity: detecting || disabled ? 0.6 : 1 }}
       >
         {detecting ? (
-          <span style={labelStyle}>Finding your location...</span>
+          <span style={labelStyle}>{tSafe('home.location.finding', 'Finding your location...')}</span>
         ) : done ? (
-          <span style={{ ...labelStyle, color: '#C8944D' }}>Location found</span>
+          <span style={{ ...labelStyle, color: '#C8944D' }}>{tSafe('home.location.found', 'Location found')}</span>
         ) : (
-          <span style={labelStyle}>{label || 'Get My Location'}</span>
+          <span style={labelStyle}>{label || tSafe('home.location.get', 'Get My Location')}</span>
         )}
       </button>
-      {softMsg && (
-        <div style={softMsgStyle}>{softMsg}</div>
+      {verdict && (
+        <div style={softMsgStyle} role="alert" data-testid="location-error" data-code={verdict.code}>
+          <div>{tSafe(verdict.titleKey, verdict.titleFallback)}</div>
+          <div style={actionRowStyle}>
+            {verdict.actions.filter(_actionable).map((a) => (
+              <button key={a.key} type="button" onClick={() => runAction(a.key)} style={actionBtnStyle}>
+                {tSafe(a.labelKey, a.labelFallback)}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -101,4 +140,15 @@ const labelStyle = { display: 'flex', alignItems: 'center', gap: '0.3rem' };
 
 const softMsgStyle = {
   fontSize: '0.78rem', color: '#dc2626', marginTop: '0.4rem', lineHeight: 1.5,
+};
+
+const actionRowStyle = {
+  display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem',
+};
+
+const actionBtnStyle = {
+  minHeight: 44, padding: '0.4rem 0.8rem',
+  background: '#fff', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 6,
+  color: '#3B82F6', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
 };
