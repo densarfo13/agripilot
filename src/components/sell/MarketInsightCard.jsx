@@ -25,6 +25,7 @@ import { useMemo } from 'react';
 import { useTranslation } from '../../i18n/index.js';
 import { tStrict } from '../../i18n/strictT.js';
 import { getDemandForCrop } from '../../runtime/market/marketDemand.js';
+import { decideSell } from '../../runtime/market/sellDecisionEngine';
 import useAutoPriceSuggestion from '../../hooks/useAutoPriceSuggestion.js';
 
 const TONES = {
@@ -98,6 +99,14 @@ const S = {
     fontWeight: 700,
   },
   pillIcon: { fontSize: 11, lineHeight: 1 },
+  decision: {
+    display: 'flex', flexDirection: 'column', gap: 3,
+    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: 12, padding: '10px 12px',
+  },
+  decisionTitle: { fontSize: 14, fontWeight: 700, color: '#fff' },
+  decisionReason: { fontSize: 12.5, color: 'rgba(255,255,255,0.82)', lineHeight: 1.45 },
+  decisionNext: { fontSize: 12, fontWeight: 600, color: '#86EFAC', marginTop: 2 },
 };
 
 /**
@@ -141,6 +150,11 @@ export default function MarketInsightCard({
 
   const showPrice  = !!priceFormatted;
   const showBuyers = buyers > 0;
+
+  // Honest "today's call" — composed from real buyer interest + whether a price reference
+  // exists. Never invents a price (no live feed → NEED_MORE_PRICE_DATA, not a guess).
+  const decision = decideSell({ buyerInterestCount: buyers, priceAvailable: showPrice });
+  const decisionReason = tStrict(decision.reasonKey, decision.reasonFallback).replace('{count}', String(buyers));
 
   return (
     <section
@@ -195,6 +209,14 @@ export default function MarketInsightCard({
             <span style={S.metaValue}>{buyers}</span>
           </div>
         ) : null}
+      </div>
+
+      {/* Today's call — one honest sell verdict (what / why / next step). */}
+      <div style={S.decision} data-testid="sell-decision" data-decision={decision.code}>
+        <span style={S.metaLabel}>{tStrict('sell.decision.label', "Today's call")}</span>
+        <span style={S.decisionTitle}>{tStrict(decision.titleKey, decision.titleFallback)}</span>
+        <span style={S.decisionReason}>{decisionReason}</span>
+        <span style={S.decisionNext}>{tStrict(decision.nextStepKey, decision.nextStepFallback)}</span>
       </div>
 
       {/* Suppress unused-var warning when only one branch renders */}
