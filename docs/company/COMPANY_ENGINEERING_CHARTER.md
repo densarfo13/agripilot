@@ -38,5 +38,39 @@ can't meet a real farmer need — not a spec describing a bigger system.
 - A mistranslated agronomic/safety term harms farmers — we ship only verified translations.
 - Secrets are never logged; image bytes and precise coordinates are never stored.
 
+## Core values
+
+1. **Farmer First** — never optimize for developers over farmers.
+2. **Truth over AI** — if evidence is weak, say "I don't know." Never fabricate.
+3. **Simplicity wins** — if two solutions work, ship the simpler one.
+4. **Reliability beats features** — one feature that works 100% beats ten unreliable ones.
+5. **Explain every recommendation** — answer What? Why? Evidence? Confidence? Risk?
+6. **Build once** — duplicate logic is forbidden; every business rule has one owner.
+7. **Measure everything** — no feature without telemetry, no optimization without metrics.
+
+## Engineering pyramid
+
+A higher layer may never compromise a lower one:
+
+```
+6  Enterprise
+5  AI
+4  UX
+3  Performance
+2  Reliability
+1  Security        ← foundation
+```
+
+(Security/reliability are load-bearing; an AI or enterprise feature that weakens them is
+rejected. This complements the day-to-day work order in
+[ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md).)
+
+## If in doubt
+
+Ask: **"Does this help a farmer today?"** If not, don't build it.
+
+---
+
 See also: [ENGINEERING_PRINCIPLES.md](ENGINEERING_PRINCIPLES.md) ·
-[RELEASE_POLICY.md](RELEASE_POLICY.md) · [PILOT_GATE.md](PILOT_GATE.md).
+[RELEASE_POLICY.md](RELEASE_POLICY.md) · [QUALITY_BAR.md](QUALITY_BAR.md) ·
+[PILOT_GATE.md](PILOT_GATE.md).

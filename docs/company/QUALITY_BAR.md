@@ -12,6 +12,22 @@ Every PR must answer all eight. A PR missing any of these is not ready.
 7. **Risk** — what could this break; what's explicitly out of scope or deferred (be honest).
 8. **Success metric** — which KPI this moves and how we'll know (the telemetry/source).
 
+## No feature ships without
+
+A *new capability* (not a bug fix) additionally requires all of:
+
+- Unit tests **and** an integration test of the real path.
+- Telemetry (it can't be a feature if we can't measure it).
+- Rollback (revert commit or feature flag).
+- Documentation (at least the PR's Problem→Success-metric; user-facing copy where relevant).
+- **Accessibility** — 48px touch targets, aria labels, legible contrast (low-literacy users).
+- **Localization** — all visible strings via the i18n layer; no hardcoded English.
+- Performance review — first-paint / hot-path impact stated.
+
+## Every bug
+
+Root cause (verified) · fix · regression test + gate. No exceptions.
+
 ## The build is the contract
 
 `npm run build:safe` runs the full gate chain and must end with
