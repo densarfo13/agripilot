@@ -40,13 +40,27 @@ if (fast) {
   if (!fast.includes('saveLocation(')) E.push('FastOnboarding must persist a successful GPS fix via saveLocation (coords were previously discarded)');
   if (!fast.includes('finishLocation(')) E.push('FastOnboarding must use the shared finishLocation handler (tap + auto-continue)');
   if (/geoStatus !== 'ok'/.test(fast)) E.push("FastOnboarding still uses the geoStatus !== 'ok' guard — a successful 'granted' fix gets mislabeled general_guidance/skipped");
+  // No dead button while GPS runs (TASK 2) + the town/ZIP search is wired in (TASK 6).
+  if (!/geoStatus !== 'requesting'/.test(fast)) E.push('FastOnboarding must hide the Continue button while GPS is running (geoStatus !== "requesting")');
+  if (!fast.includes('LocationSearch')) E.push('FastOnboarding must offer the town/ZIP LocationSearch in the manual fallback');
 }
 
+// Town/ZIP instant search (TASK 6) — forward-geocode helper + component + redaction-safe parse.
+const geo = rd('src/utils/geolocation.js');
+if (!/export async function searchLocations/.test(geo)) E.push('geolocation.js must export searchLocations (Nominatim forward search)');
+if (!geo.includes('export function parseLocationSearch')) E.push('geolocation.js must export parseLocationSearch (pure, testable)');
+if (!fs.existsSync(path.join(R, 'src/components/location/LocationSearch.jsx'))) E.push('missing: src/components/location/LocationSearch.jsx');
+
+const PARSE_TEST = 'src/utils/__tests__/parseLocationSearch.test.ts';
 if (E.length === 0) {
   try {
     const out = execSync('npx tsx ' + TEST, { cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     if (!/PASS/.test(out)) E.push('classifier test did not PASS: ' + out.trim());
   } catch (err) { E.push('classifier test failed: ' + ((err && (err.stdout || err.message)) || '')); }
+  try {
+    const out = execSync('npx tsx ' + PARSE_TEST, { cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    if (!/PASS/.test(out)) E.push('parseLocationSearch test did not PASS: ' + out.trim());
+  } catch (err) { E.push('parseLocationSearch test failed: ' + ((err && (err.stdout || err.message)) || '')); }
 }
 
 if (E.length) { console.error('[check:location-error-classify] FAIL:'); for (const e of E) console.error('  - ' + e); process.exit(1); }

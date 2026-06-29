@@ -46,6 +46,7 @@ import { stampOnboardingStart } from '../../core/onboardingTiming.js';
 import { classifyLocationError, locationContext } from '../../runtime/location/classifyLocationError';
 import { reverseGeocode } from '../../utils/geolocation.js';
 import { saveLocation } from '../../lib/locationSafe.js';
+import LocationSearch from '../../components/location/LocationSearch.jsx';
 // BYPASS_SETUP_FOR_PILOT removed in the May 2026 permanent-
 // PilotHome-removal pass. The Continue path below is now
 // always the direct "stamp complete + navigate to /" path
@@ -537,7 +538,9 @@ export default function FastOnboarding() {
         // typed nothing. A successful GPS grant ('granted') saved real coords via
         // saveLocation, so it must never be marked skipped/unavailable (the old guard used
         // 'ok', which never matched 'granted' — so every success was mislabeled).
-        if (geoStatus !== 'granted' && !country.trim()) {
+        // A town/ZIP search ('search') saved a real location too, so it must not be
+        // downgraded to general guidance either.
+        if (geoStatus !== 'granted' && source !== 'search' && !country.trim()) {
           localStorage.setItem('farroway_location_skipped', 'true');
           localStorage.setItem('locationMode', 'general_guidance');
           localStorage.setItem('locationStatus', 'unavailable');
@@ -556,6 +559,12 @@ export default function FastOnboarding() {
     const id = setTimeout(() => finishLocation('auto'), 1800);
     return () => clearTimeout(id);
 
+  }, [geoStatus]);
+
+  // On a GPS failure, reveal the search + manual options immediately (TASK 5) — the farmer
+  // never has to hunt for "Enter manually" after a denial/timeout.
+  useEffect(() => {
+    if (geoStatus === 'denied') setShowManualEntry(true);
   }, [geoStatus]);
 
   const isGarden = experience === 'garden';
@@ -1082,19 +1091,21 @@ export default function FastOnboarding() {
               missing crop / location / weather and exposes a
               non-blocking "Complete setup" card so the user
               can return to fill in details on their own time. */}
-          {/* On a successful fix we auto-continue (~1.8s) — the button is then redundant
-              and shows "Continuing…". For idle/requesting/denied the farmer taps it to
-              proceed (location is never blocking). Single shared finishLocation handler. */}
-          <button
-            type="button"
-            onClick={() => finishLocation('tap')}
-            style={S.primaryBtn}
-            data-testid="fast-onboarding-location-continue"
-          >
-            {geoStatus === 'granted'
-              ? tSafe('fastOnboarding.locationConfirm.continuing', 'Continuing…')
-              : tStrict('fastOnboarding.continue', 'Continue')}
-          </button>
+          {/* While GPS is running we show ONLY "Finding your farm…" — the Continue button is
+              hidden (TASK 2, no dead button). On success it auto-continues (~1.8s) and shows
+              "Continuing…"; for idle/denied the farmer taps it to proceed (never blocking). */}
+          {geoStatus !== 'requesting' ? (
+            <button
+              type="button"
+              onClick={() => finishLocation('tap')}
+              style={S.primaryBtn}
+              data-testid="fast-onboarding-location-continue"
+            >
+              {geoStatus === 'granted'
+                ? tSafe('fastOnboarding.locationConfirm.continuing', 'Continuing…')
+                : tStrict('fastOnboarding.continue', 'Continue')}
+            </button>
+          ) : null}
 
           {/* Manual entry behind a link per spec §1 ("hide manual
               fields behind link"). Default off; toggling reveals
@@ -1153,6 +1164,20 @@ export default function FastOnboarding() {
 
           {showManualEntry ? (
             <>
+              {/* Instant town / ZIP search (TASK 6). Selecting a suggestion saves the real
+                  location + continues — so the manual path reaches value just like GPS. The
+                  country/region fields below remain as a plain-text fallback. */}
+              <LocationSearch
+                autoFocus
+                onSelect={(r) => {
+                  try { setCountry(r.country || country); setRegion(r.region || r.locality || region); } catch { /* swallow */ }
+                  try {
+                    saveLocation({ lat: r.lat, lng: r.lng, country: r.country, region: r.region || r.locality, label: r.label, source: 'search' });
+                  } catch { /* swallow */ }
+                  try { trackEvent('onboarding_location_search_select', { hasRegion: !!(r.region || r.locality) }); } catch { /* swallow */ }
+                  finishLocation('search');
+                }}
+              />
               <span style={S.label}>
                 {tStrict('fastOnboarding.label.country', 'Country')}
               </span>

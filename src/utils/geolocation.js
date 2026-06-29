@@ -181,6 +181,65 @@ export async function reverseGeocode(latitude, longitude) {
   }
 }
 
+// ─── Forward Geocoding / town + postal search (Nominatim) ──────────
+
+/**
+ * parseLocationSearch — pure mapper from a Nominatim /search response array to the
+ * suggestion shape the UI consumes. Exported separately so it can be unit-tested without
+ * the network. Never throws; drops rows without usable coordinates.
+ *
+ * @param {any} data  raw Nominatim /search JSON (array)
+ * @returns {Array<{label, lat, lng, country, countryCode, region, locality}>}
+ */
+export function parseLocationSearch(data) {
+  if (!Array.isArray(data)) return [];
+  const out = [];
+  for (const r of data) {
+    if (!r || typeof r !== 'object') continue;
+    const lat = Number(r.lat);
+    const lng = Number(r.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const a = (r.address && typeof r.address === 'object') ? r.address : {};
+    out.push({
+      label: String(r.display_name || '').slice(0, 160),
+      lat,
+      lng,
+      country: a.country || null,
+      countryCode: (a.country_code || '').toUpperCase() || null,
+      region: a.state || a.region || a.county || null,
+      locality: a.city || a.town || a.village || a.municipality || a.county || null,
+    });
+  }
+  return out;
+}
+
+/**
+ * searchLocations — forward-geocode a free-text town name OR a postal/ZIP code via OSM
+ * Nominatim (same integration as reverseGeocode). Returns up to `limit` suggestions, each
+ * carrying coordinates + structured region. Best-effort: returns [] on any error, empty
+ * query, or short input (so callers can debounce + render nothing gracefully).
+ *
+ * @param {string} query
+ * @param {{limit?:number, signal?:AbortSignal}} [opts]
+ */
+export async function searchLocations(query, opts = {}) {
+  const q = String(query || '').trim();
+  if (q.length < 2) return [];
+  const limit = Number.isFinite(opts.limit) ? opts.limit : 5;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}`
+      + `&format=jsonv2&addressdetails=1&limit=${limit}`;
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'Farroway/1.0' },
+      signal: opts.signal,
+    });
+    if (!res.ok) return [];
+    return parseLocationSearch(await res.json());
+  } catch {
+    return [];
+  }
+}
+
 // ─── IP-based country detection (fallback) ────────────
 
 /**
