@@ -11,6 +11,13 @@
  * Rate-limited to 1 req/s per Nominatim policy — only called on explicit user action.
  */
 
+import {
+  shouldRetry,
+  attemptOptions,
+  accuracyVerdict,
+  LOCATION_ATTEMPTS,
+} from '../runtime/location/locationRetryPolicy';
+
 // ─── Error codes (stable, for programmatic use) ──────
 export const GPS_ERROR = {
   UNSUPPORTED: 'unsupported',
@@ -67,7 +74,7 @@ export async function checkLocationPermission() {
  * @returns {Promise<{latitude: number, longitude: number, accuracy: number, capturedAt: string}>}
  * @throws {Error} with .code property set to a GPS_ERROR value
  */
-export function getCurrentPosition({ enableHighAccuracy = true, timeout = 15000 } = {}) {
+export function getCurrentPosition({ enableHighAccuracy = true, timeout = 15000, maximumAge = 60000 } = {}) {
   // Start the native geolocation call IMMEDIATELY — no async before this.
   // This preserves the user-gesture context on iOS Safari.
   gpsLog('Requesting position', { enableHighAccuracy, timeout });
@@ -106,9 +113,38 @@ export function getCurrentPosition({ enableHighAccuracy = true, timeout = 15000 
         wrapped.code = code;
         reject(wrapped);
       },
-      { enableHighAccuracy, timeout, maximumAge: 60000 }
+      { enableHighAccuracy, timeout, maximumAge }
     );
   });
+}
+
+/**
+ * acquireLocation — get a position with an automatic balanced-accuracy RETRY (PHASE 4).
+ *
+ * Attempt 1 is high-accuracy GPS; on a TIMEOUT or POSITION_UNAVAILABLE we retry ONCE with
+ * balanced settings (network/cell, no high-accuracy), which commonly succeeds indoors or on
+ * weak signal — exactly where a farmer often opens the app. A permission denial / unsupported
+ * browser is NOT retried (a retry cannot change it). The resolved position carries an
+ * `accuracyVerdict` ('ok' | 'low') so callers can flag LOW_ACCURACY without blocking.
+ *
+ * iOS user-gesture rule preserved: the FIRST native call fires synchronously when
+ * acquireLocation() is invoked (no await before it); the retry runs only after permission
+ * is already granted.
+ */
+export async function acquireLocation() {
+  let lastErr = null;
+  for (let i = 0; i < LOCATION_ATTEMPTS.length; i++) {
+    try {
+      const pos = await getCurrentPosition(attemptOptions(i));
+      return { ...pos, accuracyVerdict: accuracyVerdict(pos.accuracy), attempts: i + 1 };
+    } catch (err) {
+      lastErr = err;
+      const last = i === LOCATION_ATTEMPTS.length - 1;
+      if (last || !shouldRetry(err && err.code)) break;
+      gpsLog('Retrying location with balanced accuracy', { afterCode: err && err.code });
+    }
+  }
+  throw lastErr || new Error('Location request failed.');
 }
 
 // ─── Reverse Geocoding (Nominatim) ─────────────────────
@@ -228,7 +264,7 @@ export async function detectCountryByIP() {
  * @returns {Promise<{latitude, longitude, accuracy, capturedAt, country, countryCode, region, district, locality, displayName}>}
  */
 export async function detectAndResolveLocation() {
-  const coords = await getCurrentPosition();
+  const coords = await acquireLocation();
   const geo = await reverseGeocode(coords.latitude, coords.longitude);
   return { ...coords, ...geo };
 }
