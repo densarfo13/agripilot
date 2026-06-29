@@ -43,6 +43,7 @@ import { generateFirstPlan } from '../../core/firstPlanEngine.js';
 import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../core/analytics.js';
 import { stampOnboardingStart } from '../../core/onboardingTiming.js';
+import { classifyLocationError, locationContext } from '../../runtime/location/classifyLocationError';
 // BYPASS_SETUP_FOR_PILOT removed in the May 2026 permanent-
 // PilotHome-removal pass. The Continue path below is now
 // always the direct "stamp complete + navigate to /" path
@@ -477,6 +478,7 @@ export default function FastOnboarding() {
   const [country,    setCountry]    = useState('');
   const [region,     setRegion]     = useState('');
   const [geoStatus,  setGeoStatus]  = useState('idle'); // idle|requesting|granted|denied
+  const [geoVerdict, setGeoVerdict] = useState(null);   // specific failure verdict (classifyLocationError)
   // High-Conversion Onboarding §1 — manual entry on the
   // location-confirm screen sits behind a link. Default false so
   // typical users never see the country/region inputs. Toggled by
@@ -594,7 +596,10 @@ export default function FastOnboarding() {
   // ── Geolocation (screen 3) ────────────────────────────────
   function requestLocation() {
     setError('');
+    setGeoVerdict(null);
+    const ctx = locationContext();
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGeoVerdict(classifyLocationError({ code: 'unsupported' }, ctx));
       setGeoStatus('denied');
       return;
     }
@@ -607,12 +612,21 @@ export default function FastOnboarding() {
           // user can still type country/region manually below.
           // We deliberately don't run a reverse-geocode here:
           // the spec says "if available" — it's optional context.
+          setGeoVerdict(null);
           setGeoStatus('granted');
         },
-        () => { setGeoStatus('denied'); },
+        (err) => {
+          // Show the SPECIFIC reason (timeout / unavailable / denied / insecure)
+          // instead of a one-size-fits-all message — a timed-out GPS is not a
+          // permission denial. The manual country/region fields below mean a
+          // failure never blocks onboarding.
+          setGeoVerdict(classifyLocationError(err, ctx));
+          setGeoStatus('denied');
+        },
         { enableHighAccuracy: false, timeout: 6000, maximumAge: 60_000 },
       );
-    } catch {
+    } catch (err) {
+      setGeoVerdict(classifyLocationError(err, ctx));
       setGeoStatus('denied');
     }
   }
@@ -969,8 +983,10 @@ export default function FastOnboarding() {
                 ? tStrict('fastOnboarding.locationConfirm.granted',
                     'Location detected')
                 : geoStatus === 'denied'
-                ? tStrict('fastOnboarding.locationConfirm.denied',
-                    'We couldn\u2019t detect your location')
+                ? (geoVerdict
+                    ? tSafe(geoVerdict.titleKey, geoVerdict.titleFallback)
+                    : tStrict('fastOnboarding.locationConfirm.denied',
+                        'We couldn\u2019t detect your location'))
                 : tStrict('fastOnboarding.locationConfirm.idle',
                     'Tap to use your location')}
             </span>

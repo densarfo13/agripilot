@@ -31,6 +31,13 @@ if (!ui.includes('classifyLocationError')) E.push('LocationDetect must use class
 if (/We couldn't get your exact location\. You can continue/.test(ui))
   E.push('LocationDetect still collapses errors into the generic message — render the classified verdict');
 
+// The canonical onboarding flow (the first trust screen) must show the SPECIFIC reason too.
+const fast = rd('src/pages/onboarding/FastOnboarding.jsx');
+if (fast) {
+  if (!fast.includes('classifyLocationError')) E.push('FastOnboarding must classify the location failure (not collapse every cause to "denied")');
+  if (!fast.includes('geoVerdict')) E.push('FastOnboarding must render the specific verdict (geoVerdict) on a location failure');
+}
+
 if (E.length === 0) {
   try {
     const out = execSync('npx tsx ' + TEST, { cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
