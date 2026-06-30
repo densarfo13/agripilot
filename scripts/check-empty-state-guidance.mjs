@@ -11,11 +11,12 @@ const errors = [];
 const _read = (r) => { try { return fs.readFileSync(path.join(ROOT, r), 'utf8'); } catch { return ''; } };
 const _has = (s, n, m) => { if (!s.includes(n)) errors.push(m); };
 
-// Home below-fold renders guided setup (progress + next step CTA).
+// Home below-fold renders ONE consolidated Farm Readiness card (progress % + next-step CTA +
+// confidence/quality detail behind a disclosure). Consolidated from the former 3 stacked cards.
 const BF = _read('src/components/farmBrain/FarmBrainBelowFold.jsx');
-_has(BF, 'farm-setup-progress-card', 'Home below-fold must render the Farm Setup progress card');
-_has(BF, 'farm-setup-next', 'Farm Setup card must render the next-step CTA');
-_has(BF, 'farmbrain-confidence-card', 'Home below-fold must render the FarmBrain confidence card');
+_has(BF, 'farm-readiness-card', 'Home below-fold must render the consolidated Farm Readiness card');
+_has(BF, 'farm-readiness-next', 'Farm Readiness card must render the next-step CTA');
+_has(BF, 'farm-readiness-details', 'Farm Readiness card must keep confidence/quality detail behind a disclosure');
 
 // FarmTimeline engine always carries an empty-state story + CTA.
 const TLE = _read('src/runtime/farmTimeline/FarmTimelineEngine.ts');

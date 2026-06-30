@@ -227,7 +227,7 @@ if (!_exists(BF)) {
 } else {
   const src = _read(BF);
   _has(src, 'farm-timeline-card', 'FarmBrainBelowFold must render the timeline card');
-  _has(src, 'farm-quality-card', 'FarmBrainBelowFold must render the quality card');
+  _has(src, 'farm-readiness-card', 'FarmBrainBelowFold must render the consolidated Farm Readiness card');
 }
 _has(_read('src/pages/Home.jsx'), 'FarmBrainBelowFold',
   'Home.jsx must render FarmBrainBelowFold below the hero');
