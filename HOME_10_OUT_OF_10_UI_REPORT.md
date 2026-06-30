@@ -1,5 +1,30 @@
 # Home 10/10 UI — Report (honest)
 
+## Addendum — contradiction fixes (from your screenshots)
+
+Your screenshots exposed a **real P0 bug** I could not have seen from code: three components on
+Home disagreed about farm state. The hero said **"Add your crop"** directly above a card reading
+**"My New Farm / onion"**; another card said **"Add your location"** while "Farm Setup" showed
+**✓ Location Added ✓ Crop Selected**. Root causes + fixes:
+
+- **`DecisionHero.jsx`** read only `farm.crop`, so a crop stored under `cropName` ("Onion") fell to
+  the empty-state "Add your crop." → now uses `resolveCompletionCrop(farm)` (the single resolver).
+- **`Home.jsx`** completion ladder keyed "location added" off *live-weather success* (`hasLocation`),
+  so a failed weather fetch showed "Add your location" even with a stored location. → now keyed off
+  the farm's **stored** location (coords/label), consistent with the setup card.
+
+Verified: build:safe 393 green (incl. production build) + a post-edit DOM check confirming both
+stale CTAs ("Add your crop", "Add your location") are gone from the rendered page. (A clean preview
+screenshot was blocked by a transient Vite dev "duplicate React" glitch — the production build is
+the authoritative check.)
+
+Still pending (authorized, next sprint): the §5 three-readiness-cards → one consolidation (Farm
+Setup / Recommendation confidence / Farm readiness all showed the same checklist with different
+percentages — confirmed in your screenshots) + §9 spacing/contrast polish.
+
+---
+
+
 ## Code Changed
 - **`src/pages/Home.jsx`** — §2 smart greeting: the generic headline **"Today on Farroway" →
   "Here's what needs attention today."** (`home.headline.attention`). The greeting line already

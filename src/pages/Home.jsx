@@ -700,12 +700,19 @@ export default function Home() {
         // so a crop stored under cropName no longer reports cropSelected=false and
         // wrongly shows "Add your crop". Single source of truth: resolveCompletionCrop.
         crop:         resolveCompletionCrop(local.farm),
-        location:     hasLocation ? 'set' : '',
+        // Location-added means the FARM has a stored location (coords or label) — NOT
+        // "weather loaded". Keying off live-weather success made the ladder say "Add your
+        // location" whenever the weather fetch failed, contradicting the setup card which
+        // reads the stored location. Use the resolved farm location for a consistent signal.
+        location:     (local.locationObj
+                        && (Number.isFinite(Number(local.locationObj.lat))
+                            || (typeof local.locationObj.label === 'string' && local.locationObj.label.trim())))
+                        ? 'set' : '',
         plantingDate: local.farm?.plantingDate || '',
         scanHistory:  [1],   // scan nudges are owned by the live hero decision
       });
     } catch { return null; }
-  }, [local.farm, hasLocation]);
+  }, [local.farm, local.locationObj]);
   const homeOnboardingStep = useMemo(() => homeNextStep(_farmerCompletion), [_farmerCompletion]);
 
   const greeting = (() => {

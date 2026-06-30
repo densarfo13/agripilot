@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { tSafe } from '../../i18n/tSafe.js';
 import useFarmBrainState from '../../hooks/useFarmBrainState.js';
 import { buildDailyDecision } from '../../runtime/decision/FarrowayDecisionEngine';
+import { resolveCompletionCrop } from './resolveCompletionCrop.js';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -31,7 +32,7 @@ function DecisionHeroInner({ farm }) {
 
   const decision = _safe(() => buildDailyDecision({
     farmBrainState: state,
-    crop: (farm && farm.crop) || null,
+    crop: resolveCompletionCrop(farm) || null,
     cropId: (farm && (farm.cropId || farm.id)) || null,
     farmId: (farm && farm.id) || null,
     plantingDate: (farm && (farm.plantingDate || farm.plantedAt)) || null,
