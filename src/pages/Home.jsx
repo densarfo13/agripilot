@@ -99,6 +99,7 @@ import LocationFlowStatus        from '../components/home/LocationFlowStatus.jsx
 import { LOCATION_STATUS, shouldIgnoreLocationTap } from '../components/home/locationFlowState.js';
 import HomeNextStepCard          from '../components/home/HomeNextStepCard.jsx';
 import { homeNextStep }          from '../components/home/homeNextStep.js';
+import { resolveCompletionCrop } from '../components/home/resolveCompletionCrop.js';
 import { buildFarmerCompletion } from '../runtime/farmerCompletion/FarmerCompletionEngine.ts';
 import useFarmHealth             from '../hooks/useFarmHealth.js';
 import OnTrackRowCard            from '../components/home/OnTrackRowCard.jsx';
@@ -695,7 +696,10 @@ export default function Home() {
     try {
       return buildFarmerCompletion({
         farmExists:   !!local.farm,
-        crop:         local.farm?.crop || local.farm?.cropId || '',
+        // Resolve the crop across EVERY field the app uses (cropName/crop/cropType/…)
+        // so a crop stored under cropName no longer reports cropSelected=false and
+        // wrongly shows "Add your crop". Single source of truth: resolveCompletionCrop.
+        crop:         resolveCompletionCrop(local.farm),
         location:     hasLocation ? 'set' : '',
         plantingDate: local.farm?.plantingDate || '',
         scanHistory:  [1],   // scan nudges are owned by the live hero decision

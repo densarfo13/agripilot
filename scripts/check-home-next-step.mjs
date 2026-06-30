@@ -17,7 +17,15 @@ const has = (s, n, m) => { if (!s.includes(n)) E.push(m); };
 const LADDER = 'src/components/home/homeNextStep.js';
 const CARD = 'src/components/home/HomeNextStepCard.jsx';
 const TEST = 'src/components/home/__tests__/homeNextStep.test.js';
-for (const f of [LADDER, CARD, TEST]) if (!fs.existsSync(path.join(R, f))) E.push('missing: ' + f);
+const CROP_RESOLVER = 'src/components/home/resolveCompletionCrop.js';
+const CROP_TEST = 'src/components/home/__tests__/resolveCompletionCrop.test.js';
+for (const f of [LADDER, CARD, TEST, CROP_RESOLVER, CROP_TEST]) if (!fs.existsSync(path.join(R, f))) E.push('missing: ' + f);
+
+// Stale-"Add your crop" fix — the resolver must recognize every crop field the app
+// uses, and Home must consume it (not the old crop||cropId-only check).
+const cropResolver = rd(CROP_RESOLVER);
+for (const field of ['cropName', 'cropType', 'cropDisplayName', 'cropId'])
+  has(cropResolver, field, 'resolveCompletionCrop must recognize farm.' + field);
 
 const ladder = rd(LADDER);
 for (const k of ['create_farm', 'add_crop', 'add_location', 'first_scan'])
@@ -38,14 +46,19 @@ for (const bad of ['FarmBrain', 'provider', 'model', 'evidence tier', 'API ']) {
 // Home composes the existing FarmerCompletion engine + renders the card.
 const home = rd('src/pages/Home.jsx');
 has(home, 'buildFarmerCompletion', 'Home must compose the existing FarmerCompletion engine (no duplicate decision logic)');
+has(home, 'resolveCompletionCrop', 'Home must resolve the crop via resolveCompletionCrop (fixes stale "Add your crop")');
+if (/crop:\s*local\.farm\?\.crop\s*\|\|\s*local\.farm\?\.cropId\s*\|\|\s*''/.test(home))
+  E.push('Home still uses the incomplete crop||cropId check — must use resolveCompletionCrop (misses cropName/cropType)');
 has(home, 'homeNextStep', 'Home must derive the onboarding step');
 has(home, 'HomeNextStepCard', 'Home must render the onboarding ladder card');
 
 if (E.length === 0) {
-  try {
-    const out = execSync('npx tsx ' + TEST, { cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-    if (!/PASS/.test(out)) E.push('home-next-step test did not PASS: ' + out.trim());
-  } catch (err) { E.push('home-next-step test failed: ' + ((err && (err.stdout || err.message)) || '?')); }
+  for (const t of [TEST, CROP_TEST]) {
+    try {
+      const out = execSync('npx tsx ' + t, { cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      if (!/PASS/.test(out)) E.push(t + ' did not PASS: ' + out.trim());
+    } catch (err) { E.push(t + ' failed: ' + ((err && (err.stdout || err.message)) || '?')); }
+  }
 }
 
 if (E.length) {

@@ -41,6 +41,21 @@ for (const f of [{}, { farmCreated: true }, { farmCreated: true, cropSelected: t
     'step carries title+reason+cta+route+confidence');
 }
 
+// ── Spec invariants (negative assertions) ───────────────────────────
+// crop exists → NEVER "Add your crop", for every combination that has a crop.
+for (const extra of [{}, { locationAdded: true }, { firstScanCompleted: true }, { locationAdded: true, firstScanCompleted: true }]) {
+  const s = homeNextStep(flags({ farmCreated: true, cropSelected: true, ...extra }));
+  ok(!s || s.key !== 'add_crop', 'crop exists → never add_crop (' + JSON.stringify(extra) + ')');
+}
+// location exists → NEVER "Add your location".
+for (const extra of [{}, { firstScanCompleted: true }]) {
+  const s = homeNextStep(flags({ farmCreated: true, cropSelected: true, locationAdded: true, ...extra }));
+  ok(!s || s.key !== 'add_location', 'location exists → never add_location (' + JSON.stringify(extra) + ')');
+}
+// first-scan step's CTA opens Scan (route === '/scan').
+const scanStep = homeNextStep(flags({ farmCreated: true, cropSelected: true, locationAdded: true }));
+ok(scanStep.key === 'first_scan' && scanStep.route === '/scan', 'first-scan CTA opens /scan');
+
 // Never throws on junk.
 ok(homeNextStep(null) === null && homeNextStep(undefined) === null, 'junk input → null, never throws');
 
