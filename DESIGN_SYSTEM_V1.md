@@ -212,3 +212,43 @@ These rules live in code, not just this doc.
 | Scan success % | `__scanDetectionHealth.topCandidatesVisible` | ≥ 90% |
 | Follow-up completion % | `__followUpHealth` | ≥ 40% D14 |
 | D7 retention | `__farmerRetentionHealth` | ≥ 35% pilot |
+
+---
+
+## Design System v1.0 — Token + Component Catalog (foundation)
+
+**Single source of truth:** `src/design/tokens/index.js` exports all canonical token
+categories; every component reads from here (no hand-rolled scales). Frozen — consumers
+can't mutate the shared shape. Enforced by `check:design-system-v1` (in build:safe).
+
+### Tokens (`src/design/tokens/`)
+| Category | Module | Notes |
+|---|---|---|
+| Colors | `colors.js` (`COLORS`) | Locked Soft Ochre palette |
+| Spacing | `spacing.js` (`SPACING`) | 4 / 8 / 12 / 16 / 24 / 32 / 48 scale |
+| Typography | `typography.js` (`TYPE`) | hero / section / card / body / secondary / micro |
+| Border radius | `radius.js` (`RADIUS`) | sm / md / card / lg / xl / pill |
+| Shadows | `shadows.js` (`SHADOWS`) | sm / card / modal / focus |
+| Motion / timing | `motion.js` (`MOTION`) | tap / fade / slide / shimmer |
+| Breakpoints + grid | `breakpoints.js` (`BREAKPOINTS`, `GRID`) | **new** — mobile-first 0/412/768/1024; 32rem content column |
+| Elevation (z-index) | `elevation.js` (`ELEVATION`) | **new** — base→toast stacking ladder |
+
+### Components (`src/design/components/index.js` — one barrel)
+| Canonical name | Implementation | Status |
+|---|---|---|
+| CTAButton | `design/components/CTAButton.jsx` | **new** — the one button system; 48px target, variants, `data-primary-action` |
+| ProgressRing | `design/components/ProgressRing.jsx` | **new** — 0–100 SVG ring; tone + label (no color-only meaning) |
+| Badge | `design/components/Badge.jsx` | **new** — status pill; tone drives dot **and** color |
+| HeroCard | `premium/PremiumPageHero.jsx` | aliased (existing) |
+| SectionCard | `premium/PremiumCard.jsx` | aliased (existing) |
+| EmptyState | `premium/PremiumEmptyState.jsx` | aliased (existing) |
+| KPIChip | `premium/PremiumStatChip.jsx` | aliased (existing) |
+| SectionTitle | `premium/PremiumSectionTitle.jsx` | aliased (existing) |
+| SkeletonLoader | `components/SkeletonLoader.jsx` | aliased (existing) |
+| StatusCard, ProgressCard, ActionCard, TimelineCard, FarmCard, WeatherCard, BottomSheet | — | **to build during per-screen migration** (no speculative/unused stubs) |
+
+### Migration status
+Foundation: **complete + gated.** Per-screen migration (My Farm, Tasks, Activity, Scan,
+Funding, Sell, Settings/Profile → consume the shared barrel) is the sequenced follow-on;
+each screen adopts the barrel and the consistency gate tightens to cover it. The gate is a
+**ratchet** — it locks the foundation now without retroactively failing the 24 legacy screens.

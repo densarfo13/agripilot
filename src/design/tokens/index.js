@@ -29,3 +29,5 @@ export { TYPE } from './typography.js';
 export { SHADOWS } from './shadows.js';
 export { RADIUS } from './radius.js';
 export { MOTION } from './motion.js';
+export { BREAKPOINTS, GRID } from './breakpoints.js';
+export { ELEVATION } from './elevation.js';
