@@ -98,7 +98,7 @@ export default function FarmBrainBelowFold({ farmSignals = {} } = {}) {
       {/* FARMBRAIN CONFIDENCE (§8) — no score without explanation */}
       {explanation && explanation.hasExplanation ? (
         <section style={S.card} data-testid="farmbrain-confidence-card">
-          <h3 style={S.title}>{tSafe('farmBrain.confidence.title', 'FarmBrain Confidence')}</h3>
+          <h3 style={S.title}>{tSafe('farmBrain.confidence.title', 'Recommendation confidence')}</h3>
           <span style={S.qScore} data-testid="farmbrain-confidence-score">{explanation.confidence}%</span>
           {_arr(explanation.why).length > 0 ? (
             <div style={{ marginTop: 8 }}>
@@ -122,8 +122,8 @@ export default function FarmBrainBelowFold({ farmSignals = {} } = {}) {
       {/* FARM QUALITY */}
       {quality ? (
         <section style={S.card} data-testid="farm-quality-card">
-          <h3 style={S.title}>{tSafe('farmQuality.title', 'Farm data quality')}</h3>
-          <p style={S.sub}>{tSafe('farmQuality.subtitle', 'Better data means better advice')}</p>
+          <h3 style={S.title}>{tSafe('farmQuality.title', 'Farm readiness')}</h3>
+          <p style={S.sub}>{tSafe('farmQuality.subtitle', 'Complete a few steps to improve your recommendations.')}</p>
           <div>
             <span style={S.qScore} data-testid="farm-quality-score">{quality.score}%</span>
             <span style={S.qLevel}>{tSafe('farmQuality.level.' + quality.level, quality.level)}</span>
@@ -137,7 +137,7 @@ export default function FarmBrainBelowFold({ farmSignals = {} } = {}) {
           ) : null}
           {quality.nextBestAction ? (
             <div style={S.next} data-testid="farm-quality-next">
-              {tSafe('farmQuality.improveBy', 'Improve by')}: {tSafe(
+              {tSafe('farmQuality.improveBy', 'Next')}: {tSafe(
                 quality.nextBestAction.actionKey, quality.nextBestAction.action)}
             </div>
           ) : null}
