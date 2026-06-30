@@ -1121,11 +1121,12 @@ export default function Home() {
             deck's Start button, cc-btn-start) for the
             check-ui-design-system trusted set — the gate scans
             per-page source and can't see into the deck component. */}
-        <section data-testid="home-hero-start">
-          <CommandCenterDeck />
-        </section>
+        {/* Agronomist deck (Crop / Stage / Health / Risk / Harvest tiles) is DEMOTED
+            into the collapsed "More for today" section below. DecisionHero is now the
+            single above-the-fold hero (Home 10/10: one hero, no competing cards). The
+            deck stays mounted there — one tap away — so no functionality is lost. */}
 
-        {/* ── 3b. Below fold — Farm Timeline + Farm Quality (#209).
+        {/* ── 3b. Below fold — Farm Readiness + Recent activity (#209).
              Read-only composites over the farm's existing data; show
              next-best action instead of a bare empty state. */}
         <FarmBrainBelowFold farmSignals={_farmBrainSignals} />
@@ -1149,6 +1150,10 @@ export default function Home() {
           >
             {tSafe('home.moreToday', 'More for today')} ▾
           </summary>
+          {/* Agronomist deck — demoted here so DecisionHero is the single above-fold hero. */}
+          <section data-testid="home-hero-start">
+            <CommandCenterDeck />
+          </section>
           <FeatureShell name="daily-farm-plan" silent>
             <DailyFarmPlanCard />
           </FeatureShell>

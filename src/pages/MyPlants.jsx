@@ -280,6 +280,7 @@ export default function MyPlants() {
             style={STYLES.cta}
             onClick={() => navigate('/scan')}
             data-testid="my-plants-empty-cta"
+            data-primary-action="true"
           >
             {tSafe('myPlants.empty.cta', 'Scan to add a plant')}
           </button>

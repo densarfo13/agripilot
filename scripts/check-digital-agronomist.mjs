@@ -84,14 +84,25 @@ if (!_exists(HOME)) {
 } else {
   const src = _read(HOME);
   const deckIdx = src.indexOf('<CommandCenterDeck');
-  // Use the i18n key as the render marker — the literal phrase also
-  // appears in an explanatory comment ABOVE the deck mount.
+  // Home 10/10 refactor: DecisionHero is the SINGLE above-the-fold hero. The agronomist
+  // deck is now DEMOTED into the collapsed "More for today" section (one tap away) so it no
+  // longer competes above the fold. It must still be mounted (rendered) + sit BELOW the
+  // "More for today" marker. The deck's full crop/stage/health/risk surface is the My Farm
+  // hero's job; on Home it is supporting content, not a second hero.
   const moreIdx = src.indexOf("'home.moreToday'");
+  const decisionIdx = src.indexOf('<DecisionHero');
   if (deckIdx === -1) {
-    errors.push('Home.jsx must mount <CommandCenterDeck (sprint #192 hero)');
+    errors.push('Home.jsx must mount <CommandCenterDeck (still reachable from Home)');
   }
-  if (deckIdx !== -1 && moreIdx !== -1 && deckIdx > moreIdx) {
-    errors.push('Home.jsx CommandCenterDeck must render ABOVE the "More for today" demoted section');
+  if (decisionIdx === -1) {
+    errors.push('Home.jsx must mount <DecisionHero as the single above-the-fold hero');
+  }
+  if (deckIdx !== -1 && moreIdx !== -1 && deckIdx < moreIdx) {
+    errors.push('Home.jsx CommandCenterDeck must be DEMOTED into the "More for today" section '
+      + '(below it), not competing above the fold — DecisionHero is the single hero');
+  }
+  if (decisionIdx !== -1 && moreIdx !== -1 && decisionIdx > moreIdx) {
+    errors.push('Home.jsx DecisionHero must render ABOVE the "More for today" section (it is the hero)');
   }
 }
 
