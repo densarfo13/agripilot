@@ -986,7 +986,7 @@ export default function Home() {
         <header style={S.header}>
           <div>
             <p style={S.greeting}>{greeting}, {userTypeLabel}.</p>
-            <h1 style={S.title}>{tSafe('home.title', 'Today on Farroway')}</h1>
+            <h1 style={S.title}>{tSafe('home.headline.attention', 'Here’s what needs attention today.')}</h1>
           </div>
           <div style={S.headerRight}>
             {/* Streak chip — only when FEATURE_DAILY_HABIT is on and

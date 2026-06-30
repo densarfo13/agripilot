@@ -57,6 +57,15 @@ for (const c of cols) {
   }
 }
 
+// §2 smart greeting — Home headline must be the action-oriented line, not the generic title.
+const homeSrc = rd('src/pages/Home.jsx');
+if (homeSrc) {
+  if (!homeSrc.includes('home.headline.attention'))
+    E.push('Home must render the action-oriented headline (home.headline.attention)');
+  if (homeSrc.includes("'Today on Farroway'") || homeSrc.includes('"Today on Farroway"'))
+    E.push('Home must NOT use the generic "Today on Farroway" headline (§2)');
+}
+
 if (E.length) { console.error('[check:home-no-internal-terms] FAIL:'); for (const e of E) console.error('  - ' + e); process.exit(1); }
 console.log('[check:home-no-internal-terms] PASS — no internal/backend term (FarmBrain / data quality / '
   + 'evidence tier / confidence engine) appears as farmer-facing text in Home components or any locale value.');
