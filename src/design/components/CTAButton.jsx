@@ -22,12 +22,15 @@ import { MOTION } from '../tokens/motion.js';
 const MIN_TARGET = 48; // px — accessibility floor
 
 // The ONE button system — exactly five variants (Design Bible §BUTTON SYSTEM). Nothing else.
+// Fully token-driven (no hardcoded hex). primary uses DARK ink on the gold surface
+// for AA contrast (light-gold-on-gold was a contrast defect); danger routes to the
+// canonical `error` token (there is no `COLORS.danger` — the old fallback always fired).
 const VARIANTS = {
-  primary:   { bg: COLORS.ochre || '#C8944D', color: COLORS.ochreInk || '#1F2A14', border: 'transparent' },
-  secondary: { bg: COLORS.greenSoft || 'rgba(143,171,115,0.16)', color: COLORS.greenInk || '#A8C283', border: COLORS.greenBorder || 'rgba(143,171,115,0.4)' },
-  ghost:     { bg: 'transparent', color: COLORS.ink || '#EAF2FF', border: COLORS.border || 'rgba(255,255,255,0.18)' },
-  text:      { bg: 'transparent', color: COLORS.ochreInk || '#E6BC85', border: 'transparent' },
-  danger:    { bg: COLORS.danger || '#B3402F', color: '#FFF7F4', border: 'transparent' },
+  primary:   { bg: COLORS.ochre,     color: COLORS.structureDark, border: 'transparent' },
+  secondary: { bg: COLORS.greenSoft, color: COLORS.greenInk,      border: COLORS.greenBorder },
+  ghost:     { bg: 'transparent',    color: COLORS.ink,           border: COLORS.border },
+  text:      { bg: 'transparent',    color: COLORS.ochreInk,      border: 'transparent' },
+  danger:    { bg: COLORS.error,     color: COLORS.textPrimary,   border: 'transparent' },
 };
 
 export default function CTAButton({

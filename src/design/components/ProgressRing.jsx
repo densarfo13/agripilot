@@ -10,11 +10,13 @@
 import React from 'react';
 import { COLORS } from '../tokens/colors.js';
 
+// Fully token-driven (no hardcoded hex). `attention` uses the canonical error token
+// (there is no `COLORS.danger` — the old fallback always fired with a stale crimson).
 const TONES = {
-  good:      COLORS.green || '#2E7D32',
-  watch:     COLORS.amber || '#92400E',
-  attention: COLORS.danger || '#991B1B',
-  neutral:   COLORS.inkDim || '#6B7766',
+  good:      COLORS.green,
+  watch:     COLORS.amber,
+  attention: COLORS.error,
+  neutral:   COLORS.inkDim,
 };
 
 export default function ProgressRing({
@@ -34,7 +36,7 @@ export default function ProgressRing({
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke={COLORS.border || 'rgba(0,0,0,0.08)'} strokeWidth={stroke} />
+          stroke={COLORS.border} strokeWidth={stroke} />
         <circle cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke={color} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={`${dash} ${circ - dash}`}

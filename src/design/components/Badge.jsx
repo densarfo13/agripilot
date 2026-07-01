@@ -10,12 +10,15 @@ import React from 'react';
 import { COLORS } from '../tokens/colors.js';
 import { RADIUS } from '../tokens/radius.js';
 
+// Fully token-driven (no hardcoded hex). Meaning is carried by dot + color, never
+// color alone. `attention` uses the canonical terracotta error token, not a stale
+// light-theme crimson; info/neutral use light-on-dark surfaces that read on navy.
 const TONES = {
-  good:      { fg: COLORS.greenInk || '#1f6a3a', bg: COLORS.greenSoft || 'rgba(110,139,97,0.12)', dot: '●' },
-  watch:     { fg: COLORS.amberInk || '#92400E', bg: COLORS.amberSoft || 'rgba(214,161,61,0.14)', dot: '▲' },
-  attention: { fg: '#991B1B', bg: 'rgba(153,27,27,0.10)', dot: '■' },
-  info:      { fg: COLORS.ink || '#1F2A1A', bg: 'rgba(0,0,0,0.05)', dot: '•' },
-  neutral:   { fg: COLORS.inkDim || '#6B7766', bg: 'rgba(0,0,0,0.04)', dot: '○' },
+  good:      { fg: COLORS.greenInk, bg: COLORS.greenSoft,   dot: '●' },
+  watch:     { fg: COLORS.amberInk, bg: COLORS.amberSoft,   dot: '▲' },
+  attention: { fg: COLORS.error,    bg: COLORS.errorSoft,   dot: '■' },
+  info:      { fg: COLORS.ochreInk, bg: COLORS.ochreSurface, dot: '•' },
+  neutral:   { fg: COLORS.inkDim,   bg: COLORS.panel,       dot: '○' },
 };
 
 export default function Badge({ tone = 'neutral', children, testId }) {
