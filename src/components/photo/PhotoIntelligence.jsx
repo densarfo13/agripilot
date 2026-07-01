@@ -22,6 +22,7 @@ import { useTranslation } from '../../i18n/index.js';
 import { tSafe } from '../../i18n/tSafe.js';
 import PhotoCapture from './PhotoCapture.jsx';
 import ScanResultCard from './ScanResultCard.jsx';
+import ScanResultErrorBoundary from '../scan/ScanResultErrorBoundary.jsx';
 import { PHOTO_QUESTIONS } from '../../utils/photoAnalysisEngine.js';
 import { analyzePhotoRequest } from '../../runtime/services/photoAnalysisService.js';
 import { appendScan } from '../../lib/photo/scanHistory.js';
@@ -265,15 +266,17 @@ export default function PhotoIntelligence({
                   'Photo saved. We will analyse it again when connection improves.')}
               </p>
             )}
-            <ScanResultCard
-              result={result}
-              language={lang}
-              imageDataUrl={imageDataUrl}
-              onRetake={handleRetake}
-              onContact={handleContact}
-              onSave={handleSave}
-              saved={saved}
-            />
+            <ScanResultErrorBoundary previewUrl={imageDataUrl || null} onRetry={handleRetake}>
+              <ScanResultCard
+                result={result}
+                language={lang}
+                imageDataUrl={imageDataUrl}
+                onRetake={handleRetake}
+                onContact={handleContact}
+                onSave={handleSave}
+                saved={saved}
+              />
+            </ScanResultErrorBoundary>
           </>
         )}
       </div>

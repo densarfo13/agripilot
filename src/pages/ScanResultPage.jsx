@@ -23,6 +23,7 @@ import { useScanHistory } from '../hooks/useScanHistory.js';
 import { addScanTasks } from '../core/scanToTask.js';
 import { trackEvent } from '../analytics/analyticsStore.js';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
+import ScanResultErrorBoundary from '../components/scan/ScanResultErrorBoundary.jsx';
 import { computeProduceIntelligence } from '../features/scan/ProduceIntelligenceEngine/index.js';
 import ProduceQualityBadge from '../components/produce/ProduceQualityBadge.jsx';
 import { composeReferenceImagesForScan } from '../runtime/plants/index';
@@ -212,13 +213,18 @@ export default function ScanResultPage() {
 
       {entry?.raw ? (
         <>
-          <ScanResultCard
-            result={entry.raw}
-            experience={entry.experience || 'generic'}
-            onRetake={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
-            onAddTasks={onAddTasks}
-            alreadyAddedTasks={tasksAdded}
-          />
+          <ScanResultErrorBoundary
+            previewUrl={entry.raw?.imagePreviewUrl || entry.raw?.imageUrl || null}
+            onRetry={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
+          >
+            <ScanResultCard
+              result={entry.raw}
+              experience={entry.experience || 'generic'}
+              onRetake={() => { try { navigate('/scan'); } catch { /* ignore */ } }}
+              onAddTasks={onAddTasks}
+              alreadyAddedTasks={tasksAdded}
+            />
+          </ScanResultErrorBoundary>
           {produceIntel ? (
             <ProduceQualityBadge intel={produceIntel} variant="seller" />
           ) : null}

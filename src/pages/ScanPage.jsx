@@ -89,6 +89,7 @@ import { shouldRenderIntelligentResult } from '../runtime/launchBlockers/ScanRes
 import ScanCaptureUpgrade from '../components/scan/ScanCaptureUpgrade.jsx';
 import ScanAnalyzing from '../components/scan/ScanAnalyzing.jsx';
 import ScanResultCard from '../components/scan/ScanResultCard.jsx';
+import ScanResultErrorBoundary from '../components/scan/ScanResultErrorBoundary.jsx';
 // Crash-safe fallback used by:
 //   • Setup-required guard ("setup_required" reason)
 //   • Camera unavailable / permission denied
@@ -2095,11 +2096,13 @@ export default function ScanPage() {
               is absent. Single-card invariant preserved because
               this is composition, not a duplicate result card. */}
           <ScanCommandCard result={result} />
-          <IntelligentScanResult
-            result={result}
-            onRetake={onRetake}
-            onChoose={_handleUseSavedPhoto}
-          />
+          <ScanResultErrorBoundary previewUrl={result?.imagePreviewUrl || null} onRetry={onRetake}>
+            <IntelligentScanResult
+              result={result}
+              onRetake={onRetake}
+              onChoose={_handleUseSavedPhoto}
+            />
+          </ScanResultErrorBoundary>
         </>
       ) : null}
 
@@ -2126,16 +2129,18 @@ export default function ScanPage() {
           })()
         ) : (
           <>
-            <ScanResultCard
-              result={result}
-              experience={experience}
-              onRetake={onRetake}
-              onAsk={onAsk}
-              onAddTasks={onAddTasks}
-              onSave={onSave}
-              alreadySaved={!!savedEntryId}
-              alreadyAddedTasks={tasksAdded}
-            />
+            <ScanResultErrorBoundary previewUrl={result?.imagePreviewUrl || null} onRetry={onRetake}>
+              <ScanResultCard
+                result={result}
+                experience={experience}
+                onRetake={onRetake}
+                onAsk={onAsk}
+                onAddTasks={onAddTasks}
+                onSave={onSave}
+                alreadySaved={!!savedEntryId}
+                alreadyAddedTasks={tasksAdded}
+              />
+            </ScanResultErrorBoundary>
             {Array.isArray(result.verificationQuestions) && result.verificationQuestions.length > 0 ? (
               <ScanVerificationChecklist
                 scanId={result.scanId || null}
