@@ -32,6 +32,8 @@
 
 import React from 'react';
 import PlainUploadFallback from './PlainUploadFallback.jsx';
+// Leaf, pure, never-throws — safe to use inside componentDidCatch.
+import { getScanCorrelationId } from '../../lib/scanCorrelationId.js';
 
 function _buildSha() {
   try {
@@ -57,11 +59,16 @@ export default class ScanErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Console-log the crash with a greppable prefix so engineers can
-    // filter for it in DevTools / Railway log drains.
+    // Correlation id ties this crash to the scan attempt's telemetry + server log
+    // (Scan spec: "Log every failure with a correlation ID"). Pure + never throws.
+    let correlationId = 'scan-unknown';
+    try { correlationId = getScanCorrelationId(); } catch { /* keep default */ }
+
+    // Console-log the crash with a greppable prefix + correlation id so engineers
+    // can filter for it in DevTools / Railway log drains and match it to one scan.
     try {
 
-      console.error('[FARROWAY_CRASH][scan_component_error]',
+      console.error('[FARROWAY_CRASH][scan_component_error]', correlationId,
         error && error.message ? error.message : error,
         info && info.componentStack ? info.componentStack.slice(0, 500) : '');
     } catch { /* swallow */ }
@@ -70,6 +77,7 @@ export default class ScanErrorBoundary extends React.Component {
     try {
       if (typeof window !== 'undefined') {
         window.__scanCrashDetails = Object.freeze({
+          correlationId,
           message:   error && error.message ? String(error.message).slice(0, 300) : 'unknown',
           stack:     error && error.stack ? String(error.stack).slice(0, 2000) : '',
           route:     '/scan',
@@ -87,6 +95,7 @@ export default class ScanErrorBoundary extends React.Component {
           try {
             if (mod && typeof mod.safeTrackEvent === 'function') {
               mod.safeTrackEvent('scan_component_error', {
+                correlationId,
                 message: error && error.message
                   ? String(error.message).slice(0, 200) : 'unknown',
                 componentStack: info && info.componentStack
