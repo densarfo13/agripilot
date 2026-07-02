@@ -202,6 +202,11 @@ const ALLOWED_EXCEPTIONS = [
   // CONFIDENCE NORMALIZE — bug-hunter fix: collapse the overloaded confidence field
   // (string tone / 0–1 float / 0–100 number) to one honest { pct, band }.
   'src/runtime/scan/confidence/',
+  // TERMINAL-STATE MACHINE — reviewed fix (P0 "scan must never dead-end"): a pure, total
+  // resolver mapping any scan outcome to one of 11 named states + the mayMutateFarm safety
+  // lock. Self-contained + unit-tested; no engine coupling.
+  'src/runtime/scan/resolveScanTerminalState.ts',
+  'src/runtime/scan/__tests__/',
   // ORG BARREL RE-EXPORT — reviewed fix (production-certification finding): the org barrel
   // must re-export provisionFarmerFromRow so AddFarmerPage's provisioner is live (was
   // resolving to undefined). Scoped to the single index.ts barrel file, NOT the whole

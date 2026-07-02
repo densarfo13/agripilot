@@ -232,6 +232,7 @@ const FounderDashboardPage = lazy(() => import('./pages/FounderDashboardPage.jsx
 const FounderOSPage = lazy(() => import('./pages/FounderOSPage.jsx'));
 const ApiDiagnosticsDashboard = lazy(() => import('./diagnostics/ApiDiagnosticsDashboard.tsx'));
 const ScanHealthPage = lazy(() => import('./pages/admin/ScanHealthPage.jsx'));
+const ScanDebugPage = lazy(() => import('./pages/admin/ScanDebugPage.jsx'));
 const ScanLabPage = lazy(() => import('./pages/admin/ScanLabPage.jsx'));
 const FarmerOutcomesPage = lazy(() => import('./pages/FarmerOutcomesPage.jsx'));
 const OrganizationOutcomesPage = lazy(() => import('./pages/admin/OrganizationOutcomesPage.jsx'));
@@ -3225,6 +3226,8 @@ export default function App() {
               UI path. Reads __apiHealth + __scanRecoveryHealth +
               __scanResultHealth; never throws. */}
           <Route path="/admin/scan-health" element={<RoleRoute roles={ADMIN_ROLES}><ScanHealthPage /></RoleRoute>} />
+          {/* Scan Debug Harness — hidden admin route; traces the 15 pipeline steps + exports debug JSON. */}
+          <Route path="/admin/scan-debug" element={<RoleRoute roles={ADMIN_ROLES}><ScanDebugPage /></RoleRoute>} />
           {/* SCAN_ANALYTICS_V1 — alias to the scan-health page (credit monitor
               + observability dashboard with Failure % + Credits consumed). */}
           <Route path="/admin/scan-analytics" element={<RoleRoute roles={ADMIN_ROLES}><ScanHealthPage /></RoleRoute>} />

@@ -1,4 +1,5 @@
 import { trackEvent } from './api.js';
+import { recordTelemetryStep } from './scanTraceRecorder.js';
 
 // Analytics calls must never block the UI, never throw, never wait
 // on a hung server. The bare `trackEvent` import handles the
@@ -16,6 +17,10 @@ function _timeoutPromise(ms) {
 }
 
 export function safeTrackEvent(event, metadata) {
+  // Scan Debug Harness tap — mirror scan_* events into window.__scanTrace. Never throws,
+  // never blocks; does not touch the scan engine.
+  try { if (typeof event === 'string' && event.indexOf('scan') !== -1) recordTelemetryStep(event, metadata); }
+  catch { /* diagnostic must never break analytics */ }
   try {
     const p = trackEvent(event, metadata);
     // Guard against the underlying call returning a non-thenable

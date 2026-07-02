@@ -755,6 +755,10 @@ app.get('/api/scan/diagnostics', authenticate, async (req, res) => {
       providerAvailable: live
         ? live.httpStatus === 200
         : (diag.lastHttpStatus === 200 || (diag.providerConfigured && diag.lastHttpStatus == null)),
+      // Scan Debug Harness — echo the client correlation id (passed as ?cid=) so the
+      // exported client trace and this server trace can be matched. Prefer a stored
+      // server-side id when the analyze path recorded one.
+      correlationId: diag.lastCorrelationId || (req.query && req.query.cid ? String(req.query.cid).slice(0, 60) : null),
       // Env-var NAME audit (the #221 root cause was a name mismatch).
       envVarUsed: diag.envVarUsed,
       plantIdApiKeyLength: diag.plantIdApiKeyLength,   // PLANT_ID_API_KEY (canonical)
