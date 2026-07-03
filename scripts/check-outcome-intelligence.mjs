@@ -206,6 +206,8 @@ const ALLOWED_EXCEPTIONS = [
   // resolver mapping any scan outcome to one of 11 named states + the mayMutateFarm safety
   // lock. Self-contained + unit-tested; no engine coupling.
   'src/runtime/scan/resolveScanTerminalState.ts',
+  // SELF-HEALING CHAIN — reviewed: pure orchestrator composing existing stages (retry/secondary/queue).
+  'src/runtime/scan/ScanRecoveryChain.ts',
   'src/runtime/scan/__tests__/',
   // ORG BARREL RE-EXPORT — reviewed fix (production-certification finding): the org barrel
   // must re-export provisionFarmerFromRow so AddFarmerPage's provisioner is live (was
