@@ -290,7 +290,7 @@ function _readCameraPermissionStatus() {
   }, 'unknown');
 }
 
-function _useCameraPermission() {
+function useCameraPermission() {
   const [status, setStatus] = useState('unknown');
   useEffect(() => {
     let cancelled = false;
@@ -325,7 +325,7 @@ function _useCameraPermission() {
 // bundle the offline runtime graph into its chunk.
 // ───────────────────────────────────────────────────────────
 
-function _useOfflineStatus() {
+function useOfflineStatus() {
   const [online, setOnline] = useState(() =>
     _safe(() => (typeof navigator !== 'undefined' ? navigator.onLine : true), true));
   const [queueDepth, setQueueDepth] = useState(0);
@@ -378,7 +378,7 @@ function _useOfflineStatus() {
 // Dev diagnostics — read once on mount, refresh on demand.
 // ───────────────────────────────────────────────────────────
 
-function _useDevDiagnostics(devMode) {
+function useDevDiagnostics(devMode) {
   const [snap, setSnap] = useState(null);
   useEffect(() => {
     if (!devMode) return undefined;
@@ -430,15 +430,15 @@ const PERMISSION_LABEL_DEFAULT = {
 };
 
 export default function ScanHub({ onTakePhoto, onUploadPhoto, recentLimit = 4 }) {
-  const permission = _useCameraPermission();
-  const { online, queueDepth } = _useOfflineStatus();
+  const permission = useCameraPermission();
+  const { online, queueDepth } = useOfflineStatus();
   const { entries: history } = useScanHistory();
   const devMode = _safe(() =>
     !!(typeof import.meta !== 'undefined'
        && import.meta.env
        && (import.meta.env.DEV || import.meta.env.MODE === 'development')),
   false);
-  const devDiag = _useDevDiagnostics(devMode);
+  const devDiag = useDevDiagnostics(devMode);
 
   const recentCount = Array.isArray(history) ? history.length : 0;
 
@@ -569,8 +569,8 @@ export default function ScanHub({ onTakePhoto, onUploadPhoto, recentLimit = 4 })
           via /internal/godmode (__scanUIHealth + __queueHealth)
           for QA / admin diagnostics only.
 
-          The component bodies (_useCameraPermission +
-          _useOfflineStatus) are intentionally kept above so the
+          The component bodies (useCameraPermission +
+          useOfflineStatus) are intentionally kept above so the
           subscriptions continue to power the boot-time
           diagnostics — they just do not render any grower UI. */}
 
