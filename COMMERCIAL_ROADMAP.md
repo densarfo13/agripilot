@@ -37,6 +37,23 @@ on an invented price or yield number is the one harm this product is built to ne
 - **Government data agreements** → national dashboards
 - **Scale infra** (post-1,000 farmers) → extract domains along the documented seams
 
+## Addendum — the 15-layer "global OS" spec, mapped to the same three categories
+- **Layer 1 (unified identity): BUILT** — Prisma already carries permanent IDs: `Farmer` (unique
+  national-id/phone per org), `FarmLocation`/`FarmBoundary`, `FarmSeason`, `HarvestReport`,
+  `scanId @unique`, correlation ids. QR shipment traceability = logistics partner (category 3).
+- **Layer 3 (train a FarmBrain foundation model): fabrication until data exists.** There is no
+  training corpus — the pilot's scans/corrections/harvests ARE the future training set. Claiming a
+  trained model today is exactly what `check:v13-no-fake-ml` blocks. Path: pilot data → labeled
+  corpus → fine-tune → evaluate → then (and only then) a model card.
+- **Layer 5 (digital agronomist chat): partially built** — FarmAssistantEngine + voice honesty
+  gates exist; free-form natural chat = an LLM API key + guardrail review (external decision).
+- **New category-3 externals** (partners/hardware, not sprints): carbon-credit registry +
+  methodology (Layer 9); drones/IoT/weather stations/soil probes (Layer 10); banks + insurers
+  (Layer 7); fleet/cold-chain operators (Layer 8); multi-currency/legal compliance per country
+  (Layer 12).
+- **The other 11 requested docs** map onto the table above + PLATFORM_ARCHITECTURE / FARMBRAIN_SPEC
+  / EVENT_CATALOG / DOMAIN_MODEL — not regenerated (Build Once).
+
 ## Sequencing
 Phase 0 (now): run the 100-farmer pilot — every later phase feeds on its data. Phase 1: market feed
 + 2nd provider + telemetry at volume → READY_FOR_1000. Phase 2: satellite + first trained model +
