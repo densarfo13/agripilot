@@ -32,6 +32,7 @@
 
 import React from 'react';
 import { getWeatherAction, normalizeWeather } from '../../lib/weatherAction.js';
+import { tSafe } from '../../i18n/tSafe.js';
 
 function _conditionToIcon(condition, rainChance, temp) {
   const c = String(condition || '').toLowerCase();
@@ -53,10 +54,10 @@ function _conditionLabel(condition, rainChance, temp) {
     // Title-case the condition string ("light rain" → "Light Rain").
     return condition.replace(/\b\w/g, (m) => m.toUpperCase());
   }
-  if (Number.isFinite(rainChance) && rainChance >= 60) return 'Rain expected';
-  if (Number.isFinite(temp) && temp >= 32) return 'Hot day';
-  if (Number.isFinite(rainChance) && rainChance <= 20) return 'Dry day';
-  return 'Mostly clear';
+  if (Number.isFinite(rainChance) && rainChance >= 60) return tSafe('home.weather.rain', 'Rain expected');
+  if (Number.isFinite(temp) && temp >= 32) return tSafe('home.weather.hotDay', 'Hot day');
+  if (Number.isFinite(rainChance) && rainChance <= 20) return tSafe('home.weather.dryDay', 'Dry day');
+  return tSafe('home.weather.mostlyClear', 'Mostly clear');
 }
 
 export default function WeatherActionCard({ weather, style }) {

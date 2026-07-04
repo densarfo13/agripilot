@@ -2,7 +2,7 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6801,
+      "totalKeys": 6806,
       "missingFilled": 0,
       "coveragePct": 98,
       "translatorReviewPending": [
@@ -153,7 +153,7 @@
       ]
     },
     "sw": {
-      "totalKeys": 6801,
+      "totalKeys": 6806,
       "missingFilled": 0,
       "coveragePct": 98,
       "translatorReviewPending": [
@@ -220,8 +220,6 @@
         "farmBrain.next.firstScan.guide",
         "farmBrain.next.startAction.title",
         "farmBrain.next.startAction.guide",
-        "farmQuality.title",
-        "farmQuality.subtitle",
         "farmQuality.improveBy",
         "farmQuality.level.low",
         "farmQuality.level.fair",
@@ -230,7 +228,6 @@
         "farmQuality.action.plantingDate",
         "farmQuality.action.location",
         "farmQuality.action.outcome",
-        "farmTimeline.title",
         "farmTimeline.empty",
         "farmTimeline.kind.farm_created",
         "farmTimeline.kind.crop_added",
@@ -307,7 +304,7 @@
       ]
     },
     "ha": {
-      "totalKeys": 6801,
+      "totalKeys": 6806,
       "missingFilled": 0,
       "coveragePct": 99,
       "translatorReviewPending": [
@@ -338,8 +335,6 @@
         "farmBrain.next.firstScan.guide",
         "farmBrain.next.startAction.title",
         "farmBrain.next.startAction.guide",
-        "farmQuality.title",
-        "farmQuality.subtitle",
         "farmQuality.improveBy",
         "farmQuality.level.low",
         "farmQuality.level.fair",
@@ -348,7 +343,6 @@
         "farmQuality.action.plantingDate",
         "farmQuality.action.location",
         "farmQuality.action.outcome",
-        "farmTimeline.title",
         "farmTimeline.empty",
         "farmTimeline.kind.farm_created",
         "farmTimeline.kind.crop_added",
@@ -401,7 +395,7 @@
       ]
     },
     "tw": {
-      "totalKeys": 6801,
+      "totalKeys": 6806,
       "missingFilled": 0,
       "coveragePct": 99,
       "translatorReviewPending": [
@@ -430,8 +424,6 @@
         "farmBrain.next.firstScan.guide",
         "farmBrain.next.startAction.title",
         "farmBrain.next.startAction.guide",
-        "farmQuality.title",
-        "farmQuality.subtitle",
         "farmQuality.improveBy",
         "farmQuality.level.low",
         "farmQuality.level.fair",
@@ -440,7 +432,6 @@
         "farmQuality.action.plantingDate",
         "farmQuality.action.location",
         "farmQuality.action.outcome",
-        "farmTimeline.title",
         "farmTimeline.empty",
         "farmTimeline.kind.farm_created",
         "farmTimeline.kind.crop_added",
@@ -490,8 +481,8 @@
       ]
     },
     "hi": {
-      "totalKeys": 6801,
-      "missingFilled": 75,
+      "totalKeys": 6806,
+      "missingFilled": 5,
       "coveragePct": 54,
       "translatorReviewPending": [
         "time.updated_just_now",
@@ -3649,7 +3640,12 @@
         "hero.bestTime.midday",
         "hero.bestTime.afternoon",
         "hero.bestTime.evening",
-        "hero.defaultGarden"
+        "hero.defaultGarden",
+        "gardenMode.userLabel",
+        "nav.activity",
+        "home.weather.hotDay",
+        "home.weather.dryDay",
+        "home.weather.mostlyClear"
       ]
     }
   }

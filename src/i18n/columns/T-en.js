@@ -6806,4 +6806,10 @@ export default {
   "hero.bestTime.afternoon": "This afternoon",
   "hero.bestTime.evening": "This evening",
   "hero.defaultGarden": "Your garden",
+  // ── Visible-leak fix batch 2 (2026-07-01): greeting roles + nav + weather fallbacks ──
+  "gardenMode.userLabel": "Gardener",
+  "nav.activity": "Activity",
+  "home.weather.hotDay": "Hot day",
+  "home.weather.dryDay": "Dry day",
+  "home.weather.mostlyClear": "Mostly clear",
 };

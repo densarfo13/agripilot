@@ -718,10 +718,11 @@ export default function Home() {
   const greeting = (() => {
     try {
       const h = now.getHours();
-      if (h < 12) return 'Good morning';
-      if (h < 18) return 'Good afternoon';
-      return 'Good evening';
-    } catch { return 'Hello'; }
+      // Reuse the header greeting keys — already translated in every locale.
+      if (h < 12) return tSafe('home.header.morning', 'Good morning');
+      if (h < 18) return tSafe('home.header.afternoon', 'Good afternoon');
+      return tSafe('home.header.evening', 'Good evening');
+    } catch { return tSafe('home.header.morning', 'Hello'); }
   })();
 
   // Garden Mode polish: greet the user as "Gardener" when the
