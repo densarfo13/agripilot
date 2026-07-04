@@ -2,7 +2,7 @@
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "perLocale": {
     "fr": {
-      "totalKeys": 6806,
+      "totalKeys": 6822,
       "missingFilled": 0,
       "coveragePct": 98,
       "translatorReviewPending": [
@@ -153,7 +153,7 @@
       ]
     },
     "sw": {
-      "totalKeys": 6806,
+      "totalKeys": 6822,
       "missingFilled": 0,
       "coveragePct": 98,
       "translatorReviewPending": [
@@ -304,7 +304,7 @@
       ]
     },
     "ha": {
-      "totalKeys": 6806,
+      "totalKeys": 6822,
       "missingFilled": 0,
       "coveragePct": 99,
       "translatorReviewPending": [
@@ -395,7 +395,7 @@
       ]
     },
     "tw": {
-      "totalKeys": 6806,
+      "totalKeys": 6822,
       "missingFilled": 0,
       "coveragePct": 99,
       "translatorReviewPending": [
@@ -481,9 +481,9 @@
       ]
     },
     "hi": {
-      "totalKeys": 6806,
-      "missingFilled": 5,
-      "coveragePct": 54,
+      "totalKeys": 6822,
+      "missingFilled": 16,
+      "coveragePct": 53,
       "translatorReviewPending": [
         "time.updated_just_now",
         "time.updated_minutes_ago",
@@ -3645,7 +3645,23 @@
         "nav.activity",
         "home.weather.hotDay",
         "home.weather.dryDay",
-        "home.weather.mostlyClear"
+        "home.weather.mostlyClear",
+        "experienceTabs.aria",
+        "experienceTabs.farms",
+        "experienceTabs.gardens",
+        "commandCenter.farmStatus",
+        "commandCenter.crop",
+        "commandCenter.stage",
+        "commandCenter.health",
+        "commandCenter.risk",
+        "commandCenter.harvestWindow",
+        "commandCenter.empty",
+        "funding.filter.all",
+        "funding.filter.farmer",
+        "funding.filter.backyard",
+        "funding.filter.cropPlaceholder",
+        "funding.filter.regionPlaceholder",
+        "trust.buyerVisibility"
       ]
     }
   }
