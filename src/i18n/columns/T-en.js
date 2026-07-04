@@ -4606,7 +4606,7 @@ export default {
   "funding.contacted": "Contacted",
   "funding.markContacted": "Mark contacted",
   "funding.tabCatalog": "Catalog",
-  "nav.opportunities": "Funding",
+  "nav.opportunities": "Opportunities",
   "verification.verifiedOnly": "Verified only",
   "verification.addLocation": "Add location to this task (optional)",
   "verification.checkingLocation": "Checking location…",
