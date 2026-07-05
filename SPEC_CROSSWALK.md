@@ -50,6 +50,15 @@ new file when a canonical one covers it — extend the canonical doc instead.
 | ROADMAP_10_YEARS.md | ROADMAP_2026_2035.md (already spans ten years) |
 | TOP_500_IMPROVEMENTS.md | TOP_50_FIXES.md on master — 35 evidence-backed items; the count follows evidence whether the spec asks for 50, 100, or 500 |
 | "Water Intelligence" | weather/irrigation advice (live) + ROADMAP Phase-5 prediction lines (water needs, validated-model-gated) |
+| CEO_DASHBOARD.md | MISSION_CONTROL.md (+ existing FounderOS admin page) |
+| CTO_ROADMAP.md, TOP_100_EXECUTION_PRIORITIES.md | TOP_50_FIXES.md on master (35 items) + ROADMAP_2026_2035.md |
+| PRODUCT_STRATEGY.md, PLATFORM_STRATEGY.md | FARMBRAIN_OS_MASTER_ARCHITECTURE.md + FOS-1 doctrine (product constitution, in force) |
+| ENGINEERING_PLAYBOOK.md | docs/company/ engineering charter (tracked, commit 8f82d660) + RELEASE_PLAN.md operating rules |
+| FARMER_SUCCESS_FRAMEWORK.md | FarmerSuccessEngine (shipped, sprint #47) + first-5-min funnel (sprint #217) + FOS-1 north-star metrics |
+| PILOT_EXECUTION_GUIDE.md | docs/PRODUCTION_ACCEPTANCE_TEST.md + pilot execution mode (P0/P1 charter, in force) |
+| PARTNER_STRATEGY.md | PARTNER_PLATFORM.md |
+| GLOBAL_EXPANSION.md | ROADMAP_2026_2035.md Phase 6 + master arch §Channels |
+| "Jarvis becomes proactive" | Proactivity = the EXISTING daily-plan + notification pipeline surfacing through Jarvis's suggestion chips (VOICE_PLATFORM) — no new push brain; Jarvis never initiates on its own signal it can't cite |
 
 ## Legacy docs (history only — NOT canonical)
 `FARMBRAIN_SPEC.md`, `FARMBRAIN3.md`, `FARMBRAIN_OPERATING_MODEL.md`, `AI_AGENTS.md` (superseded by
