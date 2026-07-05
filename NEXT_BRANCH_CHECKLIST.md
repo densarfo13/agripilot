@@ -29,7 +29,8 @@ below is checked. Design documents only until then.
 - [ ] Any future merge to `master`: feature-flagged OFF + full 411-gate chain + device acceptance
 
 ## D. First-implementation order (when A+B are green)
-1. Voice CC honest kernel (keyword router → existing screens; flagged; not mounted on /scan)
-2. Knowledge Graph v1 (entity-link the existing knowledge layer)
-3. Mission Control (composition over existing signals)
-— everything else per `ROADMAP_2026_2031.md` phase gates.
+1. Voice CC honest kernel (keyword router → existing screens; flagged; not mounted on /scan) — `VOICE_PLATFORM.md`
+2. Knowledge Graph v1 (entity-link the existing stores, read-side) — `KNOWLEDGE_GRAPH_SPEC.md`
+3. Mission Control (composition over existing signals) — `MISSION_CONTROL.md`
+— everything else per `ROADMAP_2026_2035.md` phase gates; canonical architecture:
+`FARMBRAIN_OS_MASTER_ARCHITECTURE.md`.
