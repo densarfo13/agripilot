@@ -93,6 +93,12 @@ export function authenticate(req, res, next) {
  */
 function verifyUserFromPayload(req, res, next, payload) {
 
+  // IDENTITY FIX (2026-07-05): every token signs the user id as `sub` only, but many
+  // routes read `req.user.id`. Without the alias below those routes saw undefined —
+  // GET /api/scan/history 401'd for every user, and scan/journal writes persisted with
+  // a NULL userId (history invisible to its owner). `id` must stay aliased to `sub`
+  // on BOTH auth paths (cache hit + DB verify).
+
   // Check cache first
   const cached = getCachedUser(payload.sub);
   if (cached) {
@@ -105,7 +111,7 @@ function verifyUserFromPayload(req, res, next, payload) {
       logAuthEvent('token_revoked', { userId: payload.sub, ip: req.ip });
       return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
-    req.user = { ...payload, role: cached.role, organizationId: cached.organizationId || null };
+    req.user = { ...payload, id: payload.sub, role: cached.role, organizationId: cached.organizationId || null };
     return next();
   }
 
@@ -132,7 +138,7 @@ function verifyUserFromPayload(req, res, next, payload) {
         return res.status(401).json({ error: 'Session expired. Please log in again.' });
       }
       // Use DB role (source of truth) rather than JWT role in case it was changed
-      req.user = { ...payload, role: user.role, organizationId: user.organizationId || null };
+      req.user = { ...payload, id: payload.sub, role: user.role, organizationId: user.organizationId || null };
       next();
     })
     .catch(() => {

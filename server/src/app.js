@@ -196,9 +196,17 @@ if (config.isProduction) {
 }
 
 // ─── Canonical Domain Redirect ────────────────────────────────────────
-// In production, redirect old/www domains to the canonical https://farroway.app
+// In production, redirect old/www domains to the canonical https://farroway.app.
+//
+// DOCUMENTS ONLY (2026-07-05 fix): the redirect must never apply to /api/*.
+// fetch() drops the Authorization header on a cross-origin redirect
+// (www.farroway.app → farroway.app is cross-origin), so API calls from a page
+// loaded on a non-canonical host were 301'd and arrived unauthenticated →
+// spurious 401s (observed live). A 301 also downgrades POST to GET in fetch.
+// The API therefore answers on every bound host; only page navigations redirect.
 if (config.isProduction) {
   app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
     const host = (req.hostname || req.headers.host || '').replace(/:\d+$/, '');
     const canonicalHost = 'farroway.app';
     // Redirect www.farroway.app, farroways.com, www.farroways.com, and old railway domain
