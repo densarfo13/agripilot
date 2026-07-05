@@ -35,6 +35,18 @@ new funding intelligence · new Jarvis/voice implementation (parked — founder 
 
 **Scoreboard: 0 green / 6 partial-or-at-risk / 5 red / 1 unmeasured. Release does not exit until all 12 are green.**
 
+### Production score (2026-07-05, evidence-based — not a vanity number)
+| Dimension | Score | Basis |
+|---|---|---|
+| Engineering quality | **A− (≈90/100)** | build:safe 411 gates green; rules-of-hooks=0 (build+CI); no-undef ratchet 0; 14.5k tests passing (50 legacy fails, W8); server perf under budget; W2/W3 identity+redirect bugs fixed & verified live. |
+| Farmer UX (Scan) | **B+ (≈85/100)** | Low-confidence result is production-quality (one guidance surface, honest confidence, camera tips, ≥48px a11y, 6 locales). Gaps: full WCAG-AA pass; delight layer after P0. |
+| Performance | **B (≈80/100)** | TTFB fast; scan < 5s; lazy i18n + code-splitting. Gap: 375 KB-gzip main chunk; no field RUM yet. |
+| Release readiness | **BLOCKED** | 0/12 exit criteria fully green — gated on ONE device-verified scan (criterion #1). |
+| **Composite** | **PILOT-CANDIDATE, not GA** | Strong engineering; release blocked by a single device-gated P0. |
+
+**The score does not move to "release-ready" on more code — it moves when one real scan reaches the
+result screen on the failing device.** Everything else is secondary to that one action.
+
 ---
 
 ## Work items (priority order)
