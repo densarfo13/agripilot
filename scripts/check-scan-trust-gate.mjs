@@ -31,7 +31,16 @@ else {
   _has(s, 'evaluateScanTrust', 'IntelligentScanResult must consult evaluateScanTrust');
   _has(s, '_trust.allowPlantCreation', 'Save-plant CTA must require _trust.allowPlantCreation');
   _has(s, '_trust.allowTaskCreation', 'Create-task CTA must require _trust.allowTaskCreation');
-  _has(s, 'scan-photo-coach-card', 'must render the photo coach card when blocked');
+  // UX sprint 2026-07-05: the coach card's job (coaching + save-for-review when blocked,
+  // never Add-to-My-Plants) moved to the single ScanGuidanceCard beneath the header.
+  _has(s, 'ScanGuidanceCard', 'must render ScanGuidanceCard (the single blocked/low-confidence surface)');
+  const G = 'src/components/scan/ScanGuidanceCard.jsx';
+  if (!_exists(G)) errors.push('missing: ' + G);
+  else {
+    const g = _read(G);
+    _has(g, 'scan-guidance-retake', 'guidance card must offer Retake');
+    _has(g, 'scan-guidance-save-review', 'guidance card must offer Save for Review');
+  }
   _has(_read('src/App.jsx'), 'installScanTrustGateHealthGlobal',
     'App.jsx must boot-install installScanTrustGateHealthGlobal');
 }

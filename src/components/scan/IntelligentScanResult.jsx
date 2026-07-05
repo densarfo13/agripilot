@@ -39,7 +39,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
 import { useTranslation } from '../../i18n/index.js';
-import NeedsReviewActions from './NeedsReviewActions.jsx';
+import ScanGuidanceCard from './ScanGuidanceCard.jsx';
 // SCAN TYPE ROUTER — fruit/veg + insect get their own result cards, not
 // the plant-only path. Direct imports (small, must render with the result).
 import FruitVegResultCard from './FruitVegResultCard.jsx';
@@ -708,7 +708,12 @@ export default function IntelligentScanResult({
     photoQuality: _photoQuality,
   }), null);
   const _trustBlocked = !!(_trust && !_trust.allowPlantCreation);
-  const _coach = _trustBlocked ? _safe(() => explainPhotoQuality(_photoQuality), null) : null;
+  // UX sprint 2026-07-05 — ONE low-confidence surface. When the trust gate blocks or the
+  // result needs review, ScanGuidanceCard (directly beneath the header) is the single
+  // guidance + CTA surface; the old photo-guidance card, coach card, and NeedsReviewActions
+  // no longer stack on top of each other. Treatment/Region hide behind the same signal.
+  const _showGuidance = _trustBlocked || needsReview;
+  const _coach = _showGuidance ? _safe(() => explainPhotoQuality(_photoQuality), null) : null;
 
   // Sprint #207 — honest numeric confidence breakdown. Only the two
   // real contributors (image base + farm-history boost) that summed to
@@ -759,8 +764,22 @@ export default function IntelligentScanResult({
   return (
     <main style={STYLES.page} data-testid="intelligent-scan-result">
       <VoiceHeader result={result} />
-      {/* Photo quality guidance — non-blocking; preserves candidates */}
-      {_retakeMsg ? (
+      {/* THE single low-confidence surface — directly beneath the header so the next
+          action is the first thing the farmer sees. Owns the Retake / Upload / Save
+          CTAs and the treatment-locked note. */}
+      {_showGuidance ? (
+        <ScanGuidanceCard
+          reasons={_coach ? _coach.whatWentWrong : null}
+          qualityLabel={_photoQuality && _photoQuality.qualityLabel}
+          showTreatmentLockedNote={!!(treatment || region)}
+          onRetake={_isFn(onRetake) ? onRetake : undefined}
+          onUpload={_isFn(onChoose) ? onChoose : undefined}
+          onSaveForReview={_isFn(onSaveForReview) ? onSaveForReview : undefined}
+        />
+      ) : null}
+      {/* Photo quality guidance — non-blocking medium-confidence case only (the
+          guidance card above owns the low-confidence message). */}
+      {!_showGuidance && _retakeMsg ? (
         <section style={STYLES.card} data-testid="scan-intel-quality">
           <h4 style={STYLES.cardTitle}>
             {tSafe('scan.intel.quality.title', 'Photo guidance')}
@@ -798,9 +817,35 @@ export default function IntelligentScanResult({
           candidates so the UI never reads "Unknown Plant" / dead-end. */}
       {_topCandidates.length > 0 ? (
         <section style={STYLES.card} data-testid="scan-intel-top-matches">
-          <h4 style={STYLES.cardTitle}>
+          <h4 style={{ ...STYLES.cardTitle, display: 'flex', alignItems: 'center',
+              gap: 8, flexWrap: 'wrap' }}>
             {tSafe('scan.intel.topMatches.title', 'Top matches')}
-            {_confidenceLabel ? ' — ' + _confidenceLabel : ''}
+            {/* Confidence badge — renders the REAL confidence band beside the title.
+                Bands from confidencePct (≥70 high / ≥40 medium / else low); the
+                server's own confidenceLabel wins as the text when present. */}
+            {(() => {
+              const pct = _num(result && result.confidencePct);
+              if (pct == null && !_confidenceLabel) return null;
+              const band = pct == null ? 'low' : (pct >= 70 ? 'high' : (pct >= 40 ? 'medium' : 'low'));
+              const palette = band === 'high'
+                ? { bg: '#ECFDF5', ink: '#065F46', line: '#A7F3D0' }
+                : band === 'medium'
+                  ? { bg: '#FFFBEB', ink: '#92400E', line: '#FDE68A' }
+                  : { bg: '#FEF2F2', ink: '#991B1B', line: '#FECACA' };
+              const text = _confidenceLabel
+                || (band === 'high' ? tSafe('scan.confidence.high', 'High confidence')
+                  : band === 'medium' ? tSafe('scan.confidence.medium', 'Medium confidence')
+                    : tSafe('scan.confidence.low', 'Low confidence'));
+              return (
+                <span data-testid="scan-confidence-badge"
+                  aria-label={text}
+                  style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px',
+                    borderRadius: 999, background: palette.bg, color: palette.ink,
+                    border: '1px solid ' + palette.line, whiteSpace: 'nowrap' }}>
+                  {text}
+                </span>
+              );
+            })()}
           </h4>
           <ol style={{ margin: 0, paddingLeft: 18 }}>
             {_topCandidates.slice(0, 5).map((c, i) => {
@@ -915,13 +960,17 @@ export default function IntelligentScanResult({
       ) : null)}
       <FlowerSection identification={identification} result={result} />
       <CropHealthSection health={health} />
-      <TreatmentSection treatment={treatment} />
-      <RegionSection region={region} />
+      {/* Treatment + Region hide on low confidence — the guidance card explains why
+          ("Once we can clearly identify the plant…"). Never advice on a shaky ID. */}
+      {!_showGuidance ? <TreatmentSection treatment={treatment} /> : null}
+      {!_showGuidance ? <RegionSection region={region} /> : null}
       <SoilSection soil={soil} />
       <SatelliteSection satellite={satellite} />
-      {/* Permanent Action Row — Create task / Scan again / Save for review.
-          Always present after a result so the user can never reach a
-          dead-end. */}
+      {/* Permanent Action Row — Create task / Scan again / Save for review. Present
+          after every CONFIDENT result so the user never dead-ends. On low confidence
+          the ScanGuidanceCard beneath the header owns the CTAs (UX sprint 2026-07-05 —
+          the old coach card that duplicated them here is gone). */}
+      {!_showGuidance ? (
       <section style={STYLES.card} data-testid="scan-intel-actions">
         {_nextActionTxt ? (
           <p style={{ ...STYLES.body, fontWeight: 700,
@@ -930,52 +979,6 @@ export default function IntelligentScanResult({
             {tSafe('scan.intel.next.title', 'Do this next')}: {_nextActionTxt}
           </p>
         ) : null}
-        {/* Sprint #214 — photo quality coach card. When the trust
-            gate blocks plant creation, replace the identification CTAs
-            with coaching + a Save-for-Review path. Never "Add to My
-            Plants" for an unidentified/unclear scan. */}
-        {_trustBlocked ? (
-          <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA',
-            borderRadius: 12, padding: '12px 14px' }}
-            data-testid="scan-photo-coach-card">
-            <p style={{ margin: 0, fontWeight: 700, color: '#9A3412' }}>
-              {tSafe('scanQuality.photoNeedsClearerView', 'Photo needs a clearer view')}
-            </p>
-            <p style={{ margin: '6px 0', fontSize: 13, color: '#7C2D12' }}>
-              {tSafe('scanTrust.cannotCreatePlant', 'We could not identify this plant yet.')}
-            </p>
-            {_coach && _arr(_coach.whatWentWrong).length > 0 ? (
-              <ul style={{ margin: '4px 0 8px', paddingLeft: 18, fontSize: 13, color: '#7C2D12' }}
-                data-testid="scan-photo-coach-reasons">
-                {_coach.whatWentWrong.slice(0, 4).map((k, i) => (
-                  <li key={'cw-' + i}>{tSafe(k, k)}</li>
-                ))}
-              </ul>
-            ) : null}
-            {_coach ? (
-              <p style={{ margin: '4px 0 10px', fontSize: 13, fontWeight: 600, color: '#1f6a3a' }}>
-                {tSafe(_coach.doThisKey, 'Move closer to one leaf and retake in daylight.')}
-              </p>
-            ) : null}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" style={STYLES.confPill('high')}
-                data-testid="scan-coach-retake"
-                onClick={_isFn(onRetake) ? onRetake : undefined}>
-                {tSafe('scanQuality.retakePhoto', 'Retake Photo')}
-              </button>
-              <button type="button" style={STYLES.pill}
-                data-testid="scan-coach-upload"
-                onClick={_isFn(onChoose) ? onChoose : undefined}>
-                {tSafe('scanQuality.uploadAnother', 'Upload Another Photo')}
-              </button>
-              <button type="button" style={STYLES.pill}
-                data-testid="scan-coach-save-review"
-                onClick={_isFn(onSaveForReview) ? onSaveForReview : undefined}>
-                {tSafe('scanReview.saveForReview', 'Save for Review')}
-              </button>
-            </div>
-          </div>
-        ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* Create task — gated by the trust gate (#214). Hidden when
               the scan is unclear / low-confidence. */}
@@ -1011,15 +1014,10 @@ export default function IntelligentScanResult({
             </button>
           ) : null}
         </div>
-        )}
       </section>
-      {needsReview ? (
-        <NeedsReviewActions
-          onTakeAnother={_isFn(onRetake) ? onRetake : undefined}
-          onChoosePhoto={_isFn(onChoose) ? onChoose : undefined}
-          onSaveForReview={_isFn(onSaveForReview) ? onSaveForReview : undefined}
-        />
       ) : null}
+      {/* NeedsReviewActions removed (UX sprint 2026-07-05) — ScanGuidanceCard beneath
+          the header is the single needs-review surface; no more stacked duplicates. */}
     </main>
   );
 }
