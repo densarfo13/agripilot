@@ -23,7 +23,11 @@ const BASELINE = path.join(R, 'scripts', 'copy-governor-baseline.json');
 const BANNED = [
   /FarmBrain/i, /confidence engine/i, /data quality engine/i, /provider timeout/i,
   /internal error/i, /stack trace/i, /\bbackend\b/i, /\bpipeline\b/i, /\bnull\b/i,
-  /undefined/i, /\bNaN\b/i,
+  // NaN must be CASE-SENSITIVE: the JS artifact only ever appears exactly as "NaN",
+  // while /\bNaN\b/i falsely bans the common Hausa word "nan" ("here/this") — it was
+  // inflating the T-ha baseline with correct farmer copy (found 2026-07-05 when three
+  // legitimate Hausa strings tripped the ratchet).
+  /undefined/i, /\bNaN\b/,
 ];
 
 function bannedCount(src) {
