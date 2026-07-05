@@ -30,8 +30,10 @@ const UI='src/components/scan/IntelligentScanResult.jsx';
 if(!x(UI))E.push('missing: '+UI);else{const s=rd(UI);
   if(!/_trust\s*&&\s*_trust\.allowTaskCreation\s*\?/.test(s))E.push('INVARIANT 1: Create Task must be gated on _trust.allowTaskCreation (plant unknown → no task)');
   if(!/_trust\s*&&\s*_trust\.allowPlantCreation\s*\?/.test(s))E.push('INVARIANT 1: Save Plant must be gated on _trust.allowPlantCreation');
-  // (2) scan unclear → explanation rendered (the coach card on block)
-  h(s,'scan-photo-coach-card','INVARIANT 2: a failure explanation (coach card) must render when blocked');
+  // (2) scan unclear → explanation rendered. UX sprint 2026-07-05: the coach card's
+  // job moved to ScanGuidanceCard (the single low-confidence surface beneath the
+  // header) — same invariant, new canonical surface.
+  h(s,'ScanGuidanceCard','INVARIANT 2: a failure explanation (ScanGuidanceCard) must render when blocked');
   h(s,'_trustBlocked','INVARIANT 2: must branch on _trustBlocked to show the explanation');
 }
 // The composer's "Scan unclear" is only reachable with empty candidates —

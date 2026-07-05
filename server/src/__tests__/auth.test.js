@@ -152,6 +152,41 @@ describe('Auth Middleware', () => {
       expect(req.user.role).toBe('farmer');
     });
 
+    // IDENTITY REGRESSION (2026-07-05): tokens carry the user id as `sub` only, but many
+    // routes read `req.user.id`. Before the fix, req.user.id was undefined on every request —
+    // GET /api/scan/history 401'd for all users and scan/journal rows persisted with a NULL
+    // userId. req.user.id must equal payload.sub on BOTH auth paths, forever.
+    it('aliases req.user.id to payload.sub (DB-verify path)', async () => {
+      jwt.verify.mockReturnValue({ sub: 'user-123', email: 'f@x.com', role: 'farmer' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'user-123', active: true, role: 'farmer' });
+
+      const { req, res, next } = createMocks();
+      authenticate(req, res, next);
+      await vi.waitFor(() => expect(next).toHaveBeenCalled());
+
+      expect(req.user.id).toBe('user-123');
+      expect(req.user.sub).toBe('user-123');
+    });
+
+    it('aliases req.user.id to payload.sub (auth-cache path)', async () => {
+      jwt.verify.mockReturnValue({ sub: 'user-123', email: 'f@x.com', role: 'farmer' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'user-123', active: true, role: 'farmer' });
+
+      // First call populates the cache (DB path)…
+      const first = createMocks();
+      authenticate(first.req, first.res, first.next);
+      await vi.waitFor(() => expect(first.next).toHaveBeenCalled());
+
+      // …second call must hit the cache and STILL alias id.
+      prisma.user.findUnique.mockClear();
+      const second = createMocks();
+      authenticate(second.req, second.res, second.next);
+      await vi.waitFor(() => expect(second.next).toHaveBeenCalled());
+
+      expect(prisma.user.findUnique).not.toHaveBeenCalled(); // proves cache path
+      expect(second.req.user.id).toBe('user-123');
+    });
+
     it('returns 403 for deactivated users', async () => {
       jwt.verify.mockReturnValue({ sub: 'user-123', role: 'farmer' });
       prisma.user.findUnique.mockResolvedValue({ id: 'user-123', active: false, role: 'farmer' });

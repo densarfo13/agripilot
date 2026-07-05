@@ -25,7 +25,12 @@ const base = {
   hybridUrgency: null, imagePreviewUrl: null, landHealth: null,
 };
 const ENVELOPES = {
-  success: { ...base, confidenceTone: 'high', confidencePct: 87, status: 'identified', suppressed: false, possibleIssue: 'Leaf spot', severity: 'low', recommendedActions: ['Remove affected leaves'] },
+  // success mirrors the REAL high-confidence production shape: topCandidates present
+  // (the trust gate blocks plant creation when topCandidates is empty, whatever the
+  // confidence), plus issueType/objectType/imageQuality as the server actually sends.
+  success: { ...base, confidenceTone: 'high', confidencePct: 87, status: 'identified', suppressed: false, possibleIssue: 'Leaf spot', severity: 'low', recommendedActions: ['Remove affected leaves'],
+    topCandidates: [{ commonName: 'Pepper', scientificName: 'Capsicum annuum', score: 0.87 }],
+    issueType: 'leaf_spot', objectType: 'leaf', imageQuality: { overall: 'good' } },
   lowConf: { ...base, confidenceTone: 'needs_review', confidencePct: 34, status: 'needs_review', suppressed: false, scanRecovery: { status: 'low_confidence', reason: 'low_confidence' } },
   sparse: { ...base, confidenceTone: 'needs_review', candidates: [{ plantName: 'Pepper' }, {}], recommendedActions: null, organicTreatment: null },
 };
@@ -45,7 +50,27 @@ for (const [name, path] of targets) {
   try { Comp = (await import(path)).default; }
   catch (e) { console.log('IMPORT-SKIP ' + name + ': ' + String(e.message).slice(0, 100)); continue; }
   for (const [label, env] of Object.entries(ENVELOPES)) {
-    try { renderToString(wrap(React.createElement(Comp, props(env)))); console.log('PASS   ' + name + ' [' + label + ']'); }
+    try {
+      const html = renderToString(wrap(React.createElement(Comp, props(env))));
+      // UX sprint 2026-07-05 — ScanGuidanceCard is THE single low-confidence surface:
+      // present on lowConf, absent on a confident success, and the old duplicate
+      // coach card must never come back.
+      if (name === 'IntelligentScanResult') {
+        if (label === 'lowConf' && html.indexOf('scan-guidance-card') === -1) {
+          crashed++; console.log('ASSERT-FAIL IntelligentScanResult [lowConf]: scan-guidance-card missing');
+          continue;
+        }
+        if (label === 'success' && html.indexOf('scan-guidance-card') !== -1) {
+          crashed++; console.log('ASSERT-FAIL IntelligentScanResult [success]: guidance card rendered on a confident result');
+          continue;
+        }
+        if (html.indexOf('scan-photo-coach-card') !== -1) {
+          crashed++; console.log('ASSERT-FAIL IntelligentScanResult [' + label + ']: removed duplicate coach card re-appeared');
+          continue;
+        }
+      }
+      console.log('PASS   ' + name + ' [' + label + ']');
+    }
     catch (e) { crashed++; console.log('CRASH  ' + name + ' [' + label + ']: ' + e.message); console.log((e.stack || '').split('\n').slice(0, 5).join('\n')); }
   }
 }
