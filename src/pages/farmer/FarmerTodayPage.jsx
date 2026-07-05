@@ -21,6 +21,7 @@
  * every title/detail flows through t() on render.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../context/AppSettingsContext.jsx';
 // Snippet ref §1+§2: greeting + weather alert pill above the
 // existing card stack. Both backed by data already on the page —
@@ -175,6 +176,7 @@ import { shapeTodayPayloadForMode } from '../../utils/modeAwareTasks.js';
 
 export default function FarmerTodayPage() {
   const { t, language, region } = useAppSettings();
+  const navigate = useNavigate();
   // Side-effect hook — hydrates language + region from the backend
   // profile on mount, and PATCHes the profile when either changes.
   // Fire-and-forget; never blocks the UI.

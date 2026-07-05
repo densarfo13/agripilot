@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/index.js';
+import { tSafe } from '../i18n/tSafe.js';
 import { tStrict } from '../i18n/strictT.js';
 import { isFeatureEnabled } from '../config/features.js';
 import { resolveRegionUX } from '../core/regionUXEngine.js';

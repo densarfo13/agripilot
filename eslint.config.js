@@ -94,4 +94,20 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
+  {
+    // Self-running .mjs test harnesses (src/**/__tests__/*.test.mjs) run
+    // under `node src/.../foo.test.mjs`, so they use node globals
+    // (console, process). They do NOT match the src/**/*.{js,jsx} block
+    // above, so without this they'd read `console`/`process` as undefined
+    // under the no-undef ratchet (check-no-undef-render.mjs) — a false
+    // positive, since node supplies them at runtime.
+    files: ['src/**/*.test.mjs', 'src/**/__tests__/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType:  'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ];
