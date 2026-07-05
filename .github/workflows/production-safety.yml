@@ -76,3 +76,20 @@ jobs:
             src/__tests__/insightEngine.test.js \
             src/__tests__/insightNotificationAdapter.test.js \
             src/__tests__/channelRouting.test.js
+
+  # React hooks guard — blocks merge on ANY rules-of-hooks violation (the 2026-07-04
+  # production scan crash class), enforces the exhaustive-deps ratchet, and runs the
+  # scan result-tree render regression (success/lowConf/sparse + scanId transition).
+  hooks-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: React hooks guard
+        run: node scripts/check-no-conditional-hooks.mjs
