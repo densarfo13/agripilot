@@ -76,6 +76,20 @@ REAL prerequisite for any future cash-flow view — a cash-flow *forecast* stays
 accumulated real records (never modeled from nothing). Candidate for Phase 1–2; farmer-facing,
 low-risk, high pilot value.
 
+## Channels (Farroway X spec delta, 2026-07-05)
+The web/PWA app is the primary channel today (offline-first, low-bandwidth by design). Two
+genuinely new farmer channels from the spec, both INTEGRATION-GATED:
+- **SMS** — one-way alerts first (weather warnings, task reminders) via a provider such as Twilio;
+  two-way keyword commands later. Requires a provider contract, per-country numbers, and
+  per-message cost governance. Highest reach for feature-phone farmers — strong post-freeze
+  candidate.
+- **WhatsApp** — WhatsApp Business API for notifications, later command routing through the SAME
+  kernel command layer as Jarvis (one intent table; three surfaces: app, voice, chat). Requires
+  Meta business verification + message-template approval.
+Both are thin transports over existing engines — no channel gets its own brain; consent,
+localization, and honesty gates apply identically. Jarvis video/document inputs remain unscoped
+(no honest processing path exists yet — faking one is a fabrication risk; revisit with real need).
+
 ## Isolation contract (unchanged)
 Track B lives on this branch only; no shared CI/gate edits; no prod DB migrations; no deploys;
 anything that eventually merges arrives feature-flagged OFF and passes the full gate chain.

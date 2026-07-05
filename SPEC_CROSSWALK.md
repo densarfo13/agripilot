@@ -43,6 +43,13 @@ new file when a canonical one covers it — extend the canonical doc instead.
 | EXECUTIVE_DASHBOARD_SPEC.md | MISSION_CONTROL.md (+ §Gated metrics) |
 | TOP_100_PLATFORM_IMPROVEMENTS.md | TOP_50_FIXES.md on master (35 evidence-backed items — count follows evidence, not the requested number) + ROADMAP phase gates for Track B items |
 | KNOWLEDGE_ENGINE.md / "Agricultural Knowledge Engine" | KNOWLEDGE_GRAPH_SPEC.md (+ §Versioned recommendations) + existing src/knowledge curated layer |
+| MASTER_ARCHITECTURE.md, PLATFORM_BLUEPRINT.md | FARMBRAIN_OS_MASTER_ARCHITECTURE.md |
+| JARVIS_X.md, AI_ORCHESTRATOR.md | VOICE_PLATFORM.md + AI_AGENT_FRAMEWORK.md (orchestrator = the Layer-4 kernel router; "never invents answers / cites evidence" = the standing confidence+provenance invariant) |
+| GLOBAL_SCALING.md | ROADMAP_2026_2035.md Phase 6 + FARMBRAIN_OS_MASTER_ARCHITECTURE.md §Channels |
+| SECURITY_MODEL.md | FARMBRAIN_OS_MASTER_ARCHITECTURE.md invariants/module contract + master PRODUCTION_SCORECARD Phase 8. ("ABAC" = the graph's per-purpose consent scopes — attribute-based by construction; no second authz system.) |
+| ROADMAP_10_YEARS.md | ROADMAP_2026_2035.md (already spans ten years) |
+| TOP_500_IMPROVEMENTS.md | TOP_50_FIXES.md on master — 35 evidence-backed items; the count follows evidence whether the spec asks for 50, 100, or 500 |
+| "Water Intelligence" | weather/irrigation advice (live) + ROADMAP Phase-5 prediction lines (water needs, validated-model-gated) |
 
 ## Legacy docs (history only — NOT canonical)
 `FARMBRAIN_SPEC.md`, `FARMBRAIN3.md`, `FARMBRAIN_OPERATING_MODEL.md`, `AI_AGENTS.md` (superseded by
