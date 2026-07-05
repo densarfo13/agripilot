@@ -31,7 +31,17 @@ mic button → speech-to-text (Web Speech API / on-device where supported)
 | "Find insurance" | INSURANCE_SEARCH → finance/insurance directory (licensed-partner info only; consent required before any personal-data use; never an approval) |
 | "Explain disease" | curated knowledge screen for the last confirmed match — never generated |
 | "Translate" / language names | language sheet |
+| "Summarize my week" | existing Weekly Review surface (+ TTS read-out) |
+| "How much money have I spent?" | Farm Records totals (GATED — exists only after the Farm Records module ships, see master architecture; a real sum of farmer-entered records, never an estimate) |
 | anything else | clarifying question + suggested commands |
+
+## Context awareness (Farroway X spec delta, 2026-07-05)
+Intent resolution reads the SAME context the app already holds — farm, crop, growth stage, today's
+tasks, weather, scan/disease history, language — plus three environmental flags: **permissions**
+(voice can never trigger an action the user's role couldn't do by tap), **offline state** (offline →
+queue-capable actions only, text fallback prominent), and **telemetry consent** (voice events obey
+the same analytics consent as taps). Context loading is read-only composition over the kernel — no
+new stores, no behavioral profiling beyond the existing grower memory.
 
 ## Voice status states (UI contract — existing design system only, no new visual system)
 `Listening · Thinking · Ready · Need clarification · Offline · Error` — every state visibly

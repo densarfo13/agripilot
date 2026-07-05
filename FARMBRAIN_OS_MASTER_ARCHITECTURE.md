@@ -28,6 +28,9 @@
    EXTERNAL (real usage, feeds, models, partners). Repo code cannot substitute for it.
 4. **Shared spine:** every module uses the same identity, graph, memory, audit, telemetry, and
    security model. No duplicate AI systems, databases, or user profiles.
+5. **Event-bus only (Farroway X spec, 2026-07-05):** modules communicate through the existing farm
+   event bus / kernel events — never point-to-point module imports. A module that reaches directly
+   into another module's internals is a rejected design.
 
 ## The 12 layers — honest status (production evidence, 2026-07-05)
 
@@ -58,6 +61,20 @@ module = {
   honesty:    confidence + provenance on every answer; declines when unsure
 }
 ```
+
+## Digital Twin & Farm Records (Farroway X spec deltas, 2026-07-05)
+**Digital Twin = a composition over existing stores, not a new system.** Fields/boundaries (GPS),
+plants, growth stage, diseases, treatments, tasks, photos, harvests, and the timeline all exist as
+production stores today; `src/runtime/farmos13` is the twin's agent foundation. The twin is the
+graph-shaped read view of them (per `KNOWLEDGE_GRAPH_SPEC.md`) — it becomes "predictive" only when
+sensor/actual-yield ground truth exists (Phase 5). Requested `DIGITAL_TWIN.md` maps here.
+
+**Farm Records — the one genuinely NEW honest module this spec surfaced.** Manual expense/revenue
+entry per farm (seed, fertilizer, labor, transport / sales). It fabricates nothing (farmer-entered),
+answers "How much have I spent?" truthfully, completes the twin's economic dimension, and is the
+REAL prerequisite for any future cash-flow view — a cash-flow *forecast* stays gated behind
+accumulated real records (never modeled from nothing). Candidate for Phase 1–2; farmer-facing,
+low-risk, high pilot value.
 
 ## Isolation contract (unchanged)
 Track B lives on this branch only; no shared CI/gate edits; no prod DB migrations; no deploys;
