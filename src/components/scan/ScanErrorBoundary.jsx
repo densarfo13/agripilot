@@ -87,6 +87,27 @@ export default class ScanErrorBoundary extends React.Component {
       }
     } catch { /* never throw from a catch handler */ }
 
+    // Persist the exception to client diagnostics (survives reload; exportable by the
+    // farmer via the fallback's Export Diagnostic Report). Dynamic import so a load error
+    // never crashes the boundary's catch handler.
+    try {
+      import('../../lib/clientDiagnostics.js')
+        .then((mod) => {
+          try {
+            if (mod && typeof mod.recordDiagException === 'function') {
+              mod.recordDiagException({
+                source: 'ScanErrorBoundary', phase: 'scan-render',
+                message: error && error.message ? String(error.message) : 'unknown',
+                stack: error && error.stack ? String(error.stack) : '',
+                componentStack: info && info.componentStack ? String(info.componentStack) : '',
+                correlationId, route: '/scan',
+              });
+            }
+          } catch { /* never propagate */ }
+        })
+        .catch(() => { /* tolerate */ });
+    } catch { /* never throw from a catch handler */ }
+
     // Fire-and-forget analytics. Dynamic import so a missing analytics
     // module never crashes the boundary's catch handler.
     try {

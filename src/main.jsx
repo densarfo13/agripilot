@@ -8,6 +8,13 @@ installConsoleFilter();
 // bubble-phase listeners can fire an app_error event for them.
 installGlobalErrorFilter();
 
+// ── Production client diagnostics (install early) ──
+// Persists every uncaught exception (window.onerror / unhandledrejection / React error
+// boundaries) + the last 200 lifecycle events to localStorage so a farmer on a failing
+// device can Export Diagnostic Report from the fallback screen. SSR-safe, never throws.
+import { installClientDiagnostics } from './lib/clientDiagnostics.js';
+installClientDiagnostics();
+
 // ── Forced UI cache/state reset + SW disable (run BEFORE everything) ──
 //
 //   ensureUiVersion()             — compares the bundled

@@ -1,5 +1,6 @@
 import { trackEvent } from './api.js';
 import { recordTelemetryStep } from './scanTraceRecorder.js';
+import { recordDiagEvent } from './clientDiagnostics.js';
 
 // Analytics calls must never block the UI, never throw, never wait
 // on a hung server. The bare `trackEvent` import handles the
@@ -40,6 +41,9 @@ export function safeTrackEvent(event, metadata) {
   // never blocks; does not touch the scan engine.
   try { if (typeof event === 'string' && event.indexOf('scan') !== -1) recordTelemetryStep(event, metadata); }
   catch { /* diagnostic must never break analytics */ }
+  // Client diagnostics tap — mirror every event into the persisted 200-entry lifecycle
+  // buffer so a failing device can export it. Best-effort; never blocks analytics.
+  try { recordDiagEvent('lifecycle', event, metadata); } catch { /* never break analytics */ }
   try {
     const canonical = typeof event === 'string' ? _CANONICAL_ALIAS[event] : null;
     if (canonical && canonical !== event) {

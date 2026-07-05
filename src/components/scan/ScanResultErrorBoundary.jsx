@@ -18,6 +18,7 @@
 import React from 'react';
 import { getScanCorrelationId } from '../../lib/scanCorrelationId.js';
 import { tSafe } from '../../i18n/tSafe.js';
+import DiagnosticExportButton from '../system/DiagnosticExportButton.jsx';
 
 // tSafe is pure (always returns the English fallback if a key is missing), so it is
 // safe to call from render even inside a boundary. Wrap defensively regardless.
@@ -49,6 +50,21 @@ export default class ScanResultErrorBoundary extends React.Component {
           timestamp: new Date().toISOString(),
         });
       }
+      // Persist to client diagnostics (survives reload; farmer-exportable). Dynamic import
+      // so a load error never re-crashes the boundary.
+      import('../../lib/clientDiagnostics.js').then((m) => {
+        try {
+          if (m && typeof m.recordDiagException === 'function') {
+            m.recordDiagException({
+              source: 'ScanResultErrorBoundary', phase: 'result-render',
+              message: error && error.message ? String(error.message) : 'unknown',
+              stack: error && error.stack ? String(error.stack) : '',
+              componentStack: info && info.componentStack ? String(info.componentStack) : '',
+              correlationId: cid,
+            });
+          }
+        } catch { /* never propagate */ }
+      }).catch(() => { /* tolerate */ });
     } catch { /* never throw from a catch handler */ }
   }
 
@@ -78,6 +94,7 @@ export default class ScanResultErrorBoundary extends React.Component {
             {_tSafe('scan.result.tryAgain', 'Try again')}
           </button>
         ) : null}
+        <DiagnosticExportButton />
       </div>
     );
   }

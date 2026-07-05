@@ -31,6 +31,7 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
+import DiagnosticExportButton from '../system/DiagnosticExportButton.jsx';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
@@ -209,6 +210,11 @@ export default function PlainUploadFallback({
         >
           {tSafe('common.goHome', 'Go Home')}
         </button>
+
+        {/* Export Diagnostic Report — lets a farmer on a failing device hand over the
+            persisted exception + lifecycle trace so the exact client-side cause is
+            capturable. iOS-Safari-friendly (copy / share / download). */}
+        <DiagnosticExportButton />
 
         {message ? (
           <p style={S.status} role="status" data-testid="plain-upload-status">
