@@ -204,6 +204,7 @@ const TIMING_STYLE = {
 };
 
 function CropCard({ crop, muted, t, onOpenPlan }) {
+  const { lang } = useTranslation();
   const badges = (crop.tags || []).filter((tag) => BADGE_META[tag]);
   const riskStyle = RISK_STYLE[crop.riskLevel] || RISK_STYLE.low;
   const timingKey = crop.timing?.recommendation || 'unknown';

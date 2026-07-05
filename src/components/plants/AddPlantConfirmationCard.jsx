@@ -107,17 +107,17 @@ export default function AddPlantConfirmationCard({
   // (scanToManagedPlant) enforces the same rule, so this is defense-in-depth.
   if (isUnconfirmedScan(scanResult)) {
     return (
-      <div style={STYLES.card} data-testid="add-plant-unconfirmed">
-        <h3 style={STYLES.header}>{tSafe('plant.confirm.unsureTitle', "We're not sure what this is yet")}</h3>
-        <p style={STYLES.meta}>{tSafe('plant.confirm.unsureBody', 'Take a clearer photo of one leaf, or save this scan for review. We won’t add an unidentified plant to My Plants.')}</p>
-        <div style={STYLES.actions}>
+      <div style={S.card} data-testid="add-plant-unconfirmed">
+        <h3 style={S.header}>{tSafe('plant.confirm.unsureTitle', "We're not sure what this is yet")}</h3>
+        <p style={S.meta}>{tSafe('plant.confirm.unsureBody', 'Take a clearer photo of one leaf, or save this scan for review. We won’t add an unidentified plant to My Plants.')}</p>
+        <div style={S.actions}>
           {_isFn(onScanAgain) ? (
-            <button type="button" style={STYLES.btnPrimary} data-testid="add-plant-unconfirmed-retake" onClick={onScanAgain}>
+            <button type="button" style={S.btnPrimary} data-testid="add-plant-unconfirmed-retake" onClick={onScanAgain}>
               {tSafe('plant.confirm.retake', 'Take another photo')}
             </button>
           ) : null}
           {_isFn(onSaveForReview) ? (
-            <button type="button" style={STYLES.btnSecondary} data-testid="add-plant-unconfirmed-review" onClick={onSaveForReview}>
+            <button type="button" style={S.btnSecondary} data-testid="add-plant-unconfirmed-review" onClick={onSaveForReview}>
               {tSafe('plant.confirm.saveReview', 'Save for review')}
             </button>
           ) : null}

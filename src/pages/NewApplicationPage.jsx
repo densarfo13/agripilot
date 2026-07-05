@@ -102,7 +102,7 @@ export default function NewApplicationPage() {
                   <label className="form-label">Crop Type *</label>
                   <CropSelect
                     value={form.cropType}
-                    onChange={(v) => setForm(f => ({ ...f, cropType: v }))}
+                    onChange={(v) => setFormDraft(f => ({ ...f, cropType: v }))}
                     countryCode={selectedFarmer?.countryCode}
                     required
                     placeholder="Search crops..."

@@ -359,6 +359,7 @@ export default function CropSelect({
  * Lightweight inline crop display — icon + label.
  */
 export function CropBadge({ value, style: extra }) {
+  const { lang } = useTranslation();
   if (!value) return null;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', ...extra }}>

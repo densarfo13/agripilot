@@ -524,6 +524,7 @@ function StepIndicator({ step }) {
 }
 
 function CreateFarmerModal({ onClose, onCreated }) {
+  const { lang } = useTranslation();
   const submitGuardRef = useRef(false);
   const [step, setStep] = useState(1);
   const CREATE_FARMER_INITIAL = {

@@ -411,6 +411,7 @@ function RegionConfig() {
 //  TAB 3: Demand Intelligence
 // ═══════════════════════════════════════════════════════
 function DemandIntelligence() {
+  const { lang } = useTranslation();
   const [loadError, setLoadError] = useState(null);
   // Country totals (KE/TZ) bubble errors; per-crop fetches keep
   // their per-call .catch so a missing crop endpoint doesn't

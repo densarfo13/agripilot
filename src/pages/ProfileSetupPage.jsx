@@ -36,6 +36,7 @@ const INITIAL_FIELD_ERRORS = {
 
 export default function ProfileSetupPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const { profile: ctxProfile, loading: ctxLoading, saveProfile } = useProfile();
 

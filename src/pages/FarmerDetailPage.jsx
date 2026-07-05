@@ -1120,6 +1120,7 @@ function FarmerTrustRiskPanel({ farmerId }) {
 // ─── Performance Profile Section ───────────────────────
 
 function PerformanceProfileSection({ farmerId }) {
+  const { lang } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [credSummary, setCredSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1501,6 +1502,7 @@ const TREND_LABEL = {
 };
 
 function HistoricalPerformanceSection({ farmerId, userRole }) {
+  const { lang } = useTranslation();
   const [history, setHistory] = useState(null);
   const [benchmarks, setBenchmarks] = useState(null);
   const [loading, setLoading] = useState(true);

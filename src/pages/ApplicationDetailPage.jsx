@@ -323,6 +323,7 @@ function DecisionBanner({ decision, app, currency }) {
 }
 
 function OverviewTab({ app, currency }) {
+  const { lang } = useTranslation();
   const d = app.decisionResult;
   return (
     <div className="detail-grid">

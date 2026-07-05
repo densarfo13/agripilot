@@ -354,7 +354,7 @@ export default function PlantProfile() {
               recordPlantingDate(plantKey, isoDate). Reading the
               stored value seeds the input on subsequent mounts. */}
           {(() => {
-            const pid = (plant && (plant.id || plant.plantId || plant.commonName)) || '';
+            const pid = (focused && (focused.id || focused.plantId || focused.commonName)) || '';
             if (!pid) return null;
             const storedDate = getPlantingDate(pid) || '';
             // Coerce to YYYY-MM-DD for the input element.
@@ -406,7 +406,7 @@ export default function PlantProfile() {
               block. Reads the canonical history (single-writer
               localStorage owned by HarvestReadinessRuntime). */}
           {(() => {
-            const pid = (plant && (plant.id || plant.plantId || plant.commonName)) || '';
+            const pid = (focused && (focused.id || focused.plantId || focused.commonName)) || '';
             if (!isSupportedPlant(pid)) return null;
             const latest = getLatestForPlant(pid);
             if (!latest) return null;
@@ -449,7 +449,7 @@ export default function PlantProfile() {
               store (single-writer localStorage owned by its
               runtime). Self-hides when the row is missing. */}
           {(() => {
-            const pid = (plant && (plant.id || plant.plantId || plant.commonName)) || '';
+            const pid = (focused && (focused.id || focused.plantId || focused.commonName)) || '';
             if (!pid) return null;
             const stage = getLatestStageForPlant(pid);
             const sev   = getLatestSeverityForPlant(pid);
