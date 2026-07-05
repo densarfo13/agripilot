@@ -209,6 +209,10 @@ function ScanOnlyVoiceAssistant() {
 //   /admin/funding  — admin manages funding catalog
 //   /ngo/funding    — same management page, NGO entry point
 const Sell           = lazy(() => import('./pages/Sell.jsx'));
+// Jarvis MVP (feature/farroway-jarvis-mvp) — lazy + double-gated: the chunk is only
+// requested when the per-device flag is ON (default OFF), and the dock additionally
+// renders null on /scan. Honest kernel: local intent match → existing screens only.
+const JarvisDock     = lazy(() => import('./domains/commandCenter/JarvisDock.jsx'));
 const Buy                = lazy(() => import('./pages/Buy.jsx'));
 const OperatorDashboard  = lazy(() => import('./pages/OperatorDashboard.jsx'));
 const MetricsDashboard   = lazy(() => import('./pages/MetricsDashboard.jsx'));
@@ -4102,6 +4106,12 @@ export default function App() {
           bottom-nav already includes a Scan tab, so users always
           have one tap to reach the voice + camera surface. */}
       <ScanOnlyVoiceAssistant />
+      {/* Jarvis MVP dock — per-device flag (localStorage farroway.jarvis.enabled='1'),
+          default OFF so production behavior is unchanged; the lazy chunk is not even
+          requested unless the flag is on. Never renders on /scan (dock self-guards). */}
+      {(() => { try { return typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('farroway.jarvis.enabled') === '1'; } catch { return false; } })()
+        ? <Suspense fallback={null}><JarvisDock /></Suspense>
+        : null}
       {/* Tiny status pill for the lightweight offline queue at
           src/offline/*. Coexists with the existing OfflineBanner
           (which serves the heavy IndexedDB sync engine). */}
