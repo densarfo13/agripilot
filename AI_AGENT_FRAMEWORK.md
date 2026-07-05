@@ -37,8 +37,12 @@ the proven production pattern (V14 precedent: 3 agents live from real engines, 9
 | Government / NGO | portal data, program directories | Partial |
 | Compliance | none | DECLINES — multi-country regs are an external corpus |
 | Learning | outcome chains, streaks | Partial |
-| Voice | PARKED — input modality, not an agent brain | see `VOICE_PLATFORM.md` |
+| Voice | MVP built on `feature/farroway-jarvis-mvp` (flag-off) — input modality, not an agent brain | see `VOICE_PLATFORM.md` |
 | Enterprise | tenant/org primitives | Partial |
+| Logistics | none (transport/warehousing need real partners) | DECLINES — partner-dependent |
+
+Aliases seen in specs: "Plant Doctor" = Disease agent · "FarmBrain" (as an agent) = the kernel
+itself, not a roster entry — it routes, it doesn't answer.
 
 ## Kernel routing (Layer 4, exists in pieces today)
 Planner → chooses agent(s) by intent · Retriever → knowledge layer/graph · Policy engine → honesty

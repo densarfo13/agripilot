@@ -36,6 +36,13 @@ new file when a canonical one covers it — extend the canonical doc instead.
 | ROADMAP_2030.md (new request; the legacy file of that name is history) | ROADMAP_2026_2035.md |
 | PREDICTION_ENGINE.md | ROADMAP_2026_2035.md §Phase 5 prediction lines + AI_AGENT_FRAMEWORK.md |
 | MEMORY_ENGINE.md, FARM_RECORDS.md | FARMBRAIN_OS_MASTER_ARCHITECTURE.md §Layer 3 / §Digital Twin & Farm Records |
+| MASTER_PLATFORM_ROADMAP.md, GLOBAL_SCALING_PLAN.md | ROADMAP_2026_2035.md (Phase 6 = global) |
+| SYSTEM_ARCHITECTURE.md, MODULE_DEPENDENCY_MAP.md | FARMBRAIN_OS_MASTER_ARCHITECTURE.md (12-layer map + module contract) |
+| AI_ARCHITECTURE.md | AI_AGENT_FRAMEWORK.md |
+| PARTNER_API_STRATEGY.md | PARTNER_PLATFORM.md |
+| EXECUTIVE_DASHBOARD_SPEC.md | MISSION_CONTROL.md (+ §Gated metrics) |
+| TOP_100_PLATFORM_IMPROVEMENTS.md | TOP_50_FIXES.md on master (35 evidence-backed items — count follows evidence, not the requested number) + ROADMAP phase gates for Track B items |
+| KNOWLEDGE_ENGINE.md / "Agricultural Knowledge Engine" | KNOWLEDGE_GRAPH_SPEC.md (+ §Versioned recommendations) + existing src/knowledge curated layer |
 
 ## Legacy docs (history only — NOT canonical)
 `FARMBRAIN_SPEC.md`, `FARMBRAIN3.md`, `FARMBRAIN_OPERATING_MODEL.md`, `AI_AGENTS.md` (superseded by

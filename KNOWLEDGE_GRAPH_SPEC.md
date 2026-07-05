@@ -37,6 +37,15 @@ the `no_live_feed` contract applies to graph content exactly as it does to scree
    farm", "what preceded this outcome", "which farmers match this program (advisory, consented)".
 3. Write path unchanged — modules keep writing to their stores; the graph indexes them.
 
+## Versioned recommendations (platform-spec delta, 2026-07-05)
+Every curated knowledge entry (disease/pest treatments, crop guidance, regional packs) carries a
+**source citation + version** internally: `{ sourceType: curated_agronomist | extension_service |
+government_advisory | fao_guidance | historical_outcome, sourceRef, version, reviewedAt }`. A
+recommendation shown to a farmer must trace to a versioned entry; updating guidance bumps the
+version rather than overwriting, so past recommendations stay auditable against what was known at
+the time. New source corpora (FAO, national extension services, government advisories) are
+ACQUISITION-GATED — each is a licensing/curation project, never scraped-and-assumed.
+
 ## Non-goals for v1
 No graph database, no embeddings store, no inferred (model-generated) edges — inferred edges would
 be fabricated relationships until a validated model earns them.
