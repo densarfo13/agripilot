@@ -26,8 +26,11 @@ export function LanguageProvider({ children }) {
 
 /** Read the language value from context, falling back to the hook. */
 export function useLanguageContext() {
+  // Both hooks run unconditionally — `ctx || useLanguage()` short-circuited the hook
+  // call, corrupting hook order whenever ctx presence changed between renders.
   const ctx = useContext(LanguageContext);
-  return ctx || useLanguage();
+  const hookValue = useLanguage();
+  return ctx || hookValue;
 }
 
 export default LanguageProvider;

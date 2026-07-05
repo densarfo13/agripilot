@@ -50,6 +50,22 @@ function CommandCenterDeckInner() {
     return () => { alive = false; };
   }, []);
 
+  // Farm-health brief hooks — hoisted ABOVE the env early-return so hook order is
+  // stable across renders (they used to sit below it: when env resolved async and
+  // flipped truthy, the render added hooks → React hook-order crash on Home).
+  const [brief, setBrief] = React.useState(null);
+  React.useEffect(() => {
+    let alive = true;
+    import('../../runtime/farmHealth/FarmHealthEngine')
+      .then((mod) => {
+        _safe(() => mod.installFarmHealthBriefGlobal(), null);
+        const b = _safe(() => mod.getFarmHealthBrief(), null);
+        if (alive) setBrief(b);
+      })
+      .catch(() => { /* swallow — never block Home */ });
+    return () => { alive = false; };
+  }, []);
+
   if (!env || !env.state) return null;
   const s = env.state;
 
@@ -85,19 +101,8 @@ function CommandCenterDeckInner() {
   // Sprint #194 — "never show score without explanation". Read the
   // FarmHealthEngine brief (composer over real probes); contributors
   // are i18n keys included ONLY when the underlying probe attests
-  // the signal. Empty → the Why line renders nothing.
-  const [brief, setBrief] = React.useState(null);
-  React.useEffect(() => {
-    let alive = true;
-    import('../../runtime/farmHealth/FarmHealthEngine')
-      .then((mod) => {
-        _safe(() => mod.installFarmHealthBriefGlobal(), null);
-        const b = _safe(() => mod.getFarmHealthBrief(), null);
-        if (alive) setBrief(b);
-      })
-      .catch(() => { /* swallow — never block Home */ });
-    return () => { alive = false; };
-  }, []);
+  // the signal. Empty → the Why line renders nothing. (brief hooks are declared
+  // above the env early-return — hook order must not change across renders.)
   const whyKeys = (brief && Array.isArray(brief.contributors))
     ? brief.contributors : [];
   // Sprint #197 (spec #192) — 4-tier band label (Excellent / Good /

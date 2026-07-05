@@ -40,7 +40,11 @@ function PhotoComparisonCardInner(props) {
   const [saving, setSaving] = React.useState(false);
   const [savedId, setSavedId] = React.useState('');
 
-  if (!scanId) return null;
+  // NOTE: the `!scanId` early return lives BELOW the hooks. It used to sit here —
+  // between the useStates and the useCallbacks — so the moment a scan completed and
+  // scanId flipped falsy→truthy, this component rendered MORE hooks than the previous
+  // render and React threw ("Rendered more hooks…") → the scan error boundary →
+  // "Scan temporarily unavailable". Production root cause, 2026-07-04.
 
   const pickBefore = React.useCallback(async (e) => {
     const file = (e.target.files && e.target.files[0]) || null;
@@ -77,6 +81,9 @@ function PhotoComparisonCardInner(props) {
       setSaving(false);
     }
   }, [scanId, beforeUrl, afterUrl, note, verdict, saving, onUpdated]);
+
+  // All hooks above are unconditional — safe to bail now (see note near the top).
+  if (!scanId) return null;
 
   return (
     <div

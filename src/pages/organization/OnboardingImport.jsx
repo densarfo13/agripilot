@@ -208,8 +208,9 @@ function _runtimeSnapshot(batchId) {
 
 export default function OnboardingImportPage() {
   const { api: apiClient } = useApiClient();
-  let navigate = null;
-  try { navigate = useNavigate(); } catch { navigate = null; }
+  // Unconditional — the page always mounts under the Router; wrapping a hook in
+  // try/catch makes it conditional and corrupts hook order.
+  const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
   const [file, setFile]           = useState(null);
   const [batchId, setBatchId]     = useState(null);
