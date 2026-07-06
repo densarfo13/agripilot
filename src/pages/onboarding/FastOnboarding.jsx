@@ -44,6 +44,7 @@ import { setOnboardingComplete } from '../../utils/onboarding.js';
 import { trackEvent } from '../../core/analytics.js';
 import { stampOnboardingStart } from '../../core/onboardingTiming.js';
 import { classifyLocationError, locationContext } from '../../runtime/location/classifyLocationError';
+import { isOnboardingPath } from './leaveGuard.js';
 import { reverseGeocode } from '../../utils/geolocation.js';
 import { saveLocation } from '../../lib/locationSafe.js';
 import LocationSearch from '../../components/location/LocationSearch.jsx';
@@ -548,7 +549,28 @@ export default function FastOnboarding() {
       }
     } catch { /* swallow */ }
     try { trackEvent('onboarding_location_continue', { geoStatus, from: 'fast-onboarding/location', source }); } catch { /* swallow */ }
-    navigate('/home', { replace: true });
+    _leaveToHome();
+  }
+
+  // Navigate to /home resiliently. The old code called navigate() once; if a route
+  // guard bounced it back (e.g. a not-yet-flushed onboarding flag) or navigate threw,
+  // finishedRef stayed true and the "Continuing…" button became a permanent no-op
+  // (every later tap hit the finishedRef guard). Now: try the router, then a hard
+  // location redirect as a failsafe, and a watchdog that force-leaves if we're still
+  // on the onboarding path shortly after. The farmer can never get stuck.
+  function _leaveToHome() {
+    try { navigate('/home', { replace: true }); }
+    catch { try { navigate('/dashboard', { replace: true }); } catch { /* fall through to hard redirect */ } }
+    try {
+      setTimeout(() => {
+        try {
+          if (typeof window !== 'undefined' && window.location
+            && isOnboardingPath(window.location.pathname)) {
+            window.location.assign('/home');
+          }
+        } catch { /* nothing else we can do */ }
+      }, 1200);
+    } catch { /* ignore */ }
   }
 
   // Auto-continue once, ~1.8s after a successful fix — long enough to show the farm preview,

@@ -1,9 +1,13 @@
-/* eslint-disable react-hooks/rules-of-hooks --
- * TODO(react-300-cleanup): pre-existing rules-of-hooks
- * violations. Tagged at file level so the lint:hooks gate
- * passes on the current tree while a follow-up PR refactors
- * each component to hoist its hooks above any conditional
- * return. Tracked by the May 2026 React #300 stability spec.
+/*
+ * FarmerDetailPage — admin/staff view of one farmer at /farmers/:id.
+ *
+ * 2026-07-05 fix: a blanket file-level lint suppression for the react-hooks
+ * ordering rule used to sit here and hid exactly ONE real bug — a `useState`
+ * placed BELOW the loading/error early returns. On a successful load that render
+ * ran one more hook than the loading render, so React threw "Rendered more hooks
+ * than during the previous render" → error boundary → "Something went wrong" (the
+ * crash after "Failed to load farmer"). The hook is now hoisted with the others
+ * and the suppression is removed so the hooks gate protects this file again.
  */
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -20,6 +24,7 @@ import ProfilePhotoUpload from '../components/ProfilePhotoUpload.jsx';
 import { getCropLabel, getCropLabelSafe } from '../utils/crops.js';
 import { formatLandSize } from '../utils/landSize.js';
 import ProgressScoreCard from '../components/farmer/ProgressScoreCard.jsx';
+import { classifyFarmerLoadError, isFarmerShapeValid, isRetryable, safeSnippet, buildFarmerDiagnostic } from './farmerDetail/farmerLoadState.js';
 
 const STATUS_COLORS = {
   pending_approval: { bg: 'rgba(245,158,11,0.15)', color: '#F59E0B', label: 'Pending Approval' },
@@ -28,35 +33,117 @@ const STATUS_COLORS = {
   disabled: { bg: '#1E293B', color: '#A1A1AA', label: 'Disabled' },
 };
 
+const _ERR_COPY = {
+  NOT_FOUND:     { title: 'Farmer not found', body: 'This farmer may have been removed, or the link is out of date.' },
+  UNAUTHORIZED:  { title: "You can't view this farmer", body: 'Your account does not have access to this farmer. If this is unexpected, contact an administrator.' },
+  SERVER_ERROR:  { title: 'Something went wrong on our side', body: 'We could not load this farmer right now. Please try again in a moment.' },
+  NETWORK_ERROR: { title: 'No connection', body: 'Check your internet connection and try again.' },
+  BAD_SHAPE:     { title: 'Could not read this farmer', body: 'The farmer data came back in an unexpected form. Please try again.' },
+};
+
+/**
+ * FarmerLoadError — safe, state-specific error surface for the farmer detail page.
+ * Renders inside the page body only (sidebar/shell stay intact — this is not thrown).
+ * Staff see an "Export Diagnostic JSON" affordance with the exact status/body/commit;
+ * non-staff see farmer-friendly copy only.
+ */
+function FarmerLoadError({ state, detail, farmerId, showDiagnostics, onRetry, onBack }) {
+  const copy = _ERR_COPY[state] || _ERR_COPY.SERVER_ERROR;
+  const diag = buildFarmerDiagnostic({
+    state, farmerId,
+    route: (typeof window !== 'undefined' && window.location) ? window.location.pathname : '',
+    status: detail ? detail.status : null,
+    message: detail ? detail.message : null,
+    body: detail ? detail.body : null,
+    commit: (typeof window !== 'undefined' && window.__FARROWAY_BUILD_SHA
+      && String(window.__FARROWAY_BUILD_SHA).indexOf('%') !== 0) ? window.__FARROWAY_BUILD_SHA : null,
+    at: new Date().toISOString(),
+  });
+  const copyJson = () => {
+    const json = (() => { try { return JSON.stringify(diag, null, 2); } catch { return '{"error":"serialize_failed"}'; } })();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) { navigator.clipboard.writeText(json); return; }
+    } catch { /* fall through */ }
+    try { window.prompt('Copy diagnostic JSON:', json); } catch { /* ignore */ }
+  };
+  return (
+    <div className="page-body" data-testid="farmer-load-error" data-error-state={state}>
+      <div className="alert alert-danger" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <strong>{copy.title}</strong>
+        <span style={{ opacity: 0.85 }}>{copy.body}</span>
+        <div className="flex gap-1" style={{ marginTop: '0.25rem' }}>
+          {state !== 'NOT_FOUND' && state !== 'UNAUTHORIZED' ? (
+            <button className="btn btn-outline btn-sm" onClick={onRetry} data-testid="farmer-load-retry">Retry</button>
+          ) : null}
+          <button className="btn btn-outline btn-sm" onClick={onBack} data-testid="farmer-load-back">Back to Farmers</button>
+          {showDiagnostics ? (
+            <button className="btn btn-outline btn-sm" onClick={copyJson} data-testid="farmer-load-export-diag">Export Diagnostic JSON</button>
+          ) : null}
+        </div>
+        {showDiagnostics ? (
+          <pre data-testid="farmer-load-diag" style={{
+            marginTop: '0.5rem', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            background: 'rgba(0,0,0,0.25)', padding: '8px 10px', borderRadius: 8, maxHeight: 180, overflow: 'auto',
+          }}>{`${state} · HTTP ${diag.status == null ? '—' : diag.status} · ${diag.message || ''}`}</pre>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function FarmerDetailPage() {
   const { lang } = useTranslation();
   const { id } = useParams();
   const [farmer, setFarmer] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  // errState is one of: '' | NOT_FOUND | UNAUTHORIZED | SERVER_ERROR | NETWORK_ERROR | BAD_SHAPE
+  const [errState, setErrState] = useState('');
+  const [errDetail, setErrDetail] = useState(null); // { status, body, message } — admin-only diagnostic
+  // Hoisted above every early return (was below — the hook-order crash, see file header).
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const isAdmin = ADMIN_ROLES.includes(user?.role);
   const isCreator = CREATOR_ROLES.includes(user?.role);
+  const isStaff = isAdmin || isCreator;
 
   const load = () => {
     setLoading(true);
-    setLoadError('');
+    setErrState('');
+    setErrDetail(null);
     api.get(`/farmers/${id}`)
-      .then(r => setFarmer(r.data))
-      .catch(() => setLoadError('Failed to load farmer'))
+      .then(r => {
+        const body = r && r.data;
+        // Guard against a malformed 200 (empty/HTML/array) so a bad shape renders
+        // BAD_SHAPE rather than crashing on farmer.fullName below.
+        if (!isFarmerShapeValid(body)) {
+          setErrState('BAD_SHAPE');
+          setErrDetail({ status: 200, message: 'Response was not a farmer object', body: safeSnippet(body) });
+          return;
+        }
+        setFarmer(body);
+      })
+      .catch((e) => {
+        const status = e && e.response ? e.response.status : 0;
+        setErrState(classifyFarmerLoadError(status));
+        setErrDetail({
+          status,
+          message: (e && e.message) || 'request failed',
+          body: safeSnippet(e && e.response && e.response.data),
+        });
+      })
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
   if (loading) return <div className="page-body"><div className="loading">Loading farmer details...</div></div>;
-  if (loadError) return (
-    <div className="page-body">
-      <div className="alert alert-danger">{loadError} <button className="btn btn-outline btn-sm" style={{ marginLeft: '0.5rem' }} onClick={load}>Retry</button></div>
-    </div>
+  if (errState) return (
+    <FarmerLoadError
+      state={errState} detail={errDetail} farmerId={id}
+      showDiagnostics={isStaff} onRetry={load} onBack={() => navigate('/farmers')}
+    />
   );
-  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
 
   if (!farmer) return null;
 
