@@ -179,10 +179,10 @@ export default function RegionalRiskMap() {
                                 {confDisplay.label}
                               </span>
                             ) : (
-                              <span style={{ color: '#64748B', fontSize: '0.8rem' }}>-</span>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>-</span>
                             )}
                             {signalCount != null && (
-                              <span style={{ fontSize: '0.7rem', color: '#64748B', marginLeft: 6 }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 6 }}>
                                 ({signalCount} signals)
                               </span>
                             )}
@@ -195,7 +195,7 @@ export default function RegionalRiskMap() {
                           <td style={S.td}>{dominant}</td>
                           <td style={S.td}>{formatDate(updated)}</td>
                           <td style={S.td}>
-                            <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
                           </td>
                         </tr>
                         {isExpanded && (
@@ -212,7 +212,7 @@ export default function RegionalRiskMap() {
                                 </button>
                               </div>
                               {regionClusters.length === 0 ? (
-                                <div style={{ color: '#64748B', fontSize: '0.85rem' }}>No clusters detected in this region.</div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No clusters detected in this region.</div>
                               ) : (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem' }}>
                                   {regionClusters.map((c, ci) => {
@@ -223,7 +223,7 @@ export default function RegionalRiskMap() {
                                           <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{c.dominantCrop ?? c.dominant_crop ?? 'Unknown crop'}</span>
                                           <span style={{ ...S.badge, background: cst.bg, color: cst.color }}>{c.status || 'active'}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                                           Likely issue: {c.likelyIssue ?? c.likely_issue ?? '-'}
                                         </div>
                                         <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem' }}>
@@ -259,10 +259,10 @@ export default function RegionalRiskMap() {
                         <span style={{ fontWeight: 600 }}>{c.region ?? c.regionKey ?? c.region_key ?? '-'}</span>
                         <span style={{ ...S.badge, background: cst.bg, color: cst.color }}>{c.status || 'active'}</span>
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                         Crop: {c.dominantCrop ?? c.dominant_crop ?? '-'}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                         Likely issue: {c.likelyIssue ?? c.likely_issue ?? '-'}
                       </div>
                       <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.8rem', marginTop: '0.5rem' }}>
@@ -288,23 +288,23 @@ export default function RegionalRiskMap() {
 const S = {
   page: { padding: '1.5rem', color: '#fff', minHeight: '100vh' },
   title: { fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' },
-  subtitle: { color: '#94A3B8', fontSize: '0.9rem', marginBottom: '1.5rem' },
+  subtitle: { color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' },
   statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' },
-  statCard: { background: '#1E293B', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(255,255,255,0.08)' },
-  statLabel: { fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  statCard: { background: 'var(--card-elevated)', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(255,255,255,0.08)' },
+  statLabel: { fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' },
   statValue: { fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' },
   filterRow: { display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' },
-  select: { background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' },
+  select: { background: 'var(--card-elevated)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' },
   table: { width: '100%', borderCollapse: 'collapse' },
-  th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
+  th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   td: { padding: '10px 12px', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
   btn: { padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', minHeight: '32px' },
   btnGreen: { background: '#C8944D', color: '#fff' },
   btnRed: { background: '#EF4444', color: '#fff' },
-  btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
+  btnOutline: { background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.15)' },
   badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
   expandedRow: { background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem' },
   spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
-  emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
+  emptyState: { textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' },
   errorBanner: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '0.75rem 1rem', color: '#FCA5A5', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 };

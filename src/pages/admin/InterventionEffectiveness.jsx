@@ -157,7 +157,7 @@ export default function InterventionEffectiveness() {
                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
                     <div style={{ width: 12, height: 12, borderRadius: 3, background: OUTCOME_COLORS[key], flexShrink: 0 }} />
                     <span style={{ color: '#CBD5E1', textTransform: 'capitalize' }}>{key}</span>
-                    <span style={{ color: '#64748B' }}>({count})</span>
+                    <span style={{ color: 'var(--text-muted)' }}>({count})</span>
                   </div>
                 );
               })}
@@ -265,23 +265,23 @@ export default function InterventionEffectiveness() {
 const S = {
   page: { padding: '1.5rem', color: '#fff', minHeight: '100vh' },
   title: { fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' },
-  subtitle: { color: '#94A3B8', fontSize: '0.9rem', marginBottom: '1.5rem' },
+  subtitle: { color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' },
   statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' },
-  statCard: { background: '#1E293B', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(255,255,255,0.08)' },
-  statLabel: { fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  statCard: { background: 'var(--card-elevated)', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(255,255,255,0.08)' },
+  statLabel: { fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' },
   statValue: { fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' },
   filterRow: { display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' },
-  select: { background: '#1E293B', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' },
+  select: { background: 'var(--card-elevated)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' },
   table: { width: '100%', borderCollapse: 'collapse' },
-  th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
+  th: { textAlign: 'left', padding: '10px 12px', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   td: { padding: '10px 12px', fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.06)' },
   btn: { padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', minHeight: '32px' },
   btnGreen: { background: '#C8944D', color: '#fff' },
   btnRed: { background: '#EF4444', color: '#fff' },
-  btnOutline: { background: 'transparent', color: '#94A3B8', border: '1px solid rgba(255,255,255,0.15)' },
+  btnOutline: { background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.15)' },
   badge: { display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 600 },
   expandedRow: { background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem' },
   spinner: { display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#C8944D', borderRadius: '50%', animation: 'spin 0.6s linear infinite' },
-  emptyState: { textAlign: 'center', padding: '3rem 1rem', color: '#64748B' },
+  emptyState: { textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' },
   errorBanner: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '0.75rem 1rem', color: '#FCA5A5', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 };
