@@ -1,0 +1,71 @@
+name: commit-hygiene
+
+# Enforces institutional Git discipline on every PR into a protected branch:
+#   • no mixed-feature commits        (per-commit path-ownership validation)
+#   • no runtime schema drift         (check-prisma-fields)
+#   • no unexpected generated files   (validate-commit-scope UNEXPECTED_GENERATED)
+#   • no unowned files                (advisory report until the map is complete)
+# Keep FAST — this is a merge gate, not an E2E suite. See RELEASE_GUARD.md.
+
+on:
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  commit-scope:
+    name: No mixed-feature commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # need full history to walk the PR range
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate each commit is single-scope
+        run: |
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          echo "Validating each commit in ${base}..${head}"
+          fail=0
+          for sha in $(git rev-list --reverse "${base}..${head}"); do
+            echo "──────── ${sha} $(git log -1 --format=%s "${sha}")"
+            node scripts/ci/validate-commit-scope.mjs --commit "${sha}" || fail=1
+          done
+          if [ "${fail}" != "0" ]; then
+            echo "::error::A commit mixes unrelated feature scopes or carries unexpected generated files. Split with scripts/git/safe-commit.mjs, or add a 'Scope-Override: <reason>' trailer."
+          fi
+          exit ${fail}
+
+  schema-drift:
+    name: No runtime schema drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Prisma field validity (schema drift → PrismaClientValidationError)
+        run: node scripts/check-prisma-fields.mjs
+
+  ownership-report:
+    name: Unowned files (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Report files that match no ownership rule
+        # Advisory: annotates but never blocks. Flip to a required check once
+        # the "shared" catch-all in scripts/ci/pathOwnership.mjs is emptied.
+        run: |
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          node scripts/ci/validate-commit-scope.mjs --range "${base}..${head}" --strict-ownership --quiet \
+            || echo "::warning::This PR touches files with no ownership rule (group 'shared'). Categorise them in scripts/ci/pathOwnership.mjs."

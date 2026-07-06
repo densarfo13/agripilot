@@ -1,0 +1,48 @@
+name: release-gate
+
+# Heavyweight required checks for merging into a protected branch. These are
+# the gates that must be GREEN before master can move (enforced via branch
+# protection — see RELEASE_GUARD.md). Runs only on PRs into master/main to
+# keep cost bounded.
+#
+# Companion checks (kept in their own workflows so each can be a distinct
+# required status check):
+#   • production-safety.yml → guards + curated tests + hooks-guard
+#   • commit-hygiene.yml    → no mixed-feature commits / schema drift / artifacts
+
+on:
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build-safe:
+    name: build:safe (full gate + production build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies (root + server)
+        run: |
+          npm ci --no-audit --no-fund
+          cd server && npm ci --no-audit --no-fund
+      - name: Run build:safe (clean build + all release gates)
+        run: npm run build:safe
+
+  security:
+    name: Security scan (secrets + unit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Secret scan + security unit checks
+        run: npm run security:audit

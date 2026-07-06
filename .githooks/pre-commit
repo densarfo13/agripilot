@@ -1,0 +1,48 @@
+#!/bin/sh
+# pre-commit — commit-scope discipline for agripilot.
+# Install with:  node scripts/git/install-hooks.mjs   (sets core.hooksPath=.githooks)
+# Bypass (discouraged, audited by CI on the PR):  git commit --no-verify
+#
+# Enforces, in order:
+#   1. No direct commits to master/main (PR-only).
+#   2. Something is actually staged (blocks blanket auto-commit-of-nothing).
+#   3. Clean staging — no file staged AND modified-unstaged (commit what you reviewed).
+#   4. Single-feature scope + no unexpected generated artifacts (validate-commit-scope).
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "DETACHED")
+
+# 1 ── protect master/main ────────────────────────────────────────────────
+case "$branch" in
+  master|main)
+    if [ "$ALLOW_COMMIT_TO_MASTER" != "1" ]; then
+      echo "[pre-commit] BLOCKED: direct commits to '$branch' are not allowed."
+      echo "             Branch off, commit there, open a PR (see RELEASE_GUARD.md)."
+      echo "             Maintainer override: ALLOW_COMMIT_TO_MASTER=1 git commit ..."
+      exit 1
+    fi
+    echo "[pre-commit] WARN: committing directly to '$branch' via maintainer override."
+    ;;
+esac
+
+# 2 ── must have staged content ───────────────────────────────────────────
+if git diff --cached --quiet; then
+  echo "[pre-commit] BLOCKED: nothing staged."
+  echo "             Stage only the files for ONE feature (git add <file>), then commit."
+  echo "             Blanket 'git add -A' / commit-everything is exactly what this guards against."
+  exit 1
+fi
+
+# 3 ── clean staging: reject files that are both staged AND unstaged ───────
+partial=$(git status --porcelain | grep -E '^[MARCDT][MDT]' || true)
+if [ -n "$partial" ]; then
+  echo "[pre-commit] BLOCKED: these files have BOTH staged and unstaged changes:"
+  echo "$partial" | sed 's/^/    /'
+  echo "             Re-stage the final content (git add <file>) or unstage it —"
+  echo "             the commit must be exactly what you reviewed (clean diff)."
+  exit 1
+fi
+
+# 4 ── single-feature scope + generated-artifact discipline ────────────────
+node scripts/ci/validate-commit-scope.mjs --staged || exit 1
+
+exit 0
