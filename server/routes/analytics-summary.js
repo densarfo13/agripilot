@@ -22,6 +22,9 @@ router.use(authenticate, authorize('super_admin', 'institutional_admin'), extrac
 // ─── GET / ─────────────────────────────────────────────
 // Supports query params: ?windowDays=30&region=X&programId=Y&cohortId=Z&primaryCrop=W&period=month|quarter|week
 router.get('/', asyncHandler(async (req, res) => {
+  // Defensive envelope (2026-07-05): analytics-summary must NEVER crash the admin dashboard.
+  // Any failure returns 200 with a safe-default shape so the dashboard degrades gracefully.
+  try {
   const windowDays = parseInt(req.query.windowDays || String(DEFAULT_ACTIVITY_WINDOW_DAYS), 10);
   const tw = buildTimeWindows({ activityWindowDays: windowDays });
 
@@ -53,15 +56,26 @@ router.get('/', asyncHandler(async (req, res) => {
     prisma.farmer.count({ where: setupIncompleteWhere }),
   ]);
 
-  // Season-scoped org filter for progress entries and validations
+  // Season-scoped org filter for progress entries and validations.
+  // FIX (2026-07-05): both SeasonProgressEntry and OfficerValidation name their season
+  // relation `season` (NOT `farmSeason`). The old `farmSeason` key threw
+  // PrismaClientValidationError for org-scoped admins. Corrected to the real field.
   const seasonOrgFilter = req.organizationId
-    ? { farmSeason: { farmer: { organizationId: req.organizationId } } }
+    ? { season: { farmer: { organizationId: req.organizationId } } }
     : {};
 
+  // FIX (2026-07-05): OfficerValidation has NO status field — the old approved/pending
+  // status filters threw PrismaClientValidationError and 500'd the
+  // admin dashboard. Real approval-shaped fields: validatedAt (non-null, @default(now())),
+  // completedAt (nullable), createdAt. Mapping:
+  //   validatedUpdates   = a validation was recorded (validatedAt is always set)
+  //   pendingValidations = recorded but not yet completed (completedAt: null). The literal
+  //     `validatedAt: null` from the request is always 0 here (validatedAt is non-nullable),
+  //     so `completedAt: null` is the schema-honest "pending" signal.
   const [totalUpdates, validatedUpdates, pendingValidations, recentUpdates] = await Promise.all([
     prisma.seasonProgressEntry.count({ where: seasonOrgFilter }),
-    prisma.officerValidation.count({ where: { ...seasonOrgFilter, status: 'approved' } }),
-    prisma.officerValidation.count({ where: { ...seasonOrgFilter, status: 'pending' } }),
+    prisma.officerValidation.count({ where: { ...seasonOrgFilter, validatedAt: { not: null } } }),
+    prisma.officerValidation.count({ where: { ...seasonOrgFilter, completedAt: null } }),
     prisma.seasonProgressEntry.count({
       where: { ...seasonOrgFilter, createdAt: { gte: tw.activityCutoff } },
     }),
@@ -233,6 +247,23 @@ router.get('/', asyncHandler(async (req, res) => {
       },
     },
   });
+  } catch (err) {
+    console.error('[analytics-summary] failed:', err && err.message ? err.message : err);
+    return res.status(200).json({
+      ok: false,
+      error: 'analytics_summary_failed',
+      message: 'Unable to load analytics summary',
+      metrics: {
+        totalFarmers: 0, activeFarmers: 0, inactiveFarmers: 0, setupIncomplete: 0,
+        totalUpdates: 0, recentUpdates: 0, validatedUpdates: 0, pendingValidations: 0,
+        needsAttention: 0, onboardingRate: '0%', firstUpdateRate: '0%',
+        landBoundaryCount: 0, seedScanCount: 0, seedWarningCount: 0, duplicateFlagged: 0,
+        profileCompleteness: { complete: 0, incomplete: 0, completePct: 0, commonMissing: [] },
+        pesticideCompliance: { compliant: 0, needsReview: 0, nonCompliant: 0, totalEvaluated: 0 },
+        periodUpdates: { last7Days: 0, last30Days: 0, last90Days: 0 },
+      },
+    });
+  }
 }));
 
 export default router;
