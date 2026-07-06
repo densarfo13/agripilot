@@ -23,9 +23,9 @@
  *     Action: SMS reminder (if phone), else email.
  *   • inactive_farmer_14d — active farmer with no event ≥ 14 days.
  *     Action: SMS nudge (if phone), else email.
- *   • critical_issue_unassigned — open issue, severity ∈ {high, critical},
- *     no assignee. Action: assign_officer when roster available, else
- *     email the admin distribution list.
+ *   • critical_issue_unassigned — open/escalated issue (the Issue model has no
+ *     `severity` field; escalated status is the critical signal), no assignee.
+ *     Action: assign_officer when roster available, else email the admin list.
  *   • new_farmer_welcome — acceptedAt within 24h, never messaged.
  *     Action: SMS welcome.
  *
@@ -186,13 +186,15 @@ function buildAssignDecision(issue, now) {
     targetType: 'issue',
     targetId:   String(issue.id),
     rule:       'critical_issue_unassigned',
-    reason:     `Unassigned ${issue.severity} severity for ${scored.daysSince || 0}+ days`,
+    // Issue exposes `status`/`description`, not `severity`/`issueType` — reading the
+    // phantom fields rendered "Unassigned undefined severity". Use the real fields.
+    reason:     `Unassigned ${issue.status || 'open'} issue for ${scored.daysSince || 0}+ days`,
     priority:   scored.priority,
     score:      scored.score,
     channel:    'in_app',
     contact:    { farmerId: issue.farmerId || null },
     template: {
-      subject: `Issue needs routing: ${issue.issueType || 'farm issue'}`,
+      subject: `Issue needs routing: ${issue.description ? String(issue.description).slice(0, 60) : 'farm issue'}`,
       message: `High/critical issue has been open without assignment. Review and route in the admin queue.`,
     },
     scheduledFor: new Date(now).toISOString(),
