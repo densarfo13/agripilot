@@ -266,10 +266,12 @@ async function buildNeedsAttention({ prisma, since, now }) {
   if (!prisma) return [];
   try {
     if (prisma.issue && typeof prisma.issue.findMany === 'function') {
+      // The Issue model has no `severity` field; `escalated` status is the
+      // schema-honest "critical" signal (the old `severity` filter threw
+      // PrismaClientValidationError, silently returning nothing via the catch).
       const issues = await prisma.issue.findMany({
         where: {
           status: { in: ['open', 'assigned', 'escalated'] },
-          severity: { in: ['high', 'critical'] },
         },
         orderBy: { createdAt: 'asc' },
         take: 20,
@@ -277,8 +279,9 @@ async function buildNeedsAttention({ prisma, since, now }) {
       return issues.map((i) => ({
         farmId:      i.farmId || null,
         farmerName:  pickName(i),
-        reason:      `${i.severity} ${i.issueType || 'issue'}`,
-        priority:    i.severity === 'critical' ? 'critical' : 'high',
+        // Issue exposes `description`/`status`, not `severity`/`issueType`.
+        reason:      i.description || `${i.status || 'open'} issue`,
+        priority:    i.status === 'escalated' ? 'critical' : 'high',
         daysSince:   Math.max(0, Math.floor((now - new Date(i.createdAt).getTime()) / DAY_MS)),
       }));
     }

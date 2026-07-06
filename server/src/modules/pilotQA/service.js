@@ -165,7 +165,8 @@ async function computeAutoStatus({ organizationId }) {
     }),
     prisma.credibilityAssessment.count({
       where: {
-        score: { lt: 40 },
+        // Schema field is `credibilityScore` (@map credibility_score), not `score`.
+        credibilityScore: { lt: 40 },
         season: { status: 'active', ...seasonWhere },
       },
     }).catch(() => 0),

@@ -59,8 +59,15 @@ async function findStalledOnboarding({ prisma, now, limit }) {
   try {
     if (!prisma || !prisma.application) return [];
     const cutoff = new Date(now - 7 * DAY_MS);
+    // Application has no `acceptedAt` field — it carries a `status` enum. "Stalled"
+    // = still awaiting a decision (not in a terminal state) more than 7 days after
+    // creation. The old `acceptedAt: null` filter threw PrismaClientValidationError,
+    // which this try/catch silently swallowed → the reader was dead.
     const rows = await prisma.application.findMany({
-      where:   { acceptedAt: null, createdAt: { lt: cutoff } },
+      where:   {
+        status: { notIn: ['approved', 'conditional_approved', 'rejected', 'disbursed'] },
+        createdAt: { lt: cutoff },
+      },
       take:    clampLimit(limit),
       orderBy: { createdAt: 'asc' },
       include: { farmer: true },
@@ -102,10 +109,12 @@ async function findInactiveFarmers({ prisma, now, limit }) {
 async function findCriticalUnassignedIssues({ prisma, now, limit }) {
   try {
     if (!prisma || !prisma.issue) return [];
+    // The Issue model has no `severity` field — the escalated status is the
+    // schema-honest "critical" signal (a `severity` filter threw
+    // PrismaClientValidationError and this try/catch silently returned nothing).
     const rows = await prisma.issue.findMany({
       where: {
         status: { in: ['open', 'escalated'] },
-        severity: { in: ['high', 'critical'] },
         assignedTo: null,
       },
       take:    clampLimit(limit),

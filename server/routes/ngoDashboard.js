@@ -59,6 +59,17 @@ router.get('/overview', ...NGO_SCOPE, async (req, res) => {
   const now = new Date();
   const activeSince = new Date(now.getTime() - ACTIVE_WINDOW_DAYS * 86_400_000);
   const orgWhere = orgWhereFarmer(req); // {} for super_admin, { organizationId } otherwise
+  const orgId = orgWhere.organizationId || null;
+  // FIX (2026-07-06): FarmProfile has NO `organizationId` column — its org path is
+  // `farmer.organizationId`. The flat orgWhereFarmer filter is Farmer-shaped; spreading it
+  // onto FarmProfile/V2CropCycle threw PrismaClientValidationError for org-scoped NGO admins
+  // (super_admin was unaffected because orgWhere is {} there). Scope via the farmer relation.
+  const profileOrgWhere = orgId ? { farmer: { organizationId: orgId } } : {};
+  // IssueReport has no relation to FarmProfile/Farmer/Organization, so it can't be nested-
+  // filtered; scope it by the org's farm-profile IDs (resolved via the canonical path above).
+  const orgProfileIds = orgId
+    ? (await prisma.farmProfile.findMany({ where: profileOrgWhere, select: { id: true } })).map((p) => p.id)
+    : null;
 
   const [
     totalFarmers,
@@ -66,13 +77,16 @@ router.get('/overview', ...NGO_SCOPE, async (req, res) => {
     openHighRiskIssues,
     cropsInProgress,
   ] = await Promise.all([
-    prisma.farmProfile.count({ where: { status: 'active', ...orgWhere } }),
+    prisma.farmProfile.count({ where: { status: 'active', ...profileOrgWhere } }),
     prisma.farmProfile.count({
-      where: { status: 'active', updatedAt: { gte: activeSince }, ...orgWhere },
+      where: { status: 'active', updatedAt: { gte: activeSince }, ...profileOrgWhere },
     }),
     prisma.issueReport.findMany({
-      where: { status: { in: ['open', 'in_review'] }, severity: 'high',
-               farmProfile: orgWhere.organizationId ? { organizationId: orgWhere.organizationId } : undefined },
+      where: {
+        status: { in: ['open', 'in_review'] },
+        severity: 'high',
+        ...(orgProfileIds ? { farmProfileId: { in: orgProfileIds } } : {}),
+      },
       select: { farmProfileId: true },
       distinct: ['farmProfileId'],
     }),
@@ -81,7 +95,7 @@ router.get('/overview', ...NGO_SCOPE, async (req, res) => {
         lifecycleStatus: { in: [
           'planned', 'planting', 'growing', 'flowering', 'harvest_ready',
         ] },
-        profile: orgWhere.organizationId ? { organizationId: orgWhere.organizationId } : undefined,
+        ...(orgId ? { profile: { farmer: { organizationId: orgId } } } : {}),
       },
     }).catch(() => 0),
   ]);
@@ -97,13 +111,24 @@ router.get('/overview', ...NGO_SCOPE, async (req, res) => {
 });
 
 // ─── GET /api/v2/ngo/risk-summary ──────────────────────────
-router.get('/risk-summary', ...NGO_SCOPE, async (_req, res) => {
+// Org-scoped: neither IssueReport nor FarmProfile carries an
+// organizationId column — the org path is farmer.organizationId. Resolve
+// the org's farm-profile IDs first, then bound both queries (mirrors the
+// /overview fix and the canonical orgWhereApplication shape in orgScope.js).
+router.get('/risk-summary', ...NGO_SCOPE, async (req, res) => {
   // For each open/in-review issue with severity >= medium, surface
   // the farm + farmer context so the NGO can triage from one list.
+  const orgId = orgWhereFarmer(req).organizationId || null;
+  const profileOrgWhere = orgId ? { farmer: { organizationId: orgId } } : {};
+  const orgProfileIds = orgId
+    ? (await prisma.farmProfile.findMany({ where: profileOrgWhere, select: { id: true } })).map((p) => p.id)
+    : null;
+
   const issues = await prisma.issueReport.findMany({
     where: {
       status: { in: ['open', 'in_review'] },
       severity: { in: ['medium', 'high'] },
+      ...(orgProfileIds ? { farmProfileId: { in: orgProfileIds } } : {}),
     },
     orderBy: [{ severity: 'desc' }, { reportedAt: 'desc' }],
     take: 200,
@@ -112,7 +137,7 @@ router.get('/risk-summary', ...NGO_SCOPE, async (_req, res) => {
   const farmIds = Array.from(new Set(issues.map((i) => i.farmProfileId)));
   const farms = farmIds.length
     ? await prisma.farmProfile.findMany({
-        where: { id: { in: farmIds } },
+        where: { id: { in: farmIds }, ...profileOrgWhere },
         select: {
           id: true, farmName: true, farmerName: true,
           country: true, stateCode: true, locationName: true,
@@ -131,9 +156,13 @@ router.get('/risk-summary', ...NGO_SCOPE, async (_req, res) => {
 });
 
 // ─── GET /api/v2/ngo/crop-analytics ────────────────────────
-router.get('/crop-analytics', ...NGO_SCOPE, async (_req, res) => {
+// Org-scoped via the cycle's profile → farmer relation (V2CropCycle has no
+// organizationId column). super_admin (orgId null) stays cross-org.
+router.get('/crop-analytics', ...NGO_SCOPE, async (req, res) => {
+  const orgId = orgWhereFarmer(req).organizationId || null;
   const rows = await prisma.v2CropCycle.groupBy({
     by: ['cropType', 'lifecycleStatus'],
+    where: orgId ? { profile: { farmer: { organizationId: orgId } } } : {},
     _count: { _all: true },
   }).catch(() => []);
 
@@ -160,10 +189,23 @@ router.get('/intervention', ...NGO_SCOPE, async (req, res) => {
   const now = new Date();
   const inactivityCutoff = new Date(now.getTime() - 14 * 86_400_000);
 
+  // Org scoping — FarmProfile/IssueReport carry no organizationId column, so
+  // resolve the org's farm-profile IDs and scope every read through the
+  // farmer relation (or those IDs). super_admin (orgId null) stays cross-org.
+  const orgId = orgWhereFarmer(req).organizationId || null;
+  const profileOrgWhere = orgId ? { farmer: { organizationId: orgId } } : {};
+  const orgProfileIds = orgId
+    ? (await prisma.farmProfile.findMany({ where: profileOrgWhere, select: { id: true } })).map((p) => p.id)
+    : null;
+
   // Candidate farms: any with open high-severity issue, overdue tasks,
   // or a cycle but no recent task completion.
   const highSevFarmIds = await prisma.issueReport.findMany({
-    where: { severity: 'high', status: { in: ['open', 'in_review'] } },
+    where: {
+      severity: 'high',
+      status: { in: ['open', 'in_review'] },
+      ...(orgProfileIds ? { farmProfileId: { in: orgProfileIds } } : {}),
+    },
     select: { farmProfileId: true },
     distinct: ['farmProfileId'],
   }).then((rows) => rows.map((r) => r.farmProfileId));
@@ -175,9 +217,17 @@ router.get('/intervention', ...NGO_SCOPE, async (req, res) => {
     having: { cropCycleId: { _count: { gte: 3 } } },
   }).catch(() => []);
   const overdueCycleIds = overdueGroups.map((r) => r.cropCycleId);
+  // Bound overdue cycles to the org here — this naturally scopes
+  // overdueFarmIds (and the candidate set) without touching the global
+  // groupBy above, whose cross-org rows are dropped when they don't resolve
+  // to an org-scoped cycle below.
   const overdueCycles = overdueCycleIds.length
     ? await prisma.v2CropCycle.findMany({
-        where: { id: { in: overdueCycleIds } }, select: { id: true, profileId: true },
+        where: {
+          id: { in: overdueCycleIds },
+          ...(orgId ? { profile: { farmer: { organizationId: orgId } } } : {}),
+        },
+        select: { id: true, profileId: true },
       })
     : [];
   const overdueFarmIds = overdueCycles.map((c) => c.profileId);
@@ -189,6 +239,7 @@ router.get('/intervention', ...NGO_SCOPE, async (req, res) => {
     where: {
       id: { in: candidateFarmIds },
       ...(stateCode ? { stateCode } : {}),
+      ...profileOrgWhere,
     },
     select: {
       id: true, farmName: true, farmerName: true, stateCode: true,
@@ -216,9 +267,12 @@ router.get('/intervention', ...NGO_SCOPE, async (req, res) => {
 router.get('/inactive-farmers', ...NGO_SCOPE, async (req, res) => {
   const days = Math.max(7, Math.min(90, parseInt(req.query.days, 10) || 14));
   const cutoff = new Date(Date.now() - days * 86_400_000);
-  const orgWhere = orgWhereFarmer(req);
+  // FarmProfile has no organizationId column — scope via the farmer relation.
+  // (The prior flat `...orgWhereFarmer(req)` spread threw PrismaClientValidationError.)
+  const orgId = orgWhereFarmer(req).organizationId || null;
+  const profileOrgWhere = orgId ? { farmer: { organizationId: orgId } } : {};
   const farms = await prisma.farmProfile.findMany({
-    where: { status: 'active', updatedAt: { lt: cutoff }, ...orgWhere },
+    where: { status: 'active', updatedAt: { lt: cutoff }, ...profileOrgWhere },
     orderBy: { updatedAt: 'asc' },
     select: {
       id: true, farmName: true, farmerName: true,
@@ -243,8 +297,13 @@ router.get('/inactive-farmers', ...NGO_SCOPE, async (req, res) => {
 // ─── GET /api/v2/ngo/overdue-clusters ──────────────────────
 // Overdue task counts grouped by cycle → farm. Useful for spotting
 // a single farm with many stalled cycles at once.
-router.get('/overdue-clusters', ...NGO_SCOPE, async (_req, res) => {
+router.get('/overdue-clusters', ...NGO_SCOPE, async (req, res) => {
   const now = new Date();
+  // Org scoping — bound the cycle lookup (and thus every downstream farm)
+  // through the profile → farmer relation. Cross-org rows in the global
+  // groupBy below are dropped when they don't resolve to an org cycle here.
+  const orgId = orgWhereFarmer(req).organizationId || null;
+  const profileOrgWhere = orgId ? { farmer: { organizationId: orgId } } : {};
   const groups = await prisma.cycleTaskPlan.groupBy({
     by: ['cropCycleId'],
     where: { status: 'pending', dueDate: { lt: now } },
@@ -254,12 +313,15 @@ router.get('/overdue-clusters', ...NGO_SCOPE, async (_req, res) => {
 
   const cycleIds = groups.map((g) => g.cropCycleId);
   const cycles = await prisma.v2CropCycle.findMany({
-    where: { id: { in: cycleIds } },
+    where: {
+      id: { in: cycleIds },
+      ...(orgId ? { profile: { farmer: { organizationId: orgId } } } : {}),
+    },
     select: { id: true, cropType: true, profileId: true, lifecycleStatus: true },
   });
   const farmIds = Array.from(new Set(cycles.map((c) => c.profileId)));
   const farms = await prisma.farmProfile.findMany({
-    where: { id: { in: farmIds } },
+    where: { id: { in: farmIds }, ...profileOrgWhere },
     select: { id: true, farmName: true, stateCode: true },
   });
   const farmsById = Object.fromEntries(farms.map((f) => [f.id, f]));
@@ -276,9 +338,12 @@ router.get('/overdue-clusters', ...NGO_SCOPE, async (_req, res) => {
 });
 
 // ─── GET /api/v2/ngo/harvest-analytics ─────────────────────
-router.get('/harvest-analytics', ...NGO_SCOPE, async (_req, res) => {
-  // V2HarvestRecord already exists in the schema (farmProfileId + totals).
+// Org-scoped via the record's farm → farmer relation. V2HarvestRecord's FK
+// is `farmId` → FarmProfile; neither carries an organizationId column.
+router.get('/harvest-analytics', ...NGO_SCOPE, async (req, res) => {
+  const orgId = orgWhereFarmer(req).organizationId || null;
   const recent = await prisma.v2HarvestRecord.findMany({
+    where: orgId ? { farm: { farmer: { organizationId: orgId } } } : {},
     orderBy: { createdAt: 'desc' },
     take: 200,
   }).catch(() => []);

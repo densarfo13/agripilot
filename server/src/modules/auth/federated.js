@@ -346,7 +346,7 @@ export async function federatedLogin({ provider, providerAccountId, email, name 
 
   // 1. Look up by linked identity
   const fedIdentity = await prisma.federatedIdentity.findUnique({
-    where: { uq_fed_provider_account: { provider, providerAccountId } },
+    where: { provider_providerAccountId: { provider, providerAccountId } },
     include: {
       user: {
         include: { farmerProfile: { select: { id: true, registrationStatus: true } } },
@@ -532,7 +532,7 @@ export async function handleFederatedCallback({ providerUser, statePayload }) {
 
 export async function linkProvider({ userId, provider, providerAccountId, providerEmail }) {
   const existing = await prisma.federatedIdentity.findUnique({
-    where: { uq_fed_provider_account: { provider, providerAccountId } },
+    where: { provider_providerAccountId: { provider, providerAccountId } },
   });
 
   if (existing) {

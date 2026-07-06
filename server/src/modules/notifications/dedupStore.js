@@ -97,13 +97,20 @@ export async function recordDedupKey({
     // microtask. Prisma doesn't give us upsert without a unique
     // constraint, and we don't want to change the schema just for
     // dedup.
+    //
+    // NOTE (schema drift, 2026-07-06): the live `AutoNotification` model has NO
+    // `metadata` JSON column, so the previous `metadata: { path: ['dedupKey'] }`
+    // filter threw PrismaClientValidationError against the real database (this
+    // module is dormant — only the mocked unit test exercises the metadata path;
+    // there are no live callers). The uniqueness check is scoped to the real
+    // columns (user + farmer + type + 24h window). Per-key persistence needs an
+    // `AutoNotification.metadata Json?` migration before this path is wired live.
     const existing = await prisma.autoNotification.count({
       where: {
         userId: userId || undefined,
         farmerId: farmerId || undefined,
         type,
         createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        metadata: { path: ['dedupKey'], equals: key },
       },
     }).catch(() => 0);
     if (existing > 0) return;

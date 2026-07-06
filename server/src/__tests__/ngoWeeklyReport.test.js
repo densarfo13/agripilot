@@ -197,8 +197,10 @@ describe('formatters', () => {
   it('html export is print-to-PDF ready + escapes user-supplied text', async () => {
     const prisma = makePrisma({
       issues: [{
-        id: 'x', farmId: 'f1', status: 'open', severity: 'high',
-        issueType: '<script>alert(1)</script>',
+        // Payload rides on `description` — the real user-supplied Issue field that flows
+        // into `reason` (the model has no `severity`/`issueType`; those were schema drift).
+        id: 'x', farmId: 'f1', status: 'open',
+        description: '<script>alert(1)</script>',
         createdAt: new Date(NOW - DAY), updatedAt: new Date(NOW),
         farmerName: null,
       }],

@@ -27,6 +27,12 @@ jobs:
       - name: CI guard - prisma safety
         run: node scripts/ci/check-prisma-safety.mjs
 
+      # Blocks any query filtering on a field the Prisma model does not have
+      # (schema drift → PrismaClientValidationError at runtime, e.g. the
+      # analytics-summary `officerValidation.count({ where: { status } })` 500).
+      - name: CI guard - prisma field validity (schema drift)
+        run: node scripts/check-prisma-fields.mjs
+
       - name: CI guard - migration safety
         run: node scripts/ci/check-migration-safety.mjs
 
@@ -67,6 +73,8 @@ jobs:
         working-directory: server
         run: |
           npx vitest run \
+            src/__tests__/checkPrismaFieldsGate.test.js \
+            src/__tests__/analyticsSummaryPrismaFix.test.js \
             src/__tests__/productionSafety.test.js \
             src/__tests__/cropEngine.test.js \
             src/__tests__/topCropEngine.test.js \
