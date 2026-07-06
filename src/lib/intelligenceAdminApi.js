@@ -3,21 +3,44 @@
  * high-risk farms, hotspots, alerts, interventions, ingestion & scoring.
  */
 
+import { classifyAdminApiError } from './intelligenceAdminError.js';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
+// 2026-07-05 fix: these calls previously sent ONLY the httpOnly cookie (credentials:
+// 'include') and NO Authorization header — the sole outlier in the app, where every other
+// admin call attaches the Bearer token from the store. When the admin is authenticated by
+// token (no cookie), the server saw no credentials → 401/403 → the UI showed "Session
+// expired". We now ALSO send the Bearer token (canonical `farroway_token`), matching the
+// rest of the app, while keeping the cookie for cookie-auth sessions.
+function _authHeader() {
+  try {
+    const tok = typeof localStorage !== 'undefined' ? localStorage.getItem('farroway_token') : null;
+    return tok ? { Authorization: 'Bearer ' + tok } : {};
+  } catch { return {}; }
+}
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ..._authHeader(),
       ...(options.headers || {}),
     },
     ...options,
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Request failed: ${res.status}`);
+    const body = await res.json().catch(() => ({}));
+    // Propagate the REAL status so callers distinguish 401 (session expired) from 403
+    // (access denied) — no more text pattern-matching. The message stays farmer-invisible;
+    // this is an admin surface.
+    const err = new Error(body.error || `Request failed: ${res.status}`);
+    err.status = res.status;
+    err.errorType = classifyAdminApiError(res.status);
+    err.body = body;
+    throw err;
   }
 
   return res.json();

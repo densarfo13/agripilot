@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useIntelligenceStore } from '../store/intelligenceStore.js';
 import { structureError } from '../api/apiClient.js';
+import { classifyAdminApiError } from '../lib/intelligenceAdminError.js';
 
 /**
  * useRegionalRisk — regional risk map + outbreak clusters.
@@ -130,14 +131,21 @@ export function useAdminAlerts(initialFilters = {}) {
 }
 
 function _classifyAlertError(err) {
-  // structureError accepts any shape and never throws.
   try {
-    if (err && typeof err === 'object') return structureError(err);
+    // 2026-07-05: prefer the REAL HTTP status the API helper now attaches — so a 403
+    // (ACCESS_DENIED / "not an admin") is never mislabeled SESSION_EXPIRED. Status wins
+    // over text; text-matching remains only as a legacy last resort.
+    if (err && typeof err === 'object') {
+      if (err.errorType) return { errorType: err.errorType, message: err.message || String(err) };
+      if (typeof err.status === 'number') {
+        return { errorType: classifyAdminApiError(err.status), message: err.message || String(err) };
+      }
+      return structureError(err);
+    }
     if (typeof err === 'string') {
-      // Best-effort sniff for common server messages — the
-      // store currently surfaces a flat string so we have to
-      // pattern-match instead of reading status/code.
       const upper = err.toUpperCase();
+      if (/ACCESS DENIED|FORBIDDEN|403/.test(upper))
+        return { errorType: 'ACCESS_DENIED',   message: err };
       if (/SESSION|UNAUTHORIZED|401/.test(upper))
         return { errorType: 'SESSION_EXPIRED', message: err };
       if (/MFA|STEP[ _-]?UP/.test(upper))

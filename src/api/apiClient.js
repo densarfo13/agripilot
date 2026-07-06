@@ -44,6 +44,7 @@ import { useAuthStore } from '../store/authStore.js';
 // ─── Error type taxonomy ───────────────────────────────────
 export const API_ERROR_TYPES = Object.freeze({
   SESSION_EXPIRED: 'SESSION_EXPIRED',
+  ACCESS_DENIED:   'ACCESS_DENIED', // 403 — valid session, insufficient role (NOT "expired")
   MFA_REQUIRED:    'MFA_REQUIRED',
   NETWORK_ERROR:   'NETWORK_ERROR',
   API_ERROR:       'API_ERROR',
@@ -117,6 +118,16 @@ function _structureError(err) {
     };
   }
 
+  // 0. Honor an errorType the caller already computed from the real HTTP status
+  //    (e.g. intelligenceAdminApi attaches one). Authoritative — no re-sniffing.
+  if (err.errorType && Object.prototype.hasOwnProperty.call(API_ERROR_TYPES, err.errorType)) {
+    return {
+      errorType: err.errorType,
+      status: err.status || (err.response && err.response.status) || null,
+      code: '', message: err.message || 'Request failed', raw: err,
+    };
+  }
+
   const status   = (err.response && err.response.status) || err.status || null;
   const data     = (err.response && err.response.data) || {};
   const code     = String(data.code || err.code || '').toUpperCase();
@@ -154,6 +165,15 @@ function _structureError(err) {
   if (status === 401) {
     return {
       errorType: API_ERROR_TYPES.SESSION_EXPIRED,
+      status, code, message, raw: err,
+    };
+  }
+
+  // 3b. 403 → access denied. A VALID session lacking the required role. Must NOT be
+  //     shown as "Session expired" (which wrongly implies re-login fixes it).
+  if (status === 403) {
+    return {
+      errorType: API_ERROR_TYPES.ACCESS_DENIED,
       status, code, message, raw: err,
     };
   }

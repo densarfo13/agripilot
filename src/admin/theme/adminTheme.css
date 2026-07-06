@@ -1,0 +1,128 @@
+/*
+ * adminTheme.css — CSS-variable mirror of adminTokens.ts for the enterprise admin
+ * console (2026-07-05). Scope everything under `.admin-theme` so it can NEVER leak
+ * into farmer mobile flows. Admin components reference var(--admin-*) or the token
+ * module — never raw hex.
+ */
+
+.admin-theme {
+  /* colors */
+  --admin-bg: #0B1220;
+  --admin-bg-elevated: #111C2E;
+  --admin-surface: #16233A;
+  --admin-surface-glass: rgba(22, 35, 58, 0.72);
+  --admin-border: rgba(148, 163, 184, 0.14);
+  --admin-border-strong: rgba(148, 163, 184, 0.28);
+  --admin-text: #E6EDF7;
+  --admin-text-muted: #9AA9BF;
+  --admin-text-faint: #64748B;
+  --admin-emerald: #10B981;
+  --admin-emerald-deep: #047857;
+  --admin-emerald-soft: rgba(16, 185, 129, 0.14);
+  --admin-gold: #D8B466;
+  --admin-gold-soft: rgba(216, 180, 102, 0.16);
+  --admin-focus: #38BDF8;
+
+  /* status */
+  --admin-critical-fg: #FCA5A5; --admin-critical-bg: rgba(239, 68, 68, 0.14);
+  --admin-high-fg: #FDBA74;     --admin-high-bg: rgba(249, 115, 22, 0.14);
+  --admin-medium-fg: #FDE68A;   --admin-medium-bg: rgba(234, 179, 8, 0.14);
+  --admin-low-fg: #86EFAC;      --admin-low-bg: rgba(34, 197, 94, 0.14);
+
+  /* spacing / radius / shadow */
+  --admin-space-sm: 8px; --admin-space-md: 12px; --admin-space-lg: 16px; --admin-space-xl: 24px;
+  --admin-radius-md: 12px; --admin-radius-lg: 16px; --admin-radius-pill: 999px;
+  --admin-shadow-card: 0 1px 2px rgba(0,0,0,0.30), 0 8px 24px rgba(0,0,0,0.24);
+  --admin-shadow-focus: 0 0 0 3px rgba(56, 189, 248, 0.45);
+
+  /* motion */
+  --admin-motion-base: 200ms;
+  --admin-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Card / glass surface */
+.admin-theme .admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-card);
+  padding: var(--admin-space-lg);
+}
+.admin-theme .admin-card--glass {
+  background: var(--admin-surface-glass);
+  backdrop-filter: blur(10px);
+}
+
+/* Interactive targets meet the 44px minimum + visible focus */
+.admin-theme button,
+.admin-theme a,
+.admin-theme [role='button'] {
+  min-height: 44px;
+}
+.admin-theme :focus-visible {
+  outline: none;
+  box-shadow: var(--admin-shadow-focus);
+  border-radius: var(--admin-radius-md);
+}
+
+/* Primary action — the single gold CTA; everything else is emerald/ghost */
+.admin-theme .admin-btn-primary {
+  background: var(--admin-gold);
+  color: #08111A;
+  border: none;
+  border-radius: var(--admin-radius-pill);
+  font-weight: 700;
+  padding: 0 18px;
+  transition: filter var(--admin-motion-base) var(--admin-ease);
+}
+.admin-theme .admin-btn-primary:hover { filter: brightness(1.06); }
+
+/* Cleaner table */
+.admin-theme .admin-table { width: 100%; border-collapse: collapse; }
+.admin-theme .admin-table th {
+  text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--admin-text-muted); padding: 10px 14px;
+  border-bottom: 1px solid var(--admin-border);
+}
+.admin-theme .admin-table td {
+  padding: 12px 14px; border-bottom: 1px solid var(--admin-border); font-size: 14px;
+}
+.admin-theme .admin-table tr:hover td { background: rgba(148, 163, 184, 0.05); }
+
+/* Risk badges — hue + label, never color alone */
+.admin-theme .admin-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 10px; border-radius: var(--admin-radius-pill);
+  font-size: 12px; font-weight: 700;
+}
+.admin-theme .admin-badge--critical { color: var(--admin-critical-fg); background: var(--admin-critical-bg); }
+.admin-theme .admin-badge--high     { color: var(--admin-high-fg);     background: var(--admin-high-bg); }
+.admin-theme .admin-badge--medium   { color: var(--admin-medium-fg);   background: var(--admin-medium-bg); }
+.admin-theme .admin-badge--low      { color: var(--admin-low-fg);      background: var(--admin-low-bg); }
+
+/* Professional empty state */
+.admin-theme .admin-empty {
+  text-align: center; padding: 40px 24px; color: var(--admin-text-muted);
+  border: 1px dashed var(--admin-border-strong); border-radius: var(--admin-radius-lg);
+}
+
+/* Loading skeleton */
+.admin-theme .admin-skeleton {
+  background: linear-gradient(90deg, rgba(148,163,184,0.08) 25%, rgba(148,163,184,0.16) 37%, rgba(148,163,184,0.08) 63%);
+  background-size: 400% 100%; border-radius: var(--admin-radius-md);
+  animation: admin-shimmer 1.4s ease infinite;
+}
+@keyframes admin-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-theme .admin-skeleton { animation: none; }
+}
+
+/* Responsive: sidebar collapses under the topbar, no collision */
+@media (max-width: 900px) {
+  .admin-theme .admin-shell { grid-template-columns: 1fr; }
+}
