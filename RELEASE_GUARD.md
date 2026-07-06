@@ -120,39 +120,49 @@ One-off bypass: `git commit --no-verify` (the PR CI still enforces everything).
 
 ## 5. Branch protection (`master` / `main`)
 
-`master` is **PR-only** with required checks. Apply once (repo admin):
+`master` must be **PR-only** so nothing — including the auto-commit bot — can
+push to it directly. Needs `gh` (`winget install GitHub.CLI` then `gh auth login`)
+or the GitHub UI.
+
+**Phase 1 — apply now** (solo-safe: a PR is required, but you can self-merge):
 
 ```sh
-# save as branch-protection.json, then apply with gh:
-cat > /tmp/branch-protection.json <<'JSON'
+cat > branch-protection.json <<'JSON'
 {
-  "required_status_checks": {
-    "strict": true,
-    "contexts": [
-      "No mixed-feature commits",
-      "No runtime schema drift",
-      "build:safe (full gate + production build)",
-      "Security scan (secrets + unit)",
-      "guards",
-      "tests",
-      "hooks-guard"
-    ]
-  },
+  "required_status_checks": { "strict": false, "contexts": ["guards", "tests", "hooks-guard"] },
   "enforce_admins": true,
-  "required_pull_request_reviews": { "required_approving_review_count": 1 },
+  "required_pull_request_reviews": { "required_approving_review_count": 0, "dismiss_stale_reviews": false, "require_code_owner_reviews": false },
   "restrictions": null,
   "allow_force_pushes": false,
   "allow_deletions": false,
-  "required_linear_history": true
+  "required_linear_history": false,
+  "required_conversation_resolution": true
 }
 JSON
-
-gh api -X PUT repos/densarfo13/agripilot/branches/master/protection \
-  -H "Accept: application/vnd.github+json" --input /tmp/branch-protection.json
+gh api --method PUT -H "Accept: application/vnd.github+json" \
+  repos/densarfo13/agripilot/branches/master/protection --input branch-protection.json
 ```
 
-This makes it impossible to push directly to `master` (including the deploy
-bot) — all changes arrive via reviewed PRs whose required checks are green.
+- `enforce_admins: true` + a required PR ⇒ **no direct pushes to `master`**, even
+  under admin credentials — this is what stops the bot.
+- `required_approving_review_count: 0` ⇒ you can merge your own PRs (raise to `1`
+  once a second reviewer exists).
+- Only checks already on `master` are required, so in-flight PRs are not blocked.
+
+**Phase 2 — after the `ci/git-discipline` PR merges** (its workflows then live on
+`master`), tighten:
+
+```
+"contexts": ["guards","tests","hooks-guard",
+             "No mixed-feature commits","No runtime schema drift",
+             "build:safe (full gate + production build)","Security scan (secrets + unit)"]
+"strict": true
+```
+
+**GitHub UI equivalent** (Settings → Branches → Add rule, pattern `master`):
+✔ Require a pull request before merging (0 approvals) · ✔ Require status checks
+(strict off; select `guards`, `tests`, `hooks-guard`) · ✔ Do not allow bypassing
+(include administrators) · ✔ Block force pushes · ✔ Block deletions.
 
 ---
 
