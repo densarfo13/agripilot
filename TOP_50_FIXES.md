@@ -13,8 +13,8 @@ Pilot-value, each H(igh)/M(ed)/L(ow). Sorted by tier, then by Impact-per-Effort.
 ## TIER 1 — production hardening (this week)
 | # | Fix | Evidence | I | E | R | P |
 |---|---|---|---|---|---|---|
-| 3 | Patch 5 root prod-dependency vulns (3 high) — `npm audit fix` + full gates | npm audit 2026-07-05 | H | L | M | H |
-| 4 | Patch 14 server prod-dependency vulns (2 high) | npm audit (server) | H | L | M | H |
+| 3 | ~~Patch 5 root prod-dependency vulns (3 high)~~ **DONE 2026-07-05** (commit 224ff503, deploy 63880895; audit → 0) | npm audit 2026-07-05 | H | L | M | H |
+| 4 | ~~Patch 14 server prod-dependency vulns (2 high)~~ **DONE 2026-07-05** (same commit; audit → 0) | npm audit (server) | H | L | M | H |
 | 5 | Add CI dependency-scan gate so vuln-drift blocks merge | 19 vulns accumulated silently — no gate exists | H | L | L | M |
 | 6 | W4: verify `/api/v2/analytics/track|events` persist rows with real userId | 0 rows found for scanning user pre-W2; W2 landed — persistence unverified | H | M | L | H |
 | 7 | W5: crash-free-session counter from shipped client diagnostics | Criterion #3 NOT MEASURED; localStorage exception store live | H | M | L | H |
