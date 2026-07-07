@@ -1,9 +1,8 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { logEvent } from '../src/services/analytics/eventLogService.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 /**
