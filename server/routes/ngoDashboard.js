@@ -13,7 +13,7 @@
  * materialized view for now.
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth, requireRole } from '../middleware/rbac.js';
 // Merged-blocker spec §3 — NGO routes must be org-scoped at the
@@ -26,7 +26,6 @@ import { requireAuth, requireRole } from '../middleware/rbac.js';
 // guarantees a reviewer's queries are bounded to their own org.
 import { extractOrganization, orgWhereFarmer } from '../src/middleware/orgScope.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // NGO endpoints are role-gated AND org-scoped. Route-level stack:

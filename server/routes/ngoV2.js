@@ -17,14 +17,13 @@
  * server/src/services/ngo/ so they're directly unit-testable.
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth, requireRole } from '../middleware/rbac.js';
 import { assessIntervention } from '../src/services/ngo/interventionEngine.js';
 import { computeFarmerScore } from '../src/services/ngo/farmerScoringEngine.js';
 import { decideFundingEligibility } from '../src/services/ngo/fundingEligibilityEngine.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 const NGO_SCOPE = [authenticate, requireAuth, requireRole('reviewer')];
 
