@@ -16,11 +16,10 @@
  *   • Moderation actions are logged to EventLog for auditability
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth, requireRole } from '../middleware/rbac.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // Role guard: only true admins may call these routes.
