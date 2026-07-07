@@ -27,12 +27,11 @@
  * we do enrich with the farmer's past outcomes for learning.
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { scoreAllCrops } from '../src/services/scoring/cropScoringEngine.js';
 import { getLearningAdjustments } from '../src/services/feedback/learningEngine.js';
 import { resolveRegionProfile } from '../src/services/region/regionProfile.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 router.post('/crops', express.json(), async (req, res) => {

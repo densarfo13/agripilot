@@ -14,12 +14,11 @@
  *     existing row with the same key already exists.
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth } from '../middleware/rbac.js';
 import { validateHarvestPayload } from '../src/services/harvests/harvestValidation.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 const FARMER_SCOPE = [authenticate, requireAuth];
