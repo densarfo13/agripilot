@@ -22,7 +22,7 @@
  *   POST  /api/listings/:id/interested
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth } from '../middleware/rbac.js';
 import {
@@ -36,7 +36,6 @@ import {
   getBuyerProfile, updateBuyerProfile,
 } from '../src/services/market/buyerProfileService.js';
 
-const prisma = new PrismaClient();
 const AUTH = [authenticate, requireAuth];
 const router = express.Router();
 

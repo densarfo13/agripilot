@@ -31,10 +31,9 @@
  *   • Any uncaught error → 500, client shows "Not enough local price data yet".
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { buildPriceInsight } from '../src/modules/marketplace/priceInsights.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // ─── GET /api/v2/pricing/suggest ──────────────────────────

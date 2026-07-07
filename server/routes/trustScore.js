@@ -34,9 +34,8 @@
  *   • Any uncaught error → 500 → client shows neutral "Building…" badge.
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const router  = express.Router();
 
 // ── Level thresholds (Phase 7B spec) ──────────────────────────

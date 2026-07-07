@@ -14,11 +14,10 @@
  *   triage module.
  */
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAuth, requireRole } from '../middleware/rbac.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 const REVIEWER_SCOPE = [authenticate, requireAuth, requireRole('reviewer')];
