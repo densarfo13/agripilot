@@ -21,4 +21,3 @@ export { default as Button }            from './Button.jsx';
 export { default as ActionCard }        from './ActionCard.jsx';
 export { default as StatusCard }        from './StatusCard.jsx';
 export { default as ProgressIndicator } from './ProgressIndicator.jsx';
-export { default as EmptyState }        from './EmptyState.jsx';
