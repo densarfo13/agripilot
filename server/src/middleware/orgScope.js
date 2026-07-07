@@ -146,6 +146,18 @@ export function orgWhereUser(req) {
 }
 
 /**
+ * Build org-scoped where clause for records attributed to a user via a `user`
+ * relation (e.g. AnalyticsEvent.user → User.organizationId). Returns
+ * { user: { organizationId } } or {} for super_admin cross-org.
+ * Canonical helper — do not re-implement this filter inline.
+ */
+export function orgWhereViaUser(req) {
+  if (req.isCrossOrg) return {};
+  if (!req.organizationId) return {};
+  return { user: { organizationId: req.organizationId } };
+}
+
+/**
  * Verify a specific record belongs to the user's organization.
  * For use on single-record lookups (getById, update, delete).
  * Returns true if access is allowed, false if denied.

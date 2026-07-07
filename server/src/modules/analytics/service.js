@@ -16,8 +16,11 @@ export async function trackEvent(event, userId = null, metadata = null) {
 /**
  * Get event counts for a time range (admin use).
  */
-export async function getEventCounts(since = null) {
-  const where = since ? { createdAt: { gte: new Date(since) } } : {};
+export async function getEventCounts(since = null, orgFilter = {}) {
+  // orgFilter (canonical orgWhereViaUser): {} for super_admin (cross-org),
+  // { user: { organizationId } } for an institutional_admin — prevents an NGO
+  // admin from seeing global cross-org event counts.
+  const where = { ...orgFilter, ...(since ? { createdAt: { gte: new Date(since) } } : {}) };
   const counts = await prisma.analyticsEvent.groupBy({
     by: ['event'],
     where,
@@ -38,8 +41,9 @@ const VOICE_EVENTS = [
  * Get aggregated voice analytics summary.
  * Returns: byEvent, topReplayed, topAbandoned, byLanguage, byScreen.
  */
-export async function getVoiceAnalyticsSummary(since = null) {
+export async function getVoiceAnalyticsSummary(since = null, orgFilter = {}) {
   const where = {
+    ...orgFilter, // canonical orgWhereViaUser — org-scopes NGO admins, {} for super_admin
     event: { in: VOICE_EVENTS },
     ...(since ? { createdAt: { gte: new Date(since) } } : {}),
   };
