@@ -53,16 +53,20 @@ const S = {
   },
 };
 
-// PhotoQualityEngine qualityLabel → farmer word. Unknown labels render as-is
-// (never hide a real signal); absent label renders nothing (never invent one).
+// PhotoQualityEngine qualityLabel → farmer word. Absent OR unmeasured/unknown labels
+// render as "Not measured yet" — NEVER the raw internal label (no "unknown", no internal
+// terms on the farmer screen, per the scan-language contract). A genuinely unrecognised
+// label is treated as unmeasured rather than leaked verbatim.
 function _qualityText(label) {
   const l = String(label || '').toLowerCase();
+  const notMeasured = tSafe('scan.guidance.quality.notMeasured', 'Not measured yet');
   if (!l) return '';
   if (l === 'excellent' || l === 'high') return tSafe('scan.guidance.quality.excellent', 'Excellent');
   if (l === 'good') return tSafe('scan.guidance.quality.good', 'Good');
   if (l === 'fair' || l === 'medium' || l === 'ok') return tSafe('scan.guidance.quality.fair', 'Fair');
   if (l === 'poor' || l === 'low' || l === 'bad') return tSafe('scan.guidance.quality.poor', 'Poor');
-  return String(label);
+  if (l === 'unknown' || l === 'unmeasured' || l === 'not_measured' || l === 'n/a') return notMeasured;
+  return notMeasured; // any other internal label → honest "Not measured yet", never leaked raw
 }
 
 const TIPS = [
