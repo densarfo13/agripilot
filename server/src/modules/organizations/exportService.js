@@ -196,6 +196,30 @@ export function buildPilotMetricsCsv(metrics) {
   lines.push(row(['accepted_requests',       metrics.outcomes.acceptedRequests]));
   lines.push('');
 
+  // Scan evidence — real stored scans only; empty when none recorded.
+  const scan = metrics.scan || {};
+  const sf   = scan.feedback   || {};
+  const sc   = scan.confidence || {};
+  lines.push(row(['section', 'scan_evidence']));
+  lines.push(row(['total_scans',        scan.total || 0]));
+  lines.push(row(['scans_in_window',    scan.inWindow || 0]));
+  lines.push(row(['feedback_helpful',      sf.helpful || 0]));
+  lines.push(row(['feedback_not_sure',     sf.notSure || 0]));
+  lines.push(row(['feedback_not_helpful',  sf.notHelpful || 0]));
+  lines.push(row(['feedback_responded',    sf.responded || 0]));
+  lines.push(row(['helpful_rate',
+                   sf.helpfulRate == null ? '' : sf.helpfulRate]));
+  lines.push(row(['confidence_high',    sc.high || 0]));
+  lines.push(row(['confidence_medium',  sc.medium || 0]));
+  lines.push(row(['confidence_low',     sc.low || 0]));
+  for (const t of (scan.topIssues || [])) {
+    lines.push(row(['top_issue', t.label, t.count]));
+  }
+  for (const t of (scan.topCrops || [])) {
+    lines.push(row(['top_crop', t.label, t.count]));
+  }
+  lines.push('');
+
   // Weekly trends
   lines.push(row(['section', 'trends_weekly']));
   lines.push(row(['week_start', 'active', 'tasks', 'listings', 'requests', 'avg_score']));

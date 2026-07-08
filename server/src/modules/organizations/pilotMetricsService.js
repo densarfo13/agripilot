@@ -17,6 +17,8 @@
  *                        trustDistribution },
  *         outcomes:   { estimatedYieldKg, marketplaceListings,
  *                        marketplaceRequests, acceptedRequests },
+ *         scan:       { total, inWindow, hasData, feedback,
+ *                        confidence, outcomes, topIssues, topCrops },
  *         trends:     { weekly: [{ weekStart, active, tasks,
  *                                   listings, requests, avgScore }],
  *                        monthly: [{ monthStart, … same }]},
@@ -42,6 +44,11 @@
  *                                  → engagement + late detection
  *                                  'market'/'weather'/'reminder' → engagement
  *   AuditLog                     : marketplace.* actions → outcomes
+ *   ScanTrainingEvent            : confidence, userFeedback,
+ *                                  predictedIssue, cropName/plantName,
+ *                                  outcome → scan (real scans only;
+ *                                  scoped via the org's farmer.userId;
+ *                                  never estimated — empty = hasData:false)
  */
 
 import {
@@ -518,6 +525,103 @@ export function computeAtRiskFarmers({
 // ═══════════════════════════════════════════════════════════════
 // Prisma wrapper (the only DB-touching function)
 // ═══════════════════════════════════════════════════════════════
+/**
+ * computeScanEvidence(scans, { now, windowDays }) — pure aggregator
+ * over stored ScanTrainingEvent rows. Counts only what was recorded;
+ * never estimates. `helpfulRate` is null until at least one farmer
+ * has answered (a fabricated rate would be worse than "not yet").
+ *
+ *   → { total, inWindow, hasData,
+ *       feedback:  { helpful, notSure, notHelpful, none,
+ *                     responded, helpfulRate },
+ *       confidence:{ high, medium, low, unknown },
+ *       outcomes:  { recovered, spread, lost, unknown, none, reported },
+ *       topIssues: [{ label, count }],   // predictedIssue, top 5
+ *       topCrops:  [{ label, count }] }  // cropName||plantName, top 5
+ */
+export function computeScanEvidence(scans = [], { now = Date.now(), windowDays = 30 } = {}) {
+  const rows = Array.isArray(scans) ? scans : [];
+  const windowStart = now - windowDays * DAY_MS;
+
+  const feedback   = { helpful: 0, notSure: 0, notHelpful: 0, none: 0 };
+  const confidence = { high: 0, medium: 0, low: 0, unknown: 0 };
+  const outcomes   = { recovered: 0, spread: 0, lost: 0, unknown: 0, none: 0 };
+  const issueCounts = new Map();
+  const cropCounts  = new Map();
+  let inWindow = 0;
+
+  for (const r of rows) {
+    if (!r) continue;
+    const ts = r.createdAt ? new Date(r.createdAt).getTime() : NaN;
+    if (Number.isFinite(ts) && ts >= windowStart) inWindow += 1;
+
+    // Farmer feedback ('helpful' | 'not_sure' | 'not_helpful') — recorded, never inferred.
+    switch (String(r.userFeedback || '')) {
+      case 'helpful':     feedback.helpful += 1; break;
+      case 'not_sure':    feedback.notSure += 1; break;
+      case 'not_helpful': feedback.notHelpful += 1; break;
+      default:            feedback.none += 1;
+    }
+
+    // Provider confidence band exactly as stored.
+    switch (String(r.confidence || '')) {
+      case 'high':   confidence.high += 1; break;
+      case 'medium': confidence.medium += 1; break;
+      case 'low':    confidence.low += 1; break;
+      default:       confidence.unknown += 1;
+    }
+
+    // Eventual outcome — only counted once the farmer reported back.
+    switch (String(r.outcome || '')) {
+      case 'recovered': outcomes.recovered += 1; break;
+      case 'spread':    outcomes.spread += 1; break;
+      case 'lost':      outcomes.lost += 1; break;
+      case 'unknown':   outcomes.unknown += 1; break;
+      default:          outcomes.none += 1;
+    }
+
+    const issue = String(r.predictedIssue || '').trim();
+    if (issue) issueCounts.set(issue, (issueCounts.get(issue) || 0) + 1);
+    const crop = String(r.cropName || r.plantName || '').trim();
+    if (crop) cropCounts.set(crop, (cropCounts.get(crop) || 0) + 1);
+  }
+
+  const total = rows.length;
+  const responded = feedback.helpful + feedback.notSure + feedback.notHelpful;
+  const helpfulRate = responded > 0
+    ? Math.round((feedback.helpful / responded) * 1000) / 1000
+    : null;
+  const reported = outcomes.recovered + outcomes.spread + outcomes.lost + outcomes.unknown;
+
+  // Deterministic: count desc, then label asc (stable across runs).
+  const topN = (map) => [...map.entries()]
+    .sort((a, b) => (b[1] - a[1]) || (a[0] < b[0] ? -1 : 1))
+    .slice(0, 5)
+    .map(([label, count]) => ({ label, count }));
+
+  return {
+    total,
+    inWindow,
+    hasData: total > 0,
+    feedback:  { ...feedback, responded, helpfulRate },
+    confidence,
+    outcomes:  { ...outcomes, reported },
+    topIssues: topN(issueCounts),
+    topCrops:  topN(cropCounts),
+  };
+}
+
+/** Zeroed, honest scan-evidence shape (hasData:false, no fabricated rates). */
+export function emptyScanEvidence() {
+  return {
+    total: 0, inWindow: 0, hasData: false,
+    feedback:  { helpful: 0, notSure: 0, notHelpful: 0, none: 0, responded: 0, helpfulRate: null },
+    confidence:{ high: 0, medium: 0, low: 0, unknown: 0 },
+    outcomes:  { recovered: 0, spread: 0, lost: 0, unknown: 0, none: 0, reported: 0 },
+    topIssues: [], topCrops: [],
+  };
+}
+
 export async function buildPilotMetrics(prisma, {
   organizationId, windowDays = 30, trendBuckets = 6, now = Date.now(),
 } = {}) {
@@ -533,6 +637,10 @@ export async function buildPilotMetrics(prisma, {
       id: true, fullName: true, phoneNumber: true, phoneVerifiedAt: true,
       email: true, emailVerifiedAt: true, profileImageUrl: true,
       region: true, country: true,
+      // userId links a farmer to their login account; scans are
+      // stored on ScanTrainingEvent.userId, so we scope scan
+      // evidence to this org via the farmers' user accounts.
+      userId: true,
       registrationStatus: true, createdAt: true, updatedAt: true,
     },
   });
@@ -540,7 +648,10 @@ export async function buildPilotMetrics(prisma, {
   if (farmerIds.length === 0) return buildEmptyMetrics({ organizationId, windowDays });
 
   const trendFrom = new Date(Math.min(fromDate.getTime(), trendsFrom.getTime()));
-  const [farms, notifications, auditLogs] = await Promise.all([
+  // Scan evidence is scoped to this org via the farmers' login
+  // accounts (ScanTrainingEvent has no organizationId column).
+  const scanUserIds = farmers.map((f) => f.userId).filter(Boolean);
+  const [farms, notifications, auditLogs, scans] = await Promise.all([
     prisma.farmProfile?.findMany
       ? prisma.farmProfile.findMany({
           where: { farmerId: { in: farmerIds } },
@@ -581,6 +692,24 @@ export async function buildPilotMetrics(prisma, {
           },
           orderBy: { createdAt: 'desc' },
           take: 5000,
+        })
+      : Promise.resolve([]),
+    // Scan evidence — real stored scans for this org's farmers.
+    // Bounded (take) + windowed (trendFrom); empty scanUserIds
+    // yields no rows, which surfaces honestly as "no scans yet".
+    prisma.scanTrainingEvent?.findMany && scanUserIds.length > 0
+      ? prisma.scanTrainingEvent.findMany({
+          take: 5000,
+          orderBy: { createdAt: 'desc' },
+          where: {
+            userId:    { in: scanUserIds },
+            createdAt: { gte: trendFrom },
+          },
+          select: {
+            userId: true, confidence: true, userFeedback: true,
+            predictedIssue: true, cropName: true, plantName: true,
+            outcome: true, createdAt: true,
+          },
         })
       : Promise.resolve([]),
   ]);
@@ -739,6 +868,7 @@ export async function buildPilotMetrics(prisma, {
     engagement:  Object.freeze({ ...engagement, source: completionEventSource }),
     performance: Object.freeze(performance),
     outcomes:    Object.freeze(outcomes),
+    scan:        Object.freeze(computeScanEvidence(scans, { now, windowDays })),
     trends,
     topRegions:    Object.freeze(topRegions.map(Object.freeze)),
     atRiskFarmers: Object.freeze(atRiskFarmers.map(Object.freeze)),
@@ -790,6 +920,7 @@ function buildEmptyMetrics({ organizationId, windowDays }) {
                     trustDistribution: { low: 0, medium: 0, high: 0, average: 0, count: 0 } },
     outcomes:    { estimatedYieldKg: 0, marketplaceListings: 0,
                     marketplaceRequests: 0, acceptedRequests: 0 },
+    scan:        emptyScanEvidence(),
     trends:      { weekly: [], monthly: [] },
     topRegions:    [],
     atRiskFarmers: [],

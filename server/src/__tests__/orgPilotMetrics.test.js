@@ -10,6 +10,7 @@ import {
   computeAdoption, computeEngagement, computePerformance,
   computeOutcomes, computeTrends, computeTopRegions,
   computeAtRiskFarmers, deltaOf,
+  computeScanEvidence, emptyScanEvidence,
 } from '../modules/organizations/pilotMetricsService.js';
 import { buildPilotMetricsCsv } from '../modules/organizations/exportService.js';
 
@@ -631,5 +632,142 @@ describe('buildPilotMetrics (real events + PoP)', () => {
       current: 0, previous: 0, absolute: 0, relative: 0,
     });
     expect(out.engagement.source).toBe('audit_log');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// computeScanEvidence — real scan aggregation, never estimated
+// ═══════════════════════════════════════════════════════════════
+describe('computeScanEvidence', () => {
+  const NOW = Date.parse('2026-05-15T00:00:00Z');
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('empty input → hasData:false, helpfulRate null (no fabrication)', () => {
+    const s = computeScanEvidence([], { now: NOW });
+    expect(s.hasData).toBe(false);
+    expect(s.total).toBe(0);
+    expect(s.feedback.responded).toBe(0);
+    expect(s.feedback.helpfulRate).toBeNull();
+    expect(s.topIssues).toEqual([]);
+    expect(s.topCrops).toEqual([]);
+    // emptyScanEvidence must match the zero shape exactly.
+    expect(emptyScanEvidence()).toEqual(s);
+  });
+
+  it('counts feedback / confidence / outcomes exactly as stored', () => {
+    const rows = [
+      { userFeedback: 'helpful',     confidence: 'high',   predictedIssue: 'Leaf blight', cropName: 'Maize', outcome: 'recovered', createdAt: new Date(NOW - 1 * DAY) },
+      { userFeedback: 'helpful',     confidence: 'medium', predictedIssue: 'Leaf blight', cropName: 'Maize', outcome: 'spread',    createdAt: new Date(NOW - 2 * DAY) },
+      { userFeedback: 'not_sure',    confidence: 'low',    predictedIssue: 'Aphids',      plantName: 'Tomato',                     createdAt: new Date(NOW - 3 * DAY) },
+      { userFeedback: 'not_helpful', confidence: 'high',   predictedIssue: '',            cropName: '',                            createdAt: new Date(NOW - 4 * DAY) },
+      { /* no feedback yet */         confidence: 'weird',                                                                          createdAt: new Date(NOW - 5 * DAY) },
+    ];
+    const s = computeScanEvidence(rows, { now: NOW });
+    expect(s.total).toBe(5);
+    expect(s.hasData).toBe(true);
+    expect(s.feedback).toMatchObject({ helpful: 2, notSure: 1, notHelpful: 1, none: 1, responded: 4 });
+    // helpfulRate = 2 helpful / 4 responded = 0.5 (rounded to 3dp)
+    expect(s.feedback.helpfulRate).toBe(0.5);
+    expect(s.confidence).toEqual({ high: 2, medium: 1, low: 1, unknown: 1 });
+    expect(s.outcomes).toMatchObject({ recovered: 1, spread: 1, lost: 0, unknown: 0, none: 3, reported: 2 });
+    // Top issue is the one with the highest count; blanks are excluded.
+    expect(s.topIssues[0]).toEqual({ label: 'Leaf blight', count: 2 });
+    expect(s.topIssues.map((i) => i.label)).not.toContain('');
+    expect(s.topCrops[0]).toEqual({ label: 'Maize', count: 2 });
+  });
+
+  it('inWindow counts only rows within windowDays; total counts all loaded', () => {
+    const rows = [
+      { confidence: 'high', createdAt: new Date(NOW - 2 * DAY) },   // in 30d window
+      { confidence: 'low',  createdAt: new Date(NOW - 40 * DAY) },  // outside 30d window
+    ];
+    const s = computeScanEvidence(rows, { now: NOW, windowDays: 30 });
+    expect(s.total).toBe(2);
+    expect(s.inWindow).toBe(1);
+  });
+
+  it('topN is deterministic (count desc, then label asc) and capped at 5', () => {
+    const rows = ['b', 'b', 'a', 'a', 'c', 'd', 'e', 'f', 'g'].map((crop, i) => ({
+      cropName: crop, createdAt: new Date(NOW - i * DAY),
+    }));
+    const s = computeScanEvidence(rows, { now: NOW });
+    expect(s.topCrops).toHaveLength(5);
+    // a and b both have count 2 → a before b (alpha tiebreak)
+    expect(s.topCrops[0]).toEqual({ label: 'a', count: 2 });
+    expect(s.topCrops[1]).toEqual({ label: 'b', count: 2 });
+  });
+
+  it('buildPilotMetrics surfaces org-scoped scan evidence via farmer.userId', async () => {
+    const prisma = {
+      farmer: {
+        async findMany({ where }) {
+          expect(where.organizationId).toBe('org-1');
+          return [
+            { id: 'f1', userId: 'u1', region: 'North', createdAt: new Date(NOW - 10 * DAY) },
+            { id: 'f2', userId: 'u2', region: 'North', createdAt: new Date(NOW - 10 * DAY) },
+            { id: 'f3', userId: null, region: 'North', createdAt: new Date(NOW - 10 * DAY) }, // no login acct
+          ];
+        },
+      },
+      scanTrainingEvent: {
+        async findMany({ where }) {
+          // Must be scoped to the org's farmer user accounts only.
+          expect(where.userId.in.sort()).toEqual(['u1', 'u2']);
+          return [
+            { userId: 'u1', userFeedback: 'helpful', confidence: 'high', predictedIssue: 'Leaf blight', cropName: 'Maize', createdAt: new Date(NOW - 1 * DAY) },
+            { userId: 'u2', userFeedback: 'not_sure', confidence: 'low',  predictedIssue: 'Aphids',      cropName: 'Tomato', createdAt: new Date(NOW - 2 * DAY) },
+          ];
+        },
+      },
+    };
+    const out = await buildPilotMetrics(prisma, { organizationId: 'org-1', windowDays: 30, now: NOW });
+    expect(out.scan).toBeTruthy();
+    expect(out.scan.total).toBe(2);
+    expect(out.scan.hasData).toBe(true);
+    expect(out.scan.feedback.helpful).toBe(1);
+    expect(out.scan.feedback.notSure).toBe(1);
+    // Both issues have count 1 → deterministic alpha tiebreak (Aphids < Leaf blight).
+    expect(out.scan.topIssues.map((i) => i.label)).toEqual(['Aphids', 'Leaf blight']);
+    expect(out.scan.topIssues.every((i) => i.count === 1)).toBe(true);
+  });
+
+  it('org with no farmers → scan is the honest empty shape', async () => {
+    const prisma = { farmer: { async findMany() { return []; } } };
+    const out = await buildPilotMetrics(prisma, { organizationId: 'org-empty' });
+    expect(out.scan).toEqual(emptyScanEvidence());
+    expect(out.scan.hasData).toBe(false);
+  });
+
+  it('CSV export includes a scan_evidence section (empty rate stays blank)', () => {
+    const csv = buildPilotMetricsCsv({
+      organizationId: 'org-1',
+      window: { days: 30 }, generatedAt: '2026-05-15T00:00:00Z',
+      adoption: { total: 0, activeWeekly: 0, activeMonthly: 0, newThisPeriod: 0, adoptionRate: 0 },
+      engagement: { tasksCompleted: 0, tasksCompletedPerWeek: 0, taskCompletionRate: null, onTime: 0, late: 0, notificationEngagement: null, source: 'audit_log' },
+      performance: { averageScore: null, scoreBand: null, scoreDistribution: {}, trustDistribution: {} },
+      outcomes: { estimatedYieldKg: 0, marketplaceListings: 0, marketplaceRequests: 0, acceptedRequests: 0 },
+      scan: computeScanEvidence([
+        { userFeedback: 'helpful', confidence: 'high', predictedIssue: 'Leaf blight', cropName: 'Maize', createdAt: new Date(NOW) },
+      ], { now: NOW }),
+      trends: { weekly: [], monthly: [] },
+      topRegions: [], atRiskFarmers: [],
+    });
+    expect(csv).toContain('scan_evidence');
+    expect(csv).toContain('total_scans');
+    expect(csv).toContain('feedback_helpful');
+    expect(csv).toContain('top_issue,Leaf blight,1');
+  });
+
+  it('CSV export handles metrics with no scan section (backward compatible)', () => {
+    const csv = buildPilotMetricsCsv({
+      organizationId: 'org-1', window: { days: 30 }, generatedAt: 'x',
+      adoption: { total: 0, activeWeekly: 0, activeMonthly: 0, newThisPeriod: 0, adoptionRate: 0 },
+      engagement: { tasksCompleted: 0, tasksCompletedPerWeek: 0, taskCompletionRate: null, onTime: 0, late: 0, notificationEngagement: null, source: 'audit_log' },
+      performance: { averageScore: null, scoreBand: null, scoreDistribution: {}, trustDistribution: {} },
+      outcomes: { estimatedYieldKg: 0, marketplaceListings: 0, marketplaceRequests: 0, acceptedRequests: 0 },
+      trends: { weekly: [], monthly: [] }, topRegions: [], atRiskFarmers: [],
+    });
+    expect(csv).toContain('scan_evidence');
+    expect(csv).toContain('total_scans,0');
   });
 });
