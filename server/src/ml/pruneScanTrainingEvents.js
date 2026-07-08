@@ -41,7 +41,11 @@ let _prismaInstance = null;
 async function _getPrisma() {
   if (_prismaInstance) return _prismaInstance;
   try {
-    const mod = await import('../core/prisma.js');
+    // Canonical prisma singleton lives at config/database.js (default
+    // export). The old '../core/prisma.js' path does not exist, so the
+    // import threw and the sweep silently no-op'd ('no_prisma') on every
+    // 30-min cron run in production. Point at the real module.
+    const mod = await import('../config/database.js');
     _prismaInstance = mod.prisma || mod.default || null;
     return _prismaInstance;
   } catch { return null; }
