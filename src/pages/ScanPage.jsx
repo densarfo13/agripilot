@@ -2050,7 +2050,7 @@ export default function ScanPage() {
       mode={isBackyard ? 'garden' : 'farm'}
       testId="scan-page"
       maxWidth="36rem"
-      bottomPad="2rem"
+      bottomPad="6rem"
     >
       {/* ── Hero — technical / diagnostic identity ────────────
            Scan reads as the technical AI camera surface. The

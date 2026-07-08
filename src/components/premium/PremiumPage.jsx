@@ -62,7 +62,10 @@ export default function PremiumPage({
     minHeight:  '100vh',
     background: `linear-gradient(180deg, ${bgTop} 0%, ${bgBot} 100%)`,
     color:      inkColor,
-    padding:    `1.25rem 1rem ${bottomPad}`,
+    // Respect the iPhone safe area (home indicator / notch). env() resolves to 0 on
+    // desktop and non-notched devices, so this is a no-op there (desktop unchanged) and
+    // only adds the real inset on iOS. Bottom-nav clearance stays in `bottomPad`.
+    padding:    `1.25rem 1rem calc(${bottomPad} + env(safe-area-inset-bottom, 0px))`,
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     ...(style || {}),
   };
