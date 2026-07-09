@@ -36,7 +36,12 @@ export const PROVIDER_ENV = Object.freeze({
   'mushroom.id':  ['MUSHROOM_ID_API_KEY'],
   'soil':         ['AMBEE_API_KEY'],
   'weather':      ['WEATHER_API_KEY'],   // or a configured public weather provider
-  'sentinel_hub': ['SENTINEL_HUB_API_KEY'],
+  // Sentinel Hub runs OAuth (sentinelHubService → /oauth/token + /api/v1/statistics),
+  // so the runtime reads SENTINEL_HUB_CLIENT_ID + SENTINEL_HUB_CLIENT_SECRET — NOT
+  // SENTINEL_HUB_API_KEY. Certifying against API_KEY gave a false "configured" green
+  // while the NDVI feed was dormant (the OAuth creds are unset). Check the vars the
+  // runtime actually uses so cert reflects reality (fieldHealthKeysPresent needs both).
+  'sentinel_hub': ['SENTINEL_HUB_CLIENT_ID', 'SENTINEL_HUB_CLIENT_SECRET'],
 });
 
 /** Read a provider's key by length + fingerprint ONLY (never the full value). */
