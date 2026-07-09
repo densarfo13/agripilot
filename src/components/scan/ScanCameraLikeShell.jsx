@@ -85,7 +85,7 @@ export default function ScanCameraLikeShell({
           <div style={S.viewportCenter}>
             <div style={S.viewportEmoji} aria-hidden="true">🌿</div>
             <p style={S.viewportReady}>
-              {tSafe('scan.cameraLike.ready', 'Ready to scan')}
+              {tSafe('scan.cameraLike.ready', 'Scan Assistant')}
             </p>
             <p style={S.viewportHint}>
               {tSafe('scan.cameraLike.hint',
