@@ -7,6 +7,16 @@ const STATS_URL = 'https://services.sentinel-hub.com/api/v1/statistics';
 let cachedToken = null;
 let tokenExpiresAt = 0;
 
+/**
+ * Force the next getAccessToken() to fetch a fresh token. Public so the
+ * scan pipeline (or a retry path) can recover from a server-side token
+ * revocation, and so tests can reset the module-level cache deterministically.
+ */
+export function invalidateToken() {
+  cachedToken = null;
+  tokenExpiresAt = 0;
+}
+
 async function getAccessToken() {
   if (cachedToken && Date.now() < tokenExpiresAt) return cachedToken;
 
@@ -14,6 +24,7 @@ async function getAccessToken() {
   const clientSecret = process.env.SENTINEL_HUB_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
+    // Invalid/absent CREDENTIALS — never retryable (a fresh token won't help).
     throw new Error('Missing Sentinel Hub OAuth credentials');
   }
 
@@ -46,25 +57,14 @@ function dateDaysAgo(days) {
   return d.toISOString();
 }
 
-export async function fetchNDVI({ latitude, longitude }) {
-  const token = await getAccessToken();
-
-  const lat = Number(latitude);
-  const lon = Number(longitude);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    throw new Error('Invalid latitude or longitude');
-  }
-
-  const requestBody = {
+// Statistical-API request body for a 30-day mean NDVI over a small box
+// centred on the point. Extracted so the request is built once and reused
+// across the auth-retry attempt (identical payload, fresh token only).
+function _buildNdviStatsBody(lat, lon) {
+  return {
     input: {
       bounds: {
-        bbox: [
-          lon - 0.002,
-          lat - 0.002,
-          lon + 0.002,
-          lat + 0.002,
-        ],
+        bbox: [lon - 0.002, lat - 0.002, lon + 0.002, lat + 0.002],
         properties: {
           crs: 'http://www.opengis.net/def/crs/EPSG/0/4326',
         },
@@ -72,21 +72,16 @@ export async function fetchNDVI({ latitude, longitude }) {
       data: [
         {
           type: 'sentinel-2-l2a',
-          dataFilter: {
-            maxCloudCoverage: 70,
-          },
+          dataFilter: { maxCloudCoverage: 70 },
         },
       ],
     },
-
     aggregation: {
       timeRange: {
         from: dateDaysAgo(30),
         to: new Date().toISOString(),
       },
-      aggregationInterval: {
-        of: 'P30D',
-      },
+      aggregationInterval: { of: 'P30D' },
       evalscript: `
         //VERSION=3
         function setup() {
@@ -108,20 +103,44 @@ export async function fetchNDVI({ latitude, longitude }) {
         }
       `,
     },
-
-    calculations: {
-      default: {},
-    },
+    calculations: { default: {} },
   };
+}
 
-  const res = await fetch(STATS_URL, {
+function _postStats(token, body) {
+  return fetch(STATS_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify(body),
   });
+}
+
+export async function fetchNDVI({ latitude, longitude }) {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+
+  // Validate BEFORE spending an OAuth call — fail fast, explainable.
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    throw new Error('Invalid latitude or longitude');
+  }
+
+  const requestBody = _buildNdviStatsBody(lat, lon);
+
+  let token = await getAccessToken();
+  let res = await _postStats(token, requestBody);
+
+  // AUTH — retry ONCE on an expired/revoked token. A cached token can outlive
+  // its server-side validity (clock skew / revocation), surfacing as a 401.
+  // Invalidate + refetch exactly once. Invalid CREDENTIALS still fail fast
+  // (getAccessToken throws), so this never loops on a permanent auth failure.
+  if (res.status === 401) {
+    invalidateToken();
+    token = await getAccessToken();
+    res = await _postStats(token, requestBody);
+  }
 
   const json = await res.json();
 
@@ -138,4 +157,3 @@ export async function fetchNDVI({ latitude, longitude }) {
     raw: json,
   };
 }
-
