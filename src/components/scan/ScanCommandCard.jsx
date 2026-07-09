@@ -53,6 +53,12 @@ function ScanCommandCardInner({ result }) {
   const confidencePct  = _conf.pct;
   const confidenceBand = _conf.band || 'low';
 
+  // Unified Result Card (2026-07): on a low-confidence scan the single source of
+  // truth is ScanGuidanceCard (rendered by IntelligentScanResult). Suppress this
+  // Command Center summary so the two never stack — the duplicated plant-name +
+  // confidence header that used to sit above the guidance card is gone.
+  if (confidenceBand === 'low') return null;
+
   // PRODUCTION ROOT-CAUSE FIX (sprint #179):
   //   The legacy `plantName || '—'` pattern caused production
   //   to render "Plant: —" whenever the v5 envelope mirror dropped

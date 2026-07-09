@@ -763,14 +763,18 @@ export default function IntelligentScanResult({
 
   return (
     <main style={STYLES.page} data-testid="intelligent-scan-result">
-      <VoiceHeader result={result} />
+      {/* Voice renders only when there IS a real result to narrate — hidden on the
+          low-confidence guidance view (no diagnosis to speak) so the unified Result
+          Card is the only thing on screen. VoiceHeader still self-hides when TTS is
+          unavailable. */}
+      {!_showGuidance ? <VoiceHeader result={result} /> : null}
       {/* THE single low-confidence surface — directly beneath the header so the next
           action is the first thing the farmer sees. Owns the Retake / Upload / Save
           CTAs and the treatment-locked note. */}
       {_showGuidance ? (
         <ScanGuidanceCard
           reasons={_coach ? _coach.whatWentWrong : null}
-          qualityLabel={_photoQuality && _photoQuality.qualityLabel}
+          confidencePct={_num(result && result.confidencePct)}
           showTreatmentLockedNote={!!(treatment || region)}
           onRetake={_isFn(onRetake) ? onRetake : undefined}
           onUpload={_isFn(onChoose) ? onChoose : undefined}
