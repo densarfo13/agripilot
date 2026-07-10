@@ -23,14 +23,24 @@ describe('ScanGuidanceCard — unified Result Card', () => {
     expect(src).toContain('⚠️');
   });
 
-  it('renders Confidence % from the real confidencePct prop, not a photo-quality label', () => {
+  it('renders Identification Confidence % from the real confidencePct prop, not a photo-quality label', () => {
     expect(src).toContain('confidencePct');
-    expect(src).toContain("tSafe('scan.confidence.label'");
+    expect(src).toContain("tSafe('scan.guidance.identConfidence'");
     // The old "Photo quality: Unknown" leak must be gone — the quality-label
     // i18n key and the qualityLabel prop are no longer used (mentions in the
     // file header comment describing the OLD behavior are fine).
     expect(src).not.toContain('scan.guidance.quality.label');
     expect(src).not.toContain('qualityLabel');
+  });
+
+  it('shows an HONEST processing checklist — stages + state, never a fabricated latency', () => {
+    // The stage list renders done/skipped/pending state from real envelope
+    // signals. No per-stage timing exists client-side, so none is shown.
+    expect(src).toContain('scan-guidance-timeline');
+    expect(src).toContain('scan.stage.pending');
+    // The stage rows render a status glyph, never a millisecond latency.
+    expect(src).toContain('_stageGlyph');
+    expect(src).not.toMatch(/stageState[^}]*\d+\s*ms/);
   });
 
   it('renders camera tips as icon chips (not a bullet list)', () => {
@@ -39,14 +49,17 @@ describe('ScanGuidanceCard — unified Result Card', () => {
     for (const icon of ['☀️', '🍃', '📷', '✋']) expect(src).toContain(icon);
   });
 
-  it('has Retake primary + Upload-from-Gallery / Save-for-Expert-Review secondary actions', () => {
-    expect(src).toContain("tSafe('scanQuality.retakePhoto'");
-    expect(src).toContain("tSafe('scanQuality.uploadAnother'");
-    expect(src).toContain("tSafe('scanReview.saveForReview'");
+  it('uses the 3-tier button hierarchy: Scan Again / Choose from Gallery / Ask an Agronomist', () => {
+    expect(src).toContain("tSafe('scan.guidance.scanAgain'");      // primary
+    expect(src).toContain("tSafe('scan.guidance.chooseGallery'");  // secondary
+    expect(src).toContain("tSafe('scan.guidance.askAgronomist'");  // tertiary
+    // The tertiary IS the save-for-review escalation — keeps the trust-gate
+    // contract testid (sprint #214) even though the label is friendlier.
+    expect(src).toContain('scan-guidance-save-review');
   });
 
-  it('animates: 300ms fade-in + press states, gated by prefers-reduced-motion', () => {
-    expect(src).toMatch(/ffScanResultIn\s+300ms/);
+  it('animates: fade-in + press states, gated by prefers-reduced-motion', () => {
+    expect(src).toMatch(/ffScanResultIn\s+320ms/);
     expect(src).toContain('prefers-reduced-motion');
   });
 });

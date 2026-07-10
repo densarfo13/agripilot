@@ -748,6 +748,28 @@ export default function IntelligentScanResult({
     return t.replace(/_/g, ' ');
   };
 
+  // Processing checklist for the low-confidence guidance card. STATE ONLY — no
+  // latency (none is measured client-side; the sole total is often 0). Honest
+  // derivation from real envelope signals:
+  //   • photo    — always done (we have a result envelope)
+  //   • identify — done (identification ran; the confidence block shows how sure)
+  //   • field    — done when the satellite envelope carries a real reading, else
+  //                skipped (no location / no satellite this scan)
+  //   • reco     — pending: on low confidence treatment stays locked until a
+  //                clear identification (see the treatment-locked note)
+  const _hasFieldView = (() => {
+    const s = result && result.satellite;
+    if (!s || typeof s !== 'object') return false;
+    return (s.ndvi != null) || !!s.cropVigor || (s.stressScore != null)
+      || !!s.vegetationHealth || !!s.growthTrend;
+  })();
+  const _stages = [
+    { key: 'photo',    labelKey: 'scan.stage.photo',    labelDefault: 'Photo received',   state: 'done' },
+    { key: 'identify', labelKey: 'scan.stage.identify', labelDefault: 'Identifying plant', state: 'done' },
+    { key: 'field',    labelKey: 'scan.stage.field',    labelDefault: 'Field view',        state: _hasFieldView ? 'done' : 'skipped' },
+    { key: 'reco',     labelKey: 'scan.stage.reco',     labelDefault: 'Recommendation',    state: 'pending' },
+  ];
+
   // SCAN TYPE ROUTER — route to the right result card. A fruit/vegetable
   // scan gets the quality card; an insect scan gets the pest card. Neither
   // renders the plant-only path (so "Unknown plant" / crop-health-only is
@@ -775,6 +797,7 @@ export default function IntelligentScanResult({
         <ScanGuidanceCard
           reasons={_coach ? _coach.whatWentWrong : null}
           confidencePct={_num(result && result.confidencePct)}
+          stages={_stages}
           showTreatmentLockedNote={!!(treatment || region)}
           onRetake={_isFn(onRetake) ? onRetake : undefined}
           onUpload={_isFn(onChoose) ? onChoose : undefined}
@@ -963,7 +986,10 @@ export default function IntelligentScanResult({
         </section>
       ) : null)}
       <FlowerSection identification={identification} result={result} />
-      <CropHealthSection health={health} />
+      {/* Crop Health is hidden on low confidence — health advice on an unconfirmed
+          identification would mislead (the guidance card explains the wait). Gated by
+          the same _showGuidance signal as Treatment/Region. */}
+      {!_showGuidance ? <CropHealthSection health={health} /> : null}
       {/* Treatment + Region hide on low confidence — the guidance card explains why
           ("Once we can clearly identify the plant…"). Never advice on a shaky ID. */}
       {!_showGuidance ? <TreatmentSection treatment={treatment} /> : null}

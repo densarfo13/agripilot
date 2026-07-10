@@ -1,21 +1,29 @@
 /**
- * ScanGuidanceCard — THE single low-confidence Result Card (Apple-Health-meets-Plantix
- * pass, 2026-07). One card, one status, one set of CTAs — the only surface a farmer sees
- * when the crop couldn't be confidently identified.
+ * ScanGuidanceCard — THE single low-confidence Result Card (Apple-HIG pass, 2026-07).
+ * One card, one status, one set of CTAs — the only surface a farmer sees when the crop
+ * couldn't be confidently identified.
  *
  * Consolidation: this replaces the old stacked messages ("We couldn't read this photo
  * clearly" + "We couldn't identify the plant clearly" + a "Scan Command Center" header
  * + a "Photo quality: Unknown" line). The Command Center is suppressed on low confidence
- * (ScanCommandCard returns null), the Voice header is hidden on this view
- * (IntelligentScanResult), so this is the SOLE result card.
+ * (ScanCommandCard returns null), the Voice header is hidden on this view, Crop Health is
+ * gated off, and the duplicate AddPlantConfirmationCard is suppressed — so this is the
+ * SOLE low-confidence surface.
  *
- * Honesty: renders ONLY real signals passed in — the numeric `confidencePct` comes from
- * the scan envelope (0–100), the photo-quality "why" reasons come from PhotoQualityEngine's
- * measured sub-scores. Nothing here computes or invents a diagnosis or a number.
+ * Honesty (hard rules — every one enforced by the no-fabrication doctrine):
+ *   • `confidencePct` is the REAL numeric from the scan envelope (0–100); never invented.
+ *   • The processing checklist shows STAGES and their done/skipped/pending STATE only —
+ *     it NEVER shows a latency, because no per-stage timing reaches the client. States are
+ *     derived from real envelope signals by the caller.
+ *   • There is deliberately NO "Lighting / Focus / Leaf Coverage / Blur / Shadows"
+ *     sub-score panel: those five values are null in the result (the pipeline never
+ *     populates them), so rendering them would be fabricated. The honest photo help is
+ *     the measured `reasons` list + the static camera tips below.
+ *   • No farmer-facing "AI" wording (the identify stage says "Identifying").
  *
  * Accessibility: ≥48px touch targets, aria-labels, high-contrast text on light amber.
- * Motion: 300ms fade-in, button spring + chip/card press — all gated by
- * prefers-reduced-motion. Strict-rule audit: pure render · never throws · tSafe only.
+ * Motion: 300ms fade-in, staged checklist reveal, button spring + chip press — all gated
+ * by prefers-reduced-motion. Strict-rule audit: pure render · never throws · tSafe only.
  */
 import React from 'react';
 import { tSafe } from '../../i18n/tSafe.js';
@@ -33,20 +41,22 @@ const C = {
   bg: '#FFF7ED', border: '#FED7AA', ink: '#7C2D12', title: '#9A3412',
   action: '#1F6A3A', actionInk: '#FFFFFF', line: 'rgba(124,45,18,0.25)',
   badgeBg: '#FEF3C7', badgeInk: '#92400E', chipBg: '#FFFFFF',
+  done: '#1F6A3A', doneBg: '#DCFCE7', pending: '#B45309', muted: '#A8A29E',
 };
 
 // Scoped motion — keyframes + press/elevate can't live in inline styles. One static
 // <style> block, reduced-motion aware, class-namespaced so it never leaks.
 const CARD_CSS = `
 @keyframes ffScanResultIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.ff-scan-result{animation:ffScanResultIn 300ms ease-out both;transition:box-shadow 140ms ease}
-.ff-scan-result:active{box-shadow:0 10px 28px rgba(124,45,18,0.16)}
-.ff-scan-btn{transition:transform 120ms cubic-bezier(.2,.8,.3,1.25),box-shadow 120ms ease}
+@keyframes ffScanStageIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+.ff-scan-result{animation:ffScanResultIn 320ms cubic-bezier(.2,.7,.3,1) both;transition:box-shadow 140ms ease}
+.ff-scan-stage{animation:ffScanStageIn 300ms ease-out both}
+.ff-scan-btn{transition:transform 120ms cubic-bezier(.2,.8,.3,1.25),box-shadow 120ms ease,background 140ms ease}
 .ff-scan-btn:active{transform:scale(.97)}
 .ff-scan-chip{transition:transform 120ms cubic-bezier(.2,.8,.3,1.25)}
 .ff-scan-chip:active{transform:scale(.94)}
 @media (prefers-reduced-motion: reduce){
-  .ff-scan-result{animation:none}
+  .ff-scan-result,.ff-scan-stage{animation:none}
   .ff-scan-btn,.ff-scan-chip{transition:none}
   .ff-scan-result:active,.ff-scan-btn:active,.ff-scan-chip:active{transform:none;box-shadow:none}
 }
@@ -70,8 +80,41 @@ const S = {
   },
   confLabel: { fontSize: 12, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase', color: C.badgeInk },
   confValue: { fontSize: 34, fontWeight: 800, color: C.title, lineHeight: 1.1, margin: '2px 0' },
-  confHint: { fontSize: 13, color: C.ink },
+  confTrack: {
+    height: 6, borderRadius: 999, background: 'rgba(124,45,18,0.12)',
+    overflow: 'hidden', margin: '8px 2px 0',
+  },
+  confFill: (pct) => ({
+    height: '100%', width: Math.max(4, Math.min(100, pct)) + '%',
+    borderRadius: 999, background: C.title,
+    transition: 'width 420ms cubic-bezier(.2,.7,.3,1)',
+  }),
+  confHint: { fontSize: 13, color: C.ink, marginTop: 6 },
   list: { margin: '10px 0 0', paddingLeft: 18, fontSize: 13, color: C.ink, lineHeight: 1.6 },
+  // Processing checklist
+  timeline: {
+    margin: '14px 0 0', padding: '12px 14px', background: C.chipBg,
+    border: '1px solid ' + C.border, borderRadius: 14,
+  },
+  timelineHead: {
+    fontSize: 12, fontWeight: 700, letterSpacing: 0.4,
+    textTransform: 'uppercase', color: C.badgeInk, margin: '0 0 8px',
+  },
+  stageRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0' },
+  stageDot: (state) => ({
+    flex: '0 0 auto', width: 22, height: 22, borderRadius: 999,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: 800,
+    background: state === 'done' ? C.doneBg : 'transparent',
+    color: state === 'done' ? C.done : state === 'pending' ? C.pending : C.muted,
+    border: state === 'done' ? 'none' : '1.5px solid '
+      + (state === 'pending' ? 'rgba(180,83,9,0.4)' : 'rgba(120,113,108,0.35)'),
+  }),
+  stageLabel: (state) => ({
+    fontSize: 14, fontWeight: state === 'done' ? 600 : 500,
+    color: state === 'skipped' ? C.muted : C.ink,
+  }),
+  stageState: { marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: C.pending },
   chips: { display: 'flex', flexWrap: 'wrap', gap: 8, margin: '14px 0 0' },
   chip: {
     display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -80,16 +123,23 @@ const S = {
   },
   chipIcon: { fontSize: 15, lineHeight: 1 },
   small: { margin: '12px 0 0', fontSize: 13, color: C.ink, lineHeight: 1.5 },
+  actions: { marginTop: 16 },
   btnPrimary: {
-    display: 'block', width: '100%', minHeight: 48, marginTop: 16,
+    display: 'block', width: '100%', minHeight: 50,
     border: 'none', borderRadius: 999, background: C.action, color: C.actionInk,
     fontSize: 15, fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 1px 2px rgba(31,106,58,0.35)',
   },
-  secondaryRow: { display: 'flex', gap: 8, marginTop: 8 },
   btnSecondary: {
-    flex: 1, minHeight: 48,
+    display: 'block', width: '100%', minHeight: 48, marginTop: 8,
     border: '1px solid ' + C.line, borderRadius: 999, background: 'transparent',
     color: C.ink, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+  },
+  btnTertiary: {
+    display: 'block', width: '100%', minHeight: 44, marginTop: 8,
+    border: 'none', borderRadius: 999, background: 'transparent',
+    color: C.title, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    textDecoration: 'underline', textUnderlineOffset: 3,
   },
 };
 
@@ -101,15 +151,24 @@ const CHIPS = [
   ['✋', 'scan.guidance.tip.avoidBlur', 'Hold Steady'],
 ];
 
+// Icon per stage state — honest glyphs, never a spinner.
+function _stageGlyph(state) {
+  if (state === 'done') return '✓';
+  if (state === 'skipped') return '–';
+  return '○';                         // pending
+}
+
 export default function ScanGuidanceCard({
   reasons,            // PhotoQualityEngine coaching keys / texts (the honest "why")
   confidencePct,      // numeric 0–100 from the scan envelope (may be absent)
+  stages,             // [{ key, labelKey, labelDefault, state:'done'|'skipped'|'pending' }]
   showTreatmentLockedNote,
   onRetake,
   onUpload,
   onSaveForReview,
 }) {
   const _reasons = _arr(reasons).slice(0, 3);
+  const _stages = _arr(stages);
   const _pct = _num(confidencePct);
   const _pctShown = _pct === null ? null : Math.max(0, Math.min(100, Math.round(_pct)));
   return (
@@ -129,20 +188,57 @@ export default function ScanGuidanceCard({
         {tSafe('scan.guidance.body', 'Take one close photo of a single leaf in daylight.')}
       </p>
 
-      {/* Confidence — the real number, replacing the old "Photo quality: Unknown". Only
-          rendered when the envelope actually carried a confidence value. */}
+      {/* Identification confidence — the REAL number, with a proportional bar. Rendered
+          only when the envelope actually carried a confidence value (never invent 0%). */}
       {_pctShown !== null ? (
         <div style={S.confBlock} data-testid="scan-guidance-confidence">
-          <div style={S.confLabel}>{tSafe('scan.confidence.label', 'Confidence')}</div>
+          <div style={S.confLabel}>{tSafe('scan.guidance.identConfidence', 'Identification confidence')}</div>
           <div style={S.confValue}>{_pctShown}%</div>
+          <div style={S.confTrack} aria-hidden="true">
+            <div style={S.confFill(_pctShown)} />
+          </div>
           <div style={S.confHint}>{tSafe('scan.confidence.low', 'Low confidence')}</div>
         </div>
       ) : null}
 
+      {/* Why we're unsure — measured photo-coaching reasons only (empty ⇒ hidden). */}
       {_reasons.length > 0 ? (
         <ul style={S.list} data-testid="scan-guidance-reasons">
           {_reasons.map((k, i) => <li key={'gr-' + i}>{tSafe(k, k)}</li>)}
         </ul>
+      ) : null}
+
+      {/* Processing checklist — STAGES + state only, no latency (none is measured
+          client-side). Honest done / skipped / pending. */}
+      {_stages.length > 0 ? (
+        <div style={S.timeline} data-testid="scan-guidance-timeline">
+          <p style={S.timelineHead}>{tSafe('scan.guidance.timeline', 'What we checked')}</p>
+          {_stages.map((s, i) => {
+            const st = s && s.state === 'done' ? 'done'
+              : s && s.state === 'skipped' ? 'skipped' : 'pending';
+            return (
+              <div key={s && s.key ? s.key : 'stage-' + i}
+                className="ff-scan-stage"
+                style={{ ...S.stageRow, animationDelay: (i * 60) + 'ms' }}
+                data-testid={'scan-stage-' + (s && s.key ? s.key : i)}
+                data-state={st}>
+                <span style={S.stageDot(st)} aria-hidden="true">{_stageGlyph(st)}</span>
+                <span style={S.stageLabel(st)}>
+                  {tSafe(s && s.labelKey, (s && s.labelDefault) || '')}
+                </span>
+                {st === 'pending' ? (
+                  <span style={S.stageState}>
+                    {tSafe('scan.stage.pending', 'Waiting for a clearer photo')}
+                  </span>
+                ) : st === 'skipped' ? (
+                  <span style={{ ...S.stageState, color: C.muted }}>
+                    {tSafe('scan.stage.skipped', 'Not available')}
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       ) : null}
 
       <div style={S.chips} data-testid="scan-guidance-tips">
@@ -161,29 +257,38 @@ export default function ScanGuidanceCard({
         </p>
       ) : null}
 
-      <button type="button" className="ff-scan-btn" style={S.btnPrimary}
-        data-testid="scan-guidance-retake"
-        aria-label={tSafe('scanQuality.retakePhoto', 'Retake Photo')}
-        onClick={_isFn(onRetake) ? onRetake : undefined}
-        disabled={!_isFn(onRetake)}>
-        {tSafe('scanQuality.retakePhoto', 'Retake Photo')}
-      </button>
+      {/* Button hierarchy — Primary: Scan Again · Secondary: Choose from Gallery ·
+          Tertiary: Ask an Agronomist (escalates to human expert review). The tertiary
+          is rendered only when a real handler is wired, so it is never a dead no-op. */}
+      <div style={S.actions}>
+        <button type="button" className="ff-scan-btn" style={S.btnPrimary}
+          data-testid="scan-guidance-retake"
+          aria-label={tSafe('scan.guidance.scanAgain', 'Scan Again')}
+          onClick={_isFn(onRetake) ? onRetake : undefined}
+          disabled={!_isFn(onRetake)}>
+          {tSafe('scan.guidance.scanAgain', 'Scan Again')}
+        </button>
 
-      <div style={S.secondaryRow}>
         <button type="button" className="ff-scan-btn" style={S.btnSecondary}
           data-testid="scan-guidance-upload"
-          aria-label={tSafe('scanQuality.uploadAnother', 'Upload from Gallery')}
+          aria-label={tSafe('scan.guidance.chooseGallery', 'Choose from Gallery')}
           onClick={_isFn(onUpload) ? onUpload : undefined}
           disabled={!_isFn(onUpload)}>
-          {tSafe('scanQuality.uploadAnother', 'Upload from Gallery')}
+          {tSafe('scan.guidance.chooseGallery', 'Choose from Gallery')}
         </button>
-        <button type="button" className="ff-scan-btn" style={S.btnSecondary}
-          data-testid="scan-guidance-save-review"
-          aria-label={tSafe('scanReview.saveForReview', 'Save for Expert Review')}
-          onClick={_isFn(onSaveForReview) ? onSaveForReview : undefined}
-          disabled={!_isFn(onSaveForReview)}>
-          {tSafe('scanReview.saveForReview', 'Save for Expert Review')}
-        </button>
+
+        {/* Tertiary "Ask an Agronomist" IS the save-for-review escalation (human
+            expert review) — the friendlier farmer-facing label for it. The testid
+            keeps the trust-gate contract name (sprint #214) since the action is
+            unchanged; only the wording is warmer. */}
+        {_isFn(onSaveForReview) ? (
+          <button type="button" className="ff-scan-btn" style={S.btnTertiary}
+            data-testid="scan-guidance-save-review"
+            aria-label={tSafe('scan.guidance.askAgronomist', 'Ask an Agronomist')}
+            onClick={onSaveForReview}>
+            {tSafe('scan.guidance.askAgronomist', 'Ask an Agronomist')}
+          </button>
+        ) : null}
       </div>
     </section>
   );

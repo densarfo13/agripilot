@@ -2102,6 +2102,13 @@ export default function ScanPage() {
               result={result}
               onRetake={onRetake}
               onChoose={_handleUseSavedPhoto}
+              onSaveForReview={() => {
+                try { trackEvent('plant_save_for_review', { scanId: result?.scanId || null }); }
+                catch { /* ignore */ }
+                // Tertiary "Ask an Agronomist" — escalate to human review through the
+                // SAME journal persistence AddPlantConfirmationCard uses (never a no-op).
+                try { onSave(); } catch { /* never crash the scan page */ }
+              }}
             />
           </ScanResultErrorBoundary>
         </>
@@ -2247,7 +2254,17 @@ export default function ScanPage() {
         })()
       ) : null}
 
-      {phase === 'result' && result ? (
+      {/* Dedup (2026-07) — on a LOW-CONFIDENCE result the ScanGuidanceCard inside
+          IntelligentScanResult is the single owner of the "clearer photo / ask an
+          agronomist" message + CTAs. Suppress AddPlantConfirmationCard's near-identical
+          unconfirmed branch here so the two don't stack. Plant creation is trust-blocked
+          on low confidence anyway, so nothing actionable is lost. */}
+      {phase === 'result' && result
+        && !(result.suppressed === true
+          || ['needs_review', 'low_confidence', 'uncertain'].includes(String(result.status || '').toLowerCase())
+          || ['low', 'needs_review'].includes(String(result.confidenceTone || '').toLowerCase())
+          || (Number.isFinite(Number(result.confidencePct)) && Number(result.confidencePct) < 40))
+        ? (
         <AddPlantConfirmationCard
           scanResult={result}
           onAdd={(sr) => {
