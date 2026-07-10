@@ -326,6 +326,35 @@ async function _fuseScanEvidenceSafe(decision, input) {
   return null;
 }
 
+// Resolve a canvas-usable image source from the scan input (data/blob/
+// http URL, or a base64 payload → data URL). Returns null when none.
+function _imageSourceFor(input) {
+  const u = input && (input.imageUrl || input.previewUrl);
+  if (typeof u === 'string' && (u.startsWith('data:') || u.startsWith('blob:') || u.startsWith('http'))) {
+    return u;
+  }
+  const b64 = input && (input.imageBase64 || input.originalBase64);
+  if (typeof b64 === 'string' && b64.length > 0) {
+    return b64.startsWith('data:') ? b64 : ('data:image/jpeg;base64,' + b64);
+  }
+  return null;
+}
+
+// Measure REAL photo quality client-side (canvas pixel math, ~<50ms)
+// and hand it to result.imageQuality so the Image Quality card shows
+// measured values instead of the server's null placeholders. Never
+// throws → null on SSR / no-image / fault, and the card simply hides.
+async function _measureImageQualitySafe(input) {
+  try {
+    const src = _imageSourceFor(input);
+    if (!src) return null;
+    const mod = await import('../lib/imageQualityPreflight.js');
+    if (!mod || typeof mod.measureImageQuality !== 'function') return null;
+    const q = await mod.measureImageQuality(src);
+    return q && q.measured ? q : null;
+  } catch { return null; }
+}
+
 export async function analyzeScan(input = {}) {
   // Defensive — accept null/undefined input.
   const safeInput = input && typeof input === 'object' ? input : {};
@@ -391,6 +420,9 @@ export async function analyzeScan(input = {}) {
           ...apiResult, confidencePct: _numConfidence,
         }, safeInput);
         const _evidenceFusion = await _fuseScanEvidenceSafe(_mythosDecision, safeInput);
+        // Measured photo-quality metrics (client-side canvas math) for the
+        // Image Quality card. Null when unmeasurable → card hides.
+        const _imageQuality = await _measureImageQualitySafe(safeInput);
 
         const _result = Object.freeze({
           // ── V1+V2+V3+V4 envelope pass-through ─────────────
@@ -426,6 +458,10 @@ export async function analyzeScan(input = {}) {
           // decision. Honest decision support; never inflates
           // confidence; satellite never used (Layer 2 frozen).
           evidenceFusion: _evidenceFusion,
+          // ── Image Quality — MEASURED client-side so the Image Quality
+          // card shows real values, not the server's null placeholders.
+          // Overrides the spread apiResult default; null → card hides.
+          imageQuality: _imageQuality || apiResult.imageQuality || null,
         });
         // FARM_BRAIN_RUNTIME_V2 — every result passes through FarmBrain.
         const _final = _withFarmBrain(_result, safeInput);

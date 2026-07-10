@@ -191,6 +191,34 @@ function _extractSatellite(r) {
   });
 }
 
+// Measured photo-quality metrics (attached client-side by
+// scanDetectionEngine via measureImageQuality). Returns the display rows
+// for the Image Quality card, or null when nothing was measured. Only
+// includes metrics with a real (non-null) score — proxy rows (coverage/
+// framing) are absent on a non-plant photo rather than fabricated.
+function _extractImageQuality(r) {
+  const q = r && r.imageQuality;
+  if (!_isObj(q) || q.measured !== true) return null;
+  const rows = [
+    { key: 'lighting', labelKey: 'scan.intel.imageQuality.lighting', labelDefault: 'Lighting',      score: _num(q.brightness) },
+    { key: 'exposure', labelKey: 'scan.intel.imageQuality.exposure', labelDefault: 'Exposure',      score: _num(q.exposure) },
+    { key: 'focus',    labelKey: 'scan.intel.imageQuality.focus',    labelDefault: 'Focus',         score: _num(q.focus) },
+    { key: 'coverage', labelKey: 'scan.intel.imageQuality.coverage', labelDefault: 'Leaf coverage', score: _num(q.leafCoverage) },
+    { key: 'shadows',  labelKey: 'scan.intel.imageQuality.shadows',  labelDefault: 'Shadows',       score: _num(q.shadow) },
+    { key: 'framing',  labelKey: 'scan.intel.imageQuality.framing',  labelDefault: 'Framing',       score: _num(q.centered) },
+  ].filter((m) => m.score != null);
+  if (rows.length === 0) return null;
+  return Object.freeze({
+    overall:  _str(q.overall) || 'good',
+    worstKey: _str(q.worstKey) || null,
+    rows,
+  });
+}
+
+function _qualityTone(score) {
+  return score >= 75 ? 'good' : score >= 50 ? 'warn' : 'poor';
+}
+
 function _shouldShowNeedsReview(r) {
   if (!_isObj(r)) return false;
   if (r.suppressed === true) return true;
@@ -616,6 +644,49 @@ function SatelliteSection({ satellite }) {
 // Spoken summary — composed in farmer language for TTS.
 // ───────────────────────────────────────────────────────────
 
+const _QUALITY_TONE_COLOR = { good: '#10B981', warn: '#F59E0B', poor: '#EF4444' };
+
+// Image Quality card — per-metric bars from the MEASURED values
+// (measureImageQuality). Higher = better. Renders only measured rows.
+function ImageQualitySection({ quality }) {
+  if (!quality) return null;
+  const showTip = quality.overall !== 'good';
+  return (
+    <section style={STYLES.card} data-testid="scan-intel-image-quality">
+      <h4 style={STYLES.cardTitle}>
+        {tSafe('scan.intel.imageQuality.title', 'Image quality')}
+      </h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+        {quality.rows.map((m) => {
+          const tone = _qualityTone(m.score);
+          const color = _QUALITY_TONE_COLOR[tone];
+          return (
+            <div key={m.key}
+              data-testid={'scan-intel-image-quality-' + m.key}
+              style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ flex: '0 0 96px', fontSize: 13, fontWeight: 600, color: '#475569' }}>
+                {tSafe(m.labelKey, m.labelDefault)}
+              </span>
+              <span style={{ flex: 1, height: 6, borderRadius: 999,
+                  background: '#EEF2F7', overflow: 'hidden' }} aria-hidden="true">
+                <span style={{ display: 'block', height: '100%', width: m.score + '%',
+                  borderRadius: 999, background: color }} />
+              </span>
+              <span style={{ flex: '0 0 32px', textAlign: 'right', fontSize: 12,
+                fontWeight: 700, color }}>{m.score}</span>
+            </div>
+          );
+        })}
+      </div>
+      {showTip ? (
+        <p style={{ ...STYLES.body, marginTop: 10 }} data-testid="scan-intel-image-quality-tip">
+          {tSafe('scan.intel.imageQuality.retakeTip', 'Retake for a clearer photo.')}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function _buildSpokenSummary(result) {
   if (!_isObj(result)) return '';
   const ident = _extractIdentification(result);
@@ -662,6 +733,7 @@ export default function IntelligentScanResult({
   const soil           = useMemo(() => _extractSoil(result),           [result]);
   const satellite      = useMemo(() => _extractSatellite(result),      [result]);
   const needsReview    = useMemo(() => _shouldShowNeedsReview(result), [result]);
+  const _imageQualityCard = useMemo(() => _extractImageQuality(result), [result]);
 
   // Permanent Detection Fix (v5) — pull the new envelope fields
   // off the result. These render UNCONDITIONALLY when present so
@@ -814,6 +886,10 @@ export default function IntelligentScanResult({
           <p style={STYLES.body}>{_retakeMsg}</p>
         </section>
       ) : null}
+      {/* Image Quality — MEASURED metrics (measureImageQuality): lighting,
+          exposure, focus, leaf coverage, shadows, framing. Renders whenever
+          the scan carried real measurements; self-hides otherwise. */}
+      {_imageQualityCard ? <ImageQualitySection quality={_imageQualityCard} /> : null}
       <PlantIdentificationSection identification={identification} />
       {/* Universal Scan Type chip — labels what was scanned. Always
           renders when an objectType is present so the user sees the
