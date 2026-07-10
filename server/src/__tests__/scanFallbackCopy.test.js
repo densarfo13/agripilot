@@ -38,12 +38,12 @@ describe('ScanFallback RETRY_COPY — state-specific outcomes (spec §7)', () =>
     expect(src).not.toMatch(/Scan is taking longer than expected/);
   });
 
-  it('permission_denied uses the calm "Camera blocked" copy + saved-photo CTA', () => {
+  it('permission_denied uses the calm "Camera is blocked" copy + upload CTA', () => {
     const idx = src.indexOf('permission_denied:');
     expect(idx).toBeGreaterThan(-1);
     const window = src.slice(idx, idx + 300);
-    expect(window).toMatch(/Camera blocked/);
-    expect(window).toMatch(/saved photo/);
+    expect(window).toMatch(/Camera is blocked/);
+    expect(window).toMatch(/Upload a photo/);
   });
 
   it('upload_failed suggests a smaller photo', () => {
@@ -64,7 +64,7 @@ describe('ScanFallback RETRY_COPY — state-specific outcomes (spec §7)', () =>
     const idx = src.indexOf('ai_unavailable:');
     expect(idx).toBeGreaterThan(-1);
     const window = src.slice(idx, idx + 300);
-    expect(window).toMatch(/AI check unavailable/);
+    expect(window).toMatch(/Smart check unavailable/);
     expect(window).toMatch(/manually/);
   });
 

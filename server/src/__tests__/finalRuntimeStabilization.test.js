@@ -85,16 +85,22 @@ describe('package.json — wiring', () => {
   });
 
   it('build:safe runs check:url-construction before build', () => {
-    expect(pkg.scripts['build:safe']).toContain('check:url-construction');
-    // Order: url check must come BEFORE `npm run build`.
-    const idxCheck = pkg.scripts['build:safe'].indexOf('check:url-construction');
-    const idxBuild = pkg.scripts['build:safe'].indexOf('npm run build');
+    // build:safe is now a runner (scripts/run-build-safe-checks.mjs) that
+    // executes the canonical step list in `build:safe:steps` — the full
+    // `&&` chain was split out because it exceeded the Windows command-line
+    // length limit. The step list is the source of truth.
+    const steps = pkg.scripts['build:safe:steps'];
+    expect(steps).toContain('check:url-construction');
+    // Order: url check must come BEFORE the `build` step.
+    const idxCheck = steps.indexOf('check:url-construction');
+    const idxBuild = steps.indexOf(' build ');
     expect(idxCheck).toBeLessThan(idxBuild);
   });
 
   it('build:safe still runs the realism + production asset checks', () => {
-    expect(pkg.scripts['build:safe']).toContain('check:assets');
-    expect(pkg.scripts['build:safe']).toContain('check:production-assets');
+    const steps = pkg.scripts['build:safe:steps'];
+    expect(steps).toContain('check:assets');
+    expect(steps).toContain('check:production-assets');
   });
 });
 

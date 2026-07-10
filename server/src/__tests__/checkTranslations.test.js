@@ -52,10 +52,14 @@ describe('check:translations — registered + wired into build:safe', () => {
     expect(pkg.scripts['check:translations']).toBe('node scripts/check-translations.mjs');
   });
 
-  it('build:safe runs check:translations before npm run build', () => {
-    expect(pkg.scripts['build:safe']).toContain('check:translations');
-    const idxCheck = pkg.scripts['build:safe'].indexOf('check:translations');
-    const idxBuild = pkg.scripts['build:safe'].indexOf('npm run build');
+  it('build:safe runs check:translations before the vite build', () => {
+    // build:safe now delegates to scripts/run-build-safe-checks.mjs;
+    // the ordered step list lives in build:safe:steps (space-separated
+    // check names, ending in the standalone `build` step).
+    const steps = pkg.scripts['build:safe:steps'];
+    expect(steps).toContain('check:translations');
+    const idxCheck = steps.indexOf('check:translations');
+    const idxBuild = steps.indexOf(' build ');
     expect(idxCheck).toBeLessThan(idxBuild);
   });
 });

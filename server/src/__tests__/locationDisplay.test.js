@@ -175,12 +175,23 @@ describe('LocationDetect component — farmer-friendly', () => {
     expect(src).not.toContain('Permission denied');
     expect(src).not.toContain('POSITION_UNAVAILABLE');
     expect(src).not.toContain('TIMEOUT');
-    expect(src).not.toContain('err.message');
+    // Error DISPLAY is now friendly + classified (classifyLocationError →
+    // tSafe). The raw err.message is captured ONLY in the redaction-safe
+    // operator diagnostic record (the `errorMessage:` field), never shown
+    // to the farmer, and never fed into the display verdict.
+    expect(src).toContain('classifyLocationError');
+    expect(src).toMatch(/errorMessage:\s*err && err\.message/);
+    expect(src).not.toMatch(/setVerdict\(\s*err\b/);
   });
 
   it('shows calm fallback message on GPS failure', () => {
-    expect(src).toContain("couldn't get your exact location");
-    expect(src).toContain('continue with your village or region');
+    // The single collapsed "couldn't get your exact location" message was
+    // intentionally replaced (classifyLocationError doctrine) with SPECIFIC,
+    // farmer-facing verdicts — still calm + non-technical, rendered via
+    // tSafe with a soft (non-red-toast) style + the right recovery actions.
+    expect(src).toContain('classifyLocationError');
+    expect(src).toContain('tSafe(verdict.titleKey, verdict.titleFallback)');
+    expect(src).toContain('softMsgStyle');
   });
 
   it('uses non-technical button text', () => {
@@ -203,8 +214,14 @@ describe('Geolocation utility — friendly errors', () => {
   const src = read('src/utils/geolocation.js');
 
   it('does NOT expose technical error codes to users', () => {
-    expect(src).not.toContain('PERMISSION_DENIED');
-    expect(src).not.toContain('POSITION_UNAVAILABLE');
+    // Strip comments — 'POSITION_UNAVAILABLE' now appears only in a JSDoc
+    // note describing the native retry trigger, never in user-facing code.
+    // The runtime uses lowercase internal codes + a single friendly message.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/[^\n]*/g, '');
+    expect(code).not.toContain('PERMISSION_DENIED');
+    expect(code).not.toContain('POSITION_UNAVAILABLE');
   });
 
   it('uses a single calm error message for all GPS failures', () => {

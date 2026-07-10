@@ -180,7 +180,7 @@ describe('AuthContext — MFA integration', () => {
   });
 
   it('completeMfaChallenge sets user and clears loading', () => {
-    const fn = src.split('completeMfaChallenge')[1]?.split('async function')[0] || '';
+    const fn = src.split('async function completeMfaChallenge')[1]?.split('async function')[0] || '';
     expect(fn).toContain('setUser');
     expect(fn).toContain('setAuthLoading(false)');
     expect(fn).toContain('cacheSession');

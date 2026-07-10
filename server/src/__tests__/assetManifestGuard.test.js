@@ -121,17 +121,24 @@ describe('package.json — check:icons registered + build:safe wiring', () => {
     expect(pkg.scripts['check:icons']).toBe('node scripts/check-icons.mjs');
   });
 
-  it('build:safe runs check:icons before `npm run build`', () => {
-    expect(pkg.scripts['build:safe']).toContain('check:icons');
-    const idxCheck = pkg.scripts['build:safe'].indexOf('check:icons');
-    const idxBuild = pkg.scripts['build:safe'].indexOf('npm run build');
+  it('build:safe runs check:icons before the vite build', () => {
+    // build:safe is now `node scripts/run-build-safe-checks.mjs`; the
+    // ordered step list lives in the build:safe:steps script (a space-
+    // separated list of check names ending in the standalone `build`
+    // step). The "check:icons runs before build" invariant is real —
+    // it just moved fields.
+    const steps = pkg.scripts['build:safe:steps'];
+    expect(steps).toContain('check:icons');
+    const idxCheck = steps.indexOf('check:icons');
+    const idxBuild = steps.indexOf(' build ');
     expect(idxCheck).toBeLessThan(idxBuild);
   });
 
   it('build:safe still runs the existing realism + production + URL checks', () => {
-    expect(pkg.scripts['build:safe']).toContain('check:assets');
-    expect(pkg.scripts['build:safe']).toContain('check:production-assets');
-    expect(pkg.scripts['build:safe']).toContain('check:url-construction');
+    const steps = pkg.scripts['build:safe:steps'];
+    expect(steps).toContain('check:assets');
+    expect(steps).toContain('check:production-assets');
+    expect(steps).toContain('check:url-construction');
   });
 });
 

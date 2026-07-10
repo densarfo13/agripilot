@@ -66,19 +66,30 @@ describe('taskCompletion store', () => {
   });
 
   it('scopes completions per date', () => {
-    markTaskDone('farm-1', 't1', '2026-05-15');
-    markTaskDone('farm-1', 't2', '2026-05-16');
-    expect(listCompletedIds('farm-1', '2026-05-15').has('t1')).toBe(true);
-    expect(listCompletedIds('farm-1', '2026-05-15').has('t2')).toBe(false);
-    expect(listCompletedIds('farm-1', '2026-05-16').has('t2')).toBe(true);
+    // Use dates RELATIVE to "now" and inside the 30-day trim window.
+    // Hardcoded absolute dates (the previous 2026-05-15/16) silently
+    // age out: every write runs trimOldDates(), which correctly evicts
+    // any date older than TRIM_DAYS — so once the clock passed ~30 days
+    // the first mark was trimmed by the second write. That is intended
+    // product behavior; the test just needs in-window dates.
+    const dayA = _internal.ymd(new Date());
+    const dayB = _internal.ymd(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
+    markTaskDone('farm-1', 't1', dayA);
+    markTaskDone('farm-1', 't2', dayB);
+    expect(listCompletedIds('farm-1', dayA).has('t1')).toBe(true);
+    expect(listCompletedIds('farm-1', dayA).has('t2')).toBe(false);
+    expect(listCompletedIds('farm-1', dayB).has('t2')).toBe(true);
   });
 
   it('clearDay wipes a specific date', () => {
-    markTaskDone('farm-1', 't1', '2026-05-15');
-    markTaskDone('farm-1', 't2', '2026-05-16');
-    clearDay('farm-1', '2026-05-15');
-    expect(listCompletedIds('farm-1', '2026-05-15').size).toBe(0);
-    expect(listCompletedIds('farm-1', '2026-05-16').has('t2')).toBe(true);
+    // Same relative-date rationale as 'scopes completions per date'.
+    const dayA = _internal.ymd(new Date());
+    const dayB = _internal.ymd(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
+    markTaskDone('farm-1', 't1', dayA);
+    markTaskDone('farm-1', 't2', dayB);
+    clearDay('farm-1', dayA);
+    expect(listCompletedIds('farm-1', dayA).size).toBe(0);
+    expect(listCompletedIds('farm-1', dayB).has('t2')).toBe(true);
   });
 
   it('rejects bad inputs gracefully', () => {

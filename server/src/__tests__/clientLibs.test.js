@@ -1324,6 +1324,18 @@ describe('completeTask', () => {
     }));
   });
 
+  afterEach(() => {
+    // These vi.doMock registrations otherwise leak into later describes.
+    // In particular the NGO dashboard smoke test dynamically imports a
+    // chain (NgoDashboardV1 → apiRuntime → apiGateway) that pulls the
+    // REAL ../../../src/api/client.js and re-exports formatApiError; a
+    // leaked partial mock (default.post only) makes that import throw.
+    // Unmock + reset so subsequent imports resolve the real modules.
+    vi.doUnmock('../../../src/api/client.js');
+    vi.doUnmock('../../../src/offline/offlineQueue.js');
+    vi.resetModules();
+  });
+
   it('marks the task done IMMEDIATELY, before the network call settles', async () => {
     const { completeTask } = await import('../../../src/lib/taskActions.js');
     const { isTaskDone } = await import('../../../src/lib/taskStore.js');

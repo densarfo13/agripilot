@@ -74,12 +74,12 @@ describe('UsefulResultCard — [SCAN_PREVIEW] diagnostic', () => {
 describe('ScanFallback — camera-not-ready wording', () => {
   const src = read('src/components/scan/ScanFallback.jsx');
 
-  it('camera_unavailable uses the calm "Camera is not ready yet" copy', () => {
+  it('camera_unavailable uses the calm "Camera is not available right now" copy', () => {
     const idx = src.indexOf('camera_unavailable:');
     expect(idx).toBeGreaterThan(-1);
     const block = src.slice(idx, idx + 200);
-    expect(block).toMatch(/Camera is not ready yet/);
-    expect(block).toMatch(/Use a saved photo to keep scanning/);
+    expect(block).toMatch(/Camera is not available right now/);
+    expect(block).toMatch(/Upload a photo instead/);
   });
 
   it('the legacy "Scan is taking longer than expected" wording stays gone', () => {

@@ -34,7 +34,11 @@ describe('App.jsx — auth loading gate', () => {
   });
 
   it('AuthLoadingGate blocks rendering until auth resolves', () => {
-    expect(src).toContain('if (authLoading) return <PageLoader />');
+    // The gate still short-circuits to a loader while authLoading is
+    // true; the loader was hardened from <PageLoader /> to
+    // <SafeLoader timeoutMs={8000} /> (startup-deadlock fix §2/§3 —
+    // an 8s hard-stop recovery panel instead of an indefinite spinner).
+    expect(src).toContain('if (authLoading) return <SafeLoader timeoutMs={8000} />');
   });
 
   it('wraps routes with AuthLoadingGate', () => {

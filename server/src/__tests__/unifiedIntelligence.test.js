@@ -186,9 +186,13 @@ describe('check:intelligence — build-time guard', () => {
   it('is registered in package.json + wired into build:safe', () => {
     const pkg = JSON.parse(read('package.json'));
     expect(pkg.scripts['check:intelligence']).toBe('node scripts/check-intelligence.mjs');
-    expect(pkg.scripts['build:safe']).toContain('check:intelligence');
-    const idxCheck = pkg.scripts['build:safe'].indexOf('check:intelligence');
-    const idxBuild = pkg.scripts['build:safe'].indexOf('npm run build');
+    // build:safe now delegates to scripts/run-build-safe-checks.mjs, which
+    // runs the canonical `build:safe:steps` list (split out to dodge the
+    // Windows command-line length limit).
+    const steps = pkg.scripts['build:safe:steps'];
+    expect(steps).toContain('check:intelligence');
+    const idxCheck = steps.indexOf('check:intelligence');
+    const idxBuild = steps.indexOf(' build ');
     expect(idxCheck).toBeLessThan(idxBuild);
   });
 });

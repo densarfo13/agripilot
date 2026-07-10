@@ -86,8 +86,11 @@ describe('FarmForm — uses areaConversion utilities', () => {
 
 // ─── 3. API wiring ──────────────────────────────────────────────
 describe('FarmForm — uses shared API helpers', () => {
-  it('imports createNewFarm + updateFarm from src/lib/api.js', () => {
-    expect(SRC).toMatch(/from ['"]\.\.\/lib\/api\.js['"]/);
+  it('imports createNewFarm + updateFarm from the runtime/auth.js facade', () => {
+    // Wave-4 refactor: pages/components import through the RUNTIME
+    // facade src/runtime/auth.js (which `export * from '../lib/api.js'`)
+    // instead of the SERVICE module src/lib/api.js directly.
+    expect(SRC).toMatch(/from ['"]\.\.\/runtime\/auth\.js['"]/);
     expect(SRC).toMatch(/createNewFarm/);
     expect(SRC).toMatch(/updateFarm/);
   });
@@ -103,7 +106,10 @@ describe('FarmForm — uses shared API helpers', () => {
 
   it('uses formatApiError to surface backend error messages', () => {
     expect(SRC).toMatch(/formatApiError/);
-    expect(SRC).toMatch(/from ['"]\.\.\/api\/client\.js['"]/);
+    // Wave-2 refactor: formatApiError is now imported via the RUNTIME
+    // facade src/runtime/apiRuntime.js (same formatter, forwarded from
+    // the api gateway) instead of the infrastructure src/api/client.js.
+    expect(SRC).toMatch(/from ['"]\.\.\/runtime\/apiRuntime\.js['"]/);
   });
 });
 

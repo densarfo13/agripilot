@@ -83,13 +83,15 @@ describe('ScanFallback — gallery-first + manual picker', () => {
     }
   });
 
-  it('makes "Use a saved photo" the PRIMARY action when the camera failed', () => {
+  it('makes "Upload photo" the PRIMARY action when the camera failed', () => {
     expect(src).toMatch(/galleryFirst/);
     // Inspect the gallery-first JSX branch specifically.
     const start = src.indexOf('galleryFirst ? (');
     expect(start).toBeGreaterThan(-1);
     const branch = src.slice(start, src.indexOf(') : (', start));
-    expect(branch).toMatch(/Use a saved photo/);
+    // Copy reworded from "Use a saved photo" → "Upload photo"; the
+    // primary-action contract (scan-fallback-upload + S.primaryBtn) holds.
+    expect(branch).toMatch(/Upload photo/);
     expect(branch).toMatch(/scan-fallback-upload/);
     expect(branch).toMatch(/S\.primaryBtn/);
   });

@@ -529,7 +529,7 @@ describe('ProfileSetup — newFarm mode', () => {
   });
 
   it('imports createNewFarm from api', () => {
-    expect(src).toContain("import { createNewFarm } from '../lib/api.js'");
+    expect(src).toContain("import { createNewFarm } from '../runtime/auth.js'");
   });
 
   it('uses createNewFarm when in newFarm mode', () => {

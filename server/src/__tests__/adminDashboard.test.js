@@ -28,7 +28,7 @@ describe('Admin Dashboard — Structure', () => {
   });
 
   it('imports api client', () => {
-    expect(code).toContain("from '../api/client.js'");
+    expect(code).toContain("from '../runtime/apiRuntime.js'");
   });
 
   it('imports SkeletonDashboard for loading state', () => {

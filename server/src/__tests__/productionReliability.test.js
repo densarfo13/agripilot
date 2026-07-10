@@ -494,13 +494,20 @@ describe('Navigation and UX — actionable paths', () => {
 describe('Silent Failure Elimination', () => {
   it('FarmerNotificationsTab markRead surfaces error to user', () => {
     const src = readFile('src/pages/FarmerNotificationsTab.jsx');
+    // Wave-3 runtime ownership: the tab is a pure subscriber that renders
+    // the `actionError` banner; the markRead failure message now lives in
+    // the runtime hook it consumes.
     expect(src).toContain('actionError');
-    expect(src).toContain("'Failed to mark as read");
+    expect(src).toContain('{actionError &&');
+    const runtime = readFile('src/hooks/useFarmerNotificationsRuntime.js');
+    expect(runtime).toContain("setActionError('Failed to mark as read");
   });
 
   it('FarmerNotificationsTab markAllRead surfaces error to user', () => {
     const src = readFile('src/pages/FarmerNotificationsTab.jsx');
-    expect(src).toContain("'Failed to mark all as read");
+    expect(src).toContain('actionError');
+    const runtime = readFile('src/hooks/useFarmerNotificationsRuntime.js');
+    expect(runtime).toContain("setActionError('Failed to mark all as read");
   });
 
   it('PortfolioPage takeSnapshot surfaces error to user', () => {

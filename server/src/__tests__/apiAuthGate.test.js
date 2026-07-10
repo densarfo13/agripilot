@@ -114,12 +114,15 @@ describe('lib/api.js auth-gate (May 2026 console-noise fix)', () => {
 // login / OTP / refreshSession resets the flag.
 
 describe('lib/api.js session-dead cool-down', () => {
-  it('marks session dead after a 401 → refresh-429 cascade', async () => {
+  it('marks session dead after a 401 → refresh-401 cascade', async () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
-    // First fetch returns 401; refresh returns 429; client sees both.
+    // First fetch returns 401; refresh returns a DEFINITIVE 401 (no /
+    // invalid refresh cookie). Only a terminal 401 marks the session
+    // dead. Transient refresh failures (429 / 5xx) now enter Phase-2
+    // "degraded mode" instead — cached session stays usable, no logout.
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: 'unauthorized' }) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({ error: 'too_many_requests' }) });
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: 'refresh_invalid' }) });
     const { getCurrentUser, isSessionDead } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
@@ -128,9 +131,11 @@ describe('lib/api.js session-dead cool-down', () => {
 
   it('short-circuits subsequent authenticated calls without firing', async () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
+    // Terminal 401 on refresh → session dead → subsequent auth calls
+    // short-circuit (a transient 429 would degrade, not die).
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
     const callsAfterFirst = globalThis.fetch.mock.calls.length;
@@ -150,7 +155,8 @@ describe('lib/api.js session-dead cool-down', () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      // Terminal 401 on refresh → session dead:
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
       // Then the user logs in successfully:
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, user: { id: 'u1' } }) })
       // Then a subsequent authenticated call:
@@ -169,7 +175,8 @@ describe('lib/api.js session-dead cool-down', () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      // Terminal 401 on refresh → session dead:
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true }) });
     const { getCurrentUser, refreshSession, isSessionDead } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
@@ -226,11 +233,14 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
     // the URL-runtime-elimination pass (commit 759d5d37) per the
     // spec rule "Keep only warn/error/fatal logs in production."
     // Spy on warn now to match the corrected behavior.
+    // NOTE: [REFRESH_FAILED] fires only on a TERMINAL refresh status
+    // (401). A transient 429/5xx now logs [REFRESH_DEGRADED] instead
+    // (Phase-2 degraded mode), so use a 401 refresh response here.
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
     const failedCalls = warnSpy.mock.calls.filter((c) => String(c[0]).includes('[REFRESH_FAILED]'));
@@ -241,9 +251,11 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
   it('logs [Auth Loop Prevented] when the _sessionDead gate trips', async () => {
     globalThis.localStorage.setItem('farroway_token', 'pretend-jwt');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    // Terminal 401 on refresh → session dead → the next auth call
+    // trips the _sessionDead gate and logs [Auth Loop Prevented].
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
     // Now a subsequent call should short-circuit + log loop-prevented.
@@ -270,7 +282,8 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
     }
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+      // Terminal 401 on refresh → session dead → session_expired event.
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
     const { getCurrentUser, SESSION_EXPIRED_EVENT } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
     expect(events).toContain(SESSION_EXPIRED_EVENT);
@@ -293,7 +306,8 @@ describe('lib/api.js auth-refresh diagnostics + session-expired event', () => {
     }
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) });
+      // Terminal 401 on refresh → session dead → session_expired (once).
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
     const { getCurrentUser } = await import('../../../src/lib/api.js');
     await getCurrentUser().catch(() => null);
     // Subsequent calls trip the gate but MUST NOT re-dispatch the event.

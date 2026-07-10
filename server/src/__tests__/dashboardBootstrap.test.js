@@ -156,7 +156,7 @@ describe('useEffect dep array', () => {
 // ─── API call correctness ──────────────────────────────────────
 describe('uses shared api client against the v1 route', () => {
   it('imports the shared client from src/api/client.js', () => {
-    expect(SRC).toMatch(/import api from '\.\.\/api\/client\.js'/);
+    expect(SRC).toMatch(/import api from '\.\.\/runtime\/apiRuntime\.js'/);
   });
   it('calls /auth/farmer-profile with the abort signal', () => {
     expect(SRC).toMatch(/api\.get\('\/auth\/farmer-profile', \{ signal: controller\.signal \}\)/);

@@ -333,14 +333,17 @@ describe('Sync Now Button', () => {
   it('SyncStatus imports syncAll and api', () => {
     const src = syncStatus();
     expect(src).toContain("syncAll");
-    expect(src).toContain("import api from '../api/client.js'");
+    // Wave-26 C-6: the transport import moved from the raw axios client to
+    // the canonical apiRuntime instance (the same one App.jsx wires into
+    // initAutoSync), so Sync Now / retry drain through one transport.
+    expect(src).toContain("import apiRuntime from '../runtime/apiRuntime.js'");
   });
 
   it('SyncStatus has Sync Now button when online with pending', () => {
     const src = syncStatus();
     expect(src).toContain("t('sync.syncNow')");
     expect(src).toContain('syncNowBtn');
-    expect(src).toContain('syncAll(api)');
+    expect(src).toContain('syncAll(apiRuntime)');
   });
 
   it('SyncStatus pendingBanner has pointerEvents auto for clickability', () => {

@@ -41,13 +41,17 @@ describe('ProtectedLayout — global floating Voice Assistant placement', () => 
   it('gates the launcher off onboarding paths', () => {
     const idx = src.indexOf('<VoiceLauncher variant="floating"');
     expect(idx).toBeGreaterThan(-1);
-    const block = src.slice(Math.max(0, idx - 220), idx);
-    expect(block).toMatch(/!onboarding/);
+    // The launcher's render IIFE grew (Simple/voice-mode + hide-path
+    // gating), so the onboarding gate now sits further above the launcher
+    // return and uses an early-return idiom (`if (onboarding || ...) return
+    // null`) instead of a `!onboarding &&` wrapper. Widen the window.
+    const block = src.slice(Math.max(0, idx - 2000), idx);
+    expect(block).toContain('if (onboarding || !isFarmerRoute) return null');
   });
 
   it('gates the launcher to farmer surfaces only', () => {
     const idx = src.indexOf('<VoiceLauncher variant="floating"');
-    const block = src.slice(Math.max(0, idx - 220), idx);
+    const block = src.slice(Math.max(0, idx - 2000), idx);
     expect(block).toMatch(/isFarmer|'farmer'/);
   });
 

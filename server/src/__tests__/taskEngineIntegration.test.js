@@ -118,7 +118,10 @@ describe('Task completion — Dashboard wiring', () => {
 
   it('imports completeTask from api', () => {
     expect(dash).toContain("completeTask");
-    expect(dash).toContain("from '../lib/api.js'");
+    // Wave-4 facade refactor: UI imports the api surface through the
+    // runtime barrel (src/runtime/auth.js → `export * from '../lib/api.js'`),
+    // not the lib module directly. Same completeTask, new path.
+    expect(dash).toContain("from '../runtime/auth.js'");
   });
 
   it('does NOT use localStorage for done tasks', () => {
@@ -197,7 +200,9 @@ describe('Task completion — FarmTasksCard', () => {
 
   it('imports completeTask from API', () => {
     expect(card).toContain("completeTask");
-    expect(card).toContain("from '../lib/api.js'");
+    // Wave-4 facade refactor: imported via the runtime barrel
+    // (src/runtime/auth.js → `export * from '../lib/api.js'`).
+    expect(card).toContain("from '../runtime/auth.js'");
   });
 
   it('does NOT use localStorage for done tasks', () => {
