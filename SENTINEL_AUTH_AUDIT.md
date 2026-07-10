@@ -106,3 +106,34 @@ fix is **operational**, not code:
 - `providerCertification.js` was checking the unused `SENTINEL_HUB_API_KEY` (false "configured" green) → fixed to the OAuth vars (deployed, `c5b06c80`).
 - OAuth token-refresh retry-once hardening added to `sentinelHubService.js` (deployed, `3c8f7b30`).
 - No code change is recommended by THIS audit — the remaining gap is the Railway credential set above.
+
+---
+
+# RUNTIME VERIFICATION — 2026-07-09 (supersedes the config gap above)
+
+The operator set the OAuth credentials at Railway. This section is a **live runtime audit**, executed
+**inside the running Railway container** via `railway ssh` (the only truthful channel — the audit sandbox
+has no outbound network, so `railway run`/curl run locally and can't reach Sentinel Hub; only in-container
+exec has both the real creds and egress). Every line is captured output, redacted to lengths.
+
+| # | Runtime check | Result | Evidence (captured) |
+|---|---|---|---|
+| 1 | `process.env` reads each variable | ✅ PASS | in-container `ENV CLIENT_ID_len=36 SECRET_len=32`; `railway variables` → all 4 SET |
+| 2 | OAuth token exchange succeeds | ✅ PASS | `POST /oauth/token` → `OAUTH_STATUS=200 ACCESS_TOKEN=true EXPIRES_IN=3600 ERR=none` |
+| 3 | Sentinel service initializes | ✅ PASS | real `sentinelHubService.fetchNDVI` (via the module) → `NDVI_STATUS=200` |
+| 4 | FieldHealthService gets a live client | ✅ PASS | real `fieldHealthProvider.fetchFieldHealth(...)` → `KEYS_PRESENT=true`, `ok:true`, `reason:null` |
+| 5 | NDVI returns real data | ✅ PASS | `ndvi:0.2626, cropVigor:"moderate", stressScore:58` → *"Field shows moderate canopy density for maize."* |
+| 6 | Exact failure point (if unavailable) | N/A | **satellite is available** — prior `sentinel_credentials_missing` (unset OAuth vars) resolved |
+
+Raw output from the real service module (lat 6.5, lng -1.6, maize):
+```
+KEYS_PRESENT=true
+FIELD_HEALTH={"ok":true,"reason":null,"ndvi":0.2626313117968375,"cropVigor":"moderate",
+              "stressScore":58,"vegetationTrend":null,"confidence":"low"}
+INTERPRETATION=Field shows moderate canopy density for maize.
+```
+
+**Verdict: the Sentinel Hub NDVI integration is LIVE in production.** Honesty holds under the live feed —
+`vegetationTrend:null` (needs ≥2 prior snapshots, not fabricated) and `confidence:"low"` (honest for a
+single reading). The provider is proven live; it populates the scan result (`result.satellite`) on the next
+real scan with farm GPS. SSH access provisioned for this audit was removed afterward (key deregistered).
