@@ -42,6 +42,7 @@ const C = {
   action: '#1F6A3A', actionInk: '#FFFFFF', line: 'rgba(124,45,18,0.25)',
   badgeBg: '#FEF3C7', badgeInk: '#92400E', chipBg: '#FFFFFF',
   done: '#1F6A3A', doneBg: '#DCFCE7', pending: '#B45309', muted: '#A8A29E',
+  failed: '#B91C1C',
 };
 
 // Scoped motion — keyframes + press/elevate can't live in inline styles. One static
@@ -106,9 +107,12 @@ const S = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     fontSize: 12, fontWeight: 800,
     background: state === 'done' ? C.doneBg : 'transparent',
-    color: state === 'done' ? C.done : state === 'pending' ? C.pending : C.muted,
+    color: state === 'done' ? C.done
+      : state === 'failed' ? C.failed
+      : state === 'pending' ? C.pending : C.muted,
     border: state === 'done' ? 'none' : '1.5px solid '
-      + (state === 'pending' ? 'rgba(180,83,9,0.4)' : 'rgba(120,113,108,0.35)'),
+      + (state === 'failed' ? 'rgba(185,28,28,0.45)'
+        : state === 'pending' ? 'rgba(180,83,9,0.4)' : 'rgba(120,113,108,0.35)'),
   }),
   stageLabel: (state) => ({
     fontSize: 14, fontWeight: state === 'done' ? 600 : 500,
@@ -154,6 +158,7 @@ const CHIPS = [
 // Icon per stage state — honest glyphs, never a spinner.
 function _stageGlyph(state) {
   if (state === 'done') return '✓';
+  if (state === 'failed') return '✕';
   if (state === 'skipped') return '–';
   return '○';                         // pending
 }
@@ -215,6 +220,7 @@ export default function ScanGuidanceCard({
           <p style={S.timelineHead}>{tSafe('scan.guidance.timeline', 'What we checked')}</p>
           {_stages.map((s, i) => {
             const st = s && s.state === 'done' ? 'done'
+              : s && s.state === 'failed' ? 'failed'
               : s && s.state === 'skipped' ? 'skipped' : 'pending';
             return (
               <div key={s && s.key ? s.key : 'stage-' + i}
@@ -226,7 +232,11 @@ export default function ScanGuidanceCard({
                 <span style={S.stageLabel(st)}>
                   {tSafe(s && s.labelKey, (s && s.labelDefault) || '')}
                 </span>
-                {st === 'pending' ? (
+                {st === 'failed' ? (
+                  <span style={{ ...S.stageState, color: C.failed }}>
+                    {tSafe('scan.stage.failed', "Couldn't identify")}
+                  </span>
+                ) : st === 'pending' ? (
                   <span style={S.stageState}>
                     {tSafe('scan.stage.pending', 'Waiting for a clearer photo')}
                   </span>

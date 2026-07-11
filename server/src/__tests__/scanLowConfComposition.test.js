@@ -13,12 +13,13 @@ const read = (rel) => fs.readFileSync(path.resolve(ROOT, rel), 'utf-8');
 describe('P0 — single low-confidence result card', () => {
   const scanPage = read('src/pages/ScanPage.jsx');
 
-  it('suppresses AddPlantConfirmationCard on low-confidence at the container level', () => {
+  it('suppresses AddPlantConfirmationCard on low-confidence via the shared resolver', () => {
     const idx = scanPage.indexOf('<AddPlantConfirmationCard');
     expect(idx).toBeGreaterThan(-1);
     const before = scanPage.slice(Math.max(0, idx - 600), idx);
-    expect(before).toContain('confidenceTone');
-    expect(before).toMatch(/low_confidence|needs_review/);
+    // The suppression now uses the SINGLE resolver shared with the result card
+    // (no divergent confidenceTone/<40 heuristic that could re-introduce a duplicate).
+    expect(before).toContain('resolveScanGuidance(result).showGuidance');
   });
 
   it('keeps ScanGuidanceCard as the single low-confidence surface with its CTAs', () => {

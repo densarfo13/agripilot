@@ -45,6 +45,7 @@ import ScanGuidanceCard from './ScanGuidanceCard.jsx';
 import FruitVegResultCard from './FruitVegResultCard.jsx';
 import InsectResultCard from './InsectResultCard.jsx';
 import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
+import { resolveScanGuidance } from '../../runtime/scanTrust/scanGuidanceResolver';
 import { evaluatePhotoQuality } from '../../runtime/scanQuality/PhotoQualityEngine';
 import { explainPhotoQuality } from '../../runtime/scanQuality/PhotoQualityExplainer';
 import {
@@ -732,7 +733,10 @@ export default function IntelligentScanResult({
   const region         = useMemo(() => _extractRegion(result),         [result]);
   const soil           = useMemo(() => _extractSoil(result),           [result]);
   const satellite      = useMemo(() => _extractSatellite(result),      [result]);
-  const needsReview    = useMemo(() => _shouldShowNeedsReview(result), [result]);
+  // P1 dedup — resolveScanGuidance is the SINGLE low-confidence resolver, shared
+  // with ScanPage so exactly one terminal card renders (never both).
+  const _guidance      = useMemo(() => (_safe(() => resolveScanGuidance(result), null) || {}), [result]);
+  const needsReview    = !!_guidance.needsReview;
   const _imageQualityCard = useMemo(() => _extractImageQuality(result), [result]);
 
   // Permanent Detection Fix (v5) — pull the new envelope fields
@@ -762,29 +766,14 @@ export default function IntelligentScanResult({
   const _fusion        = result && result.evidenceFusion;
   const _fusionAgainst = _arr(_fusion && _fusion.contradictingObservations);
 
-  // Sprint #214 — trust gate. A low-confidence / poor-quality scan
-  // may NOT create a plant or a task; it shows the photo coach card +
-  // a Save-for-Review path instead. Pure derivation from real fields.
-  const _photoQuality = _safe(() => evaluatePhotoQuality({
-    imageQuality: result && result.imageQuality, objectType: result && result.objectType,
-  }), null);
-  const _trust = _safe(() => evaluateScanTrust({
-    confidencePct: result && result.confidencePct,
-    confidence: result && result.confidence,
-    topCandidates: result && result.topCandidates,
-    plantName: result && result.plantName,
-    issueType: result && result.issueType,
-    status: result && result.status,
-    nextAction: result && (result.nextAction || (_mythos && _mythos.nextAction)),
-    hasPhoto: !!(result && (result.imageUrl || result.scanId)),
-    photoQuality: _photoQuality,
-  }), null);
-  const _trustBlocked = !!(_trust && !_trust.allowPlantCreation);
-  // UX sprint 2026-07-05 — ONE low-confidence surface. When the trust gate blocks or the
-  // result needs review, ScanGuidanceCard (directly beneath the header) is the single
-  // guidance + CTA surface; the old photo-guidance card, coach card, and NeedsReviewActions
-  // no longer stack on top of each other. Treatment/Region hide behind the same signal.
-  const _showGuidance = _trustBlocked || needsReview;
+  // Sprint #214 + P1 — trust gate via the shared resolver (_guidance above) so
+  // the guidance-card decision here is IDENTICAL to the one ScanPage uses to
+  // suppress the legacy AddPlantConfirmationCard. A low-confidence / poor-quality
+  // scan may NOT create a plant or task; ScanGuidanceCard is the single surface.
+  const _photoQuality = _guidance.photoQuality || null;
+  const _trust = _guidance.trust || null;
+  const _trustBlocked = !!_guidance.trustBlocked;
+  const _showGuidance = !!_guidance.showGuidance;
   const _coach = _showGuidance ? _safe(() => explainPhotoQuality(_photoQuality), null) : null;
 
   // Sprint #207 — honest numeric confidence breakdown. Only the two
@@ -835,9 +824,16 @@ export default function IntelligentScanResult({
     return (s.ndvi != null) || !!s.cropVigor || (s.stressScore != null)
       || !!s.vegetationHealth || !!s.growthTrend;
   })();
+  // P2 — the "Identifying plant" stage reflects REAL provider evidence: 'done'
+  // only when the provider returned a usable identification (candidates or a
+  // plant name); 'failed' when the provider was reached but produced nothing;
+  // 'pending' otherwise. Never a completed check without a real result.
+  const _hasIdentification = _topCandidates.length > 0 || !!(identification && identification.plantName);
+  const _providerFailed = !!(result && (result.serviceUnavailable === true || result.providerUnavailable === true));
+  const _identifyState = _hasIdentification ? 'done' : (_providerFailed ? 'failed' : 'pending');
   const _stages = [
-    { key: 'photo',    labelKey: 'scan.stage.photo',    labelDefault: 'Photo received',   state: 'done' },
-    { key: 'identify', labelKey: 'scan.stage.identify', labelDefault: 'Identifying plant', state: 'done' },
+    { key: 'photo',    labelKey: 'scan.stage.photo',    labelDefault: 'Photo received',    state: 'done' },
+    { key: 'identify', labelKey: 'scan.stage.identify', labelDefault: 'Identifying plant', state: _identifyState },
     { key: 'field',    labelKey: 'scan.stage.field',    labelDefault: 'Field view',        state: _hasFieldView ? 'done' : 'skipped' },
     { key: 'reco',     labelKey: 'scan.stage.reco',     labelDefault: 'Recommendation',    state: 'pending' },
   ];

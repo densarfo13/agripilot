@@ -80,6 +80,7 @@ import ScanHub from '../components/scan/ScanHub.jsx';
 import ScanCameraLikeShell from '../components/scan/ScanCameraLikeShell.jsx';
 import IntelligentScanResult from '../components/scan/IntelligentScanResult.jsx';
 import ScanLimitReachedCard from '../components/scan/ScanLimitReachedCard.jsx';
+import { resolveScanGuidance } from '../runtime/scanTrust/scanGuidanceResolver';
 // Wave-26 C-4 — single-result-card invariant. Gates IntelligentScanResult
 // so it is mutually exclusive with the legacy UsefulResultCard /
 // ScanResultCard path. Until the wave-21 analysis runtime is mounted
@@ -2262,16 +2263,13 @@ export default function ScanPage() {
         })()
       ) : null}
 
-      {/* Dedup (2026-07) — on a LOW-CONFIDENCE result the ScanGuidanceCard inside
+      {/* P1 dedup — on a LOW-CONFIDENCE result the ScanGuidanceCard inside
           IntelligentScanResult is the single owner of the "clearer photo / ask an
-          agronomist" message + CTAs. Suppress AddPlantConfirmationCard's near-identical
-          unconfirmed branch here so the two don't stack. Plant creation is trust-blocked
-          on low confidence anyway, so nothing actionable is lost. */}
-      {phase === 'result' && result
-        && !(result.suppressed === true
-          || ['needs_review', 'low_confidence', 'uncertain'].includes(String(result.status || '').toLowerCase())
-          || ['low', 'needs_review'].includes(String(result.confidenceTone || '').toLowerCase())
-          || (Number.isFinite(Number(result.confidencePct)) && Number(result.confidencePct) < 40))
+          agronomist" surface. Suppress the legacy AddPlantConfirmationCard using the
+          SAME resolver (resolveScanGuidance) the result card uses to decide, so the two
+          can never diverge — exactly ONE terminal card renders. Plant creation is
+          trust-blocked on low confidence anyway, so nothing actionable is lost. */}
+      {phase === 'result' && result && !resolveScanGuidance(result).showGuidance
         ? (
         <AddPlantConfirmationCard
           scanResult={result}
