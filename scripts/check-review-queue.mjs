@@ -1,7 +1,10 @@
 /**
- * check-review-queue.mjs — sprint #214 §12.
- * Fails build if the review queue is missing or Recent Scans doesn't
- * filter to trusted scans + show a Review Queue count.
+ * check-review-queue.mjs — sprint #214 §12 + P2 (2026-07).
+ * Fails build if the INTERNAL review-queue runtime is missing, or if the
+ * farmer-facing Recent Scans card doesn't filter to trusted scans, or if it
+ * EXPOSES the internal review-queue count to farmers. P2 reversed the prior
+ * decision: the count is an admin-only workflow; pending reviews may surface
+ * only as a neutral, countless "Expert reviews pending" link.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,11 +31,17 @@ if (!_exists(RS)) errors.push('missing: ' + RS);
 else {
   const s = _read(RS);
   _has(s, 'evaluateScanTrust', 'RecentScansCard must filter rows via evaluateScanTrust');
-  _has(s, 'recent-scans-review-queue', 'RecentScansCard must show Review Queue count');
+  // P2 — the internal review-queue COUNT must NOT reach farmers. The old count
+  // pill (recent-scans-review-queue) is removed; pending reviews surface as a
+  // neutral, countless link.
+  if (s.includes('recent-scans-review-queue')) {
+    errors.push('RecentScansCard must NOT expose the internal review-queue count to farmers (P2)');
+  }
+  _has(s, 'recent-scans-expert-review', 'RecentScansCard must show a neutral (countless) Expert reviews pending link');
 }
 if (errors.length) {
   console.error('[check:review-queue] FAIL — ' + errors.length + ' issue(s):');
   for (const e of errors) console.error('  - ' + e);
   process.exit(1);
 }
-console.log('[check:review-queue] PASS — review queue present; Recent Scans trusted-only + review count.');
+console.log('[check:review-queue] PASS — internal review queue present; Recent Scans trusted-only, no farmer-facing count (P2).');

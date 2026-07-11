@@ -24,10 +24,11 @@ import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
 
 const _safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
-// Sprint #214 — Recent Scans shows only trusted scans. A row that the
-// trust gate would not display (low confidence / unknown plant /
-// needs-review) is collapsed into the Review Queue count instead of
-// rendering a repeated "Unclear photo".
+// Sprint #214 + P2 (2026-07) — Recent Scans is a FARMER surface: it shows
+// only trusted (completed) scans. Untrusted rows (low confidence / unknown
+// plant / needs-review) are NOT rendered and their COUNT is never exposed to
+// farmers — the internal review queue is an admin workflow. Pending reviews
+// surface only as a neutral "Expert reviews pending" link (no number).
 function _isTrustedRow(r) {
   return _safe(() => {
     const g = evaluateScanTrust({
@@ -97,22 +98,17 @@ function RecentScansCardInner({ limit = 6 }) {
         </p>
       ) : null}
       {(() => {
+        // Trusted (completed) rows only. The untrusted COUNT is computed but
+        // NEVER shown to farmers — pending reviews surface as a neutral link.
         const _trusted = rows.filter(_isTrustedRow);
-        const _reviewCount = rows.length - _trusted.length;
+        const _hasPending = (rows.length - _trusted.length) > 0;
         return (
         <>
-        {_reviewCount > 0 ? (
-          <button
-            type="button"
-            style={S.reviewPill || { display: 'block', width: '100%', textAlign: 'left',
-              background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10,
-              padding: '8px 12px', marginBottom: 8, color: '#9A3412', fontWeight: 600,
-              fontSize: 13, cursor: 'pointer' }}
-            data-testid="recent-scans-review-queue"
-            onClick={() => _safe(() => navigate('/scan/review'), null)}>
-            {tSafe('scanReview.queue', 'Review Queue')} ({_reviewCount})
-          </button>
-        ) : null}
+        {_trusted.length === 0 ? (
+          <p style={S.empty} data-testid="recent-scans-empty">
+            {tSafe('recentScans.noCompleted', 'No completed scans yet.')}
+          </p>
+        ) : (
         <ul style={S.list}>
         {_trusted.map((r) => (
           <li key={r.scanId || r.createdAt}>
@@ -148,6 +144,16 @@ function RecentScansCardInner({ limit = 6 }) {
           </li>
         ))}
         </ul>
+        )}
+        {_hasPending ? (
+          <button
+            type="button"
+            style={S.pendingLink}
+            data-testid="recent-scans-expert-review"
+            onClick={() => _safe(() => navigate('/scan/review'), null)}>
+            {tSafe('recentScans.expertReviewPending', 'Expert reviews pending')}
+          </button>
+        ) : null}
         </>
         );
       })()}
@@ -212,4 +218,10 @@ const S = {
   rowMeta: { fontSize: 11, color: 'rgba(60,72,55,0.65)', marginTop: 2 },
   confirmed: { fontSize: 16, color: '#2f7a3a', fontWeight: 800 },
   empty: { fontSize: 12, color: 'rgba(60,72,55,0.55)', margin: 0 },
+  pendingLink: {
+    appearance: 'none', border: 'none', background: 'transparent',
+    color: 'rgba(60,72,55,0.7)', fontSize: 12, fontWeight: 600,
+    textAlign: 'left', padding: '4px 2px', cursor: 'pointer',
+    textDecoration: 'underline', textUnderlineOffset: 2, fontFamily: 'inherit',
+  },
 };
