@@ -1074,25 +1074,25 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
     // get the per-user counter. Pro flag is read off the user
     // record when present; defaults to false so we always pick
     // the conservative limit when in doubt.
-    const _limit = await checkDailyScanLimit({
-      prisma,
-      userId: req.user && req.user.id,
-      isPro:  !!(req.user && (req.user.isPro || req.user.proStatus === 'active')),
-    });
+    // Plan-aware quota — resolves guest/free/pilot/premium/admin from the
+    // existing user model (role + premium/pilot signal). Runs BEFORE any
+    // preprocess / provider call, so a blocked request never reaches a
+    // provider, spends a credit, or writes history/tasks/review rows.
+    const _limit = await checkDailyScanLimit({ prisma, user: req.user });
     if (!_limit.ok) {
+      // P5/P6 — a quota block is its OWN terminal state. Do NOT embed the
+      // SPEC_FALLBACK verdict here (that made the client render a low-
+      // confidence "can't identify" result). Return accurate quota metadata
+      // only; the client maps error:'scan_limit_reached' to a distinct card.
       return res.status(429).json({
         error:     'scan_limit_reached',
         limit:     _limit.limit,
         used:      _limit.used,
         remaining: _limit.remaining,
-        resetAt:   _limit.resetAt,
-        // Include the spec fallback shape so the client doesn't
-        // need a separate render path — it can show the
-        // "uncertain / monitor" state with a clear retry hint.
-        verdictV2: SPEC_FALLBACK_VERDICT,
-        verdictV3: SPEC_FALLBACK_FULL,
-        decision:  SPEC_FALLBACK_DECISION,
-        message:   'Daily scan limit reached. Upgrade to Pro for more scans.',
+        resetsAt:  _limit.resetsAt,
+        resetAt:   _limit.resetsAt,   // back-compat alias
+        plan:      _limit.plan,
+        message:   'Daily scan limit reached.',
       });
     }
 

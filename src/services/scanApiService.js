@@ -112,6 +112,28 @@ export async function requestScanAnalysis(input = {}) {
     });
     const res = await _withTimeout(fetchPromise, TIMEOUT_MS, controller);
     if (!res || !res.ok) {
+      // A 429 daily-scan-limit is a REAL terminal state, not an inference
+      // failure. Preserve its reason so the UI shows a clear "limit reached"
+      // message instead of returning null → the engine's rule-based
+      // "can't identify" fallback (silent result loss).
+      if (res && res.status === 429) {
+        const q = await _withTimeout(res.json().catch(() => null), PARSE_TIMEOUT_MS, controller)
+          .catch(() => null);
+        if (q && (q.error === 'scan_limit_reached' || q.limit != null || q.resetAt)) {
+          logScanPipelineError('inference', { message: 'scan_limit_reached' });
+          return {
+            __terminalState:  'LIMIT_REACHED',
+            scanLimitReached: true,
+            plan:      typeof q.plan === 'string' ? q.plan : null,
+            limit:     typeof q.limit === 'number' ? q.limit : null,
+            used:      typeof q.used === 'number' ? q.used : null,
+            remaining: typeof q.remaining === 'number' ? q.remaining : 0,
+            resetsAt:  q.resetsAt || q.resetAt || null,
+            resetAt:   q.resetsAt || q.resetAt || null,
+            message:   typeof q.message === 'string' ? q.message : null,
+          };
+        }
+      }
       logScanPipelineError('inference', {
         message: 'http_' + (res && res.status),
       });

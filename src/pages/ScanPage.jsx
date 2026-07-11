@@ -79,6 +79,7 @@ import ScanHub from '../components/scan/ScanHub.jsx';
 // ScanHub). Desktop keeps ScanHub.
 import ScanCameraLikeShell from '../components/scan/ScanCameraLikeShell.jsx';
 import IntelligentScanResult from '../components/scan/IntelligentScanResult.jsx';
+import ScanLimitReachedCard from '../components/scan/ScanLimitReachedCard.jsx';
 // Wave-26 C-4 — single-result-card invariant. Gates IntelligentScanResult
 // so it is mutually exclusive with the legacy UsefulResultCard /
 // ScanResultCard path. Until the wave-21 analysis runtime is mounted
@@ -2090,7 +2091,14 @@ export default function ScanPage() {
           sole rendered result surface; when false the legacy
           UsefulResultCard / ScanResultCard path below renders instead.
           The two branches are mutually exclusive — never both. */}
-      {phase === 'result' && result && shouldRenderIntelligentResult() ? (
+      {/* Daily-scan-limit (429 scan_limit_reached) is a DISTINCT terminal
+          state — its own card, never the scan-result / "can't identify" path
+          (P3 container-level terminal-state mapping). */}
+      {phase === 'result' && result && result.scanLimitReached ? (
+        <ScanLimitReachedCard result={result} />
+      ) : null}
+
+      {phase === 'result' && result && !result.scanLimitReached && shouldRenderIntelligentResult() ? (
         <>
           {/* V3 §9 — Scan Command Center stacked above the legacy
               card. Self-hides each section when its envelope key
@@ -2114,7 +2122,7 @@ export default function ScanPage() {
         </>
       ) : null}
 
-      {phase === 'result' && result && !shouldRenderIntelligentResult() ? (
+      {phase === 'result' && result && !result.scanLimitReached && !shouldRenderIntelligentResult() ? (
         FEATURE_SCAN_USEFULNESS ? (
           // FEATURE_SCAN_USEFULNESS — clean farmer-friendly card.
           // saveScanUseful is idempotent (same scanId → no-op).

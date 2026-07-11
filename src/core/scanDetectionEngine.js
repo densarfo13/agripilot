@@ -364,6 +364,13 @@ export async function analyzeScan(input = {}) {
     const mod = await import('../services/scanApiService.js');
     if (mod && typeof mod.requestScanAnalysis === 'function') {
       const apiResult = await mod.requestScanAnalysis(safeInput);
+      // Daily-scan-limit is a distinct TERMINAL state, not an identification
+      // failure — surface it directly so the UI shows "limit reached", never
+      // the rule-based "can't identify" fallback below.
+      if (apiResult && apiResult.scanLimitReached) {
+        _trackScanEvent('scan_limit_reached', {});
+        return Object.freeze({ ...apiResult, scanId: apiResult.scanId || _mintScanId() });
+      }
       if (apiResult && _looksValid(apiResult)) {
         const experience = safeInput.experience === 'farm' || safeInput.experience === 'backyard'
           ? safeInput.experience : 'generic';
