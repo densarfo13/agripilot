@@ -1691,6 +1691,48 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       _scanResponse.confidenceMargin        = _idDecision.margin;
       _scanResponse.secondConfidence        = _idDecision.secondConfidence;
       _scanResponse.identificationThresholds = _idDecision.thresholds;
+
+      // ── Provisional confirmation contract (P0) + gated persistence (P3) ──
+      try {
+        const {
+          buildProvisionalContract, normalizeCandidates, deriveScanHealth,
+        } = await import('./ml/scanDecision/plantConfirmation.js');
+        const _idCandidates = (consensus && Array.isArray(consensus.candidates) && consensus.candidates.length)
+          ? consensus.candidates : scanRecovery.topCandidates;
+        // P0 — a PROVISIONAL response carries up to 3 real candidates + the
+        // allowed actions; requiresConfirmation drives the confirm card.
+        const _prov = buildProvisionalContract(_idDecision.identificationState, _idCandidates);
+        if (_prov) {
+          _scanResponse.requiresConfirmation = true;
+          _scanResponse.allowedActions = _prov.allowedActions;
+          _scanResponse.confirmationCandidates = _prov.candidates;
+        }
+        // P3 — persist candidates + the GATED scan-time health (revealed only on
+        // confirmation) keyed by scanId (@unique → idempotent). Fire-and-forget.
+        const _health = deriveScanHealth({
+          diseaseCandidates: scanRecovery.diseaseCandidates,
+          healthStatus: scanRecovery.healthStatus,
+          providerError: (cropHealth && cropHealth.status && cropHealth.status !== 'READY'
+            && cropHealth.status !== 'NO_RESULT'),
+        });
+        prisma.scanPlantIdentification.upsert({
+          where:  { scanId },
+          create: {
+            scanId, userId: req.user?.id || null, imageUrl: imageUrl || null,
+            identificationState: _idDecision.identificationState,
+            candidates: normalizeCandidates(_idCandidates, 5),
+            scanHealthState: _health.state, scanHealthResult: _health,
+            correlationId: scanId,
+            providerVersion: (consensus && consensus.raw && consensus.raw.plantid
+              && consensus.raw.plantid.model_version) || null,
+          },
+          update: {
+            identificationState: _idDecision.identificationState,
+            candidates: normalizeCandidates(_idCandidates, 5),
+            scanHealthState: _health.state, scanHealthResult: _health,
+          },
+        }).catch(() => { /* best-effort — never blocks a scan */ });
+      } catch { /* swallow — confirmation prep is additive */ }
       // Structured decision log (no secrets, no image). Requirement #8.
       const _f = (v) => (v == null ? 'na' : Number(v).toFixed(2));
       console.log('[scan.decision] req=' + scanId
@@ -2265,6 +2307,109 @@ app.get('/api/admin/scan/trace/:scanId', authenticate, async (req, res) => {
     return res.status(500).json({
       ok: false, error: 'trace_failed', message: err && err.message,
     });
+  }
+});
+
+// POST /api/scan/:scanId/confirm-plant — farmer confirms a PROVISIONAL candidate
+// (P2/P3/P4). Authenticated, ownership-scoped, idempotent. Validates the chosen
+// candidate against the STORED provider candidates (never trusts a client name),
+// persists the confirmation, and REVEALS the pre-computed (gated) health result —
+// no duplicate provider call (P8). Health provider errors are preserved as
+// PROVIDER_ERROR (never HEALTH_UNCERTAIN, P4/P7).
+app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ error: 'unauthorized', state: 'CONFIRMATION_REJECTED' });
+    const scanId = String(req.params.scanId || '').trim();
+    const candidateTaxonId = String((req.body && req.body.candidateTaxonId) || '').trim();
+    const confirmationSource = String((req.body && req.body.confirmationSource) || 'farmer').trim() || 'farmer';
+    if (!scanId || !candidateTaxonId) {
+      return res.status(400).json({ error: 'missing_scanId_or_candidate', state: 'CONFIRMATION_REJECTED' });
+    }
+
+    const { findConfirmableCandidate, recommendationLevel } =
+      await import('./ml/scanDecision/plantConfirmation.js');
+
+    const row = await prisma.scanPlantIdentification.findUnique({ where: { scanId } });
+    if (!row) return res.status(404).json({ error: 'scan_not_found', state: 'CONFIRMATION_REJECTED' });
+    // Ownership — never let one user confirm another's scan.
+    if (row.userId && row.userId !== userId) {
+      return res.status(403).json({ error: 'forbidden', state: 'CONFIRMATION_REJECTED' });
+    }
+
+    const _log = (evt, extra) => { try {
+      console.log('[scan.confirm] ' + evt + ' scan=' + scanId + ' user=' + userId
+        + (extra ? ' ' + extra : ''));
+    } catch { /* ignore */ } };
+
+    // Idempotency (P8) — an already-confirmed scan returns the existing result,
+    // never a duplicate health reveal / persistence / provider call.
+    if (row.confirmedAt) {
+      _log('idempotent_replay', 'state=' + (row.healthState || 'NONE'));
+      return res.json({
+        scanId, state: 'HEALTH_ASSESSMENT_COMPLETE', idempotent: true,
+        confirmedPlant: {
+          taxonId: row.confirmedTaxonId, commonName: row.confirmedCommonName,
+          scientificName: row.confirmedScientific, providerConfidence: row.confirmedConfidence,
+          confirmationSource: row.confirmationSource, confirmedAt: row.confirmedAt,
+        },
+        health: { state: row.healthState, conditions: row.healthConditions || [] },
+        recommendationLevel: recommendationLevel({
+          confirmed: true, healthState: row.healthState, conditions: row.healthConditions,
+        }),
+      });
+    }
+
+    // Validate the candidate against the STORED provider list (P2 — reject
+    // arbitrary names).
+    const match = findConfirmableCandidate(row.candidates, candidateTaxonId);
+    if (!match) {
+      _log('rejected_unknown_candidate', 'taxon=' + candidateTaxonId);
+      return res.status(400).json({ error: 'candidate_not_in_result', state: 'CONFIRMATION_REJECTED' });
+    }
+
+    _log('confirmation_started', 'taxon=' + candidateTaxonId + ' source=' + confirmationSource);
+
+    // Reveal the pre-computed, gated health (P4) — computed once at scan time, so
+    // confirming spends no extra provider credit (P8). Never re-maps a provider
+    // error to HEALTH_UNCERTAIN.
+    const scanHealth = (row.scanHealthResult && typeof row.scanHealthResult === 'object')
+      ? row.scanHealthResult : { state: 'HEALTH_UNCERTAIN', conditions: [] };
+    const healthState = row.scanHealthState || scanHealth.state || 'HEALTH_UNCERTAIN';
+    const healthConditions = Array.isArray(scanHealth.conditions) ? scanHealth.conditions : [];
+
+    const now = new Date();
+    const updated = await prisma.scanPlantIdentification.update({
+      where: { scanId },
+      data: {
+        confirmedTaxonId:    match.taxonId,
+        confirmedCommonName: match.commonName,
+        confirmedScientific: match.scientificName,
+        confirmedConfidence: match.providerConfidence,
+        confirmationSource,
+        confirmedBy:         userId,
+        confirmedAt:         now,
+        healthState,
+        healthConditions,
+      },
+    });
+
+    _log('confirmation_completed', 'health=' + healthState + ' conditions=' + healthConditions.length);
+
+    return res.json({
+      scanId,
+      state: healthState === 'PROVIDER_ERROR' ? 'HEALTH_PROVIDER_ERROR' : 'HEALTH_ASSESSMENT_COMPLETE',
+      confirmedPlant: {
+        taxonId: updated.confirmedTaxonId, commonName: updated.confirmedCommonName,
+        scientificName: updated.confirmedScientific, providerConfidence: updated.confirmedConfidence,
+        confirmationSource, confirmedAt: now,
+      },
+      health: { state: healthState, conditions: healthConditions },
+      recommendationLevel: recommendationLevel({ confirmed: true, healthState, conditions: healthConditions }),
+    });
+  } catch (err) {
+    try { console.error('[scan.confirm] error:', err && err.message); } catch { /* ignore */ }
+    return res.status(500).json({ error: 'confirm_failed', state: 'CONFIRMATION_REJECTED', message: err && err.message });
   }
 });
 

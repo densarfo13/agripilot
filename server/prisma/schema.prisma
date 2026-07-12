@@ -3136,6 +3136,44 @@ model ScanObservabilityEvent {
   @@map("scan_observability_events")
 }
 
+// PROVISIONAL CONFIRMATION (P2/P3) — one durable row per scan (scanId UNIQUE →
+// idempotent by construction). Written at scan time with the real provider
+// candidates + the (gated) scan-time health result, then UPDATED once the farmer
+// confirms a candidate. The confirm endpoint validates the chosen candidate
+// against `candidates` here (never trusts a client-supplied plant name) and
+// reveals the pre-computed health result — no duplicate provider call.
+model ScanPlantIdentification {
+  id                  String    @id @default(uuid())
+  scanId              String    @unique @map("scan_id")
+  userId              String?   @map("user_id")
+  imageUrl            String?   @map("image_url")
+  identificationState String?   @map("identification_state") // CONFIRMED | PROVISIONAL | LOW_CONFIDENCE | NOT_A_PLANT | PROVIDER_ERROR
+  // Original provider candidates: [{ taxonId, commonName, scientificName, providerConfidence }]
+  candidates          Json?
+  // Scan-time health, computed once and REVEALED on confirmation (never before).
+  scanHealthState     String?   @map("scan_health_state")
+  scanHealthResult    Json?     @map("scan_health_result")
+  correlationId       String?   @map("correlation_id")
+  providerVersion     String?   @map("provider_version")
+  // ── Confirmation (set at confirm time) ──
+  confirmedTaxonId    String?   @map("confirmed_taxon_id")
+  confirmedCommonName String?   @map("confirmed_common_name")
+  confirmedScientific String?   @map("confirmed_scientific")
+  confirmedConfidence Float?    @map("confirmed_confidence")
+  confirmationSource  String?   @map("confirmation_source") // farmer | provider
+  confirmedBy         String?   @map("confirmed_by")        // actor userId
+  confirmedAt         DateTime? @map("confirmed_at")
+  // ── Health reveal (set after confirmation) ──
+  healthState         String?   @map("health_state") // HEALTHY | ISSUE_POSSIBLE | HEALTH_UNCERTAIN | PROVIDER_ERROR
+  healthConditions    Json?     @map("health_conditions")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId], map: "idx_scan_plant_ident_user")
+  @@index([confirmedAt], map: "idx_scan_plant_ident_confirmed")
+  @@map("scan_plant_identifications")
+}
+
 // PRODUCTION CERTIFICATION — one row per provider per certify run, from LIVE
 // runtime evidence (POST /api/admin/scan/certify). Readiness is measured, never
 // inferred from env vars; status is one of NOT_CONFIGURED/READY/DEGRADED/FAILED/DISABLED.

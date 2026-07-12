@@ -226,10 +226,19 @@ export default function ScanGuidanceCard({
   showTreatmentLockedNote,
   variant,            // 'image' (default) | 'lowId' | 'provisional' | 'notPlant' | 'error'
   candidateName,      // top candidate name, shown in the provisional title
+  onConfirm,          // (provisional) confirm the top candidate → health assessment
+  confirming,         // true while the confirm request is in flight
+  confirmedHealth,    // { state, conditions } once confirmation completed (hides the confirm CTA)
   onRetake,
   onUpload,
   onSaveForReview,
 }) {
+  const _provisionalConfirm = variant === 'provisional' && _isFn(onConfirm) && !confirmedHealth;
+  const _healthLabel = (st) => (
+    st === 'HEALTHY' ? tSafe('scan.health.noDisease', 'No obvious disease detected')
+      : st === 'ISSUE_POSSIBLE' ? tSafe('scan.health.issue', 'Possible issue found')
+      : st === 'HEALTH_PROVIDER_ERROR' || st === 'PROVIDER_ERROR' ? tSafe('scan.health.error', 'Health check unavailable')
+      : tSafe('scan.health.uncertain', 'Health not certain yet'));
   const _reasons = _arr(reasons).slice(0, 3);
   const _stages = _arr(stages);
   const _pct = _num(confidencePct);
@@ -330,8 +339,38 @@ export default function ScanGuidanceCard({
       {/* Button hierarchy — Primary: Scan Again · Secondary: Choose from Gallery ·
           Tertiary: Ask an Agronomist (escalates to human expert review). The tertiary
           is rendered only when a real handler is wired, so it is never a dead no-op. */}
+      {/* Confirmed health outcome — replaces the confirm CTA after a farmer
+          confirms a provisional candidate (P4/P7). Honest label only; treatment
+          stays gated behind the recommendation-level policy. */}
+      {confirmedHealth ? (
+        <div style={S.confBlock} data-testid="scan-guidance-health">
+          <div style={S.confLabel}>{tSafe('scan.health.title', 'Health check')}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.title, margin: '4px 0' }}>
+            {_healthLabel(confirmedHealth.state)}
+          </div>
+          {_arr(confirmedHealth.conditions).slice(0, 2).map((c, i) => (
+            <div key={'cond-' + i} style={S.confHint}>
+              {String((c && c.name) || '')}
+              {c && typeof c.confidence === 'number' ? ' — ' + Math.round(c.confidence * 100) + '%' : ''}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <div style={S.actions}>
-        <button type="button" className="ff-scan-btn" style={S.btnPrimary}
+        {_provisionalConfirm ? (
+          <button type="button" className="ff-scan-btn" style={S.btnPrimary}
+            data-testid="scan-guidance-confirm"
+            aria-label={tSafe('scan.guidance.confirmYes', 'Yes, this is correct')}
+            onClick={confirming ? undefined : onConfirm}
+            disabled={!!confirming}>
+            {confirming
+              ? tSafe('scan.guidance.confirming', 'Checking health…')
+              : tSafe('scan.guidance.confirmYes', 'Yes, this is correct')}
+          </button>
+        ) : null}
+        <button type="button" className="ff-scan-btn"
+          style={_provisionalConfirm ? S.btnSecondary : S.btnPrimary}
           data-testid="scan-guidance-retake"
           aria-label={tSafe('scan.guidance.scanAgain', 'Scan Again')}
           onClick={_isFn(onRetake) ? onRetake : undefined}

@@ -46,6 +46,7 @@ import FruitVegResultCard from './FruitVegResultCard.jsx';
 import InsectResultCard from './InsectResultCard.jsx';
 import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
 import { resolveScanGuidance } from '../../runtime/scanTrust/scanGuidanceResolver';
+import { confirmScanPlant } from '../../runtime/scanTrust/confirmPlantRuntime';
 import { evaluatePhotoQuality } from '../../runtime/scanQuality/PhotoQualityEngine';
 import { explainPhotoQuality } from '../../runtime/scanQuality/PhotoQualityExplainer';
 import {
@@ -788,6 +789,24 @@ export default function IntelligentScanResult({
     : _guidance.state === 'PROVIDER_ERROR' ? 'error'
     : 'lowId'; // LOW_IDENTIFICATION_CONFIDENCE (valid image, just not sure)
   const _guidanceCandidate = _str(_guidance.provisional && _guidance.provisional.plantName);
+  // P1/P4 — provisional confirmation → health. Confirms the STORED top candidate
+  // (server-validated by taxonId), then reveals the gated health outcome. Hooks
+  // are unconditional (rules-of-hooks safe); the CTA only renders on provisional.
+  const [_confirming, _setConfirming] = useState(false);
+  const [_confirmedHealth, _setConfirmedHealth] = useState(null);
+  const _onConfirmProvisional = useCallback(async () => {
+    const scanId = _str(result && (result.scanId || result.scan_id));
+    const cands = _arr(result && result.confirmationCandidates);
+    const taxonId = _str(cands[0] && cands[0].taxonId);
+    if (!scanId || !taxonId || _confirming) return;
+    _setConfirming(true);
+    try {
+      const out = await confirmScanPlant(scanId, taxonId);
+      if (out && out.health) _setConfirmedHealth(out.health);
+      else _setConfirmedHealth({ state: 'HEALTH_PROVIDER_ERROR', conditions: [] });
+    } catch { _setConfirmedHealth({ state: 'HEALTH_PROVIDER_ERROR', conditions: [] }); }
+    finally { _setConfirming(false); }
+  }, [result, _confirming]);
   // Real identification confidence for the card — resolver-normalized, never the
   // banded string. Falls back to the envelope confidencePct.
   const _guidanceConfidence = (typeof _guidance.confidencePct === 'number')
@@ -883,6 +902,9 @@ export default function IntelligentScanResult({
         <ScanGuidanceCard
           variant={_guidanceVariant}
           candidateName={_guidanceCandidate}
+          onConfirm={_showProvisional ? _onConfirmProvisional : undefined}
+          confirming={_confirming}
+          confirmedHealth={_confirmedHealth}
           reasons={_coach ? _coach.whatWentWrong : null}
           confidencePct={_guidanceConfidence}
           stages={_stages}
