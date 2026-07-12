@@ -30,6 +30,12 @@ export function cropHealthKeyPresent() {
   try { return !!_key(); } catch { return false; }
 }
 
+// Diagnostic — mirrors the identification provider's [scan.provider] lines so
+// the crop-health/disease stage is PROVABLE from runtime logs. Logs the
+// endpoint + HTTP status + disease name/count/confidence + latency ONLY —
+// never the image, the key, or any PII.
+function _plog(msg) { try { console.log('[scan.provider] ' + msg); } catch { /* ignore */ } }
+
 function _imageToBase64(image) {
   try {
     if (!image) return '';
@@ -66,9 +72,15 @@ function _statusFromHttp(http) {
 }
 
 export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
-  if (!cropHealthKeyPresent()) return _empty('UNSUPPORTED', 'CROP_HEALTH_API_KEY missing', 0);
+  if (!cropHealthKeyPresent()) {
+    _plog('→ crop.health SKIPPED reason=no_key');
+    return _empty('UNSUPPORTED', 'CROP_HEALTH_API_KEY missing', 0);
+  }
   const b64 = _imageToBase64(image);
-  if (!b64) return _empty('NO_RESULT', 'empty_image', 0);
+  if (!b64) {
+    _plog('→ crop.health SKIPPED reason=empty_image');
+    return _empty('NO_RESULT', 'empty_image', 0);
+  }
 
   const body = JSON.stringify({
     images: [b64],
@@ -81,6 +93,7 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   const startedAt = Date.now();
+  _plog('→ crop.health ' + CROP_HEALTH_ENDPOINT + ' auth=yes');
   try {
     const res = await fetch(CROP_HEALTH_ENDPOINT, {
       method: 'POST',
@@ -92,6 +105,7 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
 
     if (!res || !res.ok) {
       const http = res ? res.status : 0;
+      _plog('← crop.health HTTP ' + http + ' status=' + _statusFromHttp(http) + ' latency=' + latencyMs + 'ms');
       return _empty(_statusFromHttp(http), 'http_' + http, latencyMs);
     }
 
@@ -101,7 +115,10 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
     const disease = result.disease || result.classification || {};
     const suggestions = Array.isArray(disease.suggestions) ? disease.suggestions : [];
     const top = suggestions[0] || null;
-    if (!top) return _empty('NO_RESULT', 'no_suggestion', latencyMs);
+    if (!top) {
+      _plog('← crop.health HTTP 200 disease=none candidates=0 latency=' + latencyMs + 'ms');
+      return _empty('NO_RESULT', 'no_suggestion', latencyMs);
+    }
 
     const details = top.details || {};
     const score = Number(top.probability) || 0;
@@ -122,6 +139,8 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
       });
     });
 
+    _plog('← crop.health HTTP 200 disease="' + diseaseName + '" candidates=' + candidates.length
+      + ' conf=' + Math.round(score * 100) + ' latency=' + latencyMs + 'ms');
     return Object.freeze({
       ok: true, status: 'READY', reason: null,
       disease: diseaseName,
@@ -139,6 +158,8 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
   } catch (err) {
     clearTimeout(timer);
     const aborted = err && err.name === 'AbortError';
+    _plog('← crop.health ERROR ' + (aborted ? 'timeout' : (err && err.message || 'unknown'))
+      + ' latency=' + (Date.now() - startedAt) + 'ms');
     return _empty('UNSUPPORTED', aborted ? 'timeout' : ('error:' + (err && err.message || 'unknown')),
       Date.now() - startedAt);
   }
