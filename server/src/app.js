@@ -1658,6 +1658,57 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       landHealth,
     };
 
+    // ── CANONICAL IDENTIFICATION STATE (server-owned, env-tunable bands) ──
+    // One resolver decides CONFIRMED / PROVISIONAL / LOW_CONFIDENCE / NOT_A_PLANT
+    // / PROVIDER_ERROR from real signals (top + second candidate probability, the
+    // margin between them, and Plant.id's is_plant probability), using
+    // environment-configurable thresholds with safe defaults. The state is
+    // stamped into the response; the client RENDERS it and must not re-derive
+    // thresholds. Never blocks the scan.
+    try {
+      const { resolveIdentificationState } = await import('./ml/scanDecision/resolveIdentificationState.js');
+      // is_plant probability from Plant.id's raw v3 payload (health:'all'
+      // returns it). null when the provider did not report it.
+      let _isPlantProb = null;
+      try {
+        const ip = consensus && consensus.raw && consensus.raw.plantid
+          && consensus.raw.plantid.result && consensus.raw.plantid.result.is_plant;
+        if (ip && Number.isFinite(Number(ip.probability))) _isPlantProb = Number(ip.probability);
+      } catch { _isPlantProb = null; }
+      const _providerStatus = (consensus && consensus.ok) ? 'ok'
+        : (inference && inference.serviceUnavailable ? 'error'
+          : ((consensus && consensus.status) || 'no_candidates'));
+      const _idDecision = resolveIdentificationState({
+        isPlantProbability: _isPlantProb,
+        candidates: (consensus && Array.isArray(consensus.candidates) && consensus.candidates.length)
+          ? consensus.candidates : scanRecovery.topCandidates,
+        providerStatus: _providerStatus,
+        imageQualityFailed: false,   // server does not measure image quality; the client owns LOW_IMAGE_QUALITY
+      });
+      _scanResponse.identificationState     = _idDecision.identificationState;
+      _scanResponse.identificationReasonCode = _idDecision.reasonCode;
+      _scanResponse.plantProbability        = _isPlantProb;
+      _scanResponse.confidenceMargin        = _idDecision.margin;
+      _scanResponse.secondConfidence        = _idDecision.secondConfidence;
+      _scanResponse.identificationThresholds = _idDecision.thresholds;
+      // Structured decision log (no secrets, no image). Requirement #8.
+      const _f = (v) => (v == null ? 'na' : Number(v).toFixed(2));
+      console.log('[scan.decision] req=' + scanId
+        + ' state=' + _idDecision.identificationState
+        + ' top=' + _f(_idDecision.topConfidence)
+        + ' second=' + _f(_idDecision.secondConfidence)
+        + ' margin=' + _f(_idDecision.margin)
+        + ' isPlant=' + _f(_isPlantProb)
+        + ' band=' + _idDecision.confidenceBand
+        + ' thr.confirmed=' + _idDecision.thresholds.confirmed
+        + ' thr.provisional=' + _idDecision.thresholds.provisional
+        + ' thr.margin=' + _idDecision.thresholds.margin
+        + ' thr.isPlant=' + _idDecision.thresholds.isPlant
+        + ' reason=' + _idDecision.reasonCode);
+    } catch (e) {
+      try { console.warn('[scan.decision] resolver failed:', e && e.message); } catch { /* ignore */ }
+    }
+
     // PLANT SAFETY ENGINE (feature-flagged: plantSafetyEngine) — attach structured,
     // non-fabricated edibility/toxicity guidance for a CONFIDENT known plant. When the
     // flag is OFF the response is byte-identical to before (client falls back to its

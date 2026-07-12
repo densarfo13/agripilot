@@ -83,6 +83,38 @@ describe('resolveScanGuidance — evidence-backed state machine', () => {
   });
 });
 
+// Option-1 requirement #7 — the client CONSUMES the server-stamped
+// identificationState and must NOT re-derive the band from confidencePct.
+describe('resolveScanGuidance — consumes server identificationState (no client re-derivation)', () => {
+  const withCand = (extra) => ({ topCandidates: [{ commonName: 'Maize' }], plantName: 'Maize', scanId: 's1', ...extra });
+
+  it('server CONFIRMED wins even when confidencePct would read LOW client-side', () => {
+    const g = resolveScanGuidance(withCand({ identificationState: 'CONFIRMED', confidencePct: 10 }));
+    expect(g.state).toBe('IDENTIFIED_CONFIRMED');   // NOT LOW_IDENTIFICATION_CONFIDENCE
+    expect(g.showGuidance).toBe(false);
+  });
+
+  it('server PROVISIONAL wins even when confidencePct would read CONFIRMED client-side', () => {
+    const g = resolveScanGuidance(withCand({ identificationState: 'PROVISIONAL', confidencePct: 95 }));
+    expect(g.state).toBe('IDENTIFIED_PROVISIONAL');
+    expect(g.showProvisional).toBe(true);
+  });
+
+  it('server LOW_CONFIDENCE / NOT_A_PLANT / PROVIDER_ERROR map to the guidance family', () => {
+    expect(resolveScanGuidance(withCand({ identificationState: 'LOW_CONFIDENCE', confidencePct: 90 })).state)
+      .toBe('LOW_IDENTIFICATION_CONFIDENCE');
+    expect(resolveScanGuidance(withCand({ identificationState: 'NOT_A_PLANT', confidencePct: 90 })).state)
+      .toBe('NOT_A_PLANT');
+    expect(resolveScanGuidance(withCand({ identificationState: 'PROVIDER_ERROR', confidencePct: 90 })).state)
+      .toBe('PROVIDER_ERROR');
+  });
+
+  it('absent identificationState → client falls back to its own computation (back-compat)', () => {
+    expect(resolveScanGuidance(withCand({ confidencePct: 85 })).state).toBe('IDENTIFIED_CONFIRMED');
+    expect(resolveScanGuidance(withCand({ confidencePct: 55 })).state).toBe('IDENTIFIED_PROVISIONAL');
+  });
+});
+
 // P1/P2/P3 — composition + progress-state wiring (source assertions).
 describe('scan composition + progress-state wiring', () => {
   it('ScanPage suppresses the legacy card via the SHARED resolver, not a divergent threshold', () => {

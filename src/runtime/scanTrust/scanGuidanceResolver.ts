@@ -25,6 +25,17 @@ const _obj = (v: unknown): v is Record<string, any> => v != null && typeof v ===
 const _low = (v: unknown): string => (typeof v === 'string' ? v.toLowerCase() : '');
 const _arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 
+// Maps the SERVER-owned identification band (from resolveIdentificationState.js,
+// stamped on result.identificationState) to this client state enum. When present,
+// the client renders it directly — it never re-derives the confidence thresholds.
+const SERVER_STATE_MAP: Record<string, ScanResultState> = {
+  CONFIRMED:      'IDENTIFIED_CONFIRMED',
+  PROVISIONAL:    'IDENTIFIED_PROVISIONAL',
+  LOW_CONFIDENCE: 'LOW_IDENTIFICATION_CONFIDENCE',
+  NOT_A_PLANT:    'NOT_A_PLANT',
+  PROVIDER_ERROR: 'PROVIDER_ERROR',
+};
+
 // Accept confidence as 0-100 (pct) OR 0-1 (frac); normalize to pct. Returns
 // null when no numeric confidence is present (never invents 0).
 function _confPct(r: Record<string, any>): number | null {
@@ -121,10 +132,19 @@ export function resolveScanGuidance(result: unknown): ScanGuidanceResolution {
     || _low(r.objectType) === 'not_plant'
     || (isPlantProb != null && isPlantProb < 0.3);
 
+  // The server stamps the canonical identification band (env-tunable, decided
+  // once in resolveIdentificationState.js). The client CONSUMES it and must NOT
+  // recompute thresholds. A client-MEASURED image failure still wins (the server
+  // cannot see the photo), but the identification band itself is the server's.
+  const serverState = SERVER_STATE_MAP[String(r.identificationState || '').toUpperCase()];
+
   // ── State machine — most-specific evidence first ────────────────
   let state: ScanResultState;
   if (photoFailed) {
     state = 'LOW_IMAGE_QUALITY';
+  } else if (serverState) {
+    // Consume the server-owned decision verbatim (no threshold re-derivation).
+    state = serverState;
   } else if (providerError && !hasCandidates) {
     state = 'PROVIDER_ERROR';
   } else if (notPlant) {
