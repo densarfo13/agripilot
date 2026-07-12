@@ -142,10 +142,31 @@ export function buildScanRecoveryEnvelope({ consensus, safe, fused, cropNameHint
       || '';
     const scientificName = _str(ident && ident.scientificName);
 
-    // Confidence: prefer consensus percent (which is the weighted
-    // multi-source value); fall back to the safe verdict's confidence
-    // string.
-    let confidence = _num(c.confidencePct);
+    // ── Identification confidence (root-cause fix, 2026-07) ────────
+    // The consensus `confidencePct` does NOT represent IDENTIFICATION
+    // confidence. Two upstream steps corrupt it:
+    //   1. plantIdProvider computes its confidence BAND from the DISEASE
+    //      probability when a disease suggestion is present (health:'all'
+    //      always returns some), so a confidently-identified but mostly-
+    //      healthy plant is banded 'low'.
+    //   2. scanConsensusEngine collapses that band back to a fixed score
+    //      (low→0.25 / medium→0.55 / high→0.85), discarding the real value.
+    // Net effect: a validly-identified plant reported ~25% and was mapped
+    // to the low-confidence "clearer photo" card. The providers DO return
+    // the true per-candidate probability — use the top identification
+    // candidate's real score. Never fabricates; falls back to the band
+    // only when no candidate score exists at all.
+    const _asPct = (v) => {
+      const n = _num(v);
+      if (n == null) return null;
+      return n <= 1 ? Math.round(n * 100) : Math.round(n);
+    };
+    const _identScore = _asPct(ident && ident.score);
+    const _topCandScore = _asPct(_arr(c.candidates)[0] && _arr(c.candidates)[0].score);
+    let confidence = null;
+    if (_identScore != null && _identScore > 0) confidence = _identScore;
+    else if (_topCandScore != null && _topCandScore > 0) confidence = _topCandScore;
+    else if (_num(c.confidencePct) != null) confidence = _num(c.confidencePct);
     if (confidence == null) {
       const band = String(s.confidence || c.confidence || 'low').toLowerCase();
       confidence = band === 'high' ? 85 : band === 'medium' ? 55 : 25;

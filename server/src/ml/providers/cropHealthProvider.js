@@ -105,7 +105,14 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
 
     if (!res || !res.ok) {
       const http = res ? res.status : 0;
-      _plog('← crop.health HTTP ' + http + ' status=' + _statusFromHttp(http) + ' latency=' + latencyMs + 'ms');
+      // Sanitized body snippet — crop.health returns a JSON validation error
+      // on 400 that names the offending field (e.g. an unrecognized body
+      // key). Never logs the key or the image; caps at 160 chars. This is
+      // how a persistent 400 gets root-caused from runtime logs.
+      let snip = '';
+      try { snip = (await res.text()).replace(/\s+/g, ' ').slice(0, 160); } catch { /* ignore */ }
+      _plog('← crop.health HTTP ' + http + ' status=' + _statusFromHttp(http)
+        + ' latency=' + latencyMs + 'ms' + (snip ? ' body=' + snip : ''));
       return _empty(_statusFromHttp(http), 'http_' + http, latencyMs);
     }
 

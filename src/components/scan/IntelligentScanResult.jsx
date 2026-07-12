@@ -773,7 +773,25 @@ export default function IntelligentScanResult({
   const _photoQuality = _guidance.photoQuality || null;
   const _trust = _guidance.trust || null;
   const _trustBlocked = !!_guidance.trustBlocked;
-  const _showGuidance = !!_guidance.showGuidance;
+  // The guidance/provisional card owns the surface for EVERY non-confirmed
+  // state (low image quality, low ID confidence, not-a-plant, provider error,
+  // AND provisional). Combining them here means the existing `!_showGuidance`
+  // gates (VoiceHeader, CropHealthSection) also suppress disease analysis until
+  // the identification is confirmed — spec §5.
+  const _showProvisional = !!_guidance.showProvisional;
+  const _showGuidance = !!(_guidance.showGuidance || _showProvisional);
+  // Map the discrete backend state → the card's content variant. This is what
+  // stops "Clearer photo needed" from showing on a valid-but-unsure scan.
+  const _guidanceVariant = _guidance.state === 'LOW_IMAGE_QUALITY' ? 'image'
+    : _guidance.state === 'IDENTIFIED_PROVISIONAL' ? 'provisional'
+    : _guidance.state === 'NOT_A_PLANT' ? 'notPlant'
+    : _guidance.state === 'PROVIDER_ERROR' ? 'error'
+    : 'lowId'; // LOW_IDENTIFICATION_CONFIDENCE (valid image, just not sure)
+  const _guidanceCandidate = _str(_guidance.provisional && _guidance.provisional.plantName);
+  // Real identification confidence for the card — resolver-normalized, never the
+  // banded string. Falls back to the envelope confidencePct.
+  const _guidanceConfidence = (typeof _guidance.confidencePct === 'number')
+    ? _guidance.confidencePct : _num(result && result.confidencePct);
   const _coach = _showGuidance ? _safe(() => explainPhotoQuality(_photoQuality), null) : null;
 
   // Sprint #207 — honest numeric confidence breakdown. Only the two
@@ -863,8 +881,10 @@ export default function IntelligentScanResult({
           CTAs and the treatment-locked note. */}
       {_showGuidance ? (
         <ScanGuidanceCard
+          variant={_guidanceVariant}
+          candidateName={_guidanceCandidate}
           reasons={_coach ? _coach.whatWentWrong : null}
-          confidencePct={_num(result && result.confidencePct)}
+          confidencePct={_guidanceConfidence}
           stages={_stages}
           showTreatmentLockedNote={!!(treatment || region)}
           onRetake={_isFn(onRetake) ? onRetake : undefined}

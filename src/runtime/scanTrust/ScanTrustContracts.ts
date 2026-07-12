@@ -12,7 +12,18 @@
 export const SCAN_TRUST_CONTRACTS_VERSION = 'scan-trust-contracts-v1';
 
 // Confidence threshold (the spec's 0.70 on a 0-1 scale = 70 on 0-100).
+// At or above this we CONFIRM an identification (plant creation, disease
+// analysis allowed). This is deliberately NOT lowered — instead the band
+// below it is split into a provisional tier (see below).
 export const TRUST_CONFIDENCE_THRESHOLD_PCT = 70;
+
+// Provisional tier floor. A candidate in [PROVISIONAL, TRUST) is plausible
+// but unconfirmed: we surface the top candidate and ASK the farmer to
+// confirm — we do NOT auto-create a plant, and we do NOT generate treatment
+// until they confirm. Below PROVISIONAL there is no trustworthy candidate at
+// all → low-confidence. 45 aligns with the provider 'medium' band start, so
+// the split is: <45 low · [45,70) provisional · ≥70 confirmed.
+export const PROVISIONAL_CONFIDENCE_THRESHOLD_PCT = 45;
 
 export type GateStatus = 'trusted' | 'review' | 'blocked';
 

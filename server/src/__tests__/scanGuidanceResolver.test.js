@@ -7,36 +7,78 @@ import { resolveScanGuidance } from '../../../src/runtime/scanTrust/scanGuidance
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = (rel) => fs.readFileSync(path.resolve(ROOT, rel), 'utf-8');
 
-// P1 — the fixed defect: the trust gate blocks below 70, but the old ScanPage
-// dedup only suppressed the legacy card below 40. A result in [40, 70) therefore
-// rendered BOTH cards. The shared resolver must own that whole band.
-describe('resolveScanGuidance — single low-confidence owner (P1)', () => {
-  const withCand = (extra) => ({ topCandidates: [{ commonName: 'Maize' }], plantName: 'Maize', scanId: 's1', ...extra });
+// The evidence-backed state machine (spec §2 + §5): low image quality, low
+// identification confidence, not-a-plant, provider error, provisional, and
+// confirmed are DISTINCT — a valid image the provider couldn't confidently name
+// must NEVER be labelled "clearer photo needed", and a plausible sub-threshold
+// candidate must be shown as provisional (confirm), not thrown away.
+describe('resolveScanGuidance — evidence-backed state machine', () => {
+  const withCand = (extra) => ({ topCandidates: [{ commonName: 'Maize', scientificName: 'Zea mays' }], plantName: 'Maize', scanId: 's1', ...extra });
 
-  it('confidence in [40,70) → showGuidance=true (the old <40 dedup missed this)', () => {
-    const g = resolveScanGuidance(withCand({ confidencePct: 55 }));
-    expect(g.showGuidance).toBe(true);
-    expect(g.trustBlocked).toBe(true);
-  });
-  it('confidence just below the trust threshold (69) is still owned by guidance', () => {
-    expect(resolveScanGuidance(withCand({ confidencePct: 69 })).showGuidance).toBe(true);
-  });
-  it('high confidence (85) → showGuidance=false (legacy confirm card allowed)', () => {
-    expect(resolveScanGuidance(withCand({ confidencePct: 85 })).showGuidance).toBe(false);
-  });
-  it('a successful high-confidence candidate is NOT forced into guidance/unknown', () => {
-    const g = resolveScanGuidance(withCand({ confidencePct: 92 }));
+  it('≥70 with candidates → IDENTIFIED_CONFIRMED (no guidance, no provisional)', () => {
+    const g = resolveScanGuidance(withCand({ confidencePct: 85 }));
+    expect(g.state).toBe('IDENTIFIED_CONFIRMED');
     expect(g.showGuidance).toBe(false);
+    expect(g.showProvisional).toBe(false);
     expect(g.trustBlocked).toBe(false);
   });
-  it('no candidates → showGuidance=true', () => {
-    expect(resolveScanGuidance({ confidencePct: 90, topCandidates: [], plantName: '', scanId: 's1' }).showGuidance).toBe(true);
+
+  it('[45,70) plausible candidate → IDENTIFIED_PROVISIONAL (confirm, not "clearer photo")', () => {
+    const g = resolveScanGuidance(withCand({ confidencePct: 55 }));
+    expect(g.state).toBe('IDENTIFIED_PROVISIONAL');
+    expect(g.showProvisional).toBe(true);
+    expect(g.showGuidance).toBe(false);            // NOT the low-confidence guidance card
+    expect(g.provisional.plantName).toBe('Maize');
+    expect(g.provisional.confidencePct).toBe(55);
   });
-  it('explicit needs_review status → showGuidance=true even at high confidence', () => {
-    expect(resolveScanGuidance(withCand({ confidencePct: 90, status: 'needs_review' })).showGuidance).toBe(true);
+
+  it('69 (just below trusted) is still provisional, not confirmed', () => {
+    expect(resolveScanGuidance(withCand({ confidencePct: 69 })).state).toBe('IDENTIFIED_PROVISIONAL');
   });
-  it('null / garbage input never throws and returns a boolean', () => {
+  it('45 (provisional floor, inclusive) → provisional', () => {
+    expect(resolveScanGuidance(withCand({ confidencePct: 45 })).state).toBe('IDENTIFIED_PROVISIONAL');
+  });
+
+  it('<45 with a valid image + candidates → LOW_IDENTIFICATION_CONFIDENCE (guidance, NOT image quality)', () => {
+    const g = resolveScanGuidance(withCand({ confidencePct: 30 }));
+    expect(g.state).toBe('LOW_IDENTIFICATION_CONFIDENCE');
+    expect(g.showGuidance).toBe(true);
+    expect(g.showProvisional).toBe(false);
+  });
+
+  it('accepts fractional confidence (0..1) and normalizes to pct', () => {
+    expect(resolveScanGuidance(withCand({ confidence: 0.82 })).state).toBe('IDENTIFIED_CONFIRMED');
+    expect(resolveScanGuidance(withCand({ confidence: 0.55 })).state).toBe('IDENTIFIED_PROVISIONAL');
+  });
+
+  it('no candidates → LOW_IDENTIFICATION_CONFIDENCE (never provisional)', () => {
+    const g = resolveScanGuidance({ confidencePct: 90, topCandidates: [], plantName: '', scanId: 's1' });
+    expect(g.state).toBe('LOW_IDENTIFICATION_CONFIDENCE');
+    expect(g.showGuidance).toBe(true);
+  });
+
+  it('explicit needs_review → LOW_IDENTIFICATION_CONFIDENCE even at high confidence (human review, not provisional)', () => {
+    const g = resolveScanGuidance(withCand({ confidencePct: 90, status: 'needs_review' }));
+    expect(g.state).toBe('LOW_IDENTIFICATION_CONFIDENCE');
+    expect(g.showGuidance).toBe(true);
+    expect(g.showProvisional).toBe(false);
+  });
+
+  it('serviceUnavailable + no candidates → PROVIDER_ERROR (not "clearer photo")', () => {
+    const g = resolveScanGuidance({ serviceUnavailable: true, topCandidates: [], plantName: '', scanId: 's1' });
+    expect(g.state).toBe('PROVIDER_ERROR');
+    expect(g.showGuidance).toBe(true);
+  });
+
+  it('explicit low isPlant probability → NOT_A_PLANT', () => {
+    const g = resolveScanGuidance(withCand({ confidencePct: 80, isPlant: 0.1 }));
+    expect(g.state).toBe('NOT_A_PLANT');
+    expect(g.showGuidance).toBe(true);
+  });
+
+  it('null / garbage input never throws and returns a valid state', () => {
     expect(() => resolveScanGuidance(null)).not.toThrow();
+    expect(typeof resolveScanGuidance(null).state).toBe('string');
     expect(typeof resolveScanGuidance(null).showGuidance).toBe('boolean');
   });
 });

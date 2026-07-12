@@ -2270,6 +2270,7 @@ export default function ScanPage() {
           can never diverge — exactly ONE terminal card renders. Plant creation is
           trust-blocked on low confidence anyway, so nothing actionable is lost. */}
       {phase === 'result' && result && !resolveScanGuidance(result).showGuidance
+        && !resolveScanGuidance(result).showProvisional
         ? (
         <AddPlantConfirmationCard
           scanResult={result}

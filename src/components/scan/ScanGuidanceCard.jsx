@@ -163,11 +163,69 @@ function _stageGlyph(state) {
   return '○';                         // pending
 }
 
+// Variant → header copy. The message MUST match the real backend state so
+// "Clearer photo needed" is shown ONLY for a measured image problem — never
+// for a valid image the provider simply couldn't confidently name. Each entry
+// is [i18nKey, englishFallback]; tSafe renders the fallback until translated.
+function _variantCopy(variant, candidateName) {
+  const name = String(candidateName || '').trim();
+  switch (variant) {
+    case 'provisional':
+      return {
+        icon: '🌱',
+        badge: ['scan.guidance.provisional.badge', 'Is this correct?'],
+        title: name
+          ? ['scan.guidance.provisional.title', 'We may have identified this as ' + name + '.']
+          : ['scan.guidance.provisional.titleGeneric', 'We have a possible match.'],
+        body: ['scan.guidance.provisional.body',
+          'Confirm the plant so we can check its health, or scan again for a clearer match.'],
+        hint: ['scan.guidance.provisional.hint', 'Best guess — please confirm'],
+      };
+    case 'lowId':
+      return {
+        icon: '🔍',
+        badge: ['scan.guidance.lowId.badge', 'Not sure yet'],
+        title: ['scan.guidance.lowId.title', "We couldn't confidently name this plant."],
+        body: ['scan.guidance.lowId.body',
+          'The photo looks fine — we just are not certain. A closer photo of a single leaf, or an agronomist, can confirm it.'],
+        hint: ['scan.confidence.low', 'Low confidence'],
+      };
+    case 'notPlant':
+      return {
+        icon: '🪴',
+        badge: ['scan.guidance.notPlant.badge', 'No plant detected'],
+        title: ['scan.guidance.notPlant.title', "This doesn't look like a plant."],
+        body: ['scan.guidance.notPlant.body',
+          'Point the camera at a leaf, crop, or whole plant and scan again.'],
+        hint: ['scan.confidence.low', 'Low confidence'],
+      };
+    case 'error':
+      return {
+        icon: '📡',
+        badge: ['scan.guidance.error.badge', 'Service unavailable'],
+        title: ['scan.guidance.error.title', "We couldn't reach the plant service."],
+        body: ['scan.guidance.error.body', 'This is temporary. Please scan again in a moment.'],
+        hint: ['scan.confidence.low', 'Low confidence'],
+      };
+    case 'image':
+    default:
+      return {
+        icon: '⚠️',
+        badge: ['scanQuality.photoNeedsClearerView', 'Clearer photo needed'],
+        title: ['scan.guidance.title', "We couldn't confidently identify this crop."],
+        body: ['scan.guidance.body', 'Take one close photo of a single leaf in daylight.'],
+        hint: ['scan.confidence.low', 'Low confidence'],
+      };
+  }
+}
+
 export default function ScanGuidanceCard({
   reasons,            // PhotoQualityEngine coaching keys / texts (the honest "why")
   confidencePct,      // numeric 0–100 from the scan envelope (may be absent)
   stages,             // [{ key, labelKey, labelDefault, state:'done'|'skipped'|'pending' }]
   showTreatmentLockedNote,
+  variant,            // 'image' (default) | 'lowId' | 'provisional' | 'notPlant' | 'error'
+  candidateName,      // top candidate name, shown in the provisional title
   onRetake,
   onUpload,
   onSaveForReview,
@@ -176,21 +234,23 @@ export default function ScanGuidanceCard({
   const _stages = _arr(stages);
   const _pct = _num(confidencePct);
   const _pctShown = _pct === null ? null : Math.max(0, Math.min(100, Math.round(_pct)));
+  const _copy = _variantCopy(variant, candidateName);
   return (
     <section className="ff-scan-result" style={S.card} data-testid="scan-guidance-card" role="region"
-      aria-label={tSafe('scan.guidance.title', "We couldn't confidently identify this crop.")}>
+      data-variant={variant || 'image'}
+      aria-label={tSafe(_copy.title[0], _copy.title[1])}>
       <style>{CARD_CSS}</style>
 
       <div style={S.badge} data-testid="scan-guidance-status">
-        <span aria-hidden="true">⚠️</span>
-        <span>{tSafe('scanQuality.photoNeedsClearerView', 'Clearer photo needed')}</span>
+        <span aria-hidden="true">{_copy.icon}</span>
+        <span>{tSafe(_copy.badge[0], _copy.badge[1])}</span>
       </div>
 
       <h3 style={S.title} data-testid="scan-guidance-title">
-        {tSafe('scan.guidance.title', "We couldn't confidently identify this crop.")}
+        {tSafe(_copy.title[0], _copy.title[1])}
       </h3>
       <p style={S.body}>
-        {tSafe('scan.guidance.body', 'Take one close photo of a single leaf in daylight.')}
+        {tSafe(_copy.body[0], _copy.body[1])}
       </p>
 
       {/* Identification confidence — the REAL number, with a proportional bar. Rendered
@@ -202,7 +262,7 @@ export default function ScanGuidanceCard({
           <div style={S.confTrack} aria-hidden="true">
             <div style={S.confFill(_pctShown)} />
           </div>
-          <div style={S.confHint}>{tSafe('scan.confidence.low', 'Low confidence')}</div>
+          <div style={S.confHint}>{tSafe(_copy.hint[0], _copy.hint[1])}</div>
         </div>
       ) : null}
 
