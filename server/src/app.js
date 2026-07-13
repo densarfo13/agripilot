@@ -2413,6 +2413,47 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
   }
 });
 
+// ── Guided multi-view scan sessions (PR-B) ──────────────────────────────────
+// Durable, server-owned diagnosis sessions. One entitlement per session; the
+// server owns state + the next requested view (the client renders, never derives).
+// Thin adapters over scanSessionService (ownership/expiry/limits/dedup/idempotency
+// + the tested nextViewResolver + evidenceAggregator live there).
+app.post('/api/scan/sessions', authenticate, async (req, res) => {
+  try {
+    const { createSession } = await import('./ml/scanSession/scanSessionService.js');
+    const out = await createSession({ prisma, user: req.user, body: req.body || {} });
+    return res.status(out.status).json(out.body);
+  } catch (err) { return res.status(500).json({ error: 'session_create_failed', message: err && err.message }); }
+});
+app.post('/api/scan/sessions/:sessionId/photos', authenticate, scanUserLimiter, async (req, res) => {
+  try {
+    const { addPhoto } = await import('./ml/scanSession/scanSessionService.js');
+    const out = await addPhoto({ prisma, user: req.user, sessionId: req.params.sessionId, body: req.body || {} });
+    return res.status(out.status).json(out.body);
+  } catch (err) { return res.status(500).json({ error: 'session_photo_failed', message: err && err.message }); }
+});
+app.get('/api/scan/sessions/:sessionId', authenticate, async (req, res) => {
+  try {
+    const { getSession } = await import('./ml/scanSession/scanSessionService.js');
+    const out = await getSession({ prisma, user: req.user, sessionId: req.params.sessionId });
+    return res.status(out.status).json(out.body);
+  } catch (err) { return res.status(500).json({ error: 'session_get_failed', message: err && err.message }); }
+});
+app.post('/api/scan/sessions/:sessionId/complete', authenticate, async (req, res) => {
+  try {
+    const { completeSession } = await import('./ml/scanSession/scanSessionService.js');
+    const out = await completeSession({ prisma, user: req.user, sessionId: req.params.sessionId });
+    return res.status(out.status).json(out.body);
+  } catch (err) { return res.status(500).json({ error: 'session_complete_failed', message: err && err.message }); }
+});
+app.post('/api/scan/sessions/:sessionId/escalate', authenticate, async (req, res) => {
+  try {
+    const { escalateSession } = await import('./ml/scanSession/scanSessionService.js');
+    const out = await escalateSession({ prisma, user: req.user, sessionId: req.params.sessionId });
+    return res.status(out.status).json(out.body);
+  } catch (err) { return res.status(500).json({ error: 'session_escalate_failed', message: err && err.message }); }
+});
+
 // POST /api/scan/escalate — review escalation when confidence<60.
 //   body: { scanId, target ('community'|'field_officer'|'admin'),
 //            note? }

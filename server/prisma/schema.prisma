@@ -3174,6 +3174,76 @@ model ScanPlantIdentification {
   @@map("scan_plant_identifications")
 }
 
+// GUIDED MULTI-VIEW SESSION (PR-B). One durable, server-owned session per farmer
+// diagnosis attempt. Charges ONE scan entitlement at creation; subsequent photos
+// in the same session are free. The session owns state + the requested next view;
+// the client renders, never derives. Composes the tested nextViewResolver +
+// evidenceAggregator. Additive + nullable → zero-lock migration.
+model ScanSession {
+  id                      String    @id @default(uuid())
+  userId                  String    @map("user_id")
+  farmId                  String?   @map("farm_id")
+  fieldId                 String?   @map("field_id")
+  state                   String    @default("SESSION_CREATED")
+  requestedView           String?   @map("requested_view")
+  requestedReasonCode     String?   @map("requested_reason_code")
+  imageCount              Int       @default(0) @map("image_count")
+  identificationCallCount Int       @default(0) @map("identification_call_count")
+  healthCallCount         Int       @default(0) @map("health_call_count")
+  identificationState     String?   @map("identification_state")
+  healthState             String?   @map("health_state")
+  candidates              Json?
+  confirmedTaxonId        String?   @map("confirmed_taxon_id")
+  cropName                String?   @map("crop_name")
+  region                  String?
+  entitlementChargedAt    DateTime? @map("entitlement_charged_at")
+  expiresAt               DateTime  @map("expires_at")
+  completedAt             DateTime? @map("completed_at")
+  escalatedAt             DateTime? @map("escalated_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  images                  ScanSessionImage[]
+  events                  ScanSessionEvent[]
+
+  @@index([userId], map: "idx_scan_session_user")
+  @@index([state], map: "idx_scan_session_state")
+  @@index([expiresAt], map: "idx_scan_session_expires")
+  @@map("scan_sessions")
+}
+
+model ScanSessionImage {
+  id             String   @id @default(uuid())
+  sessionId      String   @map("session_id")
+  imageHash      String   @map("image_hash")
+  storageRef     String?  @map("storage_ref")
+  viewType       String   @map("view_type")
+  captureOrder   Int      @map("capture_order")
+  qualityState   String?  @map("quality_state")
+  qualityReasons Json?    @map("quality_reasons")
+  providerResult Json?    @map("provider_result")
+  idempotencyKey String?  @map("idempotency_key")
+  createdAt      DateTime @default(now()) @map("created_at")
+  session        ScanSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Dedup + concurrent-safety: a repeat image (same hash) in a session cannot
+  // insert twice → the second concurrent upload conflicts and reuses the stored result.
+  @@unique([sessionId, imageHash], map: "uq_scan_session_image_hash")
+  @@index([sessionId], map: "idx_scan_session_image_session")
+  @@map("scan_session_images")
+}
+
+model ScanSessionEvent {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  eventType String   @map("event_type")
+  payload   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  session   ScanSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId], map: "idx_scan_session_event_session")
+  @@map("scan_session_events")
+}
+
 // PRODUCTION CERTIFICATION — one row per provider per certify run, from LIVE
 // runtime evidence (POST /api/admin/scan/certify). Readiness is measured, never
 // inferred from env vars; status is one of NOT_CONFIGURED/READY/DEGRADED/FAILED/DISABLED.
