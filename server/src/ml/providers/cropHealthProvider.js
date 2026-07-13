@@ -82,20 +82,23 @@ export async function detectCropHealth({ image, mime: _mime, cropName } = {}) {
     return _empty('NO_RESULT', 'empty_image', 0);
   }
 
-  const body = JSON.stringify({
-    images: [b64],
-    similar_images: true,
-    // Ask crop.health for the rich detail blocks the spec needs.
-    details: ['treatment', 'prevention', 'cause', 'common_names', 'description'],
-    ...(cropName ? { crop: String(cropName) } : {}),
-  });
+  // crop.health 400 root cause (proven from the sanitized 400-body log:
+  // "Unknown modifier: details=[...]. Available modifiers: [similar_images=true]"):
+  // Kindwise crop.health accepts ONLY `similar_images` as a BODY modifier —
+  // `details` + `language` are QUERY params, and there is no body `crop` field.
+  // So the rich detail blocks go on the query string; the body stays minimal.
+  const body = JSON.stringify({ images: [b64], similar_images: true });
+  const _detailsQuery = 'details=' + encodeURIComponent('treatment,prevention,cause,common_names,description')
+    + '&language=en';
+  const _url = CROP_HEALTH_ENDPOINT + (CROP_HEALTH_ENDPOINT.includes('?') ? '&' : '?') + _detailsQuery;
+  void cropName; // crop.health is crop-agnostic — no body/crop hint (was causing the 400)
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   const startedAt = Date.now();
   _plog('→ crop.health ' + CROP_HEALTH_ENDPOINT + ' auth=yes');
   try {
-    const res = await fetch(CROP_HEALTH_ENDPOINT, {
+    const res = await fetch(_url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Api-Key': _key() },
       body, signal: ctrl.signal,

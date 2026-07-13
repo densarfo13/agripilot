@@ -38,6 +38,23 @@ describe('cropHealthProvider — [scan.provider] logging (health stage provable)
     expect(line('conf=62')).toBeTruthy();
   });
 
+  it('sends details+language as QUERY params, not body modifiers (the 400 root-cause fix)', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true, status: 200, json: async () => ({ result: { disease: { suggestions: [] } } }),
+    }));
+    globalThis.fetch = fetchMock;
+    await detectCropHealth({ image: IMG, mime: 'image/jpeg', cropName: 'maize' });
+    const [url, opts] = fetchMock.mock.calls[0];
+    // details + language live on the query string
+    expect(String(url)).toMatch(/[?&]details=/);
+    expect(String(url)).toMatch(/language=en/);
+    // the body carries ONLY the valid `similar_images` modifier — never `details`/`crop`
+    const sentBody = JSON.parse(opts.body);
+    expect(sentBody.similar_images).toBe(true);
+    expect(sentBody.details).toBeUndefined();
+    expect(sentBody.crop).toBeUndefined();
+  });
+
   it('logs AUTH_FAILED on 401 (reveals a broken health key instead of hiding it)', async () => {
     globalThis.fetch = vi.fn(async () => ({ ok: false, status: 401, json: async () => ({}) }));
     const r = await detectCropHealth({ image: IMG, mime: 'image/jpeg' });
