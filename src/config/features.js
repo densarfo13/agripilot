@@ -116,6 +116,11 @@ const DEFAULTS = Object.freeze({
   // Set VITE_FARROWAY_FEATURE_MLSCAN=0 to revert to the plain
   // rule-based fallback wording.
   mlScan: true,  // Phase 7E restore — 2026-05-07
+  // Guided multi-view scan session UI (PR-C). Consumes the live
+  // /api/scan/sessions API (server-owned state + next view). Default OFF —
+  // the working single-photo flow is untouched; flip to ON
+  // (VITE_FARROWAY_FEATURE_GUIDEDSCANSESSION=1) once validated on a device.
+  guidedScanSession: false,
   // Twi voice guidance: enables the short-phrase Twi dictionary
   // + auto-play hooks on Home greeting, Task tap, and Scan
   // result. Reuses the existing voiceEngine 3-tier fallback so

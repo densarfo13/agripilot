@@ -310,6 +310,8 @@ const ScanPage       = lazy(() => import('./pages/ScanPage.jsx'));
 // Mounted at /scan/soil; the existing /scan ScanPage gets a
 // secondary tile linking to it.
 const SoilScanPage   = lazy(() => import('./pages/SoilScanPage.jsx'));
+// PR-C — guided multi-view scan session UI (feature-flagged; default off).
+const GuidedScanSession = lazy(() => import('./components/scan/GuidedScanSession.jsx'));
 const ScanResultPage = lazy(() => import('./pages/ScanResultPage.jsx'));
 // Scan-specific error boundary — eagerly imported (not lazy) so
 // it can catch a crash from ScanPage's own lazy-import / mount.
@@ -3752,6 +3754,16 @@ export default function App() {
                 <FeatureGated flag="FEATURE_SCAN" feature="scan">
                   <ScanErrorBoundary>
                     <SoilScanPage />
+                  </ScanErrorBoundary>
+                </FeatureGated>
+              </SafeRouteShell>
+            } />
+            {/* PR-C guided multi-view session — gated on the guidedScanSession flag (default off). */}
+            <Route path="/scan/guided" element={
+              <SafeRouteShell routeName="scan-guided" loadingMs={5000}>
+                <FeatureGated flag="FEATURE_GUIDEDSCANSESSION" feature="guidedScanSession">
+                  <ScanErrorBoundary>
+                    <GuidedScanSession />
                   </ScanErrorBoundary>
                 </FeatureGated>
               </SafeRouteShell>
