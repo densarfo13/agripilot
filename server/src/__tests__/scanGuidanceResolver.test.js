@@ -127,11 +127,13 @@ describe('scan composition + progress-state wiring', () => {
     expect(code).toContain('resolveScanGuidance');
     expect(code).toContain('_guidance.showGuidance');
   });
-  it('the "Identifying plant" stage is derived from real identification, not hard-coded done (P2)', () => {
+  it('the "Identifying plant" + "Recommendation" stages are derived from the canonical state, not hard-coded (P2/§3)', () => {
     const code = read('src/components/scan/IntelligentScanResult.jsx');
-    expect(code).toContain('_identifyState');
-    expect(code).toMatch(/_hasIdentification\s*\?\s*'done'/);
-    expect(code).not.toMatch(/'Identifying plant',\s*state:\s*'done'/);
+    // stage states now come from the canonical-state row map, not a literal 'done'/'pending'
+    expect(code).toContain('_PROGRESS_ROWS');
+    expect(code).toMatch(/state:\s*_rows\.id\[0\]/);
+    expect(code).toMatch(/state:\s*_rows\.reco\[0\]/);
+    expect(code).not.toMatch(/'Recommendation',\s*state:\s*'pending'/); // legacy hard-coded pending removed
   });
   it('ScanGuidanceCard renders a distinct failed stage state (P2)', () => {
     const code = read('src/components/scan/ScanGuidanceCard.jsx');

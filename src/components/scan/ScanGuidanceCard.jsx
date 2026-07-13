@@ -229,6 +229,7 @@ export default function ScanGuidanceCard({
   onConfirm,          // (provisional) confirm the top candidate → health assessment
   confirming,         // true while the confirm request is in flight
   confirmedHealth,    // { state, conditions } once confirmation completed (hides the confirm CTA)
+  contractMismatch,   // §6 — requiresConfirmation but no candidates: fail closed, do not blame the photo
   onRetake,
   onUpload,
   onSaveForReview,
@@ -259,7 +260,9 @@ export default function ScanGuidanceCard({
         {tSafe(_copy.title[0], _copy.title[1])}
       </h3>
       <p style={S.body}>
-        {tSafe(_copy.body[0], _copy.body[1])}
+        {contractMismatch
+          ? tSafe('scan.contractMismatch', 'Plant possibilities were found, but the result could not be displayed.')
+          : tSafe(_copy.body[0], _copy.body[1])}
       </p>
 
       {/* Identification confidence — the REAL number, with a proportional bar. Rendered
@@ -301,7 +304,17 @@ export default function ScanGuidanceCard({
                 <span style={S.stageLabel(st)}>
                   {tSafe(s && s.labelKey, (s && s.labelDefault) || '')}
                 </span>
-                {st === 'failed' ? (
+                {/* State-aware note (spec §3): the caller maps the canonical
+                    server state → row copy, so a valid-image low-confidence row
+                    NEVER says "Waiting for a clearer photo". Falls back to the
+                    generic per-state suffix only when no note is supplied. */}
+                {s && (s.noteKey || s.noteDefault) ? (
+                  <span style={{ ...S.stageState,
+                    color: st === 'failed' ? C.failed : st === 'done' ? C.done
+                      : st === 'skipped' ? C.muted : C.pending }}>
+                    {tSafe(s.noteKey, s.noteDefault || '')}
+                  </span>
+                ) : st === 'failed' ? (
                   <span style={{ ...S.stageState, color: C.failed }}>
                     {tSafe('scan.stage.failed', "Couldn't identify")}
                   </span>

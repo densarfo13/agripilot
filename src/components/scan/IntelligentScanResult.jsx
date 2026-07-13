@@ -867,13 +867,31 @@ export default function IntelligentScanResult({
   // 'pending' otherwise. Never a completed check without a real result.
   const _hasIdentification = _topCandidates.length > 0 || !!(identification && identification.plantName);
   const _providerFailed = !!(result && (result.serviceUnavailable === true || result.providerUnavailable === true));
-  const _identifyState = _hasIdentification ? 'done' : (_providerFailed ? 'failed' : 'pending');
+  // Progress-row copy is driven ONLY by the canonical server state (spec §3), so
+  // a valid-image low-confidence row can NEVER say "Waiting for a clearer photo".
+  // { identify:[state,noteKey,noteDefault], reco:[state,noteKey,noteDefault] }
+  const _PROGRESS_ROWS = {
+    LOW_IMAGE_QUALITY:            { id: ['pending', 'scan.prow.imgq.id', 'Waiting for a better photo'],   reco: ['pending', 'scan.prow.imgq.reco', 'Available after a usable photo'] },
+    LOW_IDENTIFICATION_CONFIDENCE:{ id: ['done',    'scan.prow.low.id',  'Several possibilities found'],   reco: ['pending', 'scan.prow.low.reco',  'Waiting for plant confirmation'] },
+    IDENTIFIED_PROVISIONAL:       { id: ['done',    'scan.prow.prov.id', 'Possible plant found'],          reco: ['pending', 'scan.prow.prov.reco', 'Confirm the plant to continue'] },
+    IDENTIFIED_CONFIRMED:         { id: ['done',    'scan.prow.ok.id',   'Plant identified'],              reco: ['done',    'scan.prow.ok.reco',   'Checking plant health'] },
+    NOT_A_PLANT:                  { id: ['failed',  'scan.prow.np.id',   'No plant detected'],             reco: ['skipped', 'scan.prow.np.reco',   'Point the camera at a plant'] },
+    PROVIDER_ERROR:               { id: ['failed',  'scan.prow.err.id',  'Analysis temporarily unavailable'], reco: ['pending', 'scan.prow.err.reco', 'Try again later'] },
+  };
+  const _rows = _PROGRESS_ROWS[_guidance.state] || _PROGRESS_ROWS.LOW_IDENTIFICATION_CONFIDENCE;
   const _stages = [
     { key: 'photo',    labelKey: 'scan.stage.photo',    labelDefault: 'Photo received',    state: 'done' },
-    { key: 'identify', labelKey: 'scan.stage.identify', labelDefault: 'Identifying plant', state: _identifyState },
+    { key: 'identify', labelKey: 'scan.stage.identify', labelDefault: 'Identifying plant', state: _rows.id[0],   noteKey: _rows.id[1],   noteDefault: _rows.id[2] },
     { key: 'field',    labelKey: 'scan.stage.field',    labelDefault: 'Field view',        state: _hasFieldView ? 'done' : 'skipped' },
-    { key: 'reco',     labelKey: 'scan.stage.reco',     labelDefault: 'Recommendation',    state: 'pending' },
+    { key: 'reco',     labelKey: 'scan.stage.reco',     labelDefault: 'Recommendation',    state: _rows.reco[0], noteKey: _rows.reco[1], noteDefault: _rows.reco[2] },
   ];
+  // §6 fail-closed — a PROVISIONAL contract with no candidates is a bug, not a
+  // "clearer photo" case. Surface it explicitly + log once.
+  const _contractMismatch = !!(result && result.requiresConfirmation
+    && !(_arr(result.confirmationCandidates).length || _topCandidates.length));
+  if (_contractMismatch && typeof console !== 'undefined') {
+    try { console.warn('SCAN_RESULT_CONTRACT_MISMATCH', { scanId: result && result.scanId, state: _guidance.state }); } catch { /* ignore */ }
+  }
 
   // SCAN TYPE ROUTER — route to the right result card. A fruit/vegetable
   // scan gets the quality card; an insect scan gets the pest card. Neither
@@ -905,6 +923,7 @@ export default function IntelligentScanResult({
           onConfirm={_showProvisional ? _onConfirmProvisional : undefined}
           confirming={_confirming}
           confirmedHealth={_confirmedHealth}
+          contractMismatch={_contractMismatch}
           reasons={_coach ? _coach.whatWentWrong : null}
           confidencePct={_guidanceConfidence}
           stages={_stages}
