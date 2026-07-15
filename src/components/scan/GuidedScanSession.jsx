@@ -76,13 +76,21 @@ export default function GuidedScanSession({ cropName, onExit }) {
       if (got.ok && got.data && got.data.sessionId) { emitScanUiEvent('scan_ui_session_started', got.data.sessionId, got.data.state); _apply(got.data, ''); return; }
       forgetSessionId();
     }
+    emitScanUiEvent('guided_scan_session_create_started', null, null);
     const created = await createScanSession({ cropName: cropName || undefined });
-    if (created.ok && created.data && created.data.sessionId) { emitScanUiEvent('scan_ui_session_started', created.data.sessionId, created.data.state); _apply(created.data, ''); return; }
+    if (created.ok && created.data && created.data.sessionId) {
+      emitScanUiEvent('guided_scan_session_created', created.data.sessionId, created.data.state);
+      emitScanUiEvent('scan_ui_session_started', created.data.sessionId, created.data.state);
+      _apply(created.data, ''); return;
+    }
+    // Clear 401/403 vs network failure so the farmer sees why (§4).
+    emitScanUiEvent('guided_scan_session_create_failed', null, 'status_' + (created.status || 0));
     emitScanUiEvent('scan_ui_error', null, 'create_failed');
+    setNote(tSafe('scan.gs.startFailed', "We couldn't start the scan."));
     setPhase('error');
   }, [cropName, _apply]);
 
-  useEffect(() => { if (!startedRef.current) { startedRef.current = true; _start(); } }, [_start]);
+  useEffect(() => { if (!startedRef.current) { startedRef.current = true; emitScanUiEvent('guided_scan_route_loaded', null, null); _start(); } }, [_start]);
 
   const submitPhoto = useCallback(async (file) => {
     if (!file || !session || !session.sessionId) return;

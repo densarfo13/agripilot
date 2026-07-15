@@ -6,6 +6,7 @@ import {
   createScanSession, addScanSessionPhoto, getScanSession, completeScanSession, escalateScanSession,
   emitScanUiEvent, rememberSessionId, recallSessionId, forgetSessionId,
 } from '../../../src/runtime/scanSession/scanSessionClient.js';
+import { guidedScanAccess } from '../../../src/runtime/scanSession/guidedScanAccess.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = (rel) => fs.readFileSync(path.resolve(ROOT, rel), 'utf-8');
@@ -87,8 +88,38 @@ describe('GuidedScanSession — server-owned state contract', () => {
   it('idempotency key is sent with each photo', () => {
     expect(code).toContain('idempotencyKey');
   });
-  it('the guided route is feature-flag gated (default off — single-photo flow untouched)', () => {
+  it('the guided route is flag-gated + PILOT-gated (admin OR allowlist, not RoleRoute-admin-only)', () => {
     expect(app).toContain('path="/scan/guided"');
     expect(app).toContain('feature="guidedScanSession"');
+    expect(app).toContain('<GuidedScanGate>');   // widened gate so the pilot farmer can enter
+  });
+  it('emits the spec-named guided_scan client events', () => {
+    expect(code).toContain('guided_scan_route_loaded');
+    expect(code).toContain('guided_scan_session_create_started');
+    expect(code).toContain('guided_scan_session_created');
+    expect(code).toContain('guided_scan_session_create_failed');
+  });
+});
+
+// The pilot access decision — the fix for NO_SESSION_REACHED_SERVER (the route
+// was admin-only; the pilot farmer was blocked before the UI could call the API).
+describe('guidedScanAccess — admin OR pilot allowlist (regular farmers disabled)', () => {
+  it('admin roles enabled', () => {
+    expect(guidedScanAccess({ role: 'super_admin', id: 'x' }).enabled).toBe(true);
+    expect(guidedScanAccess({ role: 'institutional_admin', id: 'x' }).reason).toBe('admin_role');
+  });
+  it('allowlisted user id enabled (even as a farmer)', () => {
+    const a = guidedScanAccess({ role: 'farmer', id: 'u-42' }, { pilotIds: ['u-42', 'u-99'] });
+    expect(a.enabled).toBe(true);
+    expect(a.reason).toBe('pilot_allowlist');
+  });
+  it('regular farmer NOT in the allowlist is disabled', () => {
+    const a = guidedScanAccess({ role: 'farmer', id: 'u-7' }, { pilotIds: ['u-42'] });
+    expect(a.enabled).toBe(false);
+    expect(a.reason).toBe('not_admin_or_pilot');
+  });
+  it('no user → disabled, never throws', () => {
+    expect(guidedScanAccess(null).enabled).toBe(false);
+    expect(guidedScanAccess(null).reason).toBe('no_user');
   });
 });

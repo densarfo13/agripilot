@@ -574,6 +574,7 @@ const AdminInterventionEffectiveness = lazy(() => import('./pages/admin/Interven
 const AdminOperationalQueues = lazy(() => import('./pages/admin/OperationalQueues.jsx'));
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
+import { guidedScanAccess } from './runtime/scanSession/guidedScanAccess.js';
 // Permanent safe bootstrap wrapper for /today — always renders something
 // even when FarmerTodayPage crashes or API calls hang past 4 seconds.
 import DashboardShell from './components/DashboardShell.jsx';
@@ -761,6 +762,23 @@ function RoleRoute({ roles, children }) {
   const { user: v2User } = useAuth();
   const user = storeUser || v2User;
   if (!roles.includes(user?.role)) return <Navigate to="/" replace />;
+  return children;
+}
+
+// Guided-scan PILOT gate — admin role OR an allowlisted user id (widens
+// RoleRoute so the pilot farmer account can reach /scan/guided). Exposes the
+// decision on window for an admin-only console diagnostic (§2). Regular
+// farmers who are neither admin nor allowlisted are redirected out.
+function GuidedScanGate({ children }) {
+  const storeUser = useAuthStore(s => s.user);
+  const { user: v2User } = useAuth();
+  const user = storeUser || v2User;
+  const access = guidedScanAccess(user);
+  try {
+    if (typeof window !== 'undefined') window.__guidedScanAccess = () => access;
+    console.log('[scan.ui] guided_scan_gate enabled=' + access.enabled + ' reason=' + access.reason);
+  } catch { /* ignore */ }
+  if (!access.enabled) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -3765,11 +3783,11 @@ export default function App() {
             <Route path="/scan/guided" element={
               <SafeRouteShell routeName="scan-guided" loadingMs={5000}>
                 <FeatureGated flag="FEATURE_GUIDEDSCANSESSION" feature="guidedScanSession">
-                  <RoleRoute roles={ADMIN_ROLES}>
+                  <GuidedScanGate>
                     <ScanErrorBoundary>
                       <GuidedScanSession />
                     </ScanErrorBoundary>
-                  </RoleRoute>
+                  </GuidedScanGate>
                 </FeatureGated>
               </SafeRouteShell>
             } />
