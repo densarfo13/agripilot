@@ -128,6 +128,13 @@ const DEFAULTS = Object.freeze({
   // 404. Each surface checks its flag at render time and
   // shows "Feature temporarily disabled for pilot." when off.
   FEATURE_SCAN:    true,   // Phase 4 restore — 2026-05-04
+  // Guided multi-view scan session (PR-C). DEFAULT OFF — controlled pilot only.
+  // Activate for the internal cohort with VITE_FEATURE_GUIDEDSCANSESSION=true
+  // (build) or the per-device localStorage key
+  // 'farroway:flag:FEATURE_GUIDEDSCANSESSION'='1'. The /scan/guided route is ALSO
+  // wrapped in RoleRoute(ADMIN_ROLES), so even when this flag is on it reaches
+  // admins only — never every farmer. Kill switch: set back to off / clear the var.
+  FEATURE_GUIDEDSCANSESSION: false,
   // Scan task suggestion (Phase 7F): after a scan result, show a
   // one-line suggested follow-up task keyed to the ML category, with
   // an "Add to Tasks" button. Does NOT require ML model or scanToTask

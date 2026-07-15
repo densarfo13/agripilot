@@ -3758,13 +3758,18 @@ export default function App() {
                 </FeatureGated>
               </SafeRouteShell>
             } />
-            {/* PR-C guided multi-view session — gated on the guidedScanSession flag (default off). */}
+            {/* PR-C guided multi-view session — CONTROLLED PILOT gate: requires BOTH
+                the guidedScanSession flag (kill switch) AND an ADMIN/pilot role, so
+                flipping the flag on activates it for the internal cohort ONLY — never
+                for every farmer. Turn the flag off to instantly revert (no code change). */}
             <Route path="/scan/guided" element={
               <SafeRouteShell routeName="scan-guided" loadingMs={5000}>
                 <FeatureGated flag="FEATURE_GUIDEDSCANSESSION" feature="guidedScanSession">
-                  <ScanErrorBoundary>
-                    <GuidedScanSession />
-                  </ScanErrorBoundary>
+                  <RoleRoute roles={ADMIN_ROLES}>
+                    <ScanErrorBoundary>
+                      <GuidedScanSession />
+                    </ScanErrorBoundary>
+                  </RoleRoute>
                 </FeatureGated>
               </SafeRouteShell>
             } />

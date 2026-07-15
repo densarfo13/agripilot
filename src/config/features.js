@@ -117,9 +117,11 @@ const DEFAULTS = Object.freeze({
   // rule-based fallback wording.
   mlScan: true,  // Phase 7E restore — 2026-05-07
   // Guided multi-view scan session UI (PR-C). Consumes the live
-  // /api/scan/sessions API (server-owned state + next view). Default OFF —
-  // the working single-photo flow is untouched; flip to ON
-  // (VITE_FARROWAY_FEATURE_GUIDEDSCANSESSION=1) once validated on a device.
+  // /api/scan/sessions API (server-owned state + next view). Default OFF.
+  // NOTE: the /scan/guided route is gated by FeatureGated →
+  // isFeatureEnabled('FEATURE_GUIDEDSCANSESSION') in utils/featureFlags.js (env
+  // VITE_FEATURE_GUIDEDSCANSESSION=true), AND wrapped in RoleRoute(ADMIN_ROLES) so
+  // activation reaches admins only. This mirror flag is informational.
   guidedScanSession: false,
   // Twi voice guidance: enables the short-phrase Twi dictionary
   // + auto-play hooks on Home greeting, Task tap, and Scan
