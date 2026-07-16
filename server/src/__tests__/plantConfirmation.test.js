@@ -32,13 +32,19 @@ describe('plantConfirmation — provisional contract + candidate validation (P0/
     expect(p.allowedActions).toEqual(PROVISIONAL_ACTIONS);
     // Scan Intelligence §2 — a valid photo with sub-provisional candidates
     // surfaces the SAME ranked-candidates contract (no threshold change).
-    const low = buildProvisionalContract('LOW_IDENTIFICATION_CONFIDENCE', raw);
+    // CRITICAL literal: the server resolver emits 'LOW_CONFIDENCE' (the client
+    // renames it LOW_IDENTIFICATION_CONFIDENCE). v1 of this test asserted only
+    // the client spelling, so the real runtime path silently returned null and
+    // the device showed the dead-end — field screenshot 2026-07-16.
+    const low = buildProvisionalContract('LOW_CONFIDENCE', raw);   // ← the REAL server literal
     expect(low.requiresConfirmation).toBe(true);
     expect(low.candidates.length).toBe(3);
+    const lowAlias = buildProvisionalContract('LOW_IDENTIFICATION_CONFIDENCE', raw);
+    expect(lowAlias.requiresConfirmation).toBe(true);              // rename-safe
     expect(buildProvisionalContract('CONFIRMED', raw)).toBeNull();
     expect(buildProvisionalContract('NOT_A_PLANT', raw)).toBeNull();
     expect(buildProvisionalContract('PROVISIONAL', [])).toBeNull();
-    expect(buildProvisionalContract('LOW_IDENTIFICATION_CONFIDENCE', [])).toBeNull(); // never invents
+    expect(buildProvisionalContract('LOW_CONFIDENCE', [])).toBeNull(); // never invents
   });
 
   it('findConfirmableCandidate matches a stored taxonId and REJECTS arbitrary ones', () => {

@@ -68,7 +68,15 @@ export const PROVISIONAL_ACTIONS = Object.freeze([
  * an empty list yields null.
  */
 export function buildProvisionalContract(identificationState, rawCandidates) {
+  // NOTE the literal: the SERVER resolver (resolveIdentificationState) emits
+  // 'LOW_CONFIDENCE'; the CLIENT resolver renames it LOW_IDENTIFICATION_
+  // CONFIDENCE. The first version of this guard used the client literal, so
+  // low scans never carried candidates and the founder's device showed the
+  // old dead-end ("couldn't confidently name") with no confirm button —
+  // caught by a real field screenshot 2026-07-16. Accept BOTH spellings so a
+  // future rename in either layer can't silently re-open the dead-end.
   if (identificationState !== 'PROVISIONAL'
+    && identificationState !== 'LOW_CONFIDENCE'
     && identificationState !== 'LOW_IDENTIFICATION_CONFIDENCE') return null;
   const candidates = normalizeCandidates(rawCandidates, 3);
   if (!candidates.length) return null;
