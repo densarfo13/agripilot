@@ -22,6 +22,7 @@ import {
   getReviewQueue,
   flagForReview,
   clearReviewFlag,
+  _classifyValue,
   _resetReviewQueue,
 } from '../../../src/localization/governance/translationReviewQueue.js';
 
@@ -59,18 +60,20 @@ describe('translationReviewQueue — getReviewSummary', () => {
     expect(s.approvedPct).toBeLessThanOrEqual(100);
   });
 
-  it('reports fallback_only against the current column data', () => {
+  it('counts English-fallback-in-locale keys as fallback_only, not approved', () => {
     // Post column-split, every locale column (incl. hi) is fully
     // materialized: an untranslated slot carries the English fallback
-    // string rather than a blank. The review queue blank-detects
-    // fallback_only, so with no blank slots the summary reports zero
-    // fallback_only and counts the active keys as approved. The finer
-    // "real Hindi vs English fallback" gap (~3.2k keys whose hi value
-    // equals en) is invisible to this blank-based classifier — it is
-    // tracked in the column files, not by this summary.
+    // string verbatim rather than a blank. The classifier now treats a
+    // non-en value byte-identical to en as an English fallback, so the
+    // ~3.2k hi===en keys report as fallback_only instead of inflating
+    // the approved count — the governance dashboard tells the truth.
     const s = getReviewSummary();
-    expect(s.fallbackOnly).toBe(0);
+    expect(s.fallbackOnly).toBeGreaterThan(0);
     expect(s.approved).toBeGreaterThan(0);
+    // approved reflects only genuinely-translated keys, so it can no
+    // longer swallow the whole active set the way the old blank-only
+    // classifier did (which over-reported ~100% approved).
+    expect(s.approved).toBeLessThan(s.activeKeys);
   });
 });
 
@@ -91,6 +94,39 @@ describe('translationReviewQueue — getKeyStatus', () => {
     const q = getReviewQueue(REVIEW_STATUS.FALLBACK_ONLY, 50);
     expect(Array.isArray(q)).toBe(true);
     expect(q.length).toBeLessThanOrEqual(50);
+  });
+});
+
+// ─── 3b. English-fallback-in-locale classification ─────────
+
+describe('translationReviewQueue — English-fallback detection', () => {
+  // A genuinely-translated key: all six locales distinct + non-blank.
+  const full = {
+    en: 'Continue', fr: 'Continuer', sw: 'Endelea',
+    ha: 'Ci gaba', tw: 'Toa so', hi: 'जारी रखें',
+  };
+
+  it('classifies a key whose hi echoes en verbatim as fallback_only', () => {
+    // The column-split fills an untranslated hi slot with the English
+    // string byte-for-byte. That is an English fallback sitting in the
+    // locale column, NOT a real translation, so it must not count as
+    // approved — this is the exact over-reporting bug being fixed.
+    const v = { ...full, hi: 'Continue' }; // hi === en
+    expect(_classifyValue(v)).toBe(REVIEW_STATUS.FALLBACK_ONLY);
+  });
+
+  it('classifies a genuinely-translated key (all six distinct) as approved', () => {
+    expect(_classifyValue(full)).toBe(REVIEW_STATUS.APPROVED);
+  });
+
+  it('still treats a blank locale slot as fallback_only', () => {
+    expect(_classifyValue({ ...full, hi: '' })).toBe(REVIEW_STATUS.FALLBACK_ONLY);
+  });
+
+  it('only byte-identical values are fallbacks — a differing value is real', () => {
+    // "continue" !== "Continue"; a non-identical string is treated as a
+    // genuine (if odd) translation, not an English fallback.
+    expect(_classifyValue({ ...full, hi: 'continue' })).toBe(REVIEW_STATUS.APPROVED);
   });
 });
 

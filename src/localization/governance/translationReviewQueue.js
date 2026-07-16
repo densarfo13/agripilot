@@ -23,9 +23,11 @@
  *   approved       — non-blank value in ALL six launch languages.
  *                    The only status that counts as production-
  *                    complete.
- *   fallback_only  — English present, ≥1 other language missing.
- *                    The key renders, but non-English users see the
- *                    English fallback (never a mixed sentence).
+ *   fallback_only  — English present, but ≥1 other language is either
+ *                    blank OR carries the English string verbatim (an
+ *                    untranslated slot the column-split filled with the
+ *                    English fallback). The key renders, but those
+ *                    users see English, never a mixed sentence.
  *   missing        — English itself is blank while some other
  *                    language has text — a genuine anomaly.
  *   needs_review   — explicitly flagged by a reviewer (persisted).
@@ -57,15 +59,31 @@ const OVERRIDE_KEY = 'farroway_translation_review_overrides_v1';
 
 const _blank = (v) => typeof v !== 'string' || v.trim() === '';
 
+// A non-English locale slot that is byte-identical to the English
+// source is the English fallback sitting in the locale column, not a
+// real translation. Post column-split, an untranslated slot carries
+// the English string verbatim (never a blank), so equality with `en`
+// — not just blankness — is what separates a genuine translation from
+// a fallback. `en` itself is the source and can never be its own
+// fallback. When `en` is blank there is nothing to fall back to, so
+// this is skipped (the blank/anomaly branch handles that case).
+const _isEnglishFallback = (localeVal, enVal) =>
+  !_blank(enVal) && typeof localeVal === 'string' && localeVal === enVal;
+
 // ── Auto-classification (memoised) ───────────────────────────
 
 let _autoCache = null;
 
 /** Classify ONE key from its value object alone (no overrides). */
-function _classifyValue(valueObj) {
+export function _classifyValue(valueObj) {
   if (!valueObj || typeof valueObj !== 'object') return REVIEW_STATUS.MISSING;
   const enBlank = _blank(valueObj.en);
-  const gaps = NON_EN_LANGS.filter((l) => _blank(valueObj[l]));
+  // A locale is a "gap" if it is blank OR merely echoes the English
+  // source (the column-split fallback). Both mean that language is not
+  // genuinely translated, so the key is at best English-fallback-only.
+  const gaps = NON_EN_LANGS.filter(
+    (l) => _blank(valueObj[l]) || _isEnglishFallback(valueObj[l], valueObj.en),
+  );
   if (enBlank) {
     // All blank → an intentional placeholder, not a real string.
     return gaps.length === NON_EN_LANGS.length
@@ -230,6 +248,7 @@ const _module = {
   getReviewQueue,
   flagForReview,
   clearReviewFlag,
+  _classifyValue,
   _resetReviewQueue,
 };
 export default _module;
