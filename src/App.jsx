@@ -575,6 +575,8 @@ const AdminOperationalQueues = lazy(() => import('./pages/admin/OperationalQueue
 
 import { STAFF_ROLES, REVIEW_ROLES, ADMIN_ROLES, REGISTRATION_ROLES } from './utils/roles.js';
 import { guidedScanAccess } from './runtime/scanSession/guidedScanAccess.js';
+import { SCAN_CLIENT_BUNDLE_TAG } from './runtime/scanSession/scanSessionClient.js';
+import { isFeatureEnabled as isFlagOn } from './utils/featureFlags.js';
 // Permanent safe bootstrap wrapper for /today — always renders something
 // even when FarmerTodayPage crashes or API calls hang past 4 seconds.
 import DashboardShell from './components/DashboardShell.jsx';
@@ -767,19 +769,52 @@ function RoleRoute({ roles, children }) {
 
 // Guided-scan PILOT gate — admin role OR an allowlisted user id (widens
 // RoleRoute so the pilot farmer account can reach /scan/guided). Exposes the
-// decision on window for an admin-only console diagnostic (§2). Regular
-// farmers who are neither admin nor allowlisted are redirected out.
+// decision on window for an admin-only console diagnostic (§2).
+//
+// BOUNDARY FIX (no silent failures): the original gate did an immediate
+// <Navigate to="/" /> when access wasn't enabled. That silently bounced the
+// pilot farmer home in two invisible ways: (a) auth still hydrating → user
+// null → 'no_user', (b) allowlist mismatch. Both produced ZERO evidence —
+// matching the observed "0 POST /api/scan/sessions". Now: while auth is
+// resolving we WAIT, and a real denial renders GUIDED SCAN STATUS with the
+// exact failing stage instead of redirecting.
 function GuidedScanGate({ children }) {
   const storeUser = useAuthStore(s => s.user);
-  const { user: v2User } = useAuth();
+  const { user: v2User, authLoading } = useAuth();
   const user = storeUser || v2User;
   const access = guidedScanAccess(user);
   try {
     if (typeof window !== 'undefined') window.__guidedScanAccess = () => access;
-    console.log('[scan.ui] guided_scan_gate enabled=' + access.enabled + ' reason=' + access.reason);
+    console.log('[scan.ui] guided_scan_gate enabled=' + access.enabled + ' reason=' + access.reason + ' authLoading=' + !!authLoading);
   } catch { /* ignore */ }
-  if (!access.enabled) return <Navigate to="/" replace />;
-  return children;
+  if (access.enabled) return children;
+  if (authLoading) return <SafeLoader timeoutMs={8000} />;   // don't decide before auth hydrates
+  return <GuidedScanStatus access={access} user={user} />;
+}
+
+// §1 browser-visible boundary diagnostics — shown instead of a silent redirect
+// when /scan/guided is blocked. Technical tokens only; the userId rendered is
+// the viewer's OWN id (no other user data, no secrets, no image data).
+function GuidedScanStatus({ access, user }) {
+  let flagOn = false;
+  try { flagOn = isFlagOn('FEATURE_GUIDEDSCANSESSION'); } catch { flagOn = false; }
+  const apiUrl = (typeof window !== 'undefined' && window.location ? window.location.origin : '') + '/api/scan/sessions';
+  const row = { display: 'flex', justifyContent: 'space-between', gap: 12 };
+  return (
+    <main style={{ maxWidth: 520, margin: '0 auto', padding: 16 }} data-testid="gs-status">
+      <div style={{ padding: 12, borderRadius: 10, background: '#0B1F17', color: '#8FE3B4', fontSize: 12, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
+        <div style={{ fontWeight: 700, letterSpacing: 0.4, marginBottom: 8 }}>GUIDED SCAN STATUS</div>
+        <div style={row}><span>bundle</span><span>PASS {SCAN_CLIENT_BUNDLE_TAG}</span></div>
+        <div style={row}><span>auth</span><span>{user && user.id ? 'PASS' : 'FAIL'}</span></div>
+        <div style={row}><span>userId</span><span>{(user && user.id) || '-'}</span></div>
+        <div style={row}><span>featureFlag</span><span>{flagOn ? 'ON' : 'OFF'}</span></div>
+        <div style={row}><span>apiUrl</span><span>{apiUrl}</span></div>
+        <div style={row}><span>access</span><span>{'DENIED:' + access.reason}</span></div>
+        <div style={row}><span>sessionCreate</span><span>NOT_REACHED</span></div>
+      </div>
+      <a href="/" style={{ display: 'inline-block', marginTop: 12, fontSize: 13, fontFamily: 'ui-monospace, monospace' }}>{'← /home'}</a>
+    </main>
+  );
 }
 
 // ─── Auth loading gate ─────────────────────────────────────

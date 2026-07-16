@@ -8,8 +8,23 @@
 
 const SESSION_TIMEOUT_MS = 15000;
 
+// Deterministic bundle tag shown by the boundary diagnostics — bump per deploy.
+// Seeing this tag on the device proves the latest bundle loaded (stale-cache check).
+export const SCAN_CLIENT_BUNDLE_TAG = 'gs-v4-boundary-2026-07-16';
+
+// §2 boundary instrumentation — every request/response/network-error is visible
+// in the browser console, and the last failure is kept on window for the
+// GUIDED SCAN STATUS panel. Response bodies only (never image payloads).
+function _trace(msg) { try { console.log('[scan.api] ' + msg); } catch { /* ignore */ } }
+function _short(data) { try { const s = JSON.stringify(data); return s ? s.slice(0, 200) : 'null'; } catch { return 'unserializable'; } }
+function _recordError(path, detail) {
+  try { if (typeof window !== 'undefined') window.__scanLastError = { at: String(path), detail: String(detail || 'unknown') }; } catch { /* ignore */ }
+}
+
 async function _req(method, path, body) {
-  if (typeof fetch !== 'function') return { ok: false, status: 0, data: null };
+  if (typeof fetch !== 'function') { _recordError(path, 'fetch_unavailable'); return { ok: false, status: 0, data: null }; }
+  if (method === 'POST' && path === '/api/scan/sessions') emitScanUiEvent('scan_session_request_started', null, null);
+  _trace('request ' + method + ' ' + path);
   let ctrl = null, timer = null;
   try { ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null; } catch { ctrl = null; }
   try {
@@ -23,8 +38,15 @@ async function _req(method, path, body) {
     });
     if (timer) clearTimeout(timer);
     let data = null; try { data = await res.json(); } catch { data = null; }
+    _trace('response ' + method + ' ' + path + ' status=' + (res ? res.status : 0) + ' body=' + _short(data));
+    if (!res || !res.ok) _recordError(path, 'status_' + (res ? res.status : 0) + (data && data.error ? ':' + data.error : ''));
     return { ok: !!(res && res.ok), status: res ? res.status : 0, data };
-  } catch { if (timer) clearTimeout(timer); return { ok: false, status: 0, data: null }; }
+  } catch (e) {
+    if (timer) clearTimeout(timer);
+    _trace('network_error ' + method + ' ' + path + ' ' + ((e && e.name) || 'error'));
+    _recordError(path, 'network_' + ((e && e.name) || 'error'));
+    return { ok: false, status: 0, data: null };
+  }
 }
 
 const _id = (s) => encodeURIComponent(String(s || '').trim());

@@ -15,6 +15,7 @@ import {
   createScanSession, addScanSessionPhoto, getScanSession,
   completeScanSession, escalateScanSession,
   emitScanUiEvent, rememberSessionId, recallSessionId, forgetSessionId,
+  SCAN_CLIENT_BUNDLE_TAG,
 } from '../../runtime/scanSession/scanSessionClient.js';
 import { confirmScanPlant } from '../../runtime/scanTrust/confirmPlantRuntime.js';
 
@@ -60,7 +61,8 @@ export default function GuidedScanSession({ cropName, onExit }) {
   const [phase, setPhase] = useState('starting'); // starting | ready | working | error
   const [note, setNote] = useState('');
   // §5 admin diagnostics — Scan Runtime Health. Labeled stage states, admin/pilot-gated.
-  const [dbg, setDbg] = useState({ session: '—', photo: '—', provider: '—', decision: '—', api: '—' });
+  const [dbg, setDbg] = useState({ session: '—', photo: '—', provider: '—', decision: '—', api: '—', err: '—' });
+  const _lastErr = () => { try { return (window.__scanLastError && window.__scanLastError.detail) || 'unknown'; } catch { return 'unknown'; } };
   const startedRef = useRef(false);
   const fileRef = useRef(null);
 
@@ -81,6 +83,7 @@ export default function GuidedScanSession({ cropName, onExit }) {
     emitScanUiEvent('session_create_request', null, null);          // spec-exact
     emitScanUiEvent('scan_session_create_started', null, null);
     emitScanUiEvent('guided_scan_session_create_started', null, null);
+    setDbg((d) => ({ ...d, session: 'STARTED' }));
     const created = await createScanSession({ cropName: cropName || undefined });
     setDbg((d) => ({ ...d, api: 'POST /sessions ' + (created.status || 0) }));
     if (created.ok && created.data && created.data.sessionId) {
@@ -92,7 +95,7 @@ export default function GuidedScanSession({ cropName, onExit }) {
       _apply(created.data, ''); return;
     }
     // Clear 401/403 vs network failure so the farmer sees why (§4).
-    setDbg((d) => ({ ...d, session: 'FAILED' }));
+    setDbg((d) => ({ ...d, session: 'FAILED', err: _lastErr() }));
     emitScanUiEvent('guided_scan_session_create_failed', null, 'status_' + (created.status || 0));
     emitScanUiEvent('scan_ui_error', null, 'create_failed');
     setNote(tSafe('scan.gs.startFailed', "We couldn't start the scan."));
@@ -119,6 +122,7 @@ export default function GuidedScanSession({ cropName, onExit }) {
       photo: out.ok ? 'UPLOADED' : 'FAILED',
       provider: idSt === 'PROVIDER_ERROR' ? 'FAILED' : (idSt && idSt !== 'NOT_RUN' ? 'CALLED' : d.provider),
       decision: (out.ok && out.data && out.data.state) ? 'READY' : (out.ok ? d.decision : 'FAILED'),
+      err: out.ok ? d.err : _lastErr(),
     }));
     emitScanUiEvent('scan_result_received', session.sessionId, out.data && out.data.state);
     if (out.ok && out.data) {
@@ -264,13 +268,14 @@ export default function GuidedScanSession({ cropName, onExit }) {
         <div data-testid="gs-debug"
           style={{ marginTop: 14, padding: 10, borderRadius: 8, background: '#0B1F17', color: '#8FE3B4', fontSize: 11, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
           <div style={{ fontWeight: 700, letterSpacing: 0.4, marginBottom: 6 }}>SCAN RUNTIME HEALTH</div>
-          {[['session', dbg.session], ['photo', dbg.photo], ['provider', dbg.provider], ['decision', dbg.decision]].map(([k, v]) => (
+          {[['session', dbg.session], ['photo', dbg.photo], ['provider', dbg.provider], ['decision', dbg.decision], ['err', dbg.err]].map(([k, v]) => (
             <div key={k} data-testid={'gs-health-' + k} style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>{k}</span>
               <span style={{ color: v === 'FAILED' ? '#FF9B8A' : v === '—' ? '#5B6B60' : '#8FE3B4', fontWeight: 700 }}>{v}</span>
             </div>
           ))}
           <div style={{ marginTop: 6, opacity: 0.8 }}>{'sid=' + (s.sessionId || '-') + ' | ' + dbg.api}</div>
+          <div style={{ opacity: 0.8 }}>{'bundle=' + SCAN_CLIENT_BUNDLE_TAG + ' | api=' + ((typeof window !== 'undefined' && window.location) ? window.location.origin : '') + '/api/scan/sessions'}</div>
         </div>
       </section>
     </main>

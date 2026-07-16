@@ -54,6 +54,25 @@ describe('scanSessionClient — API calls (§client)', () => {
     rememberSessionId('s9'); expect(recallSessionId()).toBe('s9');
     forgetSessionId(); expect(recallSessionId()).toBeNull();
   });
+  it('BOUNDARY §2: create emits scan_session_request_started BEFORE the fetch', async () => {
+    globalThis.window.__scanUiEvents = [];
+    await createScanSession({});
+    expect(globalThis.window.__scanUiEvents.map((e) => e.event)).toContain('scan_session_request_started');
+  });
+  it('BOUNDARY §2: network error is NOT silent — recorded on window.__scanLastError', async () => {
+    globalThis.window.__scanLastError = null;
+    globalThis.fetch = vi.fn(async () => { throw new TypeError('Failed to fetch'); });
+    const out = await createScanSession({});
+    expect(out).toEqual({ ok: false, status: 0, data: null });
+    expect(globalThis.window.__scanLastError.at).toBe('/api/scan/sessions');
+    expect(globalThis.window.__scanLastError.detail).toMatch(/^network_/);
+  });
+  it('BOUNDARY §2: HTTP failure status is recorded (401 → status_401)', async () => {
+    globalThis.window.__scanLastError = null;
+    globalThis.fetch = vi.fn(async () => ({ ok: false, status: 401, json: async () => ({ error: 'unauthorized' }) }));
+    await createScanSession({});
+    expect(globalThis.window.__scanLastError.detail).toBe('status_401:unauthorized');
+  });
 });
 
 // ── Component contract (source-verified — full render needs a jsdom harness) ──
@@ -92,6 +111,15 @@ describe('GuidedScanSession — server-owned state contract', () => {
     expect(app).toContain('path="/scan/guided"');
     expect(app).toContain('feature="guidedScanSession"');
     expect(app).toContain('<GuidedScanGate>');   // widened gate so the pilot farmer can enter
+  });
+  it('BOUNDARY §4: gate denial is NOT a silent redirect — renders GUIDED SCAN STATUS + waits for auth', () => {
+    expect(app).toContain('GUIDED SCAN STATUS');
+    expect(app).toContain('<GuidedScanStatus access={access} user={user} />');
+    // auth-hydration race guard: never deny while auth is still loading
+    expect(app).toMatch(/if \(authLoading\) return <SafeLoader[\s\S]{0,80}GuidedScanStatus/);
+    // the gate itself must not Navigate home anymore
+    const gate = app.slice(app.indexOf('function GuidedScanGate'), app.indexOf('function GuidedScanStatus'));
+    expect(gate).not.toContain('<Navigate');
   });
   it('emits the spec-named guided_scan client events', () => {
     for (const e of ['guided_scan_loaded', 'scan_button_clicked', 'session_create_request',
