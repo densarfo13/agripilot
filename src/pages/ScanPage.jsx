@@ -1398,13 +1398,19 @@ export default function ScanPage() {
               hybridUrgency:      fallbackHybrid.urgency,
               hybridContext:      fallbackHybrid.contextType,
               disclaimer:         fallbackHybrid.disclaimer,
-              meta:               { source: 'fallback_15s_timer' },
+              meta:               { source: 'fallback_45s_timer' },
             });
             setPhase('result');
-            try { trackEvent('scan_fallback_used', { reason: '15s_timeout' }); }
+            try { trackEvent('scan_fallback_used', { reason: '45s_timeout' }); }
             catch { /* swallow */ }
           } catch { /* swallow — wait for the real result */ }
-        }, 15000);
+          // Field fix (dbg footer: src=fallback_15s_timer): the timer used to
+          // fire at 15s while the fetch budget allowed slow uploads to finish
+          // later — the placeholder card WON against a real answer the server
+          // had already produced (its 200s are in the access log). The timer
+          // must OUTLAST the whole classifier budget (30s fetch + 8s parse +
+          // margin) so it only ever fires on a genuinely hung pipeline.
+        }, 45000);
       } catch { /* swallow */ }
 
       // Pre-fetch the weather snapshot so the backend's context

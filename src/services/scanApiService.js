@@ -26,12 +26,18 @@ import {
 } from '../lib/scan/scanPipelineLogger.js';
 
 const ENDPOINT = '/api/scan/analyze';
-const TIMEOUT_MS = 8000;
+// Field fix (dbg footer: src=fallback_15s_timer, 2026-07-16): 8s was the
+// TOTAL budget including the multi-MB base64 photo UPLOAD. On the target
+// market's networks (rural 2G/3G, weak cellular, relay proxies) the upload
+// alone can exceed 8s, so the client aborted its OWN successful request —
+// the server completed + logged 200 while the phone showed the fallback.
+// 30s upload-inclusive budget; the analyzing surface owns progress messaging.
+const TIMEOUT_MS = 30000;
 // Scan Pipeline Timeout Audit — separate budget for body parsing.
 // The previous code awaited res.json() with NO timeout; a slow
 // server stream produced the indefinite "taking longer than
 // expected" stall. 3s is the canonical parsing ceiling.
-const PARSE_TIMEOUT_MS = 3000;
+const PARSE_TIMEOUT_MS = 8000;   // body is ~12KB, but slow links stream it slowly
 
 function _withTimeout(promise, ms, signal) {
   return new Promise((resolve, reject) => {
