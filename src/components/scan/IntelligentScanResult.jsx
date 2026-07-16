@@ -942,8 +942,11 @@ export default function IntelligentScanResult({
           alternates={_confirmable && !_rejected ? _confirmCands.slice(1) : undefined}
           onConfirmAlternate={_confirmable && !_rejected ? _onConfirmCandidate : undefined}
           onRejectAll={_confirmable && !_rejected ? _onRejectAll : undefined}
-          dbgLine={'state=' + (_str(result && result.identificationState) || '-')
+          dbgLine={'id=' + (_str(result && result.scanId) || '-')
+            + ' state=' + (_str(result && result.identificationState) || '-')
             + ' cand=' + _confirmCands.length + '/' + _topCandidates.length
+            + ' top=' + (_str(_topCandidates[0] && _topCandidates[0].commonName) || '-')
+            + ':' + (typeof (result && result.confidencePct) === 'number' ? result.confidencePct + '%' : '-')
             + ' src=' + (_str(result && result.meta && result.meta.source) || '-')
             + ' env=' + ((result && result.classifierInputVerified === true) ? 'v2' : 'v1')}
           confirming={_confirming}
