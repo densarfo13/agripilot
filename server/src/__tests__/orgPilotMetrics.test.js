@@ -676,6 +676,24 @@ describe('computeScanEvidence', () => {
     expect(s.topCrops[0]).toEqual({ label: 'Maize', count: 2 });
   });
 
+  it('§6 species confirmation — rates from REAL decisions only, null until decided', () => {
+    // No decisions yet → null rates, never a fabricated 0%.
+    const none = computeScanEvidence([{ userFeedback: 'helpful', createdAt: new Date(NOW - DAY) }], { now: NOW });
+    expect(none.speciesConfirmation).toMatchObject({ confirmed: 0, rejected: 0, decided: 0, confirmationRate: null, falseIdentificationRate: null });
+    // 2 confirmed + 2 rejected → 0.5 / 0.5; rejected plant names feed topUnknownPlants.
+    const rows = [
+      { userFeedback: 'farmer_confirmed_species', plantName: 'Tomato',  createdAt: new Date(NOW - DAY) },
+      { userFeedback: 'farmer_confirmed_species', plantName: 'Maize',   createdAt: new Date(NOW - DAY) },
+      { userFeedback: 'farmer_rejected_species',  plantName: 'Cassava', createdAt: new Date(NOW - DAY) },
+      { userFeedback: 'farmer_rejected_species',  plantName: 'Cassava', createdAt: new Date(NOW - DAY) },
+    ];
+    const s = computeScanEvidence(rows, { now: NOW });
+    expect(s.speciesConfirmation).toMatchObject({ confirmed: 2, rejected: 2, decided: 4, confirmationRate: 0.5, falseIdentificationRate: 0.5 });
+    expect(s.speciesConfirmation.topUnknownPlants[0]).toEqual({ label: 'Cassava', count: 2 });
+    // Species events are NOT double-counted into helpful/none feedback buckets.
+    expect(s.feedback.none).toBe(0);
+  });
+
   it('inWindow counts only rows within windowDays; total counts all loaded', () => {
     const rows = [
       { confidence: 'high', createdAt: new Date(NOW - 2 * DAY) },   // in 30d window

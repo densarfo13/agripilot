@@ -548,6 +548,11 @@ export function computeScanEvidence(scans = [], { now = Date.now(), windowDays =
   const outcomes   = { recovered: 0, spread: 0, lost: 0, unknown: 0, none: 0 };
   const issueCounts = new Map();
   const cropCounts  = new Map();
+  // Vision Intelligence §6 — species-confirmation observability. Counted from
+  // REAL recorded events only; rates are null (never 0%) until events exist.
+  const unknownPlantCounts = new Map();
+  let speciesConfirmed = 0;
+  let speciesRejected = 0;
   let inWindow = 0;
 
   for (const r of rows) {
@@ -556,10 +561,19 @@ export function computeScanEvidence(scans = [], { now = Date.now(), windowDays =
     if (Number.isFinite(ts) && ts >= windowStart) inWindow += 1;
 
     // Farmer feedback ('helpful' | 'not_sure' | 'not_helpful') — recorded, never inferred.
+    // Vision Intelligence §6 — species-confirmation signals share the column:
+    // 'farmer_confirmed_species' / 'farmer_rejected_species' (confirm-plant endpoint).
     switch (String(r.userFeedback || '')) {
       case 'helpful':     feedback.helpful += 1; break;
       case 'not_sure':    feedback.notSure += 1; break;
       case 'not_helpful': feedback.notHelpful += 1; break;
+      case 'farmer_confirmed_species': speciesConfirmed += 1; break;
+      case 'farmer_rejected_species': {
+        speciesRejected += 1;
+        const p = String(r.plantName || '').trim();
+        if (p) unknownPlantCounts.set(p, (unknownPlantCounts.get(p) || 0) + 1);
+        break;
+      }
       default:            feedback.none += 1;
     }
 
@@ -599,6 +613,14 @@ export function computeScanEvidence(scans = [], { now = Date.now(), windowDays =
     .slice(0, 5)
     .map(([label, count]) => ({ label, count }));
 
+  // Vision Intelligence §6 — decided = confirmed + rejected. Rates stay null
+  // until at least one farmer decision exists (never a fabricated 0%/100%).
+  const speciesDecided = speciesConfirmed + speciesRejected;
+  const confirmationRate = speciesDecided > 0
+    ? Math.round((speciesConfirmed / speciesDecided) * 1000) / 1000 : null;
+  const falseIdentificationRate = speciesDecided > 0
+    ? Math.round((speciesRejected / speciesDecided) * 1000) / 1000 : null;
+
   return {
     total,
     inWindow,
@@ -608,6 +630,11 @@ export function computeScanEvidence(scans = [], { now = Date.now(), windowDays =
     outcomes:  { ...outcomes, reported },
     topIssues: topN(issueCounts),
     topCrops:  topN(cropCounts),
+    speciesConfirmation: {
+      confirmed: speciesConfirmed, rejected: speciesRejected, decided: speciesDecided,
+      confirmationRate, falseIdentificationRate,
+      topUnknownPlants: topN(unknownPlantCounts),
+    },
   };
 }
 
@@ -619,6 +646,10 @@ export function emptyScanEvidence() {
     confidence:{ high: 0, medium: 0, low: 0, unknown: 0 },
     outcomes:  { recovered: 0, spread: 0, lost: 0, unknown: 0, none: 0, reported: 0 },
     topIssues: [], topCrops: [],
+    speciesConfirmation: {
+      confirmed: 0, rejected: 0, decided: 0,
+      confirmationRate: null, falseIdentificationRate: null, topUnknownPlants: [],
+    },
   };
 }
 
