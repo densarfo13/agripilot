@@ -1631,6 +1631,17 @@ app.post('/api/scan/analyze', authenticate, scanUserLimiter, async (req, res) =>
       objectType:       scanRecovery.objectType,
       issueType:        scanRecovery.issueType,
       verdict:               safe,
+      // LEGACY CONTRACT RESTORATION (field screenshots, 2026-07-16): the
+      // client engine's _looksValid() gate requires a TOP-LEVEL
+      // possibleIssue string; the Scan Recovery §3 envelope refactor moved
+      // it under `verdict`, so _looksValid returned false for EVERY
+      // response and the client silently discarded the whole API result in
+      // favour of the rule-based fallback — on every scan, since the
+      // refactor. Restore the top-level field (the client gate is also
+      // hardened to accept the canonical envelope, so neither side can
+      // sever this again).
+      possibleIssue:         safe.possibleIssue,
+      explanation:           safe.explanation,
       verdictV2,
       verdictV3,
       decision,

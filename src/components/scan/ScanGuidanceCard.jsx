@@ -245,6 +245,7 @@ export default function ScanGuidanceCard({
   alternates,         // Scan Intelligence §2 — remaining ranked candidates [{taxonId, commonName, scientificName}]
   onConfirmAlternate, // (taxonId) → confirm THAT candidate instead of the top one
   onRejectAll,        // §4 "none of these" → records farmer_rejected_species
+  dbgLine,            // pilot diagnostics — screenshot-decodable envelope facts (state/cand/src)
   onRetake,
   onUpload,
   onSaveForReview,
@@ -458,6 +459,18 @@ export default function ScanGuidanceCard({
           </button>
         ) : null}
       </div>
+
+      {/* Pilot diagnostics — technical tokens only, screenshot-decodable.
+          Three device screenshots found three client-side bugs this week that
+          412 automated gates missed; this line turns every future screenshot
+          into an envelope probe (server state present? candidates? api vs
+          fallback?). Remove at cohort launch. */}
+      {dbgLine ? (
+        <div data-testid="scan-dbg"
+          style={{ marginTop: 10, fontSize: 10, fontFamily: 'ui-monospace, monospace', color: '#9AA59C', wordBreak: 'break-all' }}>
+          {dbgLine}
+        </div>
+      ) : null}
     </section>
   );
 }

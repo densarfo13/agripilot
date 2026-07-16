@@ -508,10 +508,26 @@ async function _recordScanDebugSafe(result, input) {
   } catch { /* swallow — debug capture never affects the scan */ }
 }
 
-function _looksValid(result) {
+// Exported for tests. ROOT-CAUSE NOTE (field screenshots, 2026-07-16): this
+// gate used to require ONLY a top-level possibleIssue string. The Scan
+// Recovery §3 server refactor moved possibleIssue under `verdict`, so this
+// returned false for EVERY real response and the engine silently replaced
+// the entire server result — identification state, candidates, confirmation
+// contract, everything — with the rule-based fallback, on every scan since
+// that refactor. The gate now ALSO recognises the canonical envelope by its
+// own unmistakable signals (ok:true + scanId/scanRecovery/topCandidates), so
+// neither side's future refactor can sever the contract silently again.
+export function _looksValid(result) {
   if (!result || typeof result !== 'object') return false;
-  if (typeof result.possibleIssue !== 'string' || !result.possibleIssue.trim()) return false;
-  return true;
+  // Legacy contract — a top-level possibleIssue string.
+  if (typeof result.possibleIssue === 'string' && result.possibleIssue.trim()) return true;
+  // Canonical envelope — the server's own shape, independent of legacy fields.
+  if (result.ok === true && (
+    typeof result.scanId === 'string'
+    || (result.scanRecovery && typeof result.scanRecovery === 'object')
+    || (Array.isArray(result.topCandidates) && result.topCandidates.length > 0)
+  )) return true;
+  return false;
 }
 
 function _coerceConfidence(c) {

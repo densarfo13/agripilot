@@ -97,3 +97,36 @@ describe('buildResultEnvelope — the last-mile strip fix', () => {
     expect(buildResultEnvelope(null, null)).toBeTypeOf('object');
   });
 });
+
+// ── BUG FIVE: the engine's validity gate rejected EVERY real response ──────
+// _looksValid required a TOP-LEVEL possibleIssue string; the Scan Recovery §3
+// server refactor moved it under `verdict`, so the engine discarded the whole
+// API result and served the rule-based fallback on every scan since — which
+// is why fixing the runtime strip (above) changed nothing on the device.
+import { _looksValid } from '../../../src/core/scanDetectionEngine.js';
+
+describe('_looksValid — the gate that silently dropped every API result', () => {
+  it('THE BUG: the CANONICAL server envelope (no top-level possibleIssue) must be valid', () => {
+    // Exactly the production _scanResponse shape: ok + scanId + topCandidates,
+    // possibleIssue nested under verdict.
+    const canonical = {
+      ok: true, scanId: 'scan_mrnvyh7v',
+      scanRecovery: { plantName: 'SomePlant' },
+      topCandidates: [{ commonName: 'SomePlant', score: 0.52 }],
+      verdict: { possibleIssue: 'Possible issue' },   // ← nested, where the refactor put it
+      identificationState: 'PROVISIONAL',
+    };
+    expect(_looksValid(canonical)).toBe(true);        // was false → fallback → dead-end
+  });
+
+  it('legacy contract (top-level possibleIssue) still valid', () => {
+    expect(_looksValid({ possibleIssue: 'Leaf spots' })).toBe(true);
+  });
+
+  it('garbage / empty / non-envelope still rejected', () => {
+    expect(_looksValid(null)).toBe(false);
+    expect(_looksValid({})).toBe(false);
+    expect(_looksValid({ ok: true })).toBe(false);            // ok alone is not an envelope
+    expect(_looksValid({ possibleIssue: '   ' })).toBe(false);
+  });
+});
