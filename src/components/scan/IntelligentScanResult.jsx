@@ -46,7 +46,7 @@ import FruitVegResultCard from './FruitVegResultCard.jsx';
 import InsectResultCard from './InsectResultCard.jsx';
 import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
 import { resolveScanGuidance } from '../../runtime/scanTrust/scanGuidanceResolver';
-import { confirmScanPlant } from '../../runtime/scanTrust/confirmPlantRuntime';
+import { confirmScanPlant, rejectScanPlant } from '../../runtime/scanTrust/confirmPlantRuntime';
 import { evaluatePhotoQuality } from '../../runtime/scanQuality/PhotoQualityEngine';
 import { explainPhotoQuality } from '../../runtime/scanQuality/PhotoQualityExplainer';
 import {
@@ -788,16 +788,24 @@ export default function IntelligentScanResult({
     : _guidance.state === 'NOT_A_PLANT' ? 'notPlant'
     : _guidance.state === 'PROVIDER_ERROR' ? 'error'
     : 'lowId'; // LOW_IDENTIFICATION_CONFIDENCE (valid image, just not sure)
-  const _guidanceCandidate = _str(_guidance.provisional && _guidance.provisional.plantName);
-  // P1/P4 — provisional confirmation → health. Confirms the STORED top candidate
-  // (server-validated by taxonId), then reveals the gated health outcome. Hooks
-  // are unconditional (rules-of-hooks safe); the CTA only renders on provisional.
+  // Scan Intelligence §2 — the confirmation contract now also arrives on
+  // LOW_IDENTIFICATION_CONFIDENCE (real ranked candidates, no threshold change),
+  // so "confirmable" covers both states whenever the server sent candidates.
+  const _confirmCands = _arr(result && result.confirmationCandidates);
+  const _confirmable = _showProvisional
+    || (_guidance.state === 'LOW_IDENTIFICATION_CONFIDENCE' && _confirmCands.length > 0);
+  const _guidanceCandidate = _str(_guidance.provisional && _guidance.provisional.plantName)
+    || _str(_confirmCands[0] && (_confirmCands[0].commonName || _confirmCands[0].scientificName));
+  // P1/P4 — confirmation → health. Confirms a STORED candidate (server-validated
+  // by taxonId; defaults to the top one), then reveals the gated health outcome.
+  // Hooks are unconditional (rules-of-hooks safe); CTAs render only when confirmable.
   const [_confirming, _setConfirming] = useState(false);
   const [_confirmedHealth, _setConfirmedHealth] = useState(null);
-  const _onConfirmProvisional = useCallback(async () => {
+  const [_rejected, _setRejected] = useState(false);
+  const _onConfirmCandidate = useCallback(async (candidateTaxonId) => {
     const scanId = _str(result && (result.scanId || result.scan_id));
     const cands = _arr(result && result.confirmationCandidates);
-    const taxonId = _str(cands[0] && cands[0].taxonId);
+    const taxonId = _str(candidateTaxonId) || _str(cands[0] && cands[0].taxonId);
     if (!scanId || !taxonId || _confirming) return;
     _setConfirming(true);
     try {
@@ -806,6 +814,16 @@ export default function IntelligentScanResult({
       else _setConfirmedHealth({ state: 'HEALTH_PROVIDER_ERROR', conditions: [] });
     } catch { _setConfirmedHealth({ state: 'HEALTH_PROVIDER_ERROR', conditions: [] }); }
     finally { _setConfirming(false); }
+  }, [result, _confirming]);
+  const _onConfirmProvisional = useCallback(() => _onConfirmCandidate(null), [_onConfirmCandidate]);
+  // §4 — "none of these": records farmer_rejected_species server-side, then the
+  // card falls back to the retake/agronomist CTAs (no invented identification).
+  const _onRejectAll = useCallback(async () => {
+    const scanId = _str(result && (result.scanId || result.scan_id));
+    if (!scanId || _confirming) return;
+    _setConfirming(true);
+    try { await rejectScanPlant(scanId); } catch { /* recorded best-effort */ }
+    finally { _setConfirming(false); _setRejected(true); }
   }, [result, _confirming]);
   // Real identification confidence for the card — resolver-normalized, never the
   // banded string. Falls back to the envelope confidencePct.
@@ -920,7 +938,10 @@ export default function IntelligentScanResult({
         <ScanGuidanceCard
           variant={_guidanceVariant}
           candidateName={_guidanceCandidate}
-          onConfirm={_showProvisional ? _onConfirmProvisional : undefined}
+          onConfirm={_confirmable && !_rejected ? _onConfirmProvisional : undefined}
+          alternates={_confirmable && !_rejected ? _confirmCands.slice(1) : undefined}
+          onConfirmAlternate={_confirmable && !_rejected ? _onConfirmCandidate : undefined}
+          onRejectAll={_confirmable && !_rejected ? _onRejectAll : undefined}
           confirming={_confirming}
           confirmedHealth={_confirmedHealth}
           contractMismatch={_contractMismatch}

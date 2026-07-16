@@ -25,14 +25,20 @@ describe('plantConfirmation — provisional contract + candidate validation (P0/
     expect(c.every((x) => x.commonName || x.scientificName)).toBe(true);
   });
 
-  it('buildProvisionalContract returns the P0 block only for PROVISIONAL', () => {
+  it('buildProvisionalContract returns the P0 block for PROVISIONAL and LOW_IDENTIFICATION_CONFIDENCE', () => {
     const p = buildProvisionalContract('PROVISIONAL', raw);
     expect(p.requiresConfirmation).toBe(true);
     expect(p.candidates.length).toBe(3);
     expect(p.allowedActions).toEqual(PROVISIONAL_ACTIONS);
+    // Scan Intelligence §2 — a valid photo with sub-provisional candidates
+    // surfaces the SAME ranked-candidates contract (no threshold change).
+    const low = buildProvisionalContract('LOW_IDENTIFICATION_CONFIDENCE', raw);
+    expect(low.requiresConfirmation).toBe(true);
+    expect(low.candidates.length).toBe(3);
     expect(buildProvisionalContract('CONFIRMED', raw)).toBeNull();
-    expect(buildProvisionalContract('LOW_CONFIDENCE', raw)).toBeNull();
+    expect(buildProvisionalContract('NOT_A_PLANT', raw)).toBeNull();
     expect(buildProvisionalContract('PROVISIONAL', [])).toBeNull();
+    expect(buildProvisionalContract('LOW_IDENTIFICATION_CONFIDENCE', [])).toBeNull(); // never invents
   });
 
   it('findConfirmableCandidate matches a stored taxonId and REJECTS arbitrary ones', () => {

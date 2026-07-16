@@ -2323,7 +2323,10 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
     const scanId = String(req.params.scanId || '').trim();
     const candidateTaxonId = String((req.body && req.body.candidateTaxonId) || '').trim();
     const confirmationSource = String((req.body && req.body.confirmationSource) || 'farmer').trim() || 'farmer';
-    if (!scanId || !candidateTaxonId) {
+    // Scan Intelligence §4 — { reject: true } records farmer_rejected_species
+    // ("none of these"); no candidate id required for a rejection.
+    const isReject = !!(req.body && req.body.reject === true);
+    if (!scanId || (!candidateTaxonId && !isReject)) {
       return res.status(400).json({ error: 'missing_scanId_or_candidate', state: 'CONFIRMATION_REJECTED' });
     }
 
@@ -2341,6 +2344,30 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
       console.log('[scan.confirm] ' + evt + ' scan=' + scanId + ' user=' + userId
         + (extra ? ' ' + extra : ''));
     } catch { /* ignore */ } };
+
+    // Scan Intelligence §4 — rejection path. Records the honest training signal
+    // (farmer looked at the ranked candidates and said "none of these") WITHOUT
+    // altering the identification state or inventing a new species. The stored
+    // top candidate is captured as the rejected name so future calibration work
+    // has (candidate, rejected) pairs to learn from.
+    if (isReject) {
+      if (row.confirmedAt) {
+        return res.status(409).json({ error: 'already_confirmed', state: 'CONFIRMATION_REJECTED' });
+      }
+      const _cands = Array.isArray(row.candidates) ? row.candidates : [];
+      const _top = _cands[0] || null;
+      try {
+        await prisma.scanTrainingEvent.create({
+          data: {
+            scanId, userId,
+            plantName: (_top && (_top.commonName || _top.scientificName)) || null,
+            userFeedback: 'farmer_rejected_species',
+          },
+        });
+      } catch (e) { _log('reject_persist_failed', String(e && e.message)); }
+      _log('species_rejected', 'top=' + ((_top && _top.taxonId) || 'none'));
+      return res.json({ scanId, state: 'REJECTION_RECORDED', rejected: true });
+    }
 
     // Idempotency (P8) — an already-confirmed scan returns the existing result,
     // never a duplicate health reveal / persistence / provider call.
@@ -2395,6 +2422,17 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
     });
 
     _log('confirmation_completed', 'health=' + healthState + ' conditions=' + healthConditions.length);
+
+    // Scan Intelligence §4 — spec-named confirmation signal alongside the full
+    // ScanPlantIdentification persistence above. Fire-and-forget; the training
+    // table is where calibration work will read (candidate, confirmed) pairs.
+    prisma.scanTrainingEvent.create({
+      data: {
+        scanId, userId,
+        plantName: match.commonName || match.scientificName || null,
+        userFeedback: 'farmer_confirmed_species',
+      },
+    }).catch(() => {});
 
     return res.json({
       scanId,

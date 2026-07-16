@@ -182,14 +182,26 @@ function _variantCopy(variant, candidateName) {
         hint: ['scan.guidance.provisional.hint', 'Best guess — please confirm'],
       };
     case 'lowId':
-      return {
-        icon: '🔍',
-        badge: ['scan.guidance.lowId.badge', 'Not sure yet'],
-        title: ['scan.guidance.lowId.title', "We couldn't confidently name this plant."],
-        body: ['scan.guidance.lowId.body',
-          'The photo looks fine — we just are not certain. A closer photo of a single leaf, or an agronomist, can confirm it.'],
-        hint: ['scan.confidence.low', 'Low confidence'],
-      };
+      // Scan Intelligence §2 — when the provider returned REAL candidates, lead
+      // with the top one instead of a dead-end "couldn't name this plant".
+      // The badge stays "Not sure yet" so the lower certainty is never hidden.
+      return name
+        ? {
+          icon: '🔍',
+          badge: ['scan.guidance.lowId.badge', 'Not sure yet'],
+          title: ['scan.guidance.provisional.title', 'We may have identified this as ' + name + '.'],
+          body: ['scan.guidance.lowId.pick',
+            'Not fully sure. Pick the matching plant below, or retake a closer photo.'],
+          hint: ['scan.confidence.low', 'Low confidence'],
+        }
+        : {
+          icon: '🔍',
+          badge: ['scan.guidance.lowId.badge', 'Not sure yet'],
+          title: ['scan.guidance.lowId.title', "We couldn't confidently name this plant."],
+          body: ['scan.guidance.lowId.body',
+            'The photo looks fine — we just are not certain. A closer photo of a single leaf, or an agronomist, can confirm it.'],
+          hint: ['scan.confidence.low', 'Low confidence'],
+        };
     case 'notPlant':
       return {
         icon: '🪴',
@@ -225,16 +237,24 @@ export default function ScanGuidanceCard({
   stages,             // [{ key, labelKey, labelDefault, state:'done'|'skipped'|'pending' }]
   showTreatmentLockedNote,
   variant,            // 'image' (default) | 'lowId' | 'provisional' | 'notPlant' | 'error'
-  candidateName,      // top candidate name, shown in the provisional title
-  onConfirm,          // (provisional) confirm the top candidate → health assessment
+  candidateName,      // top candidate name, shown in the provisional/lowId title
+  onConfirm,          // (provisional | lowId) confirm the top candidate → health assessment
   confirming,         // true while the confirm request is in flight
   confirmedHealth,    // { state, conditions } once confirmation completed (hides the confirm CTA)
   contractMismatch,   // §6 — requiresConfirmation but no candidates: fail closed, do not blame the photo
+  alternates,         // Scan Intelligence §2 — remaining ranked candidates [{taxonId, commonName, scientificName}]
+  onConfirmAlternate, // (taxonId) → confirm THAT candidate instead of the top one
+  onRejectAll,        // §4 "none of these" → records farmer_rejected_species
   onRetake,
   onUpload,
   onSaveForReview,
 }) {
-  const _provisionalConfirm = variant === 'provisional' && _isFn(onConfirm) && !confirmedHealth;
+  // Scan Intelligence §2 — the confirm path now also unlocks on lowId: a valid
+  // photo with sub-provisional candidates shows the provider's REAL ranked list
+  // and lets the farmer (looking at the plant) resolve it. No threshold change.
+  const _provisionalConfirm = (variant === 'provisional' || variant === 'lowId')
+    && _isFn(onConfirm) && !confirmedHealth;
+  const _alternates = _arr(alternates).slice(0, 2);
   const _healthLabel = (st) => (
     st === 'HEALTHY' ? tSafe('scan.health.noDisease', 'No obvious disease detected')
       : st === 'ISSUE_POSSIBLE' ? tSafe('scan.health.issue', 'Possible issue found')
@@ -380,6 +400,32 @@ export default function ScanGuidanceCard({
             {confirming
               ? tSafe('scan.guidance.confirming', 'Checking health…')
               : tSafe('scan.guidance.confirmYes', 'Yes, this is correct')}
+          </button>
+        ) : null}
+
+        {/* Scan Intelligence §2 — alternative REAL candidates (never invented;
+            these are the provider's remaining ranked results). Tapping one
+            confirms THAT candidate. §4 — "None of these" records the honest
+            farmer_rejected_species signal. */}
+        {_provisionalConfirm && _alternates.length && _isFn(onConfirmAlternate) ? (
+          <div data-testid="scan-guidance-alternates" style={{ marginTop: 8 }}>
+            <div style={S.confLabel}>{tSafe('scan.guidance.alternates', 'Other possibilities')}</div>
+            {_alternates.map((a) => (
+              <button key={String(a.taxonId)} type="button" className="ff-scan-btn" style={S.btnSecondary}
+                data-testid={'scan-guidance-alt-' + String(a.taxonId)}
+                onClick={confirming ? undefined : () => onConfirmAlternate(a.taxonId)}
+                disabled={!!confirming}>
+                {String(a.commonName || a.scientificName || '')}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {_provisionalConfirm && _isFn(onRejectAll) ? (
+          <button type="button" className="ff-scan-btn" style={S.btnTertiary}
+            data-testid="scan-guidance-reject-all"
+            onClick={confirming ? undefined : onRejectAll}
+            disabled={!!confirming}>
+            {tSafe('scan.guidance.noneOfThese', 'None of these')}
           </button>
         ) : null}
         <button type="button" className="ff-scan-btn"

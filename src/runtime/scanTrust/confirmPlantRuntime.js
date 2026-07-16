@@ -39,4 +39,30 @@ export async function confirmScanPlant(scanId, candidateTaxonId) {
   }
 }
 
+// Scan Intelligence §4 — "none of these": records farmer_rejected_species on
+// the server. Same self-contained fetch contract; null on any failure.
+export async function rejectScanPlant(scanId) {
+  const id = String(scanId || '').trim();
+  if (!id || typeof fetch !== 'function') return null;
+  let controller = null, timer = null;
+  try { controller = typeof AbortController !== 'undefined' ? new AbortController() : null; }
+  catch { controller = null; }
+  try {
+    if (controller) timer = setTimeout(() => { try { controller.abort(); } catch { /* ignore */ } }, CONFIRM_TIMEOUT_MS);
+    const res = await fetch('/api/scan/' + encodeURIComponent(id) + '/confirm-plant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reject: true }),
+      credentials: 'include',
+      signal: controller ? controller.signal : undefined,
+    });
+    if (timer) clearTimeout(timer);
+    if (!res || !res.ok) return null;
+    return await res.json();
+  } catch {
+    if (timer) clearTimeout(timer);
+    return null;
+  }
+}
+
 export default confirmScanPlant;

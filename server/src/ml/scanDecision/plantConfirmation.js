@@ -58,12 +58,18 @@ export const PROVISIONAL_ACTIONS = Object.freeze([
 ]);
 
 /**
- * The P0 response block for a PROVISIONAL identification. Returns null for any
- * other state (so the caller only attaches it when confirmation is actually
- * required). Never invents candidates — an empty list yields null.
+ * The P0 response block for an identification that needs FARMER confirmation.
+ * Covers PROVISIONAL and — Scan Intelligence upgrade — LOW_IDENTIFICATION_
+ * CONFIDENCE: a valid photo whose top candidate sits below the provisional
+ * threshold still carries the provider's REAL ranked candidates, so the farmer
+ * (who is looking at the plant) can resolve what the model could not. This
+ * surfaces existing provider output — it does NOT change thresholds, scores,
+ * or ranking. Returns null for any other state. Never invents candidates —
+ * an empty list yields null.
  */
 export function buildProvisionalContract(identificationState, rawCandidates) {
-  if (identificationState !== 'PROVISIONAL') return null;
+  if (identificationState !== 'PROVISIONAL'
+    && identificationState !== 'LOW_IDENTIFICATION_CONFIDENCE') return null;
   const candidates = normalizeCandidates(rawCandidates, 3);
   if (!candidates.length) return null;
   return Object.freeze({
