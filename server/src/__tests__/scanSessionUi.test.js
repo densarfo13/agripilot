@@ -94,10 +94,14 @@ describe('GuidedScanSession — server-owned state contract', () => {
     expect(app).toContain('<GuidedScanGate>');   // widened gate so the pilot farmer can enter
   });
   it('emits the spec-named guided_scan client events', () => {
-    expect(code).toContain('guided_scan_route_loaded');
-    expect(code).toContain('guided_scan_session_create_started');
-    expect(code).toContain('guided_scan_session_created');
-    expect(code).toContain('guided_scan_session_create_failed');
+    for (const e of ['guided_scan_loaded', 'scan_session_create_started', 'scan_session_create_success',
+      'scan_photo_upload_started', 'scan_photo_upload_success', 'scan_provider_started', 'scan_result_received']) {
+      expect(code).toContain(e);
+    }
+  });
+  it('renders the admin-only debug overlay (sid / api / provider / decision)', () => {
+    expect(code).toContain('gs-debug');
+    expect(code).toMatch(/sid=.*api=.*provider=.*decision=/s);
   });
 });
 

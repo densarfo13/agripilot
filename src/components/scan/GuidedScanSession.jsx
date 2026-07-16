@@ -59,6 +59,7 @@ export default function GuidedScanSession({ cropName, onExit }) {
   const [session, setSession] = useState(null);   // the server response (source of truth)
   const [phase, setPhase] = useState('starting'); // starting | ready | working | error
   const [note, setNote] = useState('');
+  const [dbg, setDbg] = useState({ api: '—', provider: '—', decision: '—' }); // §5 admin debug
   const startedRef = useRef(false);
   const fileRef = useRef(null);
 
@@ -76,9 +77,12 @@ export default function GuidedScanSession({ cropName, onExit }) {
       if (got.ok && got.data && got.data.sessionId) { emitScanUiEvent('scan_ui_session_started', got.data.sessionId, got.data.state); _apply(got.data, ''); return; }
       forgetSessionId();
     }
+    emitScanUiEvent('scan_session_create_started', null, null);
     emitScanUiEvent('guided_scan_session_create_started', null, null);
     const created = await createScanSession({ cropName: cropName || undefined });
+    setDbg((d) => ({ ...d, api: 'POST /sessions ' + (created.status || 0) }));
     if (created.ok && created.data && created.data.sessionId) {
+      emitScanUiEvent('scan_session_create_success', created.data.sessionId, created.data.state);
       emitScanUiEvent('guided_scan_session_created', created.data.sessionId, created.data.state);
       emitScanUiEvent('scan_ui_session_started', created.data.sessionId, created.data.state);
       _apply(created.data, ''); return;
@@ -90,7 +94,7 @@ export default function GuidedScanSession({ cropName, onExit }) {
     setPhase('error');
   }, [cropName, _apply]);
 
-  useEffect(() => { if (!startedRef.current) { startedRef.current = true; emitScanUiEvent('guided_scan_route_loaded', null, null); _start(); } }, [_start]);
+  useEffect(() => { if (!startedRef.current) { startedRef.current = true; emitScanUiEvent('guided_scan_loaded', null, null); emitScanUiEvent('guided_scan_route_loaded', null, null); _start(); } }, [_start]);
 
   const submitPhoto = useCallback(async (file) => {
     if (!file || !session || !session.sessionId) return;
@@ -100,7 +104,17 @@ export default function GuidedScanSession({ cropName, onExit }) {
     if (!b64) { setPhase('ready'); setNote(tSafe('scan.gs.retryNote', "We couldn't read that photo. Try again.")); return; }
     const viewType = (session.nextView && session.nextView.viewType) || 'WHOLE_PLANT';
     const idem = 'p-' + (session.photoProgress ? session.photoProgress.received : 0) + '-' + b64.length;
+    emitScanUiEvent('scan_photo_upload_started', session.sessionId, viewType);
+    emitScanUiEvent('scan_provider_started', session.sessionId, viewType);
     const out = await addScanSessionPhoto(session.sessionId, { imageBase64: b64, viewType, idempotencyKey: idem });
+    setDbg((d) => ({
+      ...d,
+      api: 'POST /photos ' + (out.status || 0),
+      provider: (out.data && out.data.identification && out.data.identification.state) || d.provider,
+      decision: (out.data && out.data.state) || d.decision,
+    }));
+    emitScanUiEvent('scan_result_received', session.sessionId, out.data && out.data.state);
+    if (out.ok && out.data) emitScanUiEvent('scan_photo_upload_success', session.sessionId, out.data.state);
     if (out.status === 409 && out.data && out.data.error === 'session_expired') { emitScanUiEvent('scan_ui_error', session.sessionId, 'expired'); _apply(out.data, tSafe('scan.gs.expired', 'This scan expired. Start a new one.')); return; }
     if (!out.ok && !out.data) { emitScanUiEvent('scan_ui_error', session.sessionId, 'upload_failed'); setPhase('ready'); setNote(tSafe('scan.gs.retryNote', "That didn't go through. Try again.")); return; }
     if (out.data && out.data.deduplicated) { emitScanUiEvent('scan_ui_photo_submitted', session.sessionId, out.data.state); _apply(out.data, tSafe('scan.gs.duplicate', "That's the same photo — showing the previous result.")); return; }
@@ -232,6 +246,13 @@ export default function GuidedScanSession({ cropName, onExit }) {
           {typeof onExit === 'function'
             ? <button type="button" style={S.btnS} data-testid="gs-exit" onClick={onExit}>{tSafe('scan.gs.exit', 'Close')}</button>
             : null}
+        </div>
+
+        {/* §5 diagnostic — the whole component renders only behind the admin/pilot
+            gate, so this is never farmer-visible. Technical tokens only (no PII). */}
+        <div data-testid="gs-debug"
+          style={{ marginTop: 14, padding: 8, borderRadius: 8, background: '#0B1F17', color: '#8FE3B4', fontSize: 11, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
+          {'sid=' + (s.sessionId || '-') + ' | api=' + dbg.api + ' | provider=' + dbg.provider + ' | decision=' + dbg.decision}
         </div>
       </section>
     </main>
