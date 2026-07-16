@@ -2345,6 +2345,18 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
         + (extra ? ' ' + extra : ''));
     } catch { /* ignore */ } };
 
+    // Confirmation Intelligence M1 — region-tag every feedback event from row
+    // one (columns already exist on ScanTrainingEvent; regional accuracy slices
+    // are impossible to reconstruct later without this). Best-effort: a missing
+    // profile never blocks the confirmation.
+    let _geo = { country: null, region: null };
+    try {
+      const _fp = await prisma.farmProfile.findFirst({
+        where: { userId }, select: { country: true, locationName: true },
+      });
+      if (_fp) _geo = { country: _fp.country || null, region: _fp.locationName || null };
+    } catch { /* best-effort */ }
+
     // Scan Intelligence §4 — rejection path. Records the honest training signal
     // (farmer looked at the ranked candidates and said "none of these") WITHOUT
     // altering the identification state or inventing a new species. The stored
@@ -2362,6 +2374,7 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
             scanId, userId,
             plantName: (_top && (_top.commonName || _top.scientificName)) || null,
             userFeedback: 'farmer_rejected_species',
+            country: _geo.country, region: _geo.region,
           },
         });
       } catch (e) { _log('reject_persist_failed', String(e && e.message)); }
@@ -2431,6 +2444,7 @@ app.post('/api/scan/:scanId/confirm-plant', authenticate, async (req, res) => {
         scanId, userId,
         plantName: match.commonName || match.scientificName || null,
         userFeedback: 'farmer_confirmed_species',
+        country: _geo.country, region: _geo.region,
       },
     }).catch(() => {});
 
