@@ -59,7 +59,8 @@ export default function GuidedScanSession({ cropName, onExit }) {
   const [session, setSession] = useState(null);   // the server response (source of truth)
   const [phase, setPhase] = useState('starting'); // starting | ready | working | error
   const [note, setNote] = useState('');
-  const [dbg, setDbg] = useState({ api: '—', provider: '—', decision: '—' }); // §5 admin debug
+  // §5 admin diagnostics — Scan Runtime Health. Labeled stage states, admin/pilot-gated.
+  const [dbg, setDbg] = useState({ session: '—', photo: '—', provider: '—', decision: '—', api: '—' });
   const startedRef = useRef(false);
   const fileRef = useRef(null);
 
@@ -74,20 +75,24 @@ export default function GuidedScanSession({ cropName, onExit }) {
     const priorId = recallSessionId();                 // §1/§19 recover an active session — server is authoritative
     if (priorId) {
       const got = await getScanSession(priorId);
-      if (got.ok && got.data && got.data.sessionId) { emitScanUiEvent('scan_ui_session_started', got.data.sessionId, got.data.state); _apply(got.data, ''); return; }
+      if (got.ok && got.data && got.data.sessionId) { emitScanUiEvent('scan_ui_session_started', got.data.sessionId, got.data.state); setDbg((d) => ({ ...d, session: 'CREATED', api: 'GET /sessions 200' })); _apply(got.data, ''); return; }
       forgetSessionId();
     }
+    emitScanUiEvent('session_create_request', null, null);          // spec-exact
     emitScanUiEvent('scan_session_create_started', null, null);
     emitScanUiEvent('guided_scan_session_create_started', null, null);
     const created = await createScanSession({ cropName: cropName || undefined });
     setDbg((d) => ({ ...d, api: 'POST /sessions ' + (created.status || 0) }));
     if (created.ok && created.data && created.data.sessionId) {
+      setDbg((d) => ({ ...d, session: 'CREATED' }));
+      emitScanUiEvent('session_create_success', created.data.sessionId, created.data.state);   // spec-exact
       emitScanUiEvent('scan_session_create_success', created.data.sessionId, created.data.state);
       emitScanUiEvent('guided_scan_session_created', created.data.sessionId, created.data.state);
       emitScanUiEvent('scan_ui_session_started', created.data.sessionId, created.data.state);
       _apply(created.data, ''); return;
     }
     // Clear 401/403 vs network failure so the farmer sees why (§4).
+    setDbg((d) => ({ ...d, session: 'FAILED' }));
     emitScanUiEvent('guided_scan_session_create_failed', null, 'status_' + (created.status || 0));
     emitScanUiEvent('scan_ui_error', null, 'create_failed');
     setNote(tSafe('scan.gs.startFailed', "We couldn't start the scan."));
@@ -107,14 +112,19 @@ export default function GuidedScanSession({ cropName, onExit }) {
     emitScanUiEvent('scan_photo_upload_started', session.sessionId, viewType);
     emitScanUiEvent('scan_provider_started', session.sessionId, viewType);
     const out = await addScanSessionPhoto(session.sessionId, { imageBase64: b64, viewType, idempotencyKey: idem });
+    const idSt = out.data && out.data.identification && out.data.identification.state;
     setDbg((d) => ({
       ...d,
       api: 'POST /photos ' + (out.status || 0),
-      provider: (out.data && out.data.identification && out.data.identification.state) || d.provider,
-      decision: (out.data && out.data.state) || d.decision,
+      photo: out.ok ? 'UPLOADED' : 'FAILED',
+      provider: idSt === 'PROVIDER_ERROR' ? 'FAILED' : (idSt && idSt !== 'NOT_RUN' ? 'CALLED' : d.provider),
+      decision: (out.ok && out.data && out.data.state) ? 'READY' : (out.ok ? d.decision : 'FAILED'),
     }));
     emitScanUiEvent('scan_result_received', session.sessionId, out.data && out.data.state);
-    if (out.ok && out.data) emitScanUiEvent('scan_photo_upload_success', session.sessionId, out.data.state);
+    if (out.ok && out.data) {
+      emitScanUiEvent('photo_upload_success', session.sessionId, out.data.state);          // spec-exact
+      emitScanUiEvent('scan_photo_upload_success', session.sessionId, out.data.state);
+    }
     if (out.status === 409 && out.data && out.data.error === 'session_expired') { emitScanUiEvent('scan_ui_error', session.sessionId, 'expired'); _apply(out.data, tSafe('scan.gs.expired', 'This scan expired. Start a new one.')); return; }
     if (!out.ok && !out.data) { emitScanUiEvent('scan_ui_error', session.sessionId, 'upload_failed'); setPhase('ready'); setNote(tSafe('scan.gs.retryNote', "That didn't go through. Try again.")); return; }
     if (out.data && out.data.deduplicated) { emitScanUiEvent('scan_ui_photo_submitted', session.sessionId, out.data.state); _apply(out.data, tSafe('scan.gs.duplicate', "That's the same photo — showing the previous result.")); return; }
@@ -127,7 +137,7 @@ export default function GuidedScanSession({ cropName, onExit }) {
     try { e.target.value = ''; } catch { /* ignore */ }
     if (f) submitPhoto(f);
   }, [submitPhoto]);
-  const openCapture = useCallback(() => { emitScanUiEvent('scan_ui_photo_capture_opened', session && session.sessionId, session && session.state); if (fileRef.current) fileRef.current.click(); }, [session]);
+  const openCapture = useCallback(() => { emitScanUiEvent('scan_button_clicked', session && session.sessionId, session && session.state); emitScanUiEvent('scan_ui_photo_capture_opened', session && session.sessionId, session && session.state); if (fileRef.current) fileRef.current.click(); }, [session]);
 
   const doAction = useCallback(async (action) => {
     if (!session || !session.sessionId) return;
@@ -248,11 +258,19 @@ export default function GuidedScanSession({ cropName, onExit }) {
             : null}
         </div>
 
-        {/* §5 diagnostic — the whole component renders only behind the admin/pilot
-            gate, so this is never farmer-visible. Technical tokens only (no PII). */}
+        {/* §5 Scan Runtime Health — admin/pilot diagnostics. The whole component
+            renders only behind the admin/pilot gate, so this is never farmer-visible.
+            Technical tokens only (no PII, no image data, no storage URLs). */}
         <div data-testid="gs-debug"
-          style={{ marginTop: 14, padding: 8, borderRadius: 8, background: '#0B1F17', color: '#8FE3B4', fontSize: 11, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
-          {'sid=' + (s.sessionId || '-') + ' | api=' + dbg.api + ' | provider=' + dbg.provider + ' | decision=' + dbg.decision}
+          style={{ marginTop: 14, padding: 10, borderRadius: 8, background: '#0B1F17', color: '#8FE3B4', fontSize: 11, fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
+          <div style={{ fontWeight: 700, letterSpacing: 0.4, marginBottom: 6 }}>SCAN RUNTIME HEALTH</div>
+          {[['session', dbg.session], ['photo', dbg.photo], ['provider', dbg.provider], ['decision', dbg.decision]].map(([k, v]) => (
+            <div key={k} data-testid={'gs-health-' + k} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{k}</span>
+              <span style={{ color: v === 'FAILED' ? '#FF9B8A' : v === '—' ? '#5B6B60' : '#8FE3B4', fontWeight: 700 }}>{v}</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 6, opacity: 0.8 }}>{'sid=' + (s.sessionId || '-') + ' | ' + dbg.api}</div>
         </div>
       </section>
     </main>

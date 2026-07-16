@@ -151,10 +151,14 @@ export async function addPhoto({ prisma, user, sessionId, body }) {
   let providerResult = _providerResult(null, viewType, qualityStatus);
   if (qualityStatus !== 'FAIL' && pre && pre.ok) {
     await _emit(prisma, session.id, 'scan_session_provider_reserved', { call: session.identificationCallCount + 1 });
+    _elog('provider_call', 'session=' + session.id + ' call=' + (session.identificationCallCount + 1) + ' view=' + viewType);
     const { runConsensus } = await import('../scanConsensusEngine.js');
     const consensus = await runConsensus({ image: pre.image, mime: pre.mime, cropName: session.cropName || undefined });
     providerResult = _providerResult(consensus, viewType, qualityStatus);
     await _emit(prisma, session.id, 'scan_session_provider_completed', { candidates: providerResult.candidates.length, mode: providerResult.consensusMode });
+    _elog('provider_done', 'session=' + session.id + ' candidates=' + providerResult.candidates.length + ' mode=' + providerResult.consensusMode);
+  } else {
+    _elog('provider_skipped', 'session=' + session.id + ' quality=' + qualityStatus);
   }
   await prisma.scanSessionImage.update({ where: { id: imageRow.id }, data: { providerResult } });
 

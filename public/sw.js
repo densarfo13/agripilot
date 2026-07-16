@@ -18,7 +18,7 @@
  * Versioned caches purged on activate; skipWaiting + clientsClaim so an
  * update rolls out immediately. postMessage('KILL_SW') fully self-removes.
  */
-const SW_VERSION = 'v2-guidedscan';
+const SW_VERSION = 'v3-scantrace';
 const SHELL_CACHE = 'fwshell-' + SW_VERSION;
 const ASSET_CACHE = 'fwassets-' + SW_VERSION;
 const DATA_CACHE = 'fwdata-' + SW_VERSION;
