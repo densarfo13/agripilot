@@ -40,7 +40,8 @@ import { tSafe } from '../../i18n/tSafe.js';
 import { addGarden, addFarm } from '../../store/multiExperience.js';
 import { saveTaskCompletion } from '../../store/farrowayLocal.js';
 import { generateFirstPlan } from '../../core/firstPlanEngine.js';
-import { setOnboardingComplete } from '../../utils/onboarding.js';
+import { setOnboardingComplete, setSavedCountry, isOnboardingComplete } from '../../utils/onboarding.js';
+import { isOnboardingValid } from '../../runtime/launchBlockers/OnboardingGuardRuntime';
 import { trackEvent } from '../../core/analytics.js';
 import { stampOnboardingStart } from '../../core/onboardingTiming.js';
 import { classifyLocationError, locationContext } from '../../runtime/location/classifyLocationError';
@@ -507,7 +508,32 @@ export default function FastOnboarding() {
   useEffect(() => {
     if (startedAtRef.current) return;
     startedAtRef.current = Date.now();
+    // Continuation-freeze trap-breaker (§3): a user who already COMPLETED
+    // onboarding but fails the guard predicate (writer/reader mismatch) was
+    // bounced from /home back to here — the "Continuing…" ping-pong. Self-heal
+    // the minimum profile and leave. Bounded to 2 attempts per session so any
+    // deeper mismatch degrades to a VISIBLE onboarding screen, never a frozen
+    // button. Diagnostics (§6) via the existing __onboardingGuardHealth global.
+    try {
+      if (isOnboardingComplete() && !isOnboardingValid()) {
+        const k = 'ff_onb_selfheal_attempts';
+        const n = Number(sessionStorage.getItem(k) || '0');
+        if (n < 2) {
+          sessionStorage.setItem(k, String(n + 1));
+          try { localStorage.setItem('farroway_location_skipped', 'true'); } catch { /* ignore */ }
+          try { trackEvent('onboarding_guard_loop_selfheal', { attempt: n + 1 }); } catch { /* ignore */ }
+          try {
+            const w = typeof window !== 'undefined' ? window : {};
+            console.warn('[onboarding] guard_loop_detected — self-healing',
+              typeof w.__onboardingGuardHealth === 'function' ? w.__onboardingGuardHealth() : {});
+          } catch { /* ignore */ }
+          _leaveToHome();
+          return;
+        }
+      }
+    } catch { /* never block onboarding */ }
     try { trackEvent('fast_onboarding_started', {}); } catch { /* swallow */ }
+    try { trackEvent('onboarding_started', {}); } catch { /* swallow */ }
     // Onboarding cleanup §4 — stamp the canonical "first action
     // timer" so FirstActionGate can compute time_to_first_action_ms
     // on the user's first Done tap. Idempotent — a returning user
@@ -533,6 +559,15 @@ export default function FastOnboarding() {
       });
     } catch { /* swallow */ }
     try { setOnboardingComplete(); } catch { /* swallow */ }
+    // Continuation-freeze fix — persist the best-known country so the
+    // onboarding guard's minimum-profile check passes on EVERY path
+    // (GPS-resolved, searched, or typed). Without this, only failed-GPS
+    // users (skipped flag) passed the guard.
+    try {
+      if (geoPlace && geoPlace.country) setSavedCountry(geoPlace.country);
+      else if (country.trim()) setSavedCountry(country.trim());
+    } catch { /* swallow */ }
+    try { trackEvent('onboarding_completed', { geoStatus, source }); } catch { /* swallow */ }
     try {
       if (typeof localStorage !== 'undefined') {
         // Only fall back to general-guidance when we did NOT get a real fix and the user
@@ -578,6 +613,7 @@ export default function FastOnboarding() {
   useEffect(() => {
     if (geoStatus !== 'granted' || autoAdvancedRef.current) return;
     autoAdvancedRef.current = true;
+    try { trackEvent('location_detected', {}); } catch { /* swallow */ }
     const id = setTimeout(() => finishLocation('auto'), 1800);
     return () => clearTimeout(id);
 
@@ -694,6 +730,13 @@ export default function FastOnboarding() {
               if (!geo) return;
               setGeoPlace(geo);
               try { saveLocation({ lat, lng, country: geo.country, region: geo.region, label: geo.displayName, source: 'gps' }); } catch { /* swallow */ }
+              // Continuation-freeze fix: the onboarding guard's minimum-profile
+              // check reads farroway_country — which the GPS-SUCCESS path never
+              // wrote, so a working location failed isOnboardingValid() and the
+              // /home redirect bounced straight back here ("Continuing…" loop).
+              // Persist the resolved country so success passes the guard.
+              try { if (geo.country) setSavedCountry(geo.country); } catch { /* swallow */ }
+              try { trackEvent('weather_loaded', { source: 'gps' }); } catch { /* swallow */ }
             }).catch(() => { /* coords already saved; preview just stays generic */ });
           }
           setGeoStatus('granted');
@@ -1196,6 +1239,7 @@ export default function FastOnboarding() {
                   try {
                     saveLocation({ lat: r.lat, lng: r.lng, country: r.country, region: r.region || r.locality, label: r.label, source: 'search' });
                   } catch { /* swallow */ }
+                  try { if (r.country) setSavedCountry(r.country); } catch { /* swallow */ }
                   try { trackEvent('onboarding_location_search_select', { hasRegion: !!(r.region || r.locality) }); } catch { /* swallow */ }
                   finishLocation('search');
                 }}

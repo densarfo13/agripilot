@@ -90,6 +90,20 @@ function _hasEntity(): boolean {
 function _hasMinimumProfile(): boolean {
   const country = _read('farroway_country');
   if (country && String(country).trim()) return true;
+  // Continuation-freeze fix: a SAVED real location (successful GPS fix or
+  // town search — locationSafe's farroway_location row) is a stronger
+  // profile signal than the skipped flag. The old check only accepted
+  // farroway_country, which the GPS-success path never wrote — so users
+  // whose location WORKED failed the guard (bounced /home → onboarding →
+  // "Continuing…" loop) while users whose GPS failed passed via the
+  // skipped flag. Accept the saved row.
+  const savedLoc = _safe(() => {
+    const raw = _read('farroway_location');
+    if (!raw) return false;
+    const row = JSON.parse(raw);
+    return !!(row && row.hasLocation === true);
+  }, false);
+  if (savedLoc) return true;
   // Location explicitly skipped → minimum acceptable.
   return _read('farroway_location_skipped') === 'true'
       || _read('setupSkipped') === 'true';
