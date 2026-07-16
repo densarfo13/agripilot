@@ -63,6 +63,52 @@ const REQUIRED_RESULT_FIELDS = Object.freeze([
 ]);
 
 /**
+ * Build the spec §12 result envelope WITHOUT losing the classifier's
+ * intelligence fields.
+ *
+ * ROOT-CAUSE NOTE (field screenshots, 2026-07-16): ScanRuntime used to build
+ * this envelope inline as an 11-field WHITELIST ("Pass-through additional
+ * optional fields" — which passed exactly two). Everything else the server +
+ * engine produced — identificationState, requiresConfirmation,
+ * confirmationCandidates, topCandidates, plantName, confidencePct,
+ * mythosDecision, scanRecovery — was silently discarded at the LAST step
+ * before setResult. Result: the confirm button NEVER rendered on any device,
+ * every scan fell to the "couldn't confidently name this plant" dead-end, and
+ * zero farmer confirmations were ever recorded, regardless of what the server
+ * resolved. Two earlier fixes (server literal, LOW-state contract) were
+ * correct but invisible because this strip sat downstream of both.
+ *
+ * Contract: spread the RAW classifier envelope first, then stamp the §12
+ * fields on top (they win). validateScanResult only checks the §12 fields,
+ * so extra fields never fail validation. Pure; never throws.
+ */
+export function buildResultEnvelope(raw, ctx) {
+  return _safe(() => {
+    const r = _isObj(raw) ? raw : {};
+    const c = _isObj(ctx) ? ctx : {};
+    return Object.freeze({
+      // ── FULL intelligence pass-through (server decision, candidates,
+      //    confirmation contract, recovery envelope, FarmBrain, …) ──
+      ...r,
+      // ── Spec §12 contract fields (always present; override raw) ──
+      sessionId:               c.sessionId ?? null,
+      imageId:                 c.imageId ?? null,
+      imagePreviewUrl:         c.previewUrl ?? null,
+      imageHash:               c.imageId ?? null,
+      imageValidated:          true,
+      classifierInputVerified: true,
+      // Same guarantee the classifier makes ('Needs Review' floor) — a
+      // missing headline must NEVER hard-fail the whole scan at validation.
+      diagnosis:               _str(r.diagnosis) || _str(r.possibleIssue) || 'Needs Review',
+      confidenceTone:          _str(r.confidenceTone) || 'medium_confidence',
+      timestamp:               Date.now(),
+      severity:                _str(r.severity) || null,
+      recommendation:          r.recommendation || null,
+    });
+  }, Object.freeze({}));
+}
+
+/**
  * Reject scan results that don't carry full image linkage.
  * Returns `{ valid, reason, missing? }`.
  */

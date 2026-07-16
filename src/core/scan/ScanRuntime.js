@@ -54,6 +54,7 @@ import { resolveStartupMessage } from '../camera/cameraHealthEngine.js';
 import {
   assertValidScanInput, validateScanResult,
   isLowConfidenceAllowed, invalidImageMessage,
+  buildResultEnvelope,
 } from './scanRuntimeContracts.js';
 import { enqueueOfflineScan } from './offlineScanQueue.js';
 import { FarmEvents, publish } from '../../lib/farmEventBus.js';
@@ -378,20 +379,19 @@ export function createScanRuntime(cfg) {
       return { ok: false, reason: 'classifier_empty' };
     }
 
-    // Build the spec §12 result envelope.
-    const candidate = Object.freeze({
-      sessionId:                mySession,
-      imageId:                  _imageId,
-      imagePreviewUrl:          _previewUrl,
-      imageHash:                _imageId,
-      imageValidated:           true,
-      classifierInputVerified:  true,
-      diagnosis:                _str(raw.diagnosis) || raw.diagnosis || null,
-      confidenceTone:           _str(raw.confidenceTone) || 'medium_confidence',
-      timestamp:                Date.now(),
-      // Pass-through additional optional fields.
-      severity:                 _str(raw.severity) || null,
-      recommendation:           raw.recommendation || null,
+    // Build the spec §12 result envelope. ROOT-CAUSE FIX (2026-07-16, field
+    // screenshots): the old inline build was an 11-field WHITELIST that
+    // silently discarded the classifier's ENTIRE intelligence envelope
+    // (identificationState, requiresConfirmation, confirmationCandidates,
+    // topCandidates, plantName, confidencePct, scanRecovery, farmBrain…) —
+    // so the confirm button never rendered on any device and every scan fell
+    // to the "couldn't confidently name this plant" dead-end regardless of
+    // the server's decision. buildResultEnvelope spreads the raw envelope
+    // FIRST, then stamps the §12 contract fields on top.
+    const candidate = buildResultEnvelope(raw, {
+      sessionId: mySession,
+      imageId:   _imageId,
+      previewUrl: _previewUrl,
     });
     const verdict = validateScanResult(candidate);
     if (!verdict.valid) {
