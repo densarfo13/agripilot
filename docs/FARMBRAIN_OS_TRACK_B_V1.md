@@ -215,3 +215,51 @@ Track B implementation begins when ALL hold:
    or `[scan.confirm] confirmation_completed`). **Still zero as of this doc.**
 3. Founder sign-off recorded in this file's revision history.
 4. For M1 specifically: the data-volume trigger (≥200 decided events).
+
+---
+
+## Amendment A (2026-07-16) — Readiness Gating + Consent Grid
+
+Adopted from the "Data Flywheel Engine" and "Finance & Trust" specs — the two
+ideas from that series that are honest by construction.
+
+### A1. Prediction Readiness Contract (generalizes M1's data trigger)
+
+Every predictive or aggregate surface (calibration, regional slices, risk
+models, any future data product) MUST publish a readiness envelope BEFORE it
+may emit a number:
+
+    { capability, records, required, ready: bool, reason }
+
+- `ready:false` renders as an explicit "learning from more farms" state —
+  never a guessed value, never a hidden feature.
+- `required` thresholds are versioned constants with rationale comments, not
+  env-tunable knobs (prevents silent threshold-lowering to force `ready`).
+- Gate: `check:prediction-readiness` — any module emitting a prediction
+  without a readiness envelope fails the build.
+- This formalizes the existing pattern (null rates until decided > 0,
+  `hasData:false` empty states) as a platform-wide contract.
+
+### A2. Farmer Consent Grid (precedes ANY external data sharing)
+
+Before any Track B data product exposes farmer-derived data to buyers, NGOs,
+lenders, or insurers:
+
+- Per-farmer consent matrix: `{ audience: buyer|ngo|lender|insurer,
+  scope: identity|crops|health_history|outcomes, granted_at, revoked_at }`.
+- Default: ALL DENIED. Consent is opt-in per audience+scope, revocable,
+  and every access is audit-logged (who/what/when/why) via the existing
+  AuditRuntime.
+- No aggregate external product may include a farmer whose consent for that
+  scope is absent — enforced at the query layer, not the UI.
+- Sequencing: consent infrastructure ships BEFORE the first external data
+  product, regardless of build order pressure.
+
+### Explicitly rejected from the same spec series (for the record)
+
+- Farm Performance Score / finance-readiness indicators over an empty
+  dataset — a number shown to lenders is a credit signal no matter the
+  disclaimer.
+- Satellite×scan fused confidence — blocked by check:scan-evidence-fusion.
+- Context-boost confidence arithmetic (+X%), yield/harvest/price/supply
+  forecasts — never-fabricate list, unchanged.
