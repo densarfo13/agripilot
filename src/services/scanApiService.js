@@ -157,10 +157,24 @@ export async function requestScanAnalysis(input = {}) {
       logScanPipelineError('parsing', err);
       return null;
     });
+    // Boundary trace (candidate-handoff repair, req 2): candidate counts at the
+    // FIRST client boundary, keyed by scanId, so a lost candidate can be pinned
+    // to provider→API vs a later client transform. Counts only — never image data.
+    const _cc = json && Array.isArray(json.confirmationCandidates) ? json.confirmationCandidates.length : 0;
+    const _tc = json && Array.isArray(json.topCandidates) ? json.topCandidates.length : 0;
     logScanStage(SCAN_STAGES.INFERENCE_RESPONSE, {
-      durationMs: (Date.now() - t0),
-      outcome:    json ? 'ok' : 'empty',
+      durationMs:      (Date.now() - t0),
+      outcome:         json ? 'ok' : 'empty',
+      scanId:          (json && json.scanId) || null,
+      state:           (json && json.identificationState) || null,
+      confirmCands:    _cc,
+      topCands:        _tc,
     });
+    try {
+      console.info('[scan.trace] api.response scanId=' + ((json && json.scanId) || '-')
+        + ' state=' + ((json && json.identificationState) || '-')
+        + ' confirmCands=' + _cc + ' topCands=' + _tc);
+    } catch { /* swallow */ }
     return json && typeof json === 'object' ? json : null;
   } catch (err) {
     logScanPipelineError('inference', err);

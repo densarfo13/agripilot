@@ -45,7 +45,7 @@ import ScanGuidanceCard from './ScanGuidanceCard.jsx';
 import FruitVegResultCard from './FruitVegResultCard.jsx';
 import InsectResultCard from './InsectResultCard.jsx';
 import { evaluateScanTrust } from '../../runtime/scanTrust/ScanTrustGate';
-import { resolveScanGuidance } from '../../runtime/scanTrust/scanGuidanceResolver';
+import { resolveScanGuidance, isCandidateConfirmable } from '../../runtime/scanTrust/scanGuidanceResolver';
 import { confirmScanPlant, rejectScanPlant } from '../../runtime/scanTrust/confirmPlantRuntime';
 import { evaluatePhotoQuality } from '../../runtime/scanQuality/PhotoQualityEngine';
 import { explainPhotoQuality } from '../../runtime/scanQuality/PhotoQualityExplainer';
@@ -792,8 +792,15 @@ export default function IntelligentScanResult({
   // LOW_IDENTIFICATION_CONFIDENCE (real ranked candidates, no threshold change),
   // so "confirmable" covers both states whenever the server sent candidates.
   const _confirmCands = _arr(result && result.confirmationCandidates);
-  const _confirmable = _showProvisional
-    || (_guidance.state === 'LOW_IDENTIFICATION_CONFIDENCE' && _confirmCands.length > 0);
+  // Candidate-handoff repair (req 5 + 6): confirmability is gated on candidate
+  // EXISTENCE, not the identification band. Whenever the server sent at least one
+  // normalized candidate (or a provisional match), the Confirm / None-of-these
+  // controls render — the only exclusion is an explicit NOT_A_PLANT. This is what
+  // stops a valid candidate from silently losing its confirm controls when it
+  // lands under a band other than LOW_IDENTIFICATION_CONFIDENCE.
+  const _confirmable = isCandidateConfirmable(
+    _guidance.state, _showProvisional, _confirmCands.length,
+  );
   const _guidanceCandidate = _str(_guidance.provisional && _guidance.provisional.plantName)
     || _str(_confirmCands[0] && (_confirmCands[0].commonName || _confirmCands[0].scientificName));
   // P1/P4 — confirmation → health. Confirms a STORED candidate (server-validated

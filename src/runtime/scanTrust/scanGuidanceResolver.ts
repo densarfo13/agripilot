@@ -93,6 +93,30 @@ export interface ScanGuidanceResolution {
   photoQuality: any;
 }
 
+/**
+ * isCandidateConfirmable — the SINGLE rule for whether candidate-confirmation
+ * controls ("Yes, this is correct" / "None of these") should render.
+ *
+ * Spec (candidate-handoff repair, req 5 + 6): render confirmation controls
+ * whenever AT LEAST ONE normalized candidate exists — regardless of the exact
+ * identification band — and preserve low-confidence candidates for confirmation
+ * INSTEAD of collapsing them to an empty result. The ONLY hard exclusion is an
+ * explicit NOT_A_PLANT: there is genuinely nothing to confirm.
+ *
+ * Before this rule the card gated confirmability on the state literal
+ * (`state === 'LOW_IDENTIFICATION_CONFIDENCE'`), so a candidate arriving under
+ * any other band silently lost its Confirm controls. Candidate-EXISTENCE, not
+ * the band, is the correct gate. Pure; never throws.
+ */
+export function isCandidateConfirmable(
+  state: ScanResultState | string,
+  showProvisional: boolean,
+  candidateCount: number,
+): boolean {
+  if (state === 'NOT_A_PLANT') return false;
+  return !!showProvisional || (Number.isFinite(candidateCount) && candidateCount > 0);
+}
+
 export function resolveScanGuidance(result: unknown): ScanGuidanceResolution {
   const r = _obj(result) ? result : {};
   let photoQuality: any = null;

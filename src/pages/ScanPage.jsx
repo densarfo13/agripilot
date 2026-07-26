@@ -41,6 +41,7 @@ import { analyzeImageSafe, ML_CATEGORIES, CATEGORY_MESSAGES } from '../lib/mlSca
 // region) on top of the image-only verdict so the result is
 // safer + more actionable. See src/core/hybridScanEngine.js.
 import { hybridAnalyze } from '../core/hybridScanEngine.js';
+import { shouldFallbackPublish } from '../core/scan/scanFallbackPolicy.js';
 // High-trust scan output policy \u2014 sanitises forbidden wording
 // and gives us the canonical "Check this again tomorrow" follow-up
 // task we attach to Add to Today's Plan (spec \u00a77).
@@ -1353,6 +1354,11 @@ export default function ScanPage() {
       // hard-stop triggers the rule-based fallback verdict.
       let fallbackTimer = null;
       let fallbackShown = false;
+      // Candidate-handoff repair (req 4): explicit precedence flag. The real
+      // result sets this the instant it publishes; the fallback timer refuses to
+      // publish when it is set — so a valid, candidate-bearing answer can NEVER be
+      // overwritten by the empty placeholder, even if clearTimeout is missed.
+      let realResultShown = false;
       let escalationTimer = null;
       try {
         escalationTimer = setTimeout(() => {
@@ -1362,7 +1368,12 @@ export default function ScanPage() {
       } catch { /* swallow */ }
       try {
         fallbackTimer = setTimeout(() => {
-          if (fallbackShown) return;
+          // Candidate-handoff repair (req 4): a real result ALWAYS wins. The
+          // placeholder publishes only when no real result has been shown, it
+          // hasn't already fired, and the session isn't stale.
+          if (!shouldFallbackPublish({
+            realResultShown, fallbackShown, sessionStale: isStaleScanSession(_localSessionId),
+          })) return;
           fallbackShown = true;
           try {
             const fallbackHybrid = hybridAnalyze({
@@ -1487,6 +1498,20 @@ export default function ScanPage() {
       // envelope from the runtime — all legacy fields are
       // preserved + the spec §12 fields are added.
       const out = _scanRuntime.getResult() || {};
+      // Candidate-handoff repair (req 4): mark the real result present BEFORE the
+      // fallback timer could ever fire. From here the placeholder is locked out
+      // even if the clearTimeout below is somehow missed.
+      realResultShown = true;
+      // Boundary trace (req 1-3): one correlation key (scanId) + candidate counts
+      // at the client publish boundary, so a lost candidate is attributable to a
+      // specific stage instead of guessed. Never logs image data.
+      try {
+        const _cc = Array.isArray(out.confirmationCandidates) ? out.confirmationCandidates.length : 0;
+        const _tc = Array.isArray(out.topCandidates) ? out.topCandidates.length : 0;
+        console.info('[scan.trace] client.publish scanId=' + (out.scanId || '-')
+          + ' state=' + (out.identificationState || '-')
+          + ' confirmCands=' + _cc + ' topCands=' + _tc);
+      } catch { /* swallow */ }
       // Real result back — cancel the fallback timer if it
       // hasn't fired yet. If it HAS, the refinedOut below
       // overwrites the fallback in one render so the user sees
