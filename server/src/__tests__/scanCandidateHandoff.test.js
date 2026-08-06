@@ -104,3 +104,35 @@ describe('fallback precedence — req 4 (a real result is never overwritten)', (
     expect(shouldFallbackPublish({ realResultShown: false, fallbackShown: false, sessionStale: true })).toBe(false);
   });
 });
+
+// Fullscreen-scanner spec — CANDIDATE HANDOFF PROTECTION: the explicitly named
+// regression case my earlier suite did NOT cover — fallback guidance is ALREADY
+// visible, THEN valid candidates arrive and must REPLACE the fallback (not the
+// reverse). This is the exact sequence from the farmer's dead-end evidence.
+describe('candidate state replaces an already-shown fallback', () => {
+  it('fallback shown first → real candidates arrive → the real result is confirmable', () => {
+    // The fallback placeholder was published (fallbackShown=true) during a hang.
+    // The delayed real candidates then land. Resolving the REAL envelope must
+    // yield a confirmable candidate card regardless of the prior fallback —
+    // confirmability is a property of the current result, not of history.
+    const env = buildResultEnvelope(PROVIDER_WITH_CANDIDATES, { sessionId: 's', imageId: 'i', previewUrl: 'blob:x' });
+    const g = resolveScanGuidance(env);
+    expect(isCandidateConfirmable(g.state, g.showProvisional, (env.confirmationCandidates || []).length)).toBe(true);
+  });
+
+  it('once real candidates have replaced the fallback, a late fallback re-fire cannot overwrite them', () => {
+    // realResultShown latches true at the real publish; any subsequent fallback
+    // callback (even one already past its fallbackShown gate) is refused.
+    expect(shouldFallbackPublish({ realResultShown: true, fallbackShown: true, sessionStale: false })).toBe(false);
+  });
+
+  it('INVARIANT: a zero-candidate result never resolves to a candidate/confirm state ("Several possibilities" cannot show at cand=0)', () => {
+    // Acceptance: never display "Several possibilities found" while the internal
+    // candidate count is zero. The empty placeholder must be neither provisional
+    // nor confirmable, so no candidate-bearing copy can render over it.
+    const g = resolveScanGuidance(FALLBACK_PLACEHOLDER);
+    expect(g.showProvisional).toBe(false);
+    expect(g.state).not.toBe('IDENTIFIED_PROVISIONAL');
+    expect(isCandidateConfirmable(g.state, g.showProvisional, 0)).toBe(false);
+  });
+});
